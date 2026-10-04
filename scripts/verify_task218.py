@@ -133,9 +133,14 @@ check("C6 JavaLauncher 接入 CrashAnalyzer（import + 分析调用）",
       and "[CrashAnalyzer analyzeHsErrFile:hsErrPath]" in jl)
 
 print("== D. 首次使用欢迎向导 ==")
-check("D1 向导存在且登记 CMake",
+check("D1 向导存在且登记 CMake + 五个步骤构建器齐备（CI 病历：步骤 0/1 曾因插入事故缺席）",
       os.path.exists("Natives/WelcomeViewController.m")
-      and "WelcomeViewController.m" in cml)
+      and "WelcomeViewController.m" in cml
+      and all(f"ame218_build{s}:(UIView *)container" in wvc for s in
+              ["HeroStep", "LanguageStep", "SourceStep", "DataStep", "DoneStep"])
+      and 'localize(@"welcome.hero.subtitle"' in wvc
+      and 'localize(@"welcome.lang.title"' in wvc
+      and "ame218_refreshLangButtons" in wvc)
 check("D2 SceneDelegate 触发（0.8s 延迟 + 哨兵判定 + 全屏呈现）",
       "presentIfNeededFromViewController:rootVC" in sd
       and 'getPrefBool(@"general.welcome_completed")' in wvc

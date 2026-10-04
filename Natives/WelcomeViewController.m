@@ -385,6 +385,209 @@ static const NSInteger ame218_welcomeStepCount = 5;
     }];
 }
 
+#pragma mark - 步骤内容：0 Hero
+
+- (void)ame218_buildHeroStep:(UIView *)container {
+    UIView *ame218_center = [[UIView alloc] init];
+    ame218_center.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:ame218_center];
+
+    // 应用图标（弹入 + 光晕；无 AppIcon 资源时回退 SF Symbol）
+    UIImageView *ame218_icon = [[UIImageView alloc] init];
+    UIImage *ame218_appIcon = [UIImage imageNamed:@"AppIcon-Light"];
+    if (ame218_appIcon == nil) {
+        ame218_appIcon = [UIImage systemImageNamed:@"cube.fill"];
+    }
+    ame218_icon.image = ame218_appIcon;
+    ame218_icon.contentMode = UIViewContentModeScaleAspectFit;
+    ame218_icon.layer.cornerRadius = 24;
+    ame218_icon.layer.cornerCurve = kCACornerCurveContinuous;
+    ame218_icon.layer.masksToBounds = YES;
+    ame218_icon.layer.shadowColor = [UIColor colorWithRed:0.55 green:0.55 blue:1.0 alpha:1.0].CGColor;
+    ame218_icon.layer.shadowOpacity = 0.55;
+    ame218_icon.layer.shadowRadius = 26;
+    ame218_icon.layer.shadowOffset = CGSizeZero;
+    ame218_icon.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame218_center addSubview:ame218_icon];
+
+    UILabel *ame218_name = [[UILabel alloc] init];
+    NSDictionary *ame218_info = NSBundle.mainBundle.infoDictionary;
+    ame218_name.text = ame218_info[@"CFBundleDisplayName"] ?: @"Prisma";
+    ame218_name.font = [UIFont systemFontOfSize:34 weight:UIFontWeightBold];
+    ame218_name.textColor = [UIColor whiteColor];
+    ame218_name.textAlignment = NSTextAlignmentCenter;
+    ame218_name.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame218_center addSubview:ame218_name];
+
+    UILabel *ame218_version = [[UILabel alloc] init];
+    ame218_version.text = [NSString stringWithFormat:@"v%@",
+        ame218_info[@"CFBundleShortVersionString"] ?: @"6.5.0"];
+    ame218_version.font = [UIFont monospacedDigitSystemFontOfSize:14 weight:UIFontWeightMedium];
+    ame218_version.textColor = [UIColor colorWithWhite:1.0 alpha:0.72];
+    ame218_version.textAlignment = NSTextAlignmentCenter;
+    ame218_version.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame218_center addSubview:ame218_version];
+
+    UILabel *ame218_tagline = [[UILabel alloc] init];
+    ame218_tagline.text = localize(@"welcome.hero.subtitle", nil);
+    ame218_tagline.font = [UIFont systemFontOfSize:15 weight:UIFontWeightRegular];
+    ame218_tagline.textColor = [UIColor colorWithWhite:1.0 alpha:0.85];
+    ame218_tagline.textAlignment = NSTextAlignmentCenter;
+    ame218_tagline.numberOfLines = 0;
+    ame218_tagline.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame218_center addSubview:ame218_tagline];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [ame218_center.centerXAnchor constraintEqualToAnchor:container.centerXAnchor],
+        [ame218_center.centerYAnchor constraintEqualToAnchor:container.centerYAnchor],
+        [ame218_center.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [ame218_center.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+
+        [ame218_icon.centerXAnchor constraintEqualToAnchor:ame218_center.centerXAnchor],
+        [ame218_icon.topAnchor constraintEqualToAnchor:ame218_center.topAnchor],
+        [ame218_icon.widthAnchor constraintEqualToConstant:104],
+        [ame218_icon.heightAnchor constraintEqualToConstant:104],
+
+        [ame218_name.topAnchor constraintEqualToAnchor:ame218_icon.bottomAnchor constant:22],
+        [ame218_name.centerXAnchor constraintEqualToAnchor:ame218_center.centerXAnchor],
+
+        [ame218_version.topAnchor constraintEqualToAnchor:ame218_name.bottomAnchor constant:6],
+        [ame218_version.centerXAnchor constraintEqualToAnchor:ame218_center.centerXAnchor],
+
+        [ame218_tagline.topAnchor constraintEqualToAnchor:ame218_version.bottomAnchor constant:14],
+        [ame218_tagline.leadingAnchor constraintEqualToAnchor:ame218_center.leadingAnchor constant:16],
+        [ame218_tagline.trailingAnchor constraintEqualToAnchor:ame218_center.trailingAnchor constant:-16],
+        [ame218_tagline.bottomAnchor constraintEqualToAnchor:ame218_center.bottomAnchor],
+    ]];
+
+    // 图标弹簧入场（缩放 0.4 -> 1.06 -> 1.0 的过冲）
+    ame218_icon.transform = CGAffineTransformMakeScale(0.4, 0.4);
+    ame218_icon.alpha = 0;
+    [UIView animateWithDuration:0.7 delay:0.1
+     usingSpringWithDamping:0.58 initialSpringVelocity:0.35 options:0
+                    animations:^{
+        ame218_icon.transform = CGAffineTransformMakeScale(1.06, 1.06);
+        ame218_icon.alpha = 1;
+    } completion:^(BOOL finished) {
+        [UIView animateWithDuration:0.32 delay:0
+         usingSpringWithDamping:0.7 initialSpringVelocity:0.3 options:0
+                        animations:^{
+            ame218_icon.transform = CGAffineTransformIdentity;
+        } completion:nil];
+    }];
+    // 文本阶梯淡入
+    ame218_name.alpha = 0; ame218_version.alpha = 0; ame218_tagline.alpha = 0;
+    [UIView animateWithDuration:0.5 delay:0.35 options:UIViewAnimationOptionBeginFromCurrentState
+                     animations:^{
+        ame218_name.alpha = 1; ame218_version.alpha = 1; ame218_tagline.alpha = 1;
+    } completion:nil];
+}
+
+#pragma mark - 步骤内容：1 语言
+
+- (void)ame218_buildLanguageStep:(UIView *)container {
+    UILabel *ame218_title = [[UILabel alloc] init];
+    ame218_title.text = localize(@"welcome.lang.title", nil);
+    ame218_title.font = [UIFont systemFontOfSize:26 weight:UIFontWeightBold];
+    ame218_title.textColor = [UIColor whiteColor];
+    ame218_title.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:ame218_title];
+
+    UILabel *ame218_sub = [[UILabel alloc] init];
+    ame218_sub.text = localize(@"welcome.lang.subtitle", nil);
+    ame218_sub.font = [UIFont systemFontOfSize:14 weight:UIFontWeightRegular];
+    ame218_sub.textColor = [UIColor colorWithWhite:1.0 alpha:0.75];
+    ame218_sub.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:ame218_sub];
+
+    UIStackView *ame218_grid = [[UIStackView alloc] init];
+    ame218_grid.axis = UILayoutConstraintAxisVertical;
+    ame218_grid.spacing = 12;
+    ame218_grid.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:ame218_grid];
+
+    self.langButtons = [NSMutableArray array];
+    NSArray<NSString *> *ame218_codes = @[@"system", @"zh-Hans", @"zh-Hant", @"en"];
+    NSArray<NSString *> *ame218_labels = @[
+        localize(@"i18n_str_382", nil),   // 跟随系统（复用语言行同键）
+        @"简体中文",
+        @"繁體中文",
+        @"English",
+    ];
+    for (NSUInteger i = 0; i < ame218_codes.count; i++) {
+        UIButton *ame218_btn = [UIButton buttonWithType:UIButtonTypeSystem];
+        [ame218_btn setTitle:ame218_labels[i] forState:UIControlStateNormal];
+        [ame218_btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        ame218_btn.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightMedium];
+        ame218_btn.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+        ame218_btn.contentEdgeInsets = UIEdgeInsetsMake(0, 18, 0, 18);
+        ame218_btn.layer.cornerRadius = 16;
+        ame218_btn.layer.cornerCurve = kCACornerCurveContinuous;
+        ame218_btn.layer.borderWidth = 1.5;
+        ame218_btn.translatesAutoresizingMaskIntoConstraints = NO;
+        [ame218_btn addTarget:self action:@selector(ame218_langPicked:)
+           forControlEvents:UIControlEventTouchUpInside];
+        ame218_btn.tag = (NSInteger)i;
+        [ame218_grid addArrangedSubview:ame218_btn];
+        [ame218_btn.heightAnchor constraintEqualToConstant:52].active = YES;
+        [self.langButtons addObject:ame218_btn];
+    }
+
+    UILabel *ame218_more = [[UILabel alloc] init];
+    ame218_more.text = localize(@"welcome.lang.more", nil);
+    ame218_more.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
+    ame218_more.textColor = [UIColor colorWithWhite:1.0 alpha:0.55];
+    ame218_more.numberOfLines = 0;
+    ame218_more.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:ame218_more];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [ame218_title.topAnchor constraintEqualToAnchor:container.topAnchor constant:26],
+        [ame218_title.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+
+        [ame218_sub.topAnchor constraintEqualToAnchor:ame218_title.bottomAnchor constant:6],
+        [ame218_sub.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+
+        [ame218_grid.topAnchor constraintEqualToAnchor:ame218_sub.bottomAnchor constant:22],
+        [ame218_grid.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [ame218_grid.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+
+        [ame218_more.topAnchor constraintEqualToAnchor:ame218_grid.bottomAnchor constant:14],
+        [ame218_more.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:4],
+        [ame218_more.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-4],
+    ]];
+
+    [self ame218_refreshLangButtons];
+}
+
+- (void)ame218_langPicked:(UIButton *)sender {
+    NSArray<NSString *> *ame218_codes = @[@"system", @"zh-Hans", @"zh-Hant", @"en"];
+    self.pickedLanguage = ame218_codes[(NSUInteger)sender.tag];
+    self.languageChanged = YES;
+    [self ame218_refreshLangButtons];
+}
+
+- (void)ame218_refreshLangButtons {
+    NSArray<NSString *> *ame218_codes = @[@"system", @"zh-Hans", @"zh-Hant", @"en"];
+    for (NSUInteger i = 0; i < self.langButtons.count; i++) {
+        UIButton *ame218_btn = self.langButtons[i];
+        BOOL ame218_sel = [self.pickedLanguage isEqualToString:ame218_codes[i]];
+        [UIView animateWithDuration:0.30 delay:0
+         usingSpringWithDamping:0.65 initialSpringVelocity:0.4 options:0
+                        animations:^{
+            ame218_btn.backgroundColor = ame218_sel
+                ? [UIColor colorWithWhite:1.0 alpha:0.16]
+                : [UIColor colorWithWhite:1.0 alpha:0.07];
+            ame218_btn.layer.borderColor = ame218_sel
+                ? [UIColor whiteColor].CGColor
+                : [UIColor colorWithWhite:1.0 alpha:0.28].CGColor;
+            ame218_btn.transform = ame218_sel
+                ? CGAffineTransformMakeScale(1.02, 1.02)
+                : CGAffineTransformIdentity;
+        } completion:nil];
+    }
+}
+
 #pragma mark - 步骤内容：2 下载源
 
 - (void)ame218_buildSourceStep:(UIView *)container {
