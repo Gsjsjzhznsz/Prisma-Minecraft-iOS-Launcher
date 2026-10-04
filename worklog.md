@@ -1751,3 +1751,20 @@ Stage Summary:
 - CI 热修 2（run 37189755141 判读）：子模块救治生效（checkout 步已过），编译死于 WelcomeViewController.m:933 'use of undeclared identifier ame219_jitStatusLabel'——JIT 状态行约束块里把属性 self.jitStatusLabel 误写成 ame219_jitStatusLabel（局部命名前缀惯性）。修复 + 教训入库：task219_syntax 新增"未声明标识符 lint"（ame219_ 前缀 token 的声明形态五类匹配：指针/泛型指针、标量与类型化、block 变量、选择器与 [self 调用]、static/const 前缀；回归测试实锤——把 buggy 形态回注文件，lint 精确捕获 ame219_jitStatusLabel），本地无 ObjC 编译器的盲区从此有门
 - 遗留：CI 复推待确认（hotfix 2 = ca3f5c69 之后的第三次推送）；沙箱外层工作区依赖的 14 验证器待环境恢复后复跑
 - 遗留（发现）：task179_transform harness 管线存量断裂——生产 tinygl4angle.c 早已自定义 glDrawElements/glDrawArrays/glDrawElementsInstanced 等函数（Task205d 之后的生产演进），再生成 harness 与 task179_tinygl_harness.c 桩表重定义冲突（gcc 报错实锤）；该断裂先于本轮（transform 总是从当前生产再生成，我的 Task219 块未新增任何符号定义）；harness 已还原 HEAD 态不入本轮，修复（桩表收敛或 transform 剔重）留待专门轮次
+
+---
+Task ID: 219-ci
+Agent: main (Super Z)
+Task: Task 219 CI 闭环
+
+Work Log:
+- run 37188369741（0a54f2f4 十一连修主提交）：failure——"Checkout repository submodules" 步死于 khanhduytran0/DBNumberedSlider 与 fishhook 克隆（账号已删；6cd2cbfb 的 run 37181806916 先死于同因，非本轮代码问题）
+- 热修 1（ca3f5c69）：两棵钉住树经 fork 网络对象存储取回（immago/DBNumberedSlider@4eddc68b + facebook/fishhook@27bedb2ab 的 codeload 均返 200），去子模块化树内置入（fishhook 的 arm64e ptrauth __auth_got 补丁 diff 验真 = 真 fork 内容）；仓库自此对上游之死自持
+- run 37189755141（ca3f5c69）：子模块步已过（救治生效），编译死于 WelcomeViewController.m:933 ame219_jitStatusLabel 未声明（属性名误加前缀）
+- 热修 2（d632cf5b）：修复笔误 + unistd.h；task219_syntax 新增未声明标识符 lint（回归测试实锤能抓住该错误类）
+- run 37191005249（d632cf5b）：completed success——Task 219 全链闭环（81/81 + 舰队 + CI），新 IPA 就绪
+
+Stage Summary:
+- 装机验证锚点清单（按 11 项）：①VirGL："[VirGL] Task219 socket path = ..."（len < 104）/"dlopen resolved via candidate"/"post-bootstrap check ok: socket bound"；若引导失败 → "[egl_bridge] Task219 VirGL server bootstrap FAILED ... diverting renderer to Zink" + 游戏继续 + 弹窗（不再 abort）。⑦ANGLE ≤26.2："[tinygl4angle] Task219 desktop->ES300 head rewrite #N (was #version 330 ...)" + 管线编译恢复 + Task183 漏网计数归零。⑧欢迎向导：居中/可点/六步/返回键/图标。②③"[Welcome] Task219 env: LiveContainer=1 mainBundleId=... hostBundleId=... idMatch=0"（LC 指引卡）+ "[Welcome] Task219: jit_enabler set to ..."。⑥完成 → 关于页自动弹出。⑨"[DataTransfer] Task219 export preflight: N files, X MB" + 三档压缩 + 进度条。⑩TC 安装文案不再显示 Sodium；1.8.9 实例直接弹"不支持 1.12.2 以下"。⑪"[ModsManager] Task219: isolation badge for profile ... -> isolated/shared" + 隔离实例下载 mod 落隔离目录
+- 环境遗留备忘：本沙箱外层工作区被回退清除，132/133/134/135/150/156/157/168/171/174/175/179/181/182 十四个验证器依赖的外层文件缺失（git-stash 对照实验证明失败集与本轮无关）；202[J]/204[D4] 为 168 级联
+- 教训入库：①fork 网络共享 git 对象存储——上游仓库被删后，钉住 SHA 仍可经父仓库的 API/codeload 取回（网页 UI 404 是误导）；②本地无 ObjC 编译器的盲区用"未声明标识符 lint"补门（前缀 token 声明形态匹配）；③日志文件类验证证据要 git 钉（用户上传会轮换 latestlog）
