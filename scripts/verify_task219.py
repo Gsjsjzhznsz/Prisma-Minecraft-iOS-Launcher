@@ -297,6 +297,41 @@ check("M2 舰队 2520 旧值扫荡干净（除 task219 自身）",
       and all("2482" not in rd("scripts/" + f) for f in os.listdir("scripts")
               if f.startswith("verify_task") and f != "verify_task219.py"))
 
+print("== N. 上游死亡救治：khanhduytran0 两个子模块树内置入（CI 37188369741 根因） ==")
+# 病历：run 37188369741（0a54f2f4）与 37181806916（6cd2cbfb，早于本提交）都在
+# "Checkout repository submodules" 步骤死于 "could not read Username"——
+# khanhduytran0 账号已删（user API 404），DBNumberedSlider 与 fishhook 两个
+# 子模块上游 404。救治：两棵钉住树（4eddc68b / 27bedb2ab）经各自 fork 网络
+# （immago/DBNumberedSlider、facebook/fishhook——fork 网络共享对象存储，
+# codeload 对钉住 SHA 仍返回 200）完整取回，去子模块化后树内置入。
+gm = rd(".gitmodules")
+check("N1 .gitmodules 不再引用已死上游 khanhduytran0",
+      "khanhduytran0" not in gm
+      and 'submodule "Natives/external/fishhook"' not in gm
+      and 'submodule "Natives/external/DBNumberedSlider"' not in gm
+      and gm.count("[submodule") == 6)
+check("N2 fishhook 树内在位（fishhook.c/h + LICENSE，路径与 CMakeLists 消费点一致）",
+      os.path.exists("Natives/external/fishhook/fishhook.c")
+      and os.path.exists("Natives/external/fishhook/fishhook.h")
+      and os.path.exists("Natives/external/fishhook/LICENSE")
+      and "external/fishhook/fishhook.c" in cml)
+check("N3 恢复的是 fork 版内容（arm64e ptrauth __auth_got 重签名补丁在位——facebook 上游没有这段）",
+      "ptrauth_strip" in rd("Natives/external/fishhook/fishhook.c")
+      and "__auth_got" in rd("Natives/external/fishhook/fishhook.c"))
+check("N4 DBNumberedSlider 树内在位（Classes/DBNumberedSlider.m + LICENSE）",
+      os.path.exists("Natives/external/DBNumberedSlider/Classes/DBNumberedSlider.m")
+      and os.path.exists("Natives/external/DBNumberedSlider/Classes/DBNumberedSlider.h")
+      and os.path.exists("Natives/external/DBNumberedSlider/LICENSE")
+      and "external/DBNumberedSlider/Classes/DBNumberedSlider.m" in cml)
+check("N5 消费方零改动（main_hook.m include 路径 + CMakeLists include 目录原样）",
+      '#include "external/fishhook/fishhook.h"' in rd("Natives/main_hook.m")
+      and '"external/DBNumberedSlider/Classes"' in cml
+      and '"external/fishhook"' in cml)
+gitlinks = subprocess.run(["git", "ls-files", "-s"], capture_output=True, text=True).stdout
+check("N6 两处 gitlink（160000）已除名，树内为普通文件",
+      "160000" not in "\n".join(l for l in gitlinks.splitlines()
+                                if "external/fishhook" in l or "DBNumberedSlider" in l))
+
 print()
 print("=" * 40)
 print(f"verify_task219: {PASSED} passed, {len(FAILED)} failed")
