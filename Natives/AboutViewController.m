@@ -96,7 +96,19 @@ static NSString *const ame217_qqGroup = @"1126547426";
     inner.translatesAutoresizingMaskIntoConstraints = NO;
     [card addSubview:inner];
 
-    UIImage *icon = [UIImage imageNamed:@"AppIcon-Light"] ?: [UIImage systemImageNamed:@"app.fill"];
+    // Task219：图标加载改走多候选链（与欢迎向导同源）。病历：旧代码
+    // imageNamed:@"AppIcon-Light" 在 bundle 根 PNG 实名（AppIcon-Light60x60
+    // @2x.png）下必然落空 → 回退 SF Symbol 小图标（"没有图标装饰"反馈的
+    // 关于页一半）。候选链按实名去 @2x 后缀逐个试。
+    UIImage *icon = nil;
+    for (NSString *ame219_name in @[@"AppIcon-Light60x60", @"AppIcon-Light76x76",
+                                     @"AppIcon60x60", @"AppIcon-Light", @"AppIcon"]) {
+        icon = [UIImage imageNamed:ame219_name];
+        if (icon != nil) break;
+    }
+    if (icon == nil) {
+        icon = [UIImage systemImageNamed:@"app.fill"];
+    }
     if (icon) {
         UIImageView *iv = [[UIImageView alloc] initWithImage:icon];
         iv.contentMode = UIViewContentModeScaleAspectFit;

@@ -527,7 +527,44 @@ static int pojavInitOpenGLInternal(BOOL setLwjglProperty) {
         NSLog(@"[egl_bridge] VirGL renderer: bootstrapping in-process vtest server (Task 215)");
         int ame215_vs_rc = ame_virgl_start_server();
         if (ame215_vs_rc != 0) {
-            NSLog(@"[egl_bridge] VirGL server bootstrap FAILED (rc=%d) -- guest will fail to connect; check [VirGL] logs above", ame215_vs_rc);
+            // Task219：引导失败 → 优雅回退 Zink，绝不放行 guest 去 abort。
+            // 病历（6cd2cbfb latestlog.old.txt）：vtest server 起不来时 guest
+            //（libOSMesaVirgl）仍会尝试连接，virgl_vtest_negotiate_version
+            // 里直接 abort() = 整个进程崩（fatal trace 实锤）。此时 osm 桥
+            // 尚未 dlopen guest——把 AMETHYST_RENDERER 换成 zink 前端
+            //（libOSMesa.8.dylib）+ GALLIUM_DRIVER=zink，dlsym_OSMesa 会按
+            // 新值加载，游戏在 Zink 上继续跑（未调优的 Zink 环境可接受：
+            // 这正是“渲染器降级”而非“崩溃”的语义；ZinkConfig 调优在
+            // JavaLauncher 的 zink 分支，仅 virgl 会话才会走到这里）。
+            NSLog(@"[egl_bridge] Task219 VirGL server bootstrap FAILED (rc=%d) -- diverting renderer to Zink (crash prevention)", ame215_vs_rc);
+            setenv("AMETHYST_RENDERER", RENDERER_NAME_VK_ZINK, 1);
+            setenv("GALLIUM_DRIVER", "zink", 1);
+            renderer = @ RENDERER_NAME_VK_ZINK; // pojavCreateContext 后续日志口径一致
+            // 主线程弹一次性说明（不阻塞游戏线程；游戏照常启动）。
+            dispatch_async(dispatch_get_main_queue(), ^{
+                UIAlertController *ame219_alert = [UIAlertController
+                    alertControllerWithTitle:localize(@"ame219.virgl.fallback.title", nil)
+                                     message:localize(@"ame219.virgl.fallback.body", nil)
+                              preferredStyle:UIAlertControllerStyleAlert];
+                [ame219_alert addAction:[UIAlertAction actionWithTitle:localize(@"OK", @"好的")
+                                                                  style:UIAlertActionStyleDefault
+                                                                handler:nil]];
+                // 顶层 VC 手工回溯（无全局 category 可用；仅取 keyWindow 链）。
+                UIViewController *ame219_top = nil;
+                for (UIScene *ame219_scene in UIApplication.sharedApplication.connectedScenes) {
+                    if ([ame219_scene isKindOfClass:[UIWindowScene class]]) {
+                        UIViewController *ame219_root = ((UIWindowScene *)ame219_scene).keyWindow.rootViewController;
+                        while (ame219_root.presentedViewController != nil) {
+                            ame219_root = ame219_root.presentedViewController;
+                        }
+                        ame219_top = ame219_root;
+                        break;
+                    }
+                }
+                if (ame219_top != nil) {
+                    [ame219_top presentViewController:ame219_alert animated:YES completion:nil];
+                }
+            });
         }
         set_osm_bridge_tbl();
     } else if ([renderer hasPrefix:@"libOSMesa"]) {

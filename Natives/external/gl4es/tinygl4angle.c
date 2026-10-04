@@ -2029,6 +2029,66 @@ void glShaderSource(GLuint shader, GLsizei count, const GLchar * const *string, 
             free(source);
             return;
         }
+        // Task219（用户报“ANGLE 在非 26.3 版本黑屏闪退”，6cd2cbfb latestlog.txt
+        // 判读：MC 26.2 FO 会话全部 pipeline 报 "ERROR: 0:1: '' : invalid version
+        // directive"， fatal trace 为黑屏后手动强关）：26.3 的着色器走
+        // GlslCompiler.compileToSpv → shaderc → SPIRV → spirv-cross 链，
+        // ES300 重写在 spvc_shim（Task175/176）里做，送达本函数时已是
+        // "#version 300 es"；而 ≤26.2 的 GlProgram 直传路径【完全绕开】
+        // spvc——桌面 "#version 330" 原样到达，下面的旧转换只处理 1xx
+        // 版本号（converted[9]=='1'），330 头原样上传给 ES3 上下文 = 版本
+        // 指令非法 → 全部管线编译失败 → 黑屏。修法：对 >=130 的桌面源做
+        // 与 ame176_textual_es_rewrite 同构的头重写（版本行 → "#version 300
+        // es" + ES 必需 precision 声明组——该精度组在 26.3 会话经 spvc 链
+        // 已装机验证），随后直接上传（等效 ES 早退分支，跳过下方 gl4es
+        // 时代的 outColor0/gl_FragData 与扩展注入——那套是桌面 facade
+        // 时代的遗产，对 ESSL300 源反而是噪声）。
+        {
+            long ame219_ver = strtol(&source2[9], NULL, 10);
+            if (ame219_ver >= 130) {
+                static const char *const kAme219EsHead =
+                    "#version 300 es\n"
+                    "precision highp float;\n"
+                    "precision highp int;\n"
+                    "precision highp sampler2D;\n"
+                    "precision highp sampler3D;\n"
+                    "precision highp samplerCube;\n"
+                    "precision highp sampler2DShadow;\n"
+                    "precision highp samplerCubeShadow;\n"
+                    "precision highp sampler2DArray;\n"
+                    "precision highp isampler2D;\n"
+                    "precision highp usampler2D;\n"
+                    "precision highp isampler3D;\n"
+                    "precision highp usampler3D;\n"
+                    "precision highp image2D;\n"
+                    "precision highp iimage2D;\n"
+                    "precision highp uimage2D;\n";
+                const char *ame219_eol = strchr(source2, '\n');
+                if (ame219_eol != NULL) {
+                    size_t ame219_headLen = strlen(kAme219EsHead);
+                    size_t ame219_restLen = strlen(ame219_eol + 1);
+                    char *ame219_es = (char *)malloc(ame219_headLen + ame219_restLen + 1);
+                    if (ame219_es != NULL) {
+                        memcpy(ame219_es, kAme219EsHead, ame219_headLen);
+                        memcpy(ame219_es + ame219_headLen, ame219_eol + 1, ame219_restLen);
+                        ame219_es[ame219_headLen + ame219_restLen] = '\0';
+                        {
+                            static int s_ame219_rewriteN = 0;
+                            ++s_ame219_rewriteN;
+                            if (s_ame219_rewriteN <= 4 || (s_ame219_rewriteN % 64) == 0) {
+                                printf("[tinygl4angle] Task219 desktop->ES300 head rewrite #%d (was #version %ld, len=%zu)\n",
+                                       s_ame219_rewriteN, ame219_ver, ame219_headLen + ame219_restLen);
+                            }
+                        }
+                        gles_glShaderSource(shader, 1, (const GLchar * const *)(&ame219_es), NULL);
+                        free(ame219_es);
+                        free(source);
+                        return;
+                    }
+                    // malloc 失败：跌回下方旧路径（保持旧风险面，不扩大）。
+                }
+            }
+        }
         converted = strdup(source2);
         if (converted[9] == '1') {
             if (converted[10] - '0' < 2) {

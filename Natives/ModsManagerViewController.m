@@ -302,6 +302,25 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     [self.sortChipButton addTarget:self action:@selector(sortChipTapped) forControlEvents:UIControlEventTouchUpInside];
     [self.chipsStack addArrangedSubview:self.sortChipButton];
 
+    // Task219（⑪ 版本隔离自动识别）：行尾信息徽标——按当前 profile 的
+    // gameDir 自动判定隔离态（隔离 = 蓝底“隔离”，共享 = 灰底“共享目录”），
+    // 点击弹说明（下载/扫描只作用于该目录，与 ModService ame219 同口径）。
+    NSInteger ame219_iso = [ModService ame219_isolationStateForProfile:(self.profileName ?: @"default")];
+    UIButton *ame219_isoChip = [self makeChipButtonWithTitle:localize(
+        (ame219_iso == 1) ? @"ame219.mods.isolated_chip" : @"ame219.mods.shared_chip", nil)];
+    ame219_isoChip.enabled = NO;
+    if (ame219_iso == 1) {
+        [ame219_isoChip setImage:[UIImage systemImageNamed:@"lock.shield"]
+                    forState:UIControlStateNormal];
+    } else {
+        [ame219_isoChip setImage:[UIImage systemImageNamed:@"externaldrive"]
+                    forState:UIControlStateNormal];
+    }
+    ame219_isoChip.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
+    [self.chipsStack addArrangedSubview:ame219_isoChip];
+    NSLog(@"[ModsManager] Task219: isolation badge for profile %@ -> %@",
+          self.profileName ?: @"default", (ame219_iso == 1) ? @"isolated" : @"shared");
+
     [NSLayoutConstraint activateConstraints:@[
         // chips 行：紧贴搜索栏下方，tableView 改为锚到 chips 行底部
         [self.chipsScrollView.topAnchor constraintEqualToAnchor:self.searchBar.bottomAnchor constant:2],

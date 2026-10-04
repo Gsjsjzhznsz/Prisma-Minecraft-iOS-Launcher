@@ -59,8 +59,8 @@ for lg, val in EXPECT.items():
 def keyset(lg):
     return set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))
 k4 = [keyset(l) for l in ("en", "zh-Hans", "zh-CN", "zh-Hant")]
-check("A3 four-main-language key sets identical (each 2482 after +1)",
-      k4[0] == k4[1] == k4[2] == k4[3] and len(k4[0]) == 2482,
+check("A3 four-main-language key sets identical (each 2520 after +1)",
+      k4[0] == k4[1] == k4[2] == k4[3] and len(k4[0]) == 2520,
       f"counts={[len(k) for k in k4]}")
 check("A3b ja/km also carry mem_help.button",
       "mem_help.button" in keyset("ja") and "mem_help.button" in keyset("km"))
@@ -141,14 +141,14 @@ check("F5 Task212/213 addenda untouched",
 print("== G. announcement task214@2 (36 items) ==")
 ann = json.loads(rd("announcements.json"))["announcements"]
 ids = [a["id"] for a in ann]
-check("G1 38 items, id-unique (Task216@2 append)", len(ann) == 40 and len(ids) == len(set(ids)))
+check("G1 38 items, id-unique (Task216@2 append)", len(ann) == 41 and len(ids) == len(set(ids)))
 check("G2 task214@3 (Task215@2 insert shifted +1)", ids[3] == "task214-five-fixes-2026-10-02")
 check("G3 task213@3 + parallel task212@4 shifted intact",
       ids[4].startswith("task213-") and ids[5].startswith("task212-angle"))
 check("G4 pins intact (server@0 pin, task169@1)",
       ann[0].get("pin") is True and ids[1] == "task169-four-fixes-2026-09-25")
-check("G5 tail anchors task218 appended, task216 kept at -3",
-      ids[-2] == "task217-download-fixes-about-isolation-2026-10-03" and ids[-3] == "task216-ui-2026-10-03")
+check("G5 tail anchors task219 appended, task217 kept at -3",
+      ids[-3] == "task217-download-fixes-about-isolation-2026-10-03" and ids[-4] == "task216-ui-2026-10-03")
 a214 = ann[3]
 check("G6 task214 entry metadata complete",
       a214["date"] == "2026-10-02" and "付费开发者证书" in a214["summary"]
@@ -164,9 +164,9 @@ def has(p, needle):
 check("H1 v213 B5 re-anchored to kVMCardCornerRadius ring formula",
       has("scripts/verify_task213.py",
           "vm.count('kVMCardCornerRadius - (kVMCardEllipsisInset / 3.0)') >= 2"))
-check("H2 v213 H1/H7/H8 shifted to 39 (Task217 append)",
-      "len(ids) == 40" in rd("scripts/verify_task213.py")
-      and "'== 40' in v207 and '== 39' not in v207" in rd("scripts/verify_task213.py"))
+check("H2 v213 H1/H7/H8 shifted onward (Task219 append)",
+      "len(ids) == 41" in rd("scripts/verify_task213.py")
+      and "'== 41' in v207 and '== 40' not in v207" in rd("scripts/verify_task213.py"))
 check("H3 v165/167 windows lifted to 29/27",
       "range(min(30, len(anns)))" in rd("scripts/verify_task165.py")
       and "range(min(28, len(anns)))" in rd("scripts/verify_task167.py"))
@@ -182,8 +182,8 @@ check("H7 v172 G2 retry-count 3 -> 4 (Task212 CF hardening backfill)",
 check("H8 v170 F1 re-anchored to true positions (179@14..168@24)",
       'anns[15]["id"] == "task179-eight-fixes-2026-09-26"' in rd("scripts/verify_task170.py")
       and 'anns[25]["id"] == "task168-neumorph-faq-json-2026-09-25"' in rd("scripts/verify_task170.py"))
-check("H9 l10n 2482 family swept (spot: 129/133/151/206)",
-      all("2482" in rd(f) for f in
+check("H9 l10n 2520 family swept (spot: 129/133/151/206)",
+      all("2520" in rd(f) for f in
           ("scripts/verify_task129.py", "scripts/verify_task133.py",
            "scripts/verify_task151.py", "scripts/verify_task206.py")))
 check("H10 no stale == 35 announcement counters",

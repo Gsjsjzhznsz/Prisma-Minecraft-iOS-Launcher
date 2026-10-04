@@ -6,7 +6,7 @@ sort + honest no-match + MCIM retry), (B) mod-toggle silent-failure surfacing,
 (C) auto-renderer crash learning, (D) FCL-style version isolation + migration,
 (E) interim bundle id com.air-devs + data export/import service, (F) About
 page + moved update rows + right-panel route, (G) README license/QQ, (H)
-dep_virgl CI chain hardening, (I) l10n baseline 2482 x4, (J) announcements 39,
+dep_virgl CI chain hardening, (I) l10n baseline 2520 x4, (J) announcements 39,
 (K) REVISION 21, (L) syntax balance, (M) cascade spot checks.
 """
 import json
@@ -208,7 +208,7 @@ print("== I. l10n 基线 ==")
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"I-{lang} 唯一键 2482（Task217 +36）", len(keys) == 2482, f"got {len(keys)}")
+    check(f"I-{lang} 唯一键 2520（Task217 +36）", len(keys) == 2520, f"got {len(keys)}")
 zh = rd("Natives/resources/zh-Hans.lproj/Localizable.strings")
 en = rd("Natives/resources/en.lproj/Localizable.strings")
 check("I-核心键在位（isolation/导出导入/about/mods/fabricapi）",
@@ -221,11 +221,12 @@ check("I-核心键在位（isolation/导出导入/about/mods/fabricapi）",
 
 print("== J. announcements ==")
 ann = json.load(open("announcements.json", encoding="utf-8"))["announcements"]
-check("J1 40 条 + task217@-2 锚（Task218 追加后顺延）",
-      len(ann) == 40 and ann[-2]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-1]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04")
+check("J1 41 条 + task218@-2 锚（Task219 追加后顺延）",
+      len(ann) == 41 and ann[-3]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-2]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
+      and ann[-1]["id"] == "task219-virgl-angle-welcome-rebuild-2026-10-04")
 check("J2 task216@-3 / task206@-4（Task218 追加后顺延）",
-      ann[-3]["id"] == "task216-ui-2026-10-03" and ann[-4]["id"] == "task206-nggl4es-2026-10-01")
+      ann[-4]["id"] == "task216-ui-2026-10-03" and ann[-5]["id"] == "task206-nggl4es-2026-10-01")
 check("J3 置顶钉位未动",
       ann[0].get("pin") is True and ann[0]["id"].startswith("server-recommend"))
 
@@ -284,7 +285,7 @@ spot = [
     ("scripts/verify_task125_128.py", "AboutViewController.m"),
     ("scripts/verify_task156.py", 'route:@"about"'),
     ("scripts/verify_task173.py", "legacy MC baseline (Task173/212: ZL2 classic gl4es)"),
-    ("scripts/verify_task206.py", "== 2482"),
+    ("scripts/verify_task206.py", "== 2520"),
     ("scripts/verify_task216.py", "com.air-devs interim"),
 ]
 spot_ok = True

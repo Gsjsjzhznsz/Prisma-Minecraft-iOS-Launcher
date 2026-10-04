@@ -66,8 +66,9 @@
     return alert;
 }
 
-#pragma mark - Export
+#pragma mark - Export（Task219 重做：预检摘要 + 压缩等级选择 + 进度条详情）
 
+/// 导出前的扫描条目（Task219）：快速预检文件数与总量，供等级选择弹窗展示。
 - (void)exportDataFromViewController:(UIViewController *)presenter {
     self.presenter = presenter;
     NSString *home = @(getenv("POJAV_HOME"));
@@ -76,6 +77,83 @@
         return;
     }
 
+    // 后台快速预检（只 stat 不读内容；GB 级目录在 SSD 上秒级完成）
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSFileManager *fm = [NSFileManager defaultManager];
+        NSDirectoryEnumerator *enumerator = [fm enumeratorAtPath:home];
+        NSUInteger ame219_files = 0;
+        unsigned long long ame219_bytes = 0;
+        NSString *rel;
+        while ((rel = [enumerator nextObject])) {
+            if ([self ame217_shouldSkipExportEntry:rel.lastPathComponent]) {
+                [enumerator skipDescendants];
+                continue;
+            }
+            NSString *abs = [home stringByAppendingPathComponent:rel];
+            BOOL isDir = NO;
+            NSDictionary *attrs = nil;
+            if ([fm fileExistsAtPath:abs isDirectory:&isDir] && !isDir) {
+                attrs = [fm attributesOfItemAtPath:abs error:nil];
+                ame219_files++;
+                ame219_bytes += [attrs fileSize];
+            }
+        }
+        NSLog(@"[DataTransfer] Task219 export preflight: %lu files, %.1f MB",
+              (unsigned long)ame219_files, ame219_bytes / 1048576.0);
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self ame219_showExportLevelSheetWithFiles:ame219_files
+                                                bytes:ame219_bytes
+                                             presenter:presenter];
+        });
+    });
+}
+
+/// 压缩等级选择（Task219 用户指令："让用户选择压缩等级"）+ 导出摘要。
+/// 等级映射 UnzipKit compressionMethod：None=0（仅打包，最快）/ Default=-1
+///（标准）/ Best=9（最小体积，最慢）。
+- (void)ame219_showExportLevelSheetWithFiles:(NSUInteger)fileCount
+                                      bytes:(unsigned long long)totalBytes
+                                   presenter:(UIViewController *)presenter {
+    if (fileCount == 0) {
+        [self ame217_showToastOrAlert:localize(@"ame219.export.empty", @"No data to export")];
+        return;
+    }
+    NSString *sizeText = [NSByteCountFormatter stringFromByteCount:totalBytes
+                                                         countStyle:NSByteCountFormatterCountStyleFile];
+    UIAlertController *sheet = [UIAlertController
+        alertControllerWithTitle:localize(@"ame219.export.pick_level", nil)
+                         message:[NSString stringWithFormat:
+                             localize(@"ame219.export.summary", nil),
+                             (unsigned long)fileCount, sizeText]
+                  preferredStyle:UIAlertControllerStyleActionSheet];
+    void (^ame219_add)(NSString *title, UZKCompressionMethod method) = ^(NSString *title, UZKCompressionMethod method) {
+        [sheet addAction:[UIAlertAction actionWithTitle:title
+                                                  style:UIAlertActionStyleDefault
+                                                handler:^(UIAlertAction * _Nonnull action) {
+            [self ame219_runExportWithCompression:method];
+        }]];
+    };
+    ame219_add(localize(@"ame219.export.level_none", nil), UZKCompressionMethodNone);
+    ame219_add(localize(@"ame219.export.level_default", nil), UZKCompressionMethodDefault);
+    ame219_add(localize(@"ame219.export.level_best", nil), UZKCompressionMethodBest);
+    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+                                              style:UIAlertActionStyleCancel
+                                            handler:nil]];
+    sheet.popoverPresentationController.sourceView = presenter.view;
+    sheet.popoverPresentationController.sourceRect = CGRectMake(presenter.view.bounds.size.width / 2.0,
+                                                                presenter.view.bounds.size.height / 2.0, 1, 1);
+    [presenter presentViewController:sheet animated:YES completion:nil];
+}
+
+/// 带进度详情的导出执行（Task219 用户指令："添加进度条等详细信息"）。
+/// 进度弹窗 = 总进度条 + "正在压缩 i/N：文件名" + 已写 MB 计数。
+- (void)ame219_runExportWithCompression:(UZKCompressionMethod)method {
+    NSString *home = @(getenv("POJAV_HOME"));
+    if (home.length == 0) {
+        [self ame217_showToastOrAlert:localize(@"ame217.export.failed", @"Export failed: data directory unavailable")];
+        return;
+    }
     NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
     fmt.dateFormat = @"yyyyMMdd-HHmmss";
     NSString *stamp = [fmt stringFromDate:[NSDate date]];
@@ -83,9 +161,32 @@
         [NSString stringWithFormat:@"prisma-backup-%@.zip", stamp]];
     [[NSFileManager defaultManager] removeItemAtPath:tmpPath error:nil];
 
-    UIAlertController *progress = [self ame217_progressAlertWithTitle:
-        localize(@"ame217.export.progress", @"Exporting data backup…")];
-    [presenter presentViewController:progress animated:YES completion:nil];
+    // 进度弹窗（进度条 + 文件明细两行；userInteractionEnabled=NO 防误触关闭）
+    UIAlertController *progress = [UIAlertController
+        alertControllerWithTitle:localize(@"ame217.export.progress", @"Exporting data backup…")
+                         message:@"\n\n\n"
+                  preferredStyle:UIAlertControllerStyleAlert];
+    UIProgressView *bar = [[UIProgressView alloc] initWithProgressViewStyle:UIProgressViewStyleDefault];
+    bar.translatesAutoresizingMaskIntoConstraints = NO;
+    UILabel *fileLabel = [[UILabel alloc] init];
+    fileLabel.font = [UIFont monospacedDigitSystemFontOfSize:11 weight:UIFontWeightRegular];
+    fileLabel.textColor = [UIColor secondaryLabelColor];
+    fileLabel.numberOfLines = 2;
+    fileLabel.textAlignment = NSTextAlignmentCenter;
+    fileLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    fileLabel.text = @" ";
+    [progress.view addSubview:bar];
+    [progress.view addSubview:fileLabel];
+    [NSLayoutConstraint activateConstraints:@[
+        [bar.leadingAnchor constraintEqualToAnchor:progress.view.leadingAnchor constant:24],
+        [bar.trailingAnchor constraintEqualToAnchor:progress.view.trailingAnchor constant:-24],
+        [bar.topAnchor constraintEqualToAnchor:progress.view.topAnchor constant:86],
+        [fileLabel.leadingAnchor constraintEqualToAnchor:progress.view.leadingAnchor constant:24],
+        [fileLabel.trailingAnchor constraintEqualToAnchor:progress.view.trailingAnchor constant:-24],
+        [fileLabel.topAnchor constraintEqualToAnchor:bar.bottomAnchor constant:10],
+    ]];
+    progress.view.userInteractionEnabled = NO;
+    [self.presenter presentViewController:progress animated:YES completion:nil];
 
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         NSError *err = nil;
@@ -93,6 +194,9 @@
         __block BOOL ok = (archive != nil);
         __block NSString *failMsg = err.localizedDescription;
 
+        NSInteger written = 0;
+        unsigned long long writtenBytes = 0;
+        NSDate *ame219_lastUi = [NSDate distantPast];
         if (ok) {
             NSFileManager *fm = [NSFileManager defaultManager];
             NSString *root = [home copy];
@@ -100,29 +204,54 @@
             NSMutableArray<NSString *> *collected = [NSMutableArray array];
             NSString *rel;
             while ((rel = [enumerator nextObject])) {
+                if ([self ame217_shouldSkipExportEntry:rel.lastPathComponent]) {
+                    [enumerator skipDescendants];
+                    continue;
+                }
                 [collected addObject:rel];
             }
-            // 目录枚举把目录也给出：NSDirectoryEnumerator 默认先序出目录
-            // 自身再入内容；这里统一按"文件"尝试写入（目录条目 writeData
-            // 无意义），并先按 mtime 预排序，保证 zip 内目录层级自然。
-            NSInteger written = 0;
+            NSUInteger ame219_total = collected.count;
             for (NSString *relPath in collected) {
-                if (![self ame217_shouldSkipExportEntry:relPath.lastPathComponent]) {
-                    NSString *abs = [root stringByAppendingPathComponent:relPath];
-                    BOOL isDir = NO;
-                    if ([fm fileExistsAtPath:abs isDirectory:&isDir] && !isDir) {
-                        NSData *data = [NSData dataWithContentsOfFile:abs];
-                        if (data && ![archive writeData:data filePath:relPath error:&err]) {
-                            ok = NO;
-                            failMsg = err.localizedDescription;
-                            break;
-                        }
-                        written++;
+                NSString *abs = [root stringByAppendingPathComponent:relPath];
+                BOOL isDir = NO;
+                if (![fm fileExistsAtPath:abs isDirectory:&isDir] || isDir) continue;
+                NSData *data = [NSData dataWithContentsOfFile:abs];
+                if (data) {
+                    // Task219：压缩等级透传（UZK 扩展 writeData 变体；
+                    // fileDate 传 nil 走归档默认（保留条目时间戳语义不变））
+                    if (![archive writeData:data filePath:relPath fileDate:nil
+                            compressionMethod:method password:nil overwrite:YES error:&err]) {
+                        ok = NO;
+                        failMsg = err.localizedDescription;
+                        break;
                     }
+                    written++;
+                    writtenBytes += data.length;
+                }
+                // 进度 UI 节流（150ms；主线程串行落地）
+                NSDate *ame219_now = [NSDate date];
+                if ([ame219_now timeIntervalSinceDate:ame219_lastUi] > 0.15) {
+                    ame219_lastUi = ame219_now;
+                    NSString *ame219_fileName = relPath.lastPathComponent;
+                    NSUInteger ame219_done = written;
+                    unsigned long long ame219_bytes = writtenBytes;
+                    NSUInteger ame219_tot = ame219_total;
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        bar.progress = (ame219_tot > 0) ? ((float)ame219_done / (float)ame219_tot) : 0.0f;
+                        fileLabel.text = [NSString stringWithFormat:
+                            localize(@"ame219.export.progress_file", @"Compressing %lu/%lu: %@\n%@ written"),
+                            (unsigned long)ame219_done, (unsigned long)ame219_tot, ame219_fileName,
+                            [NSByteCountFormatter stringFromByteCount:ame219_bytes
+                                          countStyle:NSByteCountFormatterCountStyleFile]];
+                    });
                 }
             }
-            NSLog(@"[DataTransfer] Task217: export wrote %ld files -> %@ (%@)",
-                  (long)written, tmpPath.lastPathComponent, ok ? @"ok" : @"FAILED");
+            // 收尾刷满进度条
+            dispatch_async(dispatch_get_main_queue(), ^{
+                bar.progress = 1.0f;
+            });
+            NSLog(@"[DataTransfer] Task219: export wrote %ld files (level=%ld) -> %@ (%@)",
+                  (long)written, (long)method, tmpPath.lastPathComponent, ok ? @"ok" : @"FAILED");
         }
 
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -134,7 +263,9 @@
                     [[NSFileManager defaultManager] removeItemAtPath:tmpPath error:nil];
                     return;
                 }
-                // 导出完成：交给系统文件选择器定落点（move 语义，不占双份空间）。
+                // 导出完成：交给系统文件选择器定落点（Task219 用户指令：
+                // "让用户选择导出目录"——Files 面板自由选目录/改名，move 语义
+                // 不占双份空间）。
                 NSURL *tmpURL = [NSURL fileURLWithPath:tmpPath];
                 UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc]
                     initForExportingURLs:@[tmpURL] asCopy:NO];

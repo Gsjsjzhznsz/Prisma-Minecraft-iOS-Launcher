@@ -1719,3 +1719,33 @@ Work Log:
 Stage Summary:
 - Task 218 六项全闭环：下载源双轨根治 / Hero 卡关于入口 / CrashAnalyzer+FCL 诊断弹窗 / 欢迎向导 / 包名 .air 过渡 / 仓库去 air
 - 教训入库：多段插入编辑失败后必须 grep 复核（"Edit 失败 ≠ 内容已在"）；验证器要锚"构建器存在"而不只锚"特性存在"
+
+---
+Task ID: 219
+Agent: main (Super Z)
+Task: 用户 11 连修（VirGL 崩溃 / 欢迎向导 LiveContainer+JIT+重做 / VGPU 更名 / 国际化 / 完成开关于 / ANGLE 黑屏 / 导出增强 / Touch 下载 / 版本隔离）——6cd2cbfb 双设备日志判读 + 全量实现
+
+Work Log:
+- 取证（6cd2cbfb = 2f82e61 构建 run 622 的装机日志）：latestlog.old.txt = VirGL 会话（1.8.9+OptiFine）——"[egl_bridge] VirGL server bootstrap FAILED (rc=-1)" 后零条 [VirGL] 日志，guest 照常连 socket，"lost connection to rendering server on 8 read -1 57" 后 virgl_vtest_negotiate_version abort（fatal trace #02-#12 实锤）；latestlog.txt = ANGLE 会话（FO 26.2）——8 条 glShaderSource head48 全部 '#version 330' 桌面源直传 + Task183 漏网监测器逐条报 "DESKTOP source reached GLES upload (spvc rewrite missed)" + 全部 minecraft:pipeline 编译失败（ERROR 0:1 invalid version directive + 连带 layout 报错）→ ShaderManager 异常 → 黑屏 → 用户 actionForceClose；fatal trace #23-25 = LiveContainerShared invokeAppMain/LiveContainerMain —— 用户在 LiveContainer 里跑启动器（②的检测对象实锤）
+- ① VirGL 五层修：virgl_server.m 补 import utils.h（NSLog 宏被重定义为 customNSLog 走 latestlog 管道——本文件没 import 就全进 os_log，这就是"check [VirGL] logs above"指向空白的根因）；socket 路径 $POJAV_HOME/.virgl_test（多容器布局 ~170 字节）超 sockaddr_un.sun_path 104 上限必致 bind 失败 → 改 TMPDIR/ame_virgl_<pid>.sock + 长度守卫 + 预清理；libEGL 与 libvtestserver dlopen 改 gl_bridge 同款候选链（@executable_path 优先——LiveContainer 的 @rpath 解析落宿主 App.app）；eglChooseConfig 加 ES3_BIT→ES2_BIT 回退档 + 逐档日志；引导后验证 socket 文件 + S_ISSOCK（刻意不 connect 探测——vtest --no-loop-or-fork 单发服务，探针会吃掉唯一名额）；egl_bridge 引导失败 → setenv AMETHYST_RENDERER=libOSMesa.8.dylib + GALLIUM_DRIVER=zink 再 set_osm_bridge_tbl（guest 尚未 dlopen，改道零成本）+ 主线程弹 ame219.virgl.fallback 本地化说明——abort 路径从此不可达
+- ⑦ ANGLE 黑屏根因：26.3 着色器走 GlslCompiler.compileToSpv→shaderc→SPIRV→spirv-cross 链（Task175 ES300 重写在 spvc_shim 内做，送达已是 #version 300 es）；≤26.2 的 GlProgram 直传路径完全绕开 spvc——tinygl4angle 旧转换只处理 1xx 版本号（converted[9]=='1'），#version 330 头原样上给 ES3 上下文。修法：tinygl4angle.c glShaderSource 对桌面 >=130 源做头重写（版本行→#version 300 es + ame176 同款 16 行精度组——26.3 会话装机验证过的同构清单），重写后走 ES 早退分支（跳过 gl4es 时代 outColor0/扩展注入遗产），Task219 rewrite 日志锚 + Task183 漏网监测器保留
+- ⑧ 欢迎向导布局根因（缩左上角+无法点击）：旧 showStep 把新内容容器约束到【上一步容器】再移除旧容器——AutoLayout 随移除清除引用约束 → 新容器 0 尺寸钉死左上角，且触点落在父视图边界外 = 命中测试失败。重做：常驻 UIScrollView 舞台（约束只引用常驻视图），每步只换 step 叶子；视觉全面 iPadOS 化（systemBackground/分组卡片/SF Symbol 图标位/胶囊主按钮）；补 chevron 返回上一步（步骤 0 隐藏）；App 图标多候选加载（bundle 根 PNG 实名 AppIcon-Light60x60 等——旧 imageNamed:@"AppIcon-Light" 必落空）；六步流程；礼花与弹簧动效保留
+- ② LiveContainer 检测：+runningInLiveContainer（已加载镜像扫 LiveContainerShared——fatal trace 同款判据）+ liveContainerHostBundleId（框架路径回溯宿主 .app 读 Info.plist CFBundleIdentifier）；向导环境步展示 当前包名 vs 宿主包名 对照，一致 = 绿色确认（welcome.env.lc.ok），不一致 = 用户指令原文指引 "Please open use livecontainer's bundle id in livecontainer" + 复制宿主包名按钮
+- ③ JIT 步：状态行（isJITEnabled + 回前台刷新观察者）+ 方式选择（debug.jit_enabler 七选项：auto/stikjit/sidestore/stosdebug/jitstreamer/trollstore/manual，右面板 Task134 同键同 URL 语义）+ 立即开启按钮（五工具 URL 分发 + JIT26 脚本附带给 stikjit/stosdebug）+ LC 专属提示（JIT 工具识别宿主包名——与 ② 联动）
+- ⑥ 完成步收尾自动打开关于页（PageSheet + UINavigationController）；跳过路径保持安静不打扰
+- ⑨ 导出重做：预检扫描（文件数+总量）→ 压缩等级三选 action sheet（UZKCompressionMethod None/Default/Best 透传 writeData 扩展变体）→ 进度弹窗（UIProgressView + i/N + 当前文件名 + 已写字节，150ms 节流）→ Files 落点选择器（保留 move 语义）；跳过项（latestlog/hs_err）整棵剪枝 skipDescendants
+- ⑩ TouchController 修复：Modrinth 实测（2026-10：slug=touchcontroller、作者 fifth_light、543 版本、game_versions 从 1.12.2 起）——用户在 1.8.9 VirGL 实例安装必"找不到"。进度/失败/确认/完成文案从 sodium 键全数切到 component.touch.* 专属键（"寻找 sou…"串台根治）；ame150 取数器参数化 notFoundKey（sodium 走原键零回归）；版本预检（分量解析 1.x 且次版本<12 → 直接弹"不支持 1.12.2 以下"，刻意避开 Task217 A1 已退役的 hasPrefix 形态）
+- ⑪ 版本隔离自动识别：ModService 新增 ame219_isolationFirstModsFolderForProfile（隔离 profile 只认隔离目录、缺目录即创建、绝不回退共享——旧 existingModsFolder 的回退语义 = 隔离版本下载的 mod 落共享目录、游戏里永远看不到）；downloadMod 与 scanModsForProfile 双切；+ame219_isolationStateForProfile 类方法供 UI；模组管理页 chips 行尾加隔离/共享徽标（自动判定 + 日志锚）
+- ④ VGPU 四语言更名 "VGPU（≤1.17）"；⑤ l10n +38 键 ×4（向导环境/JIT/返回、导出等级/进度、TC 全家、隔离徽标、VirGL 回退）——en 两个键的转义双引号触发 task134 文法门，改排版引号（“ ”）后归零；身份零改动（com.air-devs.air 保持，REVISION 22 不 bump 只加附录）；公告 40→41（task219 条目）
+- 验证：verify_task219 75/75（A VirGL×7 / B ANGLE×6 / C 向导×8 / D LC+JIT×8 / E 关于×3 / F 导出×6 / G TC×6 / H 隔离×4 / I VGPU×4 / J l10n+公告×7 / K 身份基线×4 / L 平衡×10 / M 舰队×2）；选择器完备性审计全过（run621 事故类防线）；构建器 6/6 对齐
+- 舰队重锚：task219_sync.py 扫 35 验证器（2482→2520、ann 40→41、尾窗 -2/-3/-4→-3/-4/-5 深度优先防连锁误移）+ 手工重锚 task217 J1（-1→-2 加 219@-1）、task213 H7（40→41）、task214 G5/H2（ids[-N] 形态漏网）、task216 G5/G6、task206 F5 属性索引（title/content 跟随 id 锚移位）+ A1 装机证据 git 钉 2f82e611（用户 6cd2cbfb 上传替换了 latestlog.old.txt——数据漂移非回归）、task173 G4（Fabric 门文案 l10n 化）；task218 D1/D7 重锚六步新结构
+- 环境事故记录：本沙箱回退到 Task110 时代快照（本地 HEAD/fa3c154、外层 worklog 停在 109+110、外层 scripts 的 harness/审计脚本全丢）——git pull --ff-only 同步到 6cd2cbfb 后工作；132/133/134/135/150/156/157/168/171/174/175/179/181/182 共 14 个验证器依赖外层工作区文件而环境性失败，git-stash 对照实验实锤与 Task219 改动无关（改动前后失败集逐字相同）；202[J]/204[D4] 为 168 的级联受害者
+- 终态：219:75/75 + 218:44/44 + 217:59/59 + 216:55/55 + 215:60/60 + 214:53/53 + 213:85/85 + 212/211/210/209/207/206/205/204/203/196_197_198_201/193/190/186/183/173/172/159/151/143/142/141/130/131/129/125_128/112_118/119_124/167 全绿（除 14 环境阻塞 + 2 级联）
+
+Stage Summary:
+- VirGL 崩溃根治：装机锚点 "[VirGL] Task219 socket path = ..."（长度+上限）、"dlopen resolved via candidate"、引导后 "post-bootstrap check ok: socket bound"；若仍失败 → "[egl_bridge] Task219 VirGL server bootstrap FAILED (rc=...) -- diverting renderer to Zink" + 游戏继续跑（不再 abort）+ 弹窗说明
+- ANGLE 非 26.3 根治：装机锚点 "[tinygl4angle] Task219 desktop->ES300 head rewrite #N (was #version 330, ...)" + 26.2 管线编译恢复 + 画面正常；Task183 漏网计数应归零
+- 欢迎向导：居中/可点/可返回/图标/六步；装机锚点 "[Welcome] Task219 env: LiveContainer=%d mainBundleId=... hostBundleId=... idMatch=%d" + jit_enabler 落键日志 + 完成后自动弹关于页
+- 导出/TC/隔离："[DataTransfer] Task219 export preflight: N files, X MB" + 等级选择 + 进度条；TC 安装走 touch 专属文案 + 1.8.9 预检弹窗；"[ModsManager] Task219: isolation badge for profile ... -> isolated/shared"
+- 遗留：CI 待推送确认（零 Makefile/CMake 结构改动、无新文件、无 native 链变化，风险面低）；沙箱外层工作区依赖的 14 验证器待环境恢复后复跑
+- 遗留（发现）：task179_transform harness 管线存量断裂——生产 tinygl4angle.c 早已自定义 glDrawElements/glDrawArrays/glDrawElementsInstanced 等函数（Task205d 之后的生产演进），再生成 harness 与 task179_tinygl_harness.c 桩表重定义冲突（gcc 报错实锤）；该断裂先于本轮（transform 总是从当前生产再生成，我的 Task219 块未新增任何符号定义）；harness 已还原 HEAD 态不入本轮，修复（桩表收敛或 transform 剔重）留待专门轮次

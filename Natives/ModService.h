@@ -51,6 +51,10 @@ typedef void(^ModDownloadHandler)(NSError * _Nullable error); // Added for downl
 /// 获取当前 profile 的 mods 目录，不存在时自动创建
 - (nullable NSString *)ensureModsFolderForProfile:(NSString *)profileName error:(NSError **)error;
 
+/// Task219（⑪ 版本隔离自动识别）：profile 的隔离态。0 = 不隔离（gameDir
+/// 缺失或 "."）；1 = 隔离（versions/<id> 或自定义 gameDir）。
++ (NSInteger)ame219_isolationStateForProfile:(NSString *)profileName;
+
 @end
 
 NS_ASSUME_NONNULL_END

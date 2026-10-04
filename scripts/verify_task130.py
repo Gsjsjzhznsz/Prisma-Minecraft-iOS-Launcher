@@ -318,7 +318,7 @@ for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
                   rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M)))
 # Task138 重锚：+2 键（renderer_missing_dylib + mirror_policy-speed_first）
 check("H3 四语言键集一致（Task157 基线 2228 = Task156 基线 2228 + Task157 组件键 2）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2482,
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2520,
       f"counts={[len(s) for s in sets]}")
 
 delta_ok = True

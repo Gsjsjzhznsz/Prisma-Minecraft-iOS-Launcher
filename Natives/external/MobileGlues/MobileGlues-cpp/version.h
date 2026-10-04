@@ -519,6 +519,44 @@
 // refreshed in place (macMenuStub/fsrCorner, count stays 32). Launcher-side
 // only, REVISION stays 17.
 #define REVISION 22
+// REVISION addendum (Task 219, no bump -- identity unchanged, cache epoch
+// rule): eleven-item round from the Task218 build's device logs (6cd2cbfb).
+// (1) VirGL crash: the vtest server bridge never imported utils.h, so its
+// NSLog went to os_log instead of the latestlog pipe (the "check [VirGL]
+// logs above" message pointed at logs that did not exist in the file);
+// socket path shortened to the app tmp dir with a pid suffix (the old
+// $POJAV_HOME/.virgl_test ran ~170 bytes, past sockaddr_un.sun_path's 104,
+// guaranteeing bind failure), libEGL + libvtestserver dlopen now walk the
+// gl_bridge candidate chain (@executable_path first -- LiveContainer
+// resolves @rpath against the host App.app), post-bootstrap verification
+// (socket file + S_ISSOCK; deliberately NO connect probe -- vtest
+// --no-loop-or-fork is single-shot and a probe would consume the only
+// session), and on bootstrap failure the renderer diverts to Zink before
+// the guest library loads (the guest aborts in virgl_vtest_negotiate_
+// version when the socket is dead -- that was the crash). (2) ANGLE
+// black screen on non-26.3: MC <=26.2 uploads desktop "#version 330"
+// GLSL straight through glShaderSource (the shaderc->spirv-cross pipeline
+// where the Task175 ES300 rewrite lives only serves 26.3), and the legacy
+// tinygl4angle conversion only rewrites 1xx version digits -- the 330 head
+// reached the ES3 context intact = "invalid version directive" = every
+// pipeline failed = black screen; tinygl4angle now rewrites desktop heads
+// (>=130) to "#version 300 es" + the ame176 precision preamble (proven by
+// the 26.3 spvc path) and uploads via the ES branch. (3) The welcome
+// wizard was rebuilt (its per-step content containers were constrained to
+// the PREVIOUS step's container which was then removed -- AutoLayout
+// dropped the referencing constraints, leaving a zero-size top-left
+// unclickable stage; now a persistent UIScrollView owns the steps), with
+// LiveContainer detection + host-bundle-id guidance, a JIT enabler picker
+// (debug.jit_enabler, right-panel Task134 URL semantics), a back button,
+// and About auto-open after completion. (4) Data export gained a
+// preflight summary, compression-level choice (UZK None/Default/Best),
+// and a progress bar with per-file detail. (5) TouchController install
+// texts de-confused from Sodium (searching/not_found/download_failed/done
+// keys + a 1.12.2 support pre-check). (6) Mod downloads and scans follow
+// the profile's isolation (isolated dir created instead of silently
+// falling back to the shared mods folder); the mods manager shows an
+// isolation badge. (7) VGPU relabeled "VGPU (<=1.17)". REVISION stays 22:
+// no identity change, launcher-side + renderer-side-internal only.
 // REVISION 21->22 bump addendum (Task 218): identity follows the cache epoch
 // (Task214 rule) -- the bundle identifier moved AGAIN by explicit user order:
 // com.air-devs -> com.air-devs.air (the upstream's exact id, opening the

@@ -193,21 +193,21 @@ print("=" * 70)
 ann = json.loads(rd("announcements.json"))["announcements"]
 ids = [a["id"] for a in ann]
 check("G1 38 items, id-unique (Task216@2 append)",
-      len(ann) == 40 and len(ids) == len(set(ids)))
+      len(ann) == 41 and len(ids) == len(set(ids)))
 check("G2 task217 entry complete at tail (Task217 re-anchor; task216 one step in)",
-      ids[-2] == "task217-download-fixes-about-isolation-2026-10-03" and ann[-2]["date"] == "2026-10-03")
+      ids[-3] == "task217-download-fixes-about-isolation-2026-10-03" and ann[-3]["date"] == "2026-10-03")
 check("G3 task216 kept at -3 (Task218 append, re-anchor)",
-      ids[-3] == "task216-ui-2026-10-03" and ids[-4] == "task206-nggl4es-2026-10-01")
+      ids[-4] == "task216-ui-2026-10-03" and ids[-5] == "task206-nggl4es-2026-10-01")
 check("G4 pins intact (server@0, task169@1)",
       ann[0].get("pin") is True and ids[1] == "task169-four-fixes-2026-09-25")
 check("G5 historical indices unchanged (task214@3, task213@4, task212@5, task211@6)",
       ids[3].startswith("task214-") and ids[4].startswith("task213-")
       and ids[5].startswith("task212-angle") and ids[6].startswith("task211-"))
-check("G6 v207/211 length gates follow 39 (Task217)",
-      "== 40" in rd("scripts/verify_task207.py") and "== 40" in rd("scripts/verify_task211.py"))
+check("G6 v207/211 length gates follow 41 (Task219)",
+      "== 41" in rd("scripts/verify_task207.py") and "== 41" in rd("scripts/verify_task211.py"))
 check("G7 v213 realigned to Task217 anchors",
       "'_tableView.rowHeight = 64;' in ml" in rd("scripts/verify_task213.py")
-      and "len(ids) == 40" in rd("scripts/verify_task213.py"))
+      and "len(ids) == 41" in rd("scripts/verify_task213.py"))
 check("G8 v214/193/196 REVISION gates follow 21 (Task217)",
       '#define REVISION 22' in rd("scripts/verify_task214.py")
       and '#define REVISION 22' in rd("scripts/verify_task193.py")

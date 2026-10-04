@@ -142,8 +142,8 @@ langs = {}
 for lg in ("zh-Hans", "zh-Hant", "en", "zh-CN"):
     keys = re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M)
     langs[lg] = set(keys)
-check("F", "四主表键集一致且 2482（2408 + 10 ame202 - 2 Task210 退役）",
-      len(langs["zh-Hans"]) == len(langs["zh-Hant"]) == len(langs["en"]) == len(langs["zh-CN"]) == 2482
+check("F", "四主表键集一致且 2520（2408 + 10 ame202 - 2 Task210 退役）",
+      len(langs["zh-Hans"]) == len(langs["zh-Hant"]) == len(langs["en"]) == len(langs["zh-CN"]) == 2520
       and langs["zh-Hans"] == langs["zh-Hant"] == langs["en"] == langs["zh-CN"])
 ame202_keys = {k for k in langs["zh-Hans"] if k.startswith("ame202.")}
 check("F", "恰 10 个 ame202.* 键（partial + surface×2 + ai×6 + copy）",
@@ -191,7 +191,7 @@ check("H", "version.h REVISION 18 附录（Task202 八节 + no bump 理由）",
 ann = json.load(open(os.path.join(REPO, "announcements.json"), encoding='utf-8'))["announcements"]
 check("H", "公告 31 条且末位仍是 task206-nggl4es（Task209@2 插入 +1）",
       # Task209 重锚：task209@2 插入（30→31）；task202 锚顺延 [28]。
-      len(ann) == 40 and ann[-2]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      len(ann) == 41 and ann[-3]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
       and ann[34]["id"] == "task202-october-fix-wave")
 check("H", "公告索引锚（Task212 重锚：[7]=task196 / [8]=task193 / [0]=server）",
       ann[10]["id"] == "task196-quad-fixes-2026-09-29" and ann[11]["id"] == "task193-app-icon-replace-2026-09-28"

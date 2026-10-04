@@ -169,7 +169,8 @@ check("G1 moved to components section (index 2)",
       '@[@"Fabric API", @"Sodium + Iris Shaders", @"TouchController", @"OptiFine"]' in ps)
 check("G2 install method exists", "- (void)installTouchControllerStandalone {" in ps)
 check("G3 startInstall method exists", "- (void)startInstallTouchControllerWithGameVersion:(NSString *)gameVersion {" in ps)
-check("G4 Fabric gate", "TouchController is Fabric-only" in ps)
+check("G4 Fabric gate (Task219 l10n)", 'localize(@"component.touch.fabric_only"' in ps
+      and "TouchController" in ps)
 check("G5 Modrinth exact-title fetch", 'exactTitle:@"touchcontroller"' in ps)
 check("G6 auto-config armed on success", "profile auto-config armed" in ps)
 check("G7 touchControllerEnabled write", "weakSelf.touchControllerEnabled = YES;" in ps)

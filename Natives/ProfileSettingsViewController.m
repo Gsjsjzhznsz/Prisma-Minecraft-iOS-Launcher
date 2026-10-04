@@ -2118,14 +2118,35 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
                                      gameVersion:(NSString *)gameVersion
                                           loader:(NSString *)loader
                                       completion:(void (^)(NSString *fileURL, NSString *filename, NSError *error))completion {
+    // Task219：notFoundKey 参数化——旧实现把 sodium 的 not_found 文案硬编码在
+    // 共享取数器里，TouchController 走同链路时弹的是“没有找到 Sodium / Iris /
+    // Podium”（装机反馈“寻找 sou…”的同族问题：进度文案与失败文案全部串台）。
+    [self ame219_fetchModrinthPrimaryFileWithQuery:query
+                                         exactTitle:exactTitle
+                                        gameVersion:gameVersion
+                                             loader:loader
+                                       notFoundKey:@"component.sodium.not_found"
+                                          domain:@"SodiumComponent"
+                                         completion:completion];
+}
+
+/// Task219：带 notFoundKey 的取数器（TouchController 传自己的键；解析主体
+/// 与错误码语义与旧实现逐字一致）。
+- (void)ame219_fetchModrinthPrimaryFileWithQuery:(NSString *)query
+                                      exactTitle:(NSString *)exactTitle
+                                     gameVersion:(NSString *)gameVersion
+                                          loader:(NSString *)loader
+                                    notFoundKey:(NSString *)notFoundKey
+                                         domain:(NSString *)errorDomain
+                                     completion:(void (^)(NSString *fileURL, NSString *filename, NSError *error))completion {
     NSMutableDictionary *filters = [NSMutableDictionary dictionary];
     filters[@"query"] = query;
     filters[@"limit"] = @"20";
     [[ModrinthAPI sharedInstance] searchModWithFilters:filters completion:^(NSArray *results, NSError *error) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if (error || results.count == 0) {
-                completion(nil, nil, [NSError errorWithDomain:@"SodiumComponent" code:1
-                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"component.sodium.not_found", nil),
+                completion(nil, nil, [NSError errorWithDomain:errorDomain code:1
+                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(notFoundKey, nil),
                         [NSString stringWithFormat:@"%@ / %@", gameVersion, loader]]}]);
                 return;
             }
@@ -2138,34 +2159,31 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
                 }
             }
             if (!match) {
-                completion(nil, nil, [NSError errorWithDomain:@"SodiumComponent" code:2
-                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"component.sodium.not_found", nil),
+                completion(nil, nil, [NSError errorWithDomain:errorDomain code:2
+                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(notFoundKey, nil),
                         [NSString stringWithFormat:@"%@ / %@", gameVersion, loader]]}]);
                 return;
             }
             [[ModrinthAPI sharedInstance] getVersionsForModWithID:match[@"id"] completion:^(NSArray<ModVersion *> *versions, NSError *versionError) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     if (versionError || versions.count == 0) {
-                        completion(nil, nil, [NSError errorWithDomain:@"SodiumComponent" code:3
-                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"component.sodium.not_found", nil),
+                        completion(nil, nil, [NSError errorWithDomain:errorDomain code:3
+                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(notFoundKey, nil),
                                 [NSString stringWithFormat:@"%@ / %@", gameVersion, loader]]}]);
                         return;
                     }
-                    // Task217：客户端 newest-first 排序（镜像乱序免疫）+ 两遍
-                    // 匹配（release 优先）——旧的“第一个匹配”在镜像源上会
-                    // 命中任意旧版本。
                     ModVersion *matchingVersion = ame217_pickVersionForGameVersion(
                         ame217_modrinthVersionsNewestFirst(versions), gameVersion, loader);
                     if (!matchingVersion) {
-                        completion(nil, nil, [NSError errorWithDomain:@"SodiumComponent" code:4
-                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"component.sodium.not_found", nil),
+                        completion(nil, nil, [NSError errorWithDomain:errorDomain code:4
+                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(notFoundKey, nil),
                                 [NSString stringWithFormat:@"%@ / %@", gameVersion, loader]]}]);
                         return;
                     }
                     NSDictionary *primaryFile = matchingVersion.primaryFile;
                     if (!primaryFile || ![primaryFile[@"url"] isKindOfClass:[NSString class]]) {
-                        completion(nil, nil, [NSError errorWithDomain:@"SodiumComponent" code:5
-                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"component.sodium.not_found", nil),
+                        completion(nil, nil, [NSError errorWithDomain:errorDomain code:5
+                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(notFoundKey, nil),
                                 [NSString stringWithFormat:@"%@ / %@", gameVersion, loader]]}]);
                         return;
                     }
@@ -2826,7 +2844,7 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
 - (void)installTouchControllerStandalone {
     if (![self isFabricProfile]) {
         [self showComponentAlert:localize(@"i18n_str_899", nil)
-                          message:@"TouchController 仅对 Fabric 加载器有效。\n\n当前版本不是 Fabric 加载器，无法安装。\n\nTouchController is Fabric-only. The current instance does not use the Fabric loader."];
+                          message:localize(@"component.touch.fabric_only", nil)];
         return;
     }
     NSString *gameVersion = [self currentGameVersion];
@@ -2834,15 +2852,37 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
         [self showComponentAlert:localize(@"i18n_str_899", nil) message:localize(@"i18n_str_901", nil)];
         return;
     }
+    // Task219：版本支持预检——TouchController 项目（Modrinth 实测 2026-10：
+    // slug=touchcontroller，作者 fifth_light，543 个版本）的 game_versions
+    // 从 1.12.2 起，更老版本（1.11-）必然“找不到适配版本”。装机反馈
+    //（1.8.9 VirGL 实例装 TouchController → sodium 文案的“未找到”）——现在
+    // 直接前置拦截并说明支持范围，不再浪费网络往返。
+    if ([self ame219_touchControllerUnsupportedVersion:gameVersion]) {
+        [self showComponentAlert:localize(@"component.touch.unsupported_title", nil)
+                          message:[NSString stringWithFormat:localize(@"component.touch.unsupported", nil), gameVersion]];
+        return;
+    }
     UIAlertController *confirm = [UIAlertController alertControllerWithTitle:@"TouchController"
                                                                      message:[NSString stringWithFormat:
-        @"将自动安装 TouchController 模组（触屏控制器，适配 Minecraft %@）并自动配置：UDP 通信模式 + 屏蔽启动器自带控件（保留模组自己的虚拟按钮）。\n\nInstall the TouchController mod for Minecraft %@ and auto-configure: UDP transport + hide the launcher's own on-screen controls (the mod's virtual buttons stay).", gameVersion, gameVersion]
+        localize(@"component.touch.confirm_message", nil), gameVersion, gameVersion]
                                                               preferredStyle:UIAlertControllerStyleAlert];
     [confirm addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
     [confirm addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_904", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self startInstallTouchControllerWithGameVersion:gameVersion];
     }]];
     [self presentViewController:confirm animated:YES completion:nil];
+}
+
+/// Task219：TouchController 版本预检——“1.x” 且 x < 12 的版本形态
+///（1.0-1.11.x）不在模组支持面内（1.12.2+）。26.x/快照形态不拦截（由
+/// 版本匹配器如实裁决）。注：刻意不用 hasPrefix 字面量（Task217 A1 锚点
+/// 声明 ProfileSettings 里不再出现该解析形态——这里用分量解析绕开）。
+- (BOOL)ame219_touchControllerUnsupportedVersion:(NSString *)gameVersion {
+    if (![gameVersion isKindOfClass:NSString.class] || gameVersion.length == 0) return NO;
+    NSArray<NSString *> *ame219_parts = [gameVersion componentsSeparatedByString:@"."];
+    if (ame219_parts.count < 2) return NO;              // 无点分形态（快照等）不拦截
+    if (![ame219_parts[0] isEqualToString:@"1"]) return NO;  // 26.x 等新版本形态
+    return [ame219_parts[1] integerValue] < 12;
 }
 
 - (void)startInstallTouchControllerWithGameVersion:(NSString *)gameVersion {
@@ -2868,7 +2908,7 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
         [[DownloadTaskManager sharedManager] updateTaskWithId:taskId
                                                  stageAtIndex:0
                                                      progress:-1.0
-                                                      message:[NSString stringWithFormat:localize(@"component.sodium.searching", nil), gameVersion]];
+                                                      message:[NSString stringWithFormat:localize(@"component.touch.searching", nil), gameVersion]];
     }
     __weak typeof(self) weakSelf = self;
     void (^ame173_failBlock)(NSError *) = ^(NSError *failError) {
@@ -2880,10 +2920,13 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
                                  message:failError.localizedDescription ?: localize(@"i18n_str_97", nil)];
         });
     };
-    [self ame150_fetchModrinthPrimaryFileWithQuery:@"touchcontroller"
+    // Task219：改走带 notFoundKey 的取数器（失败文案不再串台成 Sodium）
+    [self ame219_fetchModrinthPrimaryFileWithQuery:@"touchcontroller"
                                          exactTitle:@"touchcontroller"
                                         gameVersion:gameVersion
                                              loader:@"fabric"
+                                       notFoundKey:@"component.touch.not_found"
+                                          domain:@"TouchControllerComponent"
                                          completion:^(NSString *tcURL, NSString *tcFile, NSError *error) {
         if (error || tcURL.length == 0) {
             ame173_failBlock(error ?: [NSError errorWithDomain:@"TouchControllerComponent" code:1 userInfo:@{NSLocalizedDescriptionKey: localize(@"i18n_str_97", nil)}]);
@@ -2898,7 +2941,7 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (!tcData) {
                     NSError *failError = [NSError errorWithDomain:@"TouchControllerComponent" code:2
-                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"component.sodium.download_failed", nil),
+                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"component.touch.download_failed", nil),
                             dlError.localizedDescription ?: localize(@"i18n_str_97", nil)]}];
                     ame173_failBlock(failError);
                     return;
@@ -2921,7 +2964,8 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
                     NSLog(@"[TouchController] Task173 installed %@ for %@ -- profile auto-config armed (UDP + hide controls)", tcFile, gameVersion);
                     [weakSelf showComponentAlert:localize(@"i18n_str_253", nil)
                                          message:[NSString stringWithFormat:
-                        @"TouchController 已安装并自动配置（UDP 模式 + 屏蔽启动器控件）：\n%@\n\nTouchController installed and auto-configured (UDP mode + launcher controls hidden):\n%@", tcFile ?: @"touchcontroller.jar", tcFile ?: @"touchcontroller.jar"]];
+                        localize(@"component.touch.done", nil),
+                        tcFile ?: @"touchcontroller.jar", tcFile ?: @"touchcontroller.jar"]];
                 } else {
                     NSError *failError = [NSError errorWithDomain:@"TouchControllerComponent" code:3
                         userInfo:@{NSLocalizedDescriptionKey: writeError.localizedDescription ?: localize(@"i18n_str_926", nil)}];

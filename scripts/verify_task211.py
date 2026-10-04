@@ -184,13 +184,13 @@ check("E1 version.h Task211 附录（五主题 + 尾部 SEP）",
       and re.search(r"// ={70,}\s*$", vh) is not None)
 ann = json.loads(rd("announcements.json"))["announcements"]
 check("E2 公告 task211@3（Task212 重锚：34 条 + task212@2 插入顺延 + 尾锚）",
-      len(ann) == 40 and ann[6]["id"] == "task211-exit-cf-angle-gl4es-2026-10-02"
+      len(ann) == 41 and ann[6]["id"] == "task211-exit-cf-angle-gl4es-2026-10-02"
       and ann[0]["id"] == "server-recommend-2026-09-24"
       and ann[1]["id"] == "task169-four-fixes-2026-09-25"
       and ann[5]["id"] == "task212-angle-cf-renderers-virgl-2026-10-02"
       and ann[7]["id"] == "task210-neumorph-retirement-card-fixes-2026-10-02"
-      and ann[-2]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-3]["id"] == "task216-ui-2026-10-03")
+      and ann[-3]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-4]["id"] == "task216-ui-2026-10-03")
 check("E3 公告内容五主题齐备",
       all(k in ann[6]["content"] for k in
           ("退出", "CurseForge", "Modrinth", "拆解", "ZL2 经典版", "virglrenderer")))
@@ -302,14 +302,14 @@ if not fails:
         s = rd(f"Natives/resources/{lg}.lproj/Localizable.strings")
         if f'"preference.title.renderer.debug.gl4eszl2" = "{want}";' not in s:
             ok_g7 = False
-    check("G7 l10n 四语言新键（Task212 用户定名收短 gl4es(≤26.2)；唯一键计数见 G7b 2482）", ok_g7)
+    check("G7 l10n 四语言新键（Task212 用户定名收短 gl4es(≤26.2)；唯一键计数见 G7b 2520）", ok_g7)
     import re as _re
     _zh = rd("Natives/resources/zh-CN.lproj/Localizable.strings")
     _keys = _re.findall(r'^"([^"]+)"\s*=', _zh, _re.M)
-    check("G7b 唯一键计数 2482（四语一致）",
-          len(set(_keys)) == 2482
+    check("G7b 唯一键计数 2520（四语一致）",
+          len(set(_keys)) == 2520
           and all(len(set(_re.findall(r'^"([^"]+)"\s*=',
-              rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), _re.M))) == 2482
+              rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), _re.M))) == 2520
               for lg in ("en", "zh-Hant", "zh-Hans")))
     import json as _json
     _faq_zh = _json.loads(rd("Natives/resources/zh-CN.lproj/help-faq.json"))
@@ -342,7 +342,7 @@ if not fails:
             g_detail.append(f"{c}:exit{rr.returncode}")
             print(f"    G-cascade FAIL {c}:\n" + "\n".join(
                 l for l in rr.stdout.split("\n") if "FAIL" in l)[:500])
-    check("G9 级联（TAB 基线 662 族 + l10n 2482 族 + Krypton 收短重锚族；129/209/202/206/135 分跑补证——135 为外层脚本缺失环境债）", g_ok, "; ".join(g_detail))
+    check("G9 级联（TAB 基线 662 族 + l10n 2520 族 + Krypton 收短重锚族；129/209/202/206/135 分跑补证——135 为外层脚本缺失环境债）", g_ok, "; ".join(g_detail))
 
 print()
 fails = [n for n, ok in results if not ok]

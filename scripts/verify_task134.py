@@ -220,7 +220,7 @@ def lkeys(lang):
 ks = [lkeys(l) for l in LANGS]
 # Task138 重锚：+2 键（renderer_missing_dylib + mirror_policy-speed_first）
 check("G1 四语言键集一致（Task157 基线 2228 = Task156 基线 2228 + Task157 组件键 2）",
-      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2482, f"counts={[len(k) for k in ks]}")
+      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2520, f"counts={[len(k) for k in ks]}")
 check("G2 Task134 新键齐备（jit_enabler 7 + title/detail 4 + hide_controls；pickextra 3 键已删）",
       all("preference.debug.jit_enabler.auto" in k and
           "preference.debug.jit_enabler.manual" in k and

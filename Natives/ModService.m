@@ -257,6 +257,40 @@
     return nil;
 }
 
+/// Task219（⑪ 版本隔离深度优化·用户指令“支持自动识别是否开启版本隔离，
+/// 比如 Mod 端”）：隔离优先的 mods 目录解析——profile 一旦配置了 gameDir
+///（隔离此版本 / 自定义目录），下载与扫描【只认】隔离目录，缺目录即创建，
+/// 绝不回退共享目录。旧 existingModsFolderForProfile 的“隔离目录还没建
+/// mods/ 就回退 POJAV_GAME_DIR/mods”语义 = 隔离版本下载的 mod 落到共享
+/// 目录，游戏里永远看不到（装机可复现：新开隔离 → 装模组 → 进游戏无此
+/// 模组）。返回 nil 仅当两条路径都无法解析。
+- (nullable NSString *)ame219_isolationFirstModsFolderForProfile:(NSString *)profileName {
+    NSError *ame219_err = nil;
+    NSString *ame219_path = [self ensureModsFolderForProfile:profileName error:&ame219_err];
+    if (ame219_path.length > 0) {
+        return ame219_path;
+    }
+    // 兑底：ensure 失败（如创建受限）退回“存在即用”语义，保持旧行为下限
+    return [self existingModsFolderForProfile:profileName];
+}
+
+/// Task219：当前 profile 的隔离态对外暴露（ModsManager 徽标用）。
+/// 0 = 不隔离（gameDir 缺失或 "."）；1 = 隔离（versions/<id> 或自定义目录）。
++ (NSInteger)ame219_isolationStateForProfile:(NSString *)profileName {
+    NSString *profile = profileName.length ? profileName : @"default";
+    @try {
+        NSDictionary *profiles = PLProfiles.current.profiles;
+        NSDictionary *prof = profiles[profile];
+        if (![prof isKindOfClass:[NSDictionary class]]) return 0;
+        NSString *gameDir = prof[@"gameDir"];
+        if (![gameDir isKindOfClass:[NSString class]] || gameDir.length == 0) return 0;
+        if ([gameDir isEqualToString:@"."]) return 0;
+        return 1;
+    } @catch (NSException *ex) {
+        return 0;
+    }
+}
+
 /// 获取当前 profile 的 mods 目录，不存在时自动创建
 - (nullable NSString *)ensureModsFolderForProfile:(NSString *)profileName error:(NSError **)error {
     NSString *profile = profileName.length ? profileName : @"default";
@@ -346,7 +380,10 @@
 // ---------- 扫描模组（核心优化）----------
 - (void)scanModsForProfile:(NSString *)profileName completion:(ModListHandler)completion {
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        NSString *modsFolder = [self existingModsFolderForProfile:profileName];
+        // Task219（⑪）：扫描改隔离优先——隔离 profile 只扫隔离目录（缺目录
+        // 视为空列表，不再被共享目录的 mod 假装成"已安装"；下载侧同款
+        // 语义，装哪儿扫哪儿）。
+        NSString *modsFolder = [self ame219_isolationFirstModsFolderForProfile:profileName];
         NSMutableArray<ModItem *> *items = [NSMutableArray array];
 
         if (!modsFolder) {
@@ -557,7 +594,7 @@
        expectedSHA1:(nullable NSString *)expectedSHA1
            progress:(nullable void (^)(NSProgress *downloadProgress))progress
          completion:(ModDownloadHandler)completion {
-    NSString *modsFolder = [self existingModsFolderForProfile:profileName];
+    NSString *modsFolder = [self ame219_isolationFirstModsFolderForProfile:profileName];
     if (!modsFolder) {
         if (completion) {
             NSError *error = [NSError errorWithDomain:@"ModServiceError" code:1 userInfo:@{NSLocalizedDescriptionKey:localize(@"i18n_str_453", nil)}];

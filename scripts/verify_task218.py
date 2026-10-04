@@ -8,7 +8,7 @@ crash identification (CrashAnalyzer + adjudicator classification + diagnosis
 dialog), (D) first-use welcome wizard (trigger/steps/keys/animations),
 (E) interim bundle id com.air-devs.air + REVISION 22, (F) repo rename away
 from air (update checker / control repo / announcements + pre-rename
-normalization), (G) l10n 2482 x4 + announcements 40, (H) syntax/baselines,
+normalization), (G) l10n 2520 x4 + announcements 40, (H) syntax/baselines,
 (I) cascade spot checks on the re-anchored fleet.
 """
 import json
@@ -133,11 +133,11 @@ check("C6 JavaLauncher 接入 CrashAnalyzer（import + 分析调用）",
       and "[CrashAnalyzer analyzeHsErrFile:hsErrPath]" in jl)
 
 print("== D. 首次使用欢迎向导 ==")
-check("D1 向导存在且登记 CMake + 五个步骤构建器齐备（CI 病历：步骤 0/1 曾因插入事故缺席）",
+check("D1 向导存在且登记 CMake + 六个步骤构建器齐备（CI 病历：步骤 0/1 曾因插入事故缺席；Task219 重做后五步扩为六步——新增 EnvJitStep，验证器同步重锚）",
       os.path.exists("Natives/WelcomeViewController.m")
       and "WelcomeViewController.m" in cml
       and all(f"ame218_build{s}:(UIView *)container" in wvc for s in
-              ["HeroStep", "LanguageStep", "SourceStep", "DataStep", "DoneStep"])
+              ["HeroStep", "LanguageStep", "EnvJitStep", "SourceStep", "DataStep", "DoneStep"])
       and 'localize(@"welcome.hero.subtitle"' in wvc
       and 'localize(@"welcome.lang.title"' in wvc
       and "ame218_refreshLangButtons" in wvc)
@@ -157,10 +157,10 @@ check("D5 语言步写 app_language + 完成后补发重建通知",
       and 'postNotificationName:@"AppLanguageChanged"' in wvc)
 check("D6 数据迁移步复用 Task217 数据桥",
       "[[DataTransferService sharedService] importDataFromViewController:self]" in wvc)
-check("D7 动效清单（渐变呼吸 / 粒子 / 弹簧转场 / 圆点 / 礼花）",
-      "CAGradientLayer" in wvc and "CAEmitterLayer" in wvc
+check("D7 动效清单（Task219 重做后口径：常驻 UIScrollView 步骤舞台 + 弹簧转场 + 圆点 + 礼花；渐变背景/氛围气泡随 iPadOS 化改造退役）",
+      "UIScrollView" in wvc and "contentLayoutGuide" in wvc
       and "usingSpringWithDamping" in wvc and "ame218_fireConfettiBurst" in wvc
-      and "ame218_locations" in wvc and "ame218_colors" in wvc)
+      and "CAEmitterLayer" in wvc and "updateDots" in wvc)
 
 print("== E. 包名过渡 com.air-devs.air（上游原地更新通道） ==")
 check("E1 Info.plist 双处（bundle id + urlscheme）",
@@ -205,7 +205,7 @@ print("== G. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"G-{lang} 唯一键 2482（Task218 +27）", len(keys) == 2482, f"got {len(keys)}")
+    check(f"G-{lang} 唯一键 2520（Task218 +27）", len(keys) == 2520, f"got {len(keys)}")
 zh = rd("Natives/resources/zh-Hans.lproj/Localizable.strings")
 en = rd("Natives/resources/en.lproj/Localizable.strings")
 check("G-新键在位（welcome 全家 + ame218.crash 全家）",
@@ -215,12 +215,12 @@ check("G-新键在位（welcome 全家 + ame218.crash 全家）",
           "welcome.done.start", "ame218.crash.title", "ame218.crash.oom.body",
           "ame218.crash.renderer.body", "ame218.crash.blacklisted", "ame218.crash.view"]))
 ann = json.load(open("announcements.json"))["announcements"]
-check("G-公告 40 条 + task218 尾锚 + 家族顺延（217@-2 / 216@-3 / 206@-4）",
-      len(ann) == 40
-      and ann[-1]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
-      and ann[-2]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-3]["id"] == "task216-ui-2026-10-03"
-      and ann[-4]["id"] == "task206-nggl4es-2026-10-01"
+check("G-公告 41 条 + 尾锚家族顺延（Task219 后：219@-1 / 218@-2 / 217@-3 / 216@-4 / 206@-5）",
+      len(ann) == 41
+      and ann[-2]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
+      and ann[-3]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-4]["id"] == "task216-ui-2026-10-03"
+      and ann[-5]["id"] == "task206-nggl4es-2026-10-01"
       and ann[0].get("pin") is True)
 
 print("== H. 语法平衡 + 基线 ==")
@@ -269,16 +269,16 @@ check("H4 公告 JSON 可解析且 id 唯一",
 print("== I. 级联抽查（本轮重锚族） ==")
 spot = {
     "scripts/verify_task217.py": ['<string>com.air-devs.air</string>',
-                                  "len(ann) == 40", "#define REVISION 22", "2482"],
-    "scripts/verify_task216.py": ["<string>com.air-devs.air</string>", "len(ann) == 40",
+                                  "len(ann) == 41", "#define REVISION 22", "2520"],
+    "scripts/verify_task216.py": ["<string>com.air-devs.air</string>", "len(ann) == 41",
                                   "#define REVISION 22"],
-    "scripts/verify_task213.py": ["len(ids) == 40"],
-    "scripts/verify_task214.py": ["len(ann) == 40", "2482"],
-    "scripts/verify_task212.py": ["len(ann) == 40", "2482"],
-    "scripts/verify_task211.py": ["len(ann) == 40", "2482"],
-    "scripts/verify_task210.py": ["len(ann) == 40", "2482"],
-    "scripts/verify_task207.py": ["len(ann) == 40"],
-    "scripts/verify_task206.py": ["len(ann) == 40", "ann[-4]", "2482"],
+    "scripts/verify_task213.py": ["len(ids) == 41"],
+    "scripts/verify_task214.py": ["len(ann) == 41", "2520"],
+    "scripts/verify_task212.py": ["len(ann) == 41", "2520"],
+    "scripts/verify_task211.py": ["len(ann) == 41", "2520"],
+    "scripts/verify_task210.py": ["len(ann) == 41", "2520"],
+    "scripts/verify_task207.py": ["len(ann) == 41"],
+    "scripts/verify_task206.py": ["len(ann) == 41", "ann[-4]", "2520"],
 }
 g_ok = True
 g_detail = []
@@ -288,7 +288,7 @@ for path, needles in spot.items():
         if n not in src:
             g_ok = False
             g_detail.append(f"{path} missing {n!r}")
-check("I1 重锚族抽查（9 验证器：计数 40 / 尾窗顺延 / 身份 / REVISION / l10n 2482）",
+check("I1 重锚族抽查（9 验证器：计数 40 / 尾窗顺延 / 身份 / REVISION / l10n 2520）",
       g_ok, "; ".join(g_detail[:3]))
 check("I2 舰队 2455 旧值扫荡干净",
       all("2455" not in rd(f) for f in
