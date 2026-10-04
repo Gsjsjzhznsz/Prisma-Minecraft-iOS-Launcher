@@ -33,6 +33,7 @@
 #import "utils.h"
 #import <objc/runtime.h>
 #include <mach-o/dyld.h>
+#include <unistd.h>
 
 /// 步骤总数（Hero / 语言 / 环境与 JIT / 下载源 / 数据迁移 / 完成）。
 static const NSInteger ame218_welcomeStepCount = 6;
@@ -930,10 +931,10 @@ static const NSInteger ame218_welcomeStepCount = 6;
         [ame219_jitIcon.centerYAnchor constraintEqualToAnchor:ame219_statusRow.centerYAnchor],
         [ame219_jitIcon.widthAnchor constraintEqualToConstant:24],
         [ame219_jitIcon.heightAnchor constraintEqualToConstant:24],
-        [ame219_jitStatusLabel.leadingAnchor constraintEqualToAnchor:ame219_jitIcon.trailingAnchor constant:12],
-        [ame219_jitStatusLabel.topAnchor constraintEqualToAnchor:ame219_statusRow.topAnchor constant:12],
-        [ame219_jitStatusLabel.bottomAnchor constraintEqualToAnchor:ame219_statusRow.bottomAnchor constant:-12],
-        [ame219_enableBtn.leadingAnchor constraintEqualToAnchor:ame219_jitStatusLabel.trailingAnchor constant:10],
+        [self.jitStatusLabel.leadingAnchor constraintEqualToAnchor:ame219_jitIcon.trailingAnchor constant:12],
+        [self.jitStatusLabel.topAnchor constraintEqualToAnchor:ame219_statusRow.topAnchor constant:12],
+        [self.jitStatusLabel.bottomAnchor constraintEqualToAnchor:ame219_statusRow.bottomAnchor constant:-12],
+        [ame219_enableBtn.leadingAnchor constraintEqualToAnchor:self.jitStatusLabel.trailingAnchor constant:10],
         [ame219_enableBtn.trailingAnchor constraintEqualToAnchor:ame219_statusRow.trailingAnchor constant:-14],
         [ame219_enableBtn.centerYAnchor constraintEqualToAnchor:ame219_statusRow.centerYAnchor],
         [ame219_enableBtn.heightAnchor constraintEqualToConstant:36],

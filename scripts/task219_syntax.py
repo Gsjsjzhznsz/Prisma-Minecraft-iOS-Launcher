@@ -125,6 +125,73 @@ for lang, expect in [("en", "VGPU (≤1.17)"), ("zh-Hans", "VGPU（≤1.17）"),
         content = f.read()
     check(f"VGPU rename {lang}", f'= "{expect}";' in content)
 
+# ---- Task219 hotfix 2 lesson: undeclared-identifier lint (run 37189755141:
+# 'ame219_jitStatusLabel' was written where the property is 'jitStatusLabel' --
+# a class of error local ObjC-less gates cannot see; this lint catches it) ----
+def strip_comments_strings(path):
+    s = open(path, encoding="utf-8", errors="replace").read()
+    out, i, n, state = [], 0, len(s), "code"
+    while i < n:
+        c = s[i]; nxt = s[i+1] if i + 1 < n else ""
+        if state == "code":
+            if c == "/" and nxt == "/":
+                state = "lc"; i += 2; continue
+            if c == "/" and nxt == "*":
+                state = "bc"; i += 2; continue
+            if c == '"':
+                state = "st"; out.append(" "); i += 1; continue
+            if c == "'":
+                state = "ch"; out.append(" "); i += 1; continue
+            out.append(c)
+        elif state == "lc":
+            if c == "\n": state = "code"; out.append(c)
+        elif state == "bc":
+            if c == "*" and nxt == "/": state = "code"; i += 2; continue
+        elif state == "st":
+            if c == "\\": i += 2; continue
+            if c == '"': state = "code"
+        elif state == "ch":
+            if c == "\\": i += 2; continue
+            if c == "'": state = "code"
+        i += 1
+    return "".join(out)
+
+def undeclared_ame_identifiers(path):
+    code = strip_comments_strings(path)
+    used = set(re.findall(r"\bame219_[A-Za-z0-9_]+\b", code))
+    declared = set()
+    # 1) 指针/对象声明（含泛型角度括号形态 "Foo<Bar *> *ame219_x"）
+    for m in re.finditer(r"\*\s*(ame219_[A-Za-z0-9_]+)\s*(?:[=;,)\]]|\(|\s+in\b)", code):
+        declared.add(m.group(1))
+    # 2) 方法名（选择器组件含冒号、@selector() 无冒号形态、[self 调用）
+    for m in re.finditer(r"\b(ame219_[A-Za-z0-9_]+)\s*:", code):
+        declared.add(m.group(1))
+    for m in re.finditer(r"@selector\((ame219_[A-Za-z0-9_]+)", code):
+        declared.add(m.group(1))
+    for m in re.finditer(r"\[self\s+(ame219_[A-Za-z0-9_]+)", code):
+        declared.add(m.group(1))
+    for m in re.finditer(r"\[weakSelf\s+(ame219_[A-Za-z0-9_]+)", code):
+        declared.add(m.group(1))
+    for m in re.finditer(r"\[WelcomeViewController\s+(ame219_[A-Za-z0-9_]+)", code):
+        declared.add(m.group(1))
+    # 3) 标量/类型化声明（含 for 循环、块内局部）
+    for m in re.finditer(r"\b(?:NSInteger|NSUInteger|int|BOOL|float|double|long|unsigned|short|char|NSRange|CGRect|CGPoint|CGSize|uint32_t|uint64_t|int64_t|size_t|NSInteger64|struct\s+\w+|NSString|NSArray|NSMutableArray|NSDictionary|NSNumber|UIView|UILabel|UIButton|UIImageView|UIStackView|UIScrollView|UIProgressView|UINavigationController|UIAlertController|UIAlertAction|NSURL|NSData|NSError|UIImage|CAEmitterLayer|CAEmitterCell|CAGradientLayer|UITapGestureRecognizer|id|UZKCompressionMethod|NSUInteger)\s+\*?\s*(ame219_[A-Za-z0-9_]+)\b", code):
+        declared.add(m.group(1))
+    # 4) block 变量："void (^ame219_x)("
+    for m in re.finditer(r"\(\^\s*(ame219_[A-Za-z0-9_]+)\)", code):
+        declared.add(m.group(1))
+    # 5) static/const/__block 前缀
+    for m in re.finditer(r"(?:static|const|__block|IBOutlet)\s+(?:const\s+)?[A-Za-z0-9_]+\s+(ame219_[A-Za-z0-9_]+)", code):
+        declared.add(m.group(1))
+    return sorted(used - declared)
+
+for p in ["Natives/WelcomeViewController.m", "Natives/DataTransferService.m",
+          "Natives/ProfileSettingsViewController.m", "Natives/ModService.m",
+          "Natives/ModsManagerViewController.m", "Natives/AboutViewController.m",
+          "Natives/ctxbridges/virgl_server.m", "Natives/egl_bridge.m"]:
+    bad = undeclared_ame_identifiers(os.path.join(REPO, p))
+    check(f"undeclared-ident lint {p.split('/')[-1]}", not bad, f"suspicious: {bad[:4]}")
+
 print()
 print(f"task219_syntax: {len(FAILED)} failed" if FAILED else "task219_syntax: ALL GREEN")
 sys.exit(1 if FAILED else 0)
