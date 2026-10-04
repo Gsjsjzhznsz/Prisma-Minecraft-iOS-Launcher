@@ -1704,3 +1704,18 @@ Stage Summary:
 - 装机待验证锚点：首启欢迎向导全流程（渐变呼吸+粒子+礼花）/ 'Task218: download source set to'（向导选源）/ '[Preferences] Task218 migrated ... fill-only' / 'Task218 loaded N remote versions from <host>'（根页清单）/ '[JavaLauncher] Task218: ... classified OOM' / 'crash frames blame'（归因）/ 崩溃诊断弹窗 / Hero 卡点击进关于页
 - 上游用户更新通道：com.air-devs.air 与上游同 id，可原地更新拿到导出功能；终态 com.prisma-devs 待用户导出数据后另行切换
 - 遗留：CI 待推送确认（本轮零 Makefile 结构改动、CMake 加两文件、无 native 链变化，风险面低）
+
+---
+Task ID: 218-ci
+Agent: main (Super Z)
+Task: Task 218 CI 闭环
+
+Work Log:
+- run 621（1c64bb5e 主轮）failure：WelcomeViewController.m 编译错误 'no visible @interface declares the selector ame218_buildHeroStep:/ame218_buildLanguageStep:'——步骤 0/1 构建器的插入编辑当时因 @end 锚多重匹配失败且未重做，showStep: 的 switch 调了五个构建器而文件只定义了三个
+- 热修 1（742effab）：补齐 Hero 步（图标光晕+弹簧过冲入场+文本阶梯淡入）与语言步（四选一按钮网格+选中动效+持久化）；verify_task218 D1 加固——五个 ame218_build*Step: 实现全数在位 + hero/lang localize 锚 + ame218_refreshLangButtons（防止"验证器绿但文件不可编译"的回归类）
+- 选择器完备性审计：三个改动控制器精确匹配全过（早期冒号交错误报为正则伪影，已记录）
+- run 622（742effab）completed success——重命名后仓库（Prisma-Minecraft-iOS-Launcher）首个全绿构建，新 IPA 就绪
+
+Stage Summary:
+- Task 218 六项全闭环：下载源双轨根治 / Hero 卡关于入口 / CrashAnalyzer+FCL 诊断弹窗 / 欢迎向导 / 包名 .air 过渡 / 仓库去 air
+- 教训入库：多段插入编辑失败后必须 grep 复核（"Edit 失败 ≠ 内容已在"）；验证器要锚"构建器存在"而不只锚"特性存在"
