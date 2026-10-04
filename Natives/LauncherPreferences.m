@@ -55,24 +55,48 @@ void toggleIsolatedPref(BOOL forceEnable) {
 void migrateDownloadSourcePreferences(void) {
     if ([getPrefObject(@"download.sourceMigrated") boolValue]) return;
 
+    // Task218：无旧值也立即封口哨兵。旧实现在"旧键缺失"时直接 return
+    // 不落哨兵——PLPreferences 的 defaults 若再播种 sourceMigrated=@NO
+    //（偏好重置、隔离实例新播种等场合），迁移会在下一次启动重新武装并
+    // 整组覆写四个策略键 = 用户"下载源设置里面莫名其妙被启动器改了"
+    // 的主诉根源之一。封口后本函数对同一份偏好存储终身只生效一次。
     NSString *legacy = getPrefObject(@"general.download_source");
-    if (![legacy isKindOfClass:[NSString class]] || legacy.length == 0) return;
+    if (![legacy isKindOfClass:[NSString class]] || legacy.length == 0) {
+        setPrefObject(@"download.sourceMigrated", @YES);
+        NSLog(@"[Preferences] Task218 sealed download-source migration sentinel (no legacy value present)");
+        return;
+    }
 
     // bmclapi / mcim 均视为镜像意图，其余值（official / 未知）按官方优先处理
     BOOL mirrorFirst = [legacy isEqualToString:@"bmclapi"] || [legacy isEqualToString:@"mcim"];
     NSString *value = mirrorFirst ? @"mirror_first" : @"official_first";
 
+    // Task218：整组覆写 -> 按键补齐（fill-only）。旧实现无条件把四个键
+    // 全部写成旧值派生值：① 与 defaults 播种的 speed_first 出厂默认互相
+    // 倾轧（首次启动即把 Task138 声明的默认翻成 mirror_first）；② 哨兵
+    // 被 defaults 重播种的场合（见上）会把用户在新 UI 里亲手选好的值冲
+    // 回旧值。新语义：旧值只负责"补缺"，已存在且合法的键（无论来自
+    // defaults 播种还是用户手选）一律不动——四个策略键自此是唯一事实源。
     NSArray<NSString *> *newKeys = @[
         @"download.fileSource",
         @"download.assetSearchSource",
         @"download.assetDownloadSource",
         @"download.modLoaderSource"
     ];
+    NSInteger ame218_filled = 0;
     for (NSString *key in newKeys) {
-        setPrefObject(key, value);
+        NSString *current = getPrefObject(key);
+        BOOL valid = [current isEqualToString:@"official_first"] ||
+                     [current isEqualToString:@"mirror_first"] ||
+                     [current isEqualToString:@"speed_first"];
+        if (!valid) {
+            setPrefObject(key, value);
+            ame218_filled++;
+        }
     }
     setPrefObject(@"download.sourceMigrated", @YES);
-    NSLog(@"[Preferences] Migrated general.download_source(%@) -> %@ for 4 mirror policy keys", legacy, value);
+    NSLog(@"[Preferences] Task218 migrated general.download_source(%@) -> %@ (fill-only: %ld key(s) filled, existing valid keys untouched)",
+          legacy, value, (long)ame218_filled);
 }
 
 #pragma mark Task 77 default control migration

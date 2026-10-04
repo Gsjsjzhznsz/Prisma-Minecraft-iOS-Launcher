@@ -6,7 +6,7 @@
   B. ANGLE DSA 通告撤回（Task197，tinygl4angle.c）
   C. 控件仓库误戳救回（Task198，CustomControlsUtils.m + controls/）
   D. Metallum Metal 渲染器移植（Task201，二进制 + 五处代码 + l10n）
-  E. 文档与公告（version.h 附录 / announcements / surveys / 2455 基线扫荡）
+  E. 文档与公告（version.h 附录 / announcements / surveys / 2482 基线扫荡）
 """
 import json
 import os
@@ -190,9 +190,9 @@ def lang_keys(lang):
 k4 = [lang_keys(l) for l in ["en", "zh-Hans", "zh-Hant", "zh-CN"]]
 check("E", "四语言 metal 键齐备", all("preference.title.renderer.debug.metal" in k for k in k4))
 check("E", "四语言键集全同", k4[0] == k4[1] == k4[2] == k4[3])
-check("E", "唯一键计数 2455", len(k4[0]) == 2455, f"got {len(k4[0])}")
+check("E", "唯一键计数 2482", len(k4[0]) == 2482, f"got {len(k4[0])}")
 vh = rd("Natives/external/MobileGlues/MobileGlues-cpp/version.h")
-check("E", "REVISION 保持 18（不 bump）", "#define REVISION 21" in vh)
+check("E", "REVISION 保持 18（不 bump）", "#define REVISION 22" in vh)
 check("E", "version.h 四任务附录在场",
       "Tasks 196/197/198/201" in vh and "Task 201 (Metallum Metal renderer" in vh)
 ann = json.load(open(os.path.join(REPO, "announcements.json"), encoding="utf-8"))["announcements"]
@@ -204,7 +204,7 @@ check("E", "公告条目在场且四锚点齐备", e196 is not None and all(
 check("E", "公告位置：新条目@2，task193 顺延@3（Task212 重锚：task212@2 插入后再顺延）",
       ann[10]["id"] == "task196-quad-fixes-2026-09-29"
       and ann[11]["id"] == "task193-app-icon-replace-2026-09-28")
-check("E", "公告计数 34（Task212@2 插入，NG-GL4ES 尾锚顺延不变）", len(ann) == 39, f"got {len(ann)}")
+check("E", "公告计数 34（Task212@2 插入，NG-GL4ES 尾锚顺延不变）", len(ann) == 40, f"got {len(ann)}")
 sv = os.path.join(REPO, "docs/surveys")
 check("E", "两份调查报告入仓",
       os.path.isfile(os.path.join(sv, "2026-09-29-upstream-sync-survey.md"))
@@ -213,7 +213,7 @@ r = subprocess.run(["grep", "-rl", "2407", f"{REPO}/scripts/"],
                    capture_output=True, text=True)
 leak = [f for f in r.stdout.split()
         if not f.endswith("verify_task196_197_198_201.py")]
-check("E", "2407 基线扫荡干净（全部升 2455，自引用除外）", not leak, str(leak[:2]))
+check("E", "2407 基线扫荡干净（全部升 2482，自引用除外）", not leak, str(leak[:2]))
 
 # ============ verdict ============
 fails = [l for l, ok in results if not ok]

@@ -20,15 +20,24 @@ static NSString * const kCachedAnnouncementsTimestampKey = @"cached_announcement
 /// 已 404 且不受我们控制；仓库根目录 announcements.json 随代码同仓维护，
 /// 提交后全端即时生效（发版/修复公告不再依赖任何第三方在线服务）。
 static NSString * const kRepoAnnouncementURL =
-    @"https://raw.githubusercontent.com/Gsjsjzhznsz/Air-Minecraft-iOS-Launcher/main/announcements.json";
+    @"https://raw.githubusercontent.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/main/announcements.json";
 /// 同一文件的 jsDelivr CDN 镜像：国内可达性更好，代价是 CDN 缓存延迟
 /// （最长 12 小时）。作为 raw.githubusercontent.com 不可达时的第二源。
 static NSString * const kRepoAnnouncementMirrorURL =
-    @"https://cdn.jsdelivr.net/gh/Gsjsjzhznsz/Air-Minecraft-iOS-Launcher@main/announcements.json";
+    @"https://cdn.jsdelivr.net/gh/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher@main/announcements.json";
 /// 旧上游默认源（已 404）。仅用于把历史存量偏好值识别为“未自定义”，
 /// 不再实际请求。
 static NSString * const kLegacyAnnouncementURL =
     @"https://air-api.vercel.app/api/announcements.php";
+/// Task218：仓库名去 air（Air-Minecraft-iOS-Launcher -> Prisma-Minecraft-iOS-Launcher）
+/// 之前的旧默认源。旧版 defaults 会把 news_url 物化进 plist——改名后这些
+/// 存量值必须继续被识别为“未自定义”（否则会被当成用户自定义源独占拉取，
+/// 丢失 jsDelivr 回退）；GitHub 对改名仓库的 raw/CDN 请求虽会重定向，但
+/// 归一到新级联不依赖重定向，更稳。
+static NSString * const kPreRenameAnnouncementURL =
+    @"https://raw.githubusercontent.com/Gsjsjzhznsz/Air-Minecraft-iOS-Launcher/main/announcements.json";
+static NSString * const kPreRenameAnnouncementMirrorURL =
+    @"https://cdn.jsdelivr.net/gh/Gsjsjzhznsz/Air-Minecraft-iOS-Launcher@main/announcements.json";
 
 @implementation AnnouncementService
 
@@ -64,6 +73,8 @@ static NSString * const kLegacyAnnouncementURL =
     BOOL customized = url.length > 0
         && ![url isEqualToString:kRepoAnnouncementURL]
         && ![url isEqualToString:kRepoAnnouncementMirrorURL]
+        && ![url isEqualToString:kPreRenameAnnouncementURL]
+        && ![url isEqualToString:kPreRenameAnnouncementMirrorURL]
         && ![url isEqualToString:kLegacyAnnouncementURL];
     if (customized) {
         return @[url];

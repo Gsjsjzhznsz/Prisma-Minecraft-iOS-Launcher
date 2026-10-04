@@ -447,7 +447,8 @@
     // 注册到统一下载任务管理器（rawTask 稍后赋值为 PLDownloadOperation；悬浮球已移除，始终注册以便下载任务列表跟踪）
     NSString *resourceName = item.fileName.length > 0 ? item.fileName : (item.displayName.length > 0 ? item.displayName : @"datapack");
     NSString *displayName = item.displayName.length > 0 ? item.displayName : resourceName;
-    NSString *downloadSource = getPrefObject(@"general.download_source") ?: @"official";
+    // Task218：来源标签收敛到 PLMirrorCenter（显示层专用 token；路由一律走候选链）。
+    NSString *downloadSource = [PLMirrorCenter legacySourceTokenForType:PLMirrorResourceTypeAssetDownload];
     DownloadTaskItem *taskItem = [[DownloadTaskManager sharedManager]
         registerTaskWithResourceType:DownloadTaskResourceTypeDataPack
                         resourceName:resourceName

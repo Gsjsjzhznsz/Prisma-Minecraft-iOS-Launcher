@@ -16,6 +16,7 @@
 #import "authenticator/BaseAuthenticator.h"
 #import "authenticator/ThirdPartyAuthenticator.h"
 #import "NMToast.h"
+#import "CrashAnalyzer.h"   // Task218：崩溃识别引擎（hs_err 分型/渲染器归因）
 // 鬼知道为什么copilot要把这玩意加里头……
 
 #import "ios_uikit_bridge.h"
@@ -1325,9 +1326,25 @@ static BOOL ame217_rendererDylibPresent(const char *rendererName) {
 
 /// Task217：裁决上一会话（崩溃自学的记分员）。在每次 auto 解析前调用。
 /// 读哨兵（.ame217_session："<renderer>|<epoch>"）→ 扫描 POJAV_HOME 下
-/// mtime 晚于哨兵时间的 hs_err_pid*.log：有 = 上一会话信号级死亡 → 该
-/// 渲染器连败 +1（达 2 次即拉黑 + 清计数）；无 = 干净会话 → 清该渲染器
-/// 连败。哨兵读后即删（幂等，单次裁决）。
+/// mtime 晚于哨兵时间的 hs_err_pid*.log：有 = 上一会话信号级死亡 → 经
+/// CrashAnalyzer 分型后记连败（OOM 不记锅、渲染器归因优先）；无 = 干净
+/// 会话 → 清该渲染器连败。哨兵读后即删（幂等，单次裁决）。
+///
+/// Task218 升级（用户指令："依据判断脚本和参考 FCL 改进崩溃识别"）：
+///   1. 取"最新"hs_err（旧实现对目录序首个命中即 break，多崩溃文件并存的
+///      场景可能裁决到旧文件）；
+///   2. 读 hs_err 内容分型（信号 / OOM / Problematic frame / native 帧），
+///      而不是只看文件存在；
+///   3. OOM 不记渲染器连败（内存不足不是渲染器的锅），诊断走降内存建议；
+///   4. 渲染器归因：崩溃帧命中渲染器家族库时，连败记在被归因渲染器头上
+///      （即使 auto 会话解析的是另一个——同库族伴生崩溃不再张冠李戴）；
+///   5. FCL 式诊断弹窗：每个崩溃文件只弹一次，呈现分型 + 处置建议 +
+///      "查看崩溃报告"（系统分享面板导出 hs_err 原文件）。
+
+/// Task218：FCL 式崩溃诊断弹窗（定义见下方；先声明供裁决器调用）。
+static void ame218_showCrashDiagnosis(NSDictionary *diag, NSString *hsErrPath,
+                                      BOOL blacklisted, NSString *failRenderer);
+
 static void ame217_autoRendererAdjudicateLastSession(void) {
     NSString *home = @(getenv("POJAV_HOME"));
     if (home.length == 0) return;
@@ -1343,47 +1360,151 @@ static void ame217_autoRendererAdjudicateLastSession(void) {
     long long epoch = [parts[1] longLongValue];
     if (renderer.length == 0 || epoch <= 0) return;
 
-    NSString *failKey = [NSString stringWithFormat:@"ame217.autoRendererFails.%@", renderer];
-    BOOL crashed = NO;
+    // Task218：多崩溃文件并存时取 mtime 最新的一份（旧实现目录序首个即
+    // break——裁决到旧文件会把上上会话的死法记到本会话头上）。
     NSString *newestHsErr = nil;
+    NSTimeInterval newestMtime = 0;
     for (NSString *entry in [NSFileManager.defaultManager contentsOfDirectoryAtPath:home error:nil]) {
         if (![entry hasPrefix:@"hs_err_pid"] || ![entry hasSuffix:@".log"]) continue;
         NSDictionary *attrs = [NSFileManager.defaultManager attributesOfItemAtPath:
             [home stringByAppendingPathComponent:entry] error:nil];
         NSDate *mtime = attrs.fileModificationDate;
         if (!mtime) continue;
-        if ([mtime timeIntervalSince1970] >= (NSTimeInterval)(epoch - 2)) {
-            crashed = YES;
+        NSTimeInterval t = [mtime timeIntervalSince1970];
+        if (t >= (NSTimeInterval)(epoch - 2) && t > newestMtime) {
+            newestMtime = t;
             newestHsErr = entry;
-            break;
         }
     }
 
-    if (crashed) {
-        NSInteger fails = getPrefInt(failKey) + 1;
-        if (fails >= 2) {
-            NSString *blacklist = getPrefObject(@"ame217.autoRendererBlacklist");
-            NSString *entry = [NSString stringWithFormat:@",%@", renderer];
-            if (![blacklist isKindOfClass:[NSString class]] ||
-                ![blacklist containsString:renderer]) {
-                NSString *merged = ([blacklist isKindOfClass:[NSString class]] && blacklist.length > 0)
-                    ? [blacklist stringByAppendingString:entry] : renderer;
-                setPrefObject(@"ame217.autoRendererBlacklist", merged);
-                NSLog(@"[JavaLauncher] Task217: auto renderer '%@' BLACKLISTED after %ld consecutive hs_err sessions (last: %@) -- auto falls to next candidate",
-                      renderer, (long)fails, newestHsErr);
-            }
-            setPrefObject(failKey, @0);
+    if (newestHsErr) {
+        // ---- Task218 分型（CrashAnalyzer：信号 / OOM / 渲染器归因）----
+        NSString *hsErrPath = [home stringByAppendingPathComponent:newestHsErr];
+        NSDictionary *diag = [CrashAnalyzer analyzeHsErrFile:hsErrPath];
+        BOOL isOOM = [diag[@"isOOM"] boolValue];
+        NSString *blamed = diag[@"blamedRenderer"];
+
+        if (isOOM) {
+            // OOM：内存不足不是渲染器的锅（判断脚本口径：insufficient memory
+            // 头）。连败不动，诊断弹窗给降内存/砍模组建议。
+            NSLog(@"[JavaLauncher] Task218: last session (%@) classified OOM (signal %@) -- renderer fail counts untouched",
+                  newestHsErr, diag[@"signal"]);
         } else {
-            setPrefObject(failKey, @(fails));
-            NSLog(@"[JavaLauncher] Task217: last session (%@) died with hs_err under auto renderer '%@' -- fail count %ld/2",
-                  newestHsErr, renderer, (long)fails);
+            // 归因优先：崩溃帧命中渲染器家族库 -> 连败记它；否则记 auto
+            // 会话渲染器（Task217 保守语义）。
+            NSString *failRenderer = blamed ?: renderer;
+            if (blamed && ![blamed isEqualToString:renderer]) {
+                NSLog(@"[JavaLauncher] Task218: crash frames blame '%@' while auto session ran '%@' -- counting against the blamed renderer",
+                      blamed, renderer);
+            }
+            NSString *failKey = [NSString stringWithFormat:@"ame217.autoRendererFails.%@", failRenderer];
+            NSInteger fails = getPrefInt(failKey) + 1;
+            if (fails >= 2) {
+                NSString *blacklist = getPrefObject(@"ame217.autoRendererBlacklist");
+                NSString *entry = [NSString stringWithFormat:@",%@", failRenderer];
+                if (![blacklist isKindOfClass:[NSString class]] ||
+                    ![blacklist containsString:failRenderer]) {
+                    NSString *merged = ([blacklist isKindOfClass:[NSString class]] && blacklist.length > 0)
+                        ? [blacklist stringByAppendingString:entry] : failRenderer;
+                    setPrefObject(@"ame217.autoRendererBlacklist", merged);
+                    NSLog(@"[JavaLauncher] Task217: auto renderer '%@' BLACKLISTED after %ld consecutive hs_err sessions (last: %@) -- auto falls to next candidate",
+                          failRenderer, (long)fails, newestHsErr);
+                }
+                setPrefObject(failKey, @0);
+                // 拉黑即弹诊断（含降级提示），不复用文件级去重键
+                ame218_showCrashDiagnosis(diag, hsErrPath, YES, failRenderer);
+                return;
+            } else {
+                setPrefObject(failKey, @(fails));
+                NSLog(@"[JavaLauncher] Task217: last session (%@) died with hs_err under auto renderer '%@' (blamed: %@) -- fail count %ld/2",
+                      newestHsErr, renderer, blamed ?: renderer, (long)fails);
+            }
+        }
+
+        // ---- FCL 式诊断弹窗（每个崩溃文件只弹一次）----
+        NSString *shownKey = @"ame218.crashDialogShownFor";
+        NSString *shownFor = getPrefObject(shownKey);
+        if (![shownFor isKindOfClass:[NSString class]] || ![shownFor isEqualToString:newestHsErr]) {
+            setPrefObject(shownKey, newestHsErr);
+            ame218_showCrashDiagnosis(diag, hsErrPath, NO, nil);
         }
     } else {
+        NSString *failKey = [NSString stringWithFormat:@"ame217.autoRendererFails.%@", renderer];
         if (getPrefInt(failKey) > 0) {
             NSLog(@"[JavaLauncher] Task217: last session under auto renderer '%@' was clean -- fail count reset", renderer);
         }
         setPrefObject(failKey, @0);
     }
+}
+
+/// Task218：FCL 式崩溃诊断弹窗（参考 Fold Craft Launcher 的崩溃呈现：
+/// 崩溃类型 + 可能原因 + 处置建议，而不是只在后台记一笔）。非阻塞——
+/// 弹窗出现时本次启动照常进行；"查看崩溃报告"经系统分享面板导出
+/// hs_err 原文件（与 Task175 弹窗同款 top-VC 呈现链，本文件已验证）。
+static void ame218_showCrashDiagnosis(NSDictionary *diag, NSString *hsErrPath, BOOL blacklisted, NSString *failRenderer) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSString *signal = diag[@"signal"] ?: @"(unknown)";
+        NSString *frame = diag[@"problematicFrame"] ?: @"";
+        NSString *body = nil;
+        if ([diag[@"isOOM"] boolValue]) {
+            body = [NSString stringWithFormat:localize(@"ame218.crash.oom.body", nil), signal];
+        } else if (diag[@"blamedRenderer"]) {
+            body = [NSString stringWithFormat:localize(@"ame218.crash.renderer.body", nil),
+                    signal, diag[@"blamedRenderer"], frame];
+        } else {
+            body = [NSString stringWithFormat:localize(@"ame218.crash.unknown.body", nil), signal, frame];
+        }
+        if (blacklisted) {
+            body = [body stringByAppendingString:
+                [NSString stringWithFormat:localize(@"ame218.crash.blacklisted", nil), failRenderer ?: @""]];
+        }
+
+        UIAlertController *alert = [UIAlertController
+            alertControllerWithTitle:localize(@"ame218.crash.title", nil)
+                             message:body
+                      preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:localize(@"ame218.crash.view", nil)
+                                                  style:UIAlertActionStyleDefault
+                                                handler:^(UIAlertAction *a) {
+            // 系统分享面板导出 hs_err 原文件（存储到"文件"App / AirDrop / 反馈渠道）
+            NSURL *ame218_fileURL = [NSURL fileURLWithPath:hsErrPath];
+            UIActivityViewController *ame218_share =
+                [[UIActivityViewController alloc] initWithActivityItems:@[ame218_fileURL]
+                                                 applicationActivities:nil];
+            UIViewController *ame218_top = nil;
+            for (UIWindowScene *ame218_scene in UIApplication.sharedApplication.connectedScenes.allObjects) {
+                if (ame218_scene.activationState == UISceneActivationStateForegroundActive &&
+                    ame218_scene.windows.count > 0) {
+                    ame218_top = ame218_scene.windows.firstObject.rootViewController;
+                    while (ame218_top.presentedViewController != nil) {
+                        ame218_top = ame218_top.presentedViewController;
+                    }
+                    break;
+                }
+            }
+            if (ame218_top) {
+                [ame218_top presentViewController:ame218_share animated:YES completion:nil];
+            }
+        }]];
+        [alert addAction:[UIAlertAction actionWithTitle:localize(@"ame218.crash.ok", nil)
+                                                  style:UIAlertActionStyleCancel
+                                                handler:nil]];
+
+        UIViewController *ame218_presenter = nil;
+        for (UIWindowScene *ame218_scene in UIApplication.sharedApplication.connectedScenes.allObjects) {
+            if (ame218_scene.activationState == UISceneActivationStateForegroundActive &&
+                ame218_scene.windows.count > 0) {
+                ame218_presenter = ame218_scene.windows.firstObject.rootViewController;
+                while (ame218_presenter.presentedViewController != nil) {
+                    ame218_presenter = ame218_presenter.presentedViewController;
+                }
+                break;
+            }
+        }
+        if (ame218_presenter) {
+            [ame218_presenter presentViewController:alert animated:YES completion:nil];
+        }
+    });
 }
 
 /// Task217：auto 候选链决策。版本基线（Task144/173/212）+ dylib 存在性 +

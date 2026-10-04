@@ -32,8 +32,15 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
             // Task 130：公告源改为本仓库托管的 announcements.json（旧上游
             // air-api.vercel.app 已 404；AnnouncementService 的 raw + jsDelivr
             // 源级联见同文件常量，此默认值同时是"未自定义"识别基准之一）
-            @"news_url": @"https://raw.githubusercontent.com/Gsjsjzhznsz/Air-Minecraft-iOS-Launcher/main/announcements.json",
-            @"download_source": @"bmclapi",
+            // Task218：仓库名去 air（Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher）。
+            @"news_url": @"https://raw.githubusercontent.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/main/announcements.json",
+            // Task218：旧版全局下载源键的默认值退役（注释化——本键已无任何
+            // 写入方，键不存在不影响任何读写）。旧默认 "bmclapi" 会被
+            // setDefaultsForPref 播种并落盘：① 让 Task138 声明的 speed_first
+            // 出厂默认在首次启动即被迁移翻成 mirror_first；② 偏好重置后
+            // 重新背上旧值。存量 plist 里已物化的值继续经 PLMirrorCenter
+            // policyForType 的回退链生效（读侧兼容零变动）。
+            // @"download_source": @"bmclapi",   // retired by Task218
             // 各资源类型独立下载源（未显式设置时回退到 modrinth）
             @"download_source_mod": @"modrinth",
             @"download_source_shader": @"modrinth",
@@ -58,6 +65,10 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
             @"ram_allocation": @(0),
             // 首页公告磁贴预览级别：full（标题+日期+摘要）/ summary（标题+摘要）/ title_only（仅标题）
             @"announcement_preview_level": @"summary",
+            // Task218：首次使用欢迎向导完成哨兵（WelcomeViewController 完成
+            // 时置 YES；未置 = 首次启动，SceneDelegate 在根视图就绪后全屏
+            // 弹出向导：语言 / 下载源 / 数据导入三步引导 + 动效）。
+            @"welcome_completed": @NO,
         }.mutableCopy,
         // 分类镜像策略（值 official_first / mirror_first / speed_first，
         // 由 PLMirrorCenter 统一读取，未迁移时回退旧键 general.download_source）。

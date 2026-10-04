@@ -474,12 +474,10 @@ static const void *kIconLoaderImageViewKey = &kIconLoaderImageViewKey;
 /// 默认镜像启用判断：bmclapi / auto（中国大陆默认走 BMCLAPI）时启用
 /// 安全处理 nil 偏好（偏好系统未初始化时返回 NO，避免 +load 早期调用崩溃）
 - (BOOL)shouldMirrorByDefault {
-    NSString *source = getPrefObject(@"general.download_source");
-    if (!source) return NO;
-    if ([source isEqualToString:@"bmclapi"]) return YES;
-    if ([source isEqualToString:@"auto"]) return YES;
-    // 官方源（mojang/official）不启用镜像
-    return NO;
+    // Task218：判定收敛到 PLMirrorCenter（AssetDownload 策略的体系化布尔
+    // 口径）。旧实现读冻结的旧键 general.download_source——用户在新版
+    // "下载镜像策略"里的选择对它永远不生效（双轨制病灶）。
+    return [PLMirrorCenter mirrorPreferredForType:PLMirrorResourceTypeAssetDownload];
 }
 
 #pragma mark - 内部：缓存 key 与磁盘路径

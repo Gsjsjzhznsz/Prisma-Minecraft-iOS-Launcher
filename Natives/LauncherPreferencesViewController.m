@@ -427,6 +427,24 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
             }
             return @"speed_first";
         }
+        // Task218：四个细粒度镜像策略行的显示兜底——存储值缺失/非法时显示
+        // 出厂默认 speed_first（与 PLMirrorCenter policyForType 的语义一致），
+        // 保证"行右侧标签"与"点开选择器的 ✓ 标记"永远同源同值（隔离实例
+        // 新播种等极端场合下键短暂缺席也不出现空标签 + 无 ✓ 的错位观感）。
+        if ([section isEqualToString:@"download"] &&
+            ([key isEqualToString:@"fileSource"] ||
+             [key isEqualToString:@"assetSearchSource"] ||
+             [key isEqualToString:@"assetDownloadSource"] ||
+             [key isEqualToString:@"modLoaderSource"])) {
+            NSString *ame218_v = getPrefObject([NSString stringWithFormat:@"download.%@", key]);
+            if ([ame218_v isKindOfClass:NSString.class] &&
+                ([ame218_v isEqualToString:@"official_first"] ||
+                 [ame218_v isEqualToString:@"mirror_first"] ||
+                 [ame218_v isEqualToString:@"speed_first"])) {
+                return ame218_v;
+            }
+            return @"speed_first";
+        }
         // Task 150（[可撤销] 删除渲染器全局控制）：主渲染器行（video.renderer）
         // 随设置页渲染器选择一并退役——每个实例强制单独选择（实例页独占写
         // profile 键），无键实例由 ame_effective_renderer 落 auto。
@@ -1762,6 +1780,15 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
 
     self.heroCard = heroCard;
 
+    // Task218：Hero 卡片 = 关于页二级入口（用户指令：设置界面最上面的
+    // 启动器卡片差不多是关于页的缩小版，让它成为关于页入口）。右侧
+    // chevron 原本就是纯装饰，现在有了真实语义；按下动效见
+    // ame218_heroCardTapped:（缩放 + 弹簧回弹）。
+    heroCard.userInteractionEnabled = YES;
+    UITapGestureRecognizer *ame218_heroTap = [[UITapGestureRecognizer alloc]
+        initWithTarget:self action:@selector(ame218_heroCardTapped:)];
+    [heroCard addGestureRecognizer:ame218_heroTap];
+
     // ===== 容器视图：searchBar（上）+ heroCard（下）=====
     UIView *container = [[UIView alloc] init];
     [container addSubview:searchBar];
@@ -1825,6 +1852,25 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
     container.frame = CGRectMake(0, 0, width, fittingHeight);
 
     self.tableView.tableHeaderView = container;
+}
+
+/// Task218：Hero 卡片点击 -> 关于页（二级入口，与"关于"行同目的地）。
+/// 按下动效：快速轻缩（0.97）+ 弹簧回弹，随后 push——整卡可点的体感
+/// 与 cell 高亮不同，需要自己的按压反馈。
+- (void)ame218_heroCardTapped:(UITapGestureRecognizer *)gesture {
+    UIView *ame218_card = gesture.view;
+    [UIView animateWithDuration:0.08 delay:0 options:UIViewAnimationOptionBeginFromCurrentState
+                     animations:^{
+        ame218_card.transform = CGAffineTransformMakeScale(0.97, 0.97);
+    } completion:^(BOOL finished) {
+        [UIView animateWithDuration:0.35 delay:0
+                        usingSpringWithDamping:0.55 initialSpringVelocity:0.4
+                        options:0 animations:^{
+            ame218_card.transform = CGAffineTransformIdentity;
+        } completion:nil];
+        AboutViewController *ame218_about = [[AboutViewController alloc] init];
+        [self.navigationController pushViewController:ame218_about animated:YES];
+    }];
 }
 
 - (void)dealloc {

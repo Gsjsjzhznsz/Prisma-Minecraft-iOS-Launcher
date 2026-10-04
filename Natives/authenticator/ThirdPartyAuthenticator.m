@@ -210,12 +210,13 @@ static void ame133_downloadAndCacheAvatar(NSString *skinURL,
 // ---------------------------------------------------------------------------
 
 /// Keychain 服务的稳定标识（Bundle identifier 在重签名安装间可能变化，不用它）
-static NSString *const ame131_keychainService = @"com.air-devs.ame131.credentials";
+static NSString *const ame131_keychainService = @"com.air-devs.air.ame131.credentials";
 
 /// Task217（包名迁移配套）：历史 Keychain 服务名回退链。keychain-access-groups
 /// 授权为 $(TEAMID).* 通配——同签名链下旧服务名里的凭据仍然可读。包名在
 /// 本仓库历史上的多次变更（com.air-devs.air → com.air-devs.prisma →
-/// com.prisma-devs.prisma → 本轮临时 com.air-devs，终态 com.prisma-devs）
+/// com.prisma-devs.prisma → com.air-devs → Task218 起临时 com.air-devs.air
+/// （上游同款包名 = 上游用户原地更新通道），终态 com.prisma-devs）
 /// 每次都会换服务名；查不到新服务时按链回退读取，读到后回写到新服务名
 /// （自迁移，用户无感）。
 static NSArray<NSString *> *ame217_legacyKeychainServices(void) {
@@ -224,8 +225,9 @@ static NSArray<NSString *> *ame217_legacyKeychainServices(void) {
     dispatch_once(&ame217_once, ^{
         ame217_chain = @[
             @"com.prisma-devs.prisma.ame131.credentials",   // Task216-217 代
+            @"com.air-devs.ame131.credentials",             // Task217 过渡代（本轮身份）
             @"com.air-devs.prisma.ame131.credentials",      // Task213 前后代
-            @"com.air-devs.air.ame131.credentials"          // 上游同源代
+            @"com.air-devs.air.ame131.credentials"          // 上游同源代（本轮主键）
         ];
     });
     return ame217_chain;

@@ -11,13 +11,13 @@
 
 @implementation UpdateChecker
 
-// Task 115：更新检测指向本仓库（Gsjsjzhznsz/Air-Minecraft-iOS-Launcher），
+// Task 115：更新检测指向本仓库（Task218 改名：Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher），
 // 而非上游参考仓库（herbrine8403/Amethyst-iOS-MyRemastered）。
 // 此前两处 URL（API + 打开页面）都指向上游：用户点"检查更新"会把上游的
 // release 当成自己的更新（版本号/下载链接全部错位）。repoOwner/repoName
 // 是这两个 URL 的唯一来源，改这里即全链路生效。
 + (NSString *)repoOwner { return @"Gsjsjzhznsz"; }
-+ (NSString *)repoName { return @"Air-Minecraft-iOS-Launcher"; }
++ (NSString *)repoName { return @"Prisma-Minecraft-iOS-Launcher"; }
 
 + (NSString *)latestReleaseURL {
     /* /releases/latest 接口自动返回最新的非 pre-release（正式版） */

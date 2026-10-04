@@ -507,6 +507,10 @@ add_executable(AngelAuraAmethyst
   PLMirrorCenter.m
   DataTransferService.m
   AboutViewController.m
+  # Task218：崩溃识别引擎（hs_err 分型/渲染器归因，JavaLauncher 消费）
+  CrashAnalyzer.m
+  # Task218：首次使用欢迎向导（语言/下载源/数据导入三步引导）
+  WelcomeViewController.m
   AppDelegate.m
   CustomControlsViewController.m
   CustomControlsViewController+UndoManager.m

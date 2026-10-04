@@ -217,11 +217,11 @@ for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     keys = re.findall(r'^"([^"]+)"\s*=',
                       rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M)
     langs[lg] = keys
-check("F1 四主语言 nggl4es 键在位且唯一键 2455（Task210 重锚：neumorph 双键退役 2455-2，nggl4es +1 已并入）",
+check("F1 四主语言 nggl4es 键在位且唯一键 2482（Task210 重锚：neumorph 双键退役 2482-2，nggl4es +1 已并入）",
       all("preference.title.renderer.debug.nggl4es" in set(langs[l]) for l in langs)
-      and all(len(set(langs[l])) == 2455 for l in langs))
+      and all(len(set(langs[l])) == 2482 for l in langs))
 
-# Task211 重锚：本轮 gl4eszl2 键 +1 后全 fleet 计数 = 2455（2419 一代旧值
+# Task211 重锚：本轮 gl4eszl2 键 +1 后全 fleet 计数 = 2482（2419 一代旧值
 # 清零；守卫精神不变——fleet 与 task151 H 门计数一致，无独立旧值残留。
 # v211 自身的历史基线叙述（2419+1）豁免。）
 fleet_stale = []
@@ -230,8 +230,8 @@ for fn in sorted(os.listdir(os.path.join(REPO, "scripts"))):
         t = rd(f"scripts/{fn}")
         if re.search(r"(?<![\w.])2419(?![\w.])", t):
             fleet_stale.append(fn)
-check("F2 锚扫荡干净（fleet 无残留 2419 旧值；task151 H 门期望 2455，Task211 重锚）",
-      not fleet_stale and '!= "2455"' in rd("scripts/verify_task151.py"))
+check("F2 锚扫荡干净（fleet 无残留 2419 旧值；task151 H 门期望 2482，Task211 重锚）",
+      not fleet_stale and '!= "2482"' in rd("scripts/verify_task151.py"))
 
 faq_files = [("Natives/resources/help-faq.json", 2), ("help-faq.json", 2),
              ("Natives/resources/zh-CN.lproj/help-faq.json", 2),
@@ -267,16 +267,16 @@ check("F4 渲染器选择条目（Task209 重锚：Krypton Wrapper 新名 + 原�
 
 ann = json.load(open(os.path.join(REPO, "announcements.json"), encoding="utf-8"))["announcements"]
 check("F5 公告 39，task217 追加，task216@2 保位于 -2（Task217 重锚）",
-      len(ann) == 39 and ann[-1]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-2]["id"] == "task216-ui-2026-10-03"
-      and ann[-3]["id"] == "task206-nggl4es-2026-10-01"
-      and "NG-GL4ES" in ann[-3]["title"] and "EMIT_PUSH_CONSTANT_AS_UNIFORM_BUFFER" in ann[-3]["content"])
+      len(ann) == 40 and ann[-2]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-3]["id"] == "task216-ui-2026-10-03"
+      and ann[-4]["id"] == "task206-nggl4es-2026-10-01"
+      and "NG-GL4ES" in ann[-4]["title"] and "EMIT_PUSH_CONSTANT_AS_UNIFORM_BUFFER" in ann[-4]["content"])
 
 anchor_ok = ('== [12, 4, 7, 15]' in rd("scripts/verify_task202.py")
              and '== [12, 4, 7, 15]' in rd("scripts/verify_task168.py")
-             and "len(ann) == 39" in rd("scripts/verify_task203.py")
-             and "len(ann) == 39" in rd("scripts/verify_task202.py")
-             and "len(ann) == 39" in rd("scripts/verify_task196_197_198_201.py"))
+             and "len(ann) == 40" in rd("scripts/verify_task203.py")
+             and "len(ann) == 40" in rd("scripts/verify_task202.py")
+             and "len(ann) == 40" in rd("scripts/verify_task196_197_198_201.py"))
 check("F6 计数锚重锚一致（FAQ 168/202 + 公告 193/202/203/196 家族；Task212 重锚 33→34）", anchor_ok)
 
 # ============ G. version.h ============

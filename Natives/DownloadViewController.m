@@ -3447,7 +3447,8 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
 - (NSString *)registerInstallerTaskWithResourceName:(NSString *)resourceName
                                          displayName:(NSString *)displayName
                                                stages:(NSArray<PLTaskStage *> *)stages {
-    NSString *source = getPrefObject(@"general.download_source") ?: @"official";
+    // Task218：来源标签收敛到 PLMirrorCenter（加载器安装任务）。
+    NSString *source = [PLMirrorCenter legacySourceTokenForType:PLMirrorResourceTypeModLoader];
     DownloadTaskItem *item = [[DownloadTaskManager sharedManager]
         registerTaskWithResourceType:DownloadTaskResourceTypeModloader
                         resourceName:resourceName
@@ -4789,7 +4790,8 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
     // 阶段映射：0=解析整合包(含 zip 下载) 1=解压文件(parse 内部完成)
     //           2=下载依赖文件(导入 p<0.3) 3=安装加载器(0.3-0.7) 4=下载游戏文件(原版预装) 5=完成配置(0.7-1.0)
     NSURL *url = [NSURL URLWithString:downloadURL];
-    NSString *downloadSource = getPrefObject(@"general.download_source") ?: @"official";
+    // Task218：来源标签收敛到 PLMirrorCenter（整合包下载任务）。
+    NSString *downloadSource = [PLMirrorCenter legacySourceTokenForType:PLMirrorResourceTypeAssetDownload];
     __block DownloadTaskItem *taskItem = nil;
 
     // 关键修复（参照 FCL/ZL2 整合包下载容错）：原实现单次下载无重试，

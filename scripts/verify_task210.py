@@ -192,13 +192,13 @@ check("D", "applyCardEffectToCell 直转 applyEffectToCell（Flat 特调行退�
 print("== E. 公告 / version.h / 级联 ==")
 ann = json.loads(rd("announcements.json"))["announcements"]
 check("E", "公告 32 条，task210@2，置顶钉位未动，NG-GL4ES 尾锚保持",
-      len(ann) == 39
+      len(ann) == 40
       and ann[7]["id"] == "task210-neumorph-retirement-card-fixes-2026-10-02"
       and ann[0]["id"].startswith("server-recommend")
       and ann[1]["id"] == "task169-four-fixes-2026-09-25"
-      and ann[-1]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-2]["id"] == "task216-ui-2026-10-03"
-      and ann[-3]["id"] == "task206-nggl4es-2026-10-01")
+      and ann[-2]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-3]["id"] == "task216-ui-2026-10-03"
+      and ann[-4]["id"] == "task206-nggl4es-2026-10-01")
 vh = rd("Natives/external/MobileGlues/MobileGlues-cpp/version.h")
 check("E", "version.h Task210 附录在场（REVISION 18 append-only，无 bump）+ 尾部 SEP 收口",
       "REVISION 18 addendum (Task 210, no bump)" in vh
@@ -209,12 +209,12 @@ check("E", "verify_task207 重锚（Task212 重锚：行高 128 / AmeCard 色族
       "kVMVersionRowHeight = 128.0" in v207
       and "AmeCardPrimaryTextColor()" in v207
       and '"Natives/VersionManagerViewController.m": 1,' in rd("scripts/verify_task91.py"))
-check("E", "级联计数族重锚（206 F1 / 202 F / 193 M / 190 G / 151 H = 2455）",
-      "== 2455" in rd("scripts/verify_task206.py")
-      and "== 2455" in rd("scripts/verify_task202.py")
-      and "唯一键 2455" in rd("scripts/verify_task193.py")
-      and "唯一键总数 == 2455" in rd("scripts/verify_task190.py")
-      and '!= "2455"' in rd("scripts/verify_task151.py"))
+check("E", "级联计数族重锚（206 F1 / 202 F / 193 M / 190 G / 151 H = 2482）",
+      "== 2482" in rd("scripts/verify_task206.py")
+      and "== 2482" in rd("scripts/verify_task202.py")
+      and "唯一键 2482" in rd("scripts/verify_task193.py")
+      and "唯一键总数 == 2482" in rd("scripts/verify_task190.py")
+      and '!= "2482"' in rd("scripts/verify_task151.py"))
 check("E", "纯新拟态验证器退役（173b_neumorph/177/178 不在 scripts）",
       all(not os.path.exists(f"scripts/verify_task{n}.py")
           for n in ["173b_neumorph", "177", "178"]))

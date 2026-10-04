@@ -6,7 +6,7 @@
 //
 //  背景：iOS 应用的数据容器按包名隔离——包名一旦变更（本仓库历史：
 //  com.air-devs.air → com.air-devs.prisma → com.prisma-devs.prisma →
-//  本轮临时回 com.air-devs，最终目标 com.prisma-devs），新包名应用无法
+//  com.air-devs → Task218 起临时 com.air-devs.air（上游同款，原地更新通道），最终目标 com.prisma-devs），新包名应用无法
 //  访问旧容器，游戏数据/账户/设置全部"原地丢失"。
 //
 //  迁移链路：旧包名版本导出全量备份（zip）→ 文件 App / iCloud 任意位置

@@ -17,7 +17,7 @@
 #import "ios_uikit_bridge.h"
 #import "utils.h"
 
-NSString * const kMinecraftResourceDownloadBackgroundSessionIdentifier = @"com.air-devs.MinecraftResourceDownloadTask";
+NSString * const kMinecraftResourceDownloadBackgroundSessionIdentifier = @"com.air-devs.air.MinecraftResourceDownloadTask";
 
 // 原版安装 6 步的阶段下标（与 PLTaskStagesVanilla() 一致，redesign-download-ui Phase 3 Task 3.1）
 static const NSUInteger kMCStageIndexFetchManifest = 0;
@@ -800,7 +800,8 @@ static const NSUInteger kMCStageIndexVerify = 5;
 - (void)registerOrUpdateTaskItem {
     // 悬浮球已移除，始终注册到统一下载任务管理器，以便下载任务列表跟踪
     NSString *displayName = self.currentVersionId ?: (self.metadata[@"id"] ?: @"Minecraft");
-    NSString *downloadSource = getPrefObject(@"general.download_source") ?: @"official";
+    // Task218：来源标签收敛到 PLMirrorCenter（显示层专用 token；路由一律走候选链）。
+    NSString *downloadSource = [PLMirrorCenter legacySourceTokenForType:PLMirrorResourceTypeGameFile];
 
     if (!self.currentDownloadTaskItem) {
         self.currentDownloadTaskItem = [[DownloadTaskManager sharedManager]

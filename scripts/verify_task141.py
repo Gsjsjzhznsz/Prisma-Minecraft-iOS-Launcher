@@ -259,9 +259,11 @@ check("G3  检测口径护栏零变化（getEntitlementValue ×2 / isJITEnabled(
 # ignore 规则即触发过 141 G4 -> 168 E7 -> 202 J -> 209 D6 的脏树传播链）。
 check("G4  工作区改动仅限预期文件集（提交后自愈；Task175：scripts/ 全体入白名单；"
       "Task202：docs/surveys/ 入白名单——Task201 报告曾被 /docs gitignore 静默吞掉，"
-      "本轮强制入库；Task217：+.gitignore）",
+      "本轮强制入库；Task217：+.gitignore；Task218：README 双语 + CI 工作流 + 根级"
+      " entitlements——仓库名去 air 与包名 .air 过渡的合法触碰面）",
       all(ln[3:].strip().startswith(("Natives/", "scripts/", "worklog.md", "announcements.json",
-                                     "JavaApp/", "help-faq.json", "docs/", "Makefile", ".gitignore"))
+                                     "JavaApp/", "help-faq.json", "docs/", "Makefile", ".gitignore",
+                                     "README.md", "README_CN.md", ".github/", "entitlements."))
           for ln in subprocess.run(["git", "-C", REPO, "status", "--porcelain"],
                                    capture_output=True, text=True).stdout.splitlines()
           if ln.strip()))

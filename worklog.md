@@ -1682,3 +1682,25 @@ Work Log:
 Stage Summary:
 - Task 217 八项全部落地且 CI 绿：26.x 组件下载根修 / mod 点击浮出 / 自动渲染器崩溃学习 / FCL 式隔离 / 关于页 / 数据导出导入 / 过渡包名 com.air-devs + keychain 回退链 / **dep_virgl CI 根治（用户"把 CI 修好"的完整兑现——不再是降级换来的绿）**
 - 十一连热修链完整因果档案：608 转义 → 609 模块+env → 610 缩进 → 611 import+路径 → 612 重复符号 → 613 objc → 614 packaging → 615 libsync → 616 zstd → 617 vl 符号 → 618 kwarg 类型 → 619 终点
+
+---
+Task ID: 218
+Agent: main (Super Z)
+Task: 六项轮——下载源双轨制根治 + 设置 Hero 卡→关于入口 + FCL 式崩溃识别 + 首次使用欢迎向导 + 包名过渡 com.air-devs.air + 仓库名去 air（用户口令全录）
+
+Work Log:
+- ① 下载源一致性根治（用户主诉"设置外面显示的是用户选择过的，里面莫名其妙被启动器改了"）：法证定位双轨制——Task138 重构后 general.download_source（official/bmclapi，迁移后冻结无人写）与四个新策略键（download.fileSource 等）并行，9 处旧键消费者（根页/卡片页版本清单的 bmclapi-vs-官方硬切换、IconLoader 镜像开关、7 处任务来源标签）永远读冻结旧值 = 设置页选什么都不生效。修复：PLMirrorCenter 新增 mirrorPreferredForType:/legacySourceTokenForType: 双辅助；迁移改 fill-only + 无旧值封口哨兵（杜绝哨兵被 defaults 重播种后整组覆写用户选择）；旧键默认值 bmclapi 退役（不再播种）；根页+卡片页版本清单走候选链（镜像 Task173 模式）；IconLoader 收敛策略层；7 处标签统一 token 化；设置页四个细分行显示兜底 speed_first（标签与 ✓ 永远同源）。
+- ② 设置页顶部 Hero 卡 = 关于页二级入口（用户指令）：卡片接 UITapGestureRecognizer + 0.97 按压缩放 + 弹簧回弹 + push AboutViewController（chevron 从装饰变为真实语义）。
+- ③ 崩溃识别升级（用户指令"依据判断脚本和参考 FCL"）：新建 CrashAnalyzer（hs_err 头部 64KB 解析：信号行/Problematic frame/native 帧区/OOM 双形态判读/11 库族渲染器归因表，vtest→virgl、gl4es_114→ZL2 归并）；JavaLauncher 裁决器升级——取最新 mtime hs_err（旧实现目录序首个即 break）、OOM 不记渲染器连败（内存不足不是渲染器的锅）、崩溃帧归因优先（记在被归因渲染器头上）、FCL 式诊断弹窗（每个崩溃文件只弹一次：分型+处置建议+拉黑降级提示+UIActivityViewController 导出 hs_err 原文件）。
+- ④ 首次使用欢迎向导（用户指令"动画和视觉效果要做足"）：新建 WelcomeViewController（5 步：Hero→语言→下载源→数据迁移→完成）；动效全清单——CAGradientLayer 紫蓝渐变双回路呼吸（位置 8s+颜色 11s 错拍）、CAEmitter 微光气泡上浮、步骤切换旧左滑淡出+新右侧弹簧弹入、进度圆点放大着色弹性、选项卡选中描边+缩放脉冲、完成页礼花彩带一次爆发+大号对勾弹簧入场；SceneDelegate 根视图就绪 0.8s 后全屏呈现（general.welcome_completed 哨兵，PLPreferences 注册默认 @NO）；语言步写 app_language（完成 dismissal 后补发 AppLanguageChanged 重建根视图，避免向导呈现中重建）、下载源步写四键+触发测速、数据迁移步复用 Task217 数据桥。
+- ⑤ 包名过渡（用户指令"先临时改成上游包名 com.air-devs.air"）：全接线字节级补丁——Info.plist（bundle id + urlscheme）、Makefile×7（TAB 662 行首配方行基线保持）、CI×6（CRLF 376/376 保持）、静态 entitlements×3、os_log×2、后台会话 id、keychain 主键 .air + Task217 过渡代入链（四代全链）、REVISION 21→22 + Task218 附录、DataTransferService.h 谱系注释更新。
+- ⑥ 仓库名去 air（用户指令）：GitHub API 重命名 Air-Minecraft-iOS-Launcher → Prisma-Minecraft-iOS-Launcher（README 双语徽章 Task216 已预埋此名）；UpdateChecker/ControlRepo/PLPreferences news_url/AnnouncementService 双源全切换；改名前旧 URL 纳入公告已知默认值表（存量 news_url 归一化，不依赖 GitHub 重定向）；announcements.json 存量 action_url×6 更新；英文 README star-history（%2F 编码形态 ×4）补齐；version.h Task115 历史注释刷新；git remote 已指向新名。
+- l10n：27 新键（welcome×20 + ame218.crash×7）×4 受限语言，唯一键基线 2455→2482；公告 39→40（task218 条目：六项更新告知，含包名过渡说明）。
+- 验证器：verify_task218 NEW 44/44；重锚——公告尾窗族 14 文件（39→40、217@-2、216@-3、206@-4，含 207/212/214 的交叉引文 spot-table 三层一致）、l10n 2455→2482 全舰队 29 文件清扫、REVISION 21→22 六文件、身份精确锚（217 E1/E3/E4 + 216 B2/B3/B4/B8/G3 + 213 G11/J7 + 214 G5 + 112_118 D1 + 130 G7 news_url + 141 G4 白名单扩容 README/CI/entitlements）；AnnouncementService 补丁事故修复（Python 三引号拼接泄漏把常量写成字面量占位，字节级定位后重写为真实 URL）。
+- 终态舰队：218:44/44、217:59/59、216:55/55、213:85/85、214:53/53、212:ALL PASS、211:42/42、210:ALL PASS、207:ALL GREEN、206:ALL PASS、203:ALL GREEN、202:57/57、193:84/0、196:51/51、168:34/34、141:36/36、130:59/59、167:31/31、125_128 链 52/52、209:26/26（TASK209_NESTED=1）。
+- GitHub 仓库已重命名（API 实证 full_name = Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher）；旧 URL 由 GitHub 重定向保活。
+
+Stage Summary:
+- 装机待验证锚点：首启欢迎向导全流程（渐变呼吸+粒子+礼花）/ 'Task218: download source set to'（向导选源）/ '[Preferences] Task218 migrated ... fill-only' / 'Task218 loaded N remote versions from <host>'（根页清单）/ '[JavaLauncher] Task218: ... classified OOM' / 'crash frames blame'（归因）/ 崩溃诊断弹窗 / Hero 卡点击进关于页
+- 上游用户更新通道：com.air-devs.air 与上游同 id，可原地更新拿到导出功能；终态 com.prisma-devs 待用户导出数据后另行切换
+- 遗留：CI 待推送确认（本轮零 Makefile 结构改动、CMake 加两文件、无 native 链变化，风险面低）

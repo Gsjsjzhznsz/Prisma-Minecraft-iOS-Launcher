@@ -107,7 +107,7 @@ check("D4 旧间距常量零残留（(0,5,0,5) / (5,15,5,15)）",
       and "NSDirectionalEdgeInsetsMake(5, 15, 5, 15)" not in layout_fn)
 
 # ============================================================
-# E. l10n：neumorph 双键退役（Task210 重锚，计数 2455 -> 2455）
+# E. l10n：neumorph 双键退役（Task210 重锚，计数 2482 -> 2482）
 # ============================================================
 check("E1 Task210：neumorph 双键六语言全退役",
       all("background.cards.neumorph." not in rd(f"Natives/resources/{lg}.lproj/Localizable.strings")
@@ -115,8 +115,8 @@ check("E1 Task210：neumorph 双键六语言全退役",
 check("E2 六语言旧键退役",
       all("background.cards.neumorph.title" not in rd(f"Natives/resources/{lg}.lproj/Localizable.strings")
           for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant", "ja", "km"]))
-check("E3 四主语言键集一致且计数 = 2455（Task210 重锚：双键退役 2455-2）",
-      all(len(set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))) == 2455
+check("E3 四主语言键集一致且计数 = 2482（Task210 重锚：双键退役 2482-2）",
+      all(len(set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))) == 2482
           for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]))
 keysets = [set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))
            for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]]
@@ -246,7 +246,7 @@ SANDBOX_EXCEPTIONS = {
     # （Task213 曾在 168 补录而本分叉漏同步）。内容 = 并行 Task212
     # （a4a4c77/b842b67）文档化的 132-135 家族漂移（OSMesa/controlify
     # 会话日志轮换类）+ 138 的 Task157 时代 2228 l10n 基线陈旧（Task217
-    # 后现 2455，键集四语言仍一致）——与 168 的豁免口径逐条对账。
+    # 后现 2482，键集四语言仍一致）——与 168 的豁免口径逐条对账。
     "133": ("B1 崩溃证据链在位", "B1c 成功会话对照"),
     "138": ("A1 崩溃日志证据", "B1 mod 侧 XML 解析失败证据",
             "B2 启动器侧 plist 写入病灶证据", "I-l10n 四语言键集一致",

@@ -1,6 +1,7 @@
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #import "LauncherNavigationController.h"
 #import "LauncherPreferences.h"
+#import "PLMirrorCenter.h"   // Task218: download-source label token
 #import "LauncherPrefManageJREViewController.h"
 #import "NSFileManager+NRFileManager.h"
 #import "UIKit+hook.h"
@@ -175,7 +176,8 @@ static NSString *currentImportTaskId;
     // redesign-download-ui Phase 4 Task 4.3：运行时导入注册为统一下载任务，
     // 单阶段 + autoPresentDetail 自动弹出统一进度页；rawTask = totalProgress 支持取消
     NSString *runtimeName = [url.path substringToIndex:url.path.length-7].lastPathComponent;
-    NSString *source = getPrefObject(@"general.download_source") ?: @"official";
+    // Task218：来源标签收敛到 PLMirrorCenter（显示层专用 token；路由一律走候选链）。
+    NSString *source = [PLMirrorCenter legacySourceTokenForType:PLMirrorResourceTypeGameFile];
     DownloadTaskItem *taskItem = [[DownloadTaskManager sharedManager]
         registerTaskWithResourceType:DownloadTaskResourceTypeJavaRuntime
                         resourceName:runtimeName

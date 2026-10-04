@@ -89,6 +89,18 @@ FOUNDATION_EXPORT NSString *const PLMirrorMCIMRootURL;
 /// 官方 vs 镜像竞速探测（双体系：BMCLAPI 系 / MCIM 系）。幂等可随时调用。
 + (void)startSpeedProbesIfNeeded;
 
+/// Task218：镜像偏好的体系化布尔判定——把"当前策略是否应走镜像"收敛到
+/// 唯一定义处，供仍停留在旧双轨判定的消费者（IconLoader 图标镜像等）
+/// 迁移。mirror_first -> YES；official_first -> NO；speed_first -> 按当前
+/// 测速赢家（结果未落地时镜像在前，与 candidateURLs 的临时序一致）。
++ (BOOL)mirrorPreferredForType:(PLMirrorResourceType)type;
+
+/// Task218：镜像策略 -> 旧式下载源 token（official / bmclapi）。统一下载
+/// 任务管理器（DownloadTaskItem.downloadSource 展示字段）的历史口径适配：
+/// 显示层专用，任何路由决策都不得使用本方法（路由一律走
+/// candidateURLsForOriginalURL / policyForType）。
++ (NSString *)legacySourceTokenForType:(PLMirrorResourceType)type;
+
 @end
 
 NS_ASSUME_NONNULL_END

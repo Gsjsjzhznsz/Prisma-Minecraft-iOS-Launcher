@@ -2640,3 +2640,32 @@
 "about.license.body" = "This launcher is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). The full license text is the LICENSE file at the repository root; third-party components are covered by their own licenses under ThirdParty/ and Natives/external/ (PojavLauncher: GPLv3, MobileGlues: LGPL-3.0, and others as noted there). Source code: https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher";
 "about.credits.title" = "Credits";
 "about.credits.body" = "Prisma is a fork of Amethyst-iOS-MyRemastered (herbrine8403), which builds on the official PojavLauncher iOS port (PojavLauncherTeam). SDL3 embedding ported from ZalithLauncher2. Renderer lineage includes gl4es, Zink/Mesa, MobileGlues, ANGLE and virglrenderer. Thanks to every upstream author and contributor.";
+
+/* Task218: welcome wizard + crash diagnosis */
+"welcome.hero.subtitle" = "A Minecraft: Java Edition launcher for iOS";
+"welcome.next" = "Next";
+"welcome.skip" = "Skip";
+"welcome.lang.title" = "Choose Language";
+"welcome.lang.subtitle" = "You can change it anytime in Settings";
+"welcome.lang.more" = "50+ more languages are available in Settings, General, Language";
+"welcome.source.title" = "Download Source";
+"welcome.source.subtitle" = "Where game files and mods are downloaded from";
+"welcome.source.official.desc" = "Connect directly to Mojang / Modrinth servers";
+"welcome.source.mirror.desc" = "BMCLAPI / MCIM acceleration, recommended in China";
+"welcome.source.speed.desc" = "Races official vs mirror at startup and picks the faster";
+"welcome.data.title" = "Data Migration";
+"welcome.data.subtitle" = "Restore from an old launcher or a backup file";
+"welcome.data.import" = "Import from Backup";
+"welcome.data.import.desc" = "Pick a previously exported prisma-backup zip";
+"welcome.data.skip" = "Skip";
+"welcome.data.skip.desc" = "Later via Settings, General, Import from Backup";
+"welcome.done.title" = "All Set!";
+"welcome.done.subtitle" = "Enjoy the game. The About page has a QQ group if you need help.";
+"welcome.done.start" = "Get Started";
+"ame218.crash.title" = "The game exited unexpectedly";
+"ame218.crash.oom.body" = "Crash type: out of memory (signal %@). The JVM ran out of memory. Try lowering the memory allocation in Settings, Java, or trim your mods.";
+"ame218.crash.renderer.body" = "Crash type: signal %@. The crash happened inside %@ native code (%@). The auto renderer has logged this failure; two in a row will switch renderers automatically. You can also pick one manually in the instance settings.";
+"ame218.crash.unknown.body" = "Crash type: signal %@ (%@). Could not be attributed to the renderer or memory. If this keeps happening, export your logs via Settings, Data Export and report it.";
+"ame218.crash.blacklisted" = "\n\n%@ crashed twice in a row -- the auto renderer has blacklisted it and moved to the next candidate.";
+"ame218.crash.view" = "View Crash Report";
+"ame218.crash.ok" = "Got It";

@@ -219,7 +219,7 @@ check("G6 全失败 → 缓存 → 内置（Task129h 链保留 + Task130 日志�
       and "Task130: all announcement sources unreachable" in ans
       and "serving bundled offline announcements" in ans)
 check("G7 PLPreferences news_url 默认 = 仓库 raw 地址",
-      '@"news_url": @"https://raw.githubusercontent.com/Gsjsjzhznsz/Air-Minecraft-iOS-Launcher/main/announcements.json"' in plp)
+      '@"news_url": @"https://raw.githubusercontent.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/main/announcements.json"' in plp)
 check("G8 内置兜底措辞更新（不再指旧上游 API）",
       "GitHub" in rd("Natives/resources/announcements-fallback.json")
       and "air-api.vercel.app/api" not in rd("Natives/resources/announcements-fallback.json"))
@@ -318,7 +318,7 @@ for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
                   rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M)))
 # Task138 重锚：+2 键（renderer_missing_dylib + mirror_policy-speed_first）
 check("H3 四语言键集一致（Task157 基线 2228 = Task156 基线 2228 + Task157 组件键 2）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2455,
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2482,
       f"counts={[len(s) for s in sets]}")
 
 delta_ok = True

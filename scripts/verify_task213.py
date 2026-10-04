@@ -171,7 +171,7 @@ ann = rd('announcements.json')
 check('G10 announcement title brand updated (historical entry text)',
       'Prisma 定制品牌第一步' in ann)
 check('G11 repo URL / device name untouched (protected classes)',
-      'Air-Minecraft-iOS-Launcher' in rd('Natives/UpdateChecker.m') and
+      'Prisma-Minecraft-iOS-Launcher' in rd('Natives/UpdateChecker.m') and
       'iPad Air' in rd('Natives/utils.m'))
 check('G12 README brand heading updated (R10: MD slugs follow the rebrand)',
       '<h1 align="center">Prisma</h1>' in rd('README.md') and
@@ -190,7 +190,7 @@ check('G14 AI header comments rebranded',
 # ============ H. docs cascade ============
 data = json.load(open('announcements.json', encoding='utf-8'))
 ids = [e['id'] for e in data['announcements']]
-check('H1 announcements 39 items (Task217 append +1)', len(ids) == 39)
+check('H1 announcements 40 items (Task218 append +1)', len(ids) == 40)
 check('H2 task213@4 (Task215 shift)', ids[4].startswith('task213-'))
 check('H2b parallel task212@5 (their ANGLE/CF/VirGL round; Task215 shift)', ids[5].startswith('task212-angle'))
 check('H3 task169 pin @1 intact', ids[1].startswith('task169-'))
@@ -200,8 +200,8 @@ check('H5 version.h Task213 addendum present', 'REVISION 18 addendum (Task 213, 
 check('H6 trailing SEP = 76 equals', re.search(r'\n//\s(={76})\s*$', vh) is not None)
 v207 = rd('scripts/verify_task207.py')
 v211 = rd('scripts/verify_task211.py')
-check('H7 207 length gate shifted 39 (Task217 append)', '== 39' in v207 and '== 38' not in v207)
-check('H8 211 length gate shifted 39 (Task217 append)', '== 39' in v211)
+check('H7 207 length gate shifted 40 (Task218 append)', '== 40' in v207 and '== 39' not in v207)
+check('H8 211 length gate shifted 40 (Task218 append)', '== 40' in v211)
 check('H9 211 announcement anchors (task211@4 + parallel task212@3 + mine task213@2)',
       'ann[6]["id"] == "task211-exit-cf-angle-gl4es-2026-10-02"' in v211 and
       'ann[5]["id"] == "task212-angle-cf-renderers-virgl-2026-10-02"' in v211)
@@ -252,7 +252,7 @@ check('J5 bundle id renamed everywhere (Task217 interim air-devs wiring)',
 check('J6 crash-view suggestions untouched (out of R9 scope)',
       'GetMoreRam (LiveContainer)' in rd('Natives/PLCrashView.m'))
 check('J7 URL scheme registration follows the new id (Task217 interim)',
-      'com.air-devs.urlscheme' in rd('Natives/Info.plist'))
+      'com.air-devs.air.urlscheme' in rd('Natives/Info.plist'))
 
 # ============ I. syntax balance gates (touched ObjC files) ============
 def balance(path):

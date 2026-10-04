@@ -518,8 +518,22 @@
 // reports transport health) ("[OSMBridge] Task100" anchors). FAQ content
 // refreshed in place (macMenuStub/fsrCorner, count stays 32). Launcher-side
 // only, REVISION stays 17.
-#define REVISION 21
-// REVISION 20->21 bump addendum (Task 217): the bundle identifier changed
+#define REVISION 22
+// REVISION 21->22 bump addendum (Task 218): identity follows the cache epoch
+// (Task214 rule) -- the bundle identifier moved AGAIN by explicit user order:
+// com.air-devs -> com.air-devs.air (the upstream's exact id, opening the
+// in-place update channel for upstream users; they update onto this build,
+// export their data via the Task217 bridge, and later hop to the final
+// com.prisma-devs build). Same round: repository renamed away from "air"
+// (Gsjsjzhznsz/Air-Minecraft-iOS-Launcher -> Gsjsjzhznsz/Prisma-Minecraft-
+// iOS-Launcher; update checker, control-repo, announcement cascade + pre-
+// rename URLs kept as known-defaults so persisted news_url normalizes), the
+// download-source dual-track retired (PLMirrorCenter is the single source of
+// truth; legacy general.download_source readers all migrated), FCL-style
+// crash identification (CrashAnalyzer + hs_err classification), and the
+// first-use onboarding wizard. Wired: Info.plist id+scheme, Makefile x7,
+// CI artifacts x6, entitlements x3, os_log x2, background session id,
+// keychain primary+chain (Task217 interim gen added to the fallback).// REVISION 20->21 bump addendum (Task 217): the bundle identifier changed
 // identity AGAIN -- by explicit user order this is the TEMPORARY migration
 // build (com.prisma-devs.prisma -> com.air-devs, the upstream-family name,
 // across Info.plist/Makefile/CI artifact names/entitlements/os_log
@@ -882,7 +896,7 @@
 //   otherwise), and SDL_InitSubSystem sets SDL_ENABLE_SCREEN_KEYBOARD=1 to
 //   override MC's desktop-convention 0 (plus RETURN_KEY_HIDES_IME and the
 //   srgb-framebuffer hint for bridge renderers).
-//   Task 115: UpdateChecker now targets Gsjsjzhznsz/Air-Minecraft-iOS-Launcher
+//   Task 115: UpdateChecker now targets Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher (Task218 rename; was Air-Minecraft-iOS-Launcher)
 //   (was pointing at the upstream repo).
 //   Task 116: 12 preference.detail.* keys + 4 crash.* keys added to zh-Hans
 //   and en (the settings page showed raw keys in detail mode after the UI

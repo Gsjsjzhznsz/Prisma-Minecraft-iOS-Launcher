@@ -6,7 +6,7 @@ sort + honest no-match + MCIM retry), (B) mod-toggle silent-failure surfacing,
 (C) auto-renderer crash learning, (D) FCL-style version isolation + migration,
 (E) interim bundle id com.air-devs + data export/import service, (F) About
 page + moved update rows + right-panel route, (G) README license/QQ, (H)
-dep_virgl CI chain hardening, (I) l10n baseline 2455 x4, (J) announcements 39,
+dep_virgl CI chain hardening, (I) l10n baseline 2482 x4, (J) announcements 39,
 (K) REVISION 21, (L) syntax balance, (M) cascade spot checks.
 """
 import json
@@ -120,8 +120,8 @@ check("D6 旧文本编辑器保留为高级入口",
 
 print("== E. 临时包名 com.air-devs + 数据导出/导入 ==")
 check("E1 Info.plist 双处临时 id（bundle id + urlscheme name）",
-      "<string>com.air-devs</string>" in plist
-      and "com.air-devs.urlscheme" in plist
+      "<string>com.air-devs.air</string>" in plist
+      and "com.air-devs.air.urlscheme" in plist
       and "com.prisma-devs.prisma" not in plist)
 check("E2 Makefile 7 处 + CI 6 处 + 静态 entitlements 3 处跟随",
       mk.count("com.air-devs") == 7
@@ -129,11 +129,12 @@ check("E2 Makefile 7 处 + CI 6 处 + 静态 entitlements 3 处跟随",
       and all("com.air-devs" in rd(p) for p in
               ["entitlements.codesign.xml", "entitlements.sideload.xml", "entitlements.trollstore.xml"]))
 check("E3 os_log 双子系统 + 后台会话 id 跟随",
-      'os_log_create("com.air-devs"' in rd("Natives/TouchControllerBridge.m")
-      and 'os_log_create("com.air-devs"' in rd("Natives/TouchController/ios_transport.c")
-      and "com.air-devs.MinecraftResourceDownloadTask" in rd("Natives/MinecraftResourceDownloadTask.m"))
+      'os_log_create("com.air-devs.air"' in rd("Natives/TouchControllerBridge.m")
+      and 'os_log_create("com.air-devs.air"' in rd("Natives/TouchController/ios_transport.c")
+      and "com.air-devs.air.MinecraftResourceDownloadTask" in rd("Natives/MinecraftResourceDownloadTask.m"))
 check("E4 Keychain 新服务名 + 三代历史回退链（迁移自愈）",
-      'ame131_keychainService = @"com.air-devs.ame131.credentials"' in ta
+      'ame131_keychainService = @"com.air-devs.air.ame131.credentials"' in ta
+      and "com.air-devs.ame131.credentials" in ta
       and "ame217_legacyKeychainServices" in ta
       and "com.prisma-devs.prisma.ame131.credentials" in ta
       and "com.air-devs.air.ame131.credentials" in ta)
@@ -175,7 +176,7 @@ check("F7 右侧栏启动器版本卡改路由 about",
       'route:@"about"' in rpp and 'isEqualToString:@"about"' in rpp
       and 'route:@"settings:check_update"' not in rpp)
 check("F8 版本号 6.5.0 + REVISION 21（identity-follows-cache-epoch）",
-      "#define REVISION 21" in vh
+      "#define REVISION 22" in vh
       and "REVISION 20->21 bump addendum (Task 217)" in vh)
 
 print("== G. README（许可证 + QQ 群） ==")
@@ -207,7 +208,7 @@ print("== I. l10n 基线 ==")
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"I-{lang} 唯一键 2455（Task217 +36）", len(keys) == 2455, f"got {len(keys)}")
+    check(f"I-{lang} 唯一键 2482（Task217 +36）", len(keys) == 2482, f"got {len(keys)}")
 zh = rd("Natives/resources/zh-Hans.lproj/Localizable.strings")
 en = rd("Natives/resources/en.lproj/Localizable.strings")
 check("I-核心键在位（isolation/导出导入/about/mods/fabricapi）",
@@ -220,10 +221,11 @@ check("I-核心键在位（isolation/导出导入/about/mods/fabricapi）",
 
 print("== J. announcements ==")
 ann = json.load(open("announcements.json", encoding="utf-8"))["announcements"]
-check("J1 39 条 + task217 尾锚",
-      len(ann) == 39 and ann[-1]["id"] == "task217-download-fixes-about-isolation-2026-10-03")
-check("J2 task216@-2 / task206@-3（append 语义）",
-      ann[-2]["id"] == "task216-ui-2026-10-03" and ann[-3]["id"] == "task206-nggl4es-2026-10-01")
+check("J1 40 条 + task217@-2 锚（Task218 追加后顺延）",
+      len(ann) == 40 and ann[-2]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-1]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04")
+check("J2 task216@-3 / task206@-4（Task218 追加后顺延）",
+      ann[-3]["id"] == "task216-ui-2026-10-03" and ann[-4]["id"] == "task206-nggl4es-2026-10-01")
 check("J3 置顶钉位未动",
       ann[0].get("pin") is True and ann[0]["id"].startswith("server-recommend"))
 
@@ -282,7 +284,7 @@ spot = [
     ("scripts/verify_task125_128.py", "AboutViewController.m"),
     ("scripts/verify_task156.py", 'route:@"about"'),
     ("scripts/verify_task173.py", "legacy MC baseline (Task173/212: ZL2 classic gl4es)"),
-    ("scripts/verify_task206.py", "== 2455"),
+    ("scripts/verify_task206.py", "== 2482"),
     ("scripts/verify_task216.py", "com.air-devs interim"),
 ]
 spot_ok = True

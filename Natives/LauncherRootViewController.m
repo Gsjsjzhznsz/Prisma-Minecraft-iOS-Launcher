@@ -9,6 +9,7 @@
 #import "LauncherPreferencesViewController.h"
 #import "LauncherNavigationController.h"
 #import "LauncherPreferences.h"
+#import "PLMirrorCenter.h"   // Task218: version manifest candidate chain
 #import "BackgroundManager.h"
 #import "PLProfiles.h"
 #import "utils.h"
@@ -159,32 +160,46 @@ static CGFloat LauncherRootLayoutRightPanelWidth(UITraitCollection *trait) {
 }
 
 - (void)fetchRemoteVersionList {
-    NSString *downloadSource = getPrefObject(@"general.download_source");
-    NSString *versionManifestURL;
-    
-    if ([downloadSource isEqualToString:@"bmclapi"]) {
-        versionManifestURL = @"https://bmclapi2.bangbang93.com/mc/game/version_manifest_v2.json";
-    } else {
-        versionManifestURL = @"https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
+    // Task218：版本清单改走 PLMirrorCenter 候选链（GameFile 策略：官方 +
+    // BMCLAPI 镜像按序尝试，任一成功即停）。旧实现读冻结的旧键
+    // general.download_source 做 bmclapi-vs-官方硬切换——设置页"下载镜像
+    // 策略"四个键里选什么都不生效，行为永远停留在迁移那一刻的旧值上
+    //（双轨制病灶，与 DownloadVC Task173 版本选择页同源同修）。
+    NSURL *ame218_official = [NSURL URLWithString:@"https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"];
+    NSArray<NSURL *> *ame218_candidates = [PLMirrorCenter candidateURLsForOriginalURL:ame218_official
+                                                                          resourceType:PLMirrorResourceTypeGameFile];
+    if (ame218_candidates.count == 0) {
+        ame218_candidates = @[ame218_official];
     }
-    
-    NSURL *url = [NSURL URLWithString:versionManifestURL];
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        if (data && !error) {
-            NSError *jsonError;
-            NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
-            if (json && json[@"versions"]) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [remoteVersionList addObjectsFromArray:json[@"versions"]];
-                    setPrefObject(@"internal.latest_version", json[@"latest"]);
-                    NSDebugLog(@"[LauncherRootVC] Loaded %d remote versions", remoteVersionList.count);
-                });
-            }
-        } else {
-            NSDebugLog(@"[LauncherRootVC] Failed to fetch version list: %@", error.localizedDescription);
+    __block NSMutableArray<NSURL *> *ame218_remaining = [ame218_candidates mutableCopy];
+    __block void (^ame218_tryNext)(void) = ^{ };
+    ame218_tryNext = ^{
+        if (ame218_remaining.count == 0) {
+            NSDebugLog(@"[LauncherRootVC] Task218 version manifest: all candidates failed");
+            return;
         }
-    }];
-    [task resume];
+        NSURL *ame218_url = ame218_remaining.firstObject;
+        [ame218_remaining removeObjectAtIndex:0];
+        NSURLSessionDataTask *ame218_task = [[NSURLSession sharedSession] dataTaskWithURL:ame218_url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            if (data && !error) {
+                NSError *jsonError;
+                NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+                if (json && json[@"versions"]) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [remoteVersionList addObjectsFromArray:json[@"versions"]];
+                        setPrefObject(@"internal.latest_version", json[@"latest"]);
+                        NSDebugLog(@"[LauncherRootVC] Task218 loaded %d remote versions from %@", remoteVersionList.count, ame218_url.host);
+                    });
+                    return;
+                }
+            }
+            NSDebugLog(@"[LauncherRootVC] Task218 manifest fetch failed on %@ (%@) -- trying next candidate",
+                      ame218_url.host, error.localizedDescription ?: @"non-JSON");
+            ame218_tryNext();
+        }];
+        [ame218_task resume];
+    };
+    ame218_tryNext();
 }
 
 - (void)viewWillAppear:(BOOL)animated {

@@ -137,7 +137,7 @@ for lg in langs:
           n1 and n2 and n3 and n4 and n5)
     sets.append(set(re.findall(r'^"([^"]+)"\s*=', s, re.M)))
 check("D5 Task150: four-language key sets identical (1952 = Task150 1928 + Task151 bing 17)",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2455,
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2482,
       f"counts={[len(x) for x in sets]}")
 
 print("== E. Publish assets ==")

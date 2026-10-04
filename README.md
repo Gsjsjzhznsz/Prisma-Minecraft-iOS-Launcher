@@ -249,10 +249,10 @@ If you find this project valuable, consider supporting the original author throu
 
 ## Star History
 
-<a href="https://www.star-history.com/?type=date&repos=Gsjsjzhznsz%2FAir-Minecraft-iOS-Launcher">
+<a href="https://www.star-history.com/?type=date&repos=Gsjsjzhznsz%2FPrisma-Minecraft-iOS-Launcher">
  <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Gsjsjzhznsz%2FAir-Minecraft-iOS-Launcher&type=date&theme=dark" />
-  <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Gsjsjzhznsz%2FAir-Minecraft-iOS-Launcher&type=date&legend=top-left" />
-  <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Gsjsjzhznsz%2FAir-Minecraft-iOS-Launcher&type=date&legend=top-left" />
+  <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Gsjsjzhznsz%2FPrisma-Minecraft-iOS-Launcher&type=date&theme=dark" />
+  <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Gsjsjzhznsz%2FPrisma-Minecraft-iOS-Launcher&type=date&legend=top-left" />
+  <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Gsjsjzhznsz%2FPrisma-Minecraft-iOS-Launcher&type=date&legend=top-left" />
  </picture>
 </a>

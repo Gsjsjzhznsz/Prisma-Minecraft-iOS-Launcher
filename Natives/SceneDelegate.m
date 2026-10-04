@@ -6,6 +6,7 @@
 #import "LauncherPreferences.h"
 #import "BackgroundManager.h"
 #import "BingWallpaperManager.h" // Task151
+#import "WelcomeViewController.h" // Task218：首次使用欢迎向导
 // Terracotta 暂时移除（排查启动崩溃）
 // #import "TerracottaManager.h"
 // #import "TerracottaBridge.h"
@@ -102,6 +103,14 @@ extern __weak UIWindow *mainWindow;
         rootVC = [[LauncherCardLayoutViewController alloc] init];
     }
     self.window.rootViewController = rootVC;
+
+    // Task218：首次使用欢迎向导（general.welcome_completed 哨兵，默认 NO）。
+    // 延迟 0.8s 让主界面先完成首帧布局，再全屏淡入向导（语言 / 下载源 /
+    // 数据导入三步引导 + 动效）。完成或跳过即置 YES，此后不再打扰。
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.8 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        [WelcomeViewController presentIfNeededFromViewController:rootVC];
+    });
 
     // 外观模式（浅色/深色/跟随系统）：读 general.ui_theme 偏好。
     //   light  -> UIUserInterfaceStyleLight

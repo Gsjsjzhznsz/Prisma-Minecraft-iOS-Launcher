@@ -22,7 +22,7 @@ Coverage:
   D. Holy gl4es retirement (user's deletion order):
      D1-D7  dylib gone, table entry gone, egl_bridge/JavaLauncher fallbacks
             retargeted, migration wired, Makefile patch lines retired
-  E. l10n net-zero key swap (2455 held: gl4es key out, virgl key in)
+  E. l10n net-zero key swap (2482 held: gl4es key out, virgl key in)
   F. Docs: version.h addendum + announcement task212@2
   G. Cascade spot checks (the re-anchored family)
 """
@@ -191,13 +191,13 @@ check("D7 Makefile 补丁接线退役 + TAB 基线 644（Task215 重锚：dep_vi
 check("D8 utils.h 宏退役（字面量仅存于迁移判定）",
       '#define RENDERER_NAME_GL4ES "libgl4es_114.dylib"' not in rd("Natives/utils.h"))
 
-print("== E. l10n 净零交换（2455 守恒） ==")
+print("== E. l10n 净零交换（2482 守恒） ==")
 def keys_of(lg):
     return set(re.findall(r'^"([^"]+)" = ', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"),
                           re.M))
 sets = [keys_of(lg) for lg in ("en", "zh-CN", "zh-Hans", "zh-Hant")]
-check("E1 四语唯一键 2455 一致（gl4es 出 / virgl 入 = 净零）",
-      all(len(s) == 2455 for s in sets) and sets[0] == sets[1] == sets[2] == sets[3])
+check("E1 四语唯一键 2482 一致（gl4es 出 / virgl 入 = 净零）",
+      all(len(s) == 2482 for s in sets) and sets[0] == sets[1] == sets[2] == sets[3])
 check("E2 holy gl4es l10n 键全清（54 文件零残留）",
       all("preference.title.renderer.debug.gl4es\"" not in
           rd(os.path.join("Natives/resources", f, "Localizable.strings"))
@@ -215,13 +215,13 @@ check("F1 version.h Task212 附录（REVISION 18 addendum + 五主题）",
 
 ann = json.loads(rd("announcements.json"))["announcements"]
 check("F2 公告 task212@3（35 条 = 并行 task213@2 插入后的合并态 + 置顶钉位 + 尾锚）",
-      len(ann) == 39 and ann[5]["id"] == "task212-angle-cf-renderers-virgl-2026-10-02"
+      len(ann) == 40 and ann[5]["id"] == "task212-angle-cf-renderers-virgl-2026-10-02"
       and ann[0]["id"].startswith("server-recommend")
       and ann[1]["id"] == "task169-four-fixes-2026-09-25"
       and ann[6]["id"] == "task211-exit-cf-angle-gl4es-2026-10-02"
-      and ann[-1]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-2]["id"] == "task216-ui-2026-10-03"
-      and ann[-3]["id"] == "task206-nggl4es-2026-10-01")
+      and ann[-2]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-3]["id"] == "task216-ui-2026-10-03"
+      and ann[-4]["id"] == "task206-nggl4es-2026-10-01")
 
 check("F3 公告内容五主题齐备",
       all(k in ann[5]["content"] for k in
@@ -229,20 +229,20 @@ check("F3 公告内容五主题齐备",
 
 print("== G. 级联抽查（本轮重锚族） ==")
 spot = {
-    "scripts/verify_task206.py": ["cur_tab == 662", 'len(ann) == 39 and ann[-1]["id"] == "task217-download-fixes-about-isolation-2026-10-03"'],
-    "scripts/verify_task211.py": ['len(ann) == 39 and ann[6]["id"] == "task211-exit-cf-angle-gl4es-2026-10-02"',
+    "scripts/verify_task206.py": ["cur_tab == 662", 'len(ann) == 40 and ann[-2]["id"] == "task217-download-fixes-about-isolation-2026-10-03"'],
+    "scripts/verify_task211.py": ['len(ann) == 40 and ann[6]["id"] == "task211-exit-cf-angle-gl4es-2026-10-02"',
                                   "(swapIndex == 240 || swapIndex == 480 || swapIndex == 720)"],
-    "scripts/verify_task210.py": ['len(ann) == 39\n      and ann[7]["id"] == "task210-neumorph'],
-    "scripts/verify_task209.py": ["a209 = ann[8]", "len(ann) == 39"],
-    "scripts/verify_task203.py": ["len(ann) == 39 and ann[-1]['id'] == 'task217-download-fixes-about-isolation-2026-10-03'"],
-    "scripts/verify_task202.py": ["len(ann) == 39", 'ann[34]["id"] == "task202-october-fix-wave"', "mk_tab == 662"],
-    "scripts/verify_task193.py": ["len(ann) == 39", 'ann[11]["id"] == "task193-app-icon-replace-2026-09-28"'],
+    "scripts/verify_task210.py": ['len(ann) == 40\n      and ann[7]["id"] == "task210-neumorph'],
+    "scripts/verify_task209.py": ["a209 = ann[8]", "len(ann) == 40"],
+    "scripts/verify_task203.py": ["len(ann) == 40 and ann[-2]['id'] == 'task217-download-fixes-about-isolation-2026-10-03'"],
+    "scripts/verify_task202.py": ["len(ann) == 40", 'ann[34]["id"] == "task202-october-fix-wave"', "mk_tab == 662"],
+    "scripts/verify_task193.py": ["len(ann) == 40", 'ann[11]["id"] == "task193-app-icon-replace-2026-09-28"'],
     "scripts/verify_task129.py": ["cur_tab == 662 and head_tab == 662"],
     "scripts/verify_task135.py": ["cur_tab == 662 and head_tab == 662"],
     "scripts/verify_task173.py": ['ann["announcements"][21]["id"] == "task173-ten-fixes-2026-09-26"'],
     "scripts/verify_task174.py": ['anns[19]["id"] == "task174-neumorph-canvas-opacity-label-2026-09-26"'],
     "scripts/verify_task168.py": ['anns[25]["id"] == "task168-neumorph-faq-json-2026-09-25"'],
-    "scripts/verify_task207.py": ["len(ann) == 39", 'ann[9]["id"] == "task207-shortcuts-instance-cards-2026-10-01"'],
+    "scripts/verify_task207.py": ["len(ann) == 40", 'ann[9]["id"] == "task207-shortcuts-instance-cards-2026-10-01"'],
     "scripts/verify_task142.py": ["v6-0-0-release-2026-09-21"],
     "scripts/verify_task140.py": ["f95a2193", "2c668874"],
     "scripts/verify_task190.py": ['["announcements"][12]["id"].startswith("task190-")'],  # Task213: two @2 inserts

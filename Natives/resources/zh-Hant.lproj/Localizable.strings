@@ -2635,3 +2635,32 @@
 "about.license.body" = "本啟動器以 GNU Affero General Public License v3.0（AGPL-3.0）授權。完整授權內容見倉庫根目錄的 LICENSE 檔案；第三方元件遵循各自授權（ThirdParty/ 與 Natives/external/ 目錄：PojavLauncher 為 GPLv3、MobileGlues 為 LGPL-3.0 等，詳見對應目錄）。原始碼：https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher";
 "about.credits.title" = "致謝";
 "about.credits.body" = "Prisma 衍生自 Amethyst-iOS-MyRemastered（herbrine8403），後者基於 PojavLauncher 官方 iOS 移植（PojavLauncherTeam）。SDL3 嵌入方案移植自 ZalithLauncher2。渲染器譜系包含 gl4es、Zink/Mesa、MobileGlues、ANGLE 與 virglrenderer。感謝所有上游作者與貢獻者。";
+
+/* Task218: welcome wizard + crash diagnosis */
+"welcome.hero.subtitle" = "iOS 上的 Minecraft Java 版啟動器";
+"welcome.next" = "下一步";
+"welcome.skip" = "跳過";
+"welcome.lang.title" = "選擇語言";
+"welcome.lang.subtitle" = "隨時可在設定中更改";
+"welcome.lang.more" = "還有 50+ 語言可在 設定 → 一般 → 語言 中選擇";
+"welcome.source.title" = "選擇下載源";
+"welcome.source.subtitle" = "決定遊戲檔案與模組的下載通道";
+"welcome.source.official.desc" = "直連 Mojang / Modrinth 官方伺服器";
+"welcome.source.mirror.desc" = "BMCLAPI / MCIM 國內加速，中國用戶推薦";
+"welcome.source.speed.desc" = "啟動時競速官方與鏡像，自動選更快的";
+"welcome.data.title" = "資料遷移";
+"welcome.data.subtitle" = "從舊啟動器或備份檔案恢復資料";
+"welcome.data.import" = "從備份匯入";
+"welcome.data.import.desc" = "選擇此前匯出的 prisma-backup 備份檔案";
+"welcome.data.skip" = "跳過";
+"welcome.data.skip.desc" = "稍後可在 設定 → 一般 → 從備份匯入";
+"welcome.done.title" = "一切就緒！";
+"welcome.done.subtitle" = "祝你玩得愉快。需要協助時，關於頁裡有 QQ 群。";
+"welcome.done.start" = "開始使用";
+"ame218.crash.title" = "上次遊戲異常退出";
+"ame218.crash.oom.body" = "當機類型：記憶體不足（訊號 %@）。JVM 可用記憶體不足以繼續執行。建議在 設定 → Java 中降低記憶體分配，或精簡模組後重試。";
+"ame218.crash.renderer.body" = "當機類型：訊號 %@。崩潰發生在 %@ 的原生程式碼中（%@）。自動渲染器已記錄本次失敗；連續兩次將自動改用其他渲染器，也可在實例設定中手動選擇。";
+"ame218.crash.unknown.body" = "當機類型：訊號 %@（%@）。未能自動歸因到渲染器或記憶體。如反覆出現，請透過 設定 → 資料匯出 匯出日誌後回報。";
+"ame218.crash.blacklisted" = "\n\n%@ 已連續崩潰兩次，自動渲染器已將其封鎖並降級到候選鏈下一項。";
+"ame218.crash.view" = "檢視崩潰報告";
+"ame218.crash.ok" = "知道了";

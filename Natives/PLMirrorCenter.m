@@ -414,4 +414,33 @@ static BOOL ame138_probeInFlight[2] = {NO, NO};
     return PLMirrorPolicyOfficialFirst;
 }
 
+#pragma mark - Task218 双轨收敛辅助
+
+/// Task218：镜像偏好的体系化布尔判定（头文件注释见 PLMirrorCenter.h）。
+/// 病历（用户主诉"下载源设置外面显示的是用户选择过的，里面莫名其妙被
+/// 启动器改了"）：Task138 重构后全工程留下两套并行的"下载源"判定——
+/// 新版分类镜像策略键（download.fileSource 等四个，值 official_first /
+/// mirror_first / speed_first）与旧版全局键 general.download_source（值
+/// official / bmclapi，迁移后冻结不再有人写）。旧键消费者（根页/卡片页
+/// 版本清单的 bmclapi-vs-官方硬切换、IconLoader 图标镜像开关、七处下载
+/// 任务来源标签）永远读冻结的旧值 = 设置页里选什么都不生效，行为停留在
+/// 迁移那一刻的旧值上——用户眼中的"被启动器改了"。本方法把布尔判定
+/// 收敛到策略层，旧键自此只剩 policyForType 的回退链一处消费者。
++ (BOOL)mirrorPreferredForType:(PLMirrorResourceType)type {
+    PLMirrorPolicy policy = [self policyForType:type];
+    if (policy == PLMirrorPolicyMirrorFirst) return YES;
+    if (policy == PLMirrorPolicyOfficialFirst) return NO;
+    // speed_first：跟随测速赢家；结果未落地时镜像在前（与 candidateURLs
+    // 的临时序一致，测速完成后自动纠正）。
+    NSString *winner = [self ame138_speedWinnerForType:type];
+    return ![winner isEqualToString:@"official"];
+}
+
+/// Task218：镜像策略 -> 旧式下载源 token（official / bmclapi）。
+/// 仅供 DownloadTaskItem.downloadSource 这类历史显示字段适配，禁止用于
+/// 路由决策（路由必须走 candidateURLsForOriginalURL / policyForType）。
++ (NSString *)legacySourceTokenForType:(PLMirrorResourceType)type {
+    return [self mirrorPreferredForType:type] ? @"bmclapi" : @"official";
+}
+
 @end

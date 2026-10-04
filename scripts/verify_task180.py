@@ -101,7 +101,7 @@ for lang in ['en', 'zh-Hans', 'zh-CN', 'zh-Hant']:
     s = io.open(os.path.join(RES, f'{lang}.lproj/Localizable.strings'), encoding='utf-8').read()
     keys = set(re.findall(r'^"([^"]+)" =', s, re.M))
     tot = len(keys) if tot is None else tot
-    check('D', f'{lang} 唯一键总数 == 2455', len(keys) == 2455, f'got {len(keys)}')
+    check('D', f'{lang} 唯一键总数 == 2482', len(keys) == 2482, f'got {len(keys)}')
 
 # ============ E. 按钮接线——183 撤销（回归恒定底色）+ 头像防御保留 ============
 rp = rd('LauncherRightPanelViewController.m')

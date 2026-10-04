@@ -115,7 +115,7 @@ check("C8 真实指针表声明（6 个 ame_real_* 新增）",
 
 print("== D. Task115 UpdateChecker ==")
 check("D1 repoOwner/repoName 指向本仓库",
-      'return @"Gsjsjzhznsz";' in uc and 'return @"Air-Minecraft-iOS-Launcher";' in uc)
+      'return @"Gsjsjzhznsz";' in uc and 'return @"Prisma-Minecraft-iOS-Launcher";' in uc)
 check("D2 上游指向已清除（herbrine8403 不再作为更新目标）",
       'return @"herbrine8403"' not in uc)
 check("D3 两条 URL 均经 repoOwner/repoName 构造（单一来源）",

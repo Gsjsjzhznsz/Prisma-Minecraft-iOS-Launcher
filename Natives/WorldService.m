@@ -19,6 +19,7 @@
 #import "DownloadTaskItem.h"
 #import "PLTaskStages.h"
 #import "LauncherPreferences.h"
+#import "PLMirrorCenter.h"   // Task218: download-source label token
 
 @interface WorldService () <NSURLSessionDownloadDelegate>
 @property (nonatomic, strong) NSURLSession *downloadSession;
@@ -394,7 +395,8 @@
     // 注册到统一下载任务管理器（悬浮球已移除，始终注册以便下载任务列表跟踪）
     NSString *resourceName = item.worldName.length > 0 ? item.worldName : (item.displayName.length > 0 ? item.displayName : @"world");
     NSString *displayName = item.displayName.length > 0 ? item.displayName : resourceName;
-    NSString *downloadSource = getPrefObject(@"general.download_source") ?: @"official";
+    // Task218：来源标签收敛到 PLMirrorCenter（显示层专用 token；路由一律走候选链）。
+    NSString *downloadSource = [PLMirrorCenter legacySourceTokenForType:PLMirrorResourceTypeAssetDownload];
     DownloadTaskItem *taskItem = [[DownloadTaskManager sharedManager]
         registerTaskWithResourceType:DownloadTaskResourceTypeWorld
                         resourceName:resourceName

@@ -23,7 +23,7 @@
 // dynamicX/dynamicY 相对定位表达式 => 分辨率无关、跨设备可分享）。
 // ============================================================================
 static NSString *const kTask189RepoOwner = @"Gsjsjzhznsz";
-static NSString *const kTask189RepoName = @"Air-Minecraft-iOS-Launcher";
+static NSString *const kTask189RepoName = @"Prisma-Minecraft-iOS-Launcher";
 static NSString *const kTask189RepoRef = @"main";
 static NSString *const kTask189RepoDir = @"controls";
 

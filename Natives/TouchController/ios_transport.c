@@ -68,7 +68,7 @@
 static os_log_t tc_log(void) {
     static os_log_t log = NULL;
     if (log == NULL) {
-        log = os_log_create("com.air-devs", "TouchControllerTransport");
+        log = os_log_create("com.air-devs.air", "TouchControllerTransport");
     }
     return log;
 }

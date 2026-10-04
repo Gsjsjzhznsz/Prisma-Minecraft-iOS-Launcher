@@ -319,15 +319,15 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: com.air-devs-${{ matrix.platform_name }}.ipa
-          path: artifacts/com.air-devs-*-${{ matrix.platform_name }}.ipa
+          name: com.air-devs.air-${{ matrix.platform_name }}.ipa
+          path: artifacts/com.air-devs.air-*-${{ matrix.platform_name }}.ipa
 
       - name: Upload regular tipa
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: com.air-devs-${{ matrix.platform_name }}-trollstore.tipa
-          path: artifacts/com.air-devs-*-${{ matrix.platform_name }}-trollstore.tipa
+          name: com.air-devs.air-${{ matrix.platform_name }}-trollstore.tipa
+          path: artifacts/com.air-devs.air-*-${{ matrix.platform_name }}-trollstore.tipa
 
       - name: Upload PojavLauncher.dSYM
         if: matrix.platform_name == 'ios' && success()
@@ -347,8 +347,8 @@ jobs:
           set -e
           TAG="nightly-sdl3"
           SHORT=$(git rev-parse --short HEAD)
-          IPA=$(ls artifacts/com.air-devs-*-ios.ipa 2>/dev/null | head -1 || true)
-          TIPA=$(ls artifacts/com.air-devs-*-ios-trollstore.tipa 2>/dev/null | head -1 || true)
+          IPA=$(ls artifacts/com.air-devs.air-*-ios.ipa 2>/dev/null | head -1 || true)
+          TIPA=$(ls artifacts/com.air-devs.air-*-ios-trollstore.tipa 2>/dev/null | head -1 || true)
           if [ -z "$IPA" ]; then
             echo "No ipa under artifacts/, skip release"
             exit 0
