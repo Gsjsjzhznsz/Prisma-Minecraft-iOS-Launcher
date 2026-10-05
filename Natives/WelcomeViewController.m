@@ -34,6 +34,7 @@
 #import "UIKit+NativeSurface.h"
 #import "utils.h"
 #import <objc/runtime.h>
+#import "UIKit+hook.h"   // Task223：UIWindow.mainWindow 分类声明（zl2 焦点遮罩取主窗口）
 #include <mach-o/dyld.h>
 #include <unistd.h>
 

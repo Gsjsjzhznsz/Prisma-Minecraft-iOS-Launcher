@@ -497,7 +497,7 @@
         __block unsigned long long writtenBytes = 0;
         __block BOOL failed = NO;
         __block NSError *failErr = nil;
-        NSDate *lastUi = [NSDate distantPast];
+        __block NSDate *lastUi = [NSDate distantPast];
 
         // 读侧：全局并发队列按序取号（保持条目顺序，zip 内目录顺序友好）。
         for (NSDictionary *e in entries) {

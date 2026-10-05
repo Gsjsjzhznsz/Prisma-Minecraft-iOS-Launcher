@@ -5,7 +5,8 @@
 #import "DownloadTaskItem.h"
 #import "PLTaskStage.h"
 #import "utils.h"
-#import <UnzipKit/UnzipKit.h>
+#import "LauncherPreferences.h"   // accentColor()（同 AboutViewController 先例）
+#import "UnzipKit.h"   // 仓内约定：CMake include 路径含 external/UnzipKit（同 ModpackImportService）
 
 @interface DataExportViewController () {
     NSUInteger _fileCount;

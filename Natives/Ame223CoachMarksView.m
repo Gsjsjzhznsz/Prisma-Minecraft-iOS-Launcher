@@ -1,5 +1,6 @@
 #import "Ame223CoachMarksView.h"
 #import "utils.h"
+#import "UIKit+hook.h"   // UIWindow.mainWindow 分类声明（同 NMToast/ControlJoystick 先例）
 
 @interface Ame223CoachMarksView ()
 @property (nonatomic, strong) NSArray<NSDictionary *> *items;

@@ -141,7 +141,8 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
             @"public.easytier.top:11010",
             @"public2.easytier.cn:54321",
         ];
-        BOOL anyReachable = NO;
+        // Task223 CI 修复：异步探测块内赋值 → 必须 __block（同 DataTransferService lastUi 病例）。
+        __block BOOL anyReachable = NO;
         dispatch_group_t g = dispatch_group_create();
         for (NSString *peer in peers) {
             dispatch_group_enter(g);
@@ -155,7 +156,7 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
                         addr.sin_family = AF_INET;
                         addr.sin_port = htons((uint16_t)[parts[1] intValue]);
                         struct hostent *he = gethostbyname(parts[0].UTF8String);
-                        if (he != NULL && he->h_addrtype == AF_INET) {
+                        if (he != NULL && he->h_addrtype == AF_INET && he->h_addr_list[0] != NULL) {
                             memcpy(&addr.sin_addr, he->h_addr_list[0], he->h_length);
                             // 非阻塞 connect + 2s 轮询（无 libevent 依赖的极简探测）
                             int flags = fcntl(fd, F_GETFL, 0);
@@ -175,8 +176,8 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
                                     if (soerr == 0) anyReachable = YES;
                                 }
                             }
-                            close(fd);
                         }
+                        close(fd);   // Task223 CI 修复：DNS 失败路径同样关闭（原在 if 内 → fd 泄漏）
                     }
                 }
                 dispatch_group_leave(g);
