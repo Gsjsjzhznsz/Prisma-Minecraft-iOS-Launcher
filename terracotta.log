@@ -1,0 +1,33 @@
+[UI]: Welcome using Terracotta v050b551, compiled at 2026-03-07 14:08:48. Easytier: v2.5.0-terracotta.2. Target: aarch64-unknown-android-.
+[Core]: Setting to state WAITING.
+[State]: Switch to AppState::GuestConnecting { code: "U/NZ68-F1C8-FHUV-27LQ" }
+[Core]: Connecting to room, code=U/NZ68-F1C8-FHUV-27LQ
+[State]: Switch to AppState::GuestStarting { code: "U/NZ68-F1C8-FHUV-27LQ", difficulty: Unknown, easytier: .. }
+[Android]: Requesting VpnService: ip=10.126.126.1, cidrs: []
+[Android]: VpnService initialized: tun_fd=215
+[RoomExperiment]: Cannot find scaffolding server.
+[EasyTier]: Killing EasyTier.
+[State]: Switch to AppState::Exception { kind: PingHostFail }
+[State]: AppState has been locked for 233ms, at src/controller/rooms/scaffolding/room.rs:296:35.
+[Core]: Setting to state WAITING.
+[State]: Switch to AppState::Waiting
+[Core]: Setting to state WAITING.
+[State]: Switch to AppState::GuestConnecting { code: "U/NZ68-F1C8-FHUV-27LQ" }
+[Core]: Connecting to room, code=U/NZ68-F1C8-FHUV-27LQ
+[State]: Switch to AppState::GuestStarting { code: "U/NZ68-F1C8-FHUV-27LQ", difficulty: Unknown, easytier: .. }
+[Android]: Requesting VpnService: ip=10.126.126.1, cidrs: []
+[Android]: VpnService initialized: tun_fd=196
+[RoomExperiment]: Cannot find scaffolding server.
+[EasyTier]: Killing EasyTier.
+[State]: Switch to AppState::Exception { kind: PingHostFail }
+[Core]: Setting to state WAITING.
+[State]: Switch to AppState::Waiting
+[Core]: Setting to state WAITING.
+[State]: Switch to AppState::GuestConnecting { code: "U/NZ68-F1C8-FHUV-27LQ" }
+[Core]: Connecting to room, code=U/NZ68-F1C8-FHUV-27LQ
+[State]: Switch to AppState::GuestStarting { code: "U/NZ68-F1C8-FHUV-27LQ", difficulty: Unknown, easytier: .. }
+[Android]: Requesting VpnService: ip=10.126.126.1, cidrs: []
+[Android]: VpnService initialized: tun_fd=236
+[RoomExperiment]: Cannot find scaffolding server.
+[EasyTier]: Killing EasyTier.
+[State]: Switch to AppState::Exception { kind: PingHostFail }
