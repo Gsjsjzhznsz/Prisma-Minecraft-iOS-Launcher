@@ -147,7 +147,7 @@
         <key>NSMicrophoneUsageDescription</key>
         <string>Prisma uses the microphone to enable support for voice chat mods.</string>
         <key>NSPhotoLibraryAddUsageDescription</key>
-        <string>Prisma uses the photo library add-only access to save Bing daily wallpapers you choose to save.</string>
+        <string>Prisma uses the photo library add-only access to save Bing daily wallpapers and the donate QR image you choose to save.</string>
         <key>UIApplicationSceneManifest</key>
         <dict>
                 <key>UIApplicationSupportsMultipleScenes</key>

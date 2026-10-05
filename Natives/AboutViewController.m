@@ -377,21 +377,50 @@ static NSString *const ame217_qqGroup = @"1126547426";
     NSString *donatePath = [NSBundle.mainBundle.resourcePath stringByAppendingPathComponent:@"donate.png"];
     UIImage *donateImage = [UIImage imageWithContentsOfFile:donatePath];
     if (donateImage == nil) return;
-    [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-        [PHPhotoLibrary creationRequestForAssetFromImage:donateImage];
-    } completionHandler:^(BOOL success, NSError *error) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            NSString *msg = success ? localize(@"about.donate.saved", nil)
-                                    : (error.localizedDescription ?: localize(@"about.donate.save_failed", nil));
-            UIAlertController *alert = [UIAlertController
-                alertControllerWithTitle:localize(@"about.donate.save_title", nil)
-                                 message:msg
-                          preferredStyle:UIAlertControllerStyleAlert];
-            [alert addAction:[UIAlertAction actionWithTitle:localize(@"OK", @"好的")
-                                                      style:UIAlertActionStyleDefault handler:nil]];
-            [self presentViewController:alert animated:YES completion:nil];
-        });
-    }];
+
+    void (^performSave)(void) = ^{
+        // Task222 CI fix: creationRequestForAssetFromImage: 是 PHAssetChangeRequest 的类方法
+        // （PHPhotoLibrary 上的同名类方法自 iOS 9 弃用并已从 SDK 移除——Xcode 15 编译期报
+        // "no known class method for selector"）。对齐 BingWallpaperGalleryViewController 房规。
+        [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+            [PHAssetChangeRequest creationRequestForAssetFromImage:donateImage];
+        } completionHandler:^(BOOL success, NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSString *msg = success ? localize(@"about.donate.saved", nil)
+                                        : (error.localizedDescription ?: localize(@"about.donate.save_failed", nil));
+                UIAlertController *alert = [UIAlertController
+                    alertControllerWithTitle:localize(@"about.donate.save_title", nil)
+                                     message:msg
+                              preferredStyle:UIAlertControllerStyleAlert];
+                [alert addAction:[UIAlertAction actionWithTitle:localize(@"OK", @"好的")
+                                                          style:UIAlertActionStyleDefault handler:nil]];
+                [self presentViewController:alert animated:YES completion:nil];
+            });
+        }];
+    };
+
+    // 相册「添加」权限：显式请求 add-only（Info.plist 已含 NSPhotoLibraryAddUsageDescription；
+    // 与 BingWallpaperGalleryViewController 存图路径同构，被拒/受限走失败提示）
+    if (@available(iOS 14.0, *)) {
+        [PHPhotoLibrary requestAuthorizationForAccessLevel:PHAccessLevelAddOnly
+            handler:^(PHAuthorizationStatus status) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (status == PHAuthorizationStatusAuthorized || status == PHAuthorizationStatusLimited) {
+                        performSave();
+                    } else {
+                        UIAlertController *alert = [UIAlertController
+                            alertControllerWithTitle:localize(@"about.donate.save_title", nil)
+                                             message:localize(@"about.donate.save_failed", nil)
+                                      preferredStyle:UIAlertControllerStyleAlert];
+                        [alert addAction:[UIAlertAction actionWithTitle:localize(@"OK", @"好的")
+                                                                  style:UIAlertActionStyleDefault handler:nil]];
+                        [self presentViewController:alert animated:YES completion:nil];
+                    }
+                });
+            }];
+    } else {
+        performSave();
+    }
 }
 
 - (void)ame217_addCard:(UIView *)card inner:(UIView *)inner {
