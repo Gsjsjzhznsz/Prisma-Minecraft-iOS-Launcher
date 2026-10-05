@@ -25,7 +25,8 @@
 #import "BackgroundManager.h"
 #import "NMToast.h"
 #import "UpdateChecker.h"
-#import "DataTransferService.h"   // Task217：数据导出/导入（包名迁移配套）
+#import "DataTransferService.h"
+#import "DataExportViewController.h"  // Task223：数据导出二级入口   // Task217：数据导出/导入（包名迁移配套）
 #import "AboutViewController.h"   // Task217：关于页二级菜单入口
 #import "CurseForgeAPIKeyViewController.h"
 #import "CustomControlsViewController.h"
@@ -901,13 +902,16 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
             },
             // Task217：数据导出（包名迁移配套——旧容器数据全量备份到 zip，
             // 落点由用户经系统文件选择器决定）。
+            // ★ Task223（清单第 12 项）：改为二级入口页（抛弃压缩等级悬浮
+            //   菜单；进度借用版本下载任务体系，可离开页面后台继续）。
             @{@"key": @"data_export",
               @"hasDetail": @YES,
               @"icon": @"square.and.arrow.up",
               @"type": self.typeButton,
               @"enableCondition": whenNotInGame,
               @"action": ^void(){
-                  [[DataTransferService sharedService] exportDataFromViewController:self];
+                  DataExportViewController *vc = [[DataExportViewController alloc] init];
+                  [self.navigationController pushViewController:vc animated:YES];
               }
             },
             // Task217：从备份导入（新包名容器直接恢复 zip 备份，重启生效）。

@@ -2046,6 +2046,15 @@ void glShaderSource(GLuint shader, GLsizei count, const GLchar * const *string, 
         {
             long ame219_ver = strtol(&source2[9], NULL, 10);
             if (ame219_ver >= 130) {
+                // ★ Task223（用户报“ANGLE 在非 SDL 版本报错”，2832c2b latestlog.old.txt
+                // 判读：FO 26.2 会话 141 个着色器全部死在 ERROR 0:14 'image2D' :
+                // Illegal use of reserved word——第 14 行正是本头部自己插入的
+                // "precision highp image2D;"。GLSL ES 3.00 里 image2D 是保留字、
+                // 不能出现在 precision 声明里（image 类型需要 ES 3.10+），而
+                // MC 26.2 着色器本体其实不用 image2D（错误计数 141 全部落在我
+                // 们的头部行，无一处 body 报错）。修法：三行 image precision
+                // 从头部移除。若未来出现真正使用 image2D 的源（ES3.10 特性），
+                // 再按需升 310 es + 探测 GL_ES_VERSION_3_1。）
                 static const char *const kAme219EsHead =
                     "#version 300 es\n"
                     "precision highp float;\n"
@@ -2059,10 +2068,7 @@ void glShaderSource(GLuint shader, GLsizei count, const GLchar * const *string, 
                     "precision highp isampler2D;\n"
                     "precision highp usampler2D;\n"
                     "precision highp isampler3D;\n"
-                    "precision highp usampler3D;\n"
-                    "precision highp image2D;\n"
-                    "precision highp iimage2D;\n"
-                    "precision highp uimage2D;\n";
+                    "precision highp usampler3D;\n";
                 const char *ame219_eol = strchr(source2, '\n');
                 if (ame219_eol != NULL) {
                     size_t ame219_headLen = strlen(kAme219EsHead);

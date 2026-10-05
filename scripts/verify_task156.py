@@ -169,7 +169,7 @@ for lg in langs:
     sets.append(keys)
     check(f"F[{lg}] footer 键在位", "background.effect.footer" in keys)
 check("F1 四主语言键集一致（1952 = Task157 基线 1948 + Task159 净增 4（新增 5 键，退役 memory.current））",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2520,
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2606,
       f"counts={[len(x) for x in sets]}")
 for f in ["Natives/BackgroundSettingsViewController.m", "Natives/JavaLauncher.m",
           "Natives/egl_bridge.m", "Natives/SurfaceViewController.m",

@@ -113,18 +113,22 @@ check("C", "正规复用（出列拆光重建退役）",
 
 # ============ D. 长按菜单全账户化 ============
 print("== D. 长按菜单（person.circle 选用 / trash 红字删除 / 129b 角色项保留） ==")
+# Task223 清单20 再锚：符号经 ame223_add(…, @"person.circle", …) 传入，
+# 消费端统一 systemImageNamed 解析（单一事实源 ame223_accountMenuItemsAtIndexPath）。
 check("D", "选用账号（person.circle -> ame190_selectAccountAtIndexPath）",
-      'systemImageNamed:@"person.circle"' in ac
-      and 'localize(@"account.menu.use"' in ac
+      'ame223_add(localize(@"account.menu.use"' in ac
+      and 'ame223_accountMenuItemsAtIndexPath' in ac
       and ac.count("[self ame190_selectAccountAtIndexPath:indexPath];") >= 2)
 check("D", "删除账号（trash + UIMenuElementAttributesDestructive -> ame190_deleteAccountAtIndexPath）",
-      'systemImageNamed:@"trash"' in ac
+      '@"trash"' in ac
       and "UIMenuElementAttributesDestructive" in ac
       and "UIActionAttributesDestructive" not in ac  # CI run 36397990325：本 SDK 无此旧别名（编译器点名真名）
       and ac.count("[self ame190_deleteAccountAtIndexPath:indexPath];") >= 2)
+# Task223 清单20 再锚：当前角色标注由 UIMenuElementStateOn 改为标题前缀
+# "✓ %@"（UIMenu 构建走单一事实源，状态位不随自定义 item 字典传递）。
 check("D", "Task129b 角色切换项保留（3P 多角色 + UUID 归一化打勾）",
       "ame129b_switchAccountAtIndexPath:indexPath toProfile:p];" in ac
-      and "UIMenuElementStateOn" in ac
+      and '"\u2713 %@"' in ac
       and 'stringByReplacingOccurrencesOfString:@"-"' in ac)
 check("D", "选择链收口（原 didSelect 主体迁入 ame190_selectAccountAtIndexPath）",
       "- (void)ame190_selectAccountAtIndexPath:(NSIndexPath *)indexPath {" in ac
@@ -141,9 +145,17 @@ check("D", "左滑删除入口保留（commitEditingStyle 委派删除链）",
 
 # ============ E. 退役断言 ============
 print("== E. 退役（130b 行内按钮 / 旧 16pt 内联卡 / 类型胶囊 / 箭头） ==")
-check("E", "ame130b_switchRoleTapped 与 person.2 按钮退役",
-      "ame130b_switchRoleTapped" not in ac and '"person.2"' not in ac
-      and "objc_setAssociatedObject" not in ac and "objc_getAssociatedObject" not in ac)
+# Task223 清单20 再锚：person.2 符号被新 UIMenu 的角色切换项合法复用
+# （ame223_add 行，Task129b 语义完整迁移：UUID 归一化 + ✓ 当前角色前缀）。
+# 退役断言收窄到真目标——130b 的方法名与关联对象机制；person.2 仅允许
+# 出现在注释与 ame223_add 菜单构建行（行内按钮形态不复存在）。
+_ac_nocom = re.sub(r"//[^\n]*", "", ac)
+_bad_p2 = [l.strip() for l in _ac_nocom.split("\n")
+           if '"person.2"' in l and "ame223_add(" not in l and l.strip()]
+check("E", "ame130b_switchRoleTapped 退役 + person.2 仅存于新菜单项（Task223 再锚）",
+      "ame130b_switchRoleTapped" not in ac and not _bad_p2
+      and "objc_setAssociatedObject" not in ac and "objc_getAssociatedObject" not in ac,
+      str(_bad_p2[:2]))
 check("E", "旧卡面退役（白 0.10 + 16pt 圆角 + pinned 钉住 + 旧方勾勾）",
       "cardView.layer.cornerRadius = 16" not in ac
       and "ame_setNeumorphPinnedCornerRadius" not in ac
@@ -183,7 +195,7 @@ for lang, (u, d) in expect.items():
     keys = set(re.findall(r'^"([^"]+)" =', s, re.M))
     check("G", f"{lang} account.menu.use/delete 键值", f'"account.menu.use" = "{u}";' in s
           and f'"account.menu.delete" = "{d}";' in s)
-    check("G", f"{lang} 唯一键总数 == 2520", len(keys) == 2520, f"got {len(keys)}")
+    check("G", f"{lang} 唯一键总数 == 2606", len(keys) == 2606, f"got {len(keys)}")
     check("G", f"{lang} account.switch_role.* 历史键保留",
           'account.switch_role.button' in keys and 'account.switch_role.title' in keys)
 

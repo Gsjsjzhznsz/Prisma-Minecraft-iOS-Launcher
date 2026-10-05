@@ -229,6 +229,10 @@ static GameSurfaceView* pojavWindow;
 // 的 ame171_armKeyboardRecheck；此处前置声明供 updateGrabState 等早于定义
 // 的收起点使用）。
 static NSUInteger ame171_keyboardDismissGeneration = 0;
+// Task223：Stop 路由的延迟收起块（去抖窗口 250ms，Start 到达即取消；
+// markedTextRange 双重守卫 + 手动 ✎ 开关不受影响——那两处直接走
+// ame171_keyboardDismissGeneration++ + resign，不经本块）。
+static dispatch_block_t ame223_pendingStopResign = NULL;
 
 // Task 78：FSR 预设 → 渲染缩放系数（与 MobileGlues-cpp FSR1.cpp
 // CalculateTargetResolution 的 scale 表同步：UQ=1.3 / Q=1.5 / B=1.7 / P=2.0）。
@@ -1971,11 +1975,28 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     // ========================================================================
     // 背景层：显示自定义启动器背景
     // ========================================================================
-    // 有自定义壁纸时：透明遮罩 + 轻微暗化蒙层（增强文字可读性）
+    // 有自定义壁纸时：遮罩【自带】壁纸图层 + 暗化蒙层（增强文字可读性）
     // 无自定义壁纸时：使用深色渐变作为回退
     if ([[BackgroundManager sharedManager] hasBackground]) {
-        // 有自定义背景：透明遮罩 + 轻微暗化蒙层
+        // ★ Task223（清单第 14 项“启动画面依旧没有显示自定义壁纸”根修）：
+        //   旧实现只是把遮罩设透明——期望窗口层的全局背景容器透出来；但
+        //   SurfaceViewController 成为根 VC 后其不透明视图把容器盖住，
+        //   实机表现 = 永远黑幕。新实现：遮罩内部直接铺 ame223_current-
+        //   WallpaperImage（降采样位图），与视图层级完全解耦。
         self.launchOverlayView.backgroundColor = [UIColor clearColor];
+        UIImage *ame223_wall = [[BackgroundManager sharedManager] ame223_currentWallpaperImage];
+        if (ame223_wall != nil) {
+            UIImageView *ame223_wiv = [[UIImageView alloc] initWithImage:ame223_wall];
+            ame223_wiv.frame = self.launchOverlayView.bounds;
+            ame223_wiv.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            ame223_wiv.contentMode = UIViewContentModeScaleAspectFill;
+            ame223_wiv.clipsToBounds = YES;
+            ame223_wiv.userInteractionEnabled = NO;
+            [self.launchOverlayView addSubview:ame223_wiv];
+        } else {
+            // 视频背景无法静态直取：黑底保底（文字可读优先）
+            self.launchOverlayView.backgroundColor = [UIColor blackColor];
+        }
         UIView *dimOverlay = [[UIView alloc] initWithFrame:self.launchOverlayView.bounds];
         dimOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         dimOverlay.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.3];
@@ -2455,6 +2476,16 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 // 进行中的输入会话）。
 - (void)ame172_sdlStartTextInput:(NSNotification *)n {
     if (!self.inputTextField) return;
+    // ★ Task223（用户报“输入法在输入一部分之后再输入会关闭键盘”第二轮）：
+    //   取消挂起的延迟收起。MC 26.x 的 EditBox 每个字符事件都可能
+    //   Stop→Start 快速循环——收起去抖窗内 Start 到达 = 输入会话未真正
+    //   结束，键盘保持（不闪断、不打断组字）。
+    if (ame223_pendingStopResign) {
+        dispatch_block_cancel(ame223_pendingStopResign);
+        Block_release(ame223_pendingStopResign);
+        ame223_pendingStopResign = NULL;
+        NSLog(@"[SurfaceVC] Task223 IME debounce: pending stop-resign cancelled by StartTextInput (rapid Stop->Start cycle)");
+    }
     if (self.inputTextField.isFirstResponder) return;
     // Task171 哨兵空格先于 becomeFirstResponder 写入（防 UIAsyncTextInput
     // 首会话竞争，与 ✎ 按钮同序）
@@ -2481,10 +2512,31 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             NSLog(@"[SurfaceVC] Task222 IME guard: skip resign during marked-text composition");
             return;
         }
-        ame171_keyboardDismissGeneration++;
-        [self.inputTextField resignFirstResponder];
-        self.inputTextField.alpha = 1.0f;
-        NSLog(@"[SurfaceVC] Task172 SDL stop-text-input: keyboard resigned with MC text context");
+        // ★ Task223（第二轮）：收起去抖——即便 markedTextRange 恰为空（组字
+        //   刚上屏的瞬间窗口），Stop 也不立即收起，而是挂 250ms 延迟块；
+        //   循环里的 Start 会在窗内取消它。只有 MC 真正结束输入会话（发送/
+        //   ESC 关菜单）时才无 Start 跟随，键盘在 250ms 后安静收起。这把
+        //   "每字符 Stop->Start" 整类循环从【必闪断】降级为【零感知】。
+        if (ame223_pendingStopResign) {
+            dispatch_block_cancel(ame223_pendingStopResign);
+            Block_release(ame223_pendingStopResign);
+        }
+        __weak typeof(self) weakSelf = self;
+        ame223_pendingStopResign = Block_copy(^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
+            if (!strongSelf.inputTextField.isFirstResponder) return;
+            if (strongSelf.inputTextField.markedTextRange != nil) {
+                NSLog(@"[SurfaceVC] Task223 IME debounce: resign skipped at fire time (composition active)");
+                return;
+            }
+            ame171_keyboardDismissGeneration++;
+            [strongSelf.inputTextField resignFirstResponder];
+            strongSelf.inputTextField.alpha = 1.0f;
+            NSLog(@"[SurfaceVC] Task172 SDL stop-text-input: keyboard resigned with MC text context (debounced 250ms)");
+        });
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ame223_pendingStopResign);
     }
 }
 

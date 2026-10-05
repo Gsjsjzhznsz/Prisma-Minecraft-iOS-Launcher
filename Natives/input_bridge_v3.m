@@ -11,6 +11,7 @@
 #import "AppDelegate.h"
 #import "SurfaceViewController.h"
 #import "FileListViewController.h"  // Task222：openURLGlobal 目录分支走应用内文件浏览器
+#import "FolderBrowserViewController.h"  // Task223：真正的全功能文件夹浏览器（FileList 只列 .json）
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -809,18 +810,19 @@ void openURLGlobal(NSString *path) {
         if (pathExists && isDir) {
             @try {
                 UIViewController *presenter = UIWindow.mainWindow.rootViewController;
-                while (presenter.presentedViewController != nil &&
-                       [presenter.presentedViewController isKindOfClass:[UINavigationController class]]) {
+                while (presenter.presentedViewController != nil) {
                     presenter = presenter.presentedViewController;
                 }
-                FileListViewController *flvc = [[FileListViewController alloc] init];
-                flvc.listPath = fsPath;
-                UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:flvc];
-                nav.modalPresentationStyle = UIModalPresentationPageSheet;
+                // ★ Task223（清单第 9 项）：换用 FolderBrowserViewController。
+                //   病历：Task222 路由到的 FileListViewController 是自定义控件
+                //   JSON 选择器——只列 .json、无标题无导航，普通文件夹上
+                //   = 空列表 = 用户只看到 PageSheet 毛玻璃。新浏览器支持全
+                //   类型、目录下钻、QL 预览与分享。
+                UINavigationController *nav = [FolderBrowserViewController wrappedControllerForPath:fsPath];
                 [presenter presentViewController:nav animated:YES completion:nil];
-                NSLog(@"[input_bridge] Task222: opened folder in-app browser: %@", fsPath);
+                NSLog(@"[input_bridge] Task223: opened folder in-app browser: %@", fsPath);
             } @catch (NSException *e) {
-                NSLog(@"[input_bridge] Task222: in-app folder browser exception: %@", e);
+                NSLog(@"[input_bridge] Task223: in-app folder browser exception: %@", e);
             }
             dispatch_group_leave(group);
             return;

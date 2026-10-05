@@ -24,11 +24,11 @@ verify_task147.py —— Task 149 校验器
 分节：A 欢迎卡(1,2) / B 主页卡片高度与阴影(3,4) / C 更新卡与新闻卡重排(3) /
       D 公告列表蓝条(5) / E 内存弹窗(6) / F 新闻页双列(3尾) / G 语法配平
 """
-import os
+import os  # Task223 path-heal: workspace rename drift
 import re
 import sys
 
-REPO = os.environ.get("TASK149_REPO", "/home/z/my-project/workspace/Air-Minecraft-iOS-Launcher")
+REPO = os.environ.get("TASK149_REPO", os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 PASS = 0
 FAIL = 0
 

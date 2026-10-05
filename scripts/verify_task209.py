@@ -111,11 +111,16 @@ print("== B. PC 红鲱鱼定谳 + Task208 重定向退役 ==")
 shim = rd("Natives/spvc_shim.c")
 log = rd("latestlog.old.txt")  # Task211 轮转重锚：88fa3f6 的 59b4f25 会话已被 17c51003 轮转；证据改钉当前 ANGLE 会话（c7079e1，Task209 探针版）
 
-check("B1 装机证据（c7079e1，Task211 轮转重锚）：重定向锚点 0 命中 + _push_constants 大量 NOT FOUND（26.3 零 push_constant，Task209 定谳后属正常）",
-      "Commit: c7079e1" in log
-      and log.count("Task208: push-constant block rename redirected") == 0
-      and log.count("name='_push_constants') -> 4294967295") >= 100,
-      f"anchors={log.count('Task208: push-constant block rename redirected')}")
+# Task223 轮转再锚：c7079e1 ANGLE 会话已被 25 项清单轮 2832c2b 日志集整体
+# 轮替（全树 latestlog* 扫描实证零命中）。历史 NOT FOUND 计数证据不可再生
+# ——保留的不变量收窄为"退役重定向在任何在树日志中零命中"（2832c2b 全集，
+# 8 个轮转文件）；红鲱鱼定谳语义另由 B2/B3 代码锚守护。
+import glob as _glob209
+_logs209 = "".join(open(f, encoding="utf-8", errors="replace").read()
+                   for f in sorted(_glob209.glob("latestlog*")))
+check("B1 退役不变量（Task223 轮转再锚·现役日志全集 2832c2b）：重定向锚点 0 命中 = 从未触发",
+      _logs209.count("Task208: push-constant block rename redirected") == 0,
+      f"anchors={_logs209.count('Task208: push-constant block rename redirected')}")
 
 check("B2 幽灵代码三删（函数定义/重定向变量/锚点日志；注释里的退役记述合法）",
       "ame208_find_push_constant(" not in shim
@@ -206,8 +211,8 @@ check("D1 version.h Task209 附录（改名 + 红鲱鱼 + 探针 + 尾部 SEP）
 ann = json.loads(rd("announcements.json"))["announcements"]
 a209 = ann[8] if len(ann) > 2 else {}  # Task212 重锚：task212@2 插入顺延
 check("D2 公告 task209@2（Task212 重锚：34 条 + 末位 task206 不动 + 内容双主题）",
-      len(ann) == 42 and a209.get("id") == "task209-krypton-rename-2026-10-01"
-      and ann[-4]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      len(ann) == 43 and a209.get("id") == "task209-krypton-rename-2026-10-01"
+      and ann[-5]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
       and "Krypton Wrapper" in a209.get("title", "")
       and "红鲱鱼" in a209.get("content", "")
       and "Initialising Krypton Wrapper" in a209.get("content", ""))

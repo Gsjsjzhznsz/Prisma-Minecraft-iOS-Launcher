@@ -205,7 +205,7 @@ print("== G. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"G-{lang} 唯一键 2565（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2565, f"got {len(keys)}")
+    check(f"G-{lang} 唯一键 2606（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2606, f"got {len(keys)}")
 zh = rd("Natives/resources/zh-Hans.lproj/Localizable.strings")
 en = rd("Natives/resources/en.lproj/Localizable.strings")
 check("G-新键在位（welcome 全家 + ame218.crash 全家）",
@@ -216,11 +216,11 @@ check("G-新键在位（welcome 全家 + ame218.crash 全家）",
           "ame218.crash.renderer.body", "ame218.crash.blacklisted", "ame218.crash.view"]))
 ann = json.load(open("announcements.json"))["announcements"]
 check("G-公告 41 条 + 尾锚家族顺延（Task219 后：219@-1 / 218@-2 / 217@-3 / 216@-4 / 206@-5）",
-      len(ann) == 42
-      and ann[-3]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
-      and ann[-4]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-5]["id"] == "task216-ui-2026-10-03"
-      and ann[-6]["id"] == "task206-nggl4es-2026-10-01"
+      len(ann) == 43
+      and ann[-4]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
+      and ann[-5]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-6]["id"] == "task216-ui-2026-10-03"
+      and ann[-7]["id"] == "task206-nggl4es-2026-10-01"
       and ann[0].get("pin") is True)
 
 print("== H. 语法平衡 + 基线 ==")
@@ -269,16 +269,16 @@ check("H4 公告 JSON 可解析且 id 唯一",
 print("== I. 级联抽查（本轮重锚族） ==")
 spot = {
     "scripts/verify_task217.py": ['<string>com.air-devs.air</string>',
-                                  "len(ann) == 42", "#define REVISION 22", "2520"],
-    "scripts/verify_task216.py": ["<string>com.air-devs.air</string>", "len(ann) == 42",
+                                  "len(ann) == 43", "#define REVISION 22", "2606"],
+    "scripts/verify_task216.py": ["<string>com.air-devs.air</string>", "len(ann) == 43",
                                   "#define REVISION 22"],
-    "scripts/verify_task213.py": ["len(ids) == 42"],
-    "scripts/verify_task214.py": ["len(ann) == 42", "2520"],
-    "scripts/verify_task212.py": ["len(ann) == 42", "2520"],
-    "scripts/verify_task211.py": ["len(ann) == 42", "2520"],
-    "scripts/verify_task210.py": ["len(ann) == 42", "2520"],
-    "scripts/verify_task207.py": ["len(ann) == 42"],
-    "scripts/verify_task206.py": ["len(ann) == 42", "ann[-5]", "2520"],
+    "scripts/verify_task213.py": ["len(ids) == 43"],
+    "scripts/verify_task214.py": ["len(ann) == 43", "2606"],
+    "scripts/verify_task212.py": ["len(ann) == 43", "2606"],
+    "scripts/verify_task211.py": ["len(ann) == 43", "2606"],
+    "scripts/verify_task210.py": ["len(ann) == 43", "2606"],
+    "scripts/verify_task207.py": ["len(ann) == 43"],
+    "scripts/verify_task206.py": ["len(ann) == 43", "ann[-5]", "2606"],
 }
 g_ok = True
 g_detail = []

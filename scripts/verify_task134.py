@@ -163,8 +163,10 @@ check("E4b 新日志取证闭环（c68552a：直传重绑调用 + idempotent hit
       # 现行日志（99d8122e 的 latestlog.txt 同含 rebind/idempotent 双锚）；
       # latestlog.old / latestlog.txt.old.txt 两文件名已不存在于工作树
       # （Task144 时代的文件名假设早已随多轮轮换失效 = 存量漂移，本轮收口）。
-      rd("latestlog.txt").count("invoking Task132 dlsym rebind") >= 1 and
-      "idempotent hit" in rd("latestlog.txt"))
+      # Task223 重锚：用户 8 份轮换日志上传后证据移位——扫描 latestlog*
+      # 轮换族（任一文件命中双锚即成立，后续轮换不再破锚）。
+      any(rd(f).count("invoking Task132 dlsym rebind") >= 1 and "idempotent hit" in rd(f)
+          for f in __import__("glob").glob("latestlog*")))
 check("E4c 静默早退根治（核心改直传 hdr+slide + 旧入口句柄查找失败落日志）",
       "amethyst_task132_rebind_jna_dlsym_ex(const struct mach_header_64 *ame132_hdr" in sdl and
       "jna rebind handle %p not found in dyld image" in sdl and
@@ -219,8 +221,8 @@ def lkeys(lang):
 
 ks = [lkeys(l) for l in LANGS]
 # Task138 重锚：+2 键（renderer_missing_dylib + mirror_policy-speed_first）
-check("G1 四语言键集一致（Task222 重锚：2565 = Task212 基线 2520 + 陶瓦联机 21 + 捐赠 7 + 向导介绍页 12 + 启动阶段 5）",
-      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2565, f"counts={[len(k) for k in ks]}")
+check("G1 四语言键集一致（Task222 重锚：2606 = Task212 基线 2520 + Task222 45 + Task223 41）",
+      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2606, f"counts={[len(k) for k in ks]}")
 check("G2 Task134 新键齐备（jit_enabler 7 + title/detail 4 + hide_controls；pickextra 3 键已删）",
       all("preference.debug.jit_enabler.auto" in k and
           "preference.debug.jit_enabler.manual" in k and

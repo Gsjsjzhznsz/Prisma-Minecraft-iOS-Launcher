@@ -114,7 +114,21 @@ mch = rd("Natives/PLMirrorCenter.h")
 # 文件↔会话新映射：latestlog.txt=Mithril(4.0)会话 / latestlog.old.txt=MobileGL-gles(ES)会话 /
 # latestlog=Forge 安装会话 / latestlog.old=OSMesa(zink)会话。原 26.1.2/voicechat 会话日志
 # 已被轮换出仓库根，A1/A2 改锚现存会话证据；A2 证据缺失时跳过（模式同 verify_task140 G 块）。
-log_2612 = rd("latestlog.old.txt")
+# Task223 重锚：日志再次轮换（用户 8 份会话日志上传）——证据 git 钉到
+# c22e7090c:latestlog.txt（Task220 同款 aged-out 证据钉法）；工作树轮换族
+# 中若仍现身役会话则优先用活证据。
+log_2612 = None
+import glob as _g, subprocess as _sp
+for _f in sorted(_g.glob("latestlog*")):
+    _t = rd(_f)
+    if "Task138: POJAV_NATIVEDIR=" in _t and "controlify JNA direct-mapping guard" in _t:
+        log_2612 = _t
+        print(f"  (A1 现役证据：工作树 {_f})")
+        break
+if log_2612 is None:
+    log_2612 = _sp.run(["git", "show", "c22e7090c:latestlog.txt"],
+                       capture_output=True, text=True).stdout
+    print("  (A1 现役轮换族无 26.1.2 会话，证据 git 钉 c22e7090c:latestlog.txt)")
 log_gles = rd("latestlog.old.txt")
 log_mithril = rd("latestlog.txt")
 # Task220 git-pin：Oct-4/5 日志三连上传轮换（e1f2114e/def65d79/50254b8d）
@@ -280,8 +294,8 @@ for l in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     s = rd(f"Natives/resources/{l}.lproj/Localizable.strings")
     ks.append(set(re.findall(r'^"([^"]+)"\s*=', s, re.M)))
 # Task220 计数同步：Task158-219 逐轮新增键（+363），四语言一致链保持。
-check("I-l10n 四语言键集一致（Task220 重锚：当前基线 2520）",
-      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2520,
+check("I-l10n 四语言键集一致（Task220 重锚：当前基线 2606）",
+      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2606,
       f"counts={[len(k) for k in ks]}")
 gram_ok = True
 for l in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:

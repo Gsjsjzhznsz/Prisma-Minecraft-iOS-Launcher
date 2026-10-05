@@ -25,7 +25,9 @@ import os
 import re
 import sys
 
-REPO = os.environ.get("TASK150_REPO", "/home/z/my-project/workspace/Air-Minecraft-iOS-Launcher")
+# Task223 修复：仓库更名+搬移后的存量路径漂移（workspace/Air-Minecraft-iOS-Launcher
+# 已不存在）——默认改为脚本所在仓库根，环境变量覆盖口保留。
+REPO = os.environ.get("TASK150_REPO", os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 PASS = 0
 FAIL = 0
 
@@ -182,7 +184,7 @@ for lg in langs:
     check(f"E[{lg}] 退役 2 键清零 + Sodium 6 键在位", r1 and r2 and n1 and n2 and n3 and n4 and n5 and n6)
     sets.append(set(re.findall(r'^"([^"]+)"\s*=', s, re.M)))
 check("E5 四语言键集一致（1952 = Task156 基线 2228 + Task157 组件键 2）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2520,
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2606,
       f"counts={[len(x) for x in sets]}")
 
 print()

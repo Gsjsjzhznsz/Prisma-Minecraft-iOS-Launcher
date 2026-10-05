@@ -131,9 +131,9 @@ check("G4 门控日志锚（user + xuid 双取证）",
 
 print("== H. 公告 + version.h ==")
 check("H1 公告 41→42（task220 条目就位）",
-      len(ann_items) == 42 and ann_items[-1]["id"] == "task220-account-avatar-skin-integrity-2026-10-05")
+      len(ann_items) == 43 and ann_items[-2]["id"] == "task220-account-avatar-skin-integrity-2026-10-05")
 check("H2 公告内容覆盖六项修复",
-      all(k in ann_items[-1]["content"] for k in ["账号类型误判", "头像链修复", "皮肤渲染源", "keychain", "令牌门控"]))
+      all(k in ann_items[-2]["content"] for k in ["账号类型误判", "头像链修复", "皮肤渲染源", "keychain", "令牌门控"]))
 check("H3 version.h Task220 追记（REVISION 22 不 bump）",
       "REVISION 22 addendum (Task 220" in vh and "#define REVISION 22" in vh)
 

@@ -115,8 +115,11 @@ bool init_checkForJailbreak() {
 
 void init_logDeviceAndVer(char *argument) {
     // Amethyst version
-    NSLog(@"[Pre-Init] Amethyst iOS Remastered INIT!");
-    NSLog(@"[Pre-Init] GitHub: https://github.com/herbrine8403/Amethyst-iOS-MyRemastered");
+    // Task223（清单第 23 项“log 里遗留旧名字”）：横幅先报本 fork 身份
+    //（Prisma，Task218 改名后的仓库名），上游出处行保持致谢语义不变。
+    NSLog(@"[Pre-Init] Prisma Launcher (fork of Amethyst iOS Remastered) INIT!");
+    NSLog(@"[Pre-Init] Fork: https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher");
+    NSLog(@"[Pre-Init] Upstream: https://github.com/herbrine8403/Amethyst-iOS-MyRemastered");
     NSLog(@"[Pre-Init] Please try not to post this log of the remastered launcher to the original GitHub Issues for help.");
     NSLog(@"[Pre-Init] Version: %@", NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"], CONFIG_TYPE);
     NSLog(@"[Pre-Init] Commit: %s (%s)", CONFIG_COMMIT, CONFIG_BRANCH);

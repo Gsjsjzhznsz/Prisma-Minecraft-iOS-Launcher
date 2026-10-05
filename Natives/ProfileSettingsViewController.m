@@ -1644,6 +1644,31 @@ static NSString * localizeProfileTitle(NSString *title) {
         return;
     }
 
+    // ★ Task223（清单第 5/6 项——“原本是版本隔离的客户端，切换成版本隔离后
+    //   模组找不到”根修）：迁移源改为【当前 gameDir 的已解析目录】，而非只
+    //   看实例根。病历：profile 原本隔离在 versions/<旧id>（或自定义目录）
+    //   时，用户再开“隔离此版本”（lastVersionId 已变，如整合包升级/唯一化
+    //   id 变化），旧代码只从实例根搬——那里什么都没有，mods/saves 留在旧
+    //   隔离目录里，新隔离目录空空如也 = “模组找不到”（2832c2b 装机
+    //   latestlog.2 实锤该族症状：26.2 实例的 mods 里混入 26.3 的
+    //   fabric-api = 各版本 mods 串位）。
+    NSString *oldGameDirRaw = self.profile[@"gameDir"];
+    NSString *migrateSource = instanceRoot;
+    if ([oldGameDirRaw isKindOfClass:[NSString class]] && oldGameDirRaw.length > 0 &&
+        ![oldGameDirRaw isEqualToString:@"."] && ![oldGameDirRaw isEqualToString:relative]) {
+        // 旧隔离/自定义目录（相对路径相对实例根解析；绝对路径原样）。
+        if ([oldGameDirRaw isAbsolutePath]) {
+            migrateSource = oldGameDirRaw;
+        } else {
+            NSString *clean = [oldGameDirRaw hasPrefix:@"./"] ? [oldGameDirRaw substringFromIndex:2] : oldGameDirRaw;
+            migrateSource = [instanceRoot stringByAppendingPathComponent:clean];
+        }
+    }
+    BOOL ame223_sameDir = [migrateSource.stringByResolvingSymlinksInPath
+        isEqualToString:isoDir.stringByResolvingSymlinksInPath];
+    NSLog(@"[ProfileSettings] Task223 isolation migration source: %@ (old gameDir=%@, same-as-target=%d)",
+          migrateSource, oldGameDirRaw, (int)ame223_sameDir);
+
     // 迁移清单：游戏运行时会读写的用户数据（旧版升级前都在实例根）。
     // 刻意排除：logs/crash-reports（历史垃圾）、versions/libraries/assets
     //（共享层，隔离目录里不存在这些概念——启动链从实例根读）。
@@ -1655,23 +1680,25 @@ static NSString * localizeProfileTitle(NSString *title) {
     NSInteger moved = 0;
     NSInteger skipped = 0;
     NSMutableArray<NSString *> *skipNames = [NSMutableArray array];
-    for (NSString *item in ame217_items) {
-        NSString *src = [instanceRoot stringByAppendingPathComponent:item];
-        NSString *dst = [isoDir stringByAppendingPathComponent:item];
-        if (![fm fileExistsAtPath:src]) continue;
-        if ([fm fileExistsAtPath:dst]) {
-            skipped++;
-            [skipNames addObject:item];
-            continue;
-        }
-        NSError *mvErr = nil;
-        if ([fm moveItemAtPath:src toPath:dst error:&mvErr]) {
-            moved++;
-            NSLog(@"[ProfileSettings] Task217: isolation migration moved '%@' -> %@", item, relative);
-        } else {
-            skipped++;
-            [skipNames addObject:item];
-            NSLog(@"[ProfileSettings] Task217: isolation migration FAILED for '%@': %@", item, mvErr);
+    if (!ame223_sameDir) {
+        for (NSString *item in ame217_items) {
+            NSString *src = [migrateSource stringByAppendingPathComponent:item];
+            NSString *dst = [isoDir stringByAppendingPathComponent:item];
+            if (![fm fileExistsAtPath:src]) continue;
+            if ([fm fileExistsAtPath:dst]) {
+                skipped++;
+                [skipNames addObject:item];
+                continue;
+            }
+            NSError *mvErr = nil;
+            if ([fm moveItemAtPath:src toPath:dst error:&mvErr]) {
+                moved++;
+                NSLog(@"[ProfileSettings] Task217: isolation migration moved '%@' -> %@", item, relative);
+            } else {
+                skipped++;
+                [skipNames addObject:item];
+                NSLog(@"[ProfileSettings] Task217: isolation migration FAILED for '%@': %@", item, mvErr);
+            }
         }
     }
 
@@ -2959,9 +2986,25 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
                     // Task173：安装成功 → 落自动配置键（Task172 键沿用；启动链
                     // ame172_applyProfileTouchController 落 UDP + 屏蔽控件）。
                     weakSelf.touchControllerEnabled = YES;
+                    // ★ Task223（用户报“下载完成后没有自动配置：设置项状态没有
+                    //   刷新，手动重启就行”）：自动配置提前到【安装完成时刻】
+                    //   落地——三项全局键立即生效（设置页/右面板即时反映，不再
+                    //   需要重启或等首次启动），同时撤掉用户关闭哨兵（新安装 =
+                    //   明确的启用意图）+ 广播刷新已打开的设置页。
+                    setPrefBool(@"control.mod_touch_enable", YES);
+                    setPrefObject(@"control.mod_touch_mode", @1);  // UDP
+                    setPrefBool(@"control.mod_touch_hide_controls", YES);
+                    setPrefBool(@"control.mod_touch_user_off", NO);
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        // Task223：专属刷新广播（已打开的 TC 设置页重读三项全局键）。
+                        [[NSNotificationCenter defaultCenter]
+                            postNotificationName:@"TouchControllerSettingsChanged" object:nil];
+                        [[NSNotificationCenter defaultCenter]
+                            postNotificationName:@"ReloadProfileList" object:nil];
+                    });
                     [weakSelf saveSettings];
                     [weakSelf reloadAllTableViews];
-                    NSLog(@"[TouchController] Task173 installed %@ for %@ -- profile auto-config armed (UDP + hide controls)", tcFile, gameVersion);
+                    NSLog(@"[TouchController] Task173 installed %@ for %@ -- auto-config applied immediately (UDP + hide controls)", tcFile, gameVersion);
                     [weakSelf showComponentAlert:localize(@"i18n_str_253", nil)
                                          message:[NSString stringWithFormat:
                         localize(@"component.touch.done", nil),

@@ -95,6 +95,7 @@
 "launcher.wait_jit.title" = "正在等待JIT";
 "launcher.wait_jit.message" = "Amethyst依賴即時編譯令Java以最大性能執行。";
 "launcher.wait_jit_trollstore.message" = "如果仍然看到此消息，请在 TrollStore 中启用 URL Scheme。";
+"launcher.jit.stikjit_unhandled" = "stikjit:// 無回應（未安裝 StikDebug？）。請安裝 StikDebug 後重試，或改用其它 JIT 開啟方式。";
 
 "login.error.username.outOfRange" = "用戶名必須是在3至16個字元之間。";
 "login.error.fields.empty" = "请填写所有字段";
@@ -1616,7 +1617,7 @@
 "i18n_str_980" = "服务器地址为空";
 "i18n_str_981" = "未选择 profile";
 "i18n_str_982" = "该服务器没有可下载的服务端整合包";
-"i18n_str_989" = "无法连接到房主（PingHostFail）";
+"i18n_str_989" = "找不到房主的連線服務（15 秒內未發現房主）。請確認房主仍在線上（房間頁保持開啟），雙方網路可用後重試。";
 "i18n_str_990" = "房主拒绝连接（PingHostRst）";
 "i18n_str_991" = "访客端 EasyTier 崩溃（GuestEasytierCrash）";
 "i18n_str_992" = "房主端 EasyTier 崩溃（HostEasytierCrash）";
@@ -2757,3 +2758,45 @@
 "launch.stage.2" = "正在載入遊戲與模組…";
 "launch.stage.3" = "正在初始化資源…";
 "launch.stage.4" = "正在開啟遊戲視窗…";
+
+/* Task223 (round 25 -- new keys) */
+"folderbrowser.item_count" = "%lu 項";
+"global.share" = "分享";
+"about.discord.join" = "Discord 社群";
+"about.donate.star" = "點個 Star";
+"about.donate.star_hint" = "如果沒錢可以點個 ⭐️ 支持一下——每一個 Star 都是持續更新的動力。";
+"dataexport.title" = "匯出資料";
+"dataexport.summary.title" = "備份內容";
+"dataexport.summary.body" = "%lu 個檔案 · 共 %@";
+"dataexport.empty" = "沒有可匯出的資料";
+"dataexport.failed" = "匯出失敗：%@";
+"dataexport.level.title" = "壓縮等級";
+"dataexport.level.none" = "不壓縮";
+"dataexport.level.fast" = "快速";
+"dataexport.level.best" = "最好";
+"dataexport.level.none.hint" = "速度最快，適合本機備份與快速遷移。";
+"dataexport.level.fast.hint" = "均衡選擇：體積更小，速度尚可。";
+"dataexport.level.best.hint" = "體積最小，但耗時最長。";
+"dataexport.start" = "開始匯出";
+"dataexport.task.name" = "資料備份匯出";
+"dataexport.stage.collect" = "掃描檔案";
+"dataexport.stage.compress" = "打包壓縮";
+"dataexport.done.title" = "匯出完成";
+"dataexport.save_to_files" = "儲存到「檔案」";
+"coachmarks.hint" = "點按任意處繼續（%lu/%lu）";
+"coachmarks.nav.title" = "側邊導覽";
+"coachmarks.nav.body" = "在左側切換首頁、下載與版本管理等頁面。";
+"coachmarks.content.title" = "主內容區";
+"coachmarks.content.body" = "你的版本、整合包與設定都在這裡展示。";
+"coachmarks.launch.title" = "啟動";
+"coachmarks.launch.body" = "右側面板：啟動遊戲、查看 JIT 與記憶體狀態。";
+"welcome.intro.subtitle" = "快速了解本啟動器的核心能力。";
+"terracotta.stage.precheck" = "正在檢查連線網路連通性…";
+"terracotta.error.no_public_peer" = "無法連線任何公共連線伺服器。請檢查網路（Wi-Fi/行動網路/代理）後重試；若網路正常，通常是房主不在線上。";
+"account.menu.change_name" = "更換遊戲名字";
+"account.menu.change_skin" = "更換皮膚";
+"account.menu.default_skin" = "預設皮膚";
+"account.default_skin.title" = "預設皮膚";
+"account.default_skin.hint" = "選擇原版預設皮膚（Steve / Alex）";
+"account.default_skin.done" = "已更新頭像：%@";
+"account.default_skin.failed" = "設定失敗：帳號檔案不可讀";

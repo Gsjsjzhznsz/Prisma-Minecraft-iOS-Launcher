@@ -2,6 +2,14 @@
 #import "TerracottaManager.h"
 #import "TerracottaBridge.h"
 #import "SilentAudioPlayer.h"
+// Task223：公共 EasyTier peer 预检（BSD socket 探测）
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <fcntl.h>
+#include <sys/select.h>
+#include <errno.h>
+#include <string.h>
 
 NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaManagerStateDidChange";
 
@@ -118,21 +126,86 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
     self.role = TerracottaRoleClient;
     self.currentInviteCode = inviteCode;
     self.status = TerracottaStatusConnecting;
-    self.stageDescription = localize(@"i18n_str_1000", nil);
+    self.stageDescription = localize(@"terracotta.stage.precheck", nil);
     self.lastError = nil;
 
     [[SilentAudioPlayer shared] startKeepingAlive];
 
-    BOOL ok = [TerracottaBridge setGuestingWithRoom:inviteCode playerName:playerName];
-    if (!ok) {
-        self.status = TerracottaStatusError;
-        self.lastError = localize(@"i18n_str_1001", nil);
-        [[SilentAudioPlayer shared] stopKeepingAlive];
-        [self notifyStateChanged];
-        return NO;
-    }
-    [self startPolling];
-    [self notifyStateChanged];
+    // ★ Task223（清单第 11 项）：公共服务器预检——2832c2b terracotta.log 实锤
+    //   “Cannot find scaffolding server” = 访客 15s 内未在 EasyTier 网络里
+    //   看到 “scaffolding-mc-server-*” 房主。两大成因：①房主不在线；②四个
+    //   公共 peer 全部不可达（断网/防火墙）。预检把 ② 提前到加入前给出明确
+    //   报错（不再让用户看三轮 15s 的 PingHostFail）；①保持原有自动重试。
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSArray<NSString *> *peers = @[
+            @"public.easytier.top:11010",
+            @"public2.easytier.cn:54321",
+        ];
+        BOOL anyReachable = NO;
+        dispatch_group_t g = dispatch_group_create();
+        for (NSString *peer in peers) {
+            dispatch_group_enter(g);
+            dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+                NSArray *parts = [peer componentsSeparatedByString:@":"];
+                if (parts.count == 2) {
+                    int fd = socket(AF_INET, SOCK_STREAM, 0);
+                    if (fd >= 0) {
+                        struct sockaddr_in addr;
+                        memset(&addr, 0, sizeof(addr));
+                        addr.sin_family = AF_INET;
+                        addr.sin_port = htons((uint16_t)[parts[1] intValue]);
+                        struct hostent *he = gethostbyname(parts[0].UTF8String);
+                        if (he != NULL && he->h_addrtype == AF_INET) {
+                            memcpy(&addr.sin_addr, he->h_addr_list[0], he->h_length);
+                            // 非阻塞 connect + 2s 轮询（无 libevent 依赖的极简探测）
+                            int flags = fcntl(fd, F_GETFL, 0);
+                            fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+                            int rc = connect(fd, (struct sockaddr *)&addr, sizeof(addr));
+                            if (rc == 0) {
+                                anyReachable = YES;
+                            } else if (rc < 0 && errno == EINPROGRESS) {
+                                fd_set wset;
+                                FD_ZERO(&wset);
+                                FD_SET(fd, &wset);
+                                struct timeval tv = {2, 0};
+                                if (select(fd + 1, NULL, &wset, NULL, &tv) > 0) {
+                                    int soerr = 0;
+                                    socklen_t slen = sizeof(soerr);
+                                    getsockopt(fd, SOL_SOCKET, SO_ERROR, &soerr, &slen);
+                                    if (soerr == 0) anyReachable = YES;
+                                }
+                            }
+                            close(fd);
+                        }
+                    }
+                }
+                dispatch_group_leave(g);
+            });
+        }
+        dispatch_group_wait(g, DISPATCH_TIME_FOREVER);
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!anyReachable) {
+                self.status = TerracottaStatusError;
+                self.lastError = localize(@"terracotta.error.no_public_peer", nil);
+                [[SilentAudioPlayer shared] stopKeepingAlive];
+                NSLog(@"[Terracotta] Task223: all public EasyTier peers unreachable -- join aborted with guidance");
+                [self notifyStateChanged];
+                return;
+            }
+            NSLog(@"[Terracotta] Task223: public peer precheck passed");
+            self.stageDescription = localize(@"i18n_str_1000", nil);
+            BOOL ok = [TerracottaBridge setGuestingWithRoom:inviteCode playerName:playerName];
+            if (!ok) {
+                self.status = TerracottaStatusError;
+                self.lastError = localize(@"i18n_str_1001", nil);
+                [[SilentAudioPlayer shared] stopKeepingAlive];
+                [self notifyStateChanged];
+                return;
+            }
+            [self startPolling];
+            [self notifyStateChanged];
+        });
+    });
     return YES;
 }
 

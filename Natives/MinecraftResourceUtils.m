@@ -138,7 +138,14 @@
             library[@"downloads"][@"classifiers"] != nil ||
             library[@"natives"] != nil ||
             // Exclude LWJGL libraries
-            [library[@"name"] hasPrefix:@"org.lwjgl"]
+            // Task223 上游同步（upstream 63add943c，yiyeshi0-hash 真机验证）：
+            // 放行 lwjgl-glfw 与 lwjgl-natives——Forge/NeoForge 的 fmlearlywindow
+            // 依赖 org.lwjgl:lwjgl-glfw，全部跳过会
+            // NoClassDefFoundError: org/lwjgl/glfw/GLFW 并 exit(1)（装 Forge 即
+            // 启动闪退）。其余 lwjgl 行为不变（iOS 仍用自带 lwjgl）。
+            ([library[@"name"] hasPrefix:@"org.lwjgl"]
+             && ![library[@"name"] hasPrefix:@"org.lwjgl:lwjgl-glfw"]
+             && ![library[@"name"] hasPrefix:@"org.lwjgl:lwjgl-natives"])
         );
 
         NSString *versionStr = [library[@"name"] componentsSeparatedByString:@":"][2];
@@ -166,6 +173,9 @@
             library[@"downloads"][@"artifact"][@"path"] = @"org/ow2/asm/asm-all/5.0.4/asm-all-5.0.4.jar";
             library[@"downloads"][@"artifact"][@"sha1"] = @"e6244859997b3d4237a552669279780876228909";
             library[@"downloads"][@"artifact"][@"url"] = @"https://repo1.maven.org/maven2/org/ow2/asm/asm-all/5.0.4/asm-all-5.0.4.jar";
+            // Task223 上游同步（upstream 3a2116c05 / Flux 同款）：继承的 size
+            // 属于被替换的旧版本，指向新 jar 后校验必失败——一并删掉。
+            [library[@"downloads"][@"artifact"] removeObjectForKey:@"size"];
         }
     }
 

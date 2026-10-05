@@ -3894,7 +3894,18 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
             NSLog(@"[JIT] [DownloadVC] Using stikjit:// with JIT26 script (TXM device)");
         }
         NSLog(@"[JIT] [DownloadVC] Opening stikjit:// to obtain debugger/JIT");
-        [UIApplication.sharedApplication openURL:[NSURL URLWithString:[NSString stringWithFormat:@"stikjit://enable-jit?bundle-id=%@&pid=%d%@", NSBundle.mainBundle.bundleIdentifier, getpid(), scriptDataString]] options:@{} completionHandler:nil];
+        // Task223 上游同步（upstream f05ec3842 的缺口项）：openURL 回调兜底——
+        // StikDebug 卸载/URL scheme 未注册时 stikjit:// 无人响应，旧代码静默
+        // 无视，用户只看到"正在开启 JIT"转圈直到超时。这里直接给出可行动
+        // 的错误提示（安装 StikDebug 或换 JIT 开启方式）。
+        [UIApplication.sharedApplication openURL:[NSURL URLWithString:[NSString stringWithFormat:@"stikjit://enable-jit?bundle-id=%@&pid=%d%@", NSBundle.mainBundle.bundleIdentifier, getpid(), scriptDataString]] options:@{} completionHandler:^(BOOL urlOK) {
+            NSLog(@"[JIT] [DownloadVC] openURL stikjit:// -> %d", urlOK);
+            if (!urlOK) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    showDialog(localize(@"Error", nil), localize(@"launcher.jit.stikjit_unhandled", nil));
+                });
+            }
+        }];
     } else {
         // Assuming 16.7-17.3.1. SideStore still lacks this URL scheme at the time of writing, so it only jumps to SideStore.
         NSLog(@"[JIT] [DownloadVC] Using sidestore:// for iOS < 17.4");

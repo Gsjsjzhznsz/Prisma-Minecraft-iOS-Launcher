@@ -1787,7 +1787,10 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_437", nil)
                                                                    message:hasTrollStoreJIT ? localize(@"i18n_str_2054", nil) : localize(@"i18n_str_439", nil)
                                                             preferredStyle:UIAlertControllerStyleAlert];
-    [self presentViewController:alert animated:YES completion:nil];
+    // ★ Task223（“版本设置启动游戏，JIT 有概率卡死”根修层 1/2）：进度型弹窗
+    //   无动画呈现——stikjit:// 切后台转场瞬间的 animated present 是主线程
+    //   楔死头号嫌疑类（同 NavCtrl 病历注释）。
+    [self presentViewController:alert animated:NO completion:nil];
     
     // Task172：后台任务断言。stikjit:// 必然把 App 切到后台（切去 StikJIT），
     // 无断言时 iOS 立即挂起本进程——760c07c 装机日志实锤等待循环被冻结
@@ -1917,7 +1920,7 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_437", nil)
                                                                    message:localize(@"i18n_str_439", nil)
                                                             preferredStyle:UIAlertControllerStyleAlert];
-    [self presentViewController:alert animated:YES completion:nil];
+    [self presentViewController:alert animated:NO  /* Task223: JIT progress alert presented un-animated (background-transition present is the main-thread wedge suspect) */ completion:nil];
     
     __block UIBackgroundTaskIdentifier ame172_bgt = [UIApplication.sharedApplication beginBackgroundTaskWithName:@"ame172-jit26-reattach" expirationHandler:^{
         // 同上：宽限期到由系统挂起，恢复后继续。

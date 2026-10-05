@@ -24,6 +24,8 @@
 //   - 完成页：礼花彩带（CAEmitter 一次爆发）+ 大号对勾弹簧入场
 //
 
+#import "Ame223CoachMarksView.h"
+#import "BackgroundManager.h"
 #import "WelcomeViewController.h"
 #import "AboutViewController.h"
 #import "LauncherPreferences.h"
@@ -71,6 +73,9 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
 @property (nonatomic, strong) UILabel *jitStatusLabel;
 /// 前台通知观察者（JIT 状态刷新）。
 @property (nonatomic, strong) id foregroundObserver;
+// Task223：欢迎页自带壁纸层（第 14 项）+ 压暗蒙层（动态反色可读性，第 21 项）。
+@property (nonatomic, strong, nullable) UIImageView *ame223_wallpaperView;
+@property (nonatomic, strong, nullable) UIView *ame223_scrimView;
 @end
 
 @implementation WelcomeViewController
@@ -137,7 +142,16 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    // ★ Task223（清单第 14/21 项）：欢迎页接入壁纸 + 动态反色。
+    //   旧实现：不透明 systemBackground——全局背景容器被全屏呈现的向导盖住
+    //   = “欢迎画面依旧没有显示自定义壁纸”。新实现：自带壁纸图层（与视图
+    //   层级无关），暗壁纸→浅字、亮壁纸→深字（ame223_adaptiveTextColor）。
     self.view.backgroundColor = [UIColor systemBackgroundColor];
+    [self ame223_applyWallpaperBackground];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame223_wallpaperChanged:)
+                                                 name:Ame223WallpaperChangedNotification
+                                               object:nil];
 
     // 语言初值：跟随当前存储（system 默认）
     NSString *ame218_lang = getPrefObject(@"general.app_language");
@@ -176,6 +190,39 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     if (self.foregroundObserver != nil) {
         [[NSNotificationCenter defaultCenter] removeObserver:self.foregroundObserver];
     }
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:Ame223WallpaperChangedNotification
+                                                  object:nil];
+}
+
+/// Task223：自带壁纸图层 + 亮度自适应文字色。无壁纸时保持系统底色
+///（labelColor 等语义色照常），有壁纸时全向导文字按壁纸亮度反色。
+- (void)ame223_applyWallpaperBackground {
+    [self.ame223_wallpaperView removeFromSuperview];
+    self.ame223_wallpaperView = nil;
+    [self.ame223_scrimView removeFromSuperview];
+    self.ame223_scrimView = nil;
+    UIImage *wall = [[BackgroundManager sharedManager] ame223_currentWallpaperImage];
+    if (wall == nil) return;
+    self.view.backgroundColor = [UIColor clearColor];
+    UIImageView *iv = [[UIImageView alloc] initWithImage:wall];
+    iv.contentMode = UIViewContentModeScaleAspectFill;
+    iv.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    iv.frame = self.view.bounds;
+    [self.view insertSubview:iv atIndex:0];
+    self.ame223_wallpaperView = iv;
+    // 压暗蒙层：暗壁纸轻压（保对比）、亮壁纸重压（白字可读）。
+    BOOL dark = [[BackgroundManager sharedManager] ame223_wallpaperLuminanceIsDark];
+    UIView *scrim = [[UIView alloc] initWithFrame:self.view.bounds];
+    scrim.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    scrim.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:dark ? 0.25 : 0.45];
+    [self.view insertSubview:scrim aboveSubview:iv];
+    self.ame223_scrimView = scrim;
+    NSLog(@"[Welcome] Task223 wallpaper layer applied (dark=%d)", (int)dark);
+}
+
+- (void)ame223_wallpaperChanged:(NSNotification *)n {
+    [self ame223_applyWallpaperBackground];
 }
 
 - (BOOL)prefersHomeIndicatorAutoHidden {
@@ -508,16 +555,94 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
             [[NSNotificationCenter defaultCenter] postNotificationName:@"AppLanguageChanged"
                                                                 object:self.pickedLanguage ?: @"system"];
         }
-        // ⑥ 完成步收尾 → 自动打开关于页（版本/QQ 群/更新检查都在那里，
-        // 首次使用者最需要看一眼；跳过路径不弹）。
+        // ⑥ 完成步收尾 → 【zl2 灰屏圆圈焦点介绍】→ 关于页（版本/QQ 群/
+        // 更新检查都在那里，首次使用者最需要看一眼；跳过路径两者都不弹）。
         if (openAbout && ame219_presenter != nil) {
-            AboutViewController *ame219_about = [[AboutViewController alloc] init];
-            UINavigationController *ame219_nav = [[UINavigationController alloc]
-                initWithRootViewController:ame219_about];
-            ame219_nav.modalPresentationStyle = UIModalPresentationPageSheet;
-            [ame219_presenter presentViewController:ame219_nav animated:YES completion:nil];
+            // ★ Task223（清单第 16 项）：先焦点引导（向导完成后主界面的
+            //   灰屏圆圈介绍），走完再弹关于页——顺序即用户描述。
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.45 * NSEC_PER_SEC)),
+                           dispatch_get_main_queue(), ^{
+                [WelcomeViewController ame223_showCoachMarksThenAboutFrom:ame219_presenter];
+            });
         }
     }];
+}
+
+/// Task223：zl2 风格焦点引导（主界面三个锚点：导航/版本卡/右侧面板），
+/// 走完后打开关于页。锚点从呈现者的视图树里按导航控制器与按钮位置
+/// 现场探测（两种主布局通吃）；探测不到的锚点自动剔除，全空则直接
+/// 进关于页（引导是增强，绝不阻塞）。
++ (void)ame223_showCoachMarksThenAboutFrom:(UIViewController *)presenter {
+    NSMutableArray<NSDictionary *> *items = [NSMutableArray array];
+    UIWindow *window = UIWindow.mainWindow;
+
+    // 锚点 1：左/侧导航（根分栏的第一个子 VC 的视图）
+    UIViewController *root = window.rootViewController;
+    NSArray<UIViewController *> *children = root.childViewControllers;
+    if (children.count > 0 && children[0].isViewLoaded && children[0].view.window) {
+        CGRect r = [Ame223CoachMarksView screenRectForView:children[0].view];
+        if (!CGRectIsNull(r)) {
+            [items addObject:@{
+                @"rect": [NSValue valueWithCGRect:r],
+                @"title": localize(@"coachmarks.nav.title", nil),
+                @"body": localize(@"coachmarks.nav.body", nil),
+                @"round": @NO,
+            }];
+        }
+    }
+
+    // 锚点 2：主内容区（最后一个子 VC = 内容/版本卡片区）
+    if (children.count > 1) {
+        UIViewController *content = children.lastObject;
+        if (content.isViewLoaded && content.view.window) {
+            CGRect r = [Ame223CoachMarksView screenRectForView:content.view];
+            if (!CGRectIsNull(r)) {
+                [items addObject:@{
+                    @"rect": [NSValue valueWithCGRect:r],
+                    @"title": localize(@"coachmarks.content.title", nil),
+                    @"body": localize(@"coachmarks.content.body", nil),
+                    @"round": @NO,
+                }];
+            }
+        }
+    }
+
+    // 锚点 3：右侧面板（启动/JIT 所在——从内容区里找最右侧的大按钮组；
+    // 通用探测：取主窗口层级中最后一个可见 UIButton 的父容器）。
+    CGRect btnRect = CGRectNull;
+    for (UIView *v in window.subviews) {
+        CGRect r = [Ame223CoachMarksView screenRectForView:v];
+        if (CGRectIsNull(r)) continue;
+        for (UIView *sub in v.subviews) {
+            if ([sub isKindOfClass:UIButton.class] && sub.frame.size.height > 40 && sub.alpha > 0.5) {
+                CGRect sr = [Ame223CoachMarksView screenRectForView:sub];
+                if (!CGRectIsNull(sr) && (CGRectIsNull(btnRect) || CGRectGetMidX(sr) > CGRectGetMidX(btnRect))) {
+                    btnRect = CGRectInset(sr, -18, -18);
+                }
+            }
+        }
+    }
+    if (!CGRectIsNull(btnRect)) {
+        [items addObject:@{
+            @"rect": [NSValue valueWithCGRect:btnRect],
+            @"title": localize(@"coachmarks.launch.title", nil),
+            @"body": localize(@"coachmarks.launch.body", nil),
+            @"round": @YES,
+        }];
+    }
+
+    void (^presentAbout)(void) = ^{
+        AboutViewController *ame219_about = [[AboutViewController alloc] init];
+        UINavigationController *ame219_nav = [[UINavigationController alloc]
+            initWithRootViewController:ame219_about];
+        ame219_nav.modalPresentationStyle = UIModalPresentationPageSheet;
+        [presenter presentViewController:ame219_nav animated:YES completion:nil];
+    };
+    if (items.count == 0) {
+        presentAbout();
+        return;
+    }
+    [Ame223CoachMarksView showSequence:items completion:presentAbout];
 }
 
 #pragma mark - 步骤内容：0 Hero
@@ -1238,54 +1363,94 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
                     subtitle:localize(@"welcome.data.subtitle", nil)];
     UIView *ame219_anchor = container.subviews.lastObject;
 
-    UIView *ame219_group = [self ame219_card];
-    ame219_group.translatesAutoresizingMaskIntoConstraints = NO;
-    [container addSubview:ame219_group];
-    UIStackView *ame219_rows = [[UIStackView alloc] init];
-    ame219_rows.axis = UILayoutConstraintAxisVertical;
-    ame219_rows.spacing = 4;
-    ame219_rows.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame219_group addSubview:ame219_rows];
+    // ★ Task223（清单第 15 项）：选项行改真 UIAction 按钮（旧 UITapGestureRecognizer
+    //   挂在零高度/被拉伸的普通 UIView 上 = “部分按键仍点击不了”的头号嫌疑；
+    //   UIControl 的命中测试 + 固定行高 = 稳定可点 + 不再“拉得特别长”。
+    //   行样式：iOS 设置风格（图标块 + 双行文字 + chevron），固定 68pt。
+    void (^ame223_addRow)(NSString *symbol, NSString *title, NSString *subtitle, SEL action) = ^(NSString *symbol, NSString *title, NSString *subtitle, SEL action) {
+        UIButton *row = [UIButton buttonWithType:UIButtonTypeSystem];
+        row.accessibilityLabel = title;
+        row.accessibilityHint = subtitle;
+        [row addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
+        row.backgroundColor = [[UIColor secondarySystemGroupedBackgroundColor] colorWithAlphaComponent:0.92];
+        row.layer.cornerRadius = 14.0;
+        row.layer.cornerCurve = kCACornerCurveContinuous;
+        row.translatesAutoresizingMaskIntoConstraints = NO;
+
+        UIView *tile = [self ame219_iconTile:symbol filled:NO];
+        tile.translatesAutoresizingMaskIntoConstraints = NO;
+        [row addSubview:tile];
+
+        UILabel *t = [[UILabel alloc] init];
+        t.text = title;
+        t.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
+        t.textColor = [UIColor labelColor];
+        t.userInteractionEnabled = NO;
+        t.translatesAutoresizingMaskIntoConstraints = NO;
+        [row addSubview:t];
+
+        UILabel *s = [[UILabel alloc] init];
+        s.text = subtitle;
+        s.font = [UIFont systemFontOfSize:12];
+        s.textColor = [UIColor secondaryLabelColor];
+        s.numberOfLines = 2;
+        s.userInteractionEnabled = NO;
+        s.translatesAutoresizingMaskIntoConstraints = NO;
+        [row addSubview:s];
+
+        UIImageView *chev = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"chevron.right"]];
+        chev.tintColor = [UIColor tertiaryLabelColor];
+        chev.contentMode = UIViewContentModeScaleAspectFit;
+        chev.userInteractionEnabled = NO;
+        chev.translatesAutoresizingMaskIntoConstraints = NO;
+        [row addSubview:chev];
+
+        [container addSubview:row];
+        [NSLayoutConstraint activateConstraints:@[
+            [row.topAnchor constraintEqualToAnchor:ame219_anchor.bottomAnchor constant:22],
+            [row.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+            [row.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+            [row.heightAnchor constraintEqualToConstant:68],
+            [tile.leadingAnchor constraintEqualToAnchor:row.leadingAnchor constant:14],
+            [tile.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
+            [tile.widthAnchor constraintEqualToConstant:34],
+            [tile.heightAnchor constraintEqualToConstant:34],
+            [t.leadingAnchor constraintEqualToAnchor:tile.trailingAnchor constant:12],
+            [t.topAnchor constraintEqualToAnchor:row.topAnchor constant:12],
+            [s.leadingAnchor constraintEqualToAnchor:t.leadingAnchor],
+            [s.trailingAnchor constraintEqualToAnchor:chev.leadingAnchor constant:-8],
+            [s.topAnchor constraintEqualToAnchor:t.bottomAnchor constant:2],
+            [chev.trailingAnchor constraintEqualToAnchor:row.trailingAnchor constant:-14],
+            [chev.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
+            [chev.widthAnchor constraintEqualToConstant:14],
+        ]];
+        ame219_anchor = row;
+    };
 
     // 主选项：从备份导入
-    UIView *ame219_importRow = [self ame219_optionRowWithIcon:@"square.and.arrow.down"
-                                                        title:localize(@"welcome.data.import", nil)
-                                                     subtitle:localize(@"welcome.data.import.desc", nil)];
-    ame219_importRow.userInteractionEnabled = YES;
-    UITapGestureRecognizer *ame218_importTap = [[UITapGestureRecognizer alloc]
-        initWithTarget:self action:@selector(ame218_importTapped:)];
-    [ame219_importRow addGestureRecognizer:ame218_importTap];
-    [ame219_rows addArrangedSubview:ame219_importRow];
+    ame223_addRow(@"square.and.arrow.down",
+                  localize(@"welcome.data.import", nil),
+                  localize(@"welcome.data.import.desc", nil),
+                  @selector(ame218_importTapped2));
 
     // 次选项：跳过（新装无数据）
-    UIView *ame219_skipRow = [self ame219_optionRowWithIcon:@"arrow.right.circle"
-                                                      title:localize(@"welcome.data.skip", nil)
-                                                   subtitle:localize(@"welcome.data.skip.desc", nil)];
-    ame219_skipRow.userInteractionEnabled = YES;
-    UITapGestureRecognizer *ame218_skipTap = [[UITapGestureRecognizer alloc]
-        initWithTarget:self action:@selector(ame218_dataSkipTapped:)];
-    [ame219_skipRow addGestureRecognizer:ame218_skipTap];
-    [ame219_rows addArrangedSubview:ame219_skipRow];
+    ame223_addRow(@"arrow.right.circle",
+                  localize(@"welcome.data.skip", nil),
+                  localize(@"welcome.data.skip.desc", nil),
+                  @selector(ame218_dataSkipTapped2));
 
-    [NSLayoutConstraint activateConstraints:@[
-        [ame219_group.topAnchor constraintEqualToAnchor:ame219_anchor.bottomAnchor constant:22],
-        [ame219_group.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
-        [ame219_group.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-        [ame219_rows.topAnchor constraintEqualToAnchor:ame219_group.topAnchor constant:6],
-        [ame219_rows.leadingAnchor constraintEqualToAnchor:ame219_group.leadingAnchor constant:6],
-        [ame219_rows.trailingAnchor constraintEqualToAnchor:ame219_group.trailingAnchor constant:-6],
-        [ame219_rows.bottomAnchor constraintEqualToAnchor:ame219_group.bottomAnchor constant:-6],
-    ]];
+    // 底部贴边（内容链尾锚到容器底——消除高度歧义，步骤内容不再异常拉伸）。
+    [ame219_anchor.bottomAnchor constraintLessThanOrEqualToAnchor:container.bottomAnchor constant:-8].active = YES;
 }
 
-- (void)ame218_importTapped:(UITapGestureRecognizer *)gesture {
+- (void)ame218_importTapped2 {
     // 从备份导入：复用 Task217 数据桥（系统文件选择器 + zip 净化 + 合并）。
     // 导入完成后的重启提示由 DataTransferService 自己弹；向导不阻拦。
     NSLog(@"[Welcome] Task218: data import requested in onboarding");
     [[DataTransferService sharedService] importDataFromViewController:self];
 }
 
-- (void)ame218_dataSkipTapped:(UITapGestureRecognizer *)gesture {
+- (void)ame218_dataSkipTapped2 {
     [self ame218_showStep:6 animated:YES];  // Task222：改为 zl2 介绍页（原 5 Done）
 }
 
@@ -1295,40 +1460,18 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
 /// 品牌图标 + 特性行列表（SF 图标 + 标题 + 副标题）+ 社区卡（QQ 群/爱发电，
 /// 与关于页/README 同源信息）。完成后下一步即 Done（自动弹关于页）。
 - (void)ame222_buildIntroStep:(UIView *)container {
-    // 滚动容器：小屏兼容（特性行 + 社区卡总高可超出）
-    UIScrollView *ame222_scroll = [[UIScrollView alloc] init];
-    ame222_scroll.showsVerticalScrollIndicator = NO;
-    ame222_scroll.translatesAutoresizingMaskIntoConstraints = NO;
-    [container addSubview:ame222_scroll];
+    // ★ Task223（清单第 16 项第一半）：本页 Task222 版在装机上是“黑屏完全
+    //   用不了”——内层 UIScrollView 与 contentLayoutGuide 双重定宽（冲突）+
+    //   特性行 alpha=0 依赖动画救活（动画被打断即永久透明）。重写为与其
+    //   它步骤同构的【直接布局】：无内层滚动（外层 contentScrollView 已有
+    //   滚动）、可见即渲染（无 alpha 依赖）、卡片底色用半透明分组色
+    //   （壁纸/深浅色下都可见）。zl2 灰屏圆圈焦点介绍（coach marks）在
+    //   完成向导后、打开关于页前呈现（见 ame218_finishOpenAbout）。
+    [self ame219_addHeaderTo:container
+                       title:localize(@"welcome.intro.title", nil)
+                    subtitle:localize(@"welcome.intro.subtitle", nil)];
+    UIView *ame222_anchor = container.subviews.lastObject;
 
-    UIStackView *ame222_stack = [[UIStackView alloc] init];
-    ame222_stack.axis = UILayoutConstraintAxisVertical;
-    ame222_stack.spacing = 14;
-    ame222_stack.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame222_scroll addSubview:ame222_stack];
-
-    [NSLayoutConstraint activateConstraints:@[
-        [ame222_scroll.topAnchor constraintEqualToAnchor:container.topAnchor],
-        [ame222_scroll.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
-        [ame222_scroll.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-        [ame222_scroll.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
-        [ame222_stack.topAnchor constraintEqualToAnchor:ame222_scroll.contentLayoutGuide.topAnchor constant:8],
-        [ame222_stack.leadingAnchor constraintEqualToAnchor:ame222_scroll.contentLayoutGuide.leadingAnchor constant:20],
-        [ame222_stack.trailingAnchor constraintEqualToAnchor:ame222_scroll.contentLayoutGuide.trailingAnchor constant:-20],
-        [ame222_stack.bottomAnchor constraintEqualToAnchor:ame222_scroll.contentLayoutGuide.bottomAnchor constant:-16],
-        [ame222_stack.widthAnchor constraintEqualToAnchor:ame222_scroll.frameLayoutGuide.widthAnchor constant:-40],
-    ]];
-
-    // 标题
-    UILabel *ame222_title = [[UILabel alloc] init];
-    ame222_title.text = localize(@"welcome.intro.title", nil);
-    ame222_title.font = [UIFont systemFontOfSize:26 weight:UIFontWeightBold];
-    ame222_title.textColor = [UIColor labelColor];
-    ame222_title.textAlignment = NSTextAlignmentCenter;
-    ame222_title.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame222_stack addArrangedSubview:ame222_title];
-
-    // 特性行工厂
     NSArray<NSDictionary *> *ame222_features = @[
         @{@"icon": @"gamecontroller.fill", @"t": @"welcome.intro.f1.title", @"b": @"welcome.intro.f1.body"},
         @{@"icon": @"character.book.closed.fill", @"t": @"welcome.intro.f2.title", @"b": @"welcome.intro.f2.body"},
@@ -1337,19 +1480,14 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     ];
     for (NSDictionary *f in ame222_features) {
         UIView *row = [[UIView alloc] init];
-        row.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.08];
+        row.backgroundColor = [[UIColor secondarySystemGroupedBackgroundColor] colorWithAlphaComponent:0.92];
         row.layer.cornerRadius = 14.0;
         row.layer.cornerCurve = kCACornerCurveContinuous;
-        row.layer.borderWidth = 0.5;
-        row.layer.borderColor = [[UIColor whiteColor] colorWithAlphaComponent:0.10].CGColor;
         row.translatesAutoresizingMaskIntoConstraints = NO;
 
-        UIImageView *icon = [[UIImageView alloc] initWithImage:
-            [UIImage systemImageNamed:f[@"icon"]]];
-        icon.tintColor = accentColor();
-        icon.contentMode = UIViewContentModeScaleAspectFit;
-        icon.translatesAutoresizingMaskIntoConstraints = NO;
-        [row addSubview:icon];
+        UIView *tile = [self ame219_iconTile:f[@"icon"] filled:YES];
+        tile.translatesAutoresizingMaskIntoConstraints = NO;
+        [row addSubview:tile];
 
         UILabel *t = [[UILabel alloc] init];
         t.text = localize(f[@"t"], nil);
@@ -1366,81 +1504,78 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         b.translatesAutoresizingMaskIntoConstraints = NO;
         [row addSubview:b];
 
-        [ame222_stack addArrangedSubview:row];
+        [container addSubview:row];
         [NSLayoutConstraint activateConstraints:@[
-            [icon.leadingAnchor constraintEqualToAnchor:row.leadingAnchor constant:14],
-            [icon.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
-            [icon.widthAnchor constraintEqualToConstant:28],
-            [icon.heightAnchor constraintEqualToConstant:28],
-            [t.leadingAnchor constraintEqualToAnchor:icon.trailingAnchor constant:12],
+            [row.topAnchor constraintEqualToAnchor:ame222_anchor.bottomAnchor constant:14],
+            [row.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+            [row.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+            [tile.leadingAnchor constraintEqualToAnchor:row.leadingAnchor constant:14],
+            [tile.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
+            [tile.widthAnchor constraintEqualToConstant:34],
+            [tile.heightAnchor constraintEqualToConstant:34],
+            [t.leadingAnchor constraintEqualToAnchor:tile.trailingAnchor constant:12],
             [t.topAnchor constraintEqualToAnchor:row.topAnchor constant:12],
             [b.leadingAnchor constraintEqualToAnchor:t.leadingAnchor],
             [b.trailingAnchor constraintEqualToAnchor:row.trailingAnchor constant:-14],
-            [b.topAnchor constraintEqualToAnchor:t.bottomAnchor constant:3],
+            [b.topAnchor constraintEqualToAnchor:t.bottomAnchor constant:2],
             [b.bottomAnchor constraintEqualToAnchor:row.bottomAnchor constant:-12],
         ]];
-        row.alpha = 0;
+        ame222_anchor = row;
     }
 
-    // 社区卡（QQ 群 + 爱发电；zl2 欢迎页同款收尾）
-    UIView *ame222_comm = [[UIView alloc] init];
-    ame222_comm.backgroundColor = [accentColor() colorWithAlphaComponent:0.12];
-    ame222_comm.layer.cornerRadius = 14.0;
-    ame222_comm.layer.cornerCurve = kCACornerCurveContinuous;
-    ame222_comm.translatesAutoresizingMaskIntoConstraints = NO;
+    // 社区卡（QQ 群 + 爱发电；与关于页/README 同源信息）
+    UIView *comm = [[UIView alloc] init];
+    comm.backgroundColor = [accentColor() colorWithAlphaComponent:0.14];
+    comm.layer.cornerRadius = 14.0;
+    comm.layer.cornerCurve = kCACornerCurveContinuous;
+    comm.translatesAutoresizingMaskIntoConstraints = NO;
 
-    UILabel *ame222_commTitle = [[UILabel alloc] init];
-    ame222_commTitle.text = localize(@"welcome.intro.community.title", nil);
-    ame222_commTitle.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
-    ame222_commTitle.textColor = [UIColor labelColor];
-    ame222_commTitle.textAlignment = NSTextAlignmentCenter;
-    ame222_commTitle.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame222_comm addSubview:ame222_commTitle];
+    UILabel *commTitle = [[UILabel alloc] init];
+    commTitle.text = localize(@"welcome.intro.community.title", nil);
+    commTitle.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+    commTitle.textColor = [UIColor labelColor];
+    commTitle.textAlignment = NSTextAlignmentCenter;
+    commTitle.translatesAutoresizingMaskIntoConstraints = NO;
+    [comm addSubview:commTitle];
 
-    UILabel *ame222_commHint = [[UILabel alloc] init];
-    ame222_commHint.text = localize(@"welcome.intro.community.hint", nil);
-    ame222_commHint.font = [UIFont systemFontOfSize:12];
-    ame222_commHint.textColor = [UIColor secondaryLabelColor];
-    ame222_commHint.textAlignment = NSTextAlignmentCenter;
-    ame222_commHint.numberOfLines = 0;
-    ame222_commHint.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame222_comm addSubview:ame222_commHint];
+    UILabel *commHint = [[UILabel alloc] init];
+    commHint.text = localize(@"welcome.intro.community.hint", nil);
+    commHint.font = [UIFont systemFontOfSize:12];
+    commHint.textColor = [UIColor secondaryLabelColor];
+    commHint.textAlignment = NSTextAlignmentCenter;
+    commHint.numberOfLines = 0;
+    commHint.translatesAutoresizingMaskIntoConstraints = NO;
+    [comm addSubview:commHint];
 
-    [ame222_stack addArrangedSubview:ame222_comm];
+    [container addSubview:comm];
     [NSLayoutConstraint activateConstraints:@[
-        [ame222_commTitle.topAnchor constraintEqualToAnchor:ame222_comm.topAnchor constant:12],
-        [ame222_commTitle.leadingAnchor constraintEqualToAnchor:ame222_comm.leadingAnchor constant:14],
-        [ame222_commTitle.trailingAnchor constraintEqualToAnchor:ame222_comm.trailingAnchor constant:-14],
-        [ame222_commHint.topAnchor constraintEqualToAnchor:ame222_commTitle.bottomAnchor constant:4],
-        [ame222_commHint.leadingAnchor constraintEqualToAnchor:ame222_comm.leadingAnchor constant:14],
-        [ame222_commHint.trailingAnchor constraintEqualToAnchor:ame222_comm.trailingAnchor constant:-14],
-        [ame222_commHint.bottomAnchor constraintEqualToAnchor:ame222_comm.bottomAnchor constant:-12],
+        [comm.topAnchor constraintEqualToAnchor:ame222_anchor.bottomAnchor constant:14],
+        [comm.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [comm.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [commTitle.topAnchor constraintEqualToAnchor:comm.topAnchor constant:12],
+        [commTitle.leadingAnchor constraintEqualToAnchor:comm.leadingAnchor constant:14],
+        [commTitle.trailingAnchor constraintEqualToAnchor:comm.trailingAnchor constant:-14],
+        [commHint.topAnchor constraintEqualToAnchor:commTitle.bottomAnchor constant:4],
+        [commHint.leadingAnchor constraintEqualToAnchor:comm.leadingAnchor constant:14],
+        [commHint.trailingAnchor constraintEqualToAnchor:comm.trailingAnchor constant:-14],
+        [commHint.bottomAnchor constraintEqualToAnchor:comm.bottomAnchor constant:-12],
     ]];
 
-    // 底部提示：下一步自动打开关于页
-    UILabel *ame222_next = [[UILabel alloc] init];
-    ame222_next.text = localize(@"welcome.intro.next_hint", nil);
-    ame222_next.font = [UIFont systemFontOfSize:11];
-    ame222_next.textColor = [UIColor tertiaryLabelColor];
-    ame222_next.textAlignment = NSTextAlignmentCenter;
-    ame222_next.numberOfLines = 0;
-    ame222_next.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame222_stack addArrangedSubview:ame222_next];
-
-    // 特性行 stagger 入场（与关于页同节奏：80ms 间隔淡入+上移）
-    NSArray<UIView *> *ame222_rows = [ame222_stack.arrangedSubviews copy];
-    for (NSUInteger i = 1; i < ame222_rows.count; i++) {
-        UIView *v = ame222_rows[i];
-        CGAffineTransform base = v.transform;
-        v.transform = CGAffineTransformTranslate(base, 0, 12);
-        [UIView animateWithDuration:0.4 delay:0.05 + 0.08 * (i - 1)
-         usingSpringWithDamping:0.82 initialSpringVelocity:0.35
-                        options:UIViewAnimationOptionAllowUserInteraction
-                     animations:^{
-            v.alpha = 1.0;
-            v.transform = base;
-        } completion:nil];
-    }
+    // 底部提示 + 内容链尾锚（高度无歧义）
+    UILabel *next = [[UILabel alloc] init];
+    next.text = localize(@"welcome.intro.next_hint", nil);
+    next.font = [UIFont systemFontOfSize:11];
+    next.textColor = [UIColor tertiaryLabelColor];
+    next.textAlignment = NSTextAlignmentCenter;
+    next.numberOfLines = 0;
+    next.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:next];
+    [NSLayoutConstraint activateConstraints:@[
+        [next.topAnchor constraintEqualToAnchor:comm.bottomAnchor constant:12],
+        [next.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [next.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [next.bottomAnchor constraintLessThanOrEqualToAnchor:container.bottomAnchor constant:-8],
+    ]];
 }
 
 #pragma mark - 步骤内容：6 完成

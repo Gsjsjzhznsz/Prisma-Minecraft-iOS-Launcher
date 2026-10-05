@@ -2595,6 +2595,14 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         NSLog(@"[JavaLauncher] Java 8 detected, skipping G1GC tuning (using default GC)");
     }
 
+    // Task223 上游同步（upstream 455c3f5a0 / Flux 同款，仅取 SoftRef 一项）：
+    // 软引用宽限从每 MB 空闲堆 1 秒降到 250ms，让材质/模型缓存在内存压力下
+    // 及时释放而不是 GC 空转（大整合包加载界面的生死线）。Java 8/17+ 通用，
+    // 与 GC 选择无关。注：同提交的 -Xss1m 不移植——本文件下方的 -Xss32M 是
+    // MC 26.3 RenderPearl→shaderc(glslang) 深递归打穿 1MB 栈的 SIGSEGV 根修
+    // （构建 662d6e2 设备日志实证），压回 1m 会复现该崩溃。
+    PUSH_MARGV_LITERAL("-XX:SoftRefLRUPolicyMSPerMB=250");
+
     // ============================================================================
     // Java 线程栈扩容 —— glslang / spirv-cross 深递归防护（MC 26.3）
     // ============================================================================

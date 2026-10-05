@@ -243,6 +243,33 @@ void ame185_dispatchToMainSelfHealing(dispatch_block_t block, NSString *label);
 void* JIT26PrepareRegion(void *addr, size_t len);
 
 // ============================================================================
+// Task223：后台 GPU 提交禁令的渲染线程驻车（zink 黑屏 / mg 卡死根修）。
+// 病历（2832c2b latestlog.1，zink FO 26.2 后台切换）：
+//   vk-error] VK_ERROR_DEVICE_LOST: Lost VkDevice after MTLCommandBuffer
+//   "vkQueueSubmit ... Insufficient Permission (to submit GPU work from
+//   background) (kIOGPUCommandBufferCallbackErrorBackgroundExecutionNotPermitted)"
+//   MESA: error: zink: DEVICE LOST!
+// iOS 在 App 进入后台后拒绝一切 GPU 命令提交；MC 的渲染线程只要在后台
+// 再画一帧（暂停菜单也在渲染——ESC 改变不了这个事实），MoltenVK 的
+// VkDevice 即永久 DEVICE_LOST = 回前台黑屏（zink）/上下文损坏冻结（mg，
+// ANGLE Metal 同族）。Task222 的 ESC 暂停链无法阻止渲染循环。
+// 根修：willResignActive 时置驻车标志，渲染线程在【交换边界】（osm 交换 /
+// EGL swap——一切 GPU 提交的必经汇聚点，且此刻本帧提交已全部完成）睡在
+// 条件变量上；didBecomeActive/willEnterForeground 放行。通知中心拉帘/
+// 来电等仅 resign 不 background 的场景同样驻车（MC 自动暂停，省电无副作用）。
+// 死锁安全：放行只依赖主线程的 UIKit 生命周期回调（与渲染线程无锁交互）；
+// 驻车只发生在游戏会话的交换路径（启动器阶段零 swap = 零影响）。
+// ============================================================================
+void ame223_bg_park_begin(void);
+void ame223_bg_park_end(void);
+void ame223_bg_park_wait(const char *swapSite);
+
+// Task223 上游同步（upstream 3a2116c05）：YES 表示 NSError 是"当前没有可用
+// 网络"，而非服务器返回了不喜欢的内容。账户刷新只认 NSURLErrorDataNotAllowed
+// 会漏掉飞行模式/无 Wi-Fi 等常见离线形态。
+BOOL isConnectivityError(NSError *error);
+
+// ============================================================================
 // Task185：加载器版本 ↔ 游戏版本等价匹配（Forge/NeoForge >26 找不到根修）。
 // 病历（11e4b63 装机反馈）：Minecraft 26.x 起版本号去掉 "1." 前缀（26.3、
 // 26.1.2），而三处提取器仍把 NeoForge 26.3.x 解析成 MC "1.26.3"、把 Forge

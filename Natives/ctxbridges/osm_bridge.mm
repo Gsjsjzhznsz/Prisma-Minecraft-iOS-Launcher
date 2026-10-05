@@ -1120,6 +1120,11 @@ void osm_make_current(osm_render_window_t* bundle) {
 }
 
 void osm_swap_buffers() {
+    // ★ Task223：后台 GPU 提交禁令驻车点（zink/VirGL/softpipe 一切 osm 系
+    // 渲染器的帧边界）。本帧的 GL 提交已全部完成（MC 渲染在本入口之前），
+    // 在此睡下 = 冻结渲染线程的下一帧 = 后台零 GPU 提交（VkDevice 不再
+    // DEVICE_LOST，MoltenVK 呈现链不再被禁令打断）。
+    ame223_bg_park_wait("osm_swap");
     // Task 106：相位计时 t0。gap = 本入口与上次入口之差 = MC 完整帧周期
     //（含 MC 渲染 + 我们的全段）；心跳里 frame - swap = MC 侧帧耗时。
     double t106_0 = ame106_us(mach_absolute_time());

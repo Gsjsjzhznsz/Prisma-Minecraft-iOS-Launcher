@@ -256,7 +256,10 @@ NSMutableDictionary* createButton(NSString* name, int* keycodes, NSString* dynam
     // 抓取切换沿可复位（见文件头 AmeControlJoystickOnGrabChange）
     char lastDirection = ame66_joystickLastDirection;
     char direction = -1;
-    if (xValue != 0 && yValue != 0) {
+    // Task223 上游同步（upstream 3a2116c05 / Flux 同款）：沿轴正推时必有一
+    // 分量为 0，要求两分量都非零会把四正方向误判为回中。这里测的是"偏离
+    // 中心"，任一分量非零即成立。
+    if (xValue != 0 || yValue != 0) {
         CGFloat degree = atan2f(yValue, xValue) * (180.0 / M_PI);
         if (degree < 0) {
             degree += 360;

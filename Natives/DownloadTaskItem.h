@@ -32,6 +32,7 @@ extern NSString * const DownloadTaskResourceTypeResourcePack;
 extern NSString * const DownloadTaskResourceTypeDataPack;
 extern NSString * const DownloadTaskResourceTypeModpack;
 extern NSString * const DownloadTaskResourceTypeWorld;
+extern NSString * const DownloadTaskResourceTypeBackup;
 extern NSString * const DownloadTaskResourceTypeJavaRuntime;
 
 @class DownloadTaskItem;

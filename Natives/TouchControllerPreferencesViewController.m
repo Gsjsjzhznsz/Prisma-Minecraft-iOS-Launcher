@@ -43,6 +43,19 @@ typedef NS_ENUM(NSInteger, TouchControllerCommMode) {
                                              selector:@selector(reapplyBackgroundEffect)
                                                  name:@"BackgroundUIEffectChanged"
                                                object:nil];
+    // Task223：监听 TouchController 设置变化广播（组件安装完成时立即落地三项
+    // 全局键后发出）——已打开的本页即时刷新显示，不再需要重启启动器。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame223_reloadOnTouchSettingsChanged)
+                                                 name:@"TouchControllerSettingsChanged"
+                                               object:nil];
+}
+
+/// Task223：TouchControllerSettingsChanged 广播到达时重载表格（三项全局键
+/// 已被外部落地，重读即显示真实状态）。
+- (void)ame223_reloadOnTouchSettingsChanged {
+    [self.tableView reloadData];
+    NSLog(@"[TouchController] Task223 settings page reloaded (TouchControllerSettingsChanged)");
 }
 
 - (void)initViewCreation {
@@ -233,14 +246,20 @@ typedef NS_ENUM(NSInteger, TouchControllerCommMode) {
             // 禁用 TouchController
             self.setPreference(@"control", @"mod_touch_enable", @NO);
             self.setPreference(@"control", @"mod_touch_mode", @0);
+            // ★ Task223（用户报“手动关闭后又被强制开启”）：全局页手动关闭 =
+            // 明确的用户意图——落哨兵，启动链 ame172 的自动配置见到哨兵
+            // 即不再覆盖（否则 profile 开关仍 YES，下次启动又把全局顶回 ON）。
+            setPrefBool(@"control.mod_touch_user_off", YES);
             [self removeUDPEnvironmentVariable];
-            NSLog(@"[TouchController] Disabled");
+            NSLog(@"[TouchController] Disabled (Task223: user-off sentinel set, launch-time auto-config will not override)");
             break;
 
         case TouchControllerCommModeUDP:
             // 启用 UDP 模式
             self.setPreference(@"control", @"mod_touch_enable", @YES);
             self.setPreference(@"control", @"mod_touch_mode", @1);
+            // Task223：手动开启 = 撤哨兵（用户重新接管，自动配置恢复默认行为）。
+            setPrefBool(@"control.mod_touch_user_off", NO);
             [self setUDPEnvironmentVariable];
             NSLog(@"[TouchController] Enabled with UDP mode");
             break;
@@ -249,6 +268,8 @@ typedef NS_ENUM(NSInteger, TouchControllerCommMode) {
             // 启用静态库模式
             self.setPreference(@"control", @"mod_touch_enable", @YES);
             self.setPreference(@"control", @"mod_touch_mode", @2);
+            // Task223：同上，撤哨兵。
+            setPrefBool(@"control.mod_touch_user_off", NO);
             [self removeUDPEnvironmentVariable];
             NSLog(@"[TouchController] Enabled with Static Library mode");
             break;

@@ -877,19 +877,32 @@ static CGFloat LauncherRootLayoutRightPanelWidth(UITraitCollection *trait) {
         // crossDissolve 渐变呈现"从左上角小点扩展出来"的怪异效果。
         // 在 animations block 内显式 layoutIfNeeded 强制立即布局，让 snapshot B 时 frame 已撑满，
         // crossDissolve 就是标准的淡入淡出。duration 由 0.25 调整为 0.3 让过渡更柔和自然。
-        [UIView transitionWithView:self.contentContainer
-                          duration:0.3
-                           options:UIViewAnimationOptionTransitionCrossDissolve
-                        animations:^{
-                            [oldVC willMoveToParentViewController:nil];
-                            [oldVC.view removeFromSuperview];
-                            [self.contentContainer addSubview:viewController.view];
-                            [NSLayoutConstraint activateConstraints:newConstraints];
-                            [self.contentContainer layoutIfNeeded];
-                        } completion:^(BOOL finished) {
-                            [oldVC removeFromParentViewController];
-                            [viewController didMoveToParentViewController:self];
-                        }];
+        // Task223：先落位再动画（新视图 addSubview + 约束 + 强制布局，
+        // 确保 transform/alpha 动画作用于已撑满的 frame——crossDissolve 时代
+        // 的"左上角小点弹出"教训在此同样适用）。
+        [self.contentContainer addSubview:viewController.view];
+        [NSLayoutConstraint activateConstraints:newConstraints];
+        [self.contentContainer layoutIfNeeded];
+        self.contentContainer.clipsToBounds = YES;
+        viewController.view.alpha = 0.0;
+        viewController.view.transform = CGAffineTransformMakeTranslation(30, 0);
+        oldVC.view.transform = CGAffineTransformIdentity;
+        [UIView animateWithDuration:0.38 delay:0
+                        usingSpringWithDamping:0.85 initialSpringVelocity:0.4
+                        options:UIViewAnimationOptionBeginFromCurrentState
+                     animations:^{
+            viewController.view.alpha = 1.0;
+            viewController.view.transform = CGAffineTransformIdentity;
+            oldVC.view.alpha = 0.0;
+            oldVC.view.transform = CGAffineTransformMakeTranslation(-22, 0);
+        } completion:^(BOOL finished) {
+            oldVC.view.alpha = 1.0;
+            oldVC.view.transform = CGAffineTransformIdentity;
+            [oldVC willMoveToParentViewController:nil];
+            [oldVC.view removeFromSuperview];
+            [oldVC removeFromParentViewController];
+            [viewController didMoveToParentViewController:self];
+        }];
     } else {
         if (oldVC) {
             [oldVC willMoveToParentViewController:nil];

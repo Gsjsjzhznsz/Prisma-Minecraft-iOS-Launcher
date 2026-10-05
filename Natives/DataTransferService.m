@@ -431,4 +431,168 @@
     });
 }
 
+#pragma mark - Task223：并发读 + 串行写流水线导出（清单第 12/13 项根修）
+
+- (void)ame223_runPipelinedBackupExportWithMethod:(NSInteger)method
+                                          progress:(void(^)(NSUInteger done, NSUInteger total, unsigned long long writtenBytes))progress
+                                      stageAdvance:(void(^)(NSUInteger stage))stageAdvance
+                                        completion:(void(^)(NSString *tmpPath, NSError *error))completion {
+    NSString *home = @(getenv("POJAV_HOME"));
+    if (home.length == 0) {
+        completion(nil, [NSError errorWithDomain:@"DataTransferService" code:100
+                                     userInfo:@{NSLocalizedDescriptionKey: @"POJAV_HOME unset"}]);
+        return;
+    }
+    NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
+    fmt.dateFormat = @"yyyyMMdd-HHmmss";
+    NSString *tmpPath = [NSTemporaryDirectory() stringByAppendingPathComponent:
+        [NSString stringWithFormat:@"prisma-backup-%@.zip", [fmt stringFromDate:[NSDate date]]]];
+    [[NSFileManager defaultManager] removeItemAtPath:tmpPath error:nil];
+
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSFileManager *fm = [NSFileManager defaultManager];
+        // ---- 阶段 0：收集（枚举 + 属性一次拿全，避免写入循环里二次 stat）----
+        NSDirectoryEnumerator *enumerator = [fm enumeratorAtPath:home];
+        NSMutableArray<NSDictionary *> *entries = [NSMutableArray array];
+        NSString *rel;
+        while ((rel = [enumerator nextObject])) {
+            if ([self ame217_shouldSkipExportEntry:rel.lastPathComponent]) {
+                [enumerator skipDescendants];
+                continue;
+            }
+            NSString *abs = [home stringByAppendingPathComponent:rel];
+            NSDictionary *attrs = [fm attributesOfItemAtPath:abs error:nil];
+            if (attrs && ![attrs.fileType isEqualToString:NSFileTypeDirectory]) {
+                [entries addObject:@{@"rel": rel, @"abs": abs, @"size": @(attrs.fileSize)}];
+            }
+        }
+        NSUInteger total = entries.count;
+        if (total == 0) {
+            completion(nil, [NSError errorWithDomain:@"DataTransferService" code:101
+                                         userInfo:@{NSLocalizedDescriptionKey: localize(@"ame219.export.empty", @"No data to export")}]);
+            return;
+        }
+        if (stageAdvance) stageAdvance(0);   // collect 完成 → compress 开始
+
+        // ---- 阶段 1：流水线（4 路并发读 + 串行写）----
+        NSError *archiveErr = nil;
+        UZKArchive *archive = [[UZKArchive alloc] initWithPath:tmpPath error:&archiveErr];
+        if (archive == nil) {
+            completion(nil, archiveErr ?: [NSError errorWithDomain:@"DataTransferService" code:102
+                                                      userInfo:@{NSLocalizedDescriptionKey: @"archive init failed"}]);
+            return;
+        }
+
+        // 在飞上限：平均文件 < 8MB 时取 8 个文件、否则按 64MB 预算折算，
+        // 防大文件会话（材质包/.jar 数百 MB）读侧内存失控。
+        unsigned long long totalSize = 0;
+        for (NSDictionary *e in entries) totalSize += [e[@"size"] unsignedLongLongValue];
+        NSUInteger avg = (NSUInteger)MAX((double)totalSize / (double)total, 1.0);
+        NSUInteger maxInFlight = (NSUInteger)MAX(8.0, MIN(48.0, 64.0 * 1048576.0 / (double)avg));
+
+        dispatch_queue_t writeQueue = dispatch_queue_create("ame223.export.write", DISPATCH_QUEUE_SERIAL);
+        dispatch_group_t writeGroup = dispatch_group_create();
+        dispatch_semaphore_t inFlight = dispatch_semaphore_create((long)maxInFlight);
+        __block NSUInteger done = 0;
+        __block unsigned long long writtenBytes = 0;
+        __block BOOL failed = NO;
+        __block NSError *failErr = nil;
+        NSDate *lastUi = [NSDate distantPast];
+
+        // 读侧：全局并发队列按序取号（保持条目顺序，zip 内目录顺序友好）。
+        for (NSDictionary *e in entries) {
+            if (failed) break;
+            dispatch_semaphore_wait(inFlight, DISPATCH_TIME_FOREVER);
+            if (failed) break;
+            NSString *abs = e[@"abs"];
+            NSString *relPath = e[@"rel"];
+            dispatch_group_enter(writeGroup);
+            dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+                @autoreleasepool {
+                    if (!failed) {
+                        NSData *data = [NSData dataWithContentsOfFile:abs];
+                        // 写侧：串行队列保证 UZKArchive 单线程访问（线程安全硬约束）；
+                        // 读完成即释放一个在飞名额（读写重叠的稳态来源）。
+                        dispatch_async(writeQueue, ^{
+                            @autoreleasepool {
+                                if (!failed && data != nil) {
+                                    NSError *werr = nil;
+                                    if (![archive writeData:data filePath:relPath fileDate:nil
+                                                compressionMethod:(UZKCompressionMethod)method
+                                                      password:nil overwrite:YES error:&werr]) {
+                                        failed = YES;
+                                        failErr = werr;
+                                    } else {
+                                        done++;
+                                        writtenBytes += data.length;
+                                    }
+                                } else if (!failed && data == nil) {
+                                    // 读失败（文件被并发删除等）：跳过该条目，不判整体失败
+                                    done++;
+                                }
+                                dispatch_group_leave(writeGroup);
+                            }
+                        });
+                    } else {
+                        dispatch_group_leave(writeGroup);
+                    }
+                    // 进度节流（150ms）+ 尾部强刷
+                    NSDate *now = [NSDate date];
+                    if (progress && ([now timeIntervalSinceDate:lastUi] > 0.15 || done == total)) {
+                        lastUi = now;
+                        NSUInteger d = done, t = total;
+                        unsigned long long b = writtenBytes;
+                        progress(d, t, b);
+                    }
+                    dispatch_semaphore_signal(inFlight);
+                }
+            });
+        }
+        // 等全部写入落盘
+        dispatch_group_wait(writeGroup, DISPATCH_TIME_FOREVER);
+
+        if (failed) {
+            [[NSFileManager defaultManager] removeItemAtPath:tmpPath error:nil];
+            completion(nil, failErr ?: [NSError errorWithDomain:@"DataTransferService" code:103
+                                                    userInfo:@{NSLocalizedDescriptionKey: @"zip write failed"}]);
+            return;
+        }
+        if (progress) progress(done, total, writtenBytes);
+        NSLog(@"[DataTransfer] Task223 pipelined export: %lu files, %llu bytes, method=%ld -> %@",
+              (unsigned long)done, writtenBytes, (long)method, tmpPath.lastPathComponent);
+        completion(tmpPath, nil);
+    });
+}
+
+- (void)ame223_presentDestinationPickerForTmpPath:(NSString *)tmpPath
+                                              from:(UIViewController *)presenter {
+    if (tmpPath.length == 0 || !presenter) return;
+    self.presenter = presenter;
+    NSURL *tmpURL = [NSURL fileURLWithPath:tmpPath];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // 完成提示 + 直接落点选择（move 语义不占双份空间）。
+        UIAlertController *doneAlert = [UIAlertController
+            alertControllerWithTitle:localize(@"dataexport.done.title", nil)
+                             message:tmpPath.lastPathComponent
+                      preferredStyle:UIAlertControllerStyleAlert];
+        [doneAlert addAction:[UIAlertAction actionWithTitle:localize(@"dataexport.save_to_files", nil)
+                                                      style:UIAlertActionStyleDefault
+                                                    handler:^(UIAlertAction *a) {
+            UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc]
+                initForExportingURLs:@[tmpURL] asCopy:NO];
+            picker.delegate = self;
+            picker.modalPresentationStyle = UIModalPresentationFormSheet;
+            self.awaitingExportDestination = YES;
+            [presenter presentViewController:picker animated:YES completion:nil];
+        }]];
+        [doneAlert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_44", @"OK")
+                                                      style:UIAlertActionStyleCancel
+                                                    handler:^(UIAlertAction *a) {
+            // 不保存：清理 tmp
+            [[NSFileManager defaultManager] removeItemAtPath:tmpPath error:nil];
+        }]];
+        [presenter presentViewController:doneAlert animated:YES completion:nil];
+    });
+}
+
 @end

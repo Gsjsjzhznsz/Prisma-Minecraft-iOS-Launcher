@@ -181,12 +181,33 @@ check("E4 重锚就位（task166 C2 + task130 E10 的 Task167 形态）",
 
 print("== F. 语法门 + 级联 ==")
 def balanced(path):
-    s = rd(path)
-    # 剥离块注释与行注释后做括号平衡（粗门；与既有任务同口径）
-    s = re.sub(r"/\*.*?\*/", "", s, flags=re.S)
-    s = re.sub(r"//[^\n]*", "", s)
-    # 剥离字符串字面量（避免内部括号干扰）
-    s = re.sub(r'"(?:[^"\\\n]|\\.)*"', '""', s)
+    # Task223 再锚：旧 stripper 先剥注释再剥字符串——字符串里的 URL（含 //）
+    # 会被行注释规则截断（Task223 的 Prisma 横幅三行 NSLog 暴露：HEAD 恰好
+    # 事故性配平，加一行后 net +1 误报）。换成 verify_task223 O 门的 house
+    # 状态机（code/lc/bc/st/ch 五态单遍扫描，字符字面量与转义正确处理）。
+    src = rd(path)
+    out, state, i = [], "code", 0
+    n = len(src)
+    while i < n:
+        c, nxt = src[i], (src[i+1] if i+1 < n else "")
+        if state == "code":
+            if c == "/" and nxt == "/": state = "lc"; i += 2; continue
+            if c == "/" and nxt == "*": state = "bc"; i += 2; continue
+            if c == '"': state = "st"
+            elif c == "'": state = "ch"
+            out.append(c)
+        elif state == "lc":
+            if c == "\n": state = "code"; out.append(c)
+        elif state == "bc":
+            if c == "*" and nxt == "/": state = "code"; i += 2; continue
+        elif state == "st":
+            if c == "\\": i += 2; continue
+            if c == '"': state = "code"
+        elif state == "ch":
+            if c == "\\": i += 2; continue
+            if c == "'": state = "code"
+        i += 1
+    s = "".join(out)
     return s.count("{") == s.count("}") and s.count("(") == s.count(")")
 
 check("F1 编辑文件括号平衡（mgl_metal_fsr.mm / LauncherPreferences.m / main.m / AppDelegate.m）",

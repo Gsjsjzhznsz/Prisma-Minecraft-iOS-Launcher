@@ -356,15 +356,19 @@ void ame185_dispatchToMainSelfHealing(dispatch_block_t block, NSString *label) {
         NSLog(@"[JIT] Task185 self-healing dispatch: refire on foreground (label=%@)", label);
         dispatch_async(dispatch_get_main_queue(), attempt);
     }];
-    // 防线③：看门狗（后台队列，窗口 120s 与 JIT 等待对齐）。仅在前台重派：
-    // 后台态主线程挂起属正常（防线②负责那个场景），前台而未达才是"派发被吞"。
+    // 防线③：看门狗（后台队列，窗口 120s 与 JIT 等待对齐）。Task223 升级：
+    // 无条件重派（旧版仅前台态重派——后台断言存活的会话里主队列若被楔死，
+    // ①已排队但永不执行、②要等回前台；若用户回前台时主【线程】仍卡在
+    // present 半途，②的激活通知同样无法送达 = 永久卡死。每 10s 盲重派一次
+    // 让 ①的队列里始终有新鲜块等着，delivered 检查保证不会双跑）。
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
         for (int ame185_i = 0; ame185_i < 60; ame185_i++) {
             if (delivered) { ame185_cleanup(); return; }
             usleep(2 * 1000 * 1000);
             if (delivered) { ame185_cleanup(); return; }
-            if ([UIApplication sharedApplication].applicationState == UIApplicationStateActive) {
-                NSLog(@"[JIT] Task185 self-healing dispatch: watchdog redispatch #%d (label=%@)", ame185_i + 1, label);
+            if ((ame185_i % 5) == 4) {  // 每 10s 一次（循环节拍 2s）
+                NSLog(@"[JIT] Task185 self-healing dispatch: watchdog redispatch #%d (label=%@)",
+                      ame185_i + 1, label);
                 dispatch_async(dispatch_get_main_queue(), attempt);
             }
         }
@@ -373,6 +377,59 @@ void ame185_dispatchToMainSelfHealing(dispatch_block_t block, NSString *label) {
         }
         ame185_cleanup();
     });
+}
+
+// ============================================================================
+// Task223：后台 GPU 提交禁令的渲染线程驻车（机制与病历见 utils.h 注释）。
+// ============================================================================
+#include <pthread.h>
+
+static pthread_mutex_t ame223_park_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t ame223_park_cond = PTHREAD_COND_INITIALIZER;
+static volatile BOOL ame223_parked = NO;
+static volatile BOOL ame223_park_logged = NO;
+
+void ame223_bg_park_begin(void) {
+    // 主线程（UIKit 生命周期回调）调用。置位即可——渲染线程在下一次
+    // 交换边界自会驻车（resign 到 background 之间的转场动画期 GPU 仍合法，
+    // 本帧已完成提交 + 下一帧尚未开始 = 安全窗口）。
+    pthread_mutex_lock(&ame223_park_mutex);
+    if (!ame223_parked) {
+        ame223_parked = YES;
+        ame223_park_logged = NO;
+        NSLog(@"[BG-Park] Task223 render thread parking armed (willResignActive)");
+    }
+    pthread_mutex_unlock(&ame223_park_mutex);
+}
+
+void ame223_bg_park_end(void) {
+    pthread_mutex_lock(&ame223_park_mutex);
+    if (ame223_parked) {
+        ame223_parked = NO;
+        pthread_cond_broadcast(&ame223_park_cond);
+        NSLog(@"[BG-Park] Task223 render thread released (foreground lifecycle)");
+    }
+    pthread_mutex_unlock(&ame223_park_mutex);
+}
+
+void ame223_bg_park_wait(const char *swapSite) {
+    // 交换边界（渲染线程）调用。无驻车时 = 一次原子读 + 立即返回（快路径
+    // 开销：一帧一次锁检查，fsr 心跳的 6ms 粒度下不可测）。
+    pthread_mutex_lock(&ame223_park_mutex);
+    if (ame223_parked) {
+        if (!ame223_park_logged) {
+            ame223_park_logged = YES;
+            NSLog(@"[BG-Park] Task223 render thread PARKED at %s -- no GPU submission while inactive",
+                  swapSite ?: "swap");
+        }
+        while (ame223_parked) {
+            // 挂起态由 iOS 掌握（进程冻结时等待自动冻结，恢复后继续等），
+            // 不设超时：唯一解锁条件是前台生命周期回调。
+            pthread_cond_wait(&ame223_park_cond, &ame223_park_mutex);
+        }
+        NSLog(@"[BG-Park] Task223 render thread RESUMED at %s", swapSite ?: "swap");
+    }
+    pthread_mutex_unlock(&ame223_park_mutex);
 }
 
 // Task169：JIT 等待轮询的有界版本。病历（装机 485b18c，zink 冷启动首次
@@ -622,6 +679,25 @@ NSError* saveJSONToFile(NSDictionary *dict, NSString *path) {
         return error;
     }
     return nil;
+}
+
+// Task223 上游同步（upstream 3a2116c05 / Flux 同款）：该错误是否意味着设备
+// 根本连不上网。值得穷举：原来微软登录只认 NSURLErrorDataNotAllowed（应用
+// 被关蜂窝数据这一种窄形态），而最常见的离线形态——飞行模式、无 Wi-Fi——
+// 是 NSURLErrorNotConnectedToInternet，反而走不进离线分支直接报错。
+BOOL isConnectivityError(NSError *error) {
+    if (![error.domain isEqualToString:NSURLErrorDomain]) return NO;
+    switch (error.code) {
+        case NSURLErrorNotConnectedToInternet:   // 飞行模式、无 Wi-Fi、无信号
+        case NSURLErrorDataNotAllowed:           // 应用被关蜂窝数据
+        case NSURLErrorNetworkConnectionLost:    // 请求中途掉线
+        case NSURLErrorCannotConnectToHost:
+        case NSURLErrorCannotFindHost:
+        case NSURLErrorResourceUnavailable:
+            return YES;
+        default:
+            return NO;
+    }
 }
 
 NSString* localize(NSString* key, NSString* comment) {
@@ -932,11 +1008,16 @@ int ame173_safeHeapCeilingMB(void) {
             int availMB = (int)(avail >> 20);
             // 剩余可用 − 1.2GB 原生预留（JVM 非堆 + 渲染面 + 系统开销）
             // = 可安全承诺的 -Xmx。
+            // Task223 上游同步（upstream 862f8b48d [fix/1024-floor]）：权威读数
+            // 路径不再做 1024 下限。iPhone X（3GB，extended VA）实测：
+            // available=1807MB -> 安全堆顶 607MB，旧代码把 607 强抬到 1024，
+            // 等于把钳制整个架空——偏高的设置值"未超 1024" -> 不钳 ->
+            // footprint 爬过顶后被 jetsam SIGKILL（无崩溃记录、latestlog 凭空
+            // 断在字体加载 = SIGKILL 特征）。本 fork 用户主力 ≥4GB 时下限
+            // 无副作用，但 3GB 设备上它把"必死的 SIGKILL"换成"可控的 GC 抖动"。
+            // 权威路径宁可要小堆：堆小只是慢，超顶是死。
             ceilingMB = availMB - 1200;
-            if (ceilingMB < 1024) {
-                ceilingMB = 1024;
-            }
-            NSLog(@"[Task173] safe heap ceiling: os_proc_available_memory=%dMB -> Xmx ceiling %dMB (native reserve 1200MB)",
+            NSLog(@"[Task173] safe heap ceiling: os_proc_available_memory=%dMB -> Xmx ceiling %dMB (native reserve 1200MB, no floor on authoritative path)",
                   availMB, ceilingMB);
         }
     }
@@ -971,9 +1052,38 @@ int ame141_currentLaunchAllocMem(void) {
         NSLog(@"[Task141] instance memory read failed (%@), falling back to auto ratio", e);
     }
     if (mem <= 0) {
-        CGFloat autoRatio = getEntitlementValue(@"com.apple.private.memorystatus") ? 0.5 : 0.25;
+        // Task223 上游同步（upstream 455c3f5a0，Flux 同款修复）：jetsam 上限
+        // 有两条抬升路径——越狱的 com.apple.private.memorystatus，以及带
+        // profile 签名的 com.apple.developer.kernel.increased-memory-limit。
+        // 只查前者会把正确 entitled 的包按无 entitlement 的 0.25 算，
+        // 小堆在加载界面静默 GC 空转。
+        BOOL raisedCeiling = getEntitlementValue(@"com.apple.private.memorystatus")
+            || getEntitlementValue(@"com.apple.developer.kernel.increased-memory-limit");
+        CGFloat autoRatio = raisedCeiling ? 0.5 : 0.25;
         mem = (int)roundf((NSProcessInfo.processInfo.physicalMemory >> 20) * autoRatio);
         NSLog(@"[Task141] launch memory from auto ratio: %d MB", mem);
+    }
+    // 防呆下限（upstream 同款）：滑条存档损坏读出极小值时保住 MC 最低可启动堆。
+    if (mem < 256) mem = 256;
+    // Task223 上游同步（upstream 455c3f5a0 后续 [fix/memorystatus-gate]）：
+    // 带 com.apple.private.memorystatus entitlement 的构建【不钳】——
+    // SurfaceViewController 的 updateJetsamControl 会用 memorystatus_control
+    // 把 jetsam 任务限额提到 mem + 1024（越狱设备实证可设）。此时按冷启动
+    // os_proc_available_memory 算出的堆顶钳制反而有害：用户手动调大的实例
+    // 内存会被压回未抬升前的旧口径，制造 limit 偏低的低顶。无 entitlement
+    // （限额提不上去，只能吃系统默认）时保持钳制作为安全网；
+    // increased-memory-limit 路径的抬升会被 os_proc_available_memory 权威
+    // 读数如实反映，钳制依然准确。AMETHYST_MEM_NO_CLAMP=1 为调试逃生门。
+    const char *ame223_noClamp = getenv("AMETHYST_MEM_NO_CLAMP");
+    BOOL ame223_canRaiseJetsamLimit = getEntitlementValue(@"com.apple.private.memorystatus");
+    if (ame223_canRaiseJetsamLimit) {
+        NSLog(@"[Task173] memorystatus entitlement present -- jetsam limit will be raised to %d MB (allocmem %d + 1024 native); heap clamp bypassed",
+              mem + 1024, mem);
+        return mem;
+    }
+    if (ame223_noClamp && ame223_noClamp[0] == '1') {
+        NSLog(@"[Task173] AMETHYST_MEM_NO_CLAMP=1 -- heap clamp bypassed (debug escape hatch)");
+        return mem;
     }
     // Task173：Jetsam 安全钳制（惊变100天根修）。
     int ame173_ceiling = ame173_safeHeapCeilingMB();

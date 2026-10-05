@@ -167,8 +167,10 @@ static NSString *const ame217_qqGroup = @"1126547426";
     [self ame217_addCard:card inner:inner];
 }
 
-/// QQ 群卡：群号展示 + 点击复制（iOS 无 QQ 群通用深链，复制群号后
-/// 在 QQ 内搜索加入是通用路径）。
+/// QQ 群卡：群号展示 + 同行双按钮（复制群号 / Discord 社区）。
+/// ★ Task223（清单第 18 项）：用户指令——在 QQ 群同行插入
+///   https://discord.gg/HqcmswrEy，并“使用元素优化界面”：两按钮同行
+///   等宽排列，Discord 用品牌蓝，复制群号保持强调色胶囊。
 - (void)ame217_buildQQCard {
     UIView *card = [self ame217_card];
     UIStackView *inner = [[UIStackView alloc] init];
@@ -184,17 +186,45 @@ static NSString *const ame217_qqGroup = @"1126547426";
         font:[UIFont monospacedDigitSystemFontOfSize:20 weight:UIFontWeightSemibold]
         color:accentColor()]];
 
+    // Task223：同行按钮行（水平等宽）。
+    UIStackView *buttonRow = [[UIStackView alloc] init];
+    buttonRow.axis = UILayoutConstraintAxisHorizontal;
+    buttonRow.distribution = UIStackViewDistributionFillEqually;
+    buttonRow.alignment = UIStackViewAlignmentCenter;
+    buttonRow.spacing = 10;
+    buttonRow.translatesAutoresizingMaskIntoConstraints = NO;
+
     UIButton *copyButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    [copyButton setTitle:localize(@"about.qq.copy", nil) forState:UIControlStateNormal];
+    [copyButton setTitle:[NSString stringWithFormat:@"📋 %@", localize(@"about.qq.copy", nil)] forState:UIControlStateNormal];
     copyButton.titleLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
     copyButton.backgroundColor = [accentColor() colorWithAlphaComponent:0.14];
     copyButton.layer.cornerRadius = 12.0;
-    copyButton.contentEdgeInsets = UIEdgeInsetsMake(8, 16, 8, 16);
+    copyButton.contentEdgeInsets = UIEdgeInsetsMake(8, 12, 8, 12);
     copyButton.translatesAutoresizingMaskIntoConstraints = NO;
     [copyButton addTarget:self action:@selector(ame217_copyQQGroup) forControlEvents:UIControlEventTouchUpInside];
-    [inner addArrangedSubview:copyButton];
+    [buttonRow addArrangedSubview:copyButton];
+
+    // ★ Task223：Discord 社区按钮（同行右侧，品牌蓝）。
+    UIButton *discordButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [discordButton setTitle:[NSString stringWithFormat:@"💬 %@", localize(@"about.discord.join", nil)]
+                   forState:UIControlStateNormal];
+    discordButton.titleLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
+    discordButton.backgroundColor = [UIColor colorWithRed:0.36 green:0.40 blue:0.94 alpha:1.0];
+    discordButton.layer.cornerRadius = 12.0;
+    discordButton.contentEdgeInsets = UIEdgeInsetsMake(8, 12, 8, 12);
+    discordButton.translatesAutoresizingMaskIntoConstraints = NO;
+    [discordButton addTarget:self action:@selector(ame223_openDiscord) forControlEvents:UIControlEventTouchUpInside];
+    [buttonRow addArrangedSubview:discordButton];
+
+    [inner addArrangedSubview:buttonRow];
 
     [self ame217_addCard:card inner:inner];
+}
+
+/// Task223：Discord 社区跳转（用户提供的邀请链接）。
+- (void)ame223_openDiscord {
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://discord.gg/HqcmswrEy"]
+                                       options:@{} completionHandler:nil];
 }
 
 /// 启动器更新区（Task217 从设置·通用区迁移）：检查更新按钮 +
@@ -310,6 +340,16 @@ static NSString *const ame217_qqGroup = @"1126547426";
         font:[UIFont systemFontOfSize:12]
         color:[UIColor secondaryLabelColor]]];
 
+    // ★ Task223（清单第 19 项）：捐献主按钮行右侧同排 GitHub Star CTA
+    //   （用户指令：在捐献旁边摆一个“如果没钱可以点个 ⭐️ 支持一下”，
+    //   放上 GitHub 链接）。两按钮同行：爱发电品牌红 + Star 金底黑字。
+    UIStackView *donateRow = [[UIStackView alloc] init];
+    donateRow.axis = UILayoutConstraintAxisHorizontal;
+    donateRow.distribution = UIStackViewDistributionFillEqually;
+    donateRow.alignment = UIStackViewAlignmentCenter;
+    donateRow.spacing = 10;
+    donateRow.translatesAutoresizingMaskIntoConstraints = NO;
+
     // 爱发电按钮（主按钮：品牌色底）
     UIButton *afdianButton = [UIButton buttonWithType:UIButtonTypeSystem];
     [afdianButton setTitle:[NSString stringWithFormat:@"❤️ %@", localize(@"about.donate.afdian", nil)]
@@ -318,10 +358,30 @@ static NSString *const ame217_qqGroup = @"1126547426";
     afdianButton.titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
     afdianButton.backgroundColor = [UIColor colorWithRed:0.95 green:0.36 blue:0.42 alpha:1.0];
     afdianButton.layer.cornerRadius = 12.0;
-    afdianButton.contentEdgeInsets = UIEdgeInsetsMake(10, 20, 10, 20);
+    afdianButton.contentEdgeInsets = UIEdgeInsetsMake(10, 12, 10, 12);
     afdianButton.translatesAutoresizingMaskIntoConstraints = NO;
     [afdianButton addTarget:self action:@selector(ame222_openAfdian) forControlEvents:UIControlEventTouchUpInside];
-    [inner addArrangedSubview:afdianButton];
+    [donateRow addArrangedSubview:afdianButton];
+
+    // Task223：GitHub Star CTA（旁边）。
+    UIButton *starButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [starButton setTitle:[NSString stringWithFormat:@"⭐️ %@", localize(@"about.donate.star", nil)]
+                 forState:UIControlStateNormal];
+    [starButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+    starButton.titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
+    starButton.backgroundColor = [UIColor colorWithRed:1.0 green:0.78 blue:0.24 alpha:1.0];
+    starButton.layer.cornerRadius = 12.0;
+    starButton.contentEdgeInsets = UIEdgeInsetsMake(10, 12, 10, 12);
+    starButton.translatesAutoresizingMaskIntoConstraints = NO;
+    [starButton addTarget:self action:@selector(ame223_openGitHubStar) forControlEvents:UIControlEventTouchUpInside];
+    [donateRow addArrangedSubview:starButton];
+
+    [inner addArrangedSubview:donateRow];
+
+    // Task223：“如果没钱可以点个 ⭐️ 支持一下”提示行（轻文案，置于按钮行下）。
+    [inner addArrangedSubview:[self ame217_labelText:localize(@"about.donate.star_hint", nil)
+        font:[UIFont systemFontOfSize:11]
+        color:[UIColor tertiaryLabelColor]]];
 
     // 微信赞赏码：bundle 内 donate.png 直显；缺失时回退链接按钮
     NSString *donatePath = [NSBundle.mainBundle.resourcePath stringByAppendingPathComponent:@"donate.png"];
@@ -365,10 +425,20 @@ static NSString *const ame217_qqGroup = @"1126547426";
                                        options:@{} completionHandler:nil];
 }
 
+/// Task223（清单第 19 项）：GitHub Star CTA 跳转（本 fork 仓库页）。
+- (void)ame223_openGitHubStar {
+    [[UIApplication sharedApplication] openURL:[NSURL
+        URLWithString:@"https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher"]
+                                       options:@{} completionHandler:nil];
+}
+
 - (void)ame222_openGitHubDonate {
     // 用户指令：赞赏码跳 GitHub 链接（仓库主分支原图）
+    // Task223（清单第 23 项）：URL 跟随 Task218 改名后的仓库名（旧
+    // Air-Minecraft-iOS-Launcher 依赖 GitHub 重定向保活——jsDelivr 类 CDN
+    // 对改名仓库并不可靠，直链新名才稳）。
     [[UIApplication sharedApplication] openURL:[NSURL
-        URLWithString:@"https://github.com/Gsjsjzhznsz/Air-Minecraft-iOS-Launcher/blob/main/donate.png?raw=true"]
+        URLWithString:@"https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/blob/main/donate.png?raw=true"]
                                        options:@{} completionHandler:nil];
 }
 

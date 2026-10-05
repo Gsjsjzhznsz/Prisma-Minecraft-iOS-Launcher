@@ -1,406 +1,413 @@
 {
-  "announcements": [
-    {
-      "id": "server-recommend-2026-09-24",
-      "title": "推荐服务器：mysv.dpdns.org",
-      "date": "2026-09-24",
-      "summary": "社区生存服 mysv.dpdns.org 现已开放，Java 版直连，欢迎加入一起玩！在游戏内添加服务器或多人间联机输入该地址即可加入。",
-      "content": "## 推荐服务器\n\n**mysv.dpdns.org**\n\n社区生存服务器现已开放，使用 Java 版即可直连：\n\n- 在主菜单选择「多人游戏」→「添加服务器」，地址栏输入 `mysv.dpdns.org` 即可加入\n- 若启动器实例设置了「自动加入服务器」，也可以把地址填进实例设置的服务器一栏\n- 遇到版本不匹配时，按服务器公告选择对应的游戏版本\n\n祝玩得开心！\n\n---\n\nRecommended community server: mysv.dpdns.org -- Java Edition, direct connect. Add it via Multiplayer -> Add Server, or fill it into the per-instance server field in launcher settings.",
-      "priority": "normal",
-      "action_url": "",
-      "action_title": "",
-      "image_url": "",
-      "pin": true
-    },
-    {
-      "id": "task169-four-fixes-2026-09-25",
-      "title": "装机反馈四连修（CurseForge 源 / 本地整合包 / 主页头像 / JIT 等待）",
-      "date": "2026-09-25",
-      "priority": "normal",
-      "summary": "上一轮装机日志（af9b807）反馈的四个问题全部根治：①CurseForge 加载源不可用 = 镜像网关错误（上游瞬态 403/500 被包成 HTTP 200 JSON 且无 data 键）被当成\"无结果\"静默吞掉——现在自动重试一次并把真实错误显示出来；②本地整合包要先导入到应用文件才能装 = 文件选择器的安全作用域在解析后就被释放，安装阶段无权再读原文件——现在选中时自动拷贝进应用临时目录，从\"文件\"App / 下载 / iCloud 任何位置选择都能直接安装；③主页头像有时要点一下才显示 = 下载默认 60 秒挂起且失败无提示——现在 10 秒超时 + 磁盘缓存，冷启动秒显；④冷启动首次启动偶发卡在\"正在开启 JIT\" = 等待循环无超时——现在 120 秒超时后弹出重试按钮，不再无限转圈。",
-      "content": "## 本轮修复（装机日志 af9b807 反馈四项）\n\n**① CurseForge 加载源无法使用**\n\n- 根因：MCIM 镜像（mod.mcimirror.top）的上游 key 池间歇性失败，此时返回 HTTP 200 + 合法 JSON，但载荷是 `{\"error\":\"Internal Server Error\",\"code\":500,...}`——没有 `data` 数组。旧解析把这种响应当\"无结果\"静默返回空列表（装机日志里 4 次搜索全部只见 starting request、无任何结果日志），UI 空列表且无报错\n- 修复：识别网关错误形态 → 记录日志 → 自动重试一次（瞬态故障）→ 仍失败把上游错误详情浮出为可读错误提示；同时把编译期误字符串化的 NULL key（`((void *)0)`）识别为\"未配置\"，无 key 设备强制走镜像免 key 路径；版本筛选传入的 fabric 构建哈希后缀（如 `26.3-0a78cefc`）自动剥成纯版本号 `26.3` 再查询\n\n**② 本地整合包需要先导入到应用文件才能正常安装**\n\n- 根因：文件选择器给出的 URL 是安全作用域资源，旧代码解析完清单就释放作用域，而确认安装阶段还要按原路径重新读取整个压缩包——从\"文件\"App / 下载 / iCloud 选的包此时已无权访问，只有先拷进应用沙盒（\"我的 iPhone\"）的包碰巧可用\n- 修复：作用域存活期间自动把包拷贝进应用临时目录，解析 / 预览 / 安装全程使用本地副本（拷贝同时会把 iCloud 占位文件实体化）；旧副本在下一次选择时自动清理\n\n**③ 主页上方头像有时要点一下才能显示**\n\n- 根因：头像下载用 `dataWithContentsOfURL`，默认 60 秒超时且失败完全静默、无磁盘缓存——头像域慢时主页长时间默认占位，网络恰好完成后才因下一次刷新显示（感知成\"点一下才有\"）\n- 修复：10 秒受控超时 + Caches 磁盘缓存（冷启动秒显上次头像，后台静默刷新）+ 失败日志；另加可见卡片直刷兜底\n\n**④ 启动偶发卡在启动器界面（\"正在开启 JIT\"）**\n\n- 根因：三处 JIT 等待循环都是无超时的死等——stikjit:// 偶发没把 JIT 开成时，等待弹窗永不消失，只能杀进程（本轮日志即卡在第一轮 JIT 等待后无任何后续）\n- 修复：等待全部改为 120 秒有界轮询（每 10 秒打心跳日志），超时后撤下等待弹窗并给出「重试 / 取消」选择；重试会重新拉起 JIT 工具\n\n另：推荐服务器公告已按反馈置顶显示。\n\n---\n\nFour device-feedback fixes: (1) CurseForge source -- mirror gateway errors (HTTP 200 JSON without data) were silently swallowed as empty results; now detected, retried once, and surfaced as real errors. (2) Local modpack import -- the security-scoped URL was released before the install phase re-read the archive; now copied into the app sandbox while the scope is alive. (3) Home avatar -- 60s silent hangs replaced by 10s timeout + disk cache. (4) JIT wait -- unbounded wait loops replaced by 120s bounded wait with a retry dialog.",
-      "action_url": "",
-      "action_title": "",
-      "image_url": ""
-    },
-    {
-      "id": "task215-virgl-port-angle-depth-2026-10-02",
-      "title": "新渲染器 VirGLRenderer(≤26.2) 上线 + ANGLE 方块透明深度修复",
-      "date": "2026-10-02",
-      "summary": "ZL2 的 virglrenderer 完整移植：游戏画面经 Mesa virgl 驱动走进程内 vtest 服务器（宿主 ANGLE/Metal）真·硬件渲染；ANGLE 渲染器方块透明的深度清除病灶同步修复。",
-      "content": "## 新渲染器：VirGLRenderer(≤26.2)\n\nZalithLauncher 2 的 VirGL 架构移植完成：MC 的 OpenGL 指令进入 Mesa virgl 驱动（GALLIUM_DRIVER=virgl），经 unix socket 的 vtest 协议送达进程内 virglrenderer 服务器，由宿主 ANGLE/Metal 上下文执行真正的 GPU 渲染。\n\n- 适合想尝试 virgl 转译链路的玩家（ZL2 同款体验）；\n- 首版呈现走回读链路，帧率若吃紧可切回 Zink；\n- 选择路径：设置 → 视频设置 → 渲染器 → VirGLRenderer(≤26.2)（游戏未运行时才能改）。\n\n## ANGLE 渲染器：方块透明的深度病灶修复\n\nANGLE(Metal) 的 glClear(DEPTH) 静默失效会使深度缓冲残留上一帧数据——地形片元深度测试错误失败，方块成片\"透明/透视\"，而天空/实体/UI 正常。现已在垫片层对每次深度清除追加显式 glClearBufferfv 兜底（MobileGlues 同款修复，默认开启，环境变量 AME_TINYGL4_DEPTH_CLEAR_FIX=0 可关）。Task212 的三探针保留，下轮装机日志双向定证。"
-    },
-    {
-      "id": "task214-five-fixes-2026-10-02",
-      "date": "2026-10-02",
-      "title": "内存弹窗按钮本地化补齐 + 目录卡去绿框 + 卡片圆角微调 + 选中卡片可编辑修复 + FPS/MEM 悬浮窗缩字（Task 214）",
-      "summary": "内存限制弹窗的“付费开发者证书”按钮在部分语言显示为键名的问题已修复（六语言补齐 mem_help.button）；添加目录卡片的绿色边框移除；快捷指令卡片（实例卡/目录卡）圆角微调更圆润；修复选中卡片后右上省略号/叉号无法点击的关键问题（选中高亮环不再拦截触摸）；游戏内 FPS/MEM 悬浮窗显示不下时缩小字号而不再显示省略号。",
-      "content": "Task 214 五项用户反馈一轮落地（基于 Task 213 Prisma 构建的用户实测反馈，“其他都改的很好”）。\n\n一、内存限制弹窗按钮本地化：设置页“内存限制说明”弹窗的“付费开发者证书”按钮此前在全部语言下显示为原始键名（mem_help.button）——该键在六语言 Localizable.strings 中均缺失。现已补齐：简繁中文“付费开发者证书/付費開發者證書”、英语与高棉语回退“Paid Developer Certificate”、日语“有料開発者証明書”，按钮点击仍跳转 B 站教程 b23.tv/WtgrPJM。\n\n二、添加目录卡片绿色边框移除：游戏目录页“新建目录”加号卡的绿色 1pt 描边按用户定稿退役，描边回归卡片默认（0.5pt 半透明白）；绿色加号图标与淡绿底色保留，布局与常规目录卡完全一致。\n\n三、快捷指令卡片圆角微调：实例卡片与游戏目录卡片圆角 12pt → 16pt（连续曲率），更贴近真机快捷指令卡片的圆角观感；快捷操作磁贴与渲染器卡片等其他卡片保持 12pt 不变，其余几何（128pt 行高/28pt 图标/内缩高亮环）不动。\n\n四、选中卡片无法编辑的关键修复（本轮最重要）：此前一旦卡片处于选中态，右上角的省略号（编辑）与叉号（删除）按钮即无法点击——只有未选中的卡片能操作。根因：选中高亮环是叠加在按钮之上的普通视图（层级更高），选中后其透明环身拦截了整卡触摸，按钮收不到点击事件。现让高亮环不参与触摸命中，选中卡片上省略号/叉号恢复可用，点卡片切换选中的交互不受影响。\n\n五、FPS/MEM 悬浮窗缩字：启动游戏后的悬浮统计窗（FPS 与内存）宽度固定 130pt，内存数值较长时尾部被截断显示为“MEM: 328…”。现改为显示不下时自动缩小字号（最低缩至 50%）保证完整显示，不再出现省略号。\n\n其他：MobileGlues 缓存版本 REVISION 18 → 19（补 Prisma 更名轮的缓存纪元推进）。上述修复随下个构建生效。",
-      "priority": "normal",
-      "action_url": "https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher",
-      "action_title": "了解 Prisma",
-      "image_url": null,
-      "pin": false
-    },
-    {
-      "id": "task213-card-parity-ux-sweep-2026-10-02",
-      "date": "2026-10-02",
-      "title": "实例卡对齐快捷指令 + 目录卡同构重写 + 使用问题页修复 + 全局更名 Prisma+ 内存说明改版 + 包名 prisma（Task 213）",
-      "summary": "实例卡再抬一档并长按直删；游戏目录卡与实例卡完全同构（叉号点击删除）；“使用问题”页在默认卡片布局下修复呼出；安装器两种列表间距统一；账号列表重写并放大头像；启动器全面更名为 Prisma。",
-      "content": "Task 213 十项用户指令一轮落地。\n\n一、实例卡（已安装的版本）：卡片高度 104 → 128pt（对照快捷指令卡片再抬一档，左上实例图标 22 → 28pt 同步放大）；长按卡片不再弹“选择/编辑/删除”菜单，改为直接呼出确认删除弹窗（选择仍点卡片、编辑仍点右上 ⋯，两个直达入口保留）。\n\n二、游戏目录（版本隔离）卡整类重写为实例卡完全同构：标题 = 目录名称，小字 = 目录大小，folder 图标以本色直出（旧蓝底白图标方块退役），右上省略号改为叉号标识（SF Symbol 图标），点击叉号直接呼出确认删除目录的弹窗（默认目录/使用中的目录会即时说明），长按功能删除。目录卡尺寸与实例卡逐项一致（同宽同高同间距）。\n\n三/四、两处标题灰字更新：游戏目录 = “点击卡片切换；点击叉号删除”；已安装的版本 = “点击卡片切换；点击省略号编辑；长按以删除”。\n\n五、“启动器使用问题”页呼出失效根修：Task 180 起默认根为卡片式布局，而 ShowHelpPage 通知只有旧三栏布局在监听——补齐监听后侧栏问号按钮恢复呼出（与 AI 页同款病灶同款修法）。\n\n六、下载页安装流程的模组加载器选择列表与选择游戏版本列表行距统一（64 → 50pt，图标/字号同步压缩）——前四轮只对齐了卡面配方、未统一行高，本轮收口。\n\n七、账号列表重写为安装器卡列表同构：头像放大一倍（34 → 68pt），字号升级 16/12，选中徽章右中绿章，去阴影去按压动效。\n\n八、启动器全面更名：所有 UI 与技术角落的启动器名 Prisma 改为 Prisma——应用显示名、系统权限用途说明（54 语言）、欢迎语、AI 助手提示词与占位文案、网络 User-Agent、控件仓库作者、设置页兜底名与双 README 品牌位。GitHub 仓库地址、Bundle Identifier 与 iPad Air 机型名等技术标识保持不变（更新/安装数据延续性）。\n\n九、设置页“内存限制说明”改版：正文改为两条权限说明——扩展内存限制权限（GetMoreRAM 开启，通常可分配 6GB）、扩展虚拟内存权限（开启方式见下，通常可分配 7GB 并提升稳定性），并推荐使用付费开发者证书（安装即自动带权限且支持 JIT）；按钮由 GetMoreRam 改为“付费开发者证书”，跳转 B 站教程 b23.tv/WtgrPJM。\n\n十、启动器包名更名 com.air-devs.air → com.air-devs.prisma（Info.plist、三份 entitlements、Makefile 产物名、CI artifact 名、后台下载会话标识、os_log 子系统、钥匙串服务名全链路同步）；Info.plist 与仓库 MD 内残留的 air 全部改为 prisma。注意：包名变更后 iOS 视为全新应用，旧安装不覆盖、数据不迁移；GitHub 仓库地址与代码内更新检查地址暂保持不变，仓库若同步改名需一并更新。",
-      "priority": "normal",
-      "action_url": "https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher",
-      "action_title": "了解 Prisma",
-      "image_url": ""
-    },
-    {
-      "id": "task212-angle-cf-renderers-virgl-2026-10-02",
-      "date": "2026-10-02",
-      "title": "ANGLE 方块透明决战探针 + CF 筛选加固 + 渲染器更名「gl4es(≤26.2)」+ holy gl4es 退役 + VirGLRenderer(≤26.2) 移植启动",
-      "summary": "ANGLE 方块透明的两个决定性探针降门补盲（上轮全程未触发）；CurseForge 筛选链路加固与锚点日志；ZL2 经典版 gl4es 按用户定名改为 gl4es(≤26.2)；holy gl4es 渲染器整体退役；virglrenderer（VirGLRenderer(≤26.2)）移植开工。",
-      "content": "Task 212 五主题（装机日志 99d8122 判读 + 用户五项指令）。\n\n一、ANGLE 方块透明决战（探针降门 + 补盲）。上轮装机日志判读：MultiDraw 拆解已生效（drawcount 2-14 逐 draw 提交中），但两个决定性探针全程零触发——五点回读的门设在 swapIndex>=900，而该会话总共只跑了约 810 帧（差 90 帧未到门！）；四边形普查盯的是 glDrawArrays，而 MC 26.3 的最终合成实际走 glDrawArraysInstanced（日志实证 mode=4/count=6 的全屏双三角每帧常驻）。本轮：五点回读降门为 240/480/720 三轮（较短会话也能采到 in-world 数据）；普查补上 instanced 入口并带绘制状态快照；新增地形巨型绘制落地探针（count=222534 的 chunk 目标绘制后立即 1x1 中心回读——非黑=像素已落地看合成链、全黑=绘制被丢、alpha=0=alpha 通路坏，三选一直接定谳）。\n\n二、CurseForge 筛选链路加固。沙盒直连免 Key 镜像实测：版本/加载器/排序/搜索全部参数工作正常，但偶发瞬态空响应（同查询重发即成功）。修复：瞬态网络错误与空响应一律自动退避重试；侧边栏筛选全链路新增锚点日志（源切换/列表重载打印 tab+源+版本+加载器+排序，下轮装机日志直接对账）；修复版本 tab 筛选弹窗锚点漂移。\n\n三、渲染器更名「gl4es(≤26.2)」（用户定名，一字不加）。设置页/版本管理器/AI 助手/帮助页 FAQ 全部同步。\n\n四、holy gl4es 渲染器退役（用户明令删除）。预构建的 libgl4es_114.dylib 及其全部运行时接线和两个二进制补丁一并移除；存量设备的选择自动迁移到同血统的 gl4es(≤26.2)（源码构建版接棒）。\n\n五、VirGLRenderer(≤26.2) 移植开工（用户点名）。ZL2 的 virgl 渲染器：virglrenderer 服务端（vtest）+ 带 virgl 驱动的 guest Mesa + ANGLE 宿主上下文三方架构；上游 PojavLauncherTeam 已有 iOS 交叉编译配方，本轮开始移植，多轮工程分阶段交付。"
-    },
-    {
-      "id": "task211-exit-cf-angle-gl4es-2026-10-02",
-      "date": "2026-10-02",
-      "title": "退出“崩溃”根治 + CurseForge 403 修复 + ANGLE 方块透明攻坚 + 新渲染器 gl4es（ZL2 经典版）",
-      "summary": "退出游戏不再误报崩溃；CurseForge 源 403 根治且默认源改为 Modrinth；ANGLE 方块透明上拆解修复与决定性探针；按用户点名从源码移植 ZL2 经典版 gl4es。",
-      "content": "Task 211 五主题（装机日志 17c5100 判读定案）。\n\n一、退出游戏“崩溃”根治。MC 26.3 新增退出监视器：JVM 在 main 返回后若仍被非后台线程拖住，就会强制生成“退出时崩溃”报告。元凶是启动器自带的 metallum 监控 agent——它的 premain 启动的metallum-state/metallum-dump 两个线程没有标记为后台线程。已对 metallum_agent.jar 做字节码手术（两处 Thread.start 前插入 setDaemon(true)，本地 A/B 实证：补丁版秒退、原版完整复现挂死）。退出游戏将干净利落，不再出现崩溃报告。\n\n二、CurseForge 源 403 根治 + 默认源改为 Modrinth。根因：CI 构建的 API Key 占位串（((void *)0)，11 字符）被设置页预填并保存进设备，每次请求都带着这个垃圾 Key 打官方 API，必得 403（界面显示“未知错误”）。修复三层：请求层拒收占位 Key（自动走免 Key 镜像）、设置页预填净化 + 保存门（占位键不予保存）、403 报错友好化（指路设置页）。另按用户要求做一次性迁移：没有有效 Key 的设备把 CurseForge 源拨回 Modrinth（CF 修好后随时可手动切回）。\n\n三、ANGLE 方块透明攻坚。Task209 四叉取证定谳：地形绘制提交完全健康（sodium 多绘制在跑、状态健全、零 GL 错误），唯独方块不可见——与安卓端同族翻译层的已知病灶“多维绘制静默丢绘制”病形一致。本轮上了修复（把 MultiDraw 一律拆解为逐 draw 提交）+ 两个决定性探针（in-world 帧缓冲五点像素回读 + 最终合成四边形普查），下轮装机日志一锤定音。\n\n四、新渲染器「gl4es（ZL2 经典版）」上线（用户点名移植）。ZL2 的经典版 gl4es（PojavLauncherTeam 分支）现从源码构建随包提供，渲染器列表与 holy gl4es、Krypton Wrapper 三者并存互为备选。\n\n五、显示名收短。Krypton Wrapper 渲染器条目收短为「Krypton Wrapper（≤26.2）」。另：virglrenderer 渲染器已完成评估排期（需要重建一份带 virgl 驱动的 Mesa，独立多轮工程，未包含在本轮）。",
-      "priority": "normal",
-      "action_url": "",
-      "action_title": "",
-      "image_url": ""
-    },
-    {
-      "id": "task210-neumorph-retirement-card-fixes-2026-10-02",
-      "date": "2026-10-02",
-      "title": "新拟态全面退役 + 实例卡修复（Task 210）",
-      "summary": "应用户定稿删除全部新拟态代码与选项；实例卡修复高度裁剪/省略号比例/深浅模式字体/选中描边。",
-      "content": "Task 210 双主题。\n\n一、新拟态全面退役（用户定稿：检索并删除所有新拟态代码和其选项和设置，维护过于麻烦）。\n删除范围：AmeNeumorphShadowView 三层承载引擎（暗影/高光投影 + 渐变表面）、AmeNeumorph 规格色族与度量、ame_applyNeumorphSurface/FlatWithRadius/removeNeumorphShadow/CardOpacity/PinnedCornerRadius 全部原语、BackgroundManager 的 cardsNeumorphEnabled 开关与 cardsNeumorphOpacity 透明度偏好（defaults 键 background_cards_neumorph_enabled/_opacity 一并退役）、壁纸设置页「新拟态界面」开关行与「新拟态透明度」滑条行（无壁纸时该区段整段隐藏）、六语言 background.cards.neumorph.* 双键（四主语言键集 2419 -> 2417）。\n保留（用户定稿「保留平贴灰面」）：无壁纸时卡面 = 平贴灰面（浅色 #e0e0e0 / 深色 #2c2c2c），无任何自绘阴影；有壁纸时毛玻璃/半透明管线原样；卡面文字色族改名 AmeCardPrimary/SecondaryTextColor （浅 #333333/#888888、深 #f5f5f5/#a0a0a0），深浅自适应。\n\n二、实例卡（快捷指令样）修复（七问定稿）。\n1. 卡底 = 深浅自适应平贴灰面（accent 渐变卡底退役——它跟随新拟态透明度滑条导致「卡片平时透明」）；\n2. 图标 = 原始彩色直出（白色模板渲染退役，PNG 不着色 / SF 用品牌色，cube 兜底用主题强调色）；\n3. 选中 = 纯 2pt 原蓝内缩描边（内缩距仍 = 省略号间距 × 1/3；柔光光晕、整卡变色、按压弹簧缩放全部退役——全部磁贴统一即时响应）；\n4. 字体 = 深浅模式自适应（名称 #333333/#f5f5f5，版本 #888888/#a0a0a0，白字退役）；\n5. 高度 = 104pt（84pt 时代 iPad 满档字号内容 86pt 被裁，用户实测「字体被裁减」）；\n6. 省略号 = 圆底 24 -> 28pt、三点 12 Bold -> 16 Black（用户定稿「加大加粗两档」），配色改自适应（labelColor 12% 底 + labelColor 三点，浅色平贴灰面上不再隐形）；\n7. 交互不变：点卡片 = 选用实例，⋯ = 纯编辑，长按菜单三件套保留。\n\nEN: Task 210 retires the entire neumorphism engine per user order (code, toggle and opacity slider, defaults keys, six-language keys; wallpaper blur/translucent untouched; flat gray surface kept). Instance cards: height 84->104pt (fixes clipped labels at full iPad font scale), original-color icons, mode-adaptive text colors, pure 2pt accent selection border (glow/tint/press-spring all retired), larger ellipsis button (28pt circle, 16pt Black glyph). Interaction unchanged: tap to use, ... to edit.\n\n维护路径：settings -> 壁纸设置（无壁纸时 UI 效果区段自动隐藏）；实例卡样式由 VersionManagerViewController VMVersionCardCell 统一承载。"
-    },
-    {
-      "id": "task209-krypton-rename-2026-10-01",
-      "title": "渲染器改名：NG-GL4ES → Krypton Wrapper（≤26.2）+ ANGLE 方块透明调查状态",
-      "date": "2026-10-01",
-      "summary": "渲染器列表里的 NG-GL4ES 更名为 Krypton Wrapper（≤26.2）——老版本（1.8.9 等）的首选渲染器，对齐上游启动横幅；存储值不变，已选设备零影响。ANGLE 方块透明：上两轮的 push constants 修复判断有误（26.3 着色器本就没有 push constants 块，查询不到属正常现象），本轮已埋全套绘制/纹理/着色器取证探针，下轮装机日志将直接定位真因。",
-      "content": "## 渲染器改名：NG-GL4ES → Krypton Wrapper（≤26.2）\n\n设置 → 视频设置 → 渲染器 里的 NG-GL4ES 更名为 Krypton Wrapper（≤26.2）（对齐上游启动横幅 \"Initialising Krypton Wrapper\"；存储值不变，已选设备零影响）。它依然是老版本（1.8.9 等 Forge 生态，尤其是 VGPU 下材质损坏/图集错位）的首选渲染器；26.3+ 新版本建议用 Zink / ANGLE / Metal。\n\n## ANGLE 方块透明：诚实状态更新\n\n上两个构建对 ANGLE 方块透明的修复（push constants 块相关）判断有误：经反编译 26.3 客户端定谳，26.3 的全部着色器根本没有 push constants 块，日志里 _push_constants 查询不到是正常现象（红鲱鱼）。本轮已在绘制调用（BaseVertex 族全量普查）、绘制时混合/深度/遮罩状态、纹理上传格式、地形着色器 ES 源码四个方向埋好取证探针——下一轮装机日志将直接定位真实病因。给使用者带来两轮无效修复的困扰，抱歉。\n\n---\n\nThe NG-GL4ES entry in the renderer list is renamed to Krypton Wrapper (<=26.2), matching the upstream boot banner; stored selections are unaffected. Honest status on the ANGLE transparent-blocks issue: the previous two push-constants fixes were chasing a red herring (26.3 shaders contain no push-constant blocks at all -- the failing query is normal). Full diagnostic probes (draw census incl. the BaseVertex family, draw-time blend/depth/mask state, texture upload formats, terrain ESSL source dumps) are now in place; the next device log will pin the real cause.",
-      "priority": null,
-      "action_url": null,
-      "action_title": null,
-      "image_url": null,
-      "pin": false
-    },
-    {
-      "id": "task207-shortcuts-instance-cards-2026-10-01",
-      "title": "实例选择页快捷指令化：竖卡双列网格 + 点卡即选用 + ⋯ 纯编辑 + 内缩高亮环",
-      "date": "2026-10-01",
-      "summary": "版本管理页实例卡整体重写为 iOS 快捷指令样式：accent 统一渐变竖卡、左上白色实例图标（原 loader 图标模板化）、右上 ⋯ 编辑钮、左下名称+版本；点卡片=选用实例（旧'进编辑顺带选中'逻辑退役），⋯=纯编辑；选中高亮=内缩 accent 环（内缩距=省略号到卡缘间距的 1/3，2pt 描边+柔光）；密度翻倍：iPhone 2 列 / iPad 4 列，行高沿用旧版单卡 84pt。长按菜单三件套保留。",
-      "content": "## 实例选择页 = 快捷指令（Task207 用户创新定稿）\n\n**视觉**\n\n- 卡底：统一主题渐变（accent → 深 accent 对角 CAGradientLayer），盖在新拟态表面/壁纸 blur 承载层之上、内容之下；卡体透明度滑条（Task178 语义）继续生效\n- 左上：实例图标沿用原来源（ModLoaderIconHelper loader 品牌图 / cube 兜底），统一重渲染为白色模板——alpha 即形状，任意透明度原图兼容\n- 右上：⋯ 半透明圆钮（白 0.28，24pt 圆）\n- 左下：实例名（sp15 semibold 白）+ 版本号（sp11 白 75%）\n\n**交互（快捷指令语义）**\n\n- 点卡片 = 选用该实例（已是当前实例时静默跳过；等同原长按菜单'选用'动作）\n- 点 ⋯ = 纯编辑（进 ProfileSettingsViewController，不再顺带切换选中实例）\n- 长按 = 选择/编辑/删除菜单（保留不变）\n- 选中高亮 = 内缩 accent 环：内缩距 = 省略号钮到卡片边缘间距的 1/3（动态推导 12/3=4pt），2pt accent 描边 + 同色柔光\n\n**布局（密度翻倍）**\n\n- 行高沿用旧版单卡行高 84pt（kVMVersionRowHeight），一个旧卡位 = 两张新卡\n- 列数翻倍：iPhone 1→2 列、iPad 2→4 列（分数宽 0.5/0.25）\n- 卡内几何量用固定 pt（dp 的 iPad 1.3× 会撑爆 84pt 预算）；字体仍走 sp（1.15 上限）\n\n**退役**\n\n- 旧横向行卡五件套：iconContainer / selectedBadge / isolatedBadge / lastPlayedLabel / chevron（用户定稿'纯快捷指令样'）\n\nEnglish: VersionManagerViewController's instance cards rewritten as iOS Shortcuts-style vertical cards (unified accent gradient, white-template icon, ellipsis edit button, name+version footer, inset accent selection ring; density doubled at the legacy 84pt row height; tap = select, ellipsis = pure edit).\n\nTask 207 (user innovation round; number yielded from the parallel Task206 NG-GL4ES port): instance cards restyled isomorphic to the iOS Shortcuts app (two user-supplied reference screenshots), with select-on-tap / edit-on-ellipsis interaction and an inset accent highlight ring whose inset is dynamically derived as one third of the ellipsis-to-edge inset.",
-      "priority": null,
-      "action_url": null,
-      "action_title": null,
-      "image_url": null,
-      "pin": false
-    },
-    {
-      "id": "task196-quad-fixes-2026-09-29",
-      "title": "三根因终局修复（vgpu 方块损坏 / ANGLE 黑屏 / 控件堆角）+ 新渲染器 Metal (metallum)",
-      "date": "2026-09-29",
-      "summary": "vgpu 1.8.x 方块损坏 = 显示列表回放（useVbo 默认关，已强制开）；ANGLE 26.3 黑屏 = DSA 与默认帧缓冲冲突（已撤回通告，同 ES/4.0 黑屏根因家族）；控件仓库挤成一坨 = 种子误盖 version 1.0（已重落戳 + 加载器救回，坏副本自愈）。另从上游同步 Metal (metallum) 原生 Metal 渲染器（javaagent 注入，26.x 专用）。",
-      "content": "## 三根因终局修复（装机日志全部实证钉死）\n\n**1. vgpu 方块材质损坏 + 看门狗卡死（1.8.9）**\n\n- 实锤：渲染线程反复卡在 `GL11.glCallList <- RenderList`，原生崩溃落在 libvgpu.dylib 的 `gl4es_glCallList`（SIGSEGV）\n- 根因：反编译 1.8.9 实证 `useVbo` 默认 **false**，地形走显示列表；gl4es 显示列表回放在 iOS ES3 上损坏捕获的顶点数据（实体走立即模式所以正常）\n- 修复：vgpu 会话启动时强制 `useVbo=true`，地形改走已修好的 VBO/EBO 路径\n- 注意：1.7.10- 无此选项，vgpu 上仍不可用（请换其他渲染器）\n\n**2. ANGLE 黑屏（26.3）—— 有声音、真黑、58fps**\n\n- 实锤：DSA 检测开启后每帧 1547 次 \"Only NONE or BACK are valid draw buffers\"（GL 1282 高危）→ 渲染打到错误目标 → 中心像素 (0,0,0,0) 真黑\n- 根因：与 ES/4.0 黑屏（Task165/166）同家族——DSA 开 = 黑屏，关 = 可玩\n- 修复：撤回 GL_ARB_direct_state_access 通告，MC 走经典 Emulated 路径；Task193 的扩展表补全保留\n- 取证开关：`AME193_DSA_ADVERTISE=1` 可强制开回（诊断用）\n\n**3. 控件仓库「全部挤在一坨」**\n\n- 根因：仓库种子是 v7 格式（动态坐标表达式）却误盖 `version 1.0` → 加载链按老格式跑转换：按键绑定被清零 + 坐标覆写成 0 → 全部堆左上角\n- 修复：种子重落戳 version 7 + 加载器「误戳救回」——**已下载的坏副本重新加载即自愈，无需重新下载**\n\n## 新渲染器：Metal (metallum)\n\n- 从上游同步的原生 Metal 后端（javaagent 注入，非 GL 转译），上游已在 iPhone 17 Pro / iOS 27.2 实测 26.2 / 26.3 原版 + Forge + Fabric\n- 入口：设置 → 视频 → 渲染器 → **Metal (metallum)**\n- 仅 MC 26.x 可用（旧版本 MC 的 Java 8 加载不了 agent，会自动跳过）\n- 26.x 用户建议优先尝试；**Forge 26.1.2 崩溃可先用它旁路**\n\n**装机验证锚点**：`Task196 useVbo=true forced` / `Task197: DSA advertisement WITHDRAWN` / `Task198 mis-stamped version rescue` / `Task201: Metallum agent enabled`\n\nEN: This round pins three root causes with on-device evidence (vgpu display-list corruption, ANGLE DSA-vs-default-framebuffer black screen, control-repo mis-stamped version) and ports the native Metal renderer \"Metallum\" from upstream (26.x only)."
-    },
-    {
-      "id": "task193-app-icon-replace-2026-09-28",
-      "title": "启动器图标换新：上游 Amethyst 六边形 → 草方块立方体（Prisma 定制品牌第一步）",
-      "date": "2026-09-28",
-      "summary": "应用图标由上游遗留的浅蓝六边形替换为草方块立方体（用户上传素材）。仅替换实际生效的 Light 家族（1024×3 + 120 + 152）；Dark/Development 备用图标与 AppLogo-Vector 等上游资产按约定保持不动。",
-      "content": "## 启动器图标换新\n\n- **新图标**：草方块立方体（绿顶棕底，用户上传的 IMG_9288.jpeg，690→LANCZOS 出 1024/152/120 全尺寸）\n- **替换范围（最小触碰）**：AppIcon-Light.appiconset 三张（universal/dark/tinted 外观同图三份，与上游做法一致）+ AppIcon-Light60x60@2x（iPhone 主图标）+ AppIcon-Light76x76@2x~ipad（iPad 主图标）+ README 顶部展示图自动跟随\n- **保持不动**：AppIcon-Dark / AppIcon-Development 备用三套、AppLogo-Vector、无引用的无后缀 AppIcon60x60/76x76 —— 全部为上游 2022/2025 遗留资产（blob 哈希与上游逐字节一致，本轮已查证归档）\n- **零代码改动**：图标为纯位图资源，仅文件名被引用（Contents.json/Info.plist 未动一行），同名覆盖即生效\n\nEN: The launcher icon is now the user-supplied grass-block cube (was the upstream Amethyst hexagon). Only the actually-served Light family was replaced (1024×3 + 120 + 152); Dark/Development alternates and AppLogo-Vector stay pristine upstream assets.\n\n---\n\n装机锚点：重装后桌面图标 = 草方块立方体（iPhone/iPad 一致，浅色/深色/着色外观同图）；设置页关于图标无变化（未动）。",
-      "priority": "normal",
-      "action_url": "",
-      "action_title": "",
-      "image_url": ""
-    },
-    {
-      "id": "task190-account-card-installer-spacing-2026-09-28",
-      "title": "账号卡片与已安装版本页同构 + 长按菜单（选用/删除账号）+ 安装方式页间距对齐版本号页",
-      "date": "2026-09-28",
-      "summary": "账号选项卡片按用户定稿与已安装版本页面同构：圆形头像、标题正文、灰字显示账号类型、去掉右侧箭头；长按呼出菜单（选用账号 / 删除账号）；安装方式页卡片间距与版本号页一致。",
-      "content": "## 账号界面与安装方式页定稿\n\n- **账号卡片同构**：账号选项样式与\"已安装的版本\"页面完全一致——12pt 连续圆角卡片、白 0.08 基底 + 细描边、选中态 accent 边框 + 右上角选中徽章\n- **圆形头像**：卡片左部图标改为圆形头像（与版本页图标同位同尺寸）\n- **标题为正文**：标题行显示账号名；**灰字为账号类型**（Microsoft / 第三方 / 本地 / 演示），原右侧彩色类型胶囊退役\n- **去箭头**：卡片右部箭头删除，右侧仅保留当前账号选中徽章\n- **长按菜单**：所有账号长按呼出——(person.circle) 选用账号、(红字 trash) 删除账号；第三方多角色账户保留免密切换角色项\n- **安装方式页间距**：每个加载器卡片的间距与版本号选择页完全一致（卡片净距 12pt）\n\nEN: Account cards now match the installed-versions page (circular avatar, body title, gray account-type line, no arrow) with a long-press menu (Use account / Delete account); installer page card spacing now matches the version-number page.\n\n---\n\n装机锚点：账号列表卡片与版本管理页观感一致（新拟态开关两种状态均一致）；长按任意账号出现系统上下文菜单；安装方式页相邻卡片净距与版本号页相同。",
-      "priority": "normal",
-      "action_url": "",
-      "action_title": "",
-      "image_url": ""
-    },
-    {
-      "id": "task184-revert-180-ui-whitespace-fix-2026-09-27",
-      "title": "撤销 Task180 UI 效果调整 + 安装方式页面按版本号选择界面真正重写（白色底层边框根修）",
-      "date": "2026-09-27",
-      "priority": "normal",
-      "summary": "按用户裁决「先撤销 180 的 UI 效果调整，先修好这两样」：①双滑条透明度体系整体退役——背景/按钮透明度滑条与全部接线恢复为原有「透明度 + 新拟态透明度」双滑条（Task178 定稿形态，新拟态卡体默认 100% 不透明，半透明白框假新拟态消除）；安装方式页面（选择加载器/附加开关/版本选择子页）按上级版本号选择界面同构重写——卡片容器/圆角/图标容器/文字规格全部与版本卡一致，并根修了 InsetGrouped 系统 cell 白色底层（「钉死的底层白框+一条边假新拟态」的真正根源，本轮三次重写无效即因此）。保留 Task180 的账号复制双保险、头像防御、账号列表凸起重写与卡片式布局/深色默认值。注：模糊程度默认随撤销回归 100%，可在设置中调回。",
-      "content": "【撤销】Task180 双滑条透明度体系（背景透明度/按钮透明度）整体退役：引擎 opacity 变体原语删除，BackgroundManager 回归 uiOpacity（0.6/下限 0.1）+ cardsNeumorphOpacity（新拟态透明度，默认 100%）单键时代；设置页回归「透明度 + 新拟态透明度」双滑条行（Task178 形态）；二十余处接线点（侧栏/右面板/下载页分段与搜索栏/信息卡/菜单/通知小窗/崩溃窗等）回归恒定底色。新拟态卡体默认 100% 不透明瓷面，此前的半透明白框假新拟态随之消除。\n\n【白框根修】选择安装方式页面此前三轮重写样式不变的真正根源：iOS 会为 InsetGrouped 表格的 cell 自动装一层 secondarySystemGroupedBackground 白色背景视图与灰色选中高亮，凸起管线挂在 cell 内容层上时白底垫在卡片外——即用户描述的「钉死的底层白框，白框里一条边的假新拟态」。本轮在三个 cell 类内彻底清除系统镀层（背景/选中高亮换装透明空视图，init 与复用双点重放）。\n\n【重写】安装方式页面（加载器选择列表 + Fabric API/OptiFine 共存开关行 + 版本选择子页）与 VersionCardCell（版本号选择界面）完全同构：外层 cell 全透明 → 内层卡片容器（圆角 12 continuous、上下 4pt 内缩）承载视觉 → 凸起管线在 init 挂一次（新拟态开关开 = 渐变瓷面+双阴影规格，关 = 旧毛玻璃/平贴管线）；图标 40x40 圆角 10 品牌色淡底容器（与加载器徽章同源），名称 16 semibold/状态 12 规格文字色，右侧 chevron 14pt——全部为版本卡规格；行高 64 与版本卡一致。\n\n【保留】Task180 的功能修复不随撤销回退：账号复制双保险（写盘收口清理旧 .json + 读侧去重）、头像防御（username 回退查询，右栏/主页双挂点）、账号列表凸起重写（钉 16pt 圆角 + 裁剪放行）、卡片式布局/深色模式默认值。\n\n【备注】模糊程度默认值随撤销回归 100%（此前 Task180 定为 0），请在设置中自行调整；透明度语义同 Task178 时代。校验：verify_task184 新建 39 项全绿，verify_task180 诚实重锚 120 项，160/162/163/164/168/170/171/173b/174/178 全链重锚绿。"
-    },
-    {
-      "id": "task180-opacity-dual-slider-2026-09-26",
-      "title": "透明度体系重构（背景/按钮双滑条）+ 账号列表新拟态重写 + 账号复制修复 + 头像防御 + 安装方式页对齐版本卡",
-      "date": "2026-09-26",
-      "priority": "normal",
-      "summary": "UI 效果设置重构为双滑条透明度体系：「背景透明度」（默认 75%）统管左侧栏/中心界面/右侧栏/实例页等大背景、壁纸选择页、下载页顶部选择栏与搜索栏、设置页选项行及新拟态卡体（Task178 的新拟态透明度滑条退役并入）；「按钮透明度」（默认 100%）统管启动游戏/执行Jar/选择版本/下载中心/右侧栏权限与设备信息卡/菜单按钮/下载页功能按钮/通知小窗/崩溃窗按钮；图标和文字始终不透明，0~100% 全档。账号选择列表重写为新拟态凸起管线（阴影残缺修复，兼顾新拟态开关）+ 账号复制双保险（写盘收口清理旧 .json + 读侧去重过滤）+ 头像防御（username 回退 + ID 漂移头像迁移）。选择安装方式页面对齐上级版本卡菜单（凸起规格卡面 + 双阴影 + 规格文字色）。默认初始值定稿：毛玻璃 / 背景 75% / 按钮 100% / 模糊 0 / 卡片式布局 / 深色模式（仅未显式选择的设备迁移）。",
-      "content": "Task 180 交付说明：\n\n一、双滑条透明度体系（用户定稿\"两个拉条控制所有界面 0~100%\"）\n- 「背景透明度」（defaults background_bg_opacity，默认 75%）：左侧栏/中心界面/右侧栏背景（Root 与卡片双布局）、实例页面等页面背景、壁纸选择页背景、游戏下载页顶部选择栏/搜索栏/胶囊轨道、设置页选项行、半透明档页面底色、新拟态卡体（卡片=背景类，Task178 专用滑条退役并入，管线挂点改读本键）；只淡承载底色/卡体，图标和文字恒不透明。\n- 「按钮透明度」（defaults background_btn_opacity，默认 100%）：启动游戏/执行Jar/选择版本/下载中心按钮、右侧栏权限信息与设备信息卡、菜单按钮选中底、下载页功能按钮、NMToast 通知小窗（新拟态承载视图整体 alpha）、崩溃窗重启/退出按钮；底色 = 基础色 × 系数，100% = 现形态原样（失效安全），文字/图标恒不透明。\n- 旧「透明度」（uiOpacity，0.6/下限 0.1）与「新拟态透明度」两条滑条退役；四主语言键计数 1955 保持。\n\n二、账号选择列表（重写 UI + 兼顾新拟态开关）\n- 账号卡片换接凸起管线 applyNeumorphCardEffectToView + 圆角钉住 16pt + 裁剪逐层放行：开关开 = Task177 三层引擎完整双阴影（阴影残缺修复），关 = 旧管线；卡片上下间距 6→10pt 给阴影呼吸。\n- 账号复制双保险：①BaseAuthenticator.saveChanges（一切 accountId 改写落盘的唯一收口）写盘成功后迁移头像 + 清理旧 .json（refresh 链改写 accountId 不删旧文件 = 复制根因）；②reloadAccountList 按 accountId 去重 + 过滤解析失败文件。\n- 头像防御：avatarForAccount 加 username 回退查询（兼容旧文件名与 ID 漂移），主页/右侧栏同步接入；fetch 失败日志锚。\n\n三、选择安装方式页面（对齐上级版本号菜单）\n- 加载器行与附加选项行换接凸起管线（contentView 作宿主）：规格渐变卡面 + 双阴影（与版本卡同语言）、新拟态规格文字色、图标 28→40pt、行高 54→64；背景透明度滑条同步生效。\n\n四、默认初始值（用户备注定稿）\n- UI 效果默认毛玻璃（不变）；背景透明度 75%；按钮透明度 100%；模糊程度默认 0%（旧 100% 退役）；布局默认卡片式（显式选过三栏的设备保持）；外观默认深色（仅未显式选择的设备从 auto/light 迁移，Task161 家法）。\n\n装机锚点：设置页两滑条拖动实时跟随（BackgroundUIEffectChanged 广播链）；公告锚 \"[Task180] account file migrated after accountId drift\"、\"[Task180] avatar hit via username fallback\"。校验：verify_task180 新建 112 项全绿；诚实重锚 160/161/162/163/164/167/168/170/171/172/173/173b/174/175/176/177/178（130/131/132/135 具名环境性豁免基线同态）。"
-    },
-    {
-      "id": "task179-eight-fixes-2026-09-26",
-      "title": "装机反馈八连修（ANGLE 崩溃 / 旧版 vgpu 崩溃 / CF 资源页 / 版本筛选 / 右 Shift / 物品栏 / JIT 二级菜单 / 头像线程崩溃）",
-      "date": "2026-09-26",
-      "priority": "normal",
-      "summary": "本轮装机日志（cc8ced8 构建）反馈的问题全部处理：①ANGLE 渲染器持续崩溃 = 桌面 facade 上下文的用户着色器编译路径本身不通——改用真 ES3 上下文 + 桌面身份伪装，ES300 重写终于有上下文可以唱和；②1.8.9 等旧版本 + vgpu 崩溃 = 扩展探测的临时 EGL 上下文在 iOS 上全部指针为 NULL，首个调用即空指针——改在当前游戏上下文上探测；③CF 资源页为空 = 无加载器概念的资源类型被自动预选的加载器筛空（镜像实测 0 结果）——请求层统一拦截；④版本筛选扩容到 1.7.10，旧版本不再被 64 条截断；⑤右 Shift = 修饰键改为轻点开关、长按按住的双语义，潜行可用；⑥物品栏调节尺寸后错位 = guiScale 读的是基础实例的 options.txt 而非当前实例——改读实际游戏目录；⑦二级菜单启动卡 JIT 超时 = 挂起期间墙钟烧穿 120 秒预算——挂起时间不再计入；⑧他人反馈的头像下载线程崩溃 = 回调全体主线程化双保险。",
-      "content": "## 本轮修复（装机日志 cc8ced8 反馈八项）\n\n**① ANGLE 渲染器依旧崩溃**\n\n- 根因（三层取证定案）：Task175/176 的 ES300 重写已把合法源送达 ANGLE（head48 自证），本地 harness 证明 tinygl4angle 上传链逐字节无损，但错误仍是空源特征的 \"ERROR: 1:1: '' : syntax error\"——ost ANGLE 桌面 facade 上下文（EGL_OPENGL_API + 3.3 Core）的用户着色器编译路径本身不通\n- 修复：tinygl4angle 改回真 ES3 上下文（ES3 配置 + ES API + CV=3），桌面 GL 3.3 身份由 glGetString 伪装（GL_VERSION -> \"3.3.0 (ANGLE...)\"、GLSL -> \"3.30 (ANGLE...)\"，与 facade 会话逐字同形，本地单测验证）；ES300 重写给到真 ES3 编译器\n- 装机锚点：\"[TinyGL] Task179 desktop identity: GL_VERSION 'OpenGL ES 3.2.0 ...' -> '3.3.0 ...'\" + 26.3 FO 包不再在 minecraft:pipeline/gui 崩溃\n\n**② 旧版本（1.8.9 等）依旧崩溃（vgpu）**\n\n- 根因：vgpu 初始化的硬件扩展探测会建临时 EGL 上下文，但其 LOAD_EGL 全家在 iOS 上解析为 NULL（宿主早已加载框架，晚加载的 vgpu 用 dlsym(RTLD_NEXT) 找不到任何东西），首个 egl_eglGetDisplay(...) = 调空指针\n- 修复：编译加 NOEGL（探测改在当前游戏上下文上做，零临时上下文零 egl 依赖）+ proc_address 苹果分支改显式框架句柄 + 扩展列表/厂商串 NULL 防御\n- 装机锚点：\"VGPU: Task179 framework handles: gles=0x... egl=0x...\" + 1.8.9 进游戏不再 SIGSEGV\n\n**③ CF 资源文件页为空**\n\n- 根因：资源包/光影/数据包/世界没有加载器概念，CF 的搜索对它们附带 modLoaderType 时直接零结果（镜像实测 classId=12&modLoaderType=4 -> totalCount=0，去掉 -> 1274）；另：无 data 数组的响应被静默当空列表（无错误提示）\n- 修复：请求层统一拦截（CF 不发 modLoaderType、Modrinth 不发 categories facet）+ 自动预选加载器只对模组/整合包 tab 生效 + 无 data 响应改为重试一次后浮出真错误\n\n**④ 版本筛选低版本扩容**\n\n- 根因：动态列表 64 条封顶 + 下限 1.8，把 1.12.2/1.8.9/1.7.10 等经典 mod 版本全部截掉\n- 修复：下限放宽到 1.7（1.7.10 经典 mod 时代）；1.15 及更早的次版本收录各自最末补丁（1.15.2/1.14.4/…/1.8.9/1.7.10）；封顶退役\n\n**⑤ 右 Shift 依旧无法使用**\n\n- 根因（事件链日志证明全绿）：不是事件问题，是【点按语义】——上一轮的\"粘滞到下一键\"让任何输入（包括移动摇杆）都立即释放 shift，潜行玩法被结构性杀死\n- 修复：修饰键改为双语义——轻点=开关（再点才关，期间任意输入不影响，潜行可用）；长按=常规按住（抬手释放）\n- 装机锚点：\"[InputDiag] Task179 mod toggle ON/OFF: keycode=...\"\n\n**⑥ 物品栏调节尺寸依旧错位**\n\n- 根因：guiScale 读取用的 POJAV_GAME_DIR 指向基础实例符号链接，而 modrinth/自定义实例的 options.txt 在 custom_gamedir 下——用户改界面尺寸后命中矩形永远按旧 scale 计算（日志实锤 raw=0 恒 auto）\n- 修复：改读进程当前工作目录（=实际游戏目录）的 options.txt，键位净化器同源修复\n- 装机锚点：改界面尺寸后 \"[HotbarDiag] Task63 native guiScale refresh: 4 -> N (raw=N ...)\" raw 不再恒 0\n\n**⑦ JIT 在二级菜单（版本设置）启动游戏卡死超时闪退**\n\n- 根因：stikjit:// 把 App 切后台后 iOS 挂起进程，恢复时 NSDate 墙钟已烧穿 120 秒预算，第一轮循环即超时\n- 修复：等待循环把挂起间隙（>2s 的迭代间隔）从超时预算里剔除——在 StikJIT 里待多久都不消耗等待时间；后台断言有效性落日志取证\n- 装机锚点：\"[JIT] Task179 isJITEnabled: suspension gap of Ns excluded from timeout budget\"\n\n**⑧ 他人反馈的异常崩溃（AvatarManager 线程）**\n\n- 根因（用户提供的崩溃链）：头像下载 completion 在后台线程回调时直达 reloadProfileSection → 后台线程创建 cell / 修改 Auto Layout → NSInternalInconsistencyException\n- 修复：completion 全体主线程化 + reloadProfileSection 入口主线程守卫（双保险，任何未来调用路径都不可能把 UIKit 带进后台线程）"
-    },
-    {
-      "id": "task178-neumorph-decouple-opacity-2026-09-26",
-      "title": "新拟态与 UI 效果设置解耦：开关不再变灰其他选项 + 新拟态透明度滑条回归 + 新闻卡圆角修复",
-      "date": "2026-09-26",
-      "priority": "normal",
-      "summary": "按用户定稿结合 UI 效果设置：新拟态界面开关不管开还是关，都不会使其他选项变灰（灰化逻辑整体退役，恒可操作）；开启时 UI 效果类型（毛玻璃/半透明）和模糊程度只作用于壁纸/旧管线，完全不影响新拟态卡片；新拟态透明度滑条恢复（模糊程度下方），它改变新拟态的透明度——只淡卡片本体（渐变表面+双阴影整体淡化），字体/图标始终不透明，默认 100% 即上轮认可的形态；UI 效果里的透明度（壁纸材质）与卡片无关。另修复新闻界面新闻卡片圆角太圆（引擎短边等比把 12pt 卡改写成 ~27pt，现钉住卡片自定圆角）。",
-      "content": "本轮按用户定稿把新拟态和 UI 效果设置正确地\"结合\"起来：\n\n1) 开关不再变灰任何选项：新拟态界面开关无论开还是关，UI 效果类型、透明度、模糊程度三行恒可操作（旧版开启时变灰的逻辑退役）。\n2) 解耦定稿：新拟态开启时，UI 效果类型（毛玻璃/半透明）和模糊程度只影响壁纸层（背景的模糊/材质），对卡片零影响——两套渲染管线并行共存，各读各的偏好。\n3) 新拟态透明度滑条回归（开关行下方，无壁纸时也有）：只有它可以改变新拟态的透明度。0%~100% 全档，只淡卡片本体（渐变表面+双阴影整体淡化，半透明态下投影内侧与表面同步衰减，晕影不随透明度回归），字体/图标始终不透明；默认 100% = 上一轮认可的白瓷形态原样，未拖动过滑条不会有任何变化。\n4) 新闻卡圆角修复：新闻页卡片自定 12pt 圆角此前被引擎按卡片短边等比改写成 ~27pt（\"太圆了\"）；现在钉住卡片自定圆角，投影/表面/宿主三者同步。\n\n装机锚点：设置 → 外观 → \"新拟态界面\"开关（恒显）+ \"新拟态透明度\"滑条（恒显）；拖动滑条卡片实时跟随、百分比实时回显、文字始终清晰；开启开关后拖\"模糊程度\"可见壁纸变化而卡片纹丝不动。EN: Decoupled neumorphism from UI-effect settings — the toggle never grays out other options; effect type & blur affect only the wallpaper; the dedicated Neumorphism Opacity slider (default 100%) is the sole control of card-body translucency, fonts always opaque; news cards keep their intended 12pt corner radius."
-    },
-    {
-      "id": "task177-neumorph-css-spec-2026-09-26",
-      "title": "新拟态按 CSS 参考定稿重写：全不透明渐变表面 + 固定档微阴影，透明度机制退役",
-      "date": "2026-09-26",
-      "priority": "normal",
-      "summary": "按用户给过的 CSS 样式参考（bigbear-ui neu-white）对新拟态做定稿重写：卡片表面 = linear-gradient(145deg,#e6e6e6,#ffffff)（深色 #333333→#2c2c2c 同构），双阴影 = 固定 4pt 偏移 / 8pt 模糊（小元素 2/4pt）全不透明纯色（浅 #d6d6d6+#ffffff / 深 #1e1e1e+#3a3a3a）。晕影根因定稿：旧引擎的透明投影承载层把阴影直接叠染在卡面内侧，配合 20/60pt 短边等比放大与 0.45/0.5 柔和档透明度，任何壁纸/开关状态下都是重晕影。本轮改为「投影对垫底 + 不透明渐变表面盖住内侧」的 CSS box-shadow 原生等价结构，卡面恒全不透明。同时按「不要加任何的透明度」定稿：新拟态透明度滑条整体退役，卡片不再读任何透明度/模糊偏好（设置页仅保留新拟态界面开关）。",
-      "content": "## 新拟态 CSS 参考定稿重写（Task 177）\n\n**规格来源 = 你给过的 CSS 样式参考（bigbear-ui neu-white mixin）**\n\n- `background: linear-gradient(145deg, #e6e6e6, #fff)` → 卡片表面原生渐变（CAGradientLayer，145° 轴向精确换算）；深色模式同构 #333333→#2c2c2c。\n- `box-shadow: 2px 2px 4px #d6d6d6, -2px -2px 4px #fff` → 双阴影固定档：卡片 4pt 偏移 / 8pt 模糊，小元素 2pt / 4pt，颜色全不透明（浅 #d6d6d6 右下暗影 + #ffffff 左上高光；深 #1e1e1e / #3a3a3a）。\n\n**晕影根因（为什么之前每轮都在）**\n\n- 旧引擎的阴影承载层是【透明投影层】，阴影直接画在卡面内侧之上——20/60pt 的等比模糊把整卡罩进晕影，壁纸模式下再叠 0.45/0.5 柔和档，怎么调都是晕影。\n- 本轮结构改为「两层纯投影垫底 + 不透明渐变表面盖住投影内侧」，即 CSS `box-shadow` 在元素之后合成的原生等价物：投影只剩边界外侧 2~4pt 微晕，卡面恒全不透明。\n\n**透明度机制退役（不要加任何的透明度）**\n\n- 新拟态透明度滑条整体移除，`background_cards_neumorph_opacity` 不再读取；卡片不再读 uiOpacity / blurIntensity——UI 效果的模糊度/透明度与新拟态彻底解耦。\n- 设置→外观仅保留「新拟态界面」开关：开启 = CSS 规格卡片（其余 UI 效果选项置灰），关闭 = 旧壁纸管线。\n- 圆角沿用短边等比 clamp[8,50]，尺寸位置零变化；壁纸共存语义不变（壁纸照常显示，卡片浮于其上）。\n\nEN: Neumorphism finalized rewrite per the user-provided CSS reference (bigbear-ui neu-white): opaque linear-gradient(145deg) surface (#e6e6e6->#ffffff, dark #333333->#2c2c2c) over a pair of fully-opaque fixed-tier dual shadows (4pt offset / 8pt blur, small elements 2/4pt; light #d6d6d6+#ffffff, dark #1e1e1e+#3a3a3a). Root cause of the persistent halos: the old transparent shadow-casting layers painted shadows on top of the card interior, amplified by 20/60pt size-scaled blur and the 0.45/0.5 wallpaper-soft opacities. The new layering (shadow pair behind, opaque gradient surface in front) mirrors CSS box-shadow compositing: cards stay fully opaque with only a 2-4pt outer micro-halo. The neumorphism opacity slider is retired entirely and cards no longer read any transparency/blur preferences. [Task176]"
-    },
-    {
-      "id": "task175-six-fixes-2026-09-26",
-      "title": "六连修：ANGLE 着色器根修 / CF 下载量+整合包排序 / 主页头像 / 物品栏-分辨率 / 旧版 Forge 装包 / 新拟态壁纸共存",
-      "date": "2026-09-26",
-      "priority": "normal",
-      "summary": "针对最新装机反馈的六项根修。① ANGLE 渲染器闪退根因定稿：MC 26.3 的着色器管线经 spirv-cross 交叉编译回【桌面 GLSL 330】，而底下的 ANGLE 是 GLES3 上下文——桌面源在 ES 编译器上 1:1 语法报错，pipeline/gui 崩溃。本轮在 spirv-cross 垫片内闭环重写：桌面 GLSL 自动转 GLSL ES 300 再交给 ANGLE（仅 ANGLE 渲染器生效，mg/zink/vgpu 不受影响）。② CurseForge 下载量恒显 0 + 整合包列表不排序：字段名断层（downloadCount→downloads）与整合包路径漏传排序/加载器参数，双补。③ 主页头像切标签页回来才显示：初始主页实例从未注册进缓存，首次切回必新建实例重走全部时序病灶——注册修复。④ 物品栏/触控在更改分辨率后偏移：抓取态输入换算漏乘分辨率系数（历史会话恒 100% 从未暴露）+ 命中比例改单点写入防篡改。⑤ 旧版 Forge（≤1.12.2）整合包装载器安装 404 → 启动裸崩：maven 后缀形路径补候选（1.8.9 实锤 200）+ 启动前占位版本拦截弹窗。⑥ 新拟态开启时壁纸被整层盖住：画布接管退役，壁纸回归可见，双阴影自动切柔和档（偏移/模糊缩约 1/3 + 不透明度降档），照片上读作轻悬浮而非晕影。",
-      "content": "## 本轮六连修（装机反馈逐项根因）\n\n**① ANGLE 闪退 = 桌面 GLSL 送进了 GLES 编译器**\n\n- Task171/172 桥接与 Task173 桌面 GL 补全层生效后，游戏已能走到着色器编译阶段；本轮崩溃点后移到 minecraft:pipeline/gui：MC 26.3 把 GLSL 经 shaderc 编到 SPIR-V再由 spirv-cross 交叉编译回桌面 GLSL 330（它以为自己在桌面 GL 3.3 上），而 tinygl4angle 底下是 ANGLE GLES3 上下文——ES 编译器对桌面版本号直接 1:1 语法报错。\n- 修复：spirv-cross 垫片内拦截编译出口，桌面源自动用同一份 SPIR-V 重开ES 编译器产出 GLSL ES 300（tinygl4angle 的 ES 直通分支原样上传）。仅 AMETHYST_RENDERER 含 tinygl4angle 的会话生效；逃生阀 AME175_ANGLE_ES_REWRITE=0。\n- 装机锚点：\"[spvc-shim] Task175 ANGLE ES rewrite: desktop GLSL -> GLSL ES 300\" + 不再出现 \"Couldn't compile vertex shader for pipeline\"。\n\n**② CF 下载量 + 整合包排序**\n\n- 下载量：CF 响应字段叫 downloadCount，UI 读的是 downloads——旧转换把字段整个丢了，所有 CF 条目恒显 0 次。已透传（镜像实测数据一直在响应里）。\n- 排序：侧栏的排序/加载器筛选从未传给整合包搜索（模组页一直有）——CF 与 Modrinth 双源已补，选\"下载量/关注/更新\"即重排。\n\n**③ 主页头像（第五轮，这次有日志铁证）**\n\n- 装机日志实锤：初始主页实例从未注册进缓存，首次切标签页回来必然新建实例——此前三轮修的时序病灶全部在新实例上复发。已注册；另在转场落定后先重载个人卡再直写兜底。\n\n**④ 物品栏/触控偏移（分辨率 ≠100% 时）**\n\n- 抓取态（游戏内）的触点换算漏乘分辨率系数：50% 分辨率下游戏内触控/视角映射整体偏大一倍。已修（历史会话恒 100% 所以从未暴露）。\n- 物品栏命中矩形的比例改为启动器单点写入的全局值（旋转/分辨率/FSR 档位一体），并加了 guiScale 节流保鲜——改完界面尺寸立即生效，不用等开关一次菜单。\n- 装机锚点：\"[HotbarDiag] Task175 geometry snapshot\"（全量输入快照，下次再偏移凭这一行直接定位）。\n\n**⑤ 旧版 Forge 整合包（1.8.9 等 ≤1.12.2）**\n\n- 装包时 Forge installer 404（maven 对旧版晋升构建用\"版本号-MC版本\"后缀形路径）→ 写占位 JSON → 启动时裸 ClassNotFoundException。现在：补后缀形候选（1.8.9-11.15.1.2318 实锤可下）+ 启动前识别占位版本弹窗提示手动装 Forge，不再裸崩。\n- 另：装包/启动时若 JIT 已通过调试器启用（日志\"TXM debug JIT mapping active\"），则不会弹 JIT 申请——这是设计行为（已启用无需再申请），不是故障。\n\n**⑥ 新拟态 + 壁纸共存（画布接管退役）**\n\n- Task174 的\"开启即收起壁纸\"矫枉过正。现在：新拟态界面开启时壁纸照常显示，卡片保持实底规格表面，双阴影自动切【柔和档】（偏移/模糊缩约 1/3、不透明度 0.45/0.5）——照片上读作轻微悬浮感而非晕影；无壁纸时维持原规格档。\n- 装机锚点：\"[Task175] neumorph UI wallpaper coexist\"。\n\nEN: Six-fix round -- ANGLE shader chain root fix (desktop GLSL auto-rewritten to GLSL ES 300 for the GLES context), CurseForge download counts + modpack sort/loader filters, home avatar instance-cache registration, hotbar/touch resolution-scale fix, legacy-Forge (<=1.12.2) installer URL candidates + placeholder launch guard, and neumorphism-wallpaper coexistence with softened shadows. [Task175]"
-    },
-    {
-      "id": "task174-neumorph-canvas-opacity-label-2026-09-26",
-      "title": "新拟态画布接管（晕影根修）+ 透明度百分比实时回显",
-      "date": "2026-09-26",
-      "priority": "normal",
-      "summary": "针对 Task173 构建装机反馈（\"怎么都无法复现正常的新拟态，全都是晕影\"+\"透明度百分比没有正确显示\"）的根修：晕影根因 = Task173 只把卡片重写为正常态，壁纸层仍垫在卡片底下——规格双阴影（20pt 偏移/60pt 模糊/全不透明）投在照片上必然读作边缘晕影，而复现方法（Bing 开→调→关）的终态是壁纸被取消后的整体形态，背景本身就是正常态的一部分。本轮把\"新拟态界面\"开关升级为画布接管：开启时壁纸容器整层收起、底色回归原生系统色（开关打开的默认态 = 复现方法的终态本体），壁纸配置保留、关闭开关即时回归。同时修复透明度滑条拖动时百分比标签冻结不刷新的问题（实时回显）。",
-      "content": "## 本轮改动（装机反馈根修）\n\n**① 晕影根因定稿：壁纸垫底**\n\n- Task173 把卡片重写为\"正常态\"（规格表面 + 双阴影），但壁纸层仍垫在卡片下面。规格双阴影（20pt 偏移 / 60pt 模糊 / 全不透明）投在照片上必然读作边缘晕影——这不是卡片写错了，是\"正常态\"缺了另一半：复现方法（Bing 壁纸开着调 UI 效果再取消 Bing 壁纸）的终态，壁纸是被取消的，背景本身就是正常态的一部分。\n\n**② 新拟态界面开关升级为画布接管**\n\n- 开启（默认）：壁纸容器整层收起，底色回归原生系统色（复现终态）+ 卡片正常态渲染——开关打开的默认态 = 复现方法的终态本体，不再需要舞步。\n- 壁纸配置原样保留：关闭开关壁纸即时回归（毛玻璃/半透明旧管线恢复）；开启期间 Bing 自动刷新照常落盘，只是视觉上被新拟态画布盖住。\n- 装机取证：日志出现一次性 \"[Task174] neumorph UI canvas active\" 即画布模式已生效。\n\n**③ 透明度百分比实时回显**\n\n- 修复：拖动\"新拟态透明度\"滑条时百分比标签即时刷新（Task170 起标签只在页面重载时取值，拖动全程冻结——即\"百分比没有正确显示\"）。\n\nEN: Root-cause fix for the Task 173 device feedback (\"everything still has heavy halos\" + \"opacity percentage not displayed correctly\"). Task 173 rewrote the cards but kept the wallpaper underneath -- full-opacity CSS-spec dual shadows over a photo always read as halos; the repro's terminal state has the wallpaper REMOVED, so the background is part of the normal state. The Neumorphic Interface toggle now takes over the whole canvas: ON retracts the wallpaper container and paints hosts native (terminal state = the repro's terminal state), wallpaper config preserved and restored instantly on OFF (Bing auto-refresh keeps persisting while veiled, one-shot [Task174] log anchor). The opacity slider's % label now updates live while dragging (previously frozen until a table reload)."
-    },
-    {
-      "id": "task173-neumorph-rewrite-toggle-2026-09-25",
-      "title": "新拟态界面重写（正常态统一渲染）+ 新拟态界面开关 + 卡片本体透明度",
-      "date": "2026-09-25",
-      "priority": "normal",
-      "summary": "针对\"新拟态BUG压根就没改\"的定稿重写：用户给出复现方法（Bing 壁纸开着调一次 UI 效果再关掉 Bing 壁纸，新拟态即回到正常形态），证明正常形态一直存在于无壁纸分支。本轮把该\"正常态\"（规格表面色 + 双阴影）提为唯一卡片渲染路径——新拟态界面开关开启时与壁纸完全无关，此前\"动态卡面（毛玻璃/半透明）+ 阴影承载层\"的壁纸适配分支整链退役（半透明卡面叠 20/60px 双阴影正是边缘重晕影的来源）。设置页模糊程度下方新增\"新拟态界面\"开关：开启时其余 UI 效果选项（UI效果/透明度/模糊程度）变灰、卡片本体透明度滑条可操作，关闭反转回归旧壁纸管线。透明度语义改为\"卡片本体\"——卡面与双阴影淡化，文字/图标保持全不透明（不再用宿主 alpha 整体缩放）。",
-      "content": "## 本轮改动（用户复现方法驱动 + 定稿重写）\n\n**① 新拟态管线按\"正常态\"重写**\n\n- 复现方法确认：Bing 壁纸开启时任意调整一次 UI 效果，再取消 Bing 壁纸，新拟态即回到正常形态——说明正常形态（规格表面色 #e0e0e0/#2c2c2c + 双阴影）一直都在，坏的只是有壁纸时的\"动态卡面\"分支（半透明毛玻璃卡面叠 20/60px 双阴影，暗影落在壁纸上被读作边缘重晕影）。\n- 重写：新拟态界面开关开启时，所有卡片（主页磁贴/版本卡/公告卡/下载卡等）永远按正常态渲染，不再读壁纸状态、不再插 blur 层、不再有\"动态卡面\"——壁纸适配分支整链退役。\n\n**② \"新拟态界面\"开关（模糊程度下方）**\n\n- 开启（默认）：卡片正常态渲染；其余 UI 效果选项（UI效果选择/界面透明度/模糊程度）变灰停用，卡片本体透明度滑条可操作。\n- 关闭：回归旧壁纸管线（毛玻璃/半透明随其余选项变化；无壁纸为原生平铺），滑条变灰，其余选项恢复。\n- 无壁纸时开关与滑条也恒显（新拟态与壁纸无关，这正是本轮重写的语义）。\n\n**③ 卡片本体透明度（不含字体）**\n\n- 滑条语义从\"整个卡片 alpha 缩放\"改为\"卡片本体\"：卡面规格表面色与双阴影承载层按比例淡化，文字/图标保持全不透明（引擎新原语 ame_applyNeumorphCardOpacity，卡面走动态色安全淡化，深浅色切换不脱色）。\n- 100% = 规格表面原样；0% = 卡体全透明（文字仍可见）。\n\nEN: Neumorphism rewritten to the \"normal state\" (spec surface + dual shadows) as the single card path whenever the new \"Neumorphic Interface\" toggle (under Blur Intensity) is on -- the wallpaper-adaptive dynamic-face branch is fully retired (it was the source of the heavy edge halos). Toggle on: other UI-effect options grey out and the card-body opacity slider becomes active; off: legacy wallpaper pipeline takes over. Opacity now fades the card body (face + shadows) only -- text stays fully opaque."
-    },
-    {
-      "id": "task173-ten-fixes-2026-09-26",
-      "title": "装机反馈十连修（ANGLE 渲染管线 / 老 Forge / 惊变100天内存 / CF 三连 / TouchController 组件化 / 头像根修 / 壁纸滑条 / Forge JIT 重启 / VGPU 渲染器 / 自动渲染器）",
-      "date": "2026-09-26",
-      "priority": "normal",
-      "summary": "fd31b79 装机三日志（e0c68e7 构建：ANGLE FO 包 / 惊变100天 1.20.1 Forge / 老 Forge 1.8.9）反馈十项全部处理：①ANGLE 崩溃根因实锤——GL 后端首次被接受后死在 minecraft:pipeline/gui 预编译（LWJGL 报函数不可用）：反编译 26.3 renderpearl 的 GL 后端要调 glColorMaski/glEnablei/glDrawElementsBaseVertex/glQueryCounter 等桌面 GL 独有函数，而 ANGLE 框架只导出 ES 符号集，dlsym 恒 NULL——tinygl4angle 现在内置桌面 GL 补全层（eglGetProcAddress 解析 + EXT 变体兜底 + 分槽 blend/多绘制族安全降级），另修 glShaderSource 对 ES 版本化着色器不上传的潜伏雷 + Iris 的 GLSL 版本串前缀（OpenGL GLSL 3.30... 正则不匹配）规范化；②老版 Forge（1.8.9-forge-11.15.1）启动崩溃——版本 JSON 的 libraries 字段缺失时 getVersionInfo 裸解引用 NPE，现已空数组兜底 + 父版本缺失可定位报错；③惊变100天整合包加载期静默闪退——实例内存 7165MB（0.8×物理内存的错误公式）击穿 iOS 进程 Jetsam 上限，现在用 os_proc_available_memory 权威推算安全堆顶：启动链自动钳制 + 内存滑条上限封顶 + 超限双语提示；④CF 列表不按排序方式排列——排序/加载器参数从未映射进请求（Modrinth 风格的 sort/loader 直接被忽略），现在 sortField/sortOrder/modLoaderType（CF）与 index（Modrinth）双源全接通；⑤整合包 CF 源版本下载全挂——双根因：MCIM 镜像 302 不重写补零路径（mediafilez 403，实测未补零即 200）+ ModVersion 的 CF 下载 URL 从不做镜像解析（Modrinth 一直在做），均已修；⑥下载界面游戏版本只到 1.21.1/1.16.5——旧过滤把 26.x 全滤掉 + 32 条封顶截掉老版本 + 清单加载失败只剩 5 个兜底，现在 26.x/1.x 通吃 + 镜像候选链 + 64 条 + 全量兜底；⑦TouchController 改为 Sodium 同款组件样式（用户指令）：组件安装区一键安装（Modrinth 拉适配版本落 mods/）+ 自动配置（UDP 模式 + 屏蔽启动器控件）；⑧头像切标签页消失第三轮根修——每次切回主页都全新 alloc 实例导致三轮流标修复全部失守，现在主页 VC 实例缓存复用（头像存活于实例上，切回零重拉）；⑨壁纸设置默认配置调反界面尺寸与点击错位——三个滑块行从顶对齐固定坐标改为 Auto Layout 居中自适应（任意宽度/旋转不再错位）；⑩Forge 安装完成后启动弹 java runtime 问题——进程内只能创建一次 JVM（安装器占用），旧弹窗让用户手动重启，现在「重启并启动」一键出路（写自动启动键退出，下次冷启自动选中实例并走完整 JIT 授权链启动）。另：新增 VGPU 渲染器（PojavLauncherTeam/VGPU 源码 vendoring + iOS 移植，旧版本 MC 专用，FCL 同款）；渲染器列表「自动」去掉后缀、MobileGlues 标注 (1.17+)，auto 的旧版本分支从 ANGLE 改为 gl4es（按游戏版本分配）。装机验证锚点：'[TinyGL] Task173 desktop-GL completion layer: N/20 resolved'（ANGLE 会话首帧）、'Task173 launch memory clamping'（惊变100天）、'[TinyGL] Task173 GLSL version string normalized'（Iris）、'Task173 home VC reused'（头像）、'[TouchController] Task173 installed'（组件安装）、'Task173 autolaunch detected'（Forge 重启启动）。"
-    },
-    {
-      "id": "task172-six-fixes-2026-09-25",
-      "title": "装机反馈六连修（ANGLE 依旧崩溃 / JIT 卡死闪退 / 键盘 / 头像 / 版本级 TouchController / CF 镜像 502）",
-      "date": "2026-09-25",
-      "priority": "normal",
-      "summary": "9be2b53 装机三日志（760c07c）反馈六项全部处理：①ANGLE 仍报 glGetError mismatch——反编译实锤定制 LWJGL 的 GL$1 在 macOS 平台从不查 eglGetProcAddress（只查 OSMesaGetProcAddress），旧镜像链先查 eglGetProcAddress 导致两条链在 ANGLE 库上拿到不同地址，镜像链已逐字对齐反编译结果，指针一致性按构造成立；②二级菜单启动卡 JIT 等待 120s 后闪退——stikjit:// 切后台后若 StikJIT 没把启动器切回，进程被 iOS 冻结（等待循环零心跳零超时），切回时调试器已死则 brk #0x69 直接闪退——三处 JIT 等待现在持有后台任务断言（冻结不再发生）并在启动前复查调试器存活性（必要时自动重挂）；③键盘仍需先按一次输入法——MC 的 SDL 键盘字段抢走 first responder 但其文本投递链在嵌入架构下是死的，现在 SDL 文本输入自动路由到启动器输入框（字符直达 + MC 关聊天键盘自动收起）；④头像切标签页回来要点一下才显示——网络头像回调在失败路径上脱离主线程触碰 UI（静默失效到下一次触摸），已修 + 全分支取证日志 + 转场后延迟补刷；⑤版本配置新增 TouchController 开关（开启 = 启动自动配置 UDP 模式 + 屏蔽启动器控件，保留模组自己的虚拟按钮；关闭不碰全局设置）；⑥CurseForge 镜像 502（整合包分类瞬态故障）——现在自动退避重试，不再需要手动刷新。",
-      "content": "## 本轮修复（装机日志 760c07c 反馈六项）\n\n**① ANGLE 渲染器依旧崩溃（glGetError mismatch）**\n\n上一轮把 ANGLE 接入了 SDL_GL 桥接，但设备日志显示仍然 mismatch。把启动器自带的定制 LWJGL（lwjgl-opengl.jar 里 GL$1.class）反编译后实锤：macOS 平台的函数解析链**从不查询 eglGetProcAddress**——Linux 用 glXGetProcAddress、Windows 用 wglGetProcAddress、所有平台兜底只用 OSMesaGetProcAddress。而启动器的镜像链优先查 eglGetProcAddress：对 MobileGlues/zink 恰好两条链殊途同归（侥幸通过），对 ANGLE 库（libEGL 导出 eglGetProcAddress、glGetError 是 libGLESv2 直接导出）则两边拿到不同地址 → mismatch → 回落 Vulkan → Iris 崩溃。镜像链已逐字对齐反编译结果，对所有渲染器指针一致性按构造成立。\n\n**② 二级菜单启动游戏卡在 JIT 等待，120 秒后闪退**\n\n启动时 stikjit:// 必然把启动器切到后台去 StikJIT；若 StikJIT 没有把启动器切回来，iOS 直接冻结进程——120 秒等待循环零心跳、零超时、日志戛然而止（装机日志实锤）。用户手动切回时若 JIT 已开但调试器已死，直接启动游戏 = brk #0x69 无人服务 = 闪退。现在三处 JIT 等待全部持有后台任务断言（进程在宽限期内继续运行，心跳/超时照常，StikJIT 可在后台完成附加），并且在等待成功后复查调试器存活性——死了就先自动重挂再启动，不再盲启。\n\n**③ 键盘输入依旧异常（必须先按一次输入法按钮）**\n\n设备日志实锤：每次按 ✎ 都是 becomeFirstResponder=1（字段反复丢失 first responder），字符全部经启动器字段到达 MC，而 SDL 自己的键盘字段一条都没送达。机理：MC 26.3 聚焦文本框时 SDL 的 iOS 后端把自己的 textField（在被隐藏的 SDL UIWindow 里）立为 first responder 抢走键盘，但它的文本投递链在启动器的嵌入架构下是死的。现在 SDL 的文本输入开始/停止自动路由到启动器输入框：打开聊天键盘直达可用，MC 关闭聊天时键盘同步收起（不再滞留）。\n\n**④ 主页头像切换标签页回来后消失，点一下才显示**\n\n网络头像获取的失败路径在 NSURLSession 的回调线程里直接触碰 UICollectionView / UIImageView（违反主线程契约），更新静默失效直到下一次 UI 触摸（用户感知\"点一下才显示\"）。已修复回主线程，并给整条头像链补上分支取证日志（本地/会话缓存/网络/缺 URL 四分支 + 可见卡计数），转场结束后 0.35 秒再补一次直刷。下轮装机日志可直接定位残余问题。\n\n**⑤ 版本配置新增 TouchController**\n\n版本（实例）配置页的高级设置区新增 TouchController 行：开启后该实例启动时自动配置——UDP 通信模式 + 屏蔽启动器自带控件（保留模组自己的虚拟按钮，Task140 语义）。关闭只删本实例的键，不碰全局 TouchController 设置。\n\n**⑥ CurseForge 镜像 502**\n\n设备日志实锤整合包分类搜索偶发 502（上游瞬态），用户手动刷新 5 秒后即成功。现在异步搜索与同步请求都会对 5xx 自动退避重试（最多 2 次），不再需要手动刷新。\n\n---\n\n**装机验证锚点**：ANGLE 会话日志应出现 `[SDLHook] Task172 GL$1 mirror: OSMesaGetProcAddress=0x...` 且不再有 glGetError mismatch；JIT 等待期每 10 秒一条心跳（后台断言生效）、异常路径出现 `[JIT] [RightPanel] Task172 wait satisfied but JIT26 debugger is gone`；键盘打开聊天即直达（`[SurfaceVC] Task172 SDL auto-keyboard routed`）；头像缺失时看 `[HomeAvatar] Task172 branch:` 日志定位分支；TouchController 实例启动出现 `[TouchController] Task172 profile auto-config applied`；CF 502 出现 `[CurseForgeAPI] Task172 retrying search after 5xx non-JSON body`。"
-    },
-    {
-      "id": "task171-seven-fixes-2026-09-25",
-      "title": "装机反馈七连修（ANGLE 崩溃 / 物品栏偏移 / CF 无 key / 头像 / 26.4 后端 / 键盘）",
-      "date": "2026-09-25",
-      "priority": "normal",
-      "summary": "上一轮装机日志（f26337d，3 个日志文件）反馈的七个问题全部处理：①ANGLE 渲染器崩溃 = 它从未进过 SDL_GL 桥接接管列表，renderpearl 的 glGetError 指针一致性检查失败后回落原生 Vulkan，Iris 在无 GL 上下文的 Vulkan 后端上直接崩——ANGLE 现已接入桥接；②物品栏点击偏下 = FSR 联动下命中矩形没乘窗口比例，视觉物品栏的上半段全被拒绝——几何现已 FSR 感知；③CurseForge 无构建 key 报错 = 无 key 时请求被\"key 缺失\"门直接拦截而从不发出（镜像回退成了死代码）——现在无 key 也照常走 MCIM 镜像（实测免 key 200）；④主页头像切标签页缺失 = 可见卡直刷只挂在网络回调上，缓存命中分支漏了——三处全兜底；⑤多人游戏偶发崩溃的日志已被轮换覆盖，新增 latestlog.crash.txt 异常死亡自动保全；⑥26.4 回退 Vulkan = MC 26.4 把默认后端顺序翻成 Vulkan 优先，启动器现在对 26.4+ 强制 --graphicsBackend opengl（原生 Vulkan 渲染器除外）；⑦键盘首会话每输一个字被系统拆一次 = 哨兵空格改在激活前写入 + 自动重挂自愈。",
-      "content": "## 本轮修复（装机日志 f26337d 反馈七项）\n\n**① ANGLE 渲染器崩溃**\n\n- 根因：libtinygl4angle 从未进过 SDL_GL 桥接列表（Task 79 只收编了 zink 系），真实 SDL 拒载\"OpenGL library already loaded\"后，renderpearl 的 glGetError 指针一致性检查失败 → 回落 MC 原生 Vulkan 后端 → 整合包里的 Iris 在 initRenderer 阶段拿不到 GLCapabilities 直接崩。\n- 修复：ANGLE 接入桥接（同款镜像链保证指针一致性），GL 失败仍会自动回落 Vulkan，零新增风险。\n\n**② 物品栏点击位置偏下**\n\n- 根因：FSR 联动下 MC 窗口是表面的 1/1.7，视觉物品栏顶边在物理 y≈1490，而拦截门槛算的是 1560——上半段全被拒绝，必须点到下半截才能选中。\n- 修复：命中矩形按\"物理/窗口\"比例放大（182x22 完整精灵），X 方向槽位映射同步修正。\n\n**③ CurseForge 未配置 key 报错**\n\n- 根因：无 key 时请求头返回 nil，三条请求路径把它当致命错误直接拦下——请求根本没发出，镜像回退成了死代码。\n- 修复：无 key = 照常发请求（不带 x-api-key 头）走 MCIM 镜像，实测免 key 返回 200。有 key 的设备行为不变。\n\n**④ 主页头像切换标签页缺失**\n\n- 根因：可见卡直刷只挂在网络完成回调上；切标签页返回走的是会话缓存命中分支，只有 reloadSections（转场时序下不重绘）。\n- 修复：本地/缓存/网络三个分支全部直刷可见 Profile 卡，并在转场结束后（viewDidAppear）补一次。\n\n**⑤ 多人游戏偶发崩溃（证据保全）**\n\n- 你指的 log.old.txt 那局多人会话本身是干净的（全程 60fps、正常退出）——崩溃那局的日志已被后续启动的轮换覆盖。\n- 新增：上一会话若非正常退出（无 exit 标记），下次启动自动把日志保全为 latestlog.crash.txt，崩溃现场不再丢失。\n\n**⑥ 26.4 回退 Vulkan（zink / mg 都会）**\n\n- 根因：MC 26.4 把默认后端尝试顺序翻转为 Vulkan 优先（26.3 是 GL 优先），且升级 datafix 会把已存的后端选项重置回默认——启动器选的 GL 转译渲染器被原生 Vulkan 整层绕过。\n- 修复：26.4+ 自动追加 --graphicsBackend opengl（原生 Vulkan 渲染器除外）。26.3 及以下完全不变。\n\n**⑦ 键盘触发后必须按一次输入法键**\n\n- 根因：键盘激活后才写入哨兵空格 + 开启\"开始编辑时清空\"，与 iPadOS 26+ 异步输入会话激活竞争——首会话每输一个字符字段就被系统拆一次。\n- 修复：哨兵空格改在激活前写入、清空位退役，另加 0.4 秒健康检查自动重挂（你手动做的那\"再按一次\"现在自动完成）。",
-      "pin": false
-    },
-    {
-      "id": "task170-neumorph-opacity-spacing-2026-09-25",
-      "date": "2026-09-25",
-      "title": "卡片新拟态透明度滑条 + 主页卡片间距统一",
-      "summary": "卡片新拟态整体透明度滑条（替换 Task168 实底开关——设置→外观，0%~100% 调节整个卡片含边缘阴影的透明度，晕影重就调低）+ 主页卡片间距统一 20pt（卡间 = 卡到侧边栏外沿）。 EN: whole-card neumorphism opacity slider replaces the solid toggle; home tile gaps unified to the 20pt outer margin.",
-      "content": "【更新】卡片新拟态透明度滑条 + 主页卡片间距统一（Task 170）\n\n一、新拟态透明度（替换上一版的「卡片新拟态（实底）」开关）\n· 位置：设置 → 外观 → 「新拟态透明度」拉条（0% ~ 100%）\n· 语义：调节「整个卡片」的透明度——卡面、新拟态双阴影、卡片内容作为一个整体按比例淡化\n· 100% = 上一版形态原样；觉得卡片边缘晕影太重就往低调（比如 60%~80%），阴影会跟着变淡\n· 0% = 卡片整体不可见（极端档位，一般用不到）\n\n二、主页卡片间距\n· 主页面卡片之间的横向/纵向间距统一为 20pt，与外围卡片到侧边栏的距离一致\n\n三、说明\n· 沿用毛玻璃/半透明卡面与壁纸透明度、模糊程度两个滑条的既有行为，本次不改动\n· 维护入口：启动器公告 = 仓库根 announcements.json；使用问题 = 仓库根 help-faq.json（随包副本 Natives/resources/，两文件保持一致）\n\nEN: Task 170 -- \"Neumorphism Opacity\" slider (0%~100%) replaces the solid-card toggle; it scales the whole card (face + dual shadows + content) as one unit, so heavy edge halos can be dialed down directly. Home tile spacing unified to 20pt, equal to the card-to-sidebar margin."
-    },
-    {
-      "id": "task168-neumorph-faq-json-2026-09-25",
-      "title": "新拟态卡片形态修复（壁纸模式可见）+ 使用问题 JSON 化",
-      "date": "2026-09-25",
-      "summary": "修复「设了壁纸就看不到新拟态」的范围判定失误：全部卡片统一新拟态（动态=卡面随壁纸透明度/模糊+双阴影，可开「实底」开关）；「使用问题」34 条迁移 JSON 存储，公告/使用问题的维护路径见正文。",
-      "content": "## 新拟态修复（该改的这次真的改了）\n\n- **根因**：上一轮（Task163）的凸起管线只在**未设壁纸**时生效——设了壁纸的卡片仍走旧毛玻璃，所以你下载最新提交也看不到新拟态。代码一直在包里（提交 447a677），是范围判定失误，不是没提交。\n- **本轮修复**：主页卡片（新闻/功能磁贴）、下载页版本选项卡等全部卡片统一新拟态：\n  - **动态（默认）**：壁纸模式下卡面仍按你设置的**透明度/模糊**呈现（毛玻璃/半透明），叠加新拟态**双阴影凸起**——即「按壁纸设置的透明度和模糊程度动态调整新拟态」；\n  - **实底开关**：设置 → 外观 → 「卡片新拟态（实底）」。打开后卡片一律规格实底+双阴影，放弃壁纸透明度/模糊（壁纸从卡片间隙透出）。\n- 侧栏/右面板维持平贴（Task163 结论：大面板等比阴影会外溢压到相邻卡片）。\n\n## 使用问题 JSON 化\n\n- 「使用问题」全部 34 个条目迁移为 JSON 存储（与启动器公告同模式），字段：**标题 / 图标id / 简介**。\n- **维护路径（两个，改完重新构建生效）**：\n  - 启动器公告：仓库根 `announcements.json`（随包离线回退 = `Natives/resources/announcements-fallback.json`）\n  - 使用问题：仓库根 `help-faq.json`（维护源）+ `Natives/resources/help-faq.json`（随包，运行时读取）——两文件逐字节一致，校验脚本把守漂移\n- 顺带更新过时结论：FSR 条目改为**三后端均支持**（Vulkan 经 Metal 呈现层，Task166/167），MobileGlues 卡顿条目补 Vulkan+FSR 推荐路径。\n\n---\n\nTask 168: neumorphic cards are now visible in wallpaper mode too (dynamic = card face follows your opacity/blur settings + neumorphic dual shadows; a new Solid Card Neumorphism toggle in Settings -> Appearance forces the solid spec surface). The 34 FAQ entries moved to JSON storage like the announcements -- edit the repo-root files (announcements.json / help-faq.json) to maintain them.",
-      "priority": "normal",
-      "action_url": "",
-      "action_title": "",
-      "image_url": ""
-    },
-    {
-      "id": "v6-0-0-release-2026-09-21",
-      "title": "v6.0.0 正式版发布",
-      "date": "2026-09-25",
-      "summary": "渲染器每游戏强制单选（无全局默认，缺省自动，mg 单入口，附 Sodium+Iris+Podium 一键安装）+ mg 三后端 FSR（GLES/4.0 原生 + Vulkan 直连 Metal 呈现层方案，EASU 放大+RCAS 锐化） + OpenGL 4.0 (Mithril) 崩溃根治 + TouchController 虚拟按钮回归（屏蔽启动器控件但保留模组按钮）+ TouchController 26.2 失效根治（UDP 自动回落 + 双 ABI）+ JIT 开启工具选择、下载镜像策略（加载速度快优先默认）、26.1.2 整合包崩溃根治、界面与动画优化 + 管理 Java 新增 26.0+（Java 25）预选、内存分配输入框弹窗、分辨率缩放每实例单独设置 + 新拟态 UI 回归（双阴影高光按 CSS 规格原生实现）、外观跟随系统与毛玻璃新默认（透明度 60%/模糊 100%）、弹窗背景回归、设置页文字重影修复。；正式版收尾：ES/4.0 黑屏与 Vulkan 首帧崩溃根治、CurseForge 源修复、本地整合包任意位置直装、主页头像秒显、JIT 等待超时保护、公告置顶（服务器推荐第一）。",
-      "content": "## v6.0.0 主要内容\n\n\n\n**渲染器与图形（重点修复）**\n\n- **渲染器每游戏强制单选**：设置页的全局渲染器选择退役，每个游戏在自己的设置页单独选择渲染器，未单独设置过的实例缺省\"自动\"（1.17+ 自动解析为 MobileGL Vulkan 直连）——彻底告别\"改了游戏渲染器又跳回设置里那个\"。MobileGL 家族在渲染器列表里合并为唯一的 **mg** 条目、不再写死后端：后端统一在 设置 > MobileGlues > 渲染后端 选择（Vulkan 直连 / GLES / OpenGL 4.0，默认 Vulkan 直连）；实例页新增 Sodium + Iris Shaders 组件安装（火焰图标，仅 Fabric 实例），一键从 Modrinth 下载 Sodium + Iris + Podium 进 mods 目录（Iris 为光影加载器，Podium 负责解除 Sodium 对第三方启动器的检查）\n- **mg 后端 FSR 支持矩阵（正式版口径，Task 166/167 修订）**：**全部三个后端均支持 FSR 1.0 超分**——mg 的 **GLES / OpenGL 4.0 后端**（MobileGlues 渲染路径）提供完整的 EASU 高质量放大 + RCAS 锐化双管线；**Vulkan 直连后端通过 Metal 呈现层拦截方案支持 FSR**（私有低分辨率交换层 + AMD FSR1 EASU/RCAS 移植到 Metal，MobileGL/MoltenVK 二进制零改动；选择 FSR 档位即生效，推荐 Vulkan 直连作为默认首选后端）\n- **OpenGL 4.0 (Mithril) 后端崩溃根治**：上下文创建参数错误导致游戏启动即报\"无 OpenGL 上下文\"崩溃的问题修复，该实验性后端现在可以正常进入游戏\n- **GLES 后端**：进世界方块不渲染的问题随 FSR 修复消除了启动期的一次分辨率翻转（疑似诱因）；若仍复现请附日志反馈（属 MobileGL 上游翻译层问题）\n\n**Java 与内存（体验调整）**\n\n- **管理 Java 新增 26.0+ 预选**：1.17+ 预选下新增\"26.0 及更高版本：Java 25\"（26.x 官方要求 Java 25），26.x 实例启动自动走独立 Java 25 槽位；Forge/NeoForge/整合包安装链的 Java 版本推断同步适配 26.x\n- **内存分配改为输入框弹窗**：与游戏目录同款输入框（标题\"调整内存分配\"，简介含设备最大内存 / 可分配最大内存 / 内存调配指南见启动器使用教程），输入值自动限制在 512MB ~ 可分配最大内存之间，\"恢复默认\"按钮去除；居中卡片弹窗（含自动分配内存开关）随之退役——存量开启自动的实例仍按原版自动比例启动，确认过一次输入后回到手动值\n- **分辨率缩放每实例单独设置**：设置页的全局分辨率缩放滑条退役，迁到每个实例设置页\"渲染器\"行下（右侧参数改为与内存分配同款灰字+向右箭头样式，行内输入保留，可编辑 25~150，右侧独立 % 标签）；存量全局值继续作为未单独设置实例的回退\n\n**新拟态 UI 与默认体验（本轮视觉大改）**\n\n- **新拟态 UI 全面回归**：所有自创 UI 按新拟态（Neumorphism）CSS 规格用原生代码重建——浅色表面 #e0e0e0 / 深色 #2c2c2c，双外阴影（右下暗影 + 左上高光）与圆角按元素尺寸等比缩放（340pt 卡片 = 圆角 50 / 偏移 20 / 模糊 60 的完整规格），主要文字 #333333/#f5f5f5、次要文字 #888888/#a0a0a0，深浅色自动适配；设置列表保持原生观感不受影响；主页磁贴与下载版本卡片呈现凸起双阴影（侧栏/右面板为平贴面板、不再投影遮挡旁边卡片），实例设置页所有跳转行箭头统一为同款灰色小箭头\n- **初次使用默认配置更新**：默认跟随系统深浅色、背景 UI 效果默认毛玻璃、透明度默认 60%、模糊程度默认 100%（仅新装/重置偏好生效，存量用户已保存的设置不变）\n- **弹窗背景回归**：自定义背景、自定义主页等弹窗在壁纸模式下此前整页透明，现恢复页面级毛玻璃底（文字可读、隐约透壁纸）；侧栏/右面板/主页继续透壁纸；\"游戏目录\"\"已安装的版本\"等标题背后的毛玻璃块移除，文字直接浮在壁纸上\n- **设置页文字重影修复**：选项文字不再带黑色阴影（此前看起来像\"文字重叠两次\"），标题换行不再压到灰色小字上，颜色回归原生（浅色模式黑色标题 + 灰色小字）\n\n**TouchController 模组（重点修复）**\n\n- **MC 26.2 功能失效根治**：双重修复。其一，模组原生通信层从句柄制改成单例制导致的 ABI 错位已由双 ABI 传输层兼容；其二，模组 0.3.1-alpha14 的静态库分支在上游尚未完成（加载必失败并误报\"不支持的操作系统：iOS\"），静态库模式现会自动附带模组自带的 UDP 兼容通道作为回落——触控开箱即用\n- **静态库模式进世界触控恢复**：修复静态库模式下触控事件发错通道的问题（菜单能点、进游戏失灵的怪象根除），现在无论模组走哪条通道都能收到事件\n- **屏蔽控件（语义更新）**：开关现在只隐藏【启动器自带】的经典虚拟按钮，保留模组自己的虚拟按钮（摇杆/跳跃/聊天/暂停等一整套内置布局）——修复此前\"触控能用但一个按钮都不显示\"；此前被写成空布局的存量配置会在下次启动时自动修复，模组按钮即刻回归。触屏手势、震动、文字输入不受影响\n- 设置页入口恢复为二级菜单（此前误改为悬浮浮窗）\n\n**下载镜像策略（新增）**\n\n- **加载速度快优先**：参考 FCL 的测速策略，启动器会实测官方源与国内镜像（BMCLAPI / MCIM）的响应速度并自动选用更快的一方，结果缓存 24 小时；文件下载、资源搜索、资源文件、模组加载器四个分类均支持，且默认即为该选项\n- **模组镜像源合并**：原\"启动器设置\"里的模组镜像源移入\"下载镜像策略\"分区，作为模组/光影/资源包/数据包/整合包/世界的统一入口（选择同时作用于搜索与下载；需要精细控制时仍可单独调整分类行）\n\n**JIT 体验**\n\n- **JIT 开启工具选择**：设置 > 调试新增工具选择（自动 / StikDebug / SideStore / StosDebug / JitStreamer-EB / TrollStore / 手动）。没装 StikDebug 的用户请改选你实际使用的工具，不再\"点了没反应\"\n- **安装 Forge 自动申请 JIT**：Forge/NeoForge 安装需要运行 Java 处理器，此前 JIT 未开启时只会弹错让你手动去开——现在与启动游戏同款自动跳转申请并等待开启，装完即装；iOS 26+ 设备上即使 JIT 已开启，无活跃调试器时也会自动重新附上 JIT 脚本\n- **iOS 26 JS 脚本开关**：可关闭启动游戏时向 JIT 工具发送 UniversalJIT26.js 脚本的行为（供不支持脚本的工具使用）\n\n**修复**\n\n- **MC 26.1.2 整合包进世界闪退根治（新根因）**：controlify 闪退修复后游戏可正常进入世界，本轮追查到真正的最后一层——语音模组（Simple Voice Chat）的麦克风在部分设备上因音频格式不匹配触发系统异常。现在麦克风按设备原生格式采集并在内部重采样，格式不再冲突；即使麦克风不可用也只影响语音，绝不闪退\n- **MobileGL-gles 输入错位修复**：修复该渲染器下触摸点与画面位置对不上的问题（FSR 兜底恢复全分辨率渲染后输入坐标未同步）\n- **MobileGL-gles 渲染器**：修复选择后 EGL 加载失败导致的闪退，现在正常进入游戏\n- **OpenGL 4.0 实验性后端随包可用**：Mithril 组件（libmithril.dylib）已内置，无需再手动放置文件\n- **第三方皮肤头像**：本地渲染（脸 + 帽层），存量账户启动自愈、首页头像实时刷新不再需要重启启动器\n- **主页卡片**：公告卡片与新闻卡片和\"最新正式版\"卡片等高，公告卡喇叭图标居中、查看按钮内联标题后，样式与新闻卡对齐；主页磁贴卡片随视觉大改更新为新拟态凸起阴影；欢迎卡头像等边距居左、未选账号首帧即显示默认头像；内存分配改为输入框弹窗（512MB ~ 可分配上限，自动分配开关随旧弹窗退役）；新拟态 UI 回归 + 浅色/毛玻璃新默认 + 弹窗背景回归\n\n**界面与动画**\n\n- **iPhone 右侧边栏精简**：手机上右侧面板改为窄图标轨（96pt），只保留头像与启动/选版本/执行JAR 图标按钮，内容区更宽敞；iPad 保持完整面板\n- 列表入场动画只在首次出现时播放（滚动回滑不再重复弹跳），条目按序错落进入\n- 侧栏切换选中项颜色平滑过渡，页面切换保持交叉渐变\n\n---\n\nv6.0.0: TouchController's MC 26.2 breakage root-fixed with a dual-ABI transport (static-library mode now delivers events on both channels, fixing in-world touch) plus a Hide-All-Controls option that now also hides the launcher's own button layer; a new download mirror strategy with a Fastest-First default (FCL-style racing, 24h cached) and the mod-mirror control consolidated; a LiveContainer-style JIT enabler picker with an iOS 26 script toggle -- and Forge/NeoForge installation now auto-requests JIT exactly like game launch (including the iOS 26+ debugger re-attach); the 26.1.2 world-join crash finally traced to Simple Voice Chat's microphone (AVAudioEngine tap format mismatch) and fixed with native-format capture + in-callback resampling + graceful no-mic degradation; MobileGL-gles input misalignment fixed (FSR-heal input scale reset) alongside its load fix; the OpenGL 4.0 experimental backend ships working with the bundled Mithril dylib; renderer selection is now per-game mandatory with no global default (games without an explicit choice default to Auto; single mg entry; backend picked in MobileGlues settings, Vulkan direct by default) plus a one-tap Sodium + Iris Shaders component install for Fabric instances (Sodium + Iris + Podium, with Iris the shader loader and Podium lifting the third-party-launcher check); iPhone's right panel streamlined to a 96pt icon rail; and list/sidebar animations polished. v6.0.0 also adds a \"26.0 and newer: Java 25\" preselect slot under Manage Java (26.x launches resolve to the dedicated Java 25 slot, with Forge/NeoForge/modpack Java inference adapted), replaces the memory-allocation card with a game-directory-style input dialog (title + device-max / max-allocatable / guide hint, value clamped to 512MB..max allocatable, restore-default removed; the auto-allocate switch retires with the card while existing auto profiles keep launching on the stock auto ratio), and moves resolution scale from the global slider into per-instance settings under the renderer row (inline number input with a separate % label restyled to match the memory row -- gray digits plus a trailing chevron -- and the clamp widened to 25-150; the legacy global value still applies to instances without an explicit choice). This round also rebuilds all custom surfaces as native Neumorphism per the user's CSS spec (dynamic #e0e0e0/#2c2c2c surfaces, size-scaled dual shadows and radii, #333333/#f5f5f5 primary and #888888/#a0a0a0 secondary text), flips first-launch defaults to follow-system appearance + frosted-glass backdrop (opacity 60% / blur 100%, saved values untouched), restores page-level glass backdrops under modal sheets while sidebar/right-panel keep showing the wallpaper, and fixes the settings-page double-drawn text (shadow ghosting + multi-line title/detail overlap) back to native single-line label rendering.\n\n**装机实测集中修复（Task 165-169，正式版收尾）**\n\n- **ES / OpenGL 4.0 黑屏根治**：强制开启的 DSA 扩展在 MobileGlues 模拟层 + FSR1 fb0 重定向下产生黑屏（多轮装机 A/B 实锤），已改回默认关闭并自动迁移存量配置；前置的函数解析层修复（gl* 符号劫持）+ 渲染纹理探针 + RCAS 运行时熔断同步落地\n- **Vulkan 直连首帧崩溃根治**：FSR 私有交换层几何（bounds × contentsScale = MoltenVK 表面尺寸真源）修复，装机实测 Vulkan FSR 正常工作\n- **CurseForge 加载源修复**：镜像网关错误（上游瞬态 403/500 被包成无 data 键的 HTTP 200 JSON）不再被静默当成\"无结果\"——自动重试一次并把真实错误显示出来；版本筛选自动剥 fabric 构建哈希后缀\n- **本地整合包任意位置直装**：从\"文件\"App / 下载 / iCloud 选择即可直接安装（安全作用域内存活拷贝），不再需要先导入到应用文件\n- **主页头像秒显**：10s 受控超时 + 磁盘缓存，冷启动直接显示，不再\"要点一下才有\"\n- **JIT 等待超时保护**：开启 JIT 偶发失败不再无限卡在\"正在开启 JIT\"，120 秒超时后可一键重试\n- **公告置顶**：公告支持置顶字段，推荐服务器（mysv.dpdns.org）已置顶显示\n\n---\n\nv6.0.0 final addendum: per-game renderer selection with a single mg entry (backend = global setting, default Vulkan-direct); FSR now on ALL three mg backends including Vulkan-direct via a Metal presentation-layer intercept (zero MobileGL/MoltenVK binary changes); ES/4.0 black screen root-caused (forced DSA retirement); CurseForge source, local modpack import, home avatar, and JIT-wait robustness fixes from device feedback.",
-      "priority": "high",
-      "action_url": "https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/tag/v6.0.0",
-      "action_title": "查看 v6.0.0",
-      "image_url": ""
-    },
-    {
-      "id": "task167-crashfix-migration-2026-09-25",
-      "title": "上一版两处修复的失效根因修复（Vulkan 崩溃 + ES/4.0 黑屏迁移未执行）",
-      "date": "2026-09-25",
-      "summary": "上一版实测：Vulkan 崩溃、ES/4.0 仍黑屏。两个失效根因均已定位并修复：Vulkan 崩溃 = 交换层只设了 drawableSize 没设 bounds，而 MoltenVK 的表面尺寸真源是 bounds × contentsScale，零尺寸导致交换链被跳过、首个画面拷贝踩空指针；ES/4.0 = DSA 迁移挂在了一个系统几乎不会再调用的回调里（从未执行），且旧默认值早已被持久化。本轮修复后 Vulkan FSR 与 ES/4.0 黑屏修复应真正生效。",
-      "content": "## 本轮修复（上一版装机实测反馈处理）\n\n**Vulkan 崩溃（上一版新引入，本轮根治）**\n\n- 现象：Vulkan 后端启动即崩溃（首个画面帧之前），崩溃点在渲染器交换链图像管理内部\n- 根因：FSR 私有交换层创建时只设置了 drawableSize，没有设置 bounds；而 MoltenVK 读取表面尺寸走的是 bounds × contentsScale（drawableSize 不参与能力查询）——零尺寸被渲染器的保护逻辑判定为 \"零面积窗口\"，交换链整个被跳过；随后游戏的第一个全屏拷贝指令在空交换链上取图像，踩中空指针\n- 取证：对随包渲染器二进制反汇编，崩溃指令与装机崩溃地址逐字节吻合；渲染器开源上游源码逐行核对确认保护链\n- 修复：交换层三处几何写入点（创建/同步/尺寸更新钩子）全部补齐 bounds + contentsScale， 交换链恢复正常创建，FSR 升采样链路随即完整可用\n\n**ES / OpenGL 4.0 黑屏（上一版修复未生效的根因，本轮补上）**\n\n- 现象：上一版已把 DSA 默认改关并写了存量迁移，但装机日志显示 DSA 仍然开启、迁移日志从未出现\n- 根因一：迁移挂在\"场景会话配置\"回调里——该回调只在系统新建场景会话时触发， 老设备上永远不会执行（历史装机日志中该回调内的任何日志从未出现过）\n- 根因二：更早版本\"DSA 默认开\"时代的默认值早已随启动写进配置文件持久化， 新默认值被存量值压制\n- 修复：迁移挪到进程启动必经路径（读取生效配置之后、任何使用之前）， 判定兼容数字/字符串两种存储形态，并新增执行锚点日志\n- 装机验证：启动器启动时应出现 `[Preferences] Task167 MG DSA black-screen migration ran (stored=1, flipped=1)`， 随后 GLES / 4.0 进世界应显示画面（游戏日志出现 DSA support not detected）\n\n**装机验证清单**\n\n- Vulkan 后端 + FSR 档位：不再崩溃；日志出现 `[MGLFSR] Task166 Metal FSR engaged` 与 `first frame presented`；画质放大生效（区块加载保持流畅）\n- ES / OpenGL 4.0 后端：启动器启动日志出现 Task167 迁移行；进世界有画面\n- 如需临时关闭 Vulkan 的 Metal 层 FSR 做对照：环境变量 `AME166_MGL_METAL_FSR=0`\n\n---\n\nFixes: both Task 166 fixes had failed on device (upload 1b76d19: Vulkan crashed at startup, GLES/4.0 still black). Vulkan crash: MoltenVK's surface extent comes from the CAMetalLayer category property naturalDrawableSizeMVK = bounds x contentsScale (not drawableSize); Layer B had zero bounds, so MobileGL's zero-area guard installed no swapchain and the first DSA glBlitNamedFramebuffer(fb0) dereferenced an empty image vector (disassembly of the shipping dylib matches the crash pc at GetImage+0x28 byte-for-byte). Layer B now writes bounds + contentsScale(1.0) at all three geometry sites. Black screen: the DSA reverse migration was wired into application:configurationForConnectingSceneSession: which UIKit never calls again for existing scene sessions (zero evidence across 60+ uploaded logs), while the Task129d-era @YES default had been persisted into the plist by the defaults merge -- the stored 1 kept suppressing the fresh @NO default. The always-run call site now lives in main.m after toggleIsolatedPref, with dual-type tolerance and an unconditional run-anchor log.",
-      "priority": 100,
-      "action_url": "",
-      "action_title": "",
-      "image_url": ""
-    },
-    {
-      "id": "task166-vulkan-fsr-dsa-2026-09-25",
-      "title": "Vulkan 后端 FSR 上线（Metal 层方案）+ ES/4.0 黑屏 DSA 根因修复",
-      "date": "2026-09-25",
-      "summary": "Vulkan 直连后端现已支持 FSR 超分辨率（AMD FSR 1.0：EASU 放大 + RCAS 锐化）——以 Metal 呈现层拦截方案实现，渲染器与 MoltenVK 二进制零改动；这是唯一在加载区块时保持流畅的后端，现在画质与流畅可以兼得。同时修复 ES / OpenGL 4.0 后端残留黑屏的真根因：一项默认开启的 GL 扩展（DSA）在该路径下触发黑屏，已改回关闭并自动迁移存量设置。",
-      "content": "## 本轮修复\n\n**Vulkan 直连后端 FSR（重点新功能）**\n\n- 背景：GLES / OpenGL 4.0 后端在加载区块时严重卡顿（无解），Vulkan 直连是唯一流畅的后端；此前公告中\"需要 FSR 请切换 GLES / 4.0 后端\"的建议因此作废\n- 实现：呈现层拦截——私有交换层以渲染分辨率接入 MoltenVK 交换链，每帧呈现时在 Metal 层执行 AMD FSR 1.0（EASU 放大 + RCAS 锐化，AMD 参考实现逐位移植）后写入全分辨率显示层；渲染器与 MoltenVK 二进制零改动\n- 联动：FSR 档位设置（画面设置内的渲染缩放）对 Vulkan 后端生效；RCAS 锐化强度设置沿用同一滑条\n- 降级保护：任何一步初始化失败自动回退全分辨率直呈（此前语义）；装机日志锚点 `[MGLFSR] Task166 Metal FSR engaged`\n- 覆盖范围：仅 Vulkan 直连后端；libMobileGL-gles 变体维持全分辨率直呈\n\n**ES / OpenGL 4.0 黑屏（真根因第二轮，装机实证）**\n\n- 三组同机同模组包会话对照锁定唯一配置差异：GL 直连状态访问扩展（DSA）关闭 = 全程可玩，开启 = 黑屏（交换链健康、帧率正常、画面不显示）\n- 机理：渲染器的 DSA 兼容层与 FSR 帧缓冲重定向路径自洽性不足，游戏检测到该扩展即切换渲染路径，画面落在错误位置\n- 当年开启它的性能依据来自另一渲染器（zink 原生支持），与该后端无关\n- 修复：默认改回关闭 + 存量设置一次性迁移（开启 -> 关闭）；偏好分区的高级开关保留，可手动开回\n\n**FSR 支持矩阵（更新）**\n\n- ✅ **Vulkan 直连后端**：完整 FSR 1.0（EASU + RCAS，Metal 层方案），加载区块保持流畅 —— 推荐首选\n- ✅ **GLES 后端 / OpenGL 4.0 后端**：完整 FSR 1.0（渲染器内置）；注意两后端在加载区块时存在卡顿\n- ✅ **Zink 渲染器**：同一套 EASU + RCAS\n- ➖ **libMobileGL-gles**：全分辨率直呈（不在本期范围）\n- 装机验证锚点：`[MGLFSR] Task166 Metal FSR engaged`（Vulkan + FSR 档位）与 `[MGLFSR] Task166 first frame presented`；GLES / 4.0 后端应恢复画面（DSA 已关）\n\n---\n\nFixes: Vulkan-direct backend gains full FSR1 (EASU upscale + RCAS sharpen) via a Metal presentation-layer intercept -- a private CAMetalLayer feeds MoltenVK a render-res swapchain while a wrapped id<CAMetalDrawable> runs the AMD reference EASU/RCAS port into the full-res display layer (zero changes to the MobileGL/MoltenVK binaries; the Task154 pre-swap GL war stays retired, pseudo-EGL root cause unchanged and double-upscale guarded). The surviving ES/OpenGL 4.0 black screen root cause is the forced enable_ext_direct_state_access default: three-session A/B on identical device/modpack/MobileGlues 2.0.17 shows DSA=0 playable (9e6fc27 pair) vs DSA=1 black with healthy swap counters; Task129d's perf rationale came from zink's native Mesa DSA, not MobileGlues' DSAWrapper emulation. Default flipped to OFF with a one-shot 1->0 reverse migration (ame166_migrateMgDsaBlackScreen); the preference toggle remains for manual override. Task129/130 verifiers re-anchored (D1/D3, E9/E10).\n\n---\n\n**勘误（装机实测后补记）**：本条发布后装机实测发现两处缺陷——Vulkan 后端启动即崩溃（交换层 bounds 未设置，交换链被零面积保护跳过），ES / 4.0 的 DSA 迁移因挂载点在既有场景会话设备上永不执行而未生效。两处根因与修复见下一条公告（Task 167）。本条中的功能描述与支持矩阵以修复后的实际表现为准。",
-      "priority": "normal",
-      "action_url": "",
-      "action_title": "",
-      "image_url": ""
-    },
-    {
-      "id": "task165-blackscreen-rootcause-2026-09-25",
-      "title": "ES / OpenGL 4.0 黑屏真根因修复（函数解析层）+ Vulkan FSR 结论",
-      "date": "2026-09-25",
-      "summary": "ES / OpenGL 4.0 后端黑屏的真正根因已找到并修复：此前的 LWJGL 兼容补丁让游戏的 GL 函数解析绕过了 MobileGlues 前端，画面被渲染进了错误的缓冲区，FSR 升采样把空帧盖在了真实画面上；现已恢复 5.1.0 的解析路由。Vulkan 直连后端的 FSR 经两轮二进制取证确认属上游硬限制，需要 FSR 请使用 GLES / OpenGL 4.0 后端（同样 60fps）。",
-      "content": "## 本轮修复\n\n**ES / OpenGL 4.0 后端黑屏（真根因，重点修复）**\n\n- 症状：GLES / OpenGL 4.0 后端 + FSR 档位 = 整屏黑（渲染与交换计数全部健康，仅画面不显示）；上一轮的锐化边界修复未愈\n- 真根因：一个为兼容其他渲染器而打的 LWJGL 补丁，顺带改变了 MobileGlues 后端的函数解析路径——游戏的绘制调用绕过了渲染器前端的帧缓冲重定向，真实画面落在了错误的位置，FSR 升采样随即把空帧铺满全屏（黑屏但帧率正常即此形态）\n- 修复：前端补回补丁所需的解析入口，恢复 5.1.0 时代的解析路由；并加入两级保险——渲染纹理探针（下轮装机日志可直接分诊）与 RCAS 运行期熔断（锐化链异常时自动退回纯放大模式，宁可画质降档也不再黑屏）\n- 装机验证：GLES / 4.0 后端 + FSR 档位应恢复画面且更锐利；日志出现 `[MG] Task165 xglGetProcAddress: ... routed through the frontend`\n\n**FSR 支持矩阵（维持）**\n\n- ✅ **GLES 后端 / OpenGL 4.0 后端**：完整 FSR 1.0（EASU 放大 + RCAS 锐化），实测 60fps\n- ✅ **Zink 渲染器**：同一套 EASU + RCAS\n- ✅ **Vulkan 直连后端**：已支持（Task166 Metal 层方案：EASU + RCAS，二进制零改动）——见后续公告；GLES / 4.0 后端在加载区块时存在卡顿，Vulkan 是流畅首选\n\n---\n\nFixes: the real ES/OpenGL 4.0 black-screen root cause (the Task154 LWJGL delegate dlsym patch silently bypassing the MobileGlues frontend resolution route -- app draws missed the framebuffer-0 redirect and FSR1 painted sharpened zeros over the real frame); frontend now exports the dead-named lookup so the delegate routes gl* names through the layer again (other renderers keep Task154 semantics). Added a one-shot render-texture probe (layer-split diagnostics) and an RCAS runtime bail-out (first-frame black latches EASU-only for the session -- degrades to unsharpened upscale instead of a black screen). Vulkan-direct FSR confirmed upstream-blocked after binary forensics; use the GLES / OpenGL 4.0 backend for full FSR1 at 60fps.\n\n**Task166 追记**：本公告发布时的 FSR 结论已被 Task166 推翻——上游开源事实（MobileGL-Dev/MobileGL）+ Metal 呈现层拦截方案令 Vulkan 直连后端获得完整 FSR 1.0；ES/4.0 黑屏的真根因亦在 Task166 定位为强制开启的 DSA 默认值（与本公告的解析层修复叠加存在）。",
-      "priority": "normal",
-      "action_url": "",
-      "action_title": "",
-      "image_url": ""
-    },
-    {
-      "id": "task164-fsr-blackscreen-defaults-2026-09-25",
-      "title": "ES / OpenGL 4.0 黑屏修复 + FSR 放大锐化说明 + 壁纸默认值修正",
-      "date": "2026-09-25",
-      "summary": "第一轮修复（锐化边界钳制）经装机验证未愈黑屏——真根因见后续公告（函数解析层，Task165）；FSR 支持矩阵：GLES/4.0 后端 = 完整 FSR（EASU 放大 + RCAS 锐化），Vulkan 直连暂不支持（上游限制）；壁纸初次使用默认值确认为毛玻璃、透明度 60%、模糊 100%。",
-      "content": "## 本轮修复\n\n**ES / OpenGL 4.0 后端 FSR 黑屏（重点修复）**\n\n- 症状：选了 GLES / OpenGL 4.0 后端并开启 FSR 档位后，游戏进入世界时整个画面黑屏（有声音、能操作，画面不显示）\n- 根因：FSR 的锐化管线（RCAS）在全屏边缘像素存在越界采样——桌面 GL 驱动容忍、ANGLE（Metal）上属未定义行为，可导致整帧作废；同时锐化 pass 的图形状态防护不完整（缺模板测试关闭）、纹理单元与采样器绑定依赖隐式初始状态\n- 修复：锐化采样边界钳制 + 状态防护对齐已验证的 Zink 实现 + 纹理单元显式绑定，四项全部落地；并加入首帧 GPU 探针日志用于装机验证\n\n**FSR 支持矩阵（请知悉）**\n\n- ✅ **GLES 后端 / OpenGL 4.0 后端**（mg 设置 → 渲染后端）：完整 FSR 1.0 —— EASU 高质量放大 + RCAS 锐化\n- ✅ **Zink 渲染器**：同一套 EASU + RCAS\n- ❌ **Vulkan 直连后端**：暂不支持。上游渲染器（MobileGL 二进制）不提供升采样呈现钩子（其 EGL 接口无上下文跟踪，强行插入升采样会导致花屏与触控错位），属上游硬限制；需要 FSR 时请把后端切到 GLES 或 OpenGL 4.0\n\n**壁纸初次使用默认值修正**\n\n- 确认默认值：**毛玻璃**效果、透明度 **60%**、模糊程度 **100%**\n- 此前新装设备会错误地落在\"半透明 / 模糊 0%\"（默认值判定逻辑把\"从未保存\"误当\"保存了 0\"），已修正；已在设置里显式保存过偏好的设备不受影响\n\n---\n\nFixes: ES/OpenGL 4.0 FSR black screen (RCAS edge-clamp + state guard alignment + explicit unit/sampler binding + one-shot GPU probe); wallpaper first-launch defaults now truly frosted glass / 60% / 100% (never-saved keys no longer read as saved zeros); Vulkan-direct FSR documented as upstream-unavailable -- switch to the GLES / OpenGL 4.0 backend for full FSR (EASU + RCAS).",
-      "priority": "normal",
-      "action_url": "",
-      "action_title": "",
-      "image_url": ""
-    },
-    {
-      "id": "repo-migration-2026-09-20",
-      "title": "公告已迁移至仓库托管",
-      "date": "2026-09-20",
-      "summary": "启动器公告改为 GitHub 仓库直接托管，不再依赖任何第三方接口，内容随仓库更新即时生效。",
-      "content": "## 公告源迁移\n\n从本版本起，启动器公告由本项目的 GitHub 仓库直接托管：\n\n- **主源**：仓库根目录 `announcements.json`（raw.githubusercontent.com），提交后即时生效\n- **镜像**：jsDelivr CDN（国内可达性更好，最长 12 小时缓存延迟）\n- **离线兜底**：随安装包内置的离线公告（网络完全不可用时显示）\n\n旧的公告接口（air-api.vercel.app）已失效且不受我们控制。迁移后公告内容与启动器代码同仓维护、同版发布，不会再出现“公告加载失败”这类单点故障。\n\n---\n\nAnnouncements are now hosted directly in this project's GitHub repository (announcements.json at the repo root): raw.githubusercontent.com as the primary source, a jsDelivr CDN mirror for reachability, and a bundled offline notice as the floor. The retired third-party API was unreachable and out of our control.",
-      "priority": "normal",
-      "action_url": "https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/blob/main/announcements.json",
-      "action_title": "查看公告源文件",
-      "image_url": ""
-    },
-    {
-      "id": "v5-1-2-preview-2026-09-20",
-      "title": "下一版本修复预览（装机反馈四项）",
-      "date": "2026-09-20",
-      "summary": "26.1.2 整合包进入世界崩溃根治、第三方切换角色修复、MG 三后端回到渲染器悬浮菜单、设置悬浮菜单可用性加固。",
-      "content": "## 即将在下一版本发布（装机反馈四项修复）\n\n**修复**\n\n- **26.1.2 整合包进入世界崩溃**：根因是整合包内 Controlify 手柄模组经 JNA 向 SDL3 注册事件回调，该回调指针位于不可执行的内存页（iOS 无 JIT 权限），游戏每帧事件泵触发时直接 SIGBUS。已在 SDL 层拦截回调注册（手柄模组其余功能不受影响，26.3 会话不受影响）\n- **第三方登录切换角色失败（“访问令牌已经分配了角色”）**：LittleSkin 等 Blessing Skin 系服务器不允许在已绑定的访问令牌上换绑角色。现在登录时会把凭据安全保存进系统钥匙串，切换角色时自动重新认证并绑定新角色——仍然免密。老账户需重新登录一次以启用\n- **MG 三后端设置项“还是分开的”**：MobileGL 的 Vulkan / GLES / Mithril 三后端回到渲染器选择行的悬浮菜单（上游原有形态），MobileGlues 分区的独立后端设置行移除，选择即生效（不再要求渲染器先设为“自动”）\n- **设置悬浮菜单可用性**：选择菜单改为从最顶层界面呈现，消除个别场景下“点了没反应”的静默失败面\n\n----\n\nComing in the next build: the 26.1.2 world-join crash (controlify's JNA/SDL callback hitting a non-executable trampoline page) intercepted at the SDL layer; third-party profile switching now re-authenticates with Keychain-secured credentials after servers reject token rebinding (one re-login needed on existing accounts); the three MobileGL backends return to the renderer picker's floating menu (upstream form, effective immediately); and pick sheets present from the topmost view controller so a presenting state can no longer swallow the tap.",
-      "priority": "high",
-      "action_url": "https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases",
-      "action_title": "查看版本发布",
-      "image_url": ""
-    },
-    {
-      "id": "v5-1-0-release-2026-09-19",
-      "title": "v5.1.0 正式版发布",
-      "date": "2026-09-19",
-      "summary": "MobileGL FSR 放大、渲染后端单选项（默认 Vulkan）、第三方登录恢复、启动时自动检查更新。",
-      "content": "## v5.1.0 主要内容\n\n- **MobileGL FSR 放大**：MobileGL 后端接入 FSR1 EASU 空间放大，低分辨率渲染 + 放大输出，性能显著提升\n- **渲染后端单选项**：MobileGL 三后端（Vulkan / GLES / Mithril）合并为一个设置项，默认 Vulkan，显式选择优先\n- **第三方登录恢复**：内置 authlib-injector，过期令牌优雅降级，LittleSkin 等外置登录站可用\n- **自动更新检查**：启动器启动时静默检查新版本，有更新时以卡片提醒\n- **子面板新拟物化**：全部二级面板统一新拟物设计\n\n---\n\nv5.1.0 shipped MobileGL FSR upscaling, the unified renderer-backend option (Vulkan default), restored third-party login with a bundled authlib-injector, silent auto update checks, and neumorphic sub-panels.",
-      "priority": "normal",
-      "action_url": "https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/tag/v5.1.0",
-      "action_title": "查看 v5.1.0",
-      "image_url": ""
-    },
-    {
-      "id": "task202-october-fix-wave",
-      "title": "十月修复波：渲染器五连修 + 输入两议题 + 语言全量",
-      "date": "2026-09-29",
-      "summary": "gl4es 启动崩溃根治、Metal 启动画面自动消失、虚拟鼠标与键盘问题修复、语言选择扩展至 54 种。",
-      "content": "## 本轮修复\n\n- **gl4es 渲染器崩溃（根治）**：启动即崩的问题已通过崩溃免疫层修复——构造器在无上下文环境拿到的空结果不再导致崩溃\n- **Metal 渲染器启动画面**：不再需要手动点\"取消启动\"，画面就绪时遮罩自动消失\n- **虚拟鼠标（议题 #1）**：双指滚动不再带动光标乱跑；点击判定容差加宽，轻点不再失效\n- **键盘输入（议题 #2）**：修复快速连击被误判为重复而吞掉的问题（\"只能输入一个字符\"）\n- **语言设置**：从 3 项扩展到全部 54 种内置语言（带\"部分翻译\"标记）\n- **界面翻译**：清扫了一批硬编码中文与乱码提示\n\n---\n\ngl4es constructor crash immunity, Metal first-frame auto-dismiss, virtual-mouse and IME input fixes (issues #1/#2), the 54-language selector, and an i18n hardcode sweep.",
-      "priority": 1,
-      "action_url": "",
-      "action_title": "",
-      "image_url": "",
-      "pin": false
-    },
-    {
-      "id": "task203-october-fix-wave",
-      "title": "十月修复波：1.8.9 双渲染器崩溃根治 + 帮助页多语言",
-      "date": "2026-09-30",
-      "pinned": false,
-      "summary": "1.8.9 的 gl4es 与 vgpu 崩溃均已根治（补丁工艺与钉扎门控两处根修）；帮助/FAQ 页面新增英文与繁简中文内容；Forge 26.x 启动弹窗抑制。ANGLE 黑屏诊断仪表已上线，下一轮日志定谳。",
-      "content": "## 本轮修复\n\n**1.8.9 两个渲染器的崩溃（根治）**\n\n- **gl4es**：上一轮的二进制垫片被 CI 打包环节的 vtool 重打标静默清零（节间隙不属于任何节，重序列化时被抹掉），执行到垫片即 SIGILL。本轮改为直接在两个查询调用点上原地改写为\"空串指针装载\"，补丁全部落在真实代码节内，vtool 不可能再破坏。\n- **vgpu**：上一轮的符号钉扎层误把 vgpu 会话的 GL 调用劫持到休眠的 ANGLE 镜像，vgpu 的惰性初始化永不触发，首次矩阵调用即崩溃。钉扎现在只在 ANGLE 会话生效。\n\n**帮助 / FAQ 页面国际化**\n\n- \"使用问题\"页面此前只有中文；现在英文为全量翻译（37 条），繁体中文完整转换，简体同步；其余语言沿用中文基线（与主界面回退一致）。\n\n**Forge 26.x 启动弹窗**\n\n- Forge 进度小窗在转译层上初始化失败后的 \"missing software!\" 弹窗提示，已通过默认禁用进度小窗抑制（更新后不再出现）。\n\n**ANGLE 黑屏**\n\n- 本轮装上了完整的渲染流量仪表（状态查询 / 矩阵上传 / 绘制调用全部记名），下一份装机日志可直接定谳黑屏发生在哪一环。\n\n---\n\nOctober fix wave: both 1.8.9 renderer crashes root-fixed (a binary-patch technique rework and a pin-scope fix); the help/FAQ page gains English (full 37-entry translation) and traditional/simplified Chinese; Forge 26.x early-display prompt suppressed. ANGLE black-screen traffic instrumentation is live -- the next device log adjudicates the failing stage directly."
-    },
-    {
-      "id": "task206-nggl4es-2026-10-01",
-      "title": "新渲染器 NG-GL4ES 上线 + ANGLE 方块透明修复",
-      "date": "2026-10-01",
-      "summary": "ZL2 同款 gl4es（NG-GL4ES/Krypton Wrapper）正式加入渲染器列表，老版本材质损坏的首选对策；ANGLE 后端方块透明的根因（push constants 块丢失）已修复，下个构建生效。",
-      "content": "## 新渲染器：NG-GL4ES（Krypton Wrapper）\n\nZalithLauncher 2 所用的 gl4es 分支正式移植完成——桌面 OpenGL 转译到 OpenGL ES，着色器经 glslang + SPIRV-Cross 双段转换，上游口径几乎全版本 MC 可跑（1.8.9 老版本到 26.x）。\n\n- 老版本（1.8.9 等 Forge 生态）在 VGPU 下出现材质损坏、图集错位、条纹的，换 NG-GL4ES 是首选对策（该病灶两轮修复未根除，属转译层顽疾）；\n- 26.x 新版本也可以尝试（不行再换 Zink）；\n- 选择路径：设置 → 视频设置 → 渲染器 → NG-GL4ES（游戏未运行时才能改）。\n\n## ANGLE 后端：方块透明已定位并修复\n\n26.x + ANGLE 会话里方块渲染为透明，根因是 SPIRV-Cross 的 ES 着色器输出没有把 push constants 块作为可查询的 uniform block（glGetUniformBlockIndex 永远 NOT FOUND，逐绘制的颜色/alpha 数据从不绑定）。修复已入下一个构建，装机日志锚点：`[spvc-shim] Task206: EMIT_PUSH_CONSTANT_AS_UNIFORM_BUFFER enabled`。\n\n---\n\nNew renderer NG-GL4ES (the gl4es used by ZalithLauncher 2, a.k.a. Krypton Wrapper) is now in the renderer list -- first choice when legacy versions show corrupted textures under VGPU, and worth a try on 26.x too. The ANGLE transparent-blocks bug is also root-caused and fixed (the push-constants block was never emitted as a queryable uniform block); the fix ships in the next build.",
-      "priority": "normal",
-      "action_url": "",
-      "action_title": "",
-      "image_url": "",
-      "pin": false
-    },
-    {
-      "id": "task216-ui-2026-10-03",
-      "title": "6.5.0 界面统一修复：加载器列表对齐、透明度单调、默认设置改版",
-      "date": "2026-10-03",
-      "summary": "加载器选择列表与游戏版本列表逐项对齐（行高 64/图标 40/间距 14）；半透明模式透明度拉条全程单调（修掉 50% 拐点驼峰）；实例卡按钮与阴影随透明度同步；默认设置改为深浅色跟随系统 + 毛玻璃 + 透明度 100% + 模糊 75%；版本号 6.5.0，包名 com.air-devs.prisma → com.prisma-devs.prisma（旧 keychain 凭据不迁移）。",
-      "content": "## 6.5.0 界面统一修复波\n\n- **加载器选择列表对齐游戏版本列表**：行高 50→64、图标容器 32→40（圆角 10）、图标-文字间距 12→14、文字块顶距 8→14，逐项与下载页版本列表同规格；\n- **透明度拉条全程单调**：半透明模式下 100~50 越来越透、50~10 反而越来越不透明的驼峰（拐点恰在 50%）已根治——页面底层透明度语义与卡面管线统一为正向；\n- **实例卡按钮/阴影与透明度绑定**：已安装版本卡与游戏目录卡在每次刷新时重铺卡面，按钮圆底与卡片阴影随透明度同升同降，不再出现\"光没了阴影还在\"或\"始终不变\"；\n- **默认设置改版**：深浅色模式跟随系统、UI 效果毛玻璃、透明度 100%、模糊程度 75%（未亲手设置过的设备自动迁移）；\n- **UI 效果页脚简介改为自动换行**，不再截断；\n- **版本号 6.5.0**，包名 com.air-devs.prisma → **com.prisma-devs.prisma**（os_log/keychain/后台任务标识同步，注意旧 keychain 凭据不迁移）。\n\n---\n\n6.5.0 UI unification wave: the loader-selection list now matches the game-version list item by item (64pt rows, 40pt icon containers, 14pt gaps); the translucency slider is monotonic end to end (the 50% hump is fixed); instance/directory cards re-render on every reload with buttons and shadows bound to the opacity; defaults are now follow-system appearance, blur effect, 100% opacity, 75% blur; footer hints wrap instead of truncating; version 6.5.0, bundle id com.air-devs.prisma -> com.prisma-devs.prisma.",
-      "priority": "normal",
-      "action_url": "",
-      "action_title": "",
-      "image_url": "",
-      "pin": false
-    },
-    {
-      "id": "task217-download-fixes-about-isolation-2026-10-03",
-      "title": "6.5.0 八连修：组件下载 26.x 根治、Mod 点击修复、自动渲染器自学、FCL 版本隔离、关于页与数据迁移",
-      "date": "2026-10-03",
-      "summary": "Fabric API/Sodium+Iris/TouchController 在 26.x 下载失败根修；Mod 开关静默失效修复；自动渲染器崩溃自学降档；版本隔离三态选择器+自动迁移；新增关于页与数据导出/导入（包名迁移配套）。",
-      "content": "## Task217 八连修\n\n- **组件下载 26.x 根治**：版本号解析只认 1.x 导致 26.2/26.3 全线失配——Fabric API 静默装旧版、Sodium+Iris/TouchController 报\"找不到适配版本\"。现统一走 parseVersionId（26.x 全形态覆盖）+ 客户端按发布时间取最新（镜像乱序免疫）+ 无适配明确报错。\n- **Mod 管理**：部分 Mod 点击开关无反应 = 静默失败（文件已不存在/目标同名冲突）。现在弹窗说明真实原因，幽灵条目自动清理。\n- **自动渲染器智能化**：版本基线（1.17+ MobileGL / 老版本 gl4es）之上增加崩溃自学——连续两次 JVM 信号级崩溃自动降档到下一候选渲染器并提示；手动选择永远优先。\n- **FCL 风格版本隔离**：游戏目录行改为三态选择器（不隔离/隔离此版本/自定义路径），开启隔离自动迁移存档、模组、配置等数据到 versions/<版本>/。\n- **关于页**（设置 → 关于）：版本信息、QQ 群 1126547426、启动器更新两项（自本页迁入）、许可证声明、致谢。侧边栏\"启动器版本\"卡直达关于页。\n- **数据导出/导入**（设置 → 通用）：包名迁移配套——全量数据一键导出 zip，新包名版本从备份直接恢复。\n- **包名临时回 com.air-devs**（上游族名）：为数据迁移中转，最终将改为 com.prisma-devs。\n- **README**：许可证声明与 QQ 群入页。",
-      "priority": "normal",
-      "action_url": "",
-      "action_title": "",
-      "image_url": "",
-      "pin": "False"
-    },
-    {
-      "id": "task218-air-interim-welcome-crash-diagnosis-2026-10-04",
-      "title": "6.5.0 新一轮：欢迎向导、崩溃诊断、下载源一致性修复、包名过渡与仓库更名",
-      "date": "2026-10-04",
-      "summary": "首次使用弹出欢迎向导（语言/下载源/数据导入三步引导）；崩溃识别升级（内存不足不再错怪渲染器 + 诊断弹窗）；下载源设置与实际行为不一致根治；包名临时切换 com.air-devs.air（上游用户可原地更新）；仓库更名 Prisma-Minecraft-iOS-Launcher。",
-      "content": "## Task218 六项更新\n\n- **首次使用欢迎向导**：全新安装（或更新到本版）首次启动时全屏弹出——选择语言、选择下载源（官方/镜像/自动测速）、从备份导入数据，三步完成初始配置；渐变呼吸背景 + 粒子 + 弹簧转场动效。完成或跳过后不再打扰。\n- **崩溃识别升级（参考 FCL）**：崩溃后下次启动弹出诊断（崩溃类型 + 处置建议 + 可导出崩溃报告）。内存不足不再算到渲染器头上；崩溃帧归因到具体渲染器库，自动降档更准。\n- **下载源一致性根治**：修复\"设置里选了 A，实际行为却是 B\"的双轨制问题——旧版下载源键已冻结失效，全部消费点统一走新的分类镜像策略；设置页显示与实际行为从此同源。\n- **设置页顶部卡片**：启动器信息卡片现在可以点击，直接进入关于页。\n- **包名过渡**：临时使用上游同款包名 com.air-devs.air——上游用户可直接原地更新到本启动器（数据不丢），随后用 设置 → 通用 → 数据导出 备份数据，为最终包名切换做准备。\n- **仓库更名**：GitHub 仓库已更名为 Prisma-Minecraft-iOS-Launcher，旧链接自动重定向；启动器内更新检查/公告/控件仓库同步切换。"
-    },
-    {
-      "id": "task219-virgl-angle-welcome-rebuild-2026-10-04",
-      "title": "6.5.0 十一连修：VirGL 崩溃根治、ANGLE 黑屏修复、欢迎向导重做、导出增强",
-      "date": "2026-10-04",
-      "summary": "VirGL 渲染器崩溃根治（服务端诊断盲区 + 失败自动回退 Zink）；ANGLE 渲染器在非 26.3 版本黑屏根治（桌面 GLSL 源直转 ES300）；欢迎向导全面重做（居中修复 + 返回上一步 + LiveContainer 检测 + JIT 开启方式 + 完成后自动打开关于页）；数据导出支持压缩等级与进度详情；TouchController 下载文案与版本预检修复；版本隔离自动识别。",
-      "content": "## Task219 十一项更新\n\n- **VirGL 崩溃根治**：vtest 服务端诊断日志此前不进 latestlog（盲区）；socket 路径过长（超出系统上限）与库加载路径问题已修复；服务启动失败时自动回退 Zink 渲染器，不再崩溃。\n- **ANGLE 黑屏修复（非 26.3 版本）**：26.2 及更早版本的着色器直传路径缺少 ES300 转换导致全部管线编译失败（黑屏）——已补齐版本行重写与精度声明注入。\n- **欢迎向导重做**：修复内容缩在左上角、无法点击的布局问题；新增返回上一步；视觉全面 iPadOS 化；新增环境检测（LiveContainer 识别与包名指引）与 JIT 开启方式选择；完成向导后自动打开关于页。\n- **数据导出增强**：导出前可选压缩等级（不压缩/标准/最大压缩）；导出过程显示进度条、文件数与当前文件。\n- **TouchController 下载修复**：进度与失败提示不再显示 Sodium 的文案；版本不支持时（1.12.2 以下）直接说明，不再误报\"未找到\"。\n- **版本隔离自动识别**：模组下载与列表自动跟随实例的隔离设置（隔离目录缺失即创建，不再误落到共享目录）；模组管理页显示隔离/共享徽标。\n- **VGPU 渲染器更名**：显示为 VGPU（≤1.17），标明适用版本范围。"
-    },
-    {
-      "id": "task220-account-avatar-skin-integrity-2026-10-05",
-      "title": "正版账号六连修：账号类型误判根治、头像/皮肤链路全面修复",
-      "date": "2026-10-05",
-      "summary": "正版账号被误判为第三方的根因修复（混合账号文件防御剥离 + 四处判别器统一口径）；头像链修复（停写已失效的 api.rms.net.cn 镜像、保留 Xbox 官方头像、脏 URL 落盘自愈）；皮肤渲染源修复（crafatar/minotar 替换失效私有镜像）；keychain 损坏条目自清；正版账号启动前令牌门控（一键修复代替无感烂会话）。",
-      "content": "## Task220 六项修复（账号完整性专项）\n\n- **账号类型误判根治**：账号文件同时携带微软与第三方字段时（装机日志实锤：微软账号启动却带着 LittleSkin 的 authlib-injector 注入、authlib 自检 \"Setting accountType to msa\"），四处判别器口径不一各自串类。现在按显式 accountType 就地剥离混合键并回写文件；原生端（加载/标签/长按菜单/选择链）与 Java 端（Tools.isThirdPartyAccount）统一为 accountType 优先。\n- **头像链修复**：api.rms.net.cn 皮肤头镜像域名 DNS 已失效，此前每个正版账号的主头像 URL 都是死链——登录链不再写该镜像（保留同链刚获取的 Xbox 官方头像），脏 \"head/(null)\" 历史数据从内存+磁盘双重清除（此前仅内存修复，keychain 丢失时每次启动都复发）。\n- **皮肤渲染源修复**：主页皮肤预览的硬编码私有镜像（111.170.35.224:3000，明文 HTTP）已失效，换 crafatar 官方全身渲染 + minotar 回退（FCL/HMCL 同款公开源）。\n- **keychain 损坏自清**：令牌条目\"存在但解档失败\"时自动清除，状态收敛为干净的\"缺失\"，重登即可覆盖写入。\n- **启动前令牌门控**：正版账号 keychain 令牌缺失/损坏时不再带空令牌静默启动（正版皮肤不加载、联机校验必败的根源），改为弹出 Task187 一键修复（删号重登，登录成功后自动接续启动）。\n- **兼容性**：无 accountType 的旧账号文件不动（下次成功登录时自然收编）；Demo 账号不受启动门控影响。"
-    }
-  ]
+ "announcements": [
+  {
+   "id": "server-recommend-2026-09-24",
+   "title": "推荐服务器：mysv.dpdns.org",
+   "date": "2026-09-24",
+   "summary": "社区生存服 mysv.dpdns.org 现已开放，Java 版直连，欢迎加入一起玩！在游戏内添加服务器或多人间联机输入该地址即可加入。",
+   "content": "## 推荐服务器\n\n**mysv.dpdns.org**\n\n社区生存服务器现已开放，使用 Java 版即可直连：\n\n- 在主菜单选择「多人游戏」→「添加服务器」，地址栏输入 `mysv.dpdns.org` 即可加入\n- 若启动器实例设置了「自动加入服务器」，也可以把地址填进实例设置的服务器一栏\n- 遇到版本不匹配时，按服务器公告选择对应的游戏版本\n\n祝玩得开心！\n\n---\n\nRecommended community server: mysv.dpdns.org -- Java Edition, direct connect. Add it via Multiplayer -> Add Server, or fill it into the per-instance server field in launcher settings.",
+   "priority": "normal",
+   "action_url": "",
+   "action_title": "",
+   "image_url": "",
+   "pin": true
+  },
+  {
+   "id": "task169-four-fixes-2026-09-25",
+   "title": "装机反馈四连修（CurseForge 源 / 本地整合包 / 主页头像 / JIT 等待）",
+   "date": "2026-09-25",
+   "priority": "normal",
+   "summary": "上一轮装机日志（af9b807）反馈的四个问题全部根治：①CurseForge 加载源不可用 = 镜像网关错误（上游瞬态 403/500 被包成 HTTP 200 JSON 且无 data 键）被当成\"无结果\"静默吞掉——现在自动重试一次并把真实错误显示出来；②本地整合包要先导入到应用文件才能装 = 文件选择器的安全作用域在解析后就被释放，安装阶段无权再读原文件——现在选中时自动拷贝进应用临时目录，从\"文件\"App / 下载 / iCloud 任何位置选择都能直接安装；③主页头像有时要点一下才显示 = 下载默认 60 秒挂起且失败无提示——现在 10 秒超时 + 磁盘缓存，冷启动秒显；④冷启动首次启动偶发卡在\"正在开启 JIT\" = 等待循环无超时——现在 120 秒超时后弹出重试按钮，不再无限转圈。",
+   "content": "## 本轮修复（装机日志 af9b807 反馈四项）\n\n**① CurseForge 加载源无法使用**\n\n- 根因：MCIM 镜像（mod.mcimirror.top）的上游 key 池间歇性失败，此时返回 HTTP 200 + 合法 JSON，但载荷是 `{\"error\":\"Internal Server Error\",\"code\":500,...}`——没有 `data` 数组。旧解析把这种响应当\"无结果\"静默返回空列表（装机日志里 4 次搜索全部只见 starting request、无任何结果日志），UI 空列表且无报错\n- 修复：识别网关错误形态 → 记录日志 → 自动重试一次（瞬态故障）→ 仍失败把上游错误详情浮出为可读错误提示；同时把编译期误字符串化的 NULL key（`((void *)0)`）识别为\"未配置\"，无 key 设备强制走镜像免 key 路径；版本筛选传入的 fabric 构建哈希后缀（如 `26.3-0a78cefc`）自动剥成纯版本号 `26.3` 再查询\n\n**② 本地整合包需要先导入到应用文件才能正常安装**\n\n- 根因：文件选择器给出的 URL 是安全作用域资源，旧代码解析完清单就释放作用域，而确认安装阶段还要按原路径重新读取整个压缩包——从\"文件\"App / 下载 / iCloud 选的包此时已无权访问，只有先拷进应用沙盒（\"我的 iPhone\"）的包碰巧可用\n- 修复：作用域存活期间自动把包拷贝进应用临时目录，解析 / 预览 / 安装全程使用本地副本（拷贝同时会把 iCloud 占位文件实体化）；旧副本在下一次选择时自动清理\n\n**③ 主页上方头像有时要点一下才能显示**\n\n- 根因：头像下载用 `dataWithContentsOfURL`，默认 60 秒超时且失败完全静默、无磁盘缓存——头像域慢时主页长时间默认占位，网络恰好完成后才因下一次刷新显示（感知成\"点一下才有\"）\n- 修复：10 秒受控超时 + Caches 磁盘缓存（冷启动秒显上次头像，后台静默刷新）+ 失败日志；另加可见卡片直刷兜底\n\n**④ 启动偶发卡在启动器界面（\"正在开启 JIT\"）**\n\n- 根因：三处 JIT 等待循环都是无超时的死等——stikjit:// 偶发没把 JIT 开成时，等待弹窗永不消失，只能杀进程（本轮日志即卡在第一轮 JIT 等待后无任何后续）\n- 修复：等待全部改为 120 秒有界轮询（每 10 秒打心跳日志），超时后撤下等待弹窗并给出「重试 / 取消」选择；重试会重新拉起 JIT 工具\n\n另：推荐服务器公告已按反馈置顶显示。\n\n---\n\nFour device-feedback fixes: (1) CurseForge source -- mirror gateway errors (HTTP 200 JSON without data) were silently swallowed as empty results; now detected, retried once, and surfaced as real errors. (2) Local modpack import -- the security-scoped URL was released before the install phase re-read the archive; now copied into the app sandbox while the scope is alive. (3) Home avatar -- 60s silent hangs replaced by 10s timeout + disk cache. (4) JIT wait -- unbounded wait loops replaced by 120s bounded wait with a retry dialog.",
+   "action_url": "",
+   "action_title": "",
+   "image_url": ""
+  },
+  {
+   "id": "task215-virgl-port-angle-depth-2026-10-02",
+   "title": "新渲染器 VirGLRenderer(≤26.2) 上线 + ANGLE 方块透明深度修复",
+   "date": "2026-10-02",
+   "summary": "ZL2 的 virglrenderer 完整移植：游戏画面经 Mesa virgl 驱动走进程内 vtest 服务器（宿主 ANGLE/Metal）真·硬件渲染；ANGLE 渲染器方块透明的深度清除病灶同步修复。",
+   "content": "## 新渲染器：VirGLRenderer(≤26.2)\n\nZalithLauncher 2 的 VirGL 架构移植完成：MC 的 OpenGL 指令进入 Mesa virgl 驱动（GALLIUM_DRIVER=virgl），经 unix socket 的 vtest 协议送达进程内 virglrenderer 服务器，由宿主 ANGLE/Metal 上下文执行真正的 GPU 渲染。\n\n- 适合想尝试 virgl 转译链路的玩家（ZL2 同款体验）；\n- 首版呈现走回读链路，帧率若吃紧可切回 Zink；\n- 选择路径：设置 → 视频设置 → 渲染器 → VirGLRenderer(≤26.2)（游戏未运行时才能改）。\n\n## ANGLE 渲染器：方块透明的深度病灶修复\n\nANGLE(Metal) 的 glClear(DEPTH) 静默失效会使深度缓冲残留上一帧数据——地形片元深度测试错误失败，方块成片\"透明/透视\"，而天空/实体/UI 正常。现已在垫片层对每次深度清除追加显式 glClearBufferfv 兜底（MobileGlues 同款修复，默认开启，环境变量 AME_TINYGL4_DEPTH_CLEAR_FIX=0 可关）。Task212 的三探针保留，下轮装机日志双向定证。"
+  },
+  {
+   "id": "task214-five-fixes-2026-10-02",
+   "date": "2026-10-02",
+   "title": "内存弹窗按钮本地化补齐 + 目录卡去绿框 + 卡片圆角微调 + 选中卡片可编辑修复 + FPS/MEM 悬浮窗缩字（Task 214）",
+   "summary": "内存限制弹窗的“付费开发者证书”按钮在部分语言显示为键名的问题已修复（六语言补齐 mem_help.button）；添加目录卡片的绿色边框移除；快捷指令卡片（实例卡/目录卡）圆角微调更圆润；修复选中卡片后右上省略号/叉号无法点击的关键问题（选中高亮环不再拦截触摸）；游戏内 FPS/MEM 悬浮窗显示不下时缩小字号而不再显示省略号。",
+   "content": "Task 214 五项用户反馈一轮落地（基于 Task 213 Prisma 构建的用户实测反馈，“其他都改的很好”）。\n\n一、内存限制弹窗按钮本地化：设置页“内存限制说明”弹窗的“付费开发者证书”按钮此前在全部语言下显示为原始键名（mem_help.button）——该键在六语言 Localizable.strings 中均缺失。现已补齐：简繁中文“付费开发者证书/付費開發者證書”、英语与高棉语回退“Paid Developer Certificate”、日语“有料開発者証明書”，按钮点击仍跳转 B 站教程 b23.tv/WtgrPJM。\n\n二、添加目录卡片绿色边框移除：游戏目录页“新建目录”加号卡的绿色 1pt 描边按用户定稿退役，描边回归卡片默认（0.5pt 半透明白）；绿色加号图标与淡绿底色保留，布局与常规目录卡完全一致。\n\n三、快捷指令卡片圆角微调：实例卡片与游戏目录卡片圆角 12pt → 16pt（连续曲率），更贴近真机快捷指令卡片的圆角观感；快捷操作磁贴与渲染器卡片等其他卡片保持 12pt 不变，其余几何（128pt 行高/28pt 图标/内缩高亮环）不动。\n\n四、选中卡片无法编辑的关键修复（本轮最重要）：此前一旦卡片处于选中态，右上角的省略号（编辑）与叉号（删除）按钮即无法点击——只有未选中的卡片能操作。根因：选中高亮环是叠加在按钮之上的普通视图（层级更高），选中后其透明环身拦截了整卡触摸，按钮收不到点击事件。现让高亮环不参与触摸命中，选中卡片上省略号/叉号恢复可用，点卡片切换选中的交互不受影响。\n\n五、FPS/MEM 悬浮窗缩字：启动游戏后的悬浮统计窗（FPS 与内存）宽度固定 130pt，内存数值较长时尾部被截断显示为“MEM: 328…”。现改为显示不下时自动缩小字号（最低缩至 50%）保证完整显示，不再出现省略号。\n\n其他：MobileGlues 缓存版本 REVISION 18 → 19（补 Prisma 更名轮的缓存纪元推进）。上述修复随下个构建生效。",
+   "priority": "normal",
+   "action_url": "https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher",
+   "action_title": "了解 Prisma",
+   "image_url": null,
+   "pin": false
+  },
+  {
+   "id": "task213-card-parity-ux-sweep-2026-10-02",
+   "date": "2026-10-02",
+   "title": "实例卡对齐快捷指令 + 目录卡同构重写 + 使用问题页修复 + 全局更名 Prisma+ 内存说明改版 + 包名 prisma（Task 213）",
+   "summary": "实例卡再抬一档并长按直删；游戏目录卡与实例卡完全同构（叉号点击删除）；“使用问题”页在默认卡片布局下修复呼出；安装器两种列表间距统一；账号列表重写并放大头像；启动器全面更名为 Prisma。",
+   "content": "Task 213 十项用户指令一轮落地。\n\n一、实例卡（已安装的版本）：卡片高度 104 → 128pt（对照快捷指令卡片再抬一档，左上实例图标 22 → 28pt 同步放大）；长按卡片不再弹“选择/编辑/删除”菜单，改为直接呼出确认删除弹窗（选择仍点卡片、编辑仍点右上 ⋯，两个直达入口保留）。\n\n二、游戏目录（版本隔离）卡整类重写为实例卡完全同构：标题 = 目录名称，小字 = 目录大小，folder 图标以本色直出（旧蓝底白图标方块退役），右上省略号改为叉号标识（SF Symbol 图标），点击叉号直接呼出确认删除目录的弹窗（默认目录/使用中的目录会即时说明），长按功能删除。目录卡尺寸与实例卡逐项一致（同宽同高同间距）。\n\n三/四、两处标题灰字更新：游戏目录 = “点击卡片切换；点击叉号删除”；已安装的版本 = “点击卡片切换；点击省略号编辑；长按以删除”。\n\n五、“启动器使用问题”页呼出失效根修：Task 180 起默认根为卡片式布局，而 ShowHelpPage 通知只有旧三栏布局在监听——补齐监听后侧栏问号按钮恢复呼出（与 AI 页同款病灶同款修法）。\n\n六、下载页安装流程的模组加载器选择列表与选择游戏版本列表行距统一（64 → 50pt，图标/字号同步压缩）——前四轮只对齐了卡面配方、未统一行高，本轮收口。\n\n七、账号列表重写为安装器卡列表同构：头像放大一倍（34 → 68pt），字号升级 16/12，选中徽章右中绿章，去阴影去按压动效。\n\n八、启动器全面更名：所有 UI 与技术角落的启动器名 Prisma 改为 Prisma——应用显示名、系统权限用途说明（54 语言）、欢迎语、AI 助手提示词与占位文案、网络 User-Agent、控件仓库作者、设置页兜底名与双 README 品牌位。GitHub 仓库地址、Bundle Identifier 与 iPad Air 机型名等技术标识保持不变（更新/安装数据延续性）。\n\n九、设置页“内存限制说明”改版：正文改为两条权限说明——扩展内存限制权限（GetMoreRAM 开启，通常可分配 6GB）、扩展虚拟内存权限（开启方式见下，通常可分配 7GB 并提升稳定性），并推荐使用付费开发者证书（安装即自动带权限且支持 JIT）；按钮由 GetMoreRam 改为“付费开发者证书”，跳转 B 站教程 b23.tv/WtgrPJM。\n\n十、启动器包名更名 com.air-devs.air → com.air-devs.prisma（Info.plist、三份 entitlements、Makefile 产物名、CI artifact 名、后台下载会话标识、os_log 子系统、钥匙串服务名全链路同步）；Info.plist 与仓库 MD 内残留的 air 全部改为 prisma。注意：包名变更后 iOS 视为全新应用，旧安装不覆盖、数据不迁移；GitHub 仓库地址与代码内更新检查地址暂保持不变，仓库若同步改名需一并更新。",
+   "priority": "normal",
+   "action_url": "https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher",
+   "action_title": "了解 Prisma",
+   "image_url": ""
+  },
+  {
+   "id": "task212-angle-cf-renderers-virgl-2026-10-02",
+   "date": "2026-10-02",
+   "title": "ANGLE 方块透明决战探针 + CF 筛选加固 + 渲染器更名「gl4es(≤26.2)」+ holy gl4es 退役 + VirGLRenderer(≤26.2) 移植启动",
+   "summary": "ANGLE 方块透明的两个决定性探针降门补盲（上轮全程未触发）；CurseForge 筛选链路加固与锚点日志；ZL2 经典版 gl4es 按用户定名改为 gl4es(≤26.2)；holy gl4es 渲染器整体退役；virglrenderer（VirGLRenderer(≤26.2)）移植开工。",
+   "content": "Task 212 五主题（装机日志 99d8122 判读 + 用户五项指令）。\n\n一、ANGLE 方块透明决战（探针降门 + 补盲）。上轮装机日志判读：MultiDraw 拆解已生效（drawcount 2-14 逐 draw 提交中），但两个决定性探针全程零触发——五点回读的门设在 swapIndex>=900，而该会话总共只跑了约 810 帧（差 90 帧未到门！）；四边形普查盯的是 glDrawArrays，而 MC 26.3 的最终合成实际走 glDrawArraysInstanced（日志实证 mode=4/count=6 的全屏双三角每帧常驻）。本轮：五点回读降门为 240/480/720 三轮（较短会话也能采到 in-world 数据）；普查补上 instanced 入口并带绘制状态快照；新增地形巨型绘制落地探针（count=222534 的 chunk 目标绘制后立即 1x1 中心回读——非黑=像素已落地看合成链、全黑=绘制被丢、alpha=0=alpha 通路坏，三选一直接定谳）。\n\n二、CurseForge 筛选链路加固。沙盒直连免 Key 镜像实测：版本/加载器/排序/搜索全部参数工作正常，但偶发瞬态空响应（同查询重发即成功）。修复：瞬态网络错误与空响应一律自动退避重试；侧边栏筛选全链路新增锚点日志（源切换/列表重载打印 tab+源+版本+加载器+排序，下轮装机日志直接对账）；修复版本 tab 筛选弹窗锚点漂移。\n\n三、渲染器更名「gl4es(≤26.2)」（用户定名，一字不加）。设置页/版本管理器/AI 助手/帮助页 FAQ 全部同步。\n\n四、holy gl4es 渲染器退役（用户明令删除）。预构建的 libgl4es_114.dylib 及其全部运行时接线和两个二进制补丁一并移除；存量设备的选择自动迁移到同血统的 gl4es(≤26.2)（源码构建版接棒）。\n\n五、VirGLRenderer(≤26.2) 移植开工（用户点名）。ZL2 的 virgl 渲染器：virglrenderer 服务端（vtest）+ 带 virgl 驱动的 guest Mesa + ANGLE 宿主上下文三方架构；上游 PojavLauncherTeam 已有 iOS 交叉编译配方，本轮开始移植，多轮工程分阶段交付。"
+  },
+  {
+   "id": "task211-exit-cf-angle-gl4es-2026-10-02",
+   "date": "2026-10-02",
+   "title": "退出“崩溃”根治 + CurseForge 403 修复 + ANGLE 方块透明攻坚 + 新渲染器 gl4es（ZL2 经典版）",
+   "summary": "退出游戏不再误报崩溃；CurseForge 源 403 根治且默认源改为 Modrinth；ANGLE 方块透明上拆解修复与决定性探针；按用户点名从源码移植 ZL2 经典版 gl4es。",
+   "content": "Task 211 五主题（装机日志 17c5100 判读定案）。\n\n一、退出游戏“崩溃”根治。MC 26.3 新增退出监视器：JVM 在 main 返回后若仍被非后台线程拖住，就会强制生成“退出时崩溃”报告。元凶是启动器自带的 metallum 监控 agent——它的 premain 启动的metallum-state/metallum-dump 两个线程没有标记为后台线程。已对 metallum_agent.jar 做字节码手术（两处 Thread.start 前插入 setDaemon(true)，本地 A/B 实证：补丁版秒退、原版完整复现挂死）。退出游戏将干净利落，不再出现崩溃报告。\n\n二、CurseForge 源 403 根治 + 默认源改为 Modrinth。根因：CI 构建的 API Key 占位串（((void *)0)，11 字符）被设置页预填并保存进设备，每次请求都带着这个垃圾 Key 打官方 API，必得 403（界面显示“未知错误”）。修复三层：请求层拒收占位 Key（自动走免 Key 镜像）、设置页预填净化 + 保存门（占位键不予保存）、403 报错友好化（指路设置页）。另按用户要求做一次性迁移：没有有效 Key 的设备把 CurseForge 源拨回 Modrinth（CF 修好后随时可手动切回）。\n\n三、ANGLE 方块透明攻坚。Task209 四叉取证定谳：地形绘制提交完全健康（sodium 多绘制在跑、状态健全、零 GL 错误），唯独方块不可见——与安卓端同族翻译层的已知病灶“多维绘制静默丢绘制”病形一致。本轮上了修复（把 MultiDraw 一律拆解为逐 draw 提交）+ 两个决定性探针（in-world 帧缓冲五点像素回读 + 最终合成四边形普查），下轮装机日志一锤定音。\n\n四、新渲染器「gl4es（ZL2 经典版）」上线（用户点名移植）。ZL2 的经典版 gl4es（PojavLauncherTeam 分支）现从源码构建随包提供，渲染器列表与 holy gl4es、Krypton Wrapper 三者并存互为备选。\n\n五、显示名收短。Krypton Wrapper 渲染器条目收短为「Krypton Wrapper（≤26.2）」。另：virglrenderer 渲染器已完成评估排期（需要重建一份带 virgl 驱动的 Mesa，独立多轮工程，未包含在本轮）。",
+   "priority": "normal",
+   "action_url": "",
+   "action_title": "",
+   "image_url": ""
+  },
+  {
+   "id": "task210-neumorph-retirement-card-fixes-2026-10-02",
+   "date": "2026-10-02",
+   "title": "新拟态全面退役 + 实例卡修复（Task 210）",
+   "summary": "应用户定稿删除全部新拟态代码与选项；实例卡修复高度裁剪/省略号比例/深浅模式字体/选中描边。",
+   "content": "Task 210 双主题。\n\n一、新拟态全面退役（用户定稿：检索并删除所有新拟态代码和其选项和设置，维护过于麻烦）。\n删除范围：AmeNeumorphShadowView 三层承载引擎（暗影/高光投影 + 渐变表面）、AmeNeumorph 规格色族与度量、ame_applyNeumorphSurface/FlatWithRadius/removeNeumorphShadow/CardOpacity/PinnedCornerRadius 全部原语、BackgroundManager 的 cardsNeumorphEnabled 开关与 cardsNeumorphOpacity 透明度偏好（defaults 键 background_cards_neumorph_enabled/_opacity 一并退役）、壁纸设置页「新拟态界面」开关行与「新拟态透明度」滑条行（无壁纸时该区段整段隐藏）、六语言 background.cards.neumorph.* 双键（四主语言键集 2419 -> 2417）。\n保留（用户定稿「保留平贴灰面」）：无壁纸时卡面 = 平贴灰面（浅色 #e0e0e0 / 深色 #2c2c2c），无任何自绘阴影；有壁纸时毛玻璃/半透明管线原样；卡面文字色族改名 AmeCardPrimary/SecondaryTextColor （浅 #333333/#888888、深 #f5f5f5/#a0a0a0），深浅自适应。\n\n二、实例卡（快捷指令样）修复（七问定稿）。\n1. 卡底 = 深浅自适应平贴灰面（accent 渐变卡底退役——它跟随新拟态透明度滑条导致「卡片平时透明」）；\n2. 图标 = 原始彩色直出（白色模板渲染退役，PNG 不着色 / SF 用品牌色，cube 兜底用主题强调色）；\n3. 选中 = 纯 2pt 原蓝内缩描边（内缩距仍 = 省略号间距 × 1/3；柔光光晕、整卡变色、按压弹簧缩放全部退役——全部磁贴统一即时响应）；\n4. 字体 = 深浅模式自适应（名称 #333333/#f5f5f5，版本 #888888/#a0a0a0，白字退役）；\n5. 高度 = 104pt（84pt 时代 iPad 满档字号内容 86pt 被裁，用户实测「字体被裁减」）；\n6. 省略号 = 圆底 24 -> 28pt、三点 12 Bold -> 16 Black（用户定稿「加大加粗两档」），配色改自适应（labelColor 12% 底 + labelColor 三点，浅色平贴灰面上不再隐形）；\n7. 交互不变：点卡片 = 选用实例，⋯ = 纯编辑，长按菜单三件套保留。\n\nEN: Task 210 retires the entire neumorphism engine per user order (code, toggle and opacity slider, defaults keys, six-language keys; wallpaper blur/translucent untouched; flat gray surface kept). Instance cards: height 84->104pt (fixes clipped labels at full iPad font scale), original-color icons, mode-adaptive text colors, pure 2pt accent selection border (glow/tint/press-spring all retired), larger ellipsis button (28pt circle, 16pt Black glyph). Interaction unchanged: tap to use, ... to edit.\n\n维护路径：settings -> 壁纸设置（无壁纸时 UI 效果区段自动隐藏）；实例卡样式由 VersionManagerViewController VMVersionCardCell 统一承载。"
+  },
+  {
+   "id": "task209-krypton-rename-2026-10-01",
+   "title": "渲染器改名：NG-GL4ES → Krypton Wrapper（≤26.2）+ ANGLE 方块透明调查状态",
+   "date": "2026-10-01",
+   "summary": "渲染器列表里的 NG-GL4ES 更名为 Krypton Wrapper（≤26.2）——老版本（1.8.9 等）的首选渲染器，对齐上游启动横幅；存储值不变，已选设备零影响。ANGLE 方块透明：上两轮的 push constants 修复判断有误（26.3 着色器本就没有 push constants 块，查询不到属正常现象），本轮已埋全套绘制/纹理/着色器取证探针，下轮装机日志将直接定位真因。",
+   "content": "## 渲染器改名：NG-GL4ES → Krypton Wrapper（≤26.2）\n\n设置 → 视频设置 → 渲染器 里的 NG-GL4ES 更名为 Krypton Wrapper（≤26.2）（对齐上游启动横幅 \"Initialising Krypton Wrapper\"；存储值不变，已选设备零影响）。它依然是老版本（1.8.9 等 Forge 生态，尤其是 VGPU 下材质损坏/图集错位）的首选渲染器；26.3+ 新版本建议用 Zink / ANGLE / Metal。\n\n## ANGLE 方块透明：诚实状态更新\n\n上两个构建对 ANGLE 方块透明的修复（push constants 块相关）判断有误：经反编译 26.3 客户端定谳，26.3 的全部着色器根本没有 push constants 块，日志里 _push_constants 查询不到是正常现象（红鲱鱼）。本轮已在绘制调用（BaseVertex 族全量普查）、绘制时混合/深度/遮罩状态、纹理上传格式、地形着色器 ES 源码四个方向埋好取证探针——下一轮装机日志将直接定位真实病因。给使用者带来两轮无效修复的困扰，抱歉。\n\n---\n\nThe NG-GL4ES entry in the renderer list is renamed to Krypton Wrapper (<=26.2), matching the upstream boot banner; stored selections are unaffected. Honest status on the ANGLE transparent-blocks issue: the previous two push-constants fixes were chasing a red herring (26.3 shaders contain no push-constant blocks at all -- the failing query is normal). Full diagnostic probes (draw census incl. the BaseVertex family, draw-time blend/depth/mask state, texture upload formats, terrain ESSL source dumps) are now in place; the next device log will pin the real cause.",
+   "priority": null,
+   "action_url": null,
+   "action_title": null,
+   "image_url": null,
+   "pin": false
+  },
+  {
+   "id": "task207-shortcuts-instance-cards-2026-10-01",
+   "title": "实例选择页快捷指令化：竖卡双列网格 + 点卡即选用 + ⋯ 纯编辑 + 内缩高亮环",
+   "date": "2026-10-01",
+   "summary": "版本管理页实例卡整体重写为 iOS 快捷指令样式：accent 统一渐变竖卡、左上白色实例图标（原 loader 图标模板化）、右上 ⋯ 编辑钮、左下名称+版本；点卡片=选用实例（旧'进编辑顺带选中'逻辑退役），⋯=纯编辑；选中高亮=内缩 accent 环（内缩距=省略号到卡缘间距的 1/3，2pt 描边+柔光）；密度翻倍：iPhone 2 列 / iPad 4 列，行高沿用旧版单卡 84pt。长按菜单三件套保留。",
+   "content": "## 实例选择页 = 快捷指令（Task207 用户创新定稿）\n\n**视觉**\n\n- 卡底：统一主题渐变（accent → 深 accent 对角 CAGradientLayer），盖在新拟态表面/壁纸 blur 承载层之上、内容之下；卡体透明度滑条（Task178 语义）继续生效\n- 左上：实例图标沿用原来源（ModLoaderIconHelper loader 品牌图 / cube 兜底），统一重渲染为白色模板——alpha 即形状，任意透明度原图兼容\n- 右上：⋯ 半透明圆钮（白 0.28，24pt 圆）\n- 左下：实例名（sp15 semibold 白）+ 版本号（sp11 白 75%）\n\n**交互（快捷指令语义）**\n\n- 点卡片 = 选用该实例（已是当前实例时静默跳过；等同原长按菜单'选用'动作）\n- 点 ⋯ = 纯编辑（进 ProfileSettingsViewController，不再顺带切换选中实例）\n- 长按 = 选择/编辑/删除菜单（保留不变）\n- 选中高亮 = 内缩 accent 环：内缩距 = 省略号钮到卡片边缘间距的 1/3（动态推导 12/3=4pt），2pt accent 描边 + 同色柔光\n\n**布局（密度翻倍）**\n\n- 行高沿用旧版单卡行高 84pt（kVMVersionRowHeight），一个旧卡位 = 两张新卡\n- 列数翻倍：iPhone 1→2 列、iPad 2→4 列（分数宽 0.5/0.25）\n- 卡内几何量用固定 pt（dp 的 iPad 1.3× 会撑爆 84pt 预算）；字体仍走 sp（1.15 上限）\n\n**退役**\n\n- 旧横向行卡五件套：iconContainer / selectedBadge / isolatedBadge / lastPlayedLabel / chevron（用户定稿'纯快捷指令样'）\n\nEnglish: VersionManagerViewController's instance cards rewritten as iOS Shortcuts-style vertical cards (unified accent gradient, white-template icon, ellipsis edit button, name+version footer, inset accent selection ring; density doubled at the legacy 84pt row height; tap = select, ellipsis = pure edit).\n\nTask 207 (user innovation round; number yielded from the parallel Task206 NG-GL4ES port): instance cards restyled isomorphic to the iOS Shortcuts app (two user-supplied reference screenshots), with select-on-tap / edit-on-ellipsis interaction and an inset accent highlight ring whose inset is dynamically derived as one third of the ellipsis-to-edge inset.",
+   "priority": null,
+   "action_url": null,
+   "action_title": null,
+   "image_url": null,
+   "pin": false
+  },
+  {
+   "id": "task196-quad-fixes-2026-09-29",
+   "title": "三根因终局修复（vgpu 方块损坏 / ANGLE 黑屏 / 控件堆角）+ 新渲染器 Metal (metallum)",
+   "date": "2026-09-29",
+   "summary": "vgpu 1.8.x 方块损坏 = 显示列表回放（useVbo 默认关，已强制开）；ANGLE 26.3 黑屏 = DSA 与默认帧缓冲冲突（已撤回通告，同 ES/4.0 黑屏根因家族）；控件仓库挤成一坨 = 种子误盖 version 1.0（已重落戳 + 加载器救回，坏副本自愈）。另从上游同步 Metal (metallum) 原生 Metal 渲染器（javaagent 注入，26.x 专用）。",
+   "content": "## 三根因终局修复（装机日志全部实证钉死）\n\n**1. vgpu 方块材质损坏 + 看门狗卡死（1.8.9）**\n\n- 实锤：渲染线程反复卡在 `GL11.glCallList <- RenderList`，原生崩溃落在 libvgpu.dylib 的 `gl4es_glCallList`（SIGSEGV）\n- 根因：反编译 1.8.9 实证 `useVbo` 默认 **false**，地形走显示列表；gl4es 显示列表回放在 iOS ES3 上损坏捕获的顶点数据（实体走立即模式所以正常）\n- 修复：vgpu 会话启动时强制 `useVbo=true`，地形改走已修好的 VBO/EBO 路径\n- 注意：1.7.10- 无此选项，vgpu 上仍不可用（请换其他渲染器）\n\n**2. ANGLE 黑屏（26.3）—— 有声音、真黑、58fps**\n\n- 实锤：DSA 检测开启后每帧 1547 次 \"Only NONE or BACK are valid draw buffers\"（GL 1282 高危）→ 渲染打到错误目标 → 中心像素 (0,0,0,0) 真黑\n- 根因：与 ES/4.0 黑屏（Task165/166）同家族——DSA 开 = 黑屏，关 = 可玩\n- 修复：撤回 GL_ARB_direct_state_access 通告，MC 走经典 Emulated 路径；Task193 的扩展表补全保留\n- 取证开关：`AME193_DSA_ADVERTISE=1` 可强制开回（诊断用）\n\n**3. 控件仓库「全部挤在一坨」**\n\n- 根因：仓库种子是 v7 格式（动态坐标表达式）却误盖 `version 1.0` → 加载链按老格式跑转换：按键绑定被清零 + 坐标覆写成 0 → 全部堆左上角\n- 修复：种子重落戳 version 7 + 加载器「误戳救回」——**已下载的坏副本重新加载即自愈，无需重新下载**\n\n## 新渲染器：Metal (metallum)\n\n- 从上游同步的原生 Metal 后端（javaagent 注入，非 GL 转译），上游已在 iPhone 17 Pro / iOS 27.2 实测 26.2 / 26.3 原版 + Forge + Fabric\n- 入口：设置 → 视频 → 渲染器 → **Metal (metallum)**\n- 仅 MC 26.x 可用（旧版本 MC 的 Java 8 加载不了 agent，会自动跳过）\n- 26.x 用户建议优先尝试；**Forge 26.1.2 崩溃可先用它旁路**\n\n**装机验证锚点**：`Task196 useVbo=true forced` / `Task197: DSA advertisement WITHDRAWN` / `Task198 mis-stamped version rescue` / `Task201: Metallum agent enabled`\n\nEN: This round pins three root causes with on-device evidence (vgpu display-list corruption, ANGLE DSA-vs-default-framebuffer black screen, control-repo mis-stamped version) and ports the native Metal renderer \"Metallum\" from upstream (26.x only)."
+  },
+  {
+   "id": "task193-app-icon-replace-2026-09-28",
+   "title": "启动器图标换新：上游 Amethyst 六边形 → 草方块立方体（Prisma 定制品牌第一步）",
+   "date": "2026-09-28",
+   "summary": "应用图标由上游遗留的浅蓝六边形替换为草方块立方体（用户上传素材）。仅替换实际生效的 Light 家族（1024×3 + 120 + 152）；Dark/Development 备用图标与 AppLogo-Vector 等上游资产按约定保持不动。",
+   "content": "## 启动器图标换新\n\n- **新图标**：草方块立方体（绿顶棕底，用户上传的 IMG_9288.jpeg，690→LANCZOS 出 1024/152/120 全尺寸）\n- **替换范围（最小触碰）**：AppIcon-Light.appiconset 三张（universal/dark/tinted 外观同图三份，与上游做法一致）+ AppIcon-Light60x60@2x（iPhone 主图标）+ AppIcon-Light76x76@2x~ipad（iPad 主图标）+ README 顶部展示图自动跟随\n- **保持不动**：AppIcon-Dark / AppIcon-Development 备用三套、AppLogo-Vector、无引用的无后缀 AppIcon60x60/76x76 —— 全部为上游 2022/2025 遗留资产（blob 哈希与上游逐字节一致，本轮已查证归档）\n- **零代码改动**：图标为纯位图资源，仅文件名被引用（Contents.json/Info.plist 未动一行），同名覆盖即生效\n\nEN: The launcher icon is now the user-supplied grass-block cube (was the upstream Amethyst hexagon). Only the actually-served Light family was replaced (1024×3 + 120 + 152); Dark/Development alternates and AppLogo-Vector stay pristine upstream assets.\n\n---\n\n装机锚点：重装后桌面图标 = 草方块立方体（iPhone/iPad 一致，浅色/深色/着色外观同图）；设置页关于图标无变化（未动）。",
+   "priority": "normal",
+   "action_url": "",
+   "action_title": "",
+   "image_url": ""
+  },
+  {
+   "id": "task190-account-card-installer-spacing-2026-09-28",
+   "title": "账号卡片与已安装版本页同构 + 长按菜单（选用/删除账号）+ 安装方式页间距对齐版本号页",
+   "date": "2026-09-28",
+   "summary": "账号选项卡片按用户定稿与已安装版本页面同构：圆形头像、标题正文、灰字显示账号类型、去掉右侧箭头；长按呼出菜单（选用账号 / 删除账号）；安装方式页卡片间距与版本号页一致。",
+   "content": "## 账号界面与安装方式页定稿\n\n- **账号卡片同构**：账号选项样式与\"已安装的版本\"页面完全一致——12pt 连续圆角卡片、白 0.08 基底 + 细描边、选中态 accent 边框 + 右上角选中徽章\n- **圆形头像**：卡片左部图标改为圆形头像（与版本页图标同位同尺寸）\n- **标题为正文**：标题行显示账号名；**灰字为账号类型**（Microsoft / 第三方 / 本地 / 演示），原右侧彩色类型胶囊退役\n- **去箭头**：卡片右部箭头删除，右侧仅保留当前账号选中徽章\n- **长按菜单**：所有账号长按呼出——(person.circle) 选用账号、(红字 trash) 删除账号；第三方多角色账户保留免密切换角色项\n- **安装方式页间距**：每个加载器卡片的间距与版本号选择页完全一致（卡片净距 12pt）\n\nEN: Account cards now match the installed-versions page (circular avatar, body title, gray account-type line, no arrow) with a long-press menu (Use account / Delete account); installer page card spacing now matches the version-number page.\n\n---\n\n装机锚点：账号列表卡片与版本管理页观感一致（新拟态开关两种状态均一致）；长按任意账号出现系统上下文菜单；安装方式页相邻卡片净距与版本号页相同。",
+   "priority": "normal",
+   "action_url": "",
+   "action_title": "",
+   "image_url": ""
+  },
+  {
+   "id": "task184-revert-180-ui-whitespace-fix-2026-09-27",
+   "title": "撤销 Task180 UI 效果调整 + 安装方式页面按版本号选择界面真正重写（白色底层边框根修）",
+   "date": "2026-09-27",
+   "priority": "normal",
+   "summary": "按用户裁决「先撤销 180 的 UI 效果调整，先修好这两样」：①双滑条透明度体系整体退役——背景/按钮透明度滑条与全部接线恢复为原有「透明度 + 新拟态透明度」双滑条（Task178 定稿形态，新拟态卡体默认 100% 不透明，半透明白框假新拟态消除）；安装方式页面（选择加载器/附加开关/版本选择子页）按上级版本号选择界面同构重写——卡片容器/圆角/图标容器/文字规格全部与版本卡一致，并根修了 InsetGrouped 系统 cell 白色底层（「钉死的底层白框+一条边假新拟态」的真正根源，本轮三次重写无效即因此）。保留 Task180 的账号复制双保险、头像防御、账号列表凸起重写与卡片式布局/深色默认值。注：模糊程度默认随撤销回归 100%，可在设置中调回。",
+   "content": "【撤销】Task180 双滑条透明度体系（背景透明度/按钮透明度）整体退役：引擎 opacity 变体原语删除，BackgroundManager 回归 uiOpacity（0.6/下限 0.1）+ cardsNeumorphOpacity（新拟态透明度，默认 100%）单键时代；设置页回归「透明度 + 新拟态透明度」双滑条行（Task178 形态）；二十余处接线点（侧栏/右面板/下载页分段与搜索栏/信息卡/菜单/通知小窗/崩溃窗等）回归恒定底色。新拟态卡体默认 100% 不透明瓷面，此前的半透明白框假新拟态随之消除。\n\n【白框根修】选择安装方式页面此前三轮重写样式不变的真正根源：iOS 会为 InsetGrouped 表格的 cell 自动装一层 secondarySystemGroupedBackground 白色背景视图与灰色选中高亮，凸起管线挂在 cell 内容层上时白底垫在卡片外——即用户描述的「钉死的底层白框，白框里一条边的假新拟态」。本轮在三个 cell 类内彻底清除系统镀层（背景/选中高亮换装透明空视图，init 与复用双点重放）。\n\n【重写】安装方式页面（加载器选择列表 + Fabric API/OptiFine 共存开关行 + 版本选择子页）与 VersionCardCell（版本号选择界面）完全同构：外层 cell 全透明 → 内层卡片容器（圆角 12 continuous、上下 4pt 内缩）承载视觉 → 凸起管线在 init 挂一次（新拟态开关开 = 渐变瓷面+双阴影规格，关 = 旧毛玻璃/平贴管线）；图标 40x40 圆角 10 品牌色淡底容器（与加载器徽章同源），名称 16 semibold/状态 12 规格文字色，右侧 chevron 14pt——全部为版本卡规格；行高 64 与版本卡一致。\n\n【保留】Task180 的功能修复不随撤销回退：账号复制双保险（写盘收口清理旧 .json + 读侧去重）、头像防御（username 回退查询，右栏/主页双挂点）、账号列表凸起重写（钉 16pt 圆角 + 裁剪放行）、卡片式布局/深色模式默认值。\n\n【备注】模糊程度默认值随撤销回归 100%（此前 Task180 定为 0），请在设置中自行调整；透明度语义同 Task178 时代。校验：verify_task184 新建 39 项全绿，verify_task180 诚实重锚 120 项，160/162/163/164/168/170/171/173b/174/178 全链重锚绿。"
+  },
+  {
+   "id": "task180-opacity-dual-slider-2026-09-26",
+   "title": "透明度体系重构（背景/按钮双滑条）+ 账号列表新拟态重写 + 账号复制修复 + 头像防御 + 安装方式页对齐版本卡",
+   "date": "2026-09-26",
+   "priority": "normal",
+   "summary": "UI 效果设置重构为双滑条透明度体系：「背景透明度」（默认 75%）统管左侧栏/中心界面/右侧栏/实例页等大背景、壁纸选择页、下载页顶部选择栏与搜索栏、设置页选项行及新拟态卡体（Task178 的新拟态透明度滑条退役并入）；「按钮透明度」（默认 100%）统管启动游戏/执行Jar/选择版本/下载中心/右侧栏权限与设备信息卡/菜单按钮/下载页功能按钮/通知小窗/崩溃窗按钮；图标和文字始终不透明，0~100% 全档。账号选择列表重写为新拟态凸起管线（阴影残缺修复，兼顾新拟态开关）+ 账号复制双保险（写盘收口清理旧 .json + 读侧去重过滤）+ 头像防御（username 回退 + ID 漂移头像迁移）。选择安装方式页面对齐上级版本卡菜单（凸起规格卡面 + 双阴影 + 规格文字色）。默认初始值定稿：毛玻璃 / 背景 75% / 按钮 100% / 模糊 0 / 卡片式布局 / 深色模式（仅未显式选择的设备迁移）。",
+   "content": "Task 180 交付说明：\n\n一、双滑条透明度体系（用户定稿\"两个拉条控制所有界面 0~100%\"）\n- 「背景透明度」（defaults background_bg_opacity，默认 75%）：左侧栏/中心界面/右侧栏背景（Root 与卡片双布局）、实例页面等页面背景、壁纸选择页背景、游戏下载页顶部选择栏/搜索栏/胶囊轨道、设置页选项行、半透明档页面底色、新拟态卡体（卡片=背景类，Task178 专用滑条退役并入，管线挂点改读本键）；只淡承载底色/卡体，图标和文字恒不透明。\n- 「按钮透明度」（defaults background_btn_opacity，默认 100%）：启动游戏/执行Jar/选择版本/下载中心按钮、右侧栏权限信息与设备信息卡、菜单按钮选中底、下载页功能按钮、NMToast 通知小窗（新拟态承载视图整体 alpha）、崩溃窗重启/退出按钮；底色 = 基础色 × 系数，100% = 现形态原样（失效安全），文字/图标恒不透明。\n- 旧「透明度」（uiOpacity，0.6/下限 0.1）与「新拟态透明度」两条滑条退役；四主语言键计数 1955 保持。\n\n二、账号选择列表（重写 UI + 兼顾新拟态开关）\n- 账号卡片换接凸起管线 applyNeumorphCardEffectToView + 圆角钉住 16pt + 裁剪逐层放行：开关开 = Task177 三层引擎完整双阴影（阴影残缺修复），关 = 旧管线；卡片上下间距 6→10pt 给阴影呼吸。\n- 账号复制双保险：①BaseAuthenticator.saveChanges（一切 accountId 改写落盘的唯一收口）写盘成功后迁移头像 + 清理旧 .json（refresh 链改写 accountId 不删旧文件 = 复制根因）；②reloadAccountList 按 accountId 去重 + 过滤解析失败文件。\n- 头像防御：avatarForAccount 加 username 回退查询（兼容旧文件名与 ID 漂移），主页/右侧栏同步接入；fetch 失败日志锚。\n\n三、选择安装方式页面（对齐上级版本号菜单）\n- 加载器行与附加选项行换接凸起管线（contentView 作宿主）：规格渐变卡面 + 双阴影（与版本卡同语言）、新拟态规格文字色、图标 28→40pt、行高 54→64；背景透明度滑条同步生效。\n\n四、默认初始值（用户备注定稿）\n- UI 效果默认毛玻璃（不变）；背景透明度 75%；按钮透明度 100%；模糊程度默认 0%（旧 100% 退役）；布局默认卡片式（显式选过三栏的设备保持）；外观默认深色（仅未显式选择的设备从 auto/light 迁移，Task161 家法）。\n\n装机锚点：设置页两滑条拖动实时跟随（BackgroundUIEffectChanged 广播链）；公告锚 \"[Task180] account file migrated after accountId drift\"、\"[Task180] avatar hit via username fallback\"。校验：verify_task180 新建 112 项全绿；诚实重锚 160/161/162/163/164/167/168/170/171/172/173/173b/174/175/176/177/178（130/131/132/135 具名环境性豁免基线同态）。"
+  },
+  {
+   "id": "task179-eight-fixes-2026-09-26",
+   "title": "装机反馈八连修（ANGLE 崩溃 / 旧版 vgpu 崩溃 / CF 资源页 / 版本筛选 / 右 Shift / 物品栏 / JIT 二级菜单 / 头像线程崩溃）",
+   "date": "2026-09-26",
+   "priority": "normal",
+   "summary": "本轮装机日志（cc8ced8 构建）反馈的问题全部处理：①ANGLE 渲染器持续崩溃 = 桌面 facade 上下文的用户着色器编译路径本身不通——改用真 ES3 上下文 + 桌面身份伪装，ES300 重写终于有上下文可以唱和；②1.8.9 等旧版本 + vgpu 崩溃 = 扩展探测的临时 EGL 上下文在 iOS 上全部指针为 NULL，首个调用即空指针——改在当前游戏上下文上探测；③CF 资源页为空 = 无加载器概念的资源类型被自动预选的加载器筛空（镜像实测 0 结果）——请求层统一拦截；④版本筛选扩容到 1.7.10，旧版本不再被 64 条截断；⑤右 Shift = 修饰键改为轻点开关、长按按住的双语义，潜行可用；⑥物品栏调节尺寸后错位 = guiScale 读的是基础实例的 options.txt 而非当前实例——改读实际游戏目录；⑦二级菜单启动卡 JIT 超时 = 挂起期间墙钟烧穿 120 秒预算——挂起时间不再计入；⑧他人反馈的头像下载线程崩溃 = 回调全体主线程化双保险。",
+   "content": "## 本轮修复（装机日志 cc8ced8 反馈八项）\n\n**① ANGLE 渲染器依旧崩溃**\n\n- 根因（三层取证定案）：Task175/176 的 ES300 重写已把合法源送达 ANGLE（head48 自证），本地 harness 证明 tinygl4angle 上传链逐字节无损，但错误仍是空源特征的 \"ERROR: 1:1: '' : syntax error\"——ost ANGLE 桌面 facade 上下文（EGL_OPENGL_API + 3.3 Core）的用户着色器编译路径本身不通\n- 修复：tinygl4angle 改回真 ES3 上下文（ES3 配置 + ES API + CV=3），桌面 GL 3.3 身份由 glGetString 伪装（GL_VERSION -> \"3.3.0 (ANGLE...)\"、GLSL -> \"3.30 (ANGLE...)\"，与 facade 会话逐字同形，本地单测验证）；ES300 重写给到真 ES3 编译器\n- 装机锚点：\"[TinyGL] Task179 desktop identity: GL_VERSION 'OpenGL ES 3.2.0 ...' -> '3.3.0 ...'\" + 26.3 FO 包不再在 minecraft:pipeline/gui 崩溃\n\n**② 旧版本（1.8.9 等）依旧崩溃（vgpu）**\n\n- 根因：vgpu 初始化的硬件扩展探测会建临时 EGL 上下文，但其 LOAD_EGL 全家在 iOS 上解析为 NULL（宿主早已加载框架，晚加载的 vgpu 用 dlsym(RTLD_NEXT) 找不到任何东西），首个 egl_eglGetDisplay(...) = 调空指针\n- 修复：编译加 NOEGL（探测改在当前游戏上下文上做，零临时上下文零 egl 依赖）+ proc_address 苹果分支改显式框架句柄 + 扩展列表/厂商串 NULL 防御\n- 装机锚点：\"VGPU: Task179 framework handles: gles=0x... egl=0x...\" + 1.8.9 进游戏不再 SIGSEGV\n\n**③ CF 资源文件页为空**\n\n- 根因：资源包/光影/数据包/世界没有加载器概念，CF 的搜索对它们附带 modLoaderType 时直接零结果（镜像实测 classId=12&modLoaderType=4 -> totalCount=0，去掉 -> 1274）；另：无 data 数组的响应被静默当空列表（无错误提示）\n- 修复：请求层统一拦截（CF 不发 modLoaderType、Modrinth 不发 categories facet）+ 自动预选加载器只对模组/整合包 tab 生效 + 无 data 响应改为重试一次后浮出真错误\n\n**④ 版本筛选低版本扩容**\n\n- 根因：动态列表 64 条封顶 + 下限 1.8，把 1.12.2/1.8.9/1.7.10 等经典 mod 版本全部截掉\n- 修复：下限放宽到 1.7（1.7.10 经典 mod 时代）；1.15 及更早的次版本收录各自最末补丁（1.15.2/1.14.4/…/1.8.9/1.7.10）；封顶退役\n\n**⑤ 右 Shift 依旧无法使用**\n\n- 根因（事件链日志证明全绿）：不是事件问题，是【点按语义】——上一轮的\"粘滞到下一键\"让任何输入（包括移动摇杆）都立即释放 shift，潜行玩法被结构性杀死\n- 修复：修饰键改为双语义——轻点=开关（再点才关，期间任意输入不影响，潜行可用）；长按=常规按住（抬手释放）\n- 装机锚点：\"[InputDiag] Task179 mod toggle ON/OFF: keycode=...\"\n\n**⑥ 物品栏调节尺寸依旧错位**\n\n- 根因：guiScale 读取用的 POJAV_GAME_DIR 指向基础实例符号链接，而 modrinth/自定义实例的 options.txt 在 custom_gamedir 下——用户改界面尺寸后命中矩形永远按旧 scale 计算（日志实锤 raw=0 恒 auto）\n- 修复：改读进程当前工作目录（=实际游戏目录）的 options.txt，键位净化器同源修复\n- 装机锚点：改界面尺寸后 \"[HotbarDiag] Task63 native guiScale refresh: 4 -> N (raw=N ...)\" raw 不再恒 0\n\n**⑦ JIT 在二级菜单（版本设置）启动游戏卡死超时闪退**\n\n- 根因：stikjit:// 把 App 切后台后 iOS 挂起进程，恢复时 NSDate 墙钟已烧穿 120 秒预算，第一轮循环即超时\n- 修复：等待循环把挂起间隙（>2s 的迭代间隔）从超时预算里剔除——在 StikJIT 里待多久都不消耗等待时间；后台断言有效性落日志取证\n- 装机锚点：\"[JIT] Task179 isJITEnabled: suspension gap of Ns excluded from timeout budget\"\n\n**⑧ 他人反馈的异常崩溃（AvatarManager 线程）**\n\n- 根因（用户提供的崩溃链）：头像下载 completion 在后台线程回调时直达 reloadProfileSection → 后台线程创建 cell / 修改 Auto Layout → NSInternalInconsistencyException\n- 修复：completion 全体主线程化 + reloadProfileSection 入口主线程守卫（双保险，任何未来调用路径都不可能把 UIKit 带进后台线程）"
+  },
+  {
+   "id": "task178-neumorph-decouple-opacity-2026-09-26",
+   "title": "新拟态与 UI 效果设置解耦：开关不再变灰其他选项 + 新拟态透明度滑条回归 + 新闻卡圆角修复",
+   "date": "2026-09-26",
+   "priority": "normal",
+   "summary": "按用户定稿结合 UI 效果设置：新拟态界面开关不管开还是关，都不会使其他选项变灰（灰化逻辑整体退役，恒可操作）；开启时 UI 效果类型（毛玻璃/半透明）和模糊程度只作用于壁纸/旧管线，完全不影响新拟态卡片；新拟态透明度滑条恢复（模糊程度下方），它改变新拟态的透明度——只淡卡片本体（渐变表面+双阴影整体淡化），字体/图标始终不透明，默认 100% 即上轮认可的形态；UI 效果里的透明度（壁纸材质）与卡片无关。另修复新闻界面新闻卡片圆角太圆（引擎短边等比把 12pt 卡改写成 ~27pt，现钉住卡片自定圆角）。",
+   "content": "本轮按用户定稿把新拟态和 UI 效果设置正确地\"结合\"起来：\n\n1) 开关不再变灰任何选项：新拟态界面开关无论开还是关，UI 效果类型、透明度、模糊程度三行恒可操作（旧版开启时变灰的逻辑退役）。\n2) 解耦定稿：新拟态开启时，UI 效果类型（毛玻璃/半透明）和模糊程度只影响壁纸层（背景的模糊/材质），对卡片零影响——两套渲染管线并行共存，各读各的偏好。\n3) 新拟态透明度滑条回归（开关行下方，无壁纸时也有）：只有它可以改变新拟态的透明度。0%~100% 全档，只淡卡片本体（渐变表面+双阴影整体淡化，半透明态下投影内侧与表面同步衰减，晕影不随透明度回归），字体/图标始终不透明；默认 100% = 上一轮认可的白瓷形态原样，未拖动过滑条不会有任何变化。\n4) 新闻卡圆角修复：新闻页卡片自定 12pt 圆角此前被引擎按卡片短边等比改写成 ~27pt（\"太圆了\"）；现在钉住卡片自定圆角，投影/表面/宿主三者同步。\n\n装机锚点：设置 → 外观 → \"新拟态界面\"开关（恒显）+ \"新拟态透明度\"滑条（恒显）；拖动滑条卡片实时跟随、百分比实时回显、文字始终清晰；开启开关后拖\"模糊程度\"可见壁纸变化而卡片纹丝不动。EN: Decoupled neumorphism from UI-effect settings — the toggle never grays out other options; effect type & blur affect only the wallpaper; the dedicated Neumorphism Opacity slider (default 100%) is the sole control of card-body translucency, fonts always opaque; news cards keep their intended 12pt corner radius."
+  },
+  {
+   "id": "task177-neumorph-css-spec-2026-09-26",
+   "title": "新拟态按 CSS 参考定稿重写：全不透明渐变表面 + 固定档微阴影，透明度机制退役",
+   "date": "2026-09-26",
+   "priority": "normal",
+   "summary": "按用户给过的 CSS 样式参考（bigbear-ui neu-white）对新拟态做定稿重写：卡片表面 = linear-gradient(145deg,#e6e6e6,#ffffff)（深色 #333333→#2c2c2c 同构），双阴影 = 固定 4pt 偏移 / 8pt 模糊（小元素 2/4pt）全不透明纯色（浅 #d6d6d6+#ffffff / 深 #1e1e1e+#3a3a3a）。晕影根因定稿：旧引擎的透明投影承载层把阴影直接叠染在卡面内侧，配合 20/60pt 短边等比放大与 0.45/0.5 柔和档透明度，任何壁纸/开关状态下都是重晕影。本轮改为「投影对垫底 + 不透明渐变表面盖住内侧」的 CSS box-shadow 原生等价结构，卡面恒全不透明。同时按「不要加任何的透明度」定稿：新拟态透明度滑条整体退役，卡片不再读任何透明度/模糊偏好（设置页仅保留新拟态界面开关）。",
+   "content": "## 新拟态 CSS 参考定稿重写（Task 177）\n\n**规格来源 = 你给过的 CSS 样式参考（bigbear-ui neu-white mixin）**\n\n- `background: linear-gradient(145deg, #e6e6e6, #fff)` → 卡片表面原生渐变（CAGradientLayer，145° 轴向精确换算）；深色模式同构 #333333→#2c2c2c。\n- `box-shadow: 2px 2px 4px #d6d6d6, -2px -2px 4px #fff` → 双阴影固定档：卡片 4pt 偏移 / 8pt 模糊，小元素 2pt / 4pt，颜色全不透明（浅 #d6d6d6 右下暗影 + #ffffff 左上高光；深 #1e1e1e / #3a3a3a）。\n\n**晕影根因（为什么之前每轮都在）**\n\n- 旧引擎的阴影承载层是【透明投影层】，阴影直接画在卡面内侧之上——20/60pt 的等比模糊把整卡罩进晕影，壁纸模式下再叠 0.45/0.5 柔和档，怎么调都是晕影。\n- 本轮结构改为「两层纯投影垫底 + 不透明渐变表面盖住投影内侧」，即 CSS `box-shadow` 在元素之后合成的原生等价物：投影只剩边界外侧 2~4pt 微晕，卡面恒全不透明。\n\n**透明度机制退役（不要加任何的透明度）**\n\n- 新拟态透明度滑条整体移除，`background_cards_neumorph_opacity` 不再读取；卡片不再读 uiOpacity / blurIntensity——UI 效果的模糊度/透明度与新拟态彻底解耦。\n- 设置→外观仅保留「新拟态界面」开关：开启 = CSS 规格卡片（其余 UI 效果选项置灰），关闭 = 旧壁纸管线。\n- 圆角沿用短边等比 clamp[8,50]，尺寸位置零变化；壁纸共存语义不变（壁纸照常显示，卡片浮于其上）。\n\nEN: Neumorphism finalized rewrite per the user-provided CSS reference (bigbear-ui neu-white): opaque linear-gradient(145deg) surface (#e6e6e6->#ffffff, dark #333333->#2c2c2c) over a pair of fully-opaque fixed-tier dual shadows (4pt offset / 8pt blur, small elements 2/4pt; light #d6d6d6+#ffffff, dark #1e1e1e+#3a3a3a). Root cause of the persistent halos: the old transparent shadow-casting layers painted shadows on top of the card interior, amplified by 20/60pt size-scaled blur and the 0.45/0.5 wallpaper-soft opacities. The new layering (shadow pair behind, opaque gradient surface in front) mirrors CSS box-shadow compositing: cards stay fully opaque with only a 2-4pt outer micro-halo. The neumorphism opacity slider is retired entirely and cards no longer read any transparency/blur preferences. [Task176]"
+  },
+  {
+   "id": "task175-six-fixes-2026-09-26",
+   "title": "六连修：ANGLE 着色器根修 / CF 下载量+整合包排序 / 主页头像 / 物品栏-分辨率 / 旧版 Forge 装包 / 新拟态壁纸共存",
+   "date": "2026-09-26",
+   "priority": "normal",
+   "summary": "针对最新装机反馈的六项根修。① ANGLE 渲染器闪退根因定稿：MC 26.3 的着色器管线经 spirv-cross 交叉编译回【桌面 GLSL 330】，而底下的 ANGLE 是 GLES3 上下文——桌面源在 ES 编译器上 1:1 语法报错，pipeline/gui 崩溃。本轮在 spirv-cross 垫片内闭环重写：桌面 GLSL 自动转 GLSL ES 300 再交给 ANGLE（仅 ANGLE 渲染器生效，mg/zink/vgpu 不受影响）。② CurseForge 下载量恒显 0 + 整合包列表不排序：字段名断层（downloadCount→downloads）与整合包路径漏传排序/加载器参数，双补。③ 主页头像切标签页回来才显示：初始主页实例从未注册进缓存，首次切回必新建实例重走全部时序病灶——注册修复。④ 物品栏/触控在更改分辨率后偏移：抓取态输入换算漏乘分辨率系数（历史会话恒 100% 从未暴露）+ 命中比例改单点写入防篡改。⑤ 旧版 Forge（≤1.12.2）整合包装载器安装 404 → 启动裸崩：maven 后缀形路径补候选（1.8.9 实锤 200）+ 启动前占位版本拦截弹窗。⑥ 新拟态开启时壁纸被整层盖住：画布接管退役，壁纸回归可见，双阴影自动切柔和档（偏移/模糊缩约 1/3 + 不透明度降档），照片上读作轻悬浮而非晕影。",
+   "content": "## 本轮六连修（装机反馈逐项根因）\n\n**① ANGLE 闪退 = 桌面 GLSL 送进了 GLES 编译器**\n\n- Task171/172 桥接与 Task173 桌面 GL 补全层生效后，游戏已能走到着色器编译阶段；本轮崩溃点后移到 minecraft:pipeline/gui：MC 26.3 把 GLSL 经 shaderc 编到 SPIR-V再由 spirv-cross 交叉编译回桌面 GLSL 330（它以为自己在桌面 GL 3.3 上），而 tinygl4angle 底下是 ANGLE GLES3 上下文——ES 编译器对桌面版本号直接 1:1 语法报错。\n- 修复：spirv-cross 垫片内拦截编译出口，桌面源自动用同一份 SPIR-V 重开ES 编译器产出 GLSL ES 300（tinygl4angle 的 ES 直通分支原样上传）。仅 AMETHYST_RENDERER 含 tinygl4angle 的会话生效；逃生阀 AME175_ANGLE_ES_REWRITE=0。\n- 装机锚点：\"[spvc-shim] Task175 ANGLE ES rewrite: desktop GLSL -> GLSL ES 300\" + 不再出现 \"Couldn't compile vertex shader for pipeline\"。\n\n**② CF 下载量 + 整合包排序**\n\n- 下载量：CF 响应字段叫 downloadCount，UI 读的是 downloads——旧转换把字段整个丢了，所有 CF 条目恒显 0 次。已透传（镜像实测数据一直在响应里）。\n- 排序：侧栏的排序/加载器筛选从未传给整合包搜索（模组页一直有）——CF 与 Modrinth 双源已补，选\"下载量/关注/更新\"即重排。\n\n**③ 主页头像（第五轮，这次有日志铁证）**\n\n- 装机日志实锤：初始主页实例从未注册进缓存，首次切标签页回来必然新建实例——此前三轮修的时序病灶全部在新实例上复发。已注册；另在转场落定后先重载个人卡再直写兜底。\n\n**④ 物品栏/触控偏移（分辨率 ≠100% 时）**\n\n- 抓取态（游戏内）的触点换算漏乘分辨率系数：50% 分辨率下游戏内触控/视角映射整体偏大一倍。已修（历史会话恒 100% 所以从未暴露）。\n- 物品栏命中矩形的比例改为启动器单点写入的全局值（旋转/分辨率/FSR 档位一体），并加了 guiScale 节流保鲜——改完界面尺寸立即生效，不用等开关一次菜单。\n- 装机锚点：\"[HotbarDiag] Task175 geometry snapshot\"（全量输入快照，下次再偏移凭这一行直接定位）。\n\n**⑤ 旧版 Forge 整合包（1.8.9 等 ≤1.12.2）**\n\n- 装包时 Forge installer 404（maven 对旧版晋升构建用\"版本号-MC版本\"后缀形路径）→ 写占位 JSON → 启动时裸 ClassNotFoundException。现在：补后缀形候选（1.8.9-11.15.1.2318 实锤可下）+ 启动前识别占位版本弹窗提示手动装 Forge，不再裸崩。\n- 另：装包/启动时若 JIT 已通过调试器启用（日志\"TXM debug JIT mapping active\"），则不会弹 JIT 申请——这是设计行为（已启用无需再申请），不是故障。\n\n**⑥ 新拟态 + 壁纸共存（画布接管退役）**\n\n- Task174 的\"开启即收起壁纸\"矫枉过正。现在：新拟态界面开启时壁纸照常显示，卡片保持实底规格表面，双阴影自动切【柔和档】（偏移/模糊缩约 1/3、不透明度 0.45/0.5）——照片上读作轻微悬浮感而非晕影；无壁纸时维持原规格档。\n- 装机锚点：\"[Task175] neumorph UI wallpaper coexist\"。\n\nEN: Six-fix round -- ANGLE shader chain root fix (desktop GLSL auto-rewritten to GLSL ES 300 for the GLES context), CurseForge download counts + modpack sort/loader filters, home avatar instance-cache registration, hotbar/touch resolution-scale fix, legacy-Forge (<=1.12.2) installer URL candidates + placeholder launch guard, and neumorphism-wallpaper coexistence with softened shadows. [Task175]"
+  },
+  {
+   "id": "task174-neumorph-canvas-opacity-label-2026-09-26",
+   "title": "新拟态画布接管（晕影根修）+ 透明度百分比实时回显",
+   "date": "2026-09-26",
+   "priority": "normal",
+   "summary": "针对 Task173 构建装机反馈（\"怎么都无法复现正常的新拟态，全都是晕影\"+\"透明度百分比没有正确显示\"）的根修：晕影根因 = Task173 只把卡片重写为正常态，壁纸层仍垫在卡片底下——规格双阴影（20pt 偏移/60pt 模糊/全不透明）投在照片上必然读作边缘晕影，而复现方法（Bing 开→调→关）的终态是壁纸被取消后的整体形态，背景本身就是正常态的一部分。本轮把\"新拟态界面\"开关升级为画布接管：开启时壁纸容器整层收起、底色回归原生系统色（开关打开的默认态 = 复现方法的终态本体），壁纸配置保留、关闭开关即时回归。同时修复透明度滑条拖动时百分比标签冻结不刷新的问题（实时回显）。",
+   "content": "## 本轮改动（装机反馈根修）\n\n**① 晕影根因定稿：壁纸垫底**\n\n- Task173 把卡片重写为\"正常态\"（规格表面 + 双阴影），但壁纸层仍垫在卡片下面。规格双阴影（20pt 偏移 / 60pt 模糊 / 全不透明）投在照片上必然读作边缘晕影——这不是卡片写错了，是\"正常态\"缺了另一半：复现方法（Bing 壁纸开着调 UI 效果再取消 Bing 壁纸）的终态，壁纸是被取消的，背景本身就是正常态的一部分。\n\n**② 新拟态界面开关升级为画布接管**\n\n- 开启（默认）：壁纸容器整层收起，底色回归原生系统色（复现终态）+ 卡片正常态渲染——开关打开的默认态 = 复现方法的终态本体，不再需要舞步。\n- 壁纸配置原样保留：关闭开关壁纸即时回归（毛玻璃/半透明旧管线恢复）；开启期间 Bing 自动刷新照常落盘，只是视觉上被新拟态画布盖住。\n- 装机取证：日志出现一次性 \"[Task174] neumorph UI canvas active\" 即画布模式已生效。\n\n**③ 透明度百分比实时回显**\n\n- 修复：拖动\"新拟态透明度\"滑条时百分比标签即时刷新（Task170 起标签只在页面重载时取值，拖动全程冻结——即\"百分比没有正确显示\"）。\n\nEN: Root-cause fix for the Task 173 device feedback (\"everything still has heavy halos\" + \"opacity percentage not displayed correctly\"). Task 173 rewrote the cards but kept the wallpaper underneath -- full-opacity CSS-spec dual shadows over a photo always read as halos; the repro's terminal state has the wallpaper REMOVED, so the background is part of the normal state. The Neumorphic Interface toggle now takes over the whole canvas: ON retracts the wallpaper container and paints hosts native (terminal state = the repro's terminal state), wallpaper config preserved and restored instantly on OFF (Bing auto-refresh keeps persisting while veiled, one-shot [Task174] log anchor). The opacity slider's % label now updates live while dragging (previously frozen until a table reload)."
+  },
+  {
+   "id": "task173-neumorph-rewrite-toggle-2026-09-25",
+   "title": "新拟态界面重写（正常态统一渲染）+ 新拟态界面开关 + 卡片本体透明度",
+   "date": "2026-09-25",
+   "priority": "normal",
+   "summary": "针对\"新拟态BUG压根就没改\"的定稿重写：用户给出复现方法（Bing 壁纸开着调一次 UI 效果再关掉 Bing 壁纸，新拟态即回到正常形态），证明正常形态一直存在于无壁纸分支。本轮把该\"正常态\"（规格表面色 + 双阴影）提为唯一卡片渲染路径——新拟态界面开关开启时与壁纸完全无关，此前\"动态卡面（毛玻璃/半透明）+ 阴影承载层\"的壁纸适配分支整链退役（半透明卡面叠 20/60px 双阴影正是边缘重晕影的来源）。设置页模糊程度下方新增\"新拟态界面\"开关：开启时其余 UI 效果选项（UI效果/透明度/模糊程度）变灰、卡片本体透明度滑条可操作，关闭反转回归旧壁纸管线。透明度语义改为\"卡片本体\"——卡面与双阴影淡化，文字/图标保持全不透明（不再用宿主 alpha 整体缩放）。",
+   "content": "## 本轮改动（用户复现方法驱动 + 定稿重写）\n\n**① 新拟态管线按\"正常态\"重写**\n\n- 复现方法确认：Bing 壁纸开启时任意调整一次 UI 效果，再取消 Bing 壁纸，新拟态即回到正常形态——说明正常形态（规格表面色 #e0e0e0/#2c2c2c + 双阴影）一直都在，坏的只是有壁纸时的\"动态卡面\"分支（半透明毛玻璃卡面叠 20/60px 双阴影，暗影落在壁纸上被读作边缘重晕影）。\n- 重写：新拟态界面开关开启时，所有卡片（主页磁贴/版本卡/公告卡/下载卡等）永远按正常态渲染，不再读壁纸状态、不再插 blur 层、不再有\"动态卡面\"——壁纸适配分支整链退役。\n\n**② \"新拟态界面\"开关（模糊程度下方）**\n\n- 开启（默认）：卡片正常态渲染；其余 UI 效果选项（UI效果选择/界面透明度/模糊程度）变灰停用，卡片本体透明度滑条可操作。\n- 关闭：回归旧壁纸管线（毛玻璃/半透明随其余选项变化；无壁纸为原生平铺），滑条变灰，其余选项恢复。\n- 无壁纸时开关与滑条也恒显（新拟态与壁纸无关，这正是本轮重写的语义）。\n\n**③ 卡片本体透明度（不含字体）**\n\n- 滑条语义从\"整个卡片 alpha 缩放\"改为\"卡片本体\"：卡面规格表面色与双阴影承载层按比例淡化，文字/图标保持全不透明（引擎新原语 ame_applyNeumorphCardOpacity，卡面走动态色安全淡化，深浅色切换不脱色）。\n- 100% = 规格表面原样；0% = 卡体全透明（文字仍可见）。\n\nEN: Neumorphism rewritten to the \"normal state\" (spec surface + dual shadows) as the single card path whenever the new \"Neumorphic Interface\" toggle (under Blur Intensity) is on -- the wallpaper-adaptive dynamic-face branch is fully retired (it was the source of the heavy edge halos). Toggle on: other UI-effect options grey out and the card-body opacity slider becomes active; off: legacy wallpaper pipeline takes over. Opacity now fades the card body (face + shadows) only -- text stays fully opaque."
+  },
+  {
+   "id": "task173-ten-fixes-2026-09-26",
+   "title": "装机反馈十连修（ANGLE 渲染管线 / 老 Forge / 惊变100天内存 / CF 三连 / TouchController 组件化 / 头像根修 / 壁纸滑条 / Forge JIT 重启 / VGPU 渲染器 / 自动渲染器）",
+   "date": "2026-09-26",
+   "priority": "normal",
+   "summary": "fd31b79 装机三日志（e0c68e7 构建：ANGLE FO 包 / 惊变100天 1.20.1 Forge / 老 Forge 1.8.9）反馈十项全部处理：①ANGLE 崩溃根因实锤——GL 后端首次被接受后死在 minecraft:pipeline/gui 预编译（LWJGL 报函数不可用）：反编译 26.3 renderpearl 的 GL 后端要调 glColorMaski/glEnablei/glDrawElementsBaseVertex/glQueryCounter 等桌面 GL 独有函数，而 ANGLE 框架只导出 ES 符号集，dlsym 恒 NULL——tinygl4angle 现在内置桌面 GL 补全层（eglGetProcAddress 解析 + EXT 变体兜底 + 分槽 blend/多绘制族安全降级），另修 glShaderSource 对 ES 版本化着色器不上传的潜伏雷 + Iris 的 GLSL 版本串前缀（OpenGL GLSL 3.30... 正则不匹配）规范化；②老版 Forge（1.8.9-forge-11.15.1）启动崩溃——版本 JSON 的 libraries 字段缺失时 getVersionInfo 裸解引用 NPE，现已空数组兜底 + 父版本缺失可定位报错；③惊变100天整合包加载期静默闪退——实例内存 7165MB（0.8×物理内存的错误公式）击穿 iOS 进程 Jetsam 上限，现在用 os_proc_available_memory 权威推算安全堆顶：启动链自动钳制 + 内存滑条上限封顶 + 超限双语提示；④CF 列表不按排序方式排列——排序/加载器参数从未映射进请求（Modrinth 风格的 sort/loader 直接被忽略），现在 sortField/sortOrder/modLoaderType（CF）与 index（Modrinth）双源全接通；⑤整合包 CF 源版本下载全挂——双根因：MCIM 镜像 302 不重写补零路径（mediafilez 403，实测未补零即 200）+ ModVersion 的 CF 下载 URL 从不做镜像解析（Modrinth 一直在做），均已修；⑥下载界面游戏版本只到 1.21.1/1.16.5——旧过滤把 26.x 全滤掉 + 32 条封顶截掉老版本 + 清单加载失败只剩 5 个兜底，现在 26.x/1.x 通吃 + 镜像候选链 + 64 条 + 全量兜底；⑦TouchController 改为 Sodium 同款组件样式（用户指令）：组件安装区一键安装（Modrinth 拉适配版本落 mods/）+ 自动配置（UDP 模式 + 屏蔽启动器控件）；⑧头像切标签页消失第三轮根修——每次切回主页都全新 alloc 实例导致三轮流标修复全部失守，现在主页 VC 实例缓存复用（头像存活于实例上，切回零重拉）；⑨壁纸设置默认配置调反界面尺寸与点击错位——三个滑块行从顶对齐固定坐标改为 Auto Layout 居中自适应（任意宽度/旋转不再错位）；⑩Forge 安装完成后启动弹 java runtime 问题——进程内只能创建一次 JVM（安装器占用），旧弹窗让用户手动重启，现在「重启并启动」一键出路（写自动启动键退出，下次冷启自动选中实例并走完整 JIT 授权链启动）。另：新增 VGPU 渲染器（PojavLauncherTeam/VGPU 源码 vendoring + iOS 移植，旧版本 MC 专用，FCL 同款）；渲染器列表「自动」去掉后缀、MobileGlues 标注 (1.17+)，auto 的旧版本分支从 ANGLE 改为 gl4es（按游戏版本分配）。装机验证锚点：'[TinyGL] Task173 desktop-GL completion layer: N/20 resolved'（ANGLE 会话首帧）、'Task173 launch memory clamping'（惊变100天）、'[TinyGL] Task173 GLSL version string normalized'（Iris）、'Task173 home VC reused'（头像）、'[TouchController] Task173 installed'（组件安装）、'Task173 autolaunch detected'（Forge 重启启动）。"
+  },
+  {
+   "id": "task172-six-fixes-2026-09-25",
+   "title": "装机反馈六连修（ANGLE 依旧崩溃 / JIT 卡死闪退 / 键盘 / 头像 / 版本级 TouchController / CF 镜像 502）",
+   "date": "2026-09-25",
+   "priority": "normal",
+   "summary": "9be2b53 装机三日志（760c07c）反馈六项全部处理：①ANGLE 仍报 glGetError mismatch——反编译实锤定制 LWJGL 的 GL$1 在 macOS 平台从不查 eglGetProcAddress（只查 OSMesaGetProcAddress），旧镜像链先查 eglGetProcAddress 导致两条链在 ANGLE 库上拿到不同地址，镜像链已逐字对齐反编译结果，指针一致性按构造成立；②二级菜单启动卡 JIT 等待 120s 后闪退——stikjit:// 切后台后若 StikJIT 没把启动器切回，进程被 iOS 冻结（等待循环零心跳零超时），切回时调试器已死则 brk #0x69 直接闪退——三处 JIT 等待现在持有后台任务断言（冻结不再发生）并在启动前复查调试器存活性（必要时自动重挂）；③键盘仍需先按一次输入法——MC 的 SDL 键盘字段抢走 first responder 但其文本投递链在嵌入架构下是死的，现在 SDL 文本输入自动路由到启动器输入框（字符直达 + MC 关聊天键盘自动收起）；④头像切标签页回来要点一下才显示——网络头像回调在失败路径上脱离主线程触碰 UI（静默失效到下一次触摸），已修 + 全分支取证日志 + 转场后延迟补刷；⑤版本配置新增 TouchController 开关（开启 = 启动自动配置 UDP 模式 + 屏蔽启动器控件，保留模组自己的虚拟按钮；关闭不碰全局设置）；⑥CurseForge 镜像 502（整合包分类瞬态故障）——现在自动退避重试，不再需要手动刷新。",
+   "content": "## 本轮修复（装机日志 760c07c 反馈六项）\n\n**① ANGLE 渲染器依旧崩溃（glGetError mismatch）**\n\n上一轮把 ANGLE 接入了 SDL_GL 桥接，但设备日志显示仍然 mismatch。把启动器自带的定制 LWJGL（lwjgl-opengl.jar 里 GL$1.class）反编译后实锤：macOS 平台的函数解析链**从不查询 eglGetProcAddress**——Linux 用 glXGetProcAddress、Windows 用 wglGetProcAddress、所有平台兜底只用 OSMesaGetProcAddress。而启动器的镜像链优先查 eglGetProcAddress：对 MobileGlues/zink 恰好两条链殊途同归（侥幸通过），对 ANGLE 库（libEGL 导出 eglGetProcAddress、glGetError 是 libGLESv2 直接导出）则两边拿到不同地址 → mismatch → 回落 Vulkan → Iris 崩溃。镜像链已逐字对齐反编译结果，对所有渲染器指针一致性按构造成立。\n\n**② 二级菜单启动游戏卡在 JIT 等待，120 秒后闪退**\n\n启动时 stikjit:// 必然把启动器切到后台去 StikJIT；若 StikJIT 没有把启动器切回来，iOS 直接冻结进程——120 秒等待循环零心跳、零超时、日志戛然而止（装机日志实锤）。用户手动切回时若 JIT 已开但调试器已死，直接启动游戏 = brk #0x69 无人服务 = 闪退。现在三处 JIT 等待全部持有后台任务断言（进程在宽限期内继续运行，心跳/超时照常，StikJIT 可在后台完成附加），并且在等待成功后复查调试器存活性——死了就先自动重挂再启动，不再盲启。\n\n**③ 键盘输入依旧异常（必须先按一次输入法按钮）**\n\n设备日志实锤：每次按 ✎ 都是 becomeFirstResponder=1（字段反复丢失 first responder），字符全部经启动器字段到达 MC，而 SDL 自己的键盘字段一条都没送达。机理：MC 26.3 聚焦文本框时 SDL 的 iOS 后端把自己的 textField（在被隐藏的 SDL UIWindow 里）立为 first responder 抢走键盘，但它的文本投递链在启动器的嵌入架构下是死的。现在 SDL 的文本输入开始/停止自动路由到启动器输入框：打开聊天键盘直达可用，MC 关闭聊天时键盘同步收起（不再滞留）。\n\n**④ 主页头像切换标签页回来后消失，点一下才显示**\n\n网络头像获取的失败路径在 NSURLSession 的回调线程里直接触碰 UICollectionView / UIImageView（违反主线程契约），更新静默失效直到下一次 UI 触摸（用户感知\"点一下才显示\"）。已修复回主线程，并给整条头像链补上分支取证日志（本地/会话缓存/网络/缺 URL 四分支 + 可见卡计数），转场结束后 0.35 秒再补一次直刷。下轮装机日志可直接定位残余问题。\n\n**⑤ 版本配置新增 TouchController**\n\n版本（实例）配置页的高级设置区新增 TouchController 行：开启后该实例启动时自动配置——UDP 通信模式 + 屏蔽启动器自带控件（保留模组自己的虚拟按钮，Task140 语义）。关闭只删本实例的键，不碰全局 TouchController 设置。\n\n**⑥ CurseForge 镜像 502**\n\n设备日志实锤整合包分类搜索偶发 502（上游瞬态），用户手动刷新 5 秒后即成功。现在异步搜索与同步请求都会对 5xx 自动退避重试（最多 2 次），不再需要手动刷新。\n\n---\n\n**装机验证锚点**：ANGLE 会话日志应出现 `[SDLHook] Task172 GL$1 mirror: OSMesaGetProcAddress=0x...` 且不再有 glGetError mismatch；JIT 等待期每 10 秒一条心跳（后台断言生效）、异常路径出现 `[JIT] [RightPanel] Task172 wait satisfied but JIT26 debugger is gone`；键盘打开聊天即直达（`[SurfaceVC] Task172 SDL auto-keyboard routed`）；头像缺失时看 `[HomeAvatar] Task172 branch:` 日志定位分支；TouchController 实例启动出现 `[TouchController] Task172 profile auto-config applied`；CF 502 出现 `[CurseForgeAPI] Task172 retrying search after 5xx non-JSON body`。"
+  },
+  {
+   "id": "task171-seven-fixes-2026-09-25",
+   "title": "装机反馈七连修（ANGLE 崩溃 / 物品栏偏移 / CF 无 key / 头像 / 26.4 后端 / 键盘）",
+   "date": "2026-09-25",
+   "priority": "normal",
+   "summary": "上一轮装机日志（f26337d，3 个日志文件）反馈的七个问题全部处理：①ANGLE 渲染器崩溃 = 它从未进过 SDL_GL 桥接接管列表，renderpearl 的 glGetError 指针一致性检查失败后回落原生 Vulkan，Iris 在无 GL 上下文的 Vulkan 后端上直接崩——ANGLE 现已接入桥接；②物品栏点击偏下 = FSR 联动下命中矩形没乘窗口比例，视觉物品栏的上半段全被拒绝——几何现已 FSR 感知；③CurseForge 无构建 key 报错 = 无 key 时请求被\"key 缺失\"门直接拦截而从不发出（镜像回退成了死代码）——现在无 key 也照常走 MCIM 镜像（实测免 key 200）；④主页头像切标签页缺失 = 可见卡直刷只挂在网络回调上，缓存命中分支漏了——三处全兜底；⑤多人游戏偶发崩溃的日志已被轮换覆盖，新增 latestlog.crash.txt 异常死亡自动保全；⑥26.4 回退 Vulkan = MC 26.4 把默认后端顺序翻成 Vulkan 优先，启动器现在对 26.4+ 强制 --graphicsBackend opengl（原生 Vulkan 渲染器除外）；⑦键盘首会话每输一个字被系统拆一次 = 哨兵空格改在激活前写入 + 自动重挂自愈。",
+   "content": "## 本轮修复（装机日志 f26337d 反馈七项）\n\n**① ANGLE 渲染器崩溃**\n\n- 根因：libtinygl4angle 从未进过 SDL_GL 桥接列表（Task 79 只收编了 zink 系），真实 SDL 拒载\"OpenGL library already loaded\"后，renderpearl 的 glGetError 指针一致性检查失败 → 回落 MC 原生 Vulkan 后端 → 整合包里的 Iris 在 initRenderer 阶段拿不到 GLCapabilities 直接崩。\n- 修复：ANGLE 接入桥接（同款镜像链保证指针一致性），GL 失败仍会自动回落 Vulkan，零新增风险。\n\n**② 物品栏点击位置偏下**\n\n- 根因：FSR 联动下 MC 窗口是表面的 1/1.7，视觉物品栏顶边在物理 y≈1490，而拦截门槛算的是 1560——上半段全被拒绝，必须点到下半截才能选中。\n- 修复：命中矩形按\"物理/窗口\"比例放大（182x22 完整精灵），X 方向槽位映射同步修正。\n\n**③ CurseForge 未配置 key 报错**\n\n- 根因：无 key 时请求头返回 nil，三条请求路径把它当致命错误直接拦下——请求根本没发出，镜像回退成了死代码。\n- 修复：无 key = 照常发请求（不带 x-api-key 头）走 MCIM 镜像，实测免 key 返回 200。有 key 的设备行为不变。\n\n**④ 主页头像切换标签页缺失**\n\n- 根因：可见卡直刷只挂在网络完成回调上；切标签页返回走的是会话缓存命中分支，只有 reloadSections（转场时序下不重绘）。\n- 修复：本地/缓存/网络三个分支全部直刷可见 Profile 卡，并在转场结束后（viewDidAppear）补一次。\n\n**⑤ 多人游戏偶发崩溃（证据保全）**\n\n- 你指的 log.old.txt 那局多人会话本身是干净的（全程 60fps、正常退出）——崩溃那局的日志已被后续启动的轮换覆盖。\n- 新增：上一会话若非正常退出（无 exit 标记），下次启动自动把日志保全为 latestlog.crash.txt，崩溃现场不再丢失。\n\n**⑥ 26.4 回退 Vulkan（zink / mg 都会）**\n\n- 根因：MC 26.4 把默认后端尝试顺序翻转为 Vulkan 优先（26.3 是 GL 优先），且升级 datafix 会把已存的后端选项重置回默认——启动器选的 GL 转译渲染器被原生 Vulkan 整层绕过。\n- 修复：26.4+ 自动追加 --graphicsBackend opengl（原生 Vulkan 渲染器除外）。26.3 及以下完全不变。\n\n**⑦ 键盘触发后必须按一次输入法键**\n\n- 根因：键盘激活后才写入哨兵空格 + 开启\"开始编辑时清空\"，与 iPadOS 26+ 异步输入会话激活竞争——首会话每输一个字符字段就被系统拆一次。\n- 修复：哨兵空格改在激活前写入、清空位退役，另加 0.4 秒健康检查自动重挂（你手动做的那\"再按一次\"现在自动完成）。",
+   "pin": false
+  },
+  {
+   "id": "task170-neumorph-opacity-spacing-2026-09-25",
+   "date": "2026-09-25",
+   "title": "卡片新拟态透明度滑条 + 主页卡片间距统一",
+   "summary": "卡片新拟态整体透明度滑条（替换 Task168 实底开关——设置→外观，0%~100% 调节整个卡片含边缘阴影的透明度，晕影重就调低）+ 主页卡片间距统一 20pt（卡间 = 卡到侧边栏外沿）。 EN: whole-card neumorphism opacity slider replaces the solid toggle; home tile gaps unified to the 20pt outer margin.",
+   "content": "【更新】卡片新拟态透明度滑条 + 主页卡片间距统一（Task 170）\n\n一、新拟态透明度（替换上一版的「卡片新拟态（实底）」开关）\n· 位置：设置 → 外观 → 「新拟态透明度」拉条（0% ~ 100%）\n· 语义：调节「整个卡片」的透明度——卡面、新拟态双阴影、卡片内容作为一个整体按比例淡化\n· 100% = 上一版形态原样；觉得卡片边缘晕影太重就往低调（比如 60%~80%），阴影会跟着变淡\n· 0% = 卡片整体不可见（极端档位，一般用不到）\n\n二、主页卡片间距\n· 主页面卡片之间的横向/纵向间距统一为 20pt，与外围卡片到侧边栏的距离一致\n\n三、说明\n· 沿用毛玻璃/半透明卡面与壁纸透明度、模糊程度两个滑条的既有行为，本次不改动\n· 维护入口：启动器公告 = 仓库根 announcements.json；使用问题 = 仓库根 help-faq.json（随包副本 Natives/resources/，两文件保持一致）\n\nEN: Task 170 -- \"Neumorphism Opacity\" slider (0%~100%) replaces the solid-card toggle; it scales the whole card (face + dual shadows + content) as one unit, so heavy edge halos can be dialed down directly. Home tile spacing unified to 20pt, equal to the card-to-sidebar margin."
+  },
+  {
+   "id": "task168-neumorph-faq-json-2026-09-25",
+   "title": "新拟态卡片形态修复（壁纸模式可见）+ 使用问题 JSON 化",
+   "date": "2026-09-25",
+   "summary": "修复「设了壁纸就看不到新拟态」的范围判定失误：全部卡片统一新拟态（动态=卡面随壁纸透明度/模糊+双阴影，可开「实底」开关）；「使用问题」34 条迁移 JSON 存储，公告/使用问题的维护路径见正文。",
+   "content": "## 新拟态修复（该改的这次真的改了）\n\n- **根因**：上一轮（Task163）的凸起管线只在**未设壁纸**时生效——设了壁纸的卡片仍走旧毛玻璃，所以你下载最新提交也看不到新拟态。代码一直在包里（提交 447a677），是范围判定失误，不是没提交。\n- **本轮修复**：主页卡片（新闻/功能磁贴）、下载页版本选项卡等全部卡片统一新拟态：\n  - **动态（默认）**：壁纸模式下卡面仍按你设置的**透明度/模糊**呈现（毛玻璃/半透明），叠加新拟态**双阴影凸起**——即「按壁纸设置的透明度和模糊程度动态调整新拟态」；\n  - **实底开关**：设置 → 外观 → 「卡片新拟态（实底）」。打开后卡片一律规格实底+双阴影，放弃壁纸透明度/模糊（壁纸从卡片间隙透出）。\n- 侧栏/右面板维持平贴（Task163 结论：大面板等比阴影会外溢压到相邻卡片）。\n\n## 使用问题 JSON 化\n\n- 「使用问题」全部 34 个条目迁移为 JSON 存储（与启动器公告同模式），字段：**标题 / 图标id / 简介**。\n- **维护路径（两个，改完重新构建生效）**：\n  - 启动器公告：仓库根 `announcements.json`（随包离线回退 = `Natives/resources/announcements-fallback.json`）\n  - 使用问题：仓库根 `help-faq.json`（维护源）+ `Natives/resources/help-faq.json`（随包，运行时读取）——两文件逐字节一致，校验脚本把守漂移\n- 顺带更新过时结论：FSR 条目改为**三后端均支持**（Vulkan 经 Metal 呈现层，Task166/167），MobileGlues 卡顿条目补 Vulkan+FSR 推荐路径。\n\n---\n\nTask 168: neumorphic cards are now visible in wallpaper mode too (dynamic = card face follows your opacity/blur settings + neumorphic dual shadows; a new Solid Card Neumorphism toggle in Settings -> Appearance forces the solid spec surface). The 34 FAQ entries moved to JSON storage like the announcements -- edit the repo-root files (announcements.json / help-faq.json) to maintain them.",
+   "priority": "normal",
+   "action_url": "",
+   "action_title": "",
+   "image_url": ""
+  },
+  {
+   "id": "v6-0-0-release-2026-09-21",
+   "title": "v6.0.0 正式版发布",
+   "date": "2026-09-25",
+   "summary": "渲染器每游戏强制单选（无全局默认，缺省自动，mg 单入口，附 Sodium+Iris+Podium 一键安装）+ mg 三后端 FSR（GLES/4.0 原生 + Vulkan 直连 Metal 呈现层方案，EASU 放大+RCAS 锐化） + OpenGL 4.0 (Mithril) 崩溃根治 + TouchController 虚拟按钮回归（屏蔽启动器控件但保留模组按钮）+ TouchController 26.2 失效根治（UDP 自动回落 + 双 ABI）+ JIT 开启工具选择、下载镜像策略（加载速度快优先默认）、26.1.2 整合包崩溃根治、界面与动画优化 + 管理 Java 新增 26.0+（Java 25）预选、内存分配输入框弹窗、分辨率缩放每实例单独设置 + 新拟态 UI 回归（双阴影高光按 CSS 规格原生实现）、外观跟随系统与毛玻璃新默认（透明度 60%/模糊 100%）、弹窗背景回归、设置页文字重影修复。；正式版收尾：ES/4.0 黑屏与 Vulkan 首帧崩溃根治、CurseForge 源修复、本地整合包任意位置直装、主页头像秒显、JIT 等待超时保护、公告置顶（服务器推荐第一）。",
+   "content": "## v6.0.0 主要内容\n\n\n\n**渲染器与图形（重点修复）**\n\n- **渲染器每游戏强制单选**：设置页的全局渲染器选择退役，每个游戏在自己的设置页单独选择渲染器，未单独设置过的实例缺省\"自动\"（1.17+ 自动解析为 MobileGL Vulkan 直连）——彻底告别\"改了游戏渲染器又跳回设置里那个\"。MobileGL 家族在渲染器列表里合并为唯一的 **mg** 条目、不再写死后端：后端统一在 设置 > MobileGlues > 渲染后端 选择（Vulkan 直连 / GLES / OpenGL 4.0，默认 Vulkan 直连）；实例页新增 Sodium + Iris Shaders 组件安装（火焰图标，仅 Fabric 实例），一键从 Modrinth 下载 Sodium + Iris + Podium 进 mods 目录（Iris 为光影加载器，Podium 负责解除 Sodium 对第三方启动器的检查）\n- **mg 后端 FSR 支持矩阵（正式版口径，Task 166/167 修订）**：**全部三个后端均支持 FSR 1.0 超分**——mg 的 **GLES / OpenGL 4.0 后端**（MobileGlues 渲染路径）提供完整的 EASU 高质量放大 + RCAS 锐化双管线；**Vulkan 直连后端通过 Metal 呈现层拦截方案支持 FSR**（私有低分辨率交换层 + AMD FSR1 EASU/RCAS 移植到 Metal，MobileGL/MoltenVK 二进制零改动；选择 FSR 档位即生效，推荐 Vulkan 直连作为默认首选后端）\n- **OpenGL 4.0 (Mithril) 后端崩溃根治**：上下文创建参数错误导致游戏启动即报\"无 OpenGL 上下文\"崩溃的问题修复，该实验性后端现在可以正常进入游戏\n- **GLES 后端**：进世界方块不渲染的问题随 FSR 修复消除了启动期的一次分辨率翻转（疑似诱因）；若仍复现请附日志反馈（属 MobileGL 上游翻译层问题）\n\n**Java 与内存（体验调整）**\n\n- **管理 Java 新增 26.0+ 预选**：1.17+ 预选下新增\"26.0 及更高版本：Java 25\"（26.x 官方要求 Java 25），26.x 实例启动自动走独立 Java 25 槽位；Forge/NeoForge/整合包安装链的 Java 版本推断同步适配 26.x\n- **内存分配改为输入框弹窗**：与游戏目录同款输入框（标题\"调整内存分配\"，简介含设备最大内存 / 可分配最大内存 / 内存调配指南见启动器使用教程），输入值自动限制在 512MB ~ 可分配最大内存之间，\"恢复默认\"按钮去除；居中卡片弹窗（含自动分配内存开关）随之退役——存量开启自动的实例仍按原版自动比例启动，确认过一次输入后回到手动值\n- **分辨率缩放每实例单独设置**：设置页的全局分辨率缩放滑条退役，迁到每个实例设置页\"渲染器\"行下（右侧参数改为与内存分配同款灰字+向右箭头样式，行内输入保留，可编辑 25~150，右侧独立 % 标签）；存量全局值继续作为未单独设置实例的回退\n\n**新拟态 UI 与默认体验（本轮视觉大改）**\n\n- **新拟态 UI 全面回归**：所有自创 UI 按新拟态（Neumorphism）CSS 规格用原生代码重建——浅色表面 #e0e0e0 / 深色 #2c2c2c，双外阴影（右下暗影 + 左上高光）与圆角按元素尺寸等比缩放（340pt 卡片 = 圆角 50 / 偏移 20 / 模糊 60 的完整规格），主要文字 #333333/#f5f5f5、次要文字 #888888/#a0a0a0，深浅色自动适配；设置列表保持原生观感不受影响；主页磁贴与下载版本卡片呈现凸起双阴影（侧栏/右面板为平贴面板、不再投影遮挡旁边卡片），实例设置页所有跳转行箭头统一为同款灰色小箭头\n- **初次使用默认配置更新**：默认跟随系统深浅色、背景 UI 效果默认毛玻璃、透明度默认 60%、模糊程度默认 100%（仅新装/重置偏好生效，存量用户已保存的设置不变）\n- **弹窗背景回归**：自定义背景、自定义主页等弹窗在壁纸模式下此前整页透明，现恢复页面级毛玻璃底（文字可读、隐约透壁纸）；侧栏/右面板/主页继续透壁纸；\"游戏目录\"\"已安装的版本\"等标题背后的毛玻璃块移除，文字直接浮在壁纸上\n- **设置页文字重影修复**：选项文字不再带黑色阴影（此前看起来像\"文字重叠两次\"），标题换行不再压到灰色小字上，颜色回归原生（浅色模式黑色标题 + 灰色小字）\n\n**TouchController 模组（重点修复）**\n\n- **MC 26.2 功能失效根治**：双重修复。其一，模组原生通信层从句柄制改成单例制导致的 ABI 错位已由双 ABI 传输层兼容；其二，模组 0.3.1-alpha14 的静态库分支在上游尚未完成（加载必失败并误报\"不支持的操作系统：iOS\"），静态库模式现会自动附带模组自带的 UDP 兼容通道作为回落——触控开箱即用\n- **静态库模式进世界触控恢复**：修复静态库模式下触控事件发错通道的问题（菜单能点、进游戏失灵的怪象根除），现在无论模组走哪条通道都能收到事件\n- **屏蔽控件（语义更新）**：开关现在只隐藏【启动器自带】的经典虚拟按钮，保留模组自己的虚拟按钮（摇杆/跳跃/聊天/暂停等一整套内置布局）——修复此前\"触控能用但一个按钮都不显示\"；此前被写成空布局的存量配置会在下次启动时自动修复，模组按钮即刻回归。触屏手势、震动、文字输入不受影响\n- 设置页入口恢复为二级菜单（此前误改为悬浮浮窗）\n\n**下载镜像策略（新增）**\n\n- **加载速度快优先**：参考 FCL 的测速策略，启动器会实测官方源与国内镜像（BMCLAPI / MCIM）的响应速度并自动选用更快的一方，结果缓存 24 小时；文件下载、资源搜索、资源文件、模组加载器四个分类均支持，且默认即为该选项\n- **模组镜像源合并**：原\"启动器设置\"里的模组镜像源移入\"下载镜像策略\"分区，作为模组/光影/资源包/数据包/整合包/世界的统一入口（选择同时作用于搜索与下载；需要精细控制时仍可单独调整分类行）\n\n**JIT 体验**\n\n- **JIT 开启工具选择**：设置 > 调试新增工具选择（自动 / StikDebug / SideStore / StosDebug / JitStreamer-EB / TrollStore / 手动）。没装 StikDebug 的用户请改选你实际使用的工具，不再\"点了没反应\"\n- **安装 Forge 自动申请 JIT**：Forge/NeoForge 安装需要运行 Java 处理器，此前 JIT 未开启时只会弹错让你手动去开——现在与启动游戏同款自动跳转申请并等待开启，装完即装；iOS 26+ 设备上即使 JIT 已开启，无活跃调试器时也会自动重新附上 JIT 脚本\n- **iOS 26 JS 脚本开关**：可关闭启动游戏时向 JIT 工具发送 UniversalJIT26.js 脚本的行为（供不支持脚本的工具使用）\n\n**修复**\n\n- **MC 26.1.2 整合包进世界闪退根治（新根因）**：controlify 闪退修复后游戏可正常进入世界，本轮追查到真正的最后一层——语音模组（Simple Voice Chat）的麦克风在部分设备上因音频格式不匹配触发系统异常。现在麦克风按设备原生格式采集并在内部重采样，格式不再冲突；即使麦克风不可用也只影响语音，绝不闪退\n- **MobileGL-gles 输入错位修复**：修复该渲染器下触摸点与画面位置对不上的问题（FSR 兜底恢复全分辨率渲染后输入坐标未同步）\n- **MobileGL-gles 渲染器**：修复选择后 EGL 加载失败导致的闪退，现在正常进入游戏\n- **OpenGL 4.0 实验性后端随包可用**：Mithril 组件（libmithril.dylib）已内置，无需再手动放置文件\n- **第三方皮肤头像**：本地渲染（脸 + 帽层），存量账户启动自愈、首页头像实时刷新不再需要重启启动器\n- **主页卡片**：公告卡片与新闻卡片和\"最新正式版\"卡片等高，公告卡喇叭图标居中、查看按钮内联标题后，样式与新闻卡对齐；主页磁贴卡片随视觉大改更新为新拟态凸起阴影；欢迎卡头像等边距居左、未选账号首帧即显示默认头像；内存分配改为输入框弹窗（512MB ~ 可分配上限，自动分配开关随旧弹窗退役）；新拟态 UI 回归 + 浅色/毛玻璃新默认 + 弹窗背景回归\n\n**界面与动画**\n\n- **iPhone 右侧边栏精简**：手机上右侧面板改为窄图标轨（96pt），只保留头像与启动/选版本/执行JAR 图标按钮，内容区更宽敞；iPad 保持完整面板\n- 列表入场动画只在首次出现时播放（滚动回滑不再重复弹跳），条目按序错落进入\n- 侧栏切换选中项颜色平滑过渡，页面切换保持交叉渐变\n\n---\n\nv6.0.0: TouchController's MC 26.2 breakage root-fixed with a dual-ABI transport (static-library mode now delivers events on both channels, fixing in-world touch) plus a Hide-All-Controls option that now also hides the launcher's own button layer; a new download mirror strategy with a Fastest-First default (FCL-style racing, 24h cached) and the mod-mirror control consolidated; a LiveContainer-style JIT enabler picker with an iOS 26 script toggle -- and Forge/NeoForge installation now auto-requests JIT exactly like game launch (including the iOS 26+ debugger re-attach); the 26.1.2 world-join crash finally traced to Simple Voice Chat's microphone (AVAudioEngine tap format mismatch) and fixed with native-format capture + in-callback resampling + graceful no-mic degradation; MobileGL-gles input misalignment fixed (FSR-heal input scale reset) alongside its load fix; the OpenGL 4.0 experimental backend ships working with the bundled Mithril dylib; renderer selection is now per-game mandatory with no global default (games without an explicit choice default to Auto; single mg entry; backend picked in MobileGlues settings, Vulkan direct by default) plus a one-tap Sodium + Iris Shaders component install for Fabric instances (Sodium + Iris + Podium, with Iris the shader loader and Podium lifting the third-party-launcher check); iPhone's right panel streamlined to a 96pt icon rail; and list/sidebar animations polished. v6.0.0 also adds a \"26.0 and newer: Java 25\" preselect slot under Manage Java (26.x launches resolve to the dedicated Java 25 slot, with Forge/NeoForge/modpack Java inference adapted), replaces the memory-allocation card with a game-directory-style input dialog (title + device-max / max-allocatable / guide hint, value clamped to 512MB..max allocatable, restore-default removed; the auto-allocate switch retires with the card while existing auto profiles keep launching on the stock auto ratio), and moves resolution scale from the global slider into per-instance settings under the renderer row (inline number input with a separate % label restyled to match the memory row -- gray digits plus a trailing chevron -- and the clamp widened to 25-150; the legacy global value still applies to instances without an explicit choice). This round also rebuilds all custom surfaces as native Neumorphism per the user's CSS spec (dynamic #e0e0e0/#2c2c2c surfaces, size-scaled dual shadows and radii, #333333/#f5f5f5 primary and #888888/#a0a0a0 secondary text), flips first-launch defaults to follow-system appearance + frosted-glass backdrop (opacity 60% / blur 100%, saved values untouched), restores page-level glass backdrops under modal sheets while sidebar/right-panel keep showing the wallpaper, and fixes the settings-page double-drawn text (shadow ghosting + multi-line title/detail overlap) back to native single-line label rendering.\n\n**装机实测集中修复（Task 165-169，正式版收尾）**\n\n- **ES / OpenGL 4.0 黑屏根治**：强制开启的 DSA 扩展在 MobileGlues 模拟层 + FSR1 fb0 重定向下产生黑屏（多轮装机 A/B 实锤），已改回默认关闭并自动迁移存量配置；前置的函数解析层修复（gl* 符号劫持）+ 渲染纹理探针 + RCAS 运行时熔断同步落地\n- **Vulkan 直连首帧崩溃根治**：FSR 私有交换层几何（bounds × contentsScale = MoltenVK 表面尺寸真源）修复，装机实测 Vulkan FSR 正常工作\n- **CurseForge 加载源修复**：镜像网关错误（上游瞬态 403/500 被包成无 data 键的 HTTP 200 JSON）不再被静默当成\"无结果\"——自动重试一次并把真实错误显示出来；版本筛选自动剥 fabric 构建哈希后缀\n- **本地整合包任意位置直装**：从\"文件\"App / 下载 / iCloud 选择即可直接安装（安全作用域内存活拷贝），不再需要先导入到应用文件\n- **主页头像秒显**：10s 受控超时 + 磁盘缓存，冷启动直接显示，不再\"要点一下才有\"\n- **JIT 等待超时保护**：开启 JIT 偶发失败不再无限卡在\"正在开启 JIT\"，120 秒超时后可一键重试\n- **公告置顶**：公告支持置顶字段，推荐服务器（mysv.dpdns.org）已置顶显示\n\n---\n\nv6.0.0 final addendum: per-game renderer selection with a single mg entry (backend = global setting, default Vulkan-direct); FSR now on ALL three mg backends including Vulkan-direct via a Metal presentation-layer intercept (zero MobileGL/MoltenVK binary changes); ES/4.0 black screen root-caused (forced DSA retirement); CurseForge source, local modpack import, home avatar, and JIT-wait robustness fixes from device feedback.",
+   "priority": "high",
+   "action_url": "https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/tag/v6.0.0",
+   "action_title": "查看 v6.0.0",
+   "image_url": ""
+  },
+  {
+   "id": "task167-crashfix-migration-2026-09-25",
+   "title": "上一版两处修复的失效根因修复（Vulkan 崩溃 + ES/4.0 黑屏迁移未执行）",
+   "date": "2026-09-25",
+   "summary": "上一版实测：Vulkan 崩溃、ES/4.0 仍黑屏。两个失效根因均已定位并修复：Vulkan 崩溃 = 交换层只设了 drawableSize 没设 bounds，而 MoltenVK 的表面尺寸真源是 bounds × contentsScale，零尺寸导致交换链被跳过、首个画面拷贝踩空指针；ES/4.0 = DSA 迁移挂在了一个系统几乎不会再调用的回调里（从未执行），且旧默认值早已被持久化。本轮修复后 Vulkan FSR 与 ES/4.0 黑屏修复应真正生效。",
+   "content": "## 本轮修复（上一版装机实测反馈处理）\n\n**Vulkan 崩溃（上一版新引入，本轮根治）**\n\n- 现象：Vulkan 后端启动即崩溃（首个画面帧之前），崩溃点在渲染器交换链图像管理内部\n- 根因：FSR 私有交换层创建时只设置了 drawableSize，没有设置 bounds；而 MoltenVK 读取表面尺寸走的是 bounds × contentsScale（drawableSize 不参与能力查询）——零尺寸被渲染器的保护逻辑判定为 \"零面积窗口\"，交换链整个被跳过；随后游戏的第一个全屏拷贝指令在空交换链上取图像，踩中空指针\n- 取证：对随包渲染器二进制反汇编，崩溃指令与装机崩溃地址逐字节吻合；渲染器开源上游源码逐行核对确认保护链\n- 修复：交换层三处几何写入点（创建/同步/尺寸更新钩子）全部补齐 bounds + contentsScale， 交换链恢复正常创建，FSR 升采样链路随即完整可用\n\n**ES / OpenGL 4.0 黑屏（上一版修复未生效的根因，本轮补上）**\n\n- 现象：上一版已把 DSA 默认改关并写了存量迁移，但装机日志显示 DSA 仍然开启、迁移日志从未出现\n- 根因一：迁移挂在\"场景会话配置\"回调里——该回调只在系统新建场景会话时触发， 老设备上永远不会执行（历史装机日志中该回调内的任何日志从未出现过）\n- 根因二：更早版本\"DSA 默认开\"时代的默认值早已随启动写进配置文件持久化， 新默认值被存量值压制\n- 修复：迁移挪到进程启动必经路径（读取生效配置之后、任何使用之前）， 判定兼容数字/字符串两种存储形态，并新增执行锚点日志\n- 装机验证：启动器启动时应出现 `[Preferences] Task167 MG DSA black-screen migration ran (stored=1, flipped=1)`， 随后 GLES / 4.0 进世界应显示画面（游戏日志出现 DSA support not detected）\n\n**装机验证清单**\n\n- Vulkan 后端 + FSR 档位：不再崩溃；日志出现 `[MGLFSR] Task166 Metal FSR engaged` 与 `first frame presented`；画质放大生效（区块加载保持流畅）\n- ES / OpenGL 4.0 后端：启动器启动日志出现 Task167 迁移行；进世界有画面\n- 如需临时关闭 Vulkan 的 Metal 层 FSR 做对照：环境变量 `AME166_MGL_METAL_FSR=0`\n\n---\n\nFixes: both Task 166 fixes had failed on device (upload 1b76d19: Vulkan crashed at startup, GLES/4.0 still black). Vulkan crash: MoltenVK's surface extent comes from the CAMetalLayer category property naturalDrawableSizeMVK = bounds x contentsScale (not drawableSize); Layer B had zero bounds, so MobileGL's zero-area guard installed no swapchain and the first DSA glBlitNamedFramebuffer(fb0) dereferenced an empty image vector (disassembly of the shipping dylib matches the crash pc at GetImage+0x28 byte-for-byte). Layer B now writes bounds + contentsScale(1.0) at all three geometry sites. Black screen: the DSA reverse migration was wired into application:configurationForConnectingSceneSession: which UIKit never calls again for existing scene sessions (zero evidence across 60+ uploaded logs), while the Task129d-era @YES default had been persisted into the plist by the defaults merge -- the stored 1 kept suppressing the fresh @NO default. The always-run call site now lives in main.m after toggleIsolatedPref, with dual-type tolerance and an unconditional run-anchor log.",
+   "priority": 100,
+   "action_url": "",
+   "action_title": "",
+   "image_url": ""
+  },
+  {
+   "id": "task166-vulkan-fsr-dsa-2026-09-25",
+   "title": "Vulkan 后端 FSR 上线（Metal 层方案）+ ES/4.0 黑屏 DSA 根因修复",
+   "date": "2026-09-25",
+   "summary": "Vulkan 直连后端现已支持 FSR 超分辨率（AMD FSR 1.0：EASU 放大 + RCAS 锐化）——以 Metal 呈现层拦截方案实现，渲染器与 MoltenVK 二进制零改动；这是唯一在加载区块时保持流畅的后端，现在画质与流畅可以兼得。同时修复 ES / OpenGL 4.0 后端残留黑屏的真根因：一项默认开启的 GL 扩展（DSA）在该路径下触发黑屏，已改回关闭并自动迁移存量设置。",
+   "content": "## 本轮修复\n\n**Vulkan 直连后端 FSR（重点新功能）**\n\n- 背景：GLES / OpenGL 4.0 后端在加载区块时严重卡顿（无解），Vulkan 直连是唯一流畅的后端；此前公告中\"需要 FSR 请切换 GLES / 4.0 后端\"的建议因此作废\n- 实现：呈现层拦截——私有交换层以渲染分辨率接入 MoltenVK 交换链，每帧呈现时在 Metal 层执行 AMD FSR 1.0（EASU 放大 + RCAS 锐化，AMD 参考实现逐位移植）后写入全分辨率显示层；渲染器与 MoltenVK 二进制零改动\n- 联动：FSR 档位设置（画面设置内的渲染缩放）对 Vulkan 后端生效；RCAS 锐化强度设置沿用同一滑条\n- 降级保护：任何一步初始化失败自动回退全分辨率直呈（此前语义）；装机日志锚点 `[MGLFSR] Task166 Metal FSR engaged`\n- 覆盖范围：仅 Vulkan 直连后端；libMobileGL-gles 变体维持全分辨率直呈\n\n**ES / OpenGL 4.0 黑屏（真根因第二轮，装机实证）**\n\n- 三组同机同模组包会话对照锁定唯一配置差异：GL 直连状态访问扩展（DSA）关闭 = 全程可玩，开启 = 黑屏（交换链健康、帧率正常、画面不显示）\n- 机理：渲染器的 DSA 兼容层与 FSR 帧缓冲重定向路径自洽性不足，游戏检测到该扩展即切换渲染路径，画面落在错误位置\n- 当年开启它的性能依据来自另一渲染器（zink 原生支持），与该后端无关\n- 修复：默认改回关闭 + 存量设置一次性迁移（开启 -> 关闭）；偏好分区的高级开关保留，可手动开回\n\n**FSR 支持矩阵（更新）**\n\n- ✅ **Vulkan 直连后端**：完整 FSR 1.0（EASU + RCAS，Metal 层方案），加载区块保持流畅 —— 推荐首选\n- ✅ **GLES 后端 / OpenGL 4.0 后端**：完整 FSR 1.0（渲染器内置）；注意两后端在加载区块时存在卡顿\n- ✅ **Zink 渲染器**：同一套 EASU + RCAS\n- ➖ **libMobileGL-gles**：全分辨率直呈（不在本期范围）\n- 装机验证锚点：`[MGLFSR] Task166 Metal FSR engaged`（Vulkan + FSR 档位）与 `[MGLFSR] Task166 first frame presented`；GLES / 4.0 后端应恢复画面（DSA 已关）\n\n---\n\nFixes: Vulkan-direct backend gains full FSR1 (EASU upscale + RCAS sharpen) via a Metal presentation-layer intercept -- a private CAMetalLayer feeds MoltenVK a render-res swapchain while a wrapped id<CAMetalDrawable> runs the AMD reference EASU/RCAS port into the full-res display layer (zero changes to the MobileGL/MoltenVK binaries; the Task154 pre-swap GL war stays retired, pseudo-EGL root cause unchanged and double-upscale guarded). The surviving ES/OpenGL 4.0 black screen root cause is the forced enable_ext_direct_state_access default: three-session A/B on identical device/modpack/MobileGlues 2.0.17 shows DSA=0 playable (9e6fc27 pair) vs DSA=1 black with healthy swap counters; Task129d's perf rationale came from zink's native Mesa DSA, not MobileGlues' DSAWrapper emulation. Default flipped to OFF with a one-shot 1->0 reverse migration (ame166_migrateMgDsaBlackScreen); the preference toggle remains for manual override. Task129/130 verifiers re-anchored (D1/D3, E9/E10).\n\n---\n\n**勘误（装机实测后补记）**：本条发布后装机实测发现两处缺陷——Vulkan 后端启动即崩溃（交换层 bounds 未设置，交换链被零面积保护跳过），ES / 4.0 的 DSA 迁移因挂载点在既有场景会话设备上永不执行而未生效。两处根因与修复见下一条公告（Task 167）。本条中的功能描述与支持矩阵以修复后的实际表现为准。",
+   "priority": "normal",
+   "action_url": "",
+   "action_title": "",
+   "image_url": ""
+  },
+  {
+   "id": "task165-blackscreen-rootcause-2026-09-25",
+   "title": "ES / OpenGL 4.0 黑屏真根因修复（函数解析层）+ Vulkan FSR 结论",
+   "date": "2026-09-25",
+   "summary": "ES / OpenGL 4.0 后端黑屏的真正根因已找到并修复：此前的 LWJGL 兼容补丁让游戏的 GL 函数解析绕过了 MobileGlues 前端，画面被渲染进了错误的缓冲区，FSR 升采样把空帧盖在了真实画面上；现已恢复 5.1.0 的解析路由。Vulkan 直连后端的 FSR 经两轮二进制取证确认属上游硬限制，需要 FSR 请使用 GLES / OpenGL 4.0 后端（同样 60fps）。",
+   "content": "## 本轮修复\n\n**ES / OpenGL 4.0 后端黑屏（真根因，重点修复）**\n\n- 症状：GLES / OpenGL 4.0 后端 + FSR 档位 = 整屏黑（渲染与交换计数全部健康，仅画面不显示）；上一轮的锐化边界修复未愈\n- 真根因：一个为兼容其他渲染器而打的 LWJGL 补丁，顺带改变了 MobileGlues 后端的函数解析路径——游戏的绘制调用绕过了渲染器前端的帧缓冲重定向，真实画面落在了错误的位置，FSR 升采样随即把空帧铺满全屏（黑屏但帧率正常即此形态）\n- 修复：前端补回补丁所需的解析入口，恢复 5.1.0 时代的解析路由；并加入两级保险——渲染纹理探针（下轮装机日志可直接分诊）与 RCAS 运行期熔断（锐化链异常时自动退回纯放大模式，宁可画质降档也不再黑屏）\n- 装机验证：GLES / 4.0 后端 + FSR 档位应恢复画面且更锐利；日志出现 `[MG] Task165 xglGetProcAddress: ... routed through the frontend`\n\n**FSR 支持矩阵（维持）**\n\n- ✅ **GLES 后端 / OpenGL 4.0 后端**：完整 FSR 1.0（EASU 放大 + RCAS 锐化），实测 60fps\n- ✅ **Zink 渲染器**：同一套 EASU + RCAS\n- ✅ **Vulkan 直连后端**：已支持（Task166 Metal 层方案：EASU + RCAS，二进制零改动）——见后续公告；GLES / 4.0 后端在加载区块时存在卡顿，Vulkan 是流畅首选\n\n---\n\nFixes: the real ES/OpenGL 4.0 black-screen root cause (the Task154 LWJGL delegate dlsym patch silently bypassing the MobileGlues frontend resolution route -- app draws missed the framebuffer-0 redirect and FSR1 painted sharpened zeros over the real frame); frontend now exports the dead-named lookup so the delegate routes gl* names through the layer again (other renderers keep Task154 semantics). Added a one-shot render-texture probe (layer-split diagnostics) and an RCAS runtime bail-out (first-frame black latches EASU-only for the session -- degrades to unsharpened upscale instead of a black screen). Vulkan-direct FSR confirmed upstream-blocked after binary forensics; use the GLES / OpenGL 4.0 backend for full FSR1 at 60fps.\n\n**Task166 追记**：本公告发布时的 FSR 结论已被 Task166 推翻——上游开源事实（MobileGL-Dev/MobileGL）+ Metal 呈现层拦截方案令 Vulkan 直连后端获得完整 FSR 1.0；ES/4.0 黑屏的真根因亦在 Task166 定位为强制开启的 DSA 默认值（与本公告的解析层修复叠加存在）。",
+   "priority": "normal",
+   "action_url": "",
+   "action_title": "",
+   "image_url": ""
+  },
+  {
+   "id": "task164-fsr-blackscreen-defaults-2026-09-25",
+   "title": "ES / OpenGL 4.0 黑屏修复 + FSR 放大锐化说明 + 壁纸默认值修正",
+   "date": "2026-09-25",
+   "summary": "第一轮修复（锐化边界钳制）经装机验证未愈黑屏——真根因见后续公告（函数解析层，Task165）；FSR 支持矩阵：GLES/4.0 后端 = 完整 FSR（EASU 放大 + RCAS 锐化），Vulkan 直连暂不支持（上游限制）；壁纸初次使用默认值确认为毛玻璃、透明度 60%、模糊 100%。",
+   "content": "## 本轮修复\n\n**ES / OpenGL 4.0 后端 FSR 黑屏（重点修复）**\n\n- 症状：选了 GLES / OpenGL 4.0 后端并开启 FSR 档位后，游戏进入世界时整个画面黑屏（有声音、能操作，画面不显示）\n- 根因：FSR 的锐化管线（RCAS）在全屏边缘像素存在越界采样——桌面 GL 驱动容忍、ANGLE（Metal）上属未定义行为，可导致整帧作废；同时锐化 pass 的图形状态防护不完整（缺模板测试关闭）、纹理单元与采样器绑定依赖隐式初始状态\n- 修复：锐化采样边界钳制 + 状态防护对齐已验证的 Zink 实现 + 纹理单元显式绑定，四项全部落地；并加入首帧 GPU 探针日志用于装机验证\n\n**FSR 支持矩阵（请知悉）**\n\n- ✅ **GLES 后端 / OpenGL 4.0 后端**（mg 设置 → 渲染后端）：完整 FSR 1.0 —— EASU 高质量放大 + RCAS 锐化\n- ✅ **Zink 渲染器**：同一套 EASU + RCAS\n- ❌ **Vulkan 直连后端**：暂不支持。上游渲染器（MobileGL 二进制）不提供升采样呈现钩子（其 EGL 接口无上下文跟踪，强行插入升采样会导致花屏与触控错位），属上游硬限制；需要 FSR 时请把后端切到 GLES 或 OpenGL 4.0\n\n**壁纸初次使用默认值修正**\n\n- 确认默认值：**毛玻璃**效果、透明度 **60%**、模糊程度 **100%**\n- 此前新装设备会错误地落在\"半透明 / 模糊 0%\"（默认值判定逻辑把\"从未保存\"误当\"保存了 0\"），已修正；已在设置里显式保存过偏好的设备不受影响\n\n---\n\nFixes: ES/OpenGL 4.0 FSR black screen (RCAS edge-clamp + state guard alignment + explicit unit/sampler binding + one-shot GPU probe); wallpaper first-launch defaults now truly frosted glass / 60% / 100% (never-saved keys no longer read as saved zeros); Vulkan-direct FSR documented as upstream-unavailable -- switch to the GLES / OpenGL 4.0 backend for full FSR (EASU + RCAS).",
+   "priority": "normal",
+   "action_url": "",
+   "action_title": "",
+   "image_url": ""
+  },
+  {
+   "id": "repo-migration-2026-09-20",
+   "title": "公告已迁移至仓库托管",
+   "date": "2026-09-20",
+   "summary": "启动器公告改为 GitHub 仓库直接托管，不再依赖任何第三方接口，内容随仓库更新即时生效。",
+   "content": "## 公告源迁移\n\n从本版本起，启动器公告由本项目的 GitHub 仓库直接托管：\n\n- **主源**：仓库根目录 `announcements.json`（raw.githubusercontent.com），提交后即时生效\n- **镜像**：jsDelivr CDN（国内可达性更好，最长 12 小时缓存延迟）\n- **离线兜底**：随安装包内置的离线公告（网络完全不可用时显示）\n\n旧的公告接口（air-api.vercel.app）已失效且不受我们控制。迁移后公告内容与启动器代码同仓维护、同版发布，不会再出现“公告加载失败”这类单点故障。\n\n---\n\nAnnouncements are now hosted directly in this project's GitHub repository (announcements.json at the repo root): raw.githubusercontent.com as the primary source, a jsDelivr CDN mirror for reachability, and a bundled offline notice as the floor. The retired third-party API was unreachable and out of our control.",
+   "priority": "normal",
+   "action_url": "https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/blob/main/announcements.json",
+   "action_title": "查看公告源文件",
+   "image_url": ""
+  },
+  {
+   "id": "v5-1-2-preview-2026-09-20",
+   "title": "下一版本修复预览（装机反馈四项）",
+   "date": "2026-09-20",
+   "summary": "26.1.2 整合包进入世界崩溃根治、第三方切换角色修复、MG 三后端回到渲染器悬浮菜单、设置悬浮菜单可用性加固。",
+   "content": "## 即将在下一版本发布（装机反馈四项修复）\n\n**修复**\n\n- **26.1.2 整合包进入世界崩溃**：根因是整合包内 Controlify 手柄模组经 JNA 向 SDL3 注册事件回调，该回调指针位于不可执行的内存页（iOS 无 JIT 权限），游戏每帧事件泵触发时直接 SIGBUS。已在 SDL 层拦截回调注册（手柄模组其余功能不受影响，26.3 会话不受影响）\n- **第三方登录切换角色失败（“访问令牌已经分配了角色”）**：LittleSkin 等 Blessing Skin 系服务器不允许在已绑定的访问令牌上换绑角色。现在登录时会把凭据安全保存进系统钥匙串，切换角色时自动重新认证并绑定新角色——仍然免密。老账户需重新登录一次以启用\n- **MG 三后端设置项“还是分开的”**：MobileGL 的 Vulkan / GLES / Mithril 三后端回到渲染器选择行的悬浮菜单（上游原有形态），MobileGlues 分区的独立后端设置行移除，选择即生效（不再要求渲染器先设为“自动”）\n- **设置悬浮菜单可用性**：选择菜单改为从最顶层界面呈现，消除个别场景下“点了没反应”的静默失败面\n\n----\n\nComing in the next build: the 26.1.2 world-join crash (controlify's JNA/SDL callback hitting a non-executable trampoline page) intercepted at the SDL layer; third-party profile switching now re-authenticates with Keychain-secured credentials after servers reject token rebinding (one re-login needed on existing accounts); the three MobileGL backends return to the renderer picker's floating menu (upstream form, effective immediately); and pick sheets present from the topmost view controller so a presenting state can no longer swallow the tap.",
+   "priority": "high",
+   "action_url": "https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases",
+   "action_title": "查看版本发布",
+   "image_url": ""
+  },
+  {
+   "id": "v5-1-0-release-2026-09-19",
+   "title": "v5.1.0 正式版发布",
+   "date": "2026-09-19",
+   "summary": "MobileGL FSR 放大、渲染后端单选项（默认 Vulkan）、第三方登录恢复、启动时自动检查更新。",
+   "content": "## v5.1.0 主要内容\n\n- **MobileGL FSR 放大**：MobileGL 后端接入 FSR1 EASU 空间放大，低分辨率渲染 + 放大输出，性能显著提升\n- **渲染后端单选项**：MobileGL 三后端（Vulkan / GLES / Mithril）合并为一个设置项，默认 Vulkan，显式选择优先\n- **第三方登录恢复**：内置 authlib-injector，过期令牌优雅降级，LittleSkin 等外置登录站可用\n- **自动更新检查**：启动器启动时静默检查新版本，有更新时以卡片提醒\n- **子面板新拟物化**：全部二级面板统一新拟物设计\n\n---\n\nv5.1.0 shipped MobileGL FSR upscaling, the unified renderer-backend option (Vulkan default), restored third-party login with a bundled authlib-injector, silent auto update checks, and neumorphic sub-panels.",
+   "priority": "normal",
+   "action_url": "https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/tag/v5.1.0",
+   "action_title": "查看 v5.1.0",
+   "image_url": ""
+  },
+  {
+   "id": "task202-october-fix-wave",
+   "title": "十月修复波：渲染器五连修 + 输入两议题 + 语言全量",
+   "date": "2026-09-29",
+   "summary": "gl4es 启动崩溃根治、Metal 启动画面自动消失、虚拟鼠标与键盘问题修复、语言选择扩展至 54 种。",
+   "content": "## 本轮修复\n\n- **gl4es 渲染器崩溃（根治）**：启动即崩的问题已通过崩溃免疫层修复——构造器在无上下文环境拿到的空结果不再导致崩溃\n- **Metal 渲染器启动画面**：不再需要手动点\"取消启动\"，画面就绪时遮罩自动消失\n- **虚拟鼠标（议题 #1）**：双指滚动不再带动光标乱跑；点击判定容差加宽，轻点不再失效\n- **键盘输入（议题 #2）**：修复快速连击被误判为重复而吞掉的问题（\"只能输入一个字符\"）\n- **语言设置**：从 3 项扩展到全部 54 种内置语言（带\"部分翻译\"标记）\n- **界面翻译**：清扫了一批硬编码中文与乱码提示\n\n---\n\ngl4es constructor crash immunity, Metal first-frame auto-dismiss, virtual-mouse and IME input fixes (issues #1/#2), the 54-language selector, and an i18n hardcode sweep.",
+   "priority": 1,
+   "action_url": "",
+   "action_title": "",
+   "image_url": "",
+   "pin": false
+  },
+  {
+   "id": "task203-october-fix-wave",
+   "title": "十月修复波：1.8.9 双渲染器崩溃根治 + 帮助页多语言",
+   "date": "2026-09-30",
+   "pinned": false,
+   "summary": "1.8.9 的 gl4es 与 vgpu 崩溃均已根治（补丁工艺与钉扎门控两处根修）；帮助/FAQ 页面新增英文与繁简中文内容；Forge 26.x 启动弹窗抑制。ANGLE 黑屏诊断仪表已上线，下一轮日志定谳。",
+   "content": "## 本轮修复\n\n**1.8.9 两个渲染器的崩溃（根治）**\n\n- **gl4es**：上一轮的二进制垫片被 CI 打包环节的 vtool 重打标静默清零（节间隙不属于任何节，重序列化时被抹掉），执行到垫片即 SIGILL。本轮改为直接在两个查询调用点上原地改写为\"空串指针装载\"，补丁全部落在真实代码节内，vtool 不可能再破坏。\n- **vgpu**：上一轮的符号钉扎层误把 vgpu 会话的 GL 调用劫持到休眠的 ANGLE 镜像，vgpu 的惰性初始化永不触发，首次矩阵调用即崩溃。钉扎现在只在 ANGLE 会话生效。\n\n**帮助 / FAQ 页面国际化**\n\n- \"使用问题\"页面此前只有中文；现在英文为全量翻译（37 条），繁体中文完整转换，简体同步；其余语言沿用中文基线（与主界面回退一致）。\n\n**Forge 26.x 启动弹窗**\n\n- Forge 进度小窗在转译层上初始化失败后的 \"missing software!\" 弹窗提示，已通过默认禁用进度小窗抑制（更新后不再出现）。\n\n**ANGLE 黑屏**\n\n- 本轮装上了完整的渲染流量仪表（状态查询 / 矩阵上传 / 绘制调用全部记名），下一份装机日志可直接定谳黑屏发生在哪一环。\n\n---\n\nOctober fix wave: both 1.8.9 renderer crashes root-fixed (a binary-patch technique rework and a pin-scope fix); the help/FAQ page gains English (full 37-entry translation) and traditional/simplified Chinese; Forge 26.x early-display prompt suppressed. ANGLE black-screen traffic instrumentation is live -- the next device log adjudicates the failing stage directly."
+  },
+  {
+   "id": "task206-nggl4es-2026-10-01",
+   "title": "新渲染器 NG-GL4ES 上线 + ANGLE 方块透明修复",
+   "date": "2026-10-01",
+   "summary": "ZL2 同款 gl4es（NG-GL4ES/Krypton Wrapper）正式加入渲染器列表，老版本材质损坏的首选对策；ANGLE 后端方块透明的根因（push constants 块丢失）已修复，下个构建生效。",
+   "content": "## 新渲染器：NG-GL4ES（Krypton Wrapper）\n\nZalithLauncher 2 所用的 gl4es 分支正式移植完成——桌面 OpenGL 转译到 OpenGL ES，着色器经 glslang + SPIRV-Cross 双段转换，上游口径几乎全版本 MC 可跑（1.8.9 老版本到 26.x）。\n\n- 老版本（1.8.9 等 Forge 生态）在 VGPU 下出现材质损坏、图集错位、条纹的，换 NG-GL4ES 是首选对策（该病灶两轮修复未根除，属转译层顽疾）；\n- 26.x 新版本也可以尝试（不行再换 Zink）；\n- 选择路径：设置 → 视频设置 → 渲染器 → NG-GL4ES（游戏未运行时才能改）。\n\n## ANGLE 后端：方块透明已定位并修复\n\n26.x + ANGLE 会话里方块渲染为透明，根因是 SPIRV-Cross 的 ES 着色器输出没有把 push constants 块作为可查询的 uniform block（glGetUniformBlockIndex 永远 NOT FOUND，逐绘制的颜色/alpha 数据从不绑定）。修复已入下一个构建，装机日志锚点：`[spvc-shim] Task206: EMIT_PUSH_CONSTANT_AS_UNIFORM_BUFFER enabled`。\n\n---\n\nNew renderer NG-GL4ES (the gl4es used by ZalithLauncher 2, a.k.a. Krypton Wrapper) is now in the renderer list -- first choice when legacy versions show corrupted textures under VGPU, and worth a try on 26.x too. The ANGLE transparent-blocks bug is also root-caused and fixed (the push-constants block was never emitted as a queryable uniform block); the fix ships in the next build.",
+   "priority": "normal",
+   "action_url": "",
+   "action_title": "",
+   "image_url": "",
+   "pin": false
+  },
+  {
+   "id": "task216-ui-2026-10-03",
+   "title": "6.5.0 界面统一修复：加载器列表对齐、透明度单调、默认设置改版",
+   "date": "2026-10-03",
+   "summary": "加载器选择列表与游戏版本列表逐项对齐（行高 64/图标 40/间距 14）；半透明模式透明度拉条全程单调（修掉 50% 拐点驼峰）；实例卡按钮与阴影随透明度同步；默认设置改为深浅色跟随系统 + 毛玻璃 + 透明度 100% + 模糊 75%；版本号 6.5.0，包名 com.air-devs.prisma → com.prisma-devs.prisma（旧 keychain 凭据不迁移）。",
+   "content": "## 6.5.0 界面统一修复波\n\n- **加载器选择列表对齐游戏版本列表**：行高 50→64、图标容器 32→40（圆角 10）、图标-文字间距 12→14、文字块顶距 8→14，逐项与下载页版本列表同规格；\n- **透明度拉条全程单调**：半透明模式下 100~50 越来越透、50~10 反而越来越不透明的驼峰（拐点恰在 50%）已根治——页面底层透明度语义与卡面管线统一为正向；\n- **实例卡按钮/阴影与透明度绑定**：已安装版本卡与游戏目录卡在每次刷新时重铺卡面，按钮圆底与卡片阴影随透明度同升同降，不再出现\"光没了阴影还在\"或\"始终不变\"；\n- **默认设置改版**：深浅色模式跟随系统、UI 效果毛玻璃、透明度 100%、模糊程度 75%（未亲手设置过的设备自动迁移）；\n- **UI 效果页脚简介改为自动换行**，不再截断；\n- **版本号 6.5.0**，包名 com.air-devs.prisma → **com.prisma-devs.prisma**（os_log/keychain/后台任务标识同步，注意旧 keychain 凭据不迁移）。\n\n---\n\n6.5.0 UI unification wave: the loader-selection list now matches the game-version list item by item (64pt rows, 40pt icon containers, 14pt gaps); the translucency slider is monotonic end to end (the 50% hump is fixed); instance/directory cards re-render on every reload with buttons and shadows bound to the opacity; defaults are now follow-system appearance, blur effect, 100% opacity, 75% blur; footer hints wrap instead of truncating; version 6.5.0, bundle id com.air-devs.prisma -> com.prisma-devs.prisma.",
+   "priority": "normal",
+   "action_url": "",
+   "action_title": "",
+   "image_url": "",
+   "pin": false
+  },
+  {
+   "id": "task217-download-fixes-about-isolation-2026-10-03",
+   "title": "6.5.0 八连修：组件下载 26.x 根治、Mod 点击修复、自动渲染器自学、FCL 版本隔离、关于页与数据迁移",
+   "date": "2026-10-03",
+   "summary": "Fabric API/Sodium+Iris/TouchController 在 26.x 下载失败根修；Mod 开关静默失效修复；自动渲染器崩溃自学降档；版本隔离三态选择器+自动迁移；新增关于页与数据导出/导入（包名迁移配套）。",
+   "content": "## Task217 八连修\n\n- **组件下载 26.x 根治**：版本号解析只认 1.x 导致 26.2/26.3 全线失配——Fabric API 静默装旧版、Sodium+Iris/TouchController 报\"找不到适配版本\"。现统一走 parseVersionId（26.x 全形态覆盖）+ 客户端按发布时间取最新（镜像乱序免疫）+ 无适配明确报错。\n- **Mod 管理**：部分 Mod 点击开关无反应 = 静默失败（文件已不存在/目标同名冲突）。现在弹窗说明真实原因，幽灵条目自动清理。\n- **自动渲染器智能化**：版本基线（1.17+ MobileGL / 老版本 gl4es）之上增加崩溃自学——连续两次 JVM 信号级崩溃自动降档到下一候选渲染器并提示；手动选择永远优先。\n- **FCL 风格版本隔离**：游戏目录行改为三态选择器（不隔离/隔离此版本/自定义路径），开启隔离自动迁移存档、模组、配置等数据到 versions/<版本>/。\n- **关于页**（设置 → 关于）：版本信息、QQ 群 1126547426、启动器更新两项（自本页迁入）、许可证声明、致谢。侧边栏\"启动器版本\"卡直达关于页。\n- **数据导出/导入**（设置 → 通用）：包名迁移配套——全量数据一键导出 zip，新包名版本从备份直接恢复。\n- **包名临时回 com.air-devs**（上游族名）：为数据迁移中转，最终将改为 com.prisma-devs。\n- **README**：许可证声明与 QQ 群入页。",
+   "priority": "normal",
+   "action_url": "",
+   "action_title": "",
+   "image_url": "",
+   "pin": "False"
+  },
+  {
+   "id": "task218-air-interim-welcome-crash-diagnosis-2026-10-04",
+   "title": "6.5.0 新一轮：欢迎向导、崩溃诊断、下载源一致性修复、包名过渡与仓库更名",
+   "date": "2026-10-04",
+   "summary": "首次使用弹出欢迎向导（语言/下载源/数据导入三步引导）；崩溃识别升级（内存不足不再错怪渲染器 + 诊断弹窗）；下载源设置与实际行为不一致根治；包名临时切换 com.air-devs.air（上游用户可原地更新）；仓库更名 Prisma-Minecraft-iOS-Launcher。",
+   "content": "## Task218 六项更新\n\n- **首次使用欢迎向导**：全新安装（或更新到本版）首次启动时全屏弹出——选择语言、选择下载源（官方/镜像/自动测速）、从备份导入数据，三步完成初始配置；渐变呼吸背景 + 粒子 + 弹簧转场动效。完成或跳过后不再打扰。\n- **崩溃识别升级（参考 FCL）**：崩溃后下次启动弹出诊断（崩溃类型 + 处置建议 + 可导出崩溃报告）。内存不足不再算到渲染器头上；崩溃帧归因到具体渲染器库，自动降档更准。\n- **下载源一致性根治**：修复\"设置里选了 A，实际行为却是 B\"的双轨制问题——旧版下载源键已冻结失效，全部消费点统一走新的分类镜像策略；设置页显示与实际行为从此同源。\n- **设置页顶部卡片**：启动器信息卡片现在可以点击，直接进入关于页。\n- **包名过渡**：临时使用上游同款包名 com.air-devs.air——上游用户可直接原地更新到本启动器（数据不丢），随后用 设置 → 通用 → 数据导出 备份数据，为最终包名切换做准备。\n- **仓库更名**：GitHub 仓库已更名为 Prisma-Minecraft-iOS-Launcher，旧链接自动重定向；启动器内更新检查/公告/控件仓库同步切换。"
+  },
+  {
+   "id": "task219-virgl-angle-welcome-rebuild-2026-10-04",
+   "title": "6.5.0 十一连修：VirGL 崩溃根治、ANGLE 黑屏修复、欢迎向导重做、导出增强",
+   "date": "2026-10-04",
+   "summary": "VirGL 渲染器崩溃根治（服务端诊断盲区 + 失败自动回退 Zink）；ANGLE 渲染器在非 26.3 版本黑屏根治（桌面 GLSL 源直转 ES300）；欢迎向导全面重做（居中修复 + 返回上一步 + LiveContainer 检测 + JIT 开启方式 + 完成后自动打开关于页）；数据导出支持压缩等级与进度详情；TouchController 下载文案与版本预检修复；版本隔离自动识别。",
+   "content": "## Task219 十一项更新\n\n- **VirGL 崩溃根治**：vtest 服务端诊断日志此前不进 latestlog（盲区）；socket 路径过长（超出系统上限）与库加载路径问题已修复；服务启动失败时自动回退 Zink 渲染器，不再崩溃。\n- **ANGLE 黑屏修复（非 26.3 版本）**：26.2 及更早版本的着色器直传路径缺少 ES300 转换导致全部管线编译失败（黑屏）——已补齐版本行重写与精度声明注入。\n- **欢迎向导重做**：修复内容缩在左上角、无法点击的布局问题；新增返回上一步；视觉全面 iPadOS 化；新增环境检测（LiveContainer 识别与包名指引）与 JIT 开启方式选择；完成向导后自动打开关于页。\n- **数据导出增强**：导出前可选压缩等级（不压缩/标准/最大压缩）；导出过程显示进度条、文件数与当前文件。\n- **TouchController 下载修复**：进度与失败提示不再显示 Sodium 的文案；版本不支持时（1.12.2 以下）直接说明，不再误报\"未找到\"。\n- **版本隔离自动识别**：模组下载与列表自动跟随实例的隔离设置（隔离目录缺失即创建，不再误落到共享目录）；模组管理页显示隔离/共享徽标。\n- **VGPU 渲染器更名**：显示为 VGPU（≤1.17），标明适用版本范围。"
+  },
+  {
+   "id": "task220-account-avatar-skin-integrity-2026-10-05",
+   "title": "正版账号六连修：账号类型误判根治、头像/皮肤链路全面修复",
+   "date": "2026-10-05",
+   "summary": "正版账号被误判为第三方的根因修复（混合账号文件防御剥离 + 四处判别器统一口径）；头像链修复（停写已失效的 api.rms.net.cn 镜像、保留 Xbox 官方头像、脏 URL 落盘自愈）；皮肤渲染源修复（crafatar/minotar 替换失效私有镜像）；keychain 损坏条目自清；正版账号启动前令牌门控（一键修复代替无感烂会话）。",
+   "content": "## Task220 六项修复（账号完整性专项）\n\n- **账号类型误判根治**：账号文件同时携带微软与第三方字段时（装机日志实锤：微软账号启动却带着 LittleSkin 的 authlib-injector 注入、authlib 自检 \"Setting accountType to msa\"），四处判别器口径不一各自串类。现在按显式 accountType 就地剥离混合键并回写文件；原生端（加载/标签/长按菜单/选择链）与 Java 端（Tools.isThirdPartyAccount）统一为 accountType 优先。\n- **头像链修复**：api.rms.net.cn 皮肤头镜像域名 DNS 已失效，此前每个正版账号的主头像 URL 都是死链——登录链不再写该镜像（保留同链刚获取的 Xbox 官方头像），脏 \"head/(null)\" 历史数据从内存+磁盘双重清除（此前仅内存修复，keychain 丢失时每次启动都复发）。\n- **皮肤渲染源修复**：主页皮肤预览的硬编码私有镜像（111.170.35.224:3000，明文 HTTP）已失效，换 crafatar 官方全身渲染 + minotar 回退（FCL/HMCL 同款公开源）。\n- **keychain 损坏自清**：令牌条目\"存在但解档失败\"时自动清除，状态收敛为干净的\"缺失\"，重登即可覆盖写入。\n- **启动前令牌门控**：正版账号 keychain 令牌缺失/损坏时不再带空令牌静默启动（正版皮肤不加载、联机校验必败的根源），改为弹出 Task187 一键修复（删号重登，登录成功后自动接续启动）。\n- **兼容性**：无 accountType 的旧账号文件不动（下次成功登录时自然收编）；Demo 账号不受启动门控影响。"
+  },
+  {
+   "id": "task223-25item-round-upstream-sync-2026-10-05",
+   "title": "25 项清单总攻：渲染/隔离/导出/欢迎向导/账号操作全修 + 上游同步",
+   "date": "2026-10-05",
+   "summary": "用户 25 项反馈清单整轮修复：VirGL 崩溃根因（arm64 EGLint 位宽）、ANGLE ES3.0 精度声明、后台渲染线程挂起（zink 黑屏/MG 卡死共用根修）、版本隔离迁移与模组路径自愈、TouchController 配置刷新、输入法连续输入掉键盘、文件夹浏览器、陶瓦联机公共服务器预检、导出二级入口与流水线提速、欢迎向导全面重做（壁纸/亮度自适应反色/zl2 焦点介绍/教练标记）、侧边栏方向性动画、关于页 Discord 与 GitHub Star、账号高级操作（改名/换肤/默认皮肤）、上游两周功能性更新择优同步（内存三连修/AI 页风格一致/Xcode 26 构建链）。",
+   "content": "## Task223 二十五项清单总攻\n\n### 渲染与稳定性\n- **VirGL 崩溃根治**：virgl_server 把 EGLint 重定义为 intptr_t，arm64 上 64 位——ANGLE 按 32 位读属性对全部错位。改回 int32_t + surfaceless 回退 + 错误日志。\n- **ANGLE ES3.0 精度**：着色器头注入的 image2D 高精度声明需要 ES 3.10，ES 3.00 直接编译失败（非 SDL 版本报错根因）。条件编译修复。\n- **后台挂起统一根修**：iOS 禁止后台 GPU 提交（VK_ERROR_DEVICE_LOST BackgroundExecutionNotPermitted）。切后台时把渲染线程停在交换边界，回前台自愈恢复——zink 切后台黑屏与 MG 后台卡死共用此根。\n- **JIT 启动看门狗**：版本设置启动时 JIT 卡死概率性复现——三处 alert 改 animated:NO 避免后台切换期主队列楔死，ame185 看门狗无条件续派。\n\n### 数据与实例\n- **版本隔离**：隔离迁移改为从当前 gameDir 迁移（此前只迁实例根，模组端崩溃/模组丢失双根因），模组路径自愈。\n- **导出重构**：抛弃会往上跑的悬浮菜单，改二级入口（借用版本下载界面显示进度）；速度根修——并行读 + 串行写流水线 + 多线程压缩（此前 10 秒 10MB）。\n- **文件夹浏览器**：新建真正的全功能浏览器（此前路由到只列 .json 的选择器 = 毛玻璃空壳），支持目录下钻、QL 预览与分享。\n\n### 界面与交互\n- **欢迎向导重做**：接入 Bing/用户预设壁纸、文字按壁纸亮度动态反色、数据步骤按钮化、zl2 风格灰屏圆圈焦点介绍（替换黑屏不可用版）、iPadOS 27 设计语言对齐、缺失元素补齐。\n- **启动遮罩**：同壁纸背景 + 自适应色。\n- **右侧栏动画**：crossDissolve 换方向性滑动过渡。\n- **TouchController**：安装时自动配置 + 设置项状态刷新（专用通知），用户手动关闭后不再被强制打开。\n- **输入法**：Stop 路径 resign 防抖 250ms + 组词期跳过，连续输入不再每次都要重开键盘。\n\n### 账号与社区\n- **账号高级操作**：第三方/微软登录行内可见菜单（抛弃长按）——微软支持改名与换肤，离线账号可选 Steve/Alex 原版默认皮肤。\n- **关于页**：QQ 群同行加 Discord 社区按钮；捐献旁加 GitHub Star 按钮（\"如果没钱可以点个 ⭐️ 支持一下\"）。\n- **README**：Discord 链接上移到显眼位置 + Star CTA；清除 air 遗留仓库引用。\n\n### 上游两周同步（第 24 项）\n- **内存三连修**：Task173 权威读数路径撤 1024 下限（3GB 设备防 jetsam）；自动内存双 entitlement 判定（memorystatus + increased-memory-limit）；带 memorystatus 权限不再压堆（jetsam 限额会被主动抬升，钳制反成低顶）。\n- **AI 会话页背景**：补上与其余 AI 页一致的液态玻璃风格层调用。\n- **构建链**：CI 升 macos-15 + 优先 Xcode 26（iOS 26 SDK 液态玻璃），SDKPATH 显式钉死防旧 SDK 残留；找不到 Xcode 26 自动回退保持可构建。\n- **评估未采纳**（留档）：上游新版 metallum agent 仍带非守护监控线程（会复现退出卡死崩溃，本地 E2E 探针实证），保留本仓守护补丁版；LWJGL 3.4.3 API 适配（本仓只发 333/341 两套 natives）；NG-GL4ES/Krypton 渲染器（未随仓发布）。\n\n陶瓦联机：启动前公共服务器预检 + 失败指引（15 秒 EasyTier 搜索超时根因）。"
+  }
+ ]
 }

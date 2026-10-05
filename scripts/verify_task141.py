@@ -160,7 +160,10 @@ check("D1  共享助手声明+实现（utils.h/.m：实例 allocatedMemory 优�
       "int ame141_currentLaunchAllocMem(void);" in utils_h
       and "int ame141_currentLaunchAllocMem(void) {" in utils_m
       and '[profile[@"allocatedMemory"] integerValue]' in utils_m
-      and 'autoRatio = getEntitlementValue(@"com.apple.private.memorystatus") ? 0.5 : 0.25;' in utils_m)
+      # Task223 L2 再锚：单 entitlement 判定升级双路（memorystatus ||
+      # increased-memory-limit，raisedCeiling）；语义不变（抬升过 0.5 否则 0.25）。
+      and 'CGFloat autoRatio = raisedCeiling ? 0.5 : 0.25;' in utils_m
+      and 'getEntitlementValue(@"com.apple.developer.kernel.increased-memory-limit")' in utils_m)
 check("D2  JavaLauncher -Xmx 读共享助手（旧 auto_ram/allocated_memory 双分支退役）",
       "int allocmem = ame141_currentLaunchAllocMem();" in jl_code
       and 'getPrefBool(@"java.auto_ram")' not in jl_code
@@ -263,7 +266,7 @@ check("G4  工作区改动仅限预期文件集（提交后自愈；Task175：sc
       " entitlements——仓库名去 air 与包名 .air 过渡的合法触碰面）",
       all(ln[3:].strip().startswith(("Natives/", "scripts/", "worklog.md", "announcements.json",
                                      "JavaApp/", "help-faq.json", "docs/", "Makefile", ".gitignore",
-                                     "README.md", "README_CN.md", ".github/", "entitlements."))
+                                     "README.md", "README_CN.md", "README_EN.md", ".github/", "entitlements."))
           for ln in subprocess.run(["git", "-C", REPO, "status", "--porcelain"],
                                    capture_output=True, text=True).stdout.splitlines()
           if ln.strip()))

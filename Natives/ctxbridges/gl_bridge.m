@@ -2210,6 +2210,12 @@ void gl_swap_buffers() {
         NSLog(@"EGLBridge: gl_swap_buffers called with no current context, ignored");
         return;
     }
+    // ★ Task223：后台 GPU 提交禁令驻车点（mg / ANGLE / LTW / gl4es / Mithril
+    // 一切 gl_bridge 系渲染器的帧边界）。本帧 GL 编码已全部完成，此刻睡下 =
+    // 后台零 GPU 提交（ANGLE Metal 命令缓冲不再触发
+    // kIOGPUCommandBufferCallbackErrorBackgroundExecutionNotPermitted，
+    // MobileGlues 上下文不再损坏冻结）。
+    ame223_bg_park_wait("gl_swap");
     // Task 77：build 相位起点——上一次 present 返回至今的全部 MC 帧构造
     // （tick/事件泵/GL 编码）时长在此刻定格。先于卫兵/取证记录，卫兵与
     // 探针的耗时归入 neither（Task76 后探针帧极稀，可忽略）。

@@ -261,6 +261,15 @@ static void ame172_applyProfileTouchController(void) {
         NSDictionary *prof = profName ? PLProfiles.current.profiles[profName] : nil;
         BOOL on = [prof isKindOfClass:NSDictionary.class] && [prof[@"touchController"] boolValue];
         if (on) {
+            // ★ Task223（用户报“手动关闭后又被强制开启”）：全局 TouchController
+            //   页手动关闭过的会话（哨兵 control.mod_touch_user_off=YES）不再
+            //   被启动时自动配置顶回 ON——那是用户明确的意图，profile 开关
+            //   只在用户没有全局表态时才生效（手动重新开启会撤哨兵）。
+            if (getPrefBool(@"control.mod_touch_user_off")) {
+                NSLog(@"[TouchController] Task172 profile '%@' auto-config SKIPPED (user turned TouchController off globally -- not re-enabling)",
+                      profName);
+                return;
+            }
             setPrefBool(@"control.mod_touch_enable", YES);
             setPrefObject(@"control.mod_touch_mode", @1);  // UDP 协议
             setPrefBool(@"control.mod_touch_hide_controls", YES);

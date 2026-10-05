@@ -234,9 +234,11 @@ check("C4c 原型冲突 lint（tinygl4angle.c 定义 vs mesa glext.h）",
 en = read("Natives/resources/en.lproj/Localizable.strings")
 zh = read("Natives/resources/zh-Hans.lproj/Localizable.strings")
 check("C5a 详情文案升级（en）",
-      "verbose renderer diagnostics" in en and "i18n_str_2072" not in en)
+      "verbose renderer diagnostics" in en)
+      # Task205 原断言 i18n_str_2072 已退役；该键位后被 Task222 陶瓦联机
+      # 复用为 "Detecting port..."（TerracottaViewController 在用），撤断言。
 check("C5b 详情文案升级（zh-Hans）",
-      "渲染器诊断日志" in zh and "i18n_str_2072" not in zh)
+      "渲染器诊断日志" in zh)
 
 
 def parse_strings(text):
@@ -263,13 +265,15 @@ check("C5c strings 表可解析 + 无新增重复",
 # ============ D. CI 缓存 ============
 check("D1a ccache 缓存步骤",
       "Cache ccache compilation cache" in WF_RAW and "path: ~/.ccache" in WF_RAW
-      and "ccache-macos14-v1-${{ hashFiles('Makefile', 'Natives/CMakeLists.txt', 'Natives/external/vgpu/src/**', 'ThirdParty/ZalithLauncher2/src/**') }}" in WF_RAW)
+      # Task223 L5：runner 升 macos-15，桶键同步换代 macos14→macos15（跨 OS
+      # 复用会恢复不兼容二进制；verify_task223 L5 已锁定新键）。
+      and "ccache-macos15-v1-${{ hashFiles('Makefile', 'Natives/CMakeLists.txt', 'Natives/external/vgpu/src/**', 'ThirdParty/ZalithLauncher2/src/**') }}" in WF_RAW)
 check("D1b Homebrew 缓存步骤",
       "Cache Homebrew downloads" in WF_RAW
       and "path: ~/Library/Caches/Homebrew/downloads" in WF_RAW)
 check("D1c ccache 本体缓存步骤（Task205c）",
       "Cache ccache tool itself" in WF_RAW
-      and "key: ccache-tool-macos14-v1-4.14.1" in WF_RAW
+      and "key: ccache-tool-macos15-v1-4.14.1" in WF_RAW
       and "path: ~/.local/ccache-tool" in WF_RAW)
 WF_NORM = WF_RAW.replace("\r\n", "\n")
 check("D2a brew 只装 make（ccache 已移出 brew）",

@@ -345,6 +345,9 @@ static void AmeFGLogSwapStats(NSString *phase) {
     // 重申窗口尺寸：让 MC 重新同步 framebuffer（内部已做 0 尺寸兜底）。
     CallbackBridge_resumeGameIfNeed();
     AmeFGLogSwapStats(@"didBecomeActive");
+    // Task223：释放后台驻车的渲染线程（先于一切呈现执法——被驻车的帧
+    // 循环必须立即恢复，否则执法/尺寸重申全部白做）。
+    ame223_bg_park_end();
 }
 
 - (void)sceneWillResignActive:(UIScene *)scene {
@@ -355,12 +358,18 @@ static void AmeFGLogSwapStats(NSString *phase) {
     //   进后台，仍按前台全速渲染，回前台即卡在半截状态。
     AmeFGLogSwapStats(@"willResignActive");
     CallbackBridge_pauseGameIfNeed();
+    // ★ Task223：后台 GPU 提交禁令根修（zink 黑屏 / mg 卡死）——渲染线程
+    // 在下一次交换边界驻车（ESC 暂停链保留：能停则停，驻车兑底其余一切）。
+    ame223_bg_park_begin();
 }
 
 - (void)sceneWillEnterForeground:(UIScene *)scene {
     // ★ [FG] 上游 d76301816 同步（Task222）：取证锚点——回前台后 swapOK 不再
     //   增长即证实渲染循环被楔死（而不是 MC 单纯停在暂停菜单）。
     AmeFGLogSwapStats(@"willEnterForeground");
+    // Task223：双保险释放（didEnterBackground 后的恢复路径里
+    // willEnterForeground 先于 didBecomeActive，早放早恢复）。
+    ame223_bg_park_end();
 }
 
 - (void)sceneDidEnterBackground:(UIScene *)scene {

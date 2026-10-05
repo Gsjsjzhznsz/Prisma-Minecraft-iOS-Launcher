@@ -94,6 +94,10 @@ struct osm_bundle_t { uint32_t width, height; void *buffer; void *color_space; }
 // 改动无关，这里修复恢复门的守护力。）
 static basic_render_window_stub *br_get_current(void) { return currentBundle; }
 static void ame139_fsr_heal_reset_input_scale(void) {}
+// ---- Task223 桩：渲染线程后台驻车（真实定义在 utils.m，声明在 utils.h；
+// osm_swap_buffers 交换边界等待点。utils.h 经条件编译链在此提取段不可见，
+// 语义等价桩保持门的守护力。）----
+static void ame223_bg_park_wait(const char *swapSite) { (void)swapSite; }
 // ---- 桩：CG / Surface / dispatch ----
 static void *dispatch_get_main_queue(void) { return (void *)1; }
 template <typename F> static void dispatch_async(void *, F) {}

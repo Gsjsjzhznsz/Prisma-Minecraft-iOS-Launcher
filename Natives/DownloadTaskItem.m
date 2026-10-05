@@ -8,6 +8,8 @@ NSString * const DownloadTaskResourceTypeResourcePack = @"resourcepack";
 NSString * const DownloadTaskResourceTypeDataPack     = @"datapack";
 NSString * const DownloadTaskResourceTypeModpack      = @"modpack";
 NSString * const DownloadTaskResourceTypeWorld        = @"world";
+// Task223：数据备份导出（设置·数据导出，借用版本下载任务体系显示进度）
+NSString * const DownloadTaskResourceTypeBackup = @"backup";
 NSString * const DownloadTaskResourceTypeJavaRuntime  = @"javaruntime";
 
 /// 快照取值辅助：仅接受非空 NSString，否则返回兜底值（快照内容不可信，需类型清洗）

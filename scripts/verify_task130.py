@@ -189,7 +189,10 @@ check("F2 关联对象 row 绑定随之退役",
 check("F3 长按菜单保留 Task129b 角色项（免密链唯一入口）",
       al.count("ame129b_switchAccountAtIndexPath:indexPath toProfile:p") == 1
       and "contextMenuConfigurationForRowAtIndexPath" in al
-      and "UIMenuElementStateOn" in al)
+      # Task223 重锚：菜单重构为 ame223_accountMenuItemsAtIndexPath 单一事实源
+      # （长按与行内 ⋯ 共用），当前角色标注从 UIMenuElementStateOn 换 "✓ " 标题前缀。
+      and "ame223_accountMenuItemsAtIndexPath" in al
+      and '"✓ %@"' in al)
 check("F4 account.switch_role.button l10n 四语言（键保留，未消费也保留）",
       all('"account.switch_role.button"' in rd(f"Natives/resources/{l}.lproj/Localizable.strings")
           for l in ["en", "zh-Hans", "zh-CN", "zh-Hant"]))
@@ -316,9 +319,9 @@ sets = []
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     sets.append(set(re.findall(r'^"([^"]+)"\s*=',
                   rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M)))
-# Task222 重锚：2565 = Task212 基线 2520 + 陶瓦联机 21 + 捐赠 7 + 向导介绍页 12 + 启动阶段 5
+# Task222 重锚：2606 = Task212 基线 2520 + Task222 45 + Task223 41
 check("H3 四语言键集一致（Task157 基线 2228 = Task156 基线 2228 + Task157 组件键 2）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2565,  # Task222 重锚：+21 陶瓦联机键
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2606,  # Task222 重锚：+21 陶瓦联机键
       f"counts={[len(s) for s in sets]}")
 
 delta_ok = True

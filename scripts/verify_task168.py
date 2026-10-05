@@ -69,7 +69,8 @@ check("A6 Task210：设置页新拟态两行退役（开关行/透明度滑条�
            "cardsNeumorphToggleChanged", "cardsNeumorphOpacitySliderChanged",
            "cardsNeumorphOpacity", "cardsNeumorphEnabled")))
 check("A7 Task210：Terracotta 状态卡换调改名后的 applyCardEffectToView",
-      "applyCardEffectToView:self.statusCard]" in rd("Natives/TerracottaViewController.m")
+      # Task213 陶瓦重建：statusCard 改名 headerCard（与 verify_task210 同步再锚）。
+      "applyCardEffectToView:self.headerCard]" in rd("Natives/TerracottaViewController.m")
       and "applyNeumorphCardEffectToView" not in rd("Natives/TerracottaViewController.m"))
 check("A8 Task210：l10n 双键六语言全退役",
       all("background.cards.neumorph." not in rd(f"Natives/resources/{lg}.lproj/Localizable.strings")
@@ -79,7 +80,7 @@ check("A9 边界维持：侧栏/右面板仍走 applyEffectToView（Task163 平�
       and "applyEffectToView:self.rightPanelContainer]" in rd("Natives/LauncherRootViewController.m"))
 
 # ============================================================
-# B. l10n 键集（Task210 重锚：双键退役，计数 2520 -> 2520）
+# B. l10n 键集（Task210 重锚：双键退役，计数 2606 -> 2520）
 # ============================================================
 bsvc = rd("Natives/BackgroundSettingsViewController.m")
 
@@ -93,7 +94,7 @@ check("B2 Task210：settings sections[0] = 纯壁纸效果三行（无 neumorph 
 check("B3 Task210：无壁纸时 section 0 整段隐藏（numberOfRows 0 行 + 页脚同步隐藏）",
       "if (section == 0 && ![[BackgroundManager sharedManager] hasBackground]) {\n        return 0;" in bsvc.replace('\n', '\n'))
 check("B4 四主语言键集一致且计数 = 2520（Task210 重锚：neumorph 双键退役，2520-2）",
-      all(len(set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))) == 2520
+      all(len(set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))) == 2606
           for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]))
 keysets = [set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))
            for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]]

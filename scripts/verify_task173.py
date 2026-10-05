@@ -172,7 +172,10 @@ check("G3 startInstall method exists", "- (void)startInstallTouchControllerWithG
 check("G4 Fabric gate (Task219 l10n)", 'localize(@"component.touch.fabric_only"' in ps
       and "TouchController" in ps)
 check("G5 Modrinth exact-title fetch", 'exactTitle:@"touchcontroller"' in ps)
-check("G6 auto-config armed on success", "profile auto-config armed" in ps)
+check("G6 auto-config armed on success",
+      # Task223 清单8：armed 语义升级为安装即落地（三项全局键 + 撤哨兵 +
+      # 专属广播），日志锚随之换代。
+      "auto-config applied immediately (UDP + hide controls)" in ps)
 check("G7 touchControllerEnabled write", "weakSelf.touchControllerEnabled = YES;" in ps)
 check("G8 cell in section 2 with hand icon",
       'systemImageNamed:@"hand.tap.fill"' in ps)

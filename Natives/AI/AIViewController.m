@@ -61,6 +61,11 @@ static const NSTimeInterval kUIThrottleInterval = 0.2;
 
     // 浅色背景（内容区整体毛玻璃由外层 BackgroundManager 提供），不加额外毛玻璃
     self.view.backgroundColor = [[UIColor labelColor] colorWithAlphaComponent:0.04];
+    // ★ Task223 上游同步（upstream 8af215fb9 系 [PAGE-GLASS]）：与同族三页
+    //   (AISessionList / AIProviderConfig / AISystemPromptEditor) 完全一致——
+    //   调色底之后再交给全局界面风格层（iOS≥26 液态玻璃、<26 系统原生材质）。
+    //   原先本页是【唯一】不调用风格层的 AI 页 ⇒ 会话页背景与其余 AI 页/设置页不一致。
+    [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
 
     self.navigationItem.title = self.session.title;
     self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeNever;

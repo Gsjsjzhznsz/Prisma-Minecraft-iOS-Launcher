@@ -1,3 +1,4 @@
+import re
 #!/usr/bin/env python3
 # verify_task219.py -- Task219 eleven-item round verifier.
 # Evidence base: 6cd2cbfb device logs (latestlog.old.txt VirGL session +
@@ -63,11 +64,13 @@ check("A7 回退弹窗走 ame219.virgl.fallback 键（l10n 四语言在位）",
               for l in ["en", "zh-Hans", "zh-Hant", "zh-CN"]))
 
 print("== B. ANGLE 非 26.3 黑屏根治（⑦：桌面 GLSL 直传无 ES300 转换） ==")
-check("B1 桌面头重写块在位（#version 300 es + ame176 同款精度组）",
-      "Task219" in tg and "kAme219EsHead" in tg
-      and '"#version 300 es\\n"' in tg
-      and "precision highp float;" in tg
-      and "precision highp uimage2D;" in tg)
+_tg_code = re.sub(r"//[^\n]*", "", re.sub(r"/\*.*?\*/", "", tg, flags=re.S))
+check("B1 桌面头重写块在位（#version 300 es + 精度组；Task223 起移除 image 三行）",
+      "Task219" in _tg_code and "kAme219EsHead" in _tg_code
+      and '"#version 300 es\\n"' in _tg_code
+      and "precision highp float;" in _tg_code
+      and "precision highp usampler3D;" in _tg_code
+      and "precision highp image2D;" not in _tg_code)
 check("B2 触发门 = 桌面 >=130（26.2 的 #version 330 命中；ES 源不受影响）",
       "ame219_ver >= 130" in tg)
 check("B3 重写后走 ES 直传路径（早退分支语义，跳过 gl4es 时代 outColor0/扩展注入）",
@@ -206,18 +209,18 @@ print("== J. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"J-{lang} 唯一键 2565（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2565, f"got {len(keys)}")
-check("J-公告 41 条 + task219 尾锚 + 家族顺延（218@-2 / 217@-3 / 216@-4 / 206@-5）",
-      len(ann) == 42
-      and ann[-2]["id"] == "task219-virgl-angle-welcome-rebuild-2026-10-04"
-      and ann[-3]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
-      and ann[-4]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-5]["id"] == "task216-ui-2026-10-03"
-      and ann[-6]["id"] == "task206-nggl4es-2026-10-01")
+    check(f"J-{lang} 唯一键 2606（Task223 重锚：+41）", len(keys) == 2606, f"got {len(keys)}")
+check("J-公告 42 条 + task219 尾锚 + 家族顺延（Task223 追加后：220@-2 / 219@-3 / 218@-4 / 217@-5 / 216@-6 / 206@-7）",
+      len(ann) == 43
+      and ann[-3]["id"] == "task219-virgl-angle-welcome-rebuild-2026-10-04"
+      and ann[-4]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
+      and ann[-5]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-6]["id"] == "task216-ui-2026-10-03"
+      and ann[-7]["id"] == "task206-nggl4es-2026-10-01")
 check("J-公告内容覆盖本轮主题（VirGL/ANGLE/向导/导出/隔离）",
-      "VirGL" in ann[-2]["content"] and "ANGLE" in ann[-2]["content"]
-      and "欢迎向导" in ann[-2]["content"] and "压缩等级" in ann[-2]["content"]
-      and "隔离" in ann[-2]["content"])
+      "VirGL" in ann[-3]["content"] and "ANGLE" in ann[-3]["content"]
+      and "欢迎向导" in ann[-3]["content"] and "压缩等级" in ann[-3]["content"]
+      and "隔离" in ann[-3]["content"])
 check("J-JSON 可解析 + id 唯一",
       len(set(a["id"] for a in ann)) == len(ann))
 
@@ -271,16 +274,16 @@ for p in ["Natives/ctxbridges/virgl_server.m", "Natives/egl_bridge.m",
 
 print("== M. 舰队重锚（计数与尾窗顺延） ==")
 spot = {
-    "scripts/verify_task218.py": ['len(ann) == 42', "ann[-3][\"id\"] == \"task218-air-interim",
-                                  "EnvJitStep", "2520"],
-    "scripts/verify_task217.py": ["len(ann) == 42", "task219-virgl-angle-welcome-rebuild"],
-    "scripts/verify_task216.py": ["== 42", "ids[-5] == \"task216-ui"],
-    "scripts/verify_task214.py": ["ids[-5] == \"task216-ui", "'== 42' in v207"],
-    "scripts/verify_task213.py": ["'== 42' in v207"],
-    "scripts/verify_task211.py": ["== 42"],
-    "scripts/verify_task210.py": ["== 42"],
-    "scripts/verify_task206.py": ["ann[-6][\"id\"] == \"task206-nggl4es"],
-    "scripts/verify_task207.py": ["ann[-4][\"id\"] == \"task217-download-fixes"],
+    "scripts/verify_task218.py": ['len(ann) == 43', "ann[-4][\"id\"] == \"task218-air-interim",
+                                  "EnvJitStep", "2606"],
+    "scripts/verify_task217.py": ["len(ann) == 43", "task219-virgl-angle-welcome-rebuild"],
+    "scripts/verify_task216.py": ["== 43", "ids[-6] == \"task216-ui"],
+    "scripts/verify_task214.py": ["ids[-6] == \"task216-ui", "'== 43' in v207"],
+    "scripts/verify_task213.py": ["'== 43' in v207"],
+    "scripts/verify_task211.py": ["== 43"],
+    "scripts/verify_task210.py": ["== 43"],
+    "scripts/verify_task206.py": ["ann[-7][\"id\"] == \"task206-nggl4es"],
+    "scripts/verify_task207.py": ["ann[-5][\"id\"] == \"task217-download-fixes"],
 }
 g_ok, g_detail = True, []
 for path, needles in spot.items():

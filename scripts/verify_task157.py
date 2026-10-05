@@ -28,11 +28,11 @@ verify_task154.py —— Task 157 校验器
       E l10n（Task157 后基线 1947）/ F 发布资产 / G 配平+白名单 / H 回归锚点
 """
 import json
-import os
+import os  # Task223 path-heal: workspace rename drift
 import re
 import sys
 
-REPO = os.environ.get("TASK157_REPO", "/home/z/my-project/workspace/Air-Minecraft-iOS-Launcher")
+REPO = os.environ.get("TASK157_REPO", os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 PASS = 0
 FAIL = 0
 FAILED = []
@@ -137,7 +137,9 @@ check("C4  Task159 重锚：自动比例唯一权威回归 utils.m（ps 内零 m
 utils_m = read("Natives/utils.m")
 check("C5  启动链 ame141_currentLaunchAllocMem 零改动（0 = 自动比例语义幸存）",
       "int ame141_currentLaunchAllocMem(void)" in utils_m
-      and 'CGFloat autoRatio = getEntitlementValue(@"com.apple.private.memorystatus") ? 0.5 : 0.25;' in utils_m
+      # Task223 L2 再锚：单 entitlement 判定升级双路 raisedCeiling（memorystatus
+      # || increased-memory-limit）；0 = 自动比例语义不变，抬升过 0.5 否则 0.25。
+      and 'CGFloat autoRatio = raisedCeiling ? 0.5 : 0.25;' in utils_m
       and "[profile[@\"allocatedMemory\"] integerValue]" in utils_m)
 check("C6  Task159 重锚：卡片转场/呈现链退役（UIModalPresentationCustom / transitioningDelegate / xmark 清零）",
       "UIModalPresentationCustom" not in ps_code
@@ -195,7 +197,7 @@ check("E6  确认弹窗标题升级（安装 Sodium + Iris Shaders）",
       '"component.sodium.confirm_title" = "安装 Sodium + Iris Shaders";' in zh
       and '"component.sodium.confirm_title" = "Install Sodium + Iris Shaders";' in read(base + "en.lproj/Localizable.strings"))
 check("E7  四语言键集一致（1952 = Task157 基线 1948 + Task159 净增 4（新增 5 键，退役 memory.current））",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2520,
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2606,
       f"counts={[len(x) for x in sets]}")
 
 print()

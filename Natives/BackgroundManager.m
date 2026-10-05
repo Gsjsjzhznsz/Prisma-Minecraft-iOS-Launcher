@@ -9,6 +9,7 @@
 #import "BackgroundManager.h"
 #import "UIKit+NativeSurface.h"
 #import <Photos/Photos.h>
+#import <ImageIO/ImageIO.h>   // Task223：CGImageSource 降采样直取壁纸
 
 static NSString * const kBackgroundTypeKey = @"background_type";
 static NSString * const kBackgroundPathKey = @"background_path";
@@ -999,6 +1000,101 @@ static const NSInteger kAme160GlassBackdropTag = 99994;
 
     // Post notification for other views to refresh
     [[NSNotificationCenter defaultCenter] postNotificationName:@"BackgroundUIEffectChanged" object:nil];
+    // Task223：壁纸变化 → 亮度自适应颜色可能翻转（动态反色）。
+    [[NSNotificationCenter defaultCenter] postNotificationName:Ame223WallpaperChangedNotification object:nil];
+}
+
+#pragma mark - Task223：壁纸直取 + 亮度自适应（清单第 14/21 项）
+
+NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperChanged";
+
+- (nullable UIImage *)ame223_currentWallpaperImage {
+    if (![self hasImageBackground]) return nil;
+    NSString *path = self.currentBackgroundPath;
+    if (path.length == 0) return nil;
+    // 降采样解码（壁纸原图可达 4K；界面层只需要屏幕尺寸级别的位图，
+    // 降采样同时省内存并让亮度计算更快）。kCGImageSource* 字面量键直用。
+    CGFloat maxDim = MAX(UIScreen.mainScreen.bounds.size.width,
+                         UIScreen.mainScreen.bounds.size.height) * UIScreen.mainScreen.scale;
+    CGImageSourceRef src = CGImageSourceCreateWithURL(
+        (__bridge CFURLRef)[NSURL fileURLWithPath:path], NULL);
+    if (src == NULL) {
+        return [UIImage imageWithContentsOfFile:path];
+    }
+    NSDictionary *downOpts = @{
+        (NSString *)kCGImageSourceCreateThumbnailFromImageAlways: @(YES),
+        (NSString *)kCGImageSourceThumbnailMaxPixelSize: @(maxDim),
+        (NSString *)kCGImageSourceShouldCacheImmediately: @(YES),
+    };
+    CGImageRef img = CGImageSourceCreateThumbnailAtIndex(src, 0, (__bridge CFDictionaryRef)downOpts);
+    CFRelease(src);
+    if (img == NULL) return [UIImage imageWithContentsOfFile:path];
+    UIImage *result = [UIImage imageWithCGImage:img];
+    CGImageRelease(img);
+    return result;
+}
+
+- (BOOL)ame223_wallpaperLuminanceIsDark {
+    static BOOL s_ame223_cachedDark = NO;
+    static NSString *s_ame223_cachedPath = nil;
+    // 无壁纸：按系统外观（浅色外观 = 亮 → 深字）。
+    NSString *path = [self hasImageBackground] ? self.currentBackgroundPath : nil;
+    if (path == nil || path.length == 0) {
+        return UIScreen.mainScreen.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
+    }
+    // 命中缓存（路径级；壁纸变化时路径变，缓存自动失效）。
+    if (s_ame223_cachedPath != nil && [s_ame223_cachedPath isEqualToString:path]) {
+        return s_ame223_cachedDark;
+    }
+    // 降采样到 24x24 灰度均值（足够稳的亮度判定，亚毫秒开销）。
+    UIImage *wall = [self ame223_currentWallpaperImage];
+    if (wall == nil) {
+        return UIScreen.mainScreen.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
+    }
+    CGSize size = CGSizeMake(24, 24);
+    UIGraphicsImageRendererFormat *fmt = [UIGraphicsImageRendererFormat defaultFormat];
+    fmt.scale = 1;
+    UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:size format:fmt];
+    UIImage *thumb = [renderer imageWithActions:^(UIGraphicsImageRendererContext *ctx) {
+        [wall drawInRect:CGRectMake(0, 0, size.width, size.height)];
+    }];
+    CGImageRef cg = thumb.CGImage;
+    if (cg == NULL) {
+        return UIScreen.mainScreen.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
+    }
+    size_t w = CGImageGetWidth(cg), h = CGImageGetHeight(cg);
+    CFDataRef data = CGDataProviderCopyData(CGImageGetDataProvider(cg));
+    BOOL dark = YES;
+    if (data != NULL) {
+        const UInt8 *px = CFDataGetBytePtr(data);
+        size_t len = CFDataGetLength(data);
+        if (px != NULL && len >= w * h * 4) {
+            double sum = 0;
+            for (size_t i = 0; i < (size_t)(w * h); i++) {
+                const UInt8 *p = px + i * 4;
+                // BT.601 luma（alpha 忽略——壁纸不透明）。
+                sum += (0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2]) / 255.0;
+            }
+            double avg = sum / (double)(w * h);
+            dark = (avg < 0.45);
+        }
+        CFRelease(data);
+    }
+    s_ame223_cachedPath = [path copy];
+    s_ame223_cachedDark = dark;
+    return dark;
+}
+
+- (UIColor *)ame223_adaptiveTextColor {
+    return [self ame223_wallpaperLuminanceIsDark]
+        ? [UIColor whiteColor]
+        : [UIColor colorWithRed:0.10 green:0.10 blue:0.12 alpha:1.0];
+}
+
+- (UIColor *)ame223_adaptiveSecondaryTextColor {
+    return [self ame223_wallpaperLuminanceIsDark]
+        ? [UIColor colorWithWhite:1.0 alpha:0.72]
+        : [UIColor colorWithWhite:0.0 alpha:0.62];
 }
 
 #pragma mark - Unified View Effect Application

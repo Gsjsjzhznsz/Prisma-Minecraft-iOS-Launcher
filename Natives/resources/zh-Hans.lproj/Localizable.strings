@@ -95,6 +95,7 @@
 "launcher.wait_jit.title" = "请等待应用获取到JIT(Just-in-time)";
 "launcher.wait_jit.message" = "Amethyst启动器必须要JIT (Just-in-time) 权限才能启动游戏";
 "launcher.wait_jit_trollstore.message" = "如果仍然看到此消息，请在 TrollStore 中启用 URL Scheme。";
+"launcher.jit.stikjit_unhandled" = "stikjit:// 无响应（未安装 StikDebug？）。请安装 StikDebug 后重试，或换用其它 JIT 开启方式。";
 
 "login.error.username.outOfRange" = "用户名必须在 3-16 个字符以内";
 "login.error.fields.empty" = "请填写所有字段";
@@ -1618,7 +1619,7 @@
 "i18n_str_980" = "服务器地址为空";
 "i18n_str_981" = "未选择 profile";
 "i18n_str_982" = "该服务器没有可下载的服务端整合包";
-"i18n_str_989" = "无法连接到房主（PingHostFail）";
+"i18n_str_989" = "找不到房主的联机服务（15 秒内未发现房主）。请确认房主仍在线（房间页保持打开），双方网络可用后重试。";
 "i18n_str_990" = "房主拒绝连接（PingHostRst）";
 "i18n_str_991" = "访客端 EasyTier 崩溃（GuestEasytierCrash）";
 "i18n_str_992" = "房主端 EasyTier 崩溃（HostEasytierCrash）";
@@ -2760,3 +2761,45 @@
 "launch.stage.2" = "正在加载游戏与模组…";
 "launch.stage.3" = "正在初始化资源…";
 "launch.stage.4" = "正在打开游戏窗口…";
+
+/* Task223 (round 25 -- new keys) */
+"folderbrowser.item_count" = "%lu 项";
+"global.share" = "分享";
+"about.discord.join" = "Discord 社区";
+"about.donate.star" = "点个 Star";
+"about.donate.star_hint" = "如果没钱可以点个 ⭐️ 支持一下——每一个 Star 都是持续更新的动力。";
+"dataexport.title" = "导出数据";
+"dataexport.summary.title" = "备份内容";
+"dataexport.summary.body" = "%lu 个文件 · 共 %@";
+"dataexport.empty" = "没有可导出的数据";
+"dataexport.failed" = "导出失败：%@";
+"dataexport.level.title" = "压缩等级";
+"dataexport.level.none" = "不压缩";
+"dataexport.level.fast" = "快速";
+"dataexport.level.best" = "最好";
+"dataexport.level.none.hint" = "速度最快，适合本地备份与快速迁移。";
+"dataexport.level.fast.hint" = "均衡选择：体积更小，速度尚可。";
+"dataexport.level.best.hint" = "体积最小，但耗时最长。";
+"dataexport.start" = "开始导出";
+"dataexport.task.name" = "数据备份导出";
+"dataexport.stage.collect" = "扫描文件";
+"dataexport.stage.compress" = "打包压缩";
+"dataexport.done.title" = "导出完成";
+"dataexport.save_to_files" = "保存到“文件”";
+"coachmarks.hint" = "点按任意处继续（%lu/%lu）";
+"coachmarks.nav.title" = "侧边导航";
+"coachmarks.nav.body" = "在左侧切换主页、下载与版本管理等页面。";
+"coachmarks.content.title" = "主内容区";
+"coachmarks.content.body" = "你的版本、整合包与设置都在这里展示。";
+"coachmarks.launch.title" = "启动";
+"coachmarks.launch.body" = "右侧面板：启动游戏、查看 JIT 与内存状态。";
+"welcome.intro.subtitle" = "快速了解本启动器的核心能力。";
+"terracotta.stage.precheck" = "正在检查联机网络连通性…";
+"terracotta.error.no_public_peer" = "无法连接任何公共联机服务器。请检查网络（Wi-Fi/蜂窝/代理）后重试；若网络正常，通常是房主不在线。";
+"account.menu.change_name" = "更换游戏名字";
+"account.menu.change_skin" = "更换皮肤";
+"account.menu.default_skin" = "默认皮肤";
+"account.default_skin.title" = "默认皮肤";
+"account.default_skin.hint" = "选择原版默认皮肤（Steve / Alex）";
+"account.default_skin.done" = "已更新头像：%@";
+"account.default_skin.failed" = "设置失败：账号文件不可读";

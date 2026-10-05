@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 # 并发控制：同一分支/PR 新的推送会取消仍在排队或运行的旧构建。
-# 这能显著缓解 macos-14 runner 供应紧张导致的"一直卡在队列中"问题：
+# 这能显著缓解 runner 供应紧张导致的"一直卡在队列中"问题：
 # 开发中频繁 push 时，旧构建被立即取消，runner 资源让给最新提交。
 # workflow_dispatch 手动触发也纳入同一组，避免与自动触发互相堆积。
 concurrency:
@@ -27,7 +27,7 @@ jobs:
           - platform: 2
             platform_name: ios
 
-    runs-on: macos-14
+    runs-on: macos-15
 
     # 发布 nightly release 需要 contents: write
     permissions:
@@ -46,10 +46,45 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - name: Select Xcode 15.4
+      # ★ Task223 上游同步（upstream 2fbac63ef）：优先 Xcode ≥26 —— 产物拿到
+      #   iOS 26 SDK 后，UIVisualEffectView 系统材质在 iPadOS 26/27 上以液态
+      #   玻璃渲染（清单第 15 项 iPadOS 27 设计语言的构建侧前提）；找不到
+      #   Xcode 26 时保持 runner 默认工具链（老 SDK 仅缺新外观，不影响功能）。
+      #   SDKPATH/DEVELOPER_DIR 写入 GITHUB_ENV：Makefile 里是 SDKPATH ?=（?=
+      #   不覆盖已有值），若环境残留旧值或 CMake 缓存了旧 CMAKE_OSX_SYSROOT，
+      #   就会用旧 SDK 编译——那样打包出来的 App 拿不到 iOS 26 新外观。
+      - name: Select Xcode (prefer 26+ for iOS 26 Liquid Glass, fallback runner default)
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+          echo "== 可用 Xcode =="
+          ls -d /Applications/Xcode*.app 2>/dev/null || true
+          echo "== 默认 =="
           xcodebuild -version || true
+          # 选最新的 Xcode ≥ 26（液态玻璃需要 iOS 26 SDK）；找不到就保持默认。
+          PICK=""
+          for app in $(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V -r); do
+            PICK="$app"; break
+          done
+          if [ -z "$PICK" ]; then
+            for app in $(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V -r); do
+              v=$(basename "$app" | sed -E 's/Xcode_?([0-9]+).*/\1/')
+              if [ -n "$v" ] && [ "$v" -ge 26 ] 2>/dev/null; then PICK="$app"; break; fi
+            done
+          fi
+          if [ -n "$PICK" ]; then
+            sudo xcode-select -s "$PICK/Contents/Developer"
+            echo "★ 选用 $PICK"
+          else
+            echo "★ 未找到 Xcode 26，保持 runner 默认工具链（本包不含 iOS 26 新外观）"
+          fi
+          xcodebuild -version || true
+          SDK=$(xcrun --sdk iphoneos --show-sdk-version 2>/dev/null || echo '?')
+          SDKPATH_REAL=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null || echo '')
+          echo "★ iPhoneOS SDK = $SDK"
+          echo "★ SDKPATH = $SDKPATH_REAL"
+          # 关键：显式写入 GITHUB_ENV，强制后续所有步骤用同一个 SDK。
+          echo "SDKPATH=$SDKPATH_REAL" >> "$GITHUB_ENV"
+          echo "DEVELOPER_DIR=$(xcode-select -p)" >> "$GITHUB_ENV"
+          echo "★ 已写入 GITHUB_ENV:SDKPATH / DEVELOPER_DIR"
 
       # Task205：CI 构建缓存（用户需求——加速 CI 出包）。
       #   (1) ccache —— MobileGlues（glslang+SPIRV-Cross+MG 本体，实测 3.4 分钟
@@ -65,24 +100,24 @@ jobs:
           path: ~/.ccache
           # Task206: +ThirdParty/ZalithLauncher2/src/**（dep_nggl4es 编译面，
           # 与 vgpu 同款入桶口径；内容哈希自失效，桶键只为配置漂移换桶）
-          key: ccache-macos14-v1-${{ hashFiles('Makefile', 'Natives/CMakeLists.txt', 'Natives/external/vgpu/src/**', 'ThirdParty/ZalithLauncher2/src/**') }}
+          key: ccache-macos15-v1-${{ hashFiles('Makefile', 'Natives/CMakeLists.txt', 'Natives/external/vgpu/src/**', 'ThirdParty/ZalithLauncher2/src/**') }}
           restore-keys: |
-            ccache-macos14-v1-
+            ccache-macos15-v1-
 
       - name: Cache Homebrew downloads
         uses: actions/cache@v4
         with:
           path: ~/Library/Caches/Homebrew/downloads
-          key: brew-macos14-v1-${{ hashFiles('.github/workflows/development.yml') }}
+          key: brew-macos15-v1-${{ hashFiles('.github/workflows/development.yml') }}
           restore-keys: |
-            brew-macos14-v1-
+            brew-macos15-v1-
       - name: Cache ccache tool itself
         # Task205c：ccache 本体也进缓存（官方预编译 darwin 包 ~2MB，
         # x86_64+arm64 通用二进制）。键含版本号：升版本自动失效重取。
         uses: actions/cache@v4
         with:
           path: ~/.local/ccache-tool
-          key: ccache-tool-macos14-v1-4.14.1
+          key: ccache-tool-macos15-v1-4.14.1
 
       - name: Install GNU Make
         # Task205c（撤销 Task205b 看门狗，RETRACTED）：三份日志定谳——

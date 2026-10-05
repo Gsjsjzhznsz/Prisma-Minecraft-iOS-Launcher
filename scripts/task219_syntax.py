@@ -100,7 +100,7 @@ for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN"]:
     with open(os.path.join(REPO, f"Natives/resources/{lang}.lproj/Localizable.strings"),
               "r", encoding="utf-8") as f:
         keys = set(re.findall(r'^"([^"]+)"\s*=', f.read(), re.M))
-    check(f"l10n {lang} unique keys 2520", len(keys) == 2520, f"got {len(keys)}")
+    check(f"l10n {lang} unique keys 2606 (Task223 +41)", len(keys) == 2606, f"got {len(keys)}")
 
 # strings files parse: every added key must appear exactly once per language
 NEED = ["welcome.back", "welcome.env.title", "welcome.env.lc.mismatch.title",

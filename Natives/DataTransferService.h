@@ -35,6 +35,32 @@ NS_ASSUME_NONNULL_BEGIN
 /// 提示重启启动器（偏好/账户/档案在内存中有缓存）。
 - (void)importDataFromViewController:(UIViewController *)presenter;
 
+#pragma mark - Task223：二级入口 + 版本下载任务体系的导出（清单第 12/13 项）
+
+/// 导出跳过规则（latestlog*/hs_err*/会话哨兵等运行期垃圾）。
+/// 供 DataExportViewController 的预检扫描复用同一份排除清单。
+- (BOOL)ame217_shouldSkipExportEntry:(NSString *)fileName;
+
+/// ★ Task223 速度根修：并发读 + 串行写流水线导出。
+/// 病历（2832c2b 装机反馈“10 秒才 10MB，无压缩也很久”）：旧实现
+/// 串行“整读单文件 → UZK 写入 → 下一文件”——读 IO 与压缩写串行等待，
+/// 小文件场景每文件固定开销占主导（文件枚举器 + 全量 NSData 读 +
+/// UZK 每条目提交），实测吞吐 ~1MB/s。
+/// 新实现：4 路并发读（dispatch_group + 信号量限深，在飞上限
+/// max(8, 64MB/平均文件)）→ 有序缓冲 → 单线程串行 zip 写入
+///（UZKArchive 非线程安全，写侧串行是硬约束），读写在稳态下重叠。
+/// 进度回调（done/total/writtenBytes）与阶段推进（0=collect 完成、
+/// 1=compress 进行中）均可在任意线程触发；completion 在后台线程。
+- (void)ame223_runPipelinedBackupExportWithMethod:(NSInteger)method
+                                          progress:(void(^)(NSUInteger done, NSUInteger total, unsigned long long writtenBytes))progress
+                                      stageAdvance:(void(^)(NSUInteger stage))stageAdvance
+                                        completion:(void(^)(NSString *tmpPath, NSError *error))completion;
+
+/// 导出完成后呈现系统文件选择器（move 语义定落点）。可从任意最顶层
+/// VC 调起（任务详情页 / 导出页均可）。
+- (void)ame223_presentDestinationPickerForTmpPath:(NSString *)tmpPath
+                                              from:(UIViewController *)presenter;
+
 @end
 
 NS_ASSUME_NONNULL_END

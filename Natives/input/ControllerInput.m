@@ -150,7 +150,10 @@ BOOL leftShiftHeld;
 
         static char lastLThumbDirection = -2;
         char direction = -1;
-        if (xValue != 0 && yValue != 0) {
+        // Task223 上游同步（upstream 3a2116c05）：同 ControlJoystick——测
+        // "偏离中心"用或而非与。手柄更常见：GCController 在死区内把轴直接
+        // snap 到 0，前推带轻微侧漂也会被误判为静止。
+        if (xValue != 0 || yValue != 0) {
             CGFloat degree = atan2f(yValue, xValue) * (180.0 / M_PI);
             if (degree < 0) {
                 degree += 360;

@@ -57,7 +57,19 @@ typedef void *EGLConfig;
 typedef void *EGLSurface;
 typedef void *EGLContext;
 typedef intptr_t EGLNativeDisplayType;
-typedef intptr_t EGLint;
+// ★ Task223（用户报“VirGL 依旧崩溃”，2832c2b 日志判读）：EGLint 必须是
+// 32 位 int——此前 typedef intptr_t（arm64 上 64 位）导致传给真 ANGLE
+// eglChooseConfig 的属性数组被按 32 位消费时错位（名值对变成
+// (0x3033, 0) + 非法属性名 1 = EGL_BAD_ATTRIBUTE → EGL_FALSE），两轮
+// pass 全部报“found no pbuffer config”、引导 rc=-1 → zink 兜底。ABI 修
+// 正后 pbuffer 查询与 ctx_attribs/pbuffer_attribs 三处同时恢复正确。
+typedef int EGLint;
+
+static EGLBoolean (*ame_vs_eglGetError)(void);
+static const char *(*ame_vs_eglQueryString)(EGLDisplay, unsigned int);
+#define AME_VS_EGL_EXTENSIONS 0x3055
+#define AME_VS_EGL_NO_SURFACE  ((EGLSurface)0)
+#define AME_VS_EGL_OPENGL_ES3_BIT_KHR 0x0040
 
 static EGLDisplay (*ame_vs_eglGetDisplay)(EGLNativeDisplayType);  /* Task216 hotfix 4: return type is EGLDisplay (void*), not EGLBoolean -- clang 15+ promotes -Wint-conversion to error at the ame_vs_display assignment (run 605) */
 static EGLBoolean (*ame_vs_eglInitialize)(EGLDisplay, EGLint *, EGLint *);
@@ -72,6 +84,7 @@ static EGLSurface ame_vs_pbuffer;
 static EGLContext ame_vs_context;
 static char ame_vs_socket_path[512];
 static int ame_vs_started = 0;
+static BOOL ame223_use_surfaceless = NO;  // Task223：EGL_KHR_surfaceless_context 兑底路径
 
 // Task219：多候选 dlopen（对齐 gl_bridge.m 的 kEglCandidates 三级链）。
 // 病历（6cd2cbfb latestlog.old.txt，VirGL 会话）：旧代码只试
@@ -137,8 +150,12 @@ static void *ame_vs_server_thread(void *arg __unused)
 {
     // ZL2 同款顺序：先 MakeCurrent（vrend 经 epoxy 感知当前上下文/display），
     // 再进 vtest 主循环。
-    if (ame_vs_eglMakeCurrent(ame_vs_display, ame_vs_pbuffer, ame_vs_pbuffer, ame_vs_context) != 1) {
-        NSLog(@"[VirGL] Task111 host eglMakeCurrent failed -- server thread aborting");
+    // Task223：surfaceless 模式下用 EGL_NO_SURFACE（上游 vrend_winsys_egl.c
+    // 的原生形态）；pbuffer 模式维持宿主载体表面。
+    EGLSurface ame223_draw = ame223_use_surfaceless ? AME_VS_EGL_NO_SURFACE : ame_vs_pbuffer;
+    if (ame_vs_eglMakeCurrent(ame_vs_display, ame223_draw, ame223_draw, ame_vs_context) != 1) {
+        NSLog(@"[VirGL] Task111 host eglMakeCurrent failed (surfaceless=%d, eglError=0x%x) -- server thread aborting",
+              (int)ame223_use_surfaceless, ame_vs_eglGetError ? (int)ame_vs_eglGetError() : -1);
         return NULL;
     }
 
@@ -205,6 +222,8 @@ int ame_virgl_start_server(void)
     ame_vs_eglCreatePbufferSurface = (void *)dlsym(egl, "eglCreatePbufferSurface");
     ame_vs_eglCreateContext = (void *)dlsym(egl, "eglCreateContext");
     ame_vs_eglMakeCurrent = (void *)dlsym(egl, "eglMakeCurrent");
+    ame_vs_eglGetError = (void *)dlsym(egl, "eglGetError");
+    ame_vs_eglQueryString = (void *)dlsym(egl, "eglQueryString");
     if (!ame_vs_eglGetDisplay || !ame_vs_eglInitialize || !ame_vs_eglChooseConfig ||
         !ame_vs_eglCreatePbufferSurface || !ame_vs_eglCreateContext || !ame_vs_eglMakeCurrent ||
         !ame_vs_eglBindAPI) {
@@ -245,8 +264,40 @@ int ame_virgl_start_server(void)
             NSLog(@"[VirGL] Task219 eglChooseConfig pass#%d (ES%d_BIT) ok (%d config)",
                   ame219_pass + 1, (ame219_pass == 0) ? 3 : 2, (int)num_configs);
         } else {
-            NSLog(@"[VirGL] Task219 eglChooseConfig pass#%d (ES%d_BIT) found no pbuffer config",
-                  ame219_pass + 1, (ame219_pass == 0) ? 3 : 2);
+            // Task223：区分“调用失败（EGL_FALSE + 错误码）”与“零匹配”，
+            // 下一轮装机日志不再两眼一抹黑。
+            NSLog(@"[VirGL] Task219 eglChooseConfig pass#%d (ES%d_BIT) found no pbuffer config (ret=%d eglError=0x%x)",
+                  ame219_pass + 1, (ame219_pass == 0) ? 3 : 2,
+                  (int)(ame_vs_eglChooseConfig ? 0 : -1),
+                  ame_vs_eglGetError ? (int)ame_vs_eglGetError() : -1);
+        }
+    }
+    if (!ame219_configOk) {
+        // ★ Task223：pbuffer 档全败时的 surfaceless 兑底（上游 vrend_winsys_egl.c
+        // 本就全程 eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, ctx)——
+        // 1x1 pbuffer 只是宿主上下文载体，从不是渲染必需品）。ANGLE Metal 若
+        // 在某些构建里不暴露 PBUFFER 位配置，这里改用任意 ES3 配置 +
+        // EGL_KHR_surfaceless_context 完成 MakeCurrent，VirGL 链路照常工作。
+        const char *ame223_ext = ame_vs_eglQueryString
+            ? ame_vs_eglQueryString(ame_vs_display, AME_VS_EGL_EXTENSIONS) : NULL;
+        BOOL ame223_surfaceless = (ame223_ext != NULL &&
+            strstr(ame223_ext, "EGL_KHR_surfaceless_context") != NULL);
+        NSLog(@"[VirGL] Task223 pbuffer configs unavailable; surfaceless fallback: ext=%@",
+              ame223_surfaceless ? @"YES" : @"NO");
+        if (ame223_surfaceless) {
+            const EGLint sl_attribs[] = {
+                AME_VS_EGL_RENDERABLE_TYPE, ame219_es3_bit,
+                AME_VS_EGL_RED_SIZE, 8,
+                AME_VS_EGL_GREEN_SIZE, 8,
+                AME_VS_EGL_BLUE_SIZE, 8,
+                AME_VS_EGL_NONE
+            };
+            if (ame_vs_eglChooseConfig(ame_vs_display, sl_attribs, &config, 1, &num_configs) == 1 &&
+                config && num_configs >= 1) {
+                ame219_configOk = YES;
+                ame223_use_surfaceless = YES;
+                NSLog(@"[VirGL] Task223 surfaceless config chosen (ES3, any surface type)");
+            }
         }
     }
     if (!ame219_configOk) {
@@ -258,10 +309,13 @@ int ame_virgl_start_server(void)
         AME_VS_EGL_HEIGHT, 1,
         AME_VS_EGL_NONE
     };
-    ame_vs_pbuffer = ame_vs_eglCreatePbufferSurface(ame_vs_display, config, pbuffer_attribs);
-    if (!ame_vs_pbuffer) {
-        NSLog(@"[VirGL] Task111 eglCreatePbufferSurface failed");
-        return -1;
+    if (!ame223_use_surfaceless) {
+        ame_vs_pbuffer = ame_vs_eglCreatePbufferSurface(ame_vs_display, config, pbuffer_attribs);
+        if (!ame_vs_pbuffer) {
+            NSLog(@"[VirGL] Task111 eglCreatePbufferSurface failed (eglError=0x%x)",
+                  ame_vs_eglGetError ? (int)ame_vs_eglGetError() : -1);
+            return -1;
+        }
     }
 
     const EGLint ctx_attribs[] = {
@@ -291,7 +345,6 @@ int ame_virgl_start_server(void)
     // ZL2 同款：给服务端 100ms 完成 bind+listen 进入 accept（backlog 也会兜住
     // 更早到来的连接，这里只是额外保险）。
     usleep(100 * 1000);
-
     // Task219：引导后验证（socket 文件已建 + 确为 socket 类型）。旧代码
     // pthread_create 成功即返 0，但 vtest_main 的 bind/listen 可能同步瞬间
     // 失败（上游错误路径直接 exit(1) 或线程早退）——guest 连不上就在
@@ -309,7 +362,7 @@ int ame_virgl_start_server(void)
     NSLog(@"[VirGL] Task219 post-bootstrap check ok: socket bound at %s", ame_vs_socket_path);
 
     ame_vs_started = 1;
-    NSLog(@"[VirGL] Task111 server bootstrap complete (socket=%s, ES3 host ctx=%p)",
-          ame_vs_socket_path, ame_vs_context);
+    NSLog(@"[VirGL] Task111 server bootstrap complete (socket=%s, ES3 host ctx=%p, surfaceless=%d)",
+          ame_vs_socket_path, ame_vs_context, (int)ame223_use_surfaceless);
     return 0;
 }

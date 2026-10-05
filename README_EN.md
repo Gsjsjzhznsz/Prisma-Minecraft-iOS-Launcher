@@ -19,18 +19,29 @@
 </p>
 
 <!-- ★ Task222: QQ group & contribution pinned (user request) -->
+<!-- ★ Task223: Discord community link in a prominent top slot + GitHub Star
+     CTA next to the sponsor section (user request). -->
 <table align="center">
   <tr>
-    <td align="center" width="50%">
+    <td align="center" width="33%">
       <b>💬 QQ Group: 1126547426</b><br/>
       <sub>User support, feedback and build announcements (also in the launcher's About page, one-tap copy)</sub>
     </td>
-    <td align="center" width="50%">
+    <td align="center" width="33%">
+      <b>🌐 Discord Community</b><br/>
+      <sub><a href="https://discord.gg/HqcmswrEy">Join us on Discord</a> · international chat · realtime feedback</sub>
+    </td>
+    <td align="center" width="34%">
       <b>❤️ Support Us</b><br/>
       <sub><a href="https://afdian.com/a/yiqiu4178">Afdian</a> · <a href="donate.png">WeChat Reward Code</a></sub>
     </td>
   </tr>
 </table>
+
+<p align="center">
+  ⭐️ <b>Can't donate? A <a href="https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher">Star</a> still helps a lot</b> —
+  every star keeps the updates coming (same entry in the launcher's About page).
+</p>
 
 ---
 

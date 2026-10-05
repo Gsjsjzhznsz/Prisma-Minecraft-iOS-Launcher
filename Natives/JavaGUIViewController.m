@@ -328,7 +328,12 @@ void AWTInputBridge_sendKey(int keycode) {
     self.logOutputView.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
     [self.view addSubview:self.logOutputView];
 
-    setenv("POJAV_SKIP_JNI_GLFW", "1", 1);
+    // Task223 上游同步（upstream 63add943c）：不再设 POJAV_SKIP_JNI_GLFW。
+    // input_bridge_v3 用 getenv() 判断，只要该变量存在（哪怕值是 "0"）就不
+    // 注册 GLFW 的 JNI 桥；而 Forge/NeoForge 的 fmlearlywindow 依赖该桥，
+    // 缺失会 NoClassDefFoundError: org/lwjgl/glfw/GLFW 并 exit(1)。改为
+    // unsetenv（防前序代码/子进程残留），桥正常注册。
+    unsetenv("POJAV_SKIP_JNI_GLFW");
 
     // Register the display loop
     // 关键修复（UI 累积异常）：之前用 dispatch_async + [NSRunLoop.currentRunLoop run] 永久阻塞线程，

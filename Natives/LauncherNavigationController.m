@@ -786,7 +786,13 @@ static void *ProgressObserverContext = &ProgressObserverContext;
     }];
     [alert addAction:cancel];
 */
-    [self presentViewController:alert animated:YES completion:nil];
+    // ★ Task223（用户报“版本设置启动游戏，JIT 有概率卡死”，2832c2b latestlog.8
+    //   判读：condition satisfied 后 Task183 锚点缺失、主队列楔死，而
+    //   Task192 的全局队列心跳照常——stikjit:// 把 App 切后台的转场瞬间
+    //   presentViewController:animated:YES 正是主线程阻塞的头号嫌疑类；
+    //   动画时钟冻结 + present 半途 = 主线程不再回 runloop）。进度型弹窗
+    //   改无动画呈现/消失，后台态零风险，前台态视觉差异可忽略。
+    [self presentViewController:alert animated:NO completion:nil];
 
     // Task172：后台任务断言（同 RightPanel，见其病历）：stikjit:// 切后台后
     // 防 iOS 立即挂起冻结等待循环。
@@ -811,8 +817,8 @@ static void *ProgressObserverContext = &ProgressObserverContext;
             if (ok) {
                 // Task182：后台态 dismiss completion 悬空风险（同 RightPanel
                 // 主等待路径，病历 bc1941b latestlog.1）——completion:nil +
-                // 直接执行后续链。
-                [alert dismissViewControllerAnimated:YES completion:nil];
+                // 直接执行后续链。Task223：再降一档动画风险（animated:NO）。
+                [alert dismissViewControllerAnimated:NO completion:nil];
                 // Task172：存活性复查（同 RightPanel）：CS_DEBUGGED 已置但
                 // 调试器已死时直接启动 = brk #0x69 闪退，先重挂。
                 if (DeviceHasJITFlags(JIT_FLAG_FORCE_MIRRORED | JIT_FLAG_HAS_TXM) &&
@@ -825,7 +831,7 @@ static void *ProgressObserverContext = &ProgressObserverContext;
                 }
             } else {
                 // Task182：同上，超时弹窗不包进 dismiss completion。
-                [alert dismissViewControllerAnimated:YES completion:nil];
+                [alert dismissViewControllerAnimated:NO completion:nil];
                 [self ame169_showJITTimeoutAlertWithRetry:handler];
             }
         }, @"NavCtrl main wait");
@@ -856,7 +862,8 @@ static void *ProgressObserverContext = &ProgressObserverContext;
     UIAlertController* alert = [UIAlertController alertControllerWithTitle:localize(@"launcher.wait_jit.title", nil)
         message:localize(@"launcher.wait_jit.message", nil)
         preferredStyle:UIAlertControllerStyleAlert];
-    [self presentViewController:alert animated:YES completion:nil];
+    // Task223：同主等待路径——重挂弹窗也无动画（后台态 present 安全）。
+    [self presentViewController:alert animated:NO completion:nil];
 
     __block UIBackgroundTaskIdentifier ame172_bgt = [UIApplication.sharedApplication beginBackgroundTaskWithName:@"ame172-jit26-reattach" expirationHandler:^{
         // 同上：宽限期到由系统挂起，恢复后继续。
@@ -910,10 +917,11 @@ static void *ProgressObserverContext = &ProgressObserverContext;
             }
             if (ok) {
                 // Task182：同主等待路径——completion:nil + 直接执行。
-                [alert dismissViewControllerAnimated:YES completion:nil];
+                // Task223：animated:NO（后台态 dismiss 安全）。
+                [alert dismissViewControllerAnimated:NO completion:nil];
                 if (handler) handler();
             } else {
-                [alert dismissViewControllerAnimated:YES completion:nil];
+                [alert dismissViewControllerAnimated:NO completion:nil];
                 [self ame169_showJITTimeoutAlertWithRetry:handler];
             }
         }, @"NavCtrl reattach wait");

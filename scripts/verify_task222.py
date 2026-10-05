@@ -162,12 +162,12 @@ print()
 print("=" * 72)
 print("F. 打开文件夹应用内浏览（清单第 10 项）")
 print("=" * 72)
-check("F1 openURLGlobal: 目录分支走 FileListViewController",
-      "FileListViewController *flvc" in ib3 and "listPath = fsPath" in ib3)
+check("F1 openURLGlobal: 目录分支走应用内浏览器（Task223 起为 FolderBrowserViewController）",
+      "wrappedControllerForPath:fsPath" in ib3 and "[FolderBrowserViewController" in ib3)
 check("F2 目录判定 + file: 前缀剥离 + 符号链接解析",
       "fileExistsAtPath:fsPath" in ib3 and "stringByResolvingSymlinksInPath" in ib3)
-check("F3 import FileListViewController",
-      '#import "FileListViewController.h"' in ib3)
+check("F3 import FolderBrowserViewController（Task223）",
+      '#import "FolderBrowserViewController.h"' in ib3)
 check("F4 文件路径保持 URL scheme 链（processPath 原样）",
       "NSString *realPath = processPath(path);" in ib3)
 
@@ -210,9 +210,9 @@ check("I1 向导 7 步（zl2 介绍页插入 Data 与 Done 之间）",
 check("I2 case 5 = zl2 介绍页 / case 6 = Done",
       "case 5: [self ame222_buildIntroStep:ame218_new]" in wv and
       "case 6: [self ame218_buildDoneStep:ame218_new]" in wv)
-check("I3 介绍页：特性行 + 社区卡 + stagger 入场",
+check("I3 介绍页：特性行 + 社区卡（Task223 重写为直接布局，见 verify_task223）",
       "ame222_buildIntroStep:(UIView *)container" in wv and
-      "welcome.intro.community.title" in wv and "0.08 * (i - 1)" in wv)
+      "welcome.intro.community.title" in wv and "welcome.intro.subtitle" in wv)
 check("I4 Data 跳过目标改为 6",
       "[self ame218_showStep:6 animated:YES];" in wv)
 check("I5 About 贡献卡（爱发电按钮 + 赞赏码）",
@@ -271,7 +271,8 @@ for p in TOUCHED:
     # LanPortDetector 是上游整体快进文件（注释含 "1)" 编号文本，原始计数天然
     # 漂移但编译无影响）——用代码级清洗对比；其余文件用原始计数对比
     # （119_124 E2 门语义）。
-    if "LanPortDetector" in p:
+    if "LanPortDetector" in p or p.endswith("utils.h"):
+        # Task223：utils.h 新增段落注释含 ASCII 括号——切代码级清洗对比
         cur_c, head_c = _strip_comments_strings(cur), _strip_comments_strings(head)
         ok = all(cur_c.count(a) - cur_c.count(b) == head_c.count(a) - head_c.count(b)
                  for a, b in [("{", "}"), ("(", ")"), ("[", "]")])
@@ -286,8 +287,8 @@ sets = []
 for lg in langs:
     s = read(f"Natives/resources/{lg}.lproj/Localizable.strings")
     sets.append(set(re.findall(r'^"([^"]+)"\s*=', s, re.M)))
-check("K2 四语言键集一致（2565 = 2520 + 21 + 7 + 12 + 5）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2565,
+check("K2 四语言键集一致（2606 = 2565 + Task223 的 41）",
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2606,
       f"counts={[len(x) for x in sets]}")
 need_keys = ["i18n_str_2072", "i18n_str_2090", "i18n_str_2091", "i18n_str_2093",
              "about.donate.title", "about.donate.afdian", "welcome.intro.title",

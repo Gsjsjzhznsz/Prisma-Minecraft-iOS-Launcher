@@ -1809,3 +1809,29 @@ Work Log:
 Stage Summary:
 - 装机验证清单见 Task 220 主条目（六项修复的日志锚点 + 用户操作指引：正版账号删除重登一次即可根治 keychain 损坏与头像链）
 - 顺带观察：50254b8d / def65d79 两次日志上传提交的 CI 也均为 success（用户上传日志不影响构建）
+
+---
+Task ID: 223
+Agent: main (Super Z)
+Task: Task 223 -- 25 项清单大轮（bug 修复 1-11 + 交互重构 12-22 + 清理 23 + 上游两周对比 24 + 四语言国际化 25），承接 2832c2b 构建的 8 份轮转日志 + terracotta.log 判读
+
+Work Log:
+- 渲染链（清单 1-4/7）：virgl_server.m EGLint typedef 回 int32_t（intptr_t 在 arm64 是 64 位，ANGLE 按 32 位属性对读取错位——根修 VirGL 崩溃）+ surfaceless 回退 + 扩展查询错误日志三件套；tinygl4angle.c 移除 ES 3.00 非法的 precision highp image2D（3.10 才合法）；渲染线程交换边界驻车（utils.m ame223_bg_park_begin/end/wait 三函数 + SceneDelegate resignActive 挂接 + gl_bridge "gl_swap"/osm_bridge "osm_swap" 双等待点——iOS 后台 GPU 提交禁令 VK_ERROR_DEVICE_LOST/BackgroundExecutionNotPermitted 的统一根修，zink 黑屏与 MG 后台卡死同源）；JIT 进度弹窗 animated:NO 呈现/消失 + ame185 看门狗无条件盲重派（后台态主队列楔死时旧版仅前台重派 = 永久卡死）
+- 数据链（清单 5/6/9/12/13）：隔离迁移改从【当前 gameDir】迁移（modpack 客户端 mods 得以保留）+ mods 路径 heal；新建 FolderBrowserViewController（真实文件夹浏览器替代 .json-only 选择器，接入 input_bridge_v3 + CMake + QL 预览）；导出改二级入口（抛弃往上跑的悬浮菜单，借版本下载界面显示进度）+ 流水线提速（并行读 -> 串行写 + 多线程压缩）
+- UI 链（清单 14-17/21）：欢迎页大改（Bing/用户预设壁纸背景 + 亮度自适应文字反色 BackgroundManager luminance API + zl2 灰屏圆圈焦点介绍重建 + coach marks + 数据步骤按钮化 + iPadOS 27 设计语言 + 补图标/缺失元素）；右侧栏 crossDissolve 改方向性滑动过渡（两套布局，中途丢失的 addSubview+constraints 已补回——本会话对拍确认）
+- 账号/关于/README（清单 18-20/22）：关于页 QQ 行插 Discord 按钮（discord.gg/HqcmswrEy）+ 捐献旁 GitHub Star CTA；账号列表行内 ⋯ 可见按钮 + UIMenu（微软改名/换肤、第三方换肤、离线 Steve/Alex 默认皮肤；Task129b 多角色切换完整迁入菜单：UUID 归一化 + 标题前缀 ✓ 当前角色）；README Discord 上移显眼位置 + Star CTA
+- 清单 8/10/11：TouchController 安装即配置（三项全局键安装完成时刻落地 + 撤 user-off 哨兵 + 专属 TouchControllerSettingsChanged 广播刷新已开设置页；启动链 ame172_applyProfileTouchController 带 user-off 哨兵不强制重开）；IME stop-resign 去抖（250ms + composition guard，输入中途不再关键盘）；陶瓦公共服务器 precheck + 失败引导文案
+- 清单 23：main.m 启动横幅改报 Prisma fork 身份（上游致谢行保留）；AnnouncementService 实时拉取 URL 已是新仓（轮内验证）；version.h 迁移文档里的历史 air 名为合法保留
+- 清单 24（第一波，丢失会话）：上游 Task173 记忆三连移植（权威路径撤 1024 下限/双 entitlement 自动比例/memorystatus 不钳 + AMETHYST_MEM_NO_CLAMP + 256 下限）、AI 会话页 PAGE-GLASS、CI macos-15 + Xcode 26 优先 + SDKPATH 钉死 + ccache 桶键 macos15 换代
+- 清单 24（第二波，本会话 10-06）：四项移植——(A) 63add943c Forge/NeoForge 早窗闪退双 hunks（类路径放行 org.lwjgl:lwjgl-glfw/natives + POJAV_SKIP_JNI_GLFW setenv 改 unsetenv，input_bridge_v3 的 GLFW JNI 桥恢复注册）；(B) 3a2116c05 Flux-p1 四件套（utils.m isConnectivityError(NSError*) 工具 + MicrosoftAuthenticator 离线判定从 NSURLErrorDataNotAllowed-only 换工具函数 + asm-all 换 jar 清继承 size + ControlJoystick/ControllerInput 方向判定 && 改 ||，四正方向不再误判回中）；(C) f05ec3842 安全半项（-XX:SoftRefLRUPolicyMSPerMB=250；同提交 -Xss1m 拒移植——本树 -Xss32M 是 MC 26.3 shaderc 深递归 SIGSEGV 根修，662d6e2 设备日志实证）；(D) f05ec3842 缺口项（DownloadViewController stikjit:// openURL 失败弹本地化错误框，不再静默转圈到 120s 超时）。拒绝项留档 version.h：340a 键盘防误收（本轮去抖更优）、glScissor 递归守卫（私有包装非本树）、上游 zh-Hans 键同步（2605/2605 已对齐）、auto_ram entitlement（路径已退役）、NG-GL4ES UAF/Krypton（渲染器未 vendor）、FSR1 族/MetalFX（本树分歧实现已覆盖）、全部 Source: Prisma 归因提交（双向同步已在）
+- 清单 25：+42 键 x4 语言（en/zh-CN/zh-Hans/zh-Hant，2606 唯一键四语一致；41 清单键 + 1 端口键 launcher.jit.stikjit_unhandled）；task223_i18n_audit.py 全量审计：used 1890 ⊆ defined、四语零缺键、diff 硬编码 UI 字面量扫描零命中；舰队 l10n 基线 2565->2606 扫荡 + 公告 43 条尾窗顺延
+- 验证（本会话收尾轮）：verify_task223 77/77 ALL GREEN（A-P-O 全节，含本会话新增 P 节锁定第二波四端口 + 拒绝项留档）；task103_syntax_swap.sh 补 ame223_bg_park_wait 桩（osm_swap 语法门恢复守护力）；显示层 [m ANSI 吞字疑云二次实证（十六进制级核对 ProfileSettingsViewController.m 两处 = [migrateSource 字节完好——Task216 教训复用，未做任何"修复"）
+- 舰队再锚（本会话，HEAD 对拍分流三类）：【本会话四端口引入】173-G6（armed->applied immediately 日志锚换代）、217-E9（导出改二级入口）、220-H2（公告尾窗 -1->-2 内容索引，丢失会话已锚 H1 漏了 H2）；【Task223 前期工作引入】190-D1/D2/D3/E（账号菜单单一事实源 ame223_accountMenuItemsAtIndexPath：符号经 ame223_add 传入 + ✓ 标题前缀替代 UIMenuElementStateOn + person.2 仅允许菜单行）、141-D1/G4（raisedCeiling 双 entitlement 锚 + README_EN.md 白名单）、157-C5（同 raisedCeiling）、167-F1（stripper 升级 house 状态机——旧 stripper 先注释后字符串，URL 里的 // 被行注释截断，HEAD 恰好事故性配平、加一行 NSLog 后 net+1 误报；main.m 本身字节级配平）；【日志轮换类】208-A1/A2（99a61eb/c7079e1 取证会话被 2832c2b 日志集整体轮替，A1 撤销 A2 改钉现役日志全集 0-redirect 不变量）、209-B1（同族改钉）；205-C5a/C5b/D1a/D1c（i18n_str_2072 被 Task222 陶瓦复用 + ccache 桶键 macos15 换代）、210-A（statusCard->headerCard Task213 改名）
+- 终态：223:77/77、222:77/77、220:43/43、219:81/81、218:44/44、217:59/59、216:55/55、215:60/60、214:53/53、213:85/85、212:36/36、211:42/42、210:41/41、209:D1-D8 各腿分跑全绿（聚合全程超沙箱墙钟，家法 split runs）、208:23/23、207、206、205:47/0、202:55/55（TASK209_NESTED 去重态）、196_198、193:84/0、192:49/0、190:59/59、189、168:34/34、167:31/31、165:34/34、157:44/0、141:36/0、173:123/0 全绿
+
+Stage Summary:
+- 25 项清单全数落地：1-23 修复/重构、24 两波上游对比+移植（第一波记忆/CI 族 + 第二波四端口）、25 四语言 42 新键零硬编码
+- 装机验证锚点：VirGL 不再崩（EGLint 对齐）、zink/MG 后台不再黑屏卡死（swap 驻车）、Forge 安装即启动不闪退（早窗双 hunks）、离线时 MS 账号走离线而非报错、四正方向摇杆/手柄可用了、导出走设置二级入口且快、欢迎页有壁纸+焦点引导、账号 ⋯ 菜单可见可换肤换名、日志横幅报 Prisma
+- 用户操作指引：装新 IPA 后重点回归清单 1-11 的原始复现路径（后台切换/隔离切换/JIT 等待/导出/导入导出欢迎流程）；TouchController 若曾手动关过，新安装会重新启用（哨兵撤销语义）
+- 环境遗留：209 聚合器全程需 ~15 分钟超沙箱墙钟（各腿已分跑实证全绿）；本沙箱无 ObjC 编译器（语法门为结构代理门，CI 编译兜底）
+- 教训入库：①上游同步必须先做归因分流（Source: Prisma 的提交是自家回流的，直接套用会回退本树改进——Xss1m vs Xss32M 即实例）；②验证器 stripper 的注释/字符串剥离顺序是潜在炸弹（URL 含 // 时先剥注释必坏），house 五态状态机是唯一正确形态；③日志证据 git-pin 的完备性论证要随每次日志上传重新审计（2832c2b 轮替让三份取证检查同时失锚）

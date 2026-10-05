@@ -19,18 +19,29 @@
 </p>
 
 <!-- ★ Task222（清单第 13 项）：QQ 群与贡献入口置顶 -->
+<!-- ★ Task223（清单第 22 项）：Discord 社区链接放到上面明显的位置；
+     在赞助旁边加上“如果没钱可以点个 ⭐️ 支持一下”（GitHub Star CTA）。 -->
 <table align="center">
   <tr>
-    <td align="center" width="50%">
+    <td align="center" width="33%">
       <b>💬 QQ 群：1126547426</b><br/>
       <sub>用户交流 · 反馈 · 构建发布通知（启动器「关于」页可一键复制）</sub>
     </td>
-    <td align="center" width="50%">
+    <td align="center" width="33%">
+      <b>🌐 Discord 社区</b><br/>
+      <sub><a href="https://discord.gg/HqcmswrEy">点击加入 Discord</a> · 国际用户交流 · 实时反馈</sub>
+    </td>
+    <td align="center" width="34%">
       <b>❤️ 支持我们</b><br/>
-      <sub><a href="https://afdian.com/a/yiqiu4178">爱发电</a> · <a href="donate.png">微信赞赏码</a>（关于页同款入口）</sub>
+      <sub><a href="https://afdian.com/a/yiqiu4178">爱发电</a> · <a href="donate.png">微信赞赏码</a></sub>
     </td>
   </tr>
 </table>
+
+<p align="center">
+  ⭐️ <b>如果没钱可以点个 <a href="https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher">Star</a> 支持一下</b> ——
+  每一个 Star 都是持续更新的动力（关于页同款入口）。
+</p>
 
 ---
 

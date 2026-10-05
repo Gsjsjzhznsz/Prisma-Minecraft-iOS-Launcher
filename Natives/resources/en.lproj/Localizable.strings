@@ -95,6 +95,7 @@
 "launcher.wait_jit.title" = "Waiting for JIT(Just-in-time)";
 "launcher.wait_jit.message" = "Amethyst relies on JIT(Just-in-time) compilation for Java to work at maximum performance";
 "launcher.wait_jit_trollstore.message" = "If you still see this message, please enable URL Scheme in TrollStore.";
+"launcher.jit.stikjit_unhandled" = "stikjit:// was not handled (StikDebug not installed?). Install StikDebug and retry, or switch to another JIT enabler.";
 
 "login.error.username.outOfRange" = "Username must be at least 3 characters and a maximum of 16 characters";
 "login.error.fields.empty" = "Please fill in all fields";
@@ -1619,7 +1620,7 @@
 "i18n_str_980" = "Server address is empty";
 "i18n_str_981" = "No profile selected";
 "i18n_str_982" = "This server has no downloadable server modpack";
-"i18n_str_989" = "Could not connect to the host (PingHostFail)";
+"i18n_str_989" = "Could not find the host's multiplayer server (host not seen within 15s). Make sure the host is still online (room page open) and both networks work, then retry.";
 "i18n_str_990" = "The host refused the connection (PingHostRst)";
 "i18n_str_991" = "The guest's EasyTier crashed (GuestEasytierCrash)";
 "i18n_str_992" = "The host's EasyTier crashed (HostEasytierCrash)";
@@ -2762,3 +2763,45 @@
 "launch.stage.2" = "Loading Minecraft and mods…";
 "launch.stage.3" = "Initializing resources…";
 "launch.stage.4" = "Opening the game window…";
+
+/* Task223 (round 25 -- new keys) */
+"folderbrowser.item_count" = "%lu items";
+"global.share" = "Share";
+"about.discord.join" = "Discord";
+"about.donate.star" = "Star on GitHub";
+"about.donate.star_hint" = "Can't donate? A ⭐️ still helps -- every star keeps the updates coming.";
+"dataexport.title" = "Export Data";
+"dataexport.summary.title" = "Backup contents";
+"dataexport.summary.body" = "%lu files · %@ total";
+"dataexport.empty" = "Nothing to export";
+"dataexport.failed" = "Export failed: %@";
+"dataexport.level.title" = "Compression level";
+"dataexport.level.none" = "None";
+"dataexport.level.fast" = "Fast";
+"dataexport.level.best" = "Best";
+"dataexport.level.none.hint" = "Fastest; ideal for local backups and quick migrations.";
+"dataexport.level.fast.hint" = "Balanced: smaller files at decent speed.";
+"dataexport.level.best.hint" = "Smallest files, longest runtime.";
+"dataexport.start" = "Start Export";
+"dataexport.task.name" = "Data backup export";
+"dataexport.stage.collect" = "Scanning files";
+"dataexport.stage.compress" = "Packing archive";
+"dataexport.done.title" = "Export complete";
+"dataexport.save_to_files" = "Save to Files";
+"coachmarks.hint" = "Tap anywhere to continue (%lu/%lu)";
+"coachmarks.nav.title" = "Sidebar navigation";
+"coachmarks.nav.body" = "Switch between Home, Downloads and Version Manager on the left.";
+"coachmarks.content.title" = "Main content";
+"coachmarks.content.body" = "Your versions, modpacks and settings live here.";
+"coachmarks.launch.title" = "Launch";
+"coachmarks.launch.body" = "Right panel: launch the game, check JIT and memory.";
+"welcome.intro.subtitle" = "A quick tour of what this launcher can do.";
+"terracotta.stage.precheck" = "Checking multiplayer connectivity…";
+"terracotta.error.no_public_peer" = "No public EasyTier server is reachable. Check your network (Wi-Fi/cellular/proxy) and retry; if the network is fine, the host is probably offline.";
+"account.menu.change_name" = "Change gamertag";
+"account.menu.change_skin" = "Change skin";
+"account.menu.default_skin" = "Default skin";
+"account.default_skin.title" = "Default skin";
+"account.default_skin.hint" = "Pick one of the two vanilla default skins (Steve / Alex)";
+"account.default_skin.done" = "Avatar updated: %@";
+"account.default_skin.failed" = "Failed: account file unreadable";

@@ -3898,3 +3898,79 @@
 // wizard intro 12, launch stages 5). Fleet key-count baselines re-anchored
 // 2520 -> 2565 across 129-142/217-219.
 // ============================================================================
+
+// REVISION 22 addendum (Task 223, no bump): the 25-item checklist round.
+// Render: virgl_server EGLint int32_t (arm64 64-bit typedef misaligned
+// ANGLE's 32-bit attribute pairs), tinygl4angle image2D precision gate
+// (ES 3.00 illegality), render-thread park-at-swap for backgrounded GPU
+// work (zink black-out + MG wedge share the BackgroundExecutionNotPermitted
+// root), JIT alert animated:NO + ame185 unconditional redispatch.
+// Data: isolation migration from the live gameDir (modpack clients kept
+// their mods), export pipeline (parallel read -> serial write + threaded
+// zip, second-level entry riding the version-download progress system),
+// FolderBrowserViewController replacing the .json-only picker.
+// UI: welcome overhaul (Bing/preset wallpaper, luminance-adaptive text
+// inversion, zl2 grey-circle focus intro, coach marks), directional
+// sidebar transitions, TouchController install-time config + dedicated
+// refresh notification, IME stop-resign debounce (250ms + composition
+// guard), About-page Discord + GitHub Star CTA, README restructure.
+// Accounts: inline action menus (MS rename/skin, offline Steve/Alex).
+// Upstream 2-week review (item 24): memory triple-port (Task173
+// authoritative-path 1024-floor removal, dual-entitlement auto ratio,
+// memorystatus-gated clamp bypass + 256MB floor), AI session page
+// PAGE-GLASS call, CI macos-15 + Xcode 26 preference (iOS 26 SDK liquid
+// glass) with runner-default fallback and SDKPATH pinning. Evaluated and
+// declined with reasons: upstream's 10-04 metallum_agent.jar still ships
+// non-daemon monitor threads (E2E probe: daemon=false on both -- would
+// reintroduce the Task 211 exit-"crash"), LWJGL 3.4.3 API adaptation
+// (this tree ships LWJGL 333/341 only), NG-GL4ES/Krypton renderer (not
+// vendored here), MetalFX config write (the four settings toggles no
+// longer exist in either tree post air-full merge), TrackedTextField
+// preventUnexpectedResign (our Task222 composition guard + Task223
+// debounce cover the same symptom with this fork's resign-site
+// inventory). i18n +41 keys x4 languages; fleet baselines re-anchored
+// 2565 -> 2606 and announcement tail windows shifted for the 43rd entry.
+//
+// Task 223 port block (second wave, 10-06 session -- item 24 continuation,
+// upstream 09-19..10-06 window re-triaged after the Task 222 overlap was
+// accounted for; four ports, all launcher-side):
+// (1) 63add943c Forge/NeoForge early-window crash, both hunks: the library
+//     filter now exempts org.lwjgl:lwjgl-glfw + lwjgl-natives from the
+//     blanket org.lwjgl skip (fmlearlywindow needs lwjgl-glfw on the
+//     classpath or NoClassDefFoundError: org/lwjgl/glfw/GLFW exit(1)),
+//     and JavaGUIViewController drops setenv(POJAV_SKIP_JNI_GLFW) for
+//     unsetenv -- input_bridge_v3 tests mere existence via getenv, so the
+//     variable suppressed the GLFW JNI bridge the same window depends on.
+//     Same lineage already device-verified upstream.
+// (2) 3a2116c05 (Flux-ported p1 quartet): isConnectivityError(NSError*)
+//     util in utils.m + MicrosoftAuthenticator offline detection switched
+//     from NSURLErrorDataNotAllowed-only to the util (airplane-mode
+//     NotConnectedToInternet previously fell into the failure branch);
+//     asm-all 5.0.4 jar rewrite now strips the inherited "size" (it
+//     belonged to the replaced artifact, guaranteeing checksum failure);
+//     ControlJoystick + ControllerInput direction gates && -> || (a pure
+//     axis push has one zero component, so requiring both non-zero
+//     misread the four cardinal directions as center).
+// (3) f05ec3842 safe half only: -XX:SoftRefLRUPolicyMSPerMB=250 (soft
+//     refs survive 250ms/MB of pressure instead of being flushed at the
+//     first GC -- measurably fewer class reload stalls on 4GB devices).
+//     The same commit's -Xss1m was REJECTED: this tree's -Xss32M is the
+//     device-proven root fix for MC 26.3 RenderPearl->shaderc(glslang)
+//     deep-recursion SIGSEGV (662d6e2 logs); reverting to 1m would
+//     reintroduce that crash.
+// (4) f05ec3842 missing piece: stikjit:// openURL completion handler in
+//     DownloadViewController now surfaces a localized failure dialog
+//     (launcher.jit.stikjit_unhandled) instead of silently spinning to
+//     the 120s timeout when StikDebug is uninstalled/the scheme is
+//     unregistered.
+// Declined this wave: upstream 340adedaa TrackedTextField rewrite (our
+// item-10 resign-site debounce + composition guard already cover it while
+// preserving legit dismissals), glScissor recursion guard (their private
+// wrapper, not in this tree), upstream zh-Hans key sync (2605/2605 parity
+// verified against this tree's superset), auto_ram entitlement (path
+// retired here by the Task173 authoritative-memory rework), NG-GL4ES UAF
+// + Krypton renderer (renderer not vendored), FSR1 family + MetalFX (our
+// divergent implementations predate and cover them), and everything
+// carrying a "Source: Prisma" attribution (bidirectional sync -- already
+// in this tree). i18n +1 port key (2606 total) x4 languages.
+// ============================================================================

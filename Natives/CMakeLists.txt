@@ -506,6 +506,7 @@ add_executable(AngelAuraAmethyst
   PLDownloadClient.m
   PLMirrorCenter.m
   DataTransferService.m
+  DataExportViewController.m
   AboutViewController.m
   # Task218：崩溃识别引擎（hs_err 分型/渲染器归因，JavaLauncher 消费）
   CrashAnalyzer.m
@@ -516,6 +517,8 @@ add_executable(AngelAuraAmethyst
   CustomControlsViewController+UndoManager.m
   ControlRepoViewController.m
   FileListViewController.m
+  FolderBrowserViewController.m
+  Ame223CoachMarksView.m
   GameSurfaceView.m
   JavaGUIViewController.m
   # ★ [MP-RESTORE] Task222：ZeroTier 联机恢复
@@ -800,6 +803,8 @@ target_link_libraries(AngelAuraAmethyst
   "-framework IOKit"
   # Task 166：Metal 层 FSR1（mgl_metal_fsr.mm 的 MTLDevice/管线/命令缓冲）。
   "-framework Metal"
+  # Task223：应用内文件夹浏览器的 QL 预览（FolderBrowserViewController）。
+  "-framework QuickLook"
   "-framework QuartzCore"
   "-framework UIKit"
   "-framework UniformTypeIdentifiers"

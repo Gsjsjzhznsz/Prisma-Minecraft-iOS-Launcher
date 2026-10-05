@@ -80,6 +80,24 @@ typedef NS_ENUM(NSInteger, BackgroundUIEffect) {
 // Get background preview
 - (nullable UIImage *)backgroundPreview;
 
+// ============================================================================
+// Task223（清单第 14/21 项）：壁纸直取 + 亮度自适应（动态反色）。
+// 病历：启动遮罩/欢迎向导此前的"透底"方案依赖全局背景容器在视图栈最底层
+// ——根视图换到 SurfaceViewController / 向导全屏呈现后，不透明宿主视图把
+// 容器盖住 = "依旧没有显示自定义壁纸"。新方案：需要透壁纸的界面【自带】
+// 壁纸图层（currentWallpaperImage 直取磁盘缓存），与视图层级无关。
+// 动态反色（第 21 项）：wallpaperLuminanceIsDark 对当前壁纸做降采样平均
+// 亮度判定（阈值 0.45），亮壁纸上用深色文字、暗壁纸上用浅色文字，避免
+// 壁纸影响可读性。背景变化时广播 Ame223WallpaperChanged 供已打开界面
+// 重取颜色。
+// ============================================================================
+- (nullable UIImage *)ame223_currentWallpaperImage;
+- (BOOL)ame223_wallpaperLuminanceIsDark;   // 无壁纸时按当前系统外观判定
+- (UIColor *)ame223_adaptiveTextColor;      // 深壁纸→白字 / 亮壁纸→黑字
+- (UIColor *)ame223_adaptiveSecondaryTextColor;
+
+FOUNDATION_EXPORT NSNotificationName const Ame223WallpaperChangedNotification;
+
 // Pause/Resume video (for app lifecycle)
 - (void)pauseVideo;
 - (void)resumeVideo;
