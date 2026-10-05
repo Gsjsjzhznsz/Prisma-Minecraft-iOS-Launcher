@@ -823,8 +823,9 @@
                      progress:(void (^_Nullable)(NSUInteger done, NSUInteger total))progress {
     NSFileManager *fileManager = [NSFileManager defaultManager];
 
-    // 先统计文件总数
+    // 先统计文件总数（同时收集路径清单，避免二次枚举）
     NSUInteger total = 0;
+    NSMutableArray<NSString *> *relPaths = [NSMutableArray array];
     NSDirectoryEnumerator *counter = [fileManager enumeratorAtPath:dirPath];
     NSString *relPath;
     while ((relPath = [counter nextObject])) {
@@ -832,6 +833,7 @@
         BOOL isDir = NO;
         if ([fileManager fileExistsAtPath:fullPath isDirectory:&isDir] && !isDir) {
             total++;
+            [relPaths addObject:relPath];
         }
     }
     if (total == 0) {
@@ -839,10 +841,24 @@
         return;
     }
 
-    NSDirectoryEnumerator *enumerator = [fileManager enumeratorAtPath:dirPath];
+    // ★ Task222：导出多线程化（清单第 6 项）。旧实现逐文件「读→写→读→写」
+    //   全串行：磁盘 I/O 与 zip 写互相等待，无压缩模式也慢（用户装机实测）。
+    //   UZKArchive 的 writeData 不是线程安全的（zip 追加写必须串行），
+    //   所以采用「分批并行读 + 串行写」：
+    //     * 磁盘读并行化（concurrent queue + dispatch_group）——iPad NVMe
+    //       并行读收益显著，这是大头；
+    //     * zip 写保持串行（库的线程安全约束）；
+    //     * 分批（按累计字节数上限 64MB）控制内存峰值——整合包 mods 目录
+    //       可达数 GB，不能全部驻留内存。
+    //   批大小按【未压缩源文件字节数】计；zip 侧压缩与否不影响该上界。
+    NSArray<NSString *> *sortedPaths = [relPaths sortedArrayUsingSelector:@selector(compare:)];
     NSUInteger done = 0;
-    while ((relPath = [enumerator nextObject])) {
-        // 取消检查点
+    NSUInteger batchStart = 0;
+    // 并行读队列：QoS userInitiated（导出是用户显式等待的操作）
+    dispatch_queue_t readQueue = dispatch_queue_create("ame222.export.read", DISPATCH_QUEUE_CONCURRENT);
+
+    while (batchStart < sortedPaths.count) {
+        // 取消检查点（批间检查，批内读很快不检查）
         @synchronized(self) {
             if (self.cancelled) {
                 if (progress) progress(done, total);
@@ -850,16 +866,48 @@
             }
         }
 
-        NSString *fullPath = [dirPath stringByAppendingPathComponent:relPath];
-        BOOL isDir = NO;
-        if (![fileManager fileExistsAtPath:fullPath isDirectory:&isDir] || isDir) continue;
+        // 组装本批：按源文件体积累计到 64MB 上限（或至少 8 个文件，避免小文件批过小）
+        NSMutableArray<NSString *> *batch = [NSMutableArray array];
+        unsigned long long batchBytes = 0;
+        NSUInteger idx = batchStart;
+        while (idx < sortedPaths.count) {
+            NSString *rel = sortedPaths[idx];
+            NSString *full = [dirPath stringByAppendingPathComponent:rel];
+            NSDictionary *attrs = [fileManager attributesOfItemAtPath:full error:nil];
+            unsigned long long sz = [attrs fileSize];
+            if (batch.count > 0 && batchBytes + sz > 64ULL * 1024 * 1024) break;
+            [batch addObject:rel];
+            batchBytes += sz;
+            idx++;
+            if (batch.count >= 128) break;   // 单批文件数上限（元组开销有界）
+        }
+        batchStart = idx;
 
-        NSData *data = [NSData dataWithContentsOfFile:fullPath];
-        if (!data) continue;
+        // 批内并行读 → (zipPath, data) 收集
+        NSMutableArray<NSDictionary *> *loaded = [NSMutableArray arrayWithCapacity:batch.count];
+        dispatch_group_t group = dispatch_group_create();
+        for (NSString *rel in batch) {
+            dispatch_group_async(group, readQueue, ^{
+                NSString *full = [dirPath stringByAppendingPathComponent:rel];
+                NSData *data = [NSData dataWithContentsOfFile:full];
+                if (!data) return;   // 读失败沿用旧行为：静默跳过
+                @synchronized(loaded) {
+                    [loaded addObject:@{@"zip": [NSString stringWithFormat:@"%@/%@", prefixInZip, rel],
+                                        @"data": data}];
+                }
+            });
+        }
+        dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
 
-        NSString *zipPath = [NSString stringWithFormat:@"%@/%@", prefixInZip, relPath];
-        [archive writeData:data filePath:zipPath error:nil];
-        done++;
+        // 串行写入 zip（保持顺序稳定：sortedArray 保证同批内 zipPath 有序）
+        NSArray *sortedLoaded = [loaded sortedArrayUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
+            return [a[@"zip"] compare:b[@"zip"]];
+        }];
+        for (NSDictionary *item in sortedLoaded) {
+            [archive writeData:item[@"data"] filePath:item[@"zip"] error:nil];
+        }
+
+        done += batch.count;
         if (progress) progress(done, total);
     }
 }
@@ -936,6 +984,27 @@
     return [hex copy];
 }
 
+// ★ Task222：剥离官方版本号尾部 的 构建哈希后缀（如 "26.2-db6fa7a3" -> "26.2"）。
+//   需求背景（装机反馈）：FO 26.2 的 versionId 是 "26.2-db6fa7a3"，
+//   parseVersionId 纯版本分支原样返回全串 → Modrinth game_versions 精确
+//   containsObject 匹配（"26.2"）必然落空 → TouchController/Sodium/FabricAPI
+//   全部报「找不到适配版本」。
+//   剥离规则：尾部 "-" 后接 7~12 位十六进制短哈希（git 短哈希长度域）
+//   才剥；剩余部分必须仍含数字。官方预发布形态（1.20-rc1 / 1.7.10-pre4）
+//   含非 hex 字符（r/p）自然不命中，安全。
+static NSString *ame222_stripBuildHash(NSString *version) {
+    if (version.length == 0) return version;
+    NSRange dash = [version rangeOfString:@"-" options:NSBackwardsSearch];
+    if (dash.location == NSNotFound || dash.length == 0) return version;
+    NSString *tail = [version substringFromIndex:dash.location + 1];
+    if (tail.length < 7 || tail.length > 12) return version;
+    NSCharacterSet *hex = [NSCharacterSet characterSetWithCharactersInString:@"0123456789abcdefABCDEF"];
+    if ([tail rangeOfCharacterFromSet:[hex invertedSet]].location != NSNotFound) return version;
+    NSString *head = [version substringToIndex:dash.location];
+    if ([head rangeOfCharacterFromSet:[NSCharacterSet decimalDigitCharacterSet]].location == NSNotFound) return version;
+    return head;
+}
+
 + (NSDictionary *)parseVersionId:(NSString *)versionId {
     if (versionId.length == 0) return @{};
 
@@ -946,7 +1015,8 @@
         if (parts.count >= 2) {
             NSString *loaderVersion = parts[0];
             NSString *mcVersion = [[parts subarrayWithRange:NSMakeRange(1, parts.count - 1)] componentsJoinedByString:@"-"];
-            return @{@"loader": @"fabric", @"loaderVersion": loaderVersion, @"minecraft": mcVersion};
+            // ★ Task222：mcVer 尾部可能携带构建哈希（fabric-loader-0.17.2-26.2-db6fa7a3）
+            return @{@"loader": @"fabric", @"loaderVersion": loaderVersion, @"minecraft": ame222_stripBuildHash(mcVersion), @"minecraftRaw": mcVersion};
         }
     }
 
@@ -957,7 +1027,7 @@
         if (parts.count >= 2) {
             NSString *loaderVersion = parts[0];
             NSString *mcVersion = [[parts subarrayWithRange:NSMakeRange(1, parts.count - 1)] componentsJoinedByString:@"-"];
-            return @{@"loader": @"quilt", @"loaderVersion": loaderVersion, @"minecraft": mcVersion};
+            return @{@"loader": @"quilt", @"loaderVersion": loaderVersion, @"minecraft": ame222_stripBuildHash(mcVersion), @"minecraftRaw": mcVersion};
         }
     }
 
@@ -966,7 +1036,7 @@
     if (forgeRange.location != NSNotFound) {
         NSString *mcVersion = [versionId substringToIndex:forgeRange.location];
         NSString *loaderVersion = [versionId substringFromIndex:forgeRange.location + forgeRange.length];
-        return @{@"loader": @"forge", @"loaderVersion": loaderVersion, @"minecraft": mcVersion};
+        return @{@"loader": @"forge", @"loaderVersion": loaderVersion, @"minecraft": ame222_stripBuildHash(mcVersion), @"minecraftRaw": mcVersion};
     }
 
     // <mcVer>-neoforge-<loaderVer>
@@ -974,11 +1044,11 @@
     if (neoforgeRange.location != NSNotFound) {
         NSString *mcVersion = [versionId substringToIndex:neoforgeRange.location];
         NSString *loaderVersion = [versionId substringFromIndex:neoforgeRange.location + neoforgeRange.length];
-        return @{@"loader": @"neoforge", @"loaderVersion": loaderVersion, @"minecraft": mcVersion};
+        return @{@"loader": @"neoforge", @"loaderVersion": loaderVersion, @"minecraft": ame222_stripBuildHash(mcVersion), @"minecraftRaw": mcVersion};
     }
 
-    // 纯 mc 版本（无 loader）
-    return @{@"minecraft": versionId};
+    // 纯 mc 版本（无 loader）★ Task222：尾部构建哈希剥离（"26.2-db6fa7a3" -> "26.2"）
+    return @{@"minecraft": ame222_stripBuildHash(versionId), @"minecraftRaw": versionId};
 }
 
 @end

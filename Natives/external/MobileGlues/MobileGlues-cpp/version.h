@@ -3861,3 +3861,40 @@
 // log). Missing virgl dylibs degrade gracefully: the renderer picker hides
 // entries whose file is absent.
 // ============================================================================
+// ============================================================================
+// REVISION 22 addendum (Task 222, no bump -- upstream sync + 19-item list
+// optimization round; launcher-side + lifecycle only, zero renderer touch).
+// Upstream sync (herbrine8403/Amethyst-iOS-MyRemastered 10-05): (1) d76301816
+// lifecycle fix ported -- pauseGameIfNeed criterion widened from isGrabbing
+// (SDL3 constant 0 = no-op) to liveSession triple (isGrabbing || isInputReady
+// || g_sdlWindow), sceneWillResignActive pauses immediately, didBecomeActive
+// runs the ported Amethyst_EnforceSDL3Presentation presentation-enforcement
+// family (SDL empty-UIWindow black cover / GameSurfaceView hidden / SDL metal
+// layer opaque) + new CallbackBridge_resumeGameIfNeed window-size re-announce
+// (fixes background->foreground freeze/black on zink/mg/all renderers; the
+// Task56 geometry retry's landscape early-return that skipped the FG chain
+// was rewritten to if-not-landscape). (2) Terracotta multiplayer fully
+// restored [MP-RESTORE]: lazy-init design (startup path never creates
+// TerracottaManager / terracotta_ios_start / ZeroTier node -- first entry
+// into the multiplayer page does), CMakeLists recompiled (ZT six files +
+// Terracotta four + TERRACOTTA_LIB link + ZT framework vars), upstream FCL
+// rebuild of TerracottaViewController + LanPortDetector (auto LAN port
+// detection: log tailing + verified local scan), container-mode close via
+// ShowHomePage notification + floating close FAB, game-side PageSheet entry.
+// 19-item list closures: version-string build-hash strip in parseVersionId
+// ("26.2-db6fa7a3" -> "26.2", TouchController/Sodium/FabricAPI Modrinth
+// matching), export multithreading (batched parallel read + serial zip write,
+// 64MB/128-file bounded memory), About-page stagger entrance + right-panel
+// card press feedback, openURLGlobal folder branch rerouted to in-app
+// FileListViewController (bare-path NSURL failure root fix), IME marked-text
+// guard (StopTextInput resign skipped during composition), README restructure
+// (Chinese-default README.md + English via README_EN.md, QQ group & donation
+// pinned at top), welcome wizard 7th zl2-style intro step (feature rows +
+// community card + stagger), About-page donation section (Afdian button +
+// bundled WeChat reward code with long-press save), launch overlay progress
+// (five-stage timeline labels + indeterminate shimmer bar + elapsed timer).
+// i18n +45 keys x4 languages (terracotta 21 incl. 2068-2070 remapped to
+// 2091-2093 to avoid the Task220 account-dialog key collision, donate 7,
+// wizard intro 12, launch stages 5). Fleet key-count baselines re-anchored
+// 2520 -> 2565 across 129-142/217-219.
+// ============================================================================

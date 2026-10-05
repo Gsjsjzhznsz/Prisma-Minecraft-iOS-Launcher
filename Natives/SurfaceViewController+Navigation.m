@@ -10,10 +10,10 @@
 #import "utils.h"
 #import "ScreenUtils.h"
 #import "NMToast.h"
-// ZeroTier/Terracotta 联机暂时移除（排查启动崩溃）
-// #import "MultiplayerViewController.h"
-// #import "MultiplayerManager.h"
-// #import "TerracottaViewController.h"
+// ★ [MP-RESTORE] Task222：ZeroTier/Terracotta 联机恢复（上游同日恢复）
+#import "MultiplayerViewController.h"
+#import "MultiplayerManager.h"
+#import "TerracottaViewController.h"
 #import <objc/runtime.h>
 
 // 暴露 class extension 中的私有属性，供 category 使用
@@ -209,13 +209,14 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
     [alert addAction:cancelAction];
 
     UIAlertAction* okAction = [UIAlertAction actionWithTitle:localize(@"OK", nil) style:UIAlertActionStyleDestructive handler:^(UIAlertAction * action) {
-        // ZeroTier/Terracotta 联机暂时移除：原 stopAllMultiplayerServices 调用注释掉
-        // @try {
-        //     [[MultiplayerManager sharedManager] stopAllMultiplayerServices];
-        //     NSLog(@"[ForceClose] Multiplayer resources cleaned up");
-        // } @catch (NSException *e) {
-        //     NSLog(@"[ForceClose] Exception while cleaning up multiplayer resources: %@", e);
-        // }
+        // ★ [MP-RESTORE] Task222 联机恢复：强退前清理联机资源
+        //   （ZeroTier 节点 / 陶瓦会话 / SOCKS5 / 端口转发）
+        @try {
+            [[MultiplayerManager sharedManager] stopAllMultiplayerServices];
+            NSLog(@"[ForceClose] Multiplayer resources cleaned up");
+        } @catch (NSException *e) {
+            NSLog(@"[ForceClose] Exception while cleaning up multiplayer resources: %@", e);
+        }
 
         // FCL 风格：直接退出，不再做缩小动画
         if (fatalExitGroup == nil) {
@@ -288,14 +289,23 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
 /// 选择当房主（创建世界→开放局域网→输入端口→生成邀请码）
 /// 或当房客（输入邀请码→加入网络→MC 多人游戏直连 127.0.0.1:25565）。
 - (void)actionOpenMultiplayer {
-    // ZeroTier/Terracotta 联机暂时移除（排查启动崩溃）
+    // ★ [MP-RESTORE] Task222 联机恢复：游戏内 modal 呈现（TVC 的 modal 分支
+    //   自带系统 Close 按钮，dismiss 即回游戏；与上游 FCL 流程一致）。
     [self dismissMenu];
-    UIAlertController *alert = [UIAlertController
-        alertControllerWithTitle:localize(@"i18n_str_320", nil)
-                          message:localize(@"i18n_str_321", nil)
-                   preferredStyle:UIAlertControllerStyleAlert];
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_322", nil) style:UIAlertActionStyleDefault handler:nil]];
-    [self presentViewController:alert animated:YES completion:nil];
+    if (![TerracottaBridge isAvailable]) {
+        UIAlertController *alert = [UIAlertController
+            alertControllerWithTitle:localize(@"i18n_str_320", nil)
+                              message:localize(@"i18n_str_321", nil)
+                       preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_322", nil) style:UIAlertActionStyleDefault handler:nil]];
+        [self presentViewController:alert animated:YES completion:nil];
+        return;
+    }
+    TerracottaViewController *vc = [[TerracottaViewController alloc] init];
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+    nav.navigationBar.prefersLargeTitles = NO;
+    nav.modalPresentationStyle = UIModalPresentationPageSheet;
+    [self presentViewController:nav animated:YES completion:nil];
 }
 
 /// FCL 风格：隐藏/显示控制按钮（对应 FCL hide_all 开关）

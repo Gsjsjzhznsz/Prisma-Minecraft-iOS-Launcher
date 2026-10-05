@@ -196,16 +196,16 @@ check("F3 公告源三处 + 改名前旧 URL 纳入已知默认值（存量 news
       and "cdn.jsdelivr.net/gh/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher@main" in ans
       and "kPreRenameAnnouncementURL" in ans and "kPreRenameAnnouncementMirrorURL" in ans
       and ans.count("Air-Minecraft-iOS-Launcher") == 3)  # 改名前常量两处 + 注释一处
-check("F4 README 双语徽章 + star-history 全部新名",
-      rd("README.md").count("Gsjsjzhznsz%2FPrisma-Minecraft-iOS-Launcher") == 4
-      and "Air-Minecraft" not in rd("README.md")
-      and rd("README_CN.md").count("Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher") >= 10)
+check("F4 README 双语徽章 + star-history 全部新名（Task222 重锚：英文在 README_EN.md）",
+      rd("README_EN.md").count("Gsjsjzhznsz%2FPrisma-Minecraft-iOS-Launcher") == 4
+      and "Air-Minecraft" not in rd("README_EN.md")
+      and rd("README.md").count("Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher") >= 10)
 
 print("== G. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"G-{lang} 唯一键 2520（Task218 +27）", len(keys) == 2520, f"got {len(keys)}")
+    check(f"G-{lang} 唯一键 2565（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2565, f"got {len(keys)}")
 zh = rd("Natives/resources/zh-Hans.lproj/Localizable.strings")
 en = rd("Natives/resources/en.lproj/Localizable.strings")
 check("G-新键在位（welcome 全家 + ame218.crash 全家）",

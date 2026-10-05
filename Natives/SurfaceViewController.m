@@ -405,6 +405,14 @@ static BOOL ame83_fsr_capable_renderer(NSString *renderer) {
 @property(nonatomic, strong) CAGradientLayer *launchGradientLayer;
 @property(nonatomic, strong) UIActivityIndicatorView *launchSpinner;
 @property(nonatomic, strong) UILabel *launchTitleLabel;
+// ★ Task222（清单第 16 项）：高级启动进度（阶段文案 + 微光进度条 + 耗时 + 信息胶囊）
+@property(nonatomic, strong) UILabel *launchStageLabel;
+@property(nonatomic, strong) UIView *launchProgressTrack;
+@property(nonatomic, strong) UIView *launchProgressBar;
+@property(nonatomic, strong) UILabel *launchElapsedLabel;
+@property(nonatomic, strong) UILabel *launchInfoLabel;
+@property(nonatomic, strong) NSTimer *launchStageTimer;
+@property(nonatomic, assign) NSInteger launchStageIndex;
 @property(nonatomic, assign) NSTimeInterval launchStartTime;
 @property(nonatomic, assign) BOOL launchOverlayDismissed;
 @property(nonatomic, strong) UIButton *launchCancelButton;     // 取消启动按钮
@@ -2012,6 +2020,53 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     self.launchTitleLabel.textAlignment = NSTextAlignmentCenter;
     [centerContainer addSubview:self.launchTitleLabel];
 
+    // ============================================================
+    // ★ Task222（清单第 16 项）：高级启动进度三件套
+    //   阶段文案（时间轴轮转，淡入淡出）+ 微光进度条（FCL 式 indeterminate
+    //   shimmer，真实进度不可知时的最佳形态）+ 已耗时计时。
+    //   保持 FCL 的简洁语言：元素少而精，信息密度高。
+    // ============================================================
+    self.launchStageLabel = [[UILabel alloc] init];
+    self.launchStageLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    self.launchStageLabel.text = localize(@"launch.stage.0", nil);
+    self.launchStageLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
+    self.launchStageLabel.textColor = [UIColor colorWithWhite:0.72 alpha:1.0];
+    self.launchStageLabel.textAlignment = NSTextAlignmentCenter;
+    [centerContainer addSubview:self.launchStageLabel];
+    self.launchStageIndex = 0;
+
+    // 进度轨道（2pt 细条，280pt 宽）+ 微光滑块（30% 宽往复移动）
+    self.launchProgressTrack = [[UIView alloc] init];
+    self.launchProgressTrack.translatesAutoresizingMaskIntoConstraints = NO;
+    self.launchProgressTrack.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.15];
+    self.launchProgressTrack.layer.cornerRadius = 1.5;
+    self.launchProgressTrack.layer.masksToBounds = YES;
+    [centerContainer addSubview:self.launchProgressTrack];
+
+    self.launchProgressBar = [[UIView alloc] init];
+    self.launchProgressBar.translatesAutoresizingMaskIntoConstraints = NO;
+    self.launchProgressBar.backgroundColor = [UIColor whiteColor];
+    self.launchProgressBar.layer.cornerRadius = 1.5;
+    [self.launchProgressTrack addSubview:self.launchProgressBar];
+    // 微光动画：30% 宽的亮条从左到右循环扫过（indeterminate shimmer）
+    [NSLayoutConstraint activateConstraints:@[
+        [self.launchProgressBar.topAnchor constraintEqualToAnchor:self.launchProgressTrack.topAnchor],
+        [self.launchProgressBar.bottomAnchor constraintEqualToAnchor:self.launchProgressTrack.bottomAnchor],
+        [self.launchProgressBar.leadingAnchor constraintEqualToAnchor:self.launchProgressTrack.leadingAnchor],
+        [self.launchProgressBar.widthAnchor constraintEqualToAnchor:self.launchProgressTrack.widthAnchor multiplier:0.3],
+    ]];
+    // 微光扫过动画在 updateLaunchStage 的首个周期挂载（届时 track 已完成
+    // 首次 layout、有真实宽度，keyframe 数值才有效）。
+
+    // 已耗时
+    self.launchElapsedLabel = [[UILabel alloc] init];
+    self.launchElapsedLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    self.launchElapsedLabel.text = @"0s";
+    self.launchElapsedLabel.font = [UIFont monospacedDigitSystemFontOfSize:11 weight:UIFontWeightRegular];
+    self.launchElapsedLabel.textColor = [UIColor colorWithWhite:0.55 alpha:1.0];
+    self.launchElapsedLabel.textAlignment = NSTextAlignmentCenter;
+    [centerContainer addSubview:self.launchElapsedLabel];
+
     // ========================================================================
     // 取消启动按钮（底部，独立添加到 self.view 不受遮罩穿透影响）
     // ========================================================================
@@ -2042,7 +2097,23 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         [self.launchTitleLabel.topAnchor constraintEqualToAnchor:self.launchSpinner.bottomAnchor constant:16],
         [self.launchTitleLabel.leadingAnchor constraintEqualToAnchor:centerContainer.leadingAnchor],
         [self.launchTitleLabel.trailingAnchor constraintEqualToAnchor:centerContainer.trailingAnchor],
-        [self.launchTitleLabel.bottomAnchor constraintEqualToAnchor:centerContainer.bottomAnchor],
+
+        // ★ Task222：阶段文案（标题下方，淡入淡出轮转）
+        [self.launchStageLabel.topAnchor constraintEqualToAnchor:self.launchTitleLabel.bottomAnchor constant:8],
+        [self.launchStageLabel.leadingAnchor constraintEqualToAnchor:centerContainer.leadingAnchor],
+        [self.launchStageLabel.trailingAnchor constraintEqualToAnchor:centerContainer.trailingAnchor],
+
+        // ★ Task222：微光进度条（阶段下方，280pt 宽 3pt 高）
+        [self.launchProgressTrack.topAnchor constraintEqualToAnchor:self.launchStageLabel.bottomAnchor constant:14],
+        [self.launchProgressTrack.centerXAnchor constraintEqualToAnchor:centerContainer.centerXAnchor],
+        [self.launchProgressTrack.widthAnchor constraintEqualToConstant:280],
+        [self.launchProgressTrack.heightAnchor constraintEqualToConstant:3],
+
+        // ★ Task222：已耗时（进度条下方）
+        [self.launchElapsedLabel.topAnchor constraintEqualToAnchor:self.launchProgressTrack.bottomAnchor constant:8],
+        [self.launchElapsedLabel.leadingAnchor constraintEqualToAnchor:centerContainer.leadingAnchor],
+        [self.launchElapsedLabel.trailingAnchor constraintEqualToAnchor:centerContainer.trailingAnchor],
+        [self.launchElapsedLabel.bottomAnchor constraintEqualToAnchor:centerContainer.bottomAnchor],
 
         // 取消按钮：底部安全区域上方
         [self.launchCancelButton.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-24],
@@ -2056,6 +2127,14 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
                                              selector:@selector(onFirstFrameRendered)
                                                  name:@"PojavFirstFrameRendered"
                                                object:nil];
+
+    // ★ Task222（清单第 16 项）：阶段轮转定时器（0.5s 周期：阶段判定 +
+    //   耗时刷新 + 微光动画延迟挂载——首帧 layout 完成后 track 才有宽度）
+    self.launchStageTimer = [NSTimer scheduledTimerWithTimeInterval:0.5
+                                                             target:self
+                                                           selector:@selector(updateLaunchStage)
+                                                           userInfo:nil
+                                                            repeats:YES];
 
     // Task172：SDL 文本输入路由（sdl3_hook.m 的 Start/StopTextInput 钩子派发）。
     // MC 26.3 EditBox 聚焦时 SDL UIKit 自己的 textField 会抢走 first responder
@@ -2092,14 +2171,59 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     [self presentViewController:alert animated:YES completion:nil];
 }
 
-/// 定时器回调（每 0.5 秒）：
-/// 1. 基于已耗时计算当前阶段索引（每 2.5 秒一个阶段，避免 static 变量在多次启动间不重置）
-/// 2. 推进进度条（基于已耗时，封顶 95%）
-/// 3. 更新已耗时显示
+/// 定时器回调（每 0.5 秒）——★ Task222（清单第 16 项）实装：
+/// 1. 基于已耗时判定启动阶段（时间轴估计：JVM 日志时机在 C 层，OC 侧
+///    不可靠，时间轴是 Pojav 系启动器的通用形态），阶段切换带淡入淡出；
+/// 2. 首个周期挂载微光扫过动画（track 首次 layout 后才有真实宽度）；
+/// 3. 刷新已耗时（等宽数字，秒级）。
 - (void)updateLaunchStage {
-    // FCL 风格启动界面不再需要阶段轮转和进度推进。
-    // 此方法保留为空实现仅为兼容可能的旧调用点（实际上 setupLaunchOverlay
-    // 已不再创建 launchStageTimer，此方法不会被调用）。
+    if (self.launchOverlayDismissed) return;
+
+    NSTimeInterval elapsed = [NSDate timeIntervalSinceReferenceDate] - self.launchStartTime;
+
+    // 阶段时间轴（iPad 性能基线；慢设备自然多停留几拍，文案语义渐进不违和）：
+    //   0-4s 准备运行环境 / 4-10s 启动 Java 虚拟机 / 10-22s 加载游戏与模组 /
+    //   22-40s 初始化资源 / 40s+ 生成窗口（首次启动/整合包耗时更久）
+    NSInteger stage = 0;
+    if (elapsed >= 40.0)      stage = 4;
+    else if (elapsed >= 22.0) stage = 3;
+    else if (elapsed >= 10.0) stage = 2;
+    else if (elapsed >= 4.0)  stage = 1;
+
+    if (stage != self.launchStageIndex) {
+        self.launchStageIndex = stage;
+        NSString *key = [NSString stringWithFormat:@"launch.stage.%ld", (long)stage];
+        // 淡出 -> 换文案 -> 淡入（0.18s，克制不抢戏）
+        [UIView animateWithDuration:0.18 animations:^{
+            self.launchStageLabel.alpha = 0.0;
+        } completion:^(BOOL finished) {
+            self.launchStageLabel.text = localize(key, nil);
+            [UIView animateWithDuration:0.22 animations:^{
+                self.launchStageLabel.alpha = 1.0;
+            }];
+        }];
+    }
+
+    // 首个周期：挂载微光扫过动画（track 已 layout，宽度有效）
+    if (self.launchProgressBar.layer.animationKeys.count == 0 &&
+        self.launchProgressTrack.bounds.size.width > 1.0) {
+        CGFloat trackW = self.launchProgressTrack.bounds.size.width;
+        CGFloat barW = trackW * 0.3;
+        CAKeyframeAnimation *shimmer = [CAKeyframeAnimation animationWithKeyPath:@"transform.translation.x"];
+        [shimmer setValues:@[@(-barW), @(trackW), @(-barW)]];
+        [shimmer setKeyTimes:@[@0.0, @0.5, @1.0]];
+        [shimmer setDuration:2.4];
+        shimmer.repeatCount = HUGE_VALF;
+        [self.launchProgressBar.layer addAnimation:shimmer forKey:@"ame222_shimmer"];
+    }
+
+    // 已耗时（分钟:秒 或 秒）
+    if (elapsed >= 60.0) {
+        self.launchElapsedLabel.text = [NSString stringWithFormat:@"%ldm%02lds",
+            (long)(elapsed / 60.0), (long)elapsed % 60];
+    } else {
+        self.launchElapsedLabel.text = [NSString stringWithFormat:@"%lds", (long)elapsed];
+    }
 }
 
 /// 首帧渲染通知回调：淡出并移除启动遮罩层
@@ -2109,6 +2233,9 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         self.launchOverlayDismissed = YES;
 
         [self.launchSpinner stopAnimating];
+        // ★ Task222：停阶段轮转定时器
+        [self.launchStageTimer invalidate];
+        self.launchStageTimer = nil;
 
         NSTimeInterval elapsed = [NSDate timeIntervalSinceReferenceDate] - self.launchStartTime;
 
@@ -2142,6 +2269,9 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         self.launchOverlayDismissed = YES;
 
         [self.launchSpinner stopAnimating];
+        // ★ Task222：停阶段轮转定时器
+        [self.launchStageTimer invalidate];
+        self.launchStageTimer = nil;
         [[NSNotificationCenter defaultCenter] removeObserver:self name:@"PojavFirstFrameRendered" object:nil];
 
         [self.launchOverlayView removeFromSuperview];
@@ -2339,6 +2469,18 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 - (void)ame172_sdlStopTextInput:(NSNotification *)n {
     if (!self.inputTextField) return;
     if (self.inputTextField.isFirstResponder) {
+        // ★ Task222（清单第 12 项）：IME 组合输入守卫——"输入法输入一部分后
+        //   再输入会关闭键盘"的根修。MC 26.x 的 EditBox 在部分输入场景会
+        //   快速 Stop->Start 文本上下文（每次字符事件都可能重设上下文）；
+        //   Stop 分支的 resign 会把进行中的 IME 组合态（拼音/注音缓冲，
+        //   markedTextRange 非空）整个拆掉——键盘收起、缓冲丢弃，用户
+        //   必须重新聚焦从头再打。组合进行中跳过本次 resign：紧随的
+        //   Start 分支有 isFirstResponder 早退守卫（不会打断），MC 后续
+        //   真正关闭上下文（发送/ESC）时组合态早已上屏，正常收起。
+        if (self.inputTextField.markedTextRange != nil) {
+            NSLog(@"[SurfaceVC] Task222 IME guard: skip resign during marked-text composition");
+            return;
+        }
         ame171_keyboardDismissGeneration++;
         [self.inputTextField resignFirstResponder];
         self.inputTextField.alpha = 1.0f;
@@ -2903,6 +3045,251 @@ static UIView *findSDL_uikitview(UIView *root) {
         if (found) return found;
     }
     return nil;
+}
+
+// ============================================================================
+// ★ [FG] 上游 d76301816 同步（Task222）：SDL3 呈现面执法函数族。
+//   供 SceneDelegate 的前后台生命周期回调使用（回前台自愈）；也可被
+//   gl_bridge / 其它路径周期性重跑——设计上幂等且全程 @try。
+//   覆盖三个黑屏遮挡源（Air Task 32/52 法证）：
+//     (a) SDL 自建 UIWindow 被 makeKeyAndVisible 浮在宿主之上（空窗黑盖子）；
+//     (b) 供应商 libSDL3.dylib 的 Zalith 同源嵌入补丁对 GameSurfaceView
+//         setHidden:YES（但它的 CAMetalLayer 才是 GL/Vulkan 真正呈现面）；
+//     (c) SDL 嵌入视图的 CAMetalLayer 默认 opaque=1 整块盖住画面。
+// ============================================================================
+
+// 找到当前嵌入的 SDL 视图；非 SDL3 路径返回 nil。
+static UIView *Amethyst_FindSDLView(void) {
+    UIWindow *host = nil;
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+            if (scene.activationState != UISceneActivationStateForegroundActive ||
+                ![scene isKindOfClass:UIWindowScene.class]) {
+                continue;
+            }
+            for (UIWindow *w in ((UIWindowScene *)scene).windows) {
+                if (!w.hidden && w.rootViewController != nil) { host = w; break; }
+            }
+            if (host) break;
+        }
+    }
+    if (!host) host = UIApplication.sharedApplication.keyWindow;
+
+    UIView *root = host.rootViewController.view;
+    if (!root && pojavWindow != nil) root = pojavWindow.window.rootViewController.view;
+    if (!root) return nil;
+    return findSDL_uikitview(root);
+}
+
+// 回退开关：AMETHYST_KEEP_SDL_METAL=1 时保留 SDL 的金属子层（仅透明化，
+// 不隐藏）。默认隐藏 —— EGL 路径下真正的呈现面是 GameSurfaceView 的
+// CAMetalLayer，SDL 的金属层不是渲染目标，留着只会整块盖住画面。
+static BOOL ame_keepSDLMetalLayer(void) {
+    static int cached = -1;
+    if (cached < 0) {
+        const char *e = getenv("AMETHYST_KEEP_SDL_METAL");
+        cached = (e != NULL && atoi(e) == 1) ? 1 : 0;
+    }
+    return cached == 1;
+}
+
+static BOOL ame_applyTransparentRecursive(UIView *v, BOOL isRoot) {
+    if (v == nil) return NO;
+    BOOL changed = NO;
+    BOOL isMetal = [v.layer isKindOfClass:CAMetalLayer.class];
+    if (isRoot || isMetal) {
+        if (v.opaque) { v.opaque = NO; changed = YES; }
+        if (v.layer.opaque) { v.layer.opaque = NO; changed = YES; }
+        if (v.backgroundColor != nil &&
+            CGColorGetAlpha(v.backgroundColor.CGColor) > 0.0) {
+            v.backgroundColor = UIColor.clearColor;
+            changed = YES;
+        }
+    }
+    // 预编译 libSDL3.dylib 在 SDL 视图内额外建了 SDL_uikitmetalview 子层
+    //（Air 从源码构建 SDL3，不存在这层）。它的 CAMetalLayer 默认 opaque=1
+    // 且 drawableSize 为全屏像素：即便把 opaque 置 NO，只要有内容仍会整块
+    // 盖住画面。EGL 路径下它不是渲染目标，直接移出合成最稳妥（可用
+    // AMETHYST_KEEP_SDL_METAL=1 回退为仅透明化）。
+    if (isMetal && !isRoot && !ame_keepSDLMetalLayer()) {
+        if (!v.hidden) { v.hidden = YES; changed = YES; }
+    }
+    for (UIView *sub in v.subviews) {
+        if (ame_applyTransparentRecursive(sub, NO)) changed = YES;
+    }
+    return changed;
+}
+
+// 让 SDL 嵌入视图（含其金属子层）退出"整块黑层"状态。
+// 非 SDL3 路径返回 NO、不改动任何状态。
+BOOL Amethyst_MakeSDLRenderTransparent(void) {
+    UIView *sdl = Amethyst_FindSDLView();
+    if (sdl == nil) return NO;
+    return ame_applyTransparentRecursive(sdl, YES);
+}
+
+// 一次性诊断：把「谁在谁上面」完整 dump 出来。只在检测到异常时打印，
+// 且总预算有限，避免高频执法刷屏。
+static void ame_dumpPresentationState(const char *reason) {
+    static int budget = 6;
+    if (budget <= 0) return;
+    budget--;
+
+    NSMutableString *m = [NSMutableString string];
+    [m appendFormat:@"[Amethyst][diag] presentation dump (%s)\n", reason];
+
+    NSArray *wins = [UIApplication sharedApplication].windows;
+    [m appendFormat:@"  windows=%lu\n", (unsigned long)wins.count];
+    for (UIWindow *w in wins) {
+        [m appendFormat:@"    win=%@ rc=%@ hidden=%d level=%.0f key=%d frame=%@\n",
+            NSStringFromClass(w.class),
+            w.rootViewController ? NSStringFromClass(w.rootViewController.class) : @"(nil)",
+            (int)w.hidden, w.windowLevel, (int)w.isKeyWindow,
+            NSStringFromCGRect(w.frame)];
+    }
+
+    UIView *gs = pojavWindow;
+    if (gs) {
+        CALayer *l = gs.layer;
+        NSString *ds = @"(n/a)";
+        if ([l isKindOfClass:CAMetalLayer.class]) {
+            CGSize sz = ((CAMetalLayer *)l).drawableSize;
+            ds = [NSString stringWithFormat:@"%.0fx%.0f", sz.width, sz.height];
+        }
+        [m appendFormat:@"  gameSurface=%@ hidden=%d layerHidden=%d layer=%@ layerOpaque=%d "
+                        @"scale=%.2f drawable=%@ frame=%@ window=%@\n",
+            NSStringFromClass(gs.class), (int)gs.hidden, (int)l.hidden,
+            NSStringFromClass(l.class), (int)l.opaque, l.contentsScale, ds,
+            NSStringFromCGRect(gs.frame),
+            gs.window ? NSStringFromClass(gs.window.class) : @"(nil)"];
+    } else {
+        [m appendString:@"  gameSurface=(nil)\n"];
+    }
+
+    UIView *sdl = Amethyst_FindSDLView();
+    if (sdl) {
+        CALayer *l = sdl.layer;
+        NSString *ds = @"(n/a)";
+        if ([l isKindOfClass:CAMetalLayer.class]) {
+            CGSize sz = ((CAMetalLayer *)l).drawableSize;
+            ds = [NSString stringWithFormat:@"%.0fx%.0f", sz.width, sz.height];
+        }
+        [m appendFormat:@"  sdlView=%@ hidden=%d opaque=%d layer=%@ layerOpaque=%d "
+                        @"scale=%.2f drawable=%@ frame=%@ window=%@\n",
+            NSStringFromClass(sdl.class), (int)sdl.hidden, (int)sdl.opaque,
+            NSStringFromClass(l.class), (int)l.opaque, l.contentsScale, ds,
+            NSStringFromCGRect(sdl.frame),
+            sdl.window ? NSStringFromClass(sdl.window.class) : @"(nil)"];
+    } else {
+        [m appendString:@"  sdlView=(not found)\n"];
+    }
+
+    UIView *container = gs ? gs.superview : nil;
+    if (container) {
+        NSMutableArray *order = [NSMutableArray array];
+        for (UIView *v in container.subviews) {
+            [order addObject:[NSString stringWithFormat:@"%@(h=%d,op=%d,lo=%d)",
+                NSStringFromClass(v.class), (int)v.hidden, (int)v.opaque, (int)v.layer.opaque]];
+        }
+        [m appendFormat:@"  container=%@ subviews(bottom->top)=%@\n",
+            NSStringFromClass(container.class),
+            [order componentsJoinedByString:@" | "]];
+    }
+    NSLog(@"%@", m);
+}
+
+// 呈现面执法主入口：隐藏 SDL 自建空窗 + 揭开 GameSurfaceView + SDL 视图
+// 透明化 + z 序钉扎。幂等、非游戏态（pojavWindow==nil）直接返回 NO，
+// 全程 @try 吞异常。安全保障：
+//   * 只在确认存在另一个可见宿主 window 时才隐藏 SDL window；
+//   * z 序调整前先确认 SDL 的 layer 已真正透明，否则宁可维持现状；
+//   * 任何异常都吞掉并记录，不影响游戏进程。
+BOOL Amethyst_EnforceSDL3Presentation(void) {
+    if (pojavWindow == nil) return NO;
+    UIView *gs = pojavWindow;
+    UIView *sdlView = Amethyst_FindSDLView();
+    UIView *container = gs.superview;
+    if (container == nil) return NO;
+
+    @try {
+        BOOL fixed = NO;
+
+        // 1. SDL 自建 UIWindow 永远隐藏，并把 key window 还给宿主。
+        //    安全条件：必须存在另一个可见的、非 SDL 的 window 才动手。
+        NSArray *allWindows = [UIApplication sharedApplication].windows;
+        for (UIWindow *w in allWindows) {
+            UIViewController *rc = w.rootViewController;
+            if (rc == nil) continue;
+            if ([NSStringFromClass(rc.class) rangeOfString:@"SDL_uikitviewcontroller"]
+                    .location == NSNotFound) continue;
+            if (w.hidden) continue;
+
+            // 安全：确认有替身 host window 可见，且该 host 不是 SDL 自己的
+            UIWindow *hostWin = nil;
+            for (UIWindow *w2 in allWindows) {
+                if (w2 == w || w2.hidden || w2.rootViewController == nil) continue;
+                if ([NSStringFromClass(w2.rootViewController.class) rangeOfString:
+                        @"SDL_uikitviewcontroller"].location != NSNotFound) continue;
+                hostWin = w2;
+                break;
+            }
+            if (hostWin == nil) {
+                ame_dumpPresentationState("SDL window found but NO host window to fall back");
+                continue;   // 绝不把唯一可见窗口藏掉
+            }
+
+            w.hidden = YES;
+            [hostWin makeKeyWindow];
+            fixed = YES;
+            NSLog(@"[Amethyst] Task32: SDL UIWindow re-hidden (empty key+visible window "
+                  @"covers GameSurfaceView = black screen); host key window restored");
+            ame_dumpPresentationState("SDL own UIWindow was visible (black cover)");
+        }
+
+        // 2. 揭开真正的渲染呈现面。
+        if (gs.hidden || gs.layer.hidden) {
+            gs.hidden = NO;
+            gs.layer.hidden = NO;
+            fixed = YES;
+            NSLog(@"[Amethyst] Task52: GameSurfaceView was HIDDEN by SDL provider embed "
+                  @"patch -- UN-HIDDEN (it is our render target)");
+            ame_dumpPresentationState("GameSurfaceView was hidden");
+        }
+
+        // 3. SDL 视图透明化（Air Task 52 原样：sdlView.backgroundColor = nil;
+        //    sdlView.opaque = NO;）+ 递归处理预编译 SDL 额外建出的金属子层。
+        if (sdlView != nil) {
+            if (sdlView.opaque) { sdlView.opaque = NO; fixed = YES; }
+            if (sdlView.layer.opaque) { sdlView.layer.opaque = NO; fixed = YES; }
+            if (sdlView.backgroundColor != nil) {
+                sdlView.backgroundColor = nil;
+                fixed = YES;
+            }
+            if (Amethyst_MakeSDLRenderTransparent()) fixed = YES;
+        }
+
+        // 4. z 序终局（Air Task 52 原样）：其它子视图（虚拟鼠标指针、控制按钮）
+        //    压回 SDL 视图之上，GameSurfaceView 紧贴 SDL 触摸视图之下 ——
+        //    画面在下、触摸层在上，靠 SDL 视图透明透出画面。
+        if (sdlView != nil && sdlView.superview == container) {
+            for (UIView *sub in [container.subviews copy]) {
+                if (sub != sdlView && sub != gs) [container bringSubviewToFront:sub];
+            }
+            NSArray *subs = container.subviews;
+            NSUInteger gi = [subs indexOfObjectIdenticalTo:gs];
+            NSUInteger si = [subs indexOfObjectIdenticalTo:sdlView];
+            if (gi != NSNotFound && si != NSNotFound && gi > si) {
+                [container insertSubview:gs belowSubview:sdlView];
+                NSLog(@"[Amethyst] Task52: GameSurfaceView pinned BELOW SDL touch view "
+                      @"(Air Task52: SDL view transparent, frame shows through)");
+            }
+        }
+
+        return fixed;
+    } @catch (NSException *e) {
+        NSLog(@"[Amethyst] Task32/52 enforcement exception: %@", e);
+        return NO;
+    }
 }
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event

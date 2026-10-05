@@ -990,9 +990,22 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
 
 - (void)ame156_infoCardTapped:(UITapGestureRecognizer *)tap {
     NSString *route = objc_getAssociatedObject(tap, "ame156_route");
-    if (route != nil) {
+    if (route == nil) return;
+    // ★ Task222（清单第 8 项）：信息卡按压反馈动画（旧实现零反馈，点击
+    //   "不知道按没按上"）。先快速缩到 0.97，spring 回弹到位后再路由——
+    //   与设置页 hero 卡（ame218_heroCardTapped）同一交互语言。
+    UIView *card = tap.view;
+    [UIView animateWithDuration:0.08 delay:0 options:UIViewAnimationOptionBeginFromCurrentState
+                     animations:^{
+        card.transform = CGAffineTransformMakeScale(0.97, 0.97);
+    } completion:^(BOOL finished) {
+        [UIView animateWithDuration:0.35 delay:0
+                        usingSpringWithDamping:0.55 initialSpringVelocity:0.4
+                        options:0 animations:^{
+            card.transform = CGAffineTransformIdentity;
+        } completion:nil];
         [self ame156_navigateToRoute:route];
-    }
+    }];
 }
 
 #pragma mark - MeloNX 风格信息卡工厂（Task96）

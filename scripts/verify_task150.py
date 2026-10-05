@@ -189,8 +189,9 @@ print()
 print("=" * 72)
 print("F. 发布资产（README 双语 / announcements / version.h 附记）")
 print("=" * 72)
-rcn = read("README_CN.md")
-ren = read("README.md")
+# Task222：README.md 现为中文默认，英文移至 README_EN.md
+rcn = read("README.md")
+ren = read("README_EN.md")
 ann = json.loads(read("announcements.json"))
 # Task162 重锚：公告数组按日期降序（服务端排序消费），新条目会插到头部——
 # 发布资产锚点改按 id 定位 v6.0.0 发行条目，不再假设它是 [0]。

@@ -219,8 +219,8 @@ def lkeys(lang):
 
 ks = [lkeys(l) for l in LANGS]
 # Task138 重锚：+2 键（renderer_missing_dylib + mirror_policy-speed_first）
-check("G1 四语言键集一致（Task157 基线 2228 = Task156 基线 2228 + Task157 组件键 2）",
-      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2520, f"counts={[len(k) for k in ks]}")
+check("G1 四语言键集一致（Task222 重锚：2565 = Task212 基线 2520 + 陶瓦联机 21 + 捐赠 7 + 向导介绍页 12 + 启动阶段 5）",
+      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2565, f"counts={[len(k) for k in ks]}")
 check("G2 Task134 新键齐备（jit_enabler 7 + title/detail 4 + hide_controls；pickextra 3 键已删）",
       all("preference.debug.jit_enabler.auto" in k and
           "preference.debug.jit_enabler.manual" in k and
@@ -237,8 +237,9 @@ except Exception:
     ann_ok = False
 check("G3 announcements.json 合法且含 v6.0.0 条目", ann_ok)
 check("G4 双语 README 更新（新差异行 + 本地化行数刷新）",
-      "Dual-ABI Transport" in rd("README.md") and "双 ABI 传输层" in rd("README_CN.md") and
-      "JIT Enabler Picker" in rd("README.md") and "2000+ lines" in rd("README.md"))
+      # Task222：README.md 现为中文默认，英文移至 README_EN.md
+      "Dual-ABI Transport" in rd("README_EN.md") and "双 ABI 传输层" in rd("README.md") and
+      "JIT Enabler Picker" in rd("README_EN.md") and "2000+ lines" in rd("README_EN.md"))
 
 print("== H. 语法门 ==")
 

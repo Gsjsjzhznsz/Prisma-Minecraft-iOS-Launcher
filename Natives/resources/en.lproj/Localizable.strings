@@ -2709,3 +2709,56 @@
 "ame219.mods.shared_chip" = "Shared";
 "ame219.virgl.fallback.title" = "VirGL unavailable";
 "ame219.virgl.fallback.body" = "The VirGL vtest server could not start this session, so the renderer fell back to Zink to avoid a crash. You can pick another renderer in instance settings.";
+
+/* Task222: Terracotta 联机界面（上游 10-05 同步；2068-2070 重映射为 2091-2093，本地 Task220 占用原键） */
+"i18n_str_2072" = "Detecting port...";
+"i18n_str_2073" = "In Minecraft: Pause -> Open to LAN. The port fills in automatically.";
+"i18n_str_2074" = "Port %u detected";
+"i18n_str_2075" = "Choose how you want to play together";
+"i18n_str_2076" = "Scan this device for the port";
+"i18n_str_2077" = "Scanning this device...";
+"i18n_str_2078" = "Checked %lu / %lu ports";
+"i18n_str_2079" = "No Minecraft port found. Open to LAN inside the game first.";
+"i18n_str_2080" = "Cancel";
+"i18n_str_2081" = "Copy";
+"i18n_str_2082" = "Send this code to your friends so they can join your world";
+"i18n_str_2083" = "Add this address in Minecraft -> Multiplayer, then connect";
+"i18n_str_2084" = "Create room";
+"i18n_str_2085" = "Invite code looks good";
+"i18n_str_2087" = "Unknown error";
+"i18n_str_2088" = "Enter the invite code your friend shared with you";
+"i18n_str_2089" = "Invite code";
+"i18n_str_2090" = "Server address";
+"i18n_str_2091" = "Share your world with friends; an invite code is made for you";
+"i18n_str_2092" = "Paste the invite code your friend shared with you";
+"i18n_str_2093" = "Detect port automatically";
+
+/* Task222: 关于页贡献专区（清单第 18 项） */
+"about.donate.title" = "Support Us";
+"about.donate.body" = "If you find this launcher valuable, consider supporting the project -- every bit helps keep development going.";
+"about.donate.afdian" = "Afdian";
+"about.donate.wechat_code" = "WeChat Reward Code";
+"about.donate.save_title" = "Reward Code";
+"about.donate.saved" = "Saved to Photos. Open WeChat and scan it from your album.";
+"about.donate.save_failed" = "Failed to save the image.";
+
+/* Task222: 欢迎向导 zl2 风格介绍页（清单第 17 项） */
+"welcome.intro.title" = "Meet Prisma";
+"welcome.intro.f1.title" = "Full Minecraft: Java Edition";
+"welcome.intro.f1.body" = "Multiple game versions and mod loaders (Fabric / Forge / NeoForge / Quilt), with mod, shader and resource pack management built in.";
+"welcome.intro.f2.title" = "Deep Chinese localization";
+"welcome.intro.f2.body" = "Full Chinese UI, in-app language switching and China-friendly download mirrors (BMCLAPI / MCIM).";
+"welcome.intro.f3.title" = "TouchController support";
+"welcome.intro.f3.body" = "Full on-screen touch controls via the TouchController mod -- play anywhere without a keyboard.";
+"welcome.intro.f4.title" = "Multiplayer";
+"welcome.intro.f4.body" = "Terracotta multiplayer (interoperable with HMCL / FCL / ZL2) and ZeroTier rooms.";
+"welcome.intro.community.title" = "Join the Community";
+"welcome.intro.community.hint" = "QQ Group 1126547426 -- support, feedback and build announcements. Like the launcher? Support us on Afdian (About page).";
+"welcome.intro.next_hint" = "Next, we'll open the About page -- version info, QQ group and update checks live there.";
+
+/* Task222: 启动等待界面阶段文案（清单第 16 项） */
+"launch.stage.0" = "Preparing the runtime…";
+"launch.stage.1" = "Starting the Java Virtual Machine…";
+"launch.stage.2" = "Loading Minecraft and mods…";
+"launch.stage.3" = "Initializing resources…";
+"launch.stage.4" = "Opening the game window…";

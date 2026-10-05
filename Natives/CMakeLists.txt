@@ -35,44 +35,44 @@ include_directories(
   "external/ballpa1n"
   "external/ballpa1n/wrapped"
   "external/mach"
-  # "external/ZeroTierFramework/ios-example-app/zt.framework/Headers"  # ZeroTier 暂时移除
+  # ★ [MP-RESTORE] Task222：ZeroTier framework headers（联机恢复；
+  #   子模块在 CI checkout 时自动拉取，本地静态验证不依赖）
+  "external/ZeroTierFramework/ios-example-app/zt.framework/Headers"
 )
 
 # ============================================================================
-# ZeroTier Apple Framework 集成 —— 暂时移除（注释掉以排查启动崩溃）
+# ZeroTier Apple Framework 集成 —— ★ [MP-RESTORE] Task222 恢复联机
+#   （上游同日恢复；框架经子模块拉取，与上游 gitlink 同 commit b8e672f5）
 # ============================================================================
-# set(ZT_FRAMEWORK_DIR "${CMAKE_CURRENT_LIST_DIR}/external/ZeroTierFramework/ios-example-app")
-# set(ZT_FRAMEWORK_LIB "${ZT_FRAMEWORK_DIR}/zt.framework/zt")
-# if(EXISTS "${ZT_FRAMEWORK_LIB}")
-#   message(STATUS "Found ZeroTier framework binary: ${ZT_FRAMEWORK_LIB}")
-#   set(ZT_FRAMEWORK_SEARCH_PATH "-F'${ZT_FRAMEWORK_DIR}'")
-#   set(ZT_FRAMEWORK_LINK "-framework zt")
-#   set(ZT_CXX_LIB "-lc++")
-# else()
-#   message(FATAL_ERROR "ZeroTier framework not found at ${ZT_FRAMEWORK_LIB}. Please run: git submodule update --init --recursive")
-# endif()
-set(ZT_FRAMEWORK_SEARCH_PATH "")
-set(ZT_FRAMEWORK_LINK "")
-set(ZT_CXX_LIB "")
+set(ZT_FRAMEWORK_DIR "${CMAKE_CURRENT_LIST_DIR}/external/ZeroTierFramework/ios-example-app")
+set(ZT_FRAMEWORK_LIB "${ZT_FRAMEWORK_DIR}/zt.framework/zt")
+if(EXISTS "${ZT_FRAMEWORK_LIB}")
+  message(STATUS "Found ZeroTier framework binary: ${ZT_FRAMEWORK_LIB}")
+  set(ZT_FRAMEWORK_SEARCH_PATH "-F'${ZT_FRAMEWORK_DIR}'")
+  set(ZT_FRAMEWORK_LINK "-framework zt")
+  set(ZT_CXX_LIB "-lc++")
+else()
+  message(FATAL_ERROR "ZeroTier framework not found at ${ZT_FRAMEWORK_LIB}. Please run: git submodule update --init --recursive")
+endif()
 
 # ============================================================================
-# libterracotta.xcframework 集成（陶瓦联机）—— 暂时移除（注释掉以排查启动崩溃）
+# libterracotta.xcframework 集成（陶瓦联机）—— ★ [MP-RESTORE] Task222 恢复联机
+#   （上游同日恢复；lazy init 设计：启动路径不创建 Manager/不触发
+#    terracotta_ios_start，首次进联机页才 init，不会带回旧启动崩溃）
 # ============================================================================
-# set(TERRACOTTA_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/terracotta")
-# set(TERRACOTTA_XCFW "${TERRACOTTA_LIB_DIR}/libterracotta.xcframework")
-# set(TERRACOTTA_LIB "")
-# set(TERRACOTTA_AVAILABLE OFF)
-# if(EXISTS "${TERRACOTTA_XCFW}/ios-arm64/libterracotta.a")
-#   set(_TC_LIB_PATH "${TERRACOTTA_XCFW}/ios-arm64/libterracotta.a")
-#   set(TERRACOTTA_LIB "-Wl,-force_load,${_TC_LIB_PATH}")
-#   set(TERRACOTTA_AVAILABLE ON)
-# elseif(EXISTS "${TERRACOTTA_LIB_DIR}/libterracotta.a")
-#   set(_TC_LIB_PATH "${TERRACOTTA_LIB_DIR}/libterracotta.a")
-#   set(TERRACOTTA_LIB "-Wl,-force_load,${_TC_LIB_PATH}")
-#   set(TERRACOTTA_AVAILABLE ON)
-# endif()
+set(TERRACOTTA_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/terracotta")
+set(TERRACOTTA_XCFW "${TERRACOTTA_LIB_DIR}/libterracotta.xcframework")
 set(TERRACOTTA_LIB "")
 set(TERRACOTTA_AVAILABLE OFF)
+if(EXISTS "${TERRACOTTA_XCFW}/ios-arm64/libterracotta.a")
+  set(_TC_LIB_PATH "${TERRACOTTA_XCFW}/ios-arm64/libterracotta.a")
+  set(TERRACOTTA_LIB "-Wl,-force_load,${_TC_LIB_PATH}")
+  set(TERRACOTTA_AVAILABLE ON)
+elseif(EXISTS "${TERRACOTTA_LIB_DIR}/libterracotta.a")
+  set(_TC_LIB_PATH "${TERRACOTTA_LIB_DIR}/libterracotta.a")
+  set(TERRACOTTA_LIB "-Wl,-force_load,${_TC_LIB_PATH}")
+  set(TERRACOTTA_AVAILABLE ON)
+endif()
 
 # For cacio support library
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rpath @loader_path -rpath @executable_path/java_runtimes/java-8-openjdk/lib -rpath /usr/lib/jvm/java-8-openjdk/lib")
@@ -518,13 +518,13 @@ add_executable(AngelAuraAmethyst
   FileListViewController.m
   GameSurfaceView.m
   JavaGUIViewController.m
-  # ZeroTier 联机暂时移除（排查启动崩溃）
-  # MultiplayerManager.m
-  # MultiplayerViewController.m
-  # LanPortDetector.m
-  # ZeroTierBridge.m
-  # SOCKS5Proxy.m
-  # PortForwarder.m
+  # ★ [MP-RESTORE] Task222：ZeroTier 联机恢复
+  MultiplayerManager.m
+  MultiplayerViewController.m
+  LanPortDetector.m
+  ZeroTierBridge.m
+  SOCKS5Proxy.m
+  PortForwarder.m
   LauncherMenuViewController.m
   LauncherNavigationController.m
   LauncherNewsViewController.m
@@ -656,11 +656,11 @@ add_executable(AngelAuraAmethyst
   TouchControllerBridge.m
   TouchControllerPreferencesViewController.m
 
-  # Terracotta multiplayer（陶瓦联机）—— 暂时移除（排查启动崩溃）
-  # TerracottaBridge.m
-  # TerracottaManager.m
-  # SilentAudioPlayer.m
-  # TerracottaViewController.m
+  # ★ [MP-RESTORE] Task222：Terracotta multiplayer（陶瓦联机）恢复
+  TerracottaBridge.m
+  TerracottaManager.m
+  SilentAudioPlayer.m
+  TerracottaViewController.m
 
   # Update checker（参考 FCL/ZL2，使用 GitHub Releases API 检查正式版更新）
   UpdateChecker.m
@@ -758,6 +758,18 @@ if("${CMAKE_HOST_SYSTEM_NAME}" MATCHES "Linux|^GNU$|Android")
   target_sources(AngelAuraAmethyst PUBLIC non_darwin_utils.m)
 endif()
 
+# ★ Task222（清单第 18 项）：微信赞赏码图片打包进 bundle（关于页贡献专区展示）。
+#   仓库根目录的 donate.png -> Resources/donate.png，运行时
+#   [NSBundle mainBundle].resourcePath/donate.png 直读。
+set(DONATE_PNG "${CMAKE_CURRENT_LIST_DIR}/../donate.png")
+if(EXISTS "${DONATE_PNG}")
+  set_source_files_properties(${DONATE_PNG} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+  target_sources(AngelAuraAmethyst PRIVATE ${DONATE_PNG})
+  message(STATUS "Including WeChat reward code in bundle: donate.png")
+else()
+  message(STATUS "donate.png not found at repo root, About-page donate card falls back to link-only")
+endif()
+
 target_link_libraries(AngelAuraAmethyst
   PUBLIC AFNetworking
   lzma
@@ -768,7 +780,10 @@ target_link_libraries(AngelAuraAmethyst
   "-framework Foundation"
   "-F'${CMAKE_CURRENT_LIST_DIR}/build'"
   "-F'${CMAKE_CURRENT_LIST_DIR}/resources/Frameworks'"
-  # ZeroTier 暂时移除："${ZT_FRAMEWORK_SEARCH_PATH}" "${ZT_FRAMEWORK_LINK}" "${ZT_CXX_LIB}"
+  # ★ [MP-RESTORE] Task222：ZeroTier 联机恢复
+  "${ZT_FRAMEWORK_SEARCH_PATH}"
+  "${ZT_FRAMEWORK_LINK}"
+  "${ZT_CXX_LIB}"
   "-framework AltKit"
   "-framework AuthenticationServices"
   "-framework AVFoundation"
@@ -792,7 +807,10 @@ target_link_libraries(AngelAuraAmethyst
   "-framework WebKit"
   "-weak_framework SafariServices"
   ${TOUCHCONTROLLER_LIB}
-  # Terracotta multiplayer 暂时移除：${TERRACOTTA_LIB} "-lc++" "-lresolv"
+  # ★ [MP-RESTORE] Task222：Terracotta multiplayer —— libterracotta 是 Rust 静态库，需要 libc++/resolv
+  ${TERRACOTTA_LIB}
+  "-lc++"
+  "-lresolv"
 )
 set_target_properties(AngelAuraAmethyst PROPERTIES
   MACOSX_BUNDLE TRUE

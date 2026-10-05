@@ -171,8 +171,9 @@ check("F2 announcement hide-controls revised",
       '屏蔽启动器控件' in e['content'] or '保留模组自己的虚拟按钮' in e['content'])
 check("F3 announcement mentions FSR fix",
       'FSR' in e['summary'])
-rcn = read('README_CN.md')
-ren = read('README.md')
+# Task222：README.md 现为中文默认，英文移至 README_EN.md
+rcn = read('README.md')
+ren = read('README_EN.md')
 check("F4 Task150: README_CN renderer row per-game mandatory", '每游戏强制单选' in rcn)
 check("F5 README_CN hide semantics updated", '保留模组自己的虚拟按钮' in rcn)
 check("F6 Task150: README EN per-game mandatory (hide-controls wording kept)", 'per-game mandatory' in ren and 'Hide Launcher Controls' in ren)

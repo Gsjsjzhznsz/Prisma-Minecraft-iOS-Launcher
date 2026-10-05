@@ -2704,3 +2704,56 @@
 "ame219.mods.shared_chip" = "共享目錄";
 "ame219.virgl.fallback.title" = "VirGL 不可用";
 "ame219.virgl.fallback.body" = "本次 VirGL vtest 服務啟動失敗，渲染器已回退到 Zink 以避免崩潰。可在實例設定中選擇其他渲染器。";
+
+/* Task222: Terracotta 联机界面（上游 10-05 同步；2068-2070 重映射为 2091-2093，本地 Task220 占用原键） */
+"i18n_str_2072" = "正在偵測連接埠…";
+"i18n_str_2073" = "請在 Minecraft 中：暫停 → 開放區域網路。偵測到連接埠後會自動建立房間";
+"i18n_str_2074" = "已偵測到連接埠 %u";
+"i18n_str_2075" = "選擇一種方式開始連線";
+"i18n_str_2076" = "掃描本機連接埠";
+"i18n_str_2077" = "正在掃描本機連接埠…";
+"i18n_str_2078" = "已檢查 %lu / %lu 個連接埠";
+"i18n_str_2079" = "找不到 Minecraft 連接埠，請先在遊戲內「開放區域網路」";
+"i18n_str_2080" = "取消";
+"i18n_str_2081" = "複製";
+"i18n_str_2082" = "把邀請碼傳給好友，他們就能加入你的世界";
+"i18n_str_2083" = "在 Minecraft 的「多人遊戲」中新增這個位址即可進入";
+"i18n_str_2084" = "開始建立";
+"i18n_str_2085" = "邀請碼格式正確";
+"i18n_str_2087" = "未知錯誤";
+"i18n_str_2088" = "輸入好友分享的邀請碼";
+"i18n_str_2089" = "邀請碼";
+"i18n_str_2090" = "伺服器位址";
+"i18n_str_2091" = "把自己的世界開放給好友，自動產生邀請碼";
+"i18n_str_2092" = "輸入好友分享的邀請碼，直接進入他的世界";
+"i18n_str_2093" = "自動偵測連接埠";
+
+/* Task222: 关于页贡献专区（清单第 18 项） */
+"about.donate.title" = "支持我們";
+"about.donate.body" = "如果這個啟動器對你有幫助，歡迎支持一下——每一份支持都是持續更新的動力。";
+"about.donate.afdian" = "愛發電";
+"about.donate.wechat_code" = "微信讚賞碼";
+"about.donate.save_title" = "讚賞碼";
+"about.donate.saved" = "已儲存到相簿，可在微信中掃一掃相簿圖片。";
+"about.donate.save_failed" = "圖片儲存失敗。";
+
+/* Task222: 欢迎向导 zl2 风格介绍页（清单第 17 项） */
+"welcome.intro.title" = "認識 Prisma";
+"welcome.intro.f1.title" = "完整的 Minecraft Java 版體驗";
+"welcome.intro.f1.body" = "多遊戲版本、多載入器（Fabric / Forge / NeoForge / Quilt），內建模組、光影與資源包管理。";
+"welcome.intro.f2.title" = "深度中文最佳化";
+"welcome.intro.f2.body" = "完整中文介面、應用內語言切換、國內友好的下載鏡像（BMCLAPI / MCIM）。";
+"welcome.intro.f3.title" = "TouchController 觸控";
+"welcome.intro.f3.body" = "配合 TouchController 模組獲得完整觸屏虛擬按鍵——隨時隨地開玩，無需鍵盤。";
+"welcome.intro.f4.title" = "多人連線";
+"welcome.intro.f4.body" = "陶瓦連線（與 HMCL / FCL / ZL2 互通）+ ZeroTier 房間。";
+"welcome.intro.community.title" = "加入社群";
+"welcome.intro.community.hint" = "QQ 群 1126547426——交流、回饋與建置發布通知。覺得好用？歡迎到「關於」頁愛發電支持我們。";
+"welcome.intro.next_hint" = "接下來會為你開啟「關於」頁——版本資訊、QQ 群與更新檢查都在那裡。";
+
+/* Task222: 启动等待界面阶段文案（清单第 16 项） */
+"launch.stage.0" = "正在準備執行環境…";
+"launch.stage.1" = "正在啟動 Java 虛擬機…";
+"launch.stage.2" = "正在載入遊戲與模組…";
+"launch.stage.3" = "正在初始化資源…";
+"launch.stage.4" = "正在開啟遊戲視窗…";

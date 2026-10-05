@@ -36,7 +36,7 @@
 #include <unistd.h>
 
 /// 步骤总数（Hero / 语言 / 环境与 JIT / 下载源 / 数据迁移 / 完成）。
-static const NSInteger ame218_welcomeStepCount = 6;
+static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格介绍页（Data 与 Done 之间）
 
 @interface WelcomeViewController ()
 /// 进度圆点（StepCount 个）。
@@ -426,7 +426,8 @@ static const NSInteger ame218_welcomeStepCount = 6;
         case 2: [self ame218_buildEnvJitStep:ame218_new]; break;
         case 3: [self ame218_buildSourceStep:ame218_new]; break;
         case 4: [self ame218_buildDataStep:ame218_new]; break;
-        case 5: [self ame218_buildDoneStep:ame218_new]; break;
+        case 5: [self ame222_buildIntroStep:ame218_new]; break;  // Task222：zl2 风格介绍页
+        case 6: [self ame218_buildDoneStep:ame218_new]; break;
     }
 
     // 滚回顶部（新步骤从首行开始）
@@ -1285,10 +1286,164 @@ static const NSInteger ame218_welcomeStepCount = 6;
 }
 
 - (void)ame218_dataSkipTapped:(UITapGestureRecognizer *)gesture {
-    [self ame218_showStep:5 animated:YES];
+    [self ame218_showStep:6 animated:YES];  // Task222：改为 zl2 介绍页（原 5 Done）
 }
 
-#pragma mark - 步骤内容：5 完成
+#pragma mark - 步骤内容：5 zl2 风格介绍页（Task222，清单第 17 项）
+
+/// zl2（ZalithLauncher2）风格的特性介绍页：插入在数据迁移与完成页之间。
+/// 品牌图标 + 特性行列表（SF 图标 + 标题 + 副标题）+ 社区卡（QQ 群/爱发电，
+/// 与关于页/README 同源信息）。完成后下一步即 Done（自动弹关于页）。
+- (void)ame222_buildIntroStep:(UIView *)container {
+    // 滚动容器：小屏兼容（特性行 + 社区卡总高可超出）
+    UIScrollView *ame222_scroll = [[UIScrollView alloc] init];
+    ame222_scroll.showsVerticalScrollIndicator = NO;
+    ame222_scroll.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:ame222_scroll];
+
+    UIStackView *ame222_stack = [[UIStackView alloc] init];
+    ame222_stack.axis = UILayoutConstraintAxisVertical;
+    ame222_stack.spacing = 14;
+    ame222_stack.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame222_scroll addSubview:ame222_stack];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [ame222_scroll.topAnchor constraintEqualToAnchor:container.topAnchor],
+        [ame222_scroll.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [ame222_scroll.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [ame222_scroll.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
+        [ame222_stack.topAnchor constraintEqualToAnchor:ame222_scroll.contentLayoutGuide.topAnchor constant:8],
+        [ame222_stack.leadingAnchor constraintEqualToAnchor:ame222_scroll.contentLayoutGuide.leadingAnchor constant:20],
+        [ame222_stack.trailingAnchor constraintEqualToAnchor:ame222_scroll.contentLayoutGuide.trailingAnchor constant:-20],
+        [ame222_stack.bottomAnchor constraintEqualToAnchor:ame222_scroll.contentLayoutGuide.bottomAnchor constant:-16],
+        [ame222_stack.widthAnchor constraintEqualToAnchor:ame222_scroll.frameLayoutGuide.widthAnchor constant:-40],
+    ]];
+
+    // 标题
+    UILabel *ame222_title = [[UILabel alloc] init];
+    ame222_title.text = localize(@"welcome.intro.title", nil);
+    ame222_title.font = [UIFont systemFontOfSize:26 weight:UIFontWeightBold];
+    ame222_title.textColor = [UIColor labelColor];
+    ame222_title.textAlignment = NSTextAlignmentCenter;
+    ame222_title.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame222_stack addArrangedSubview:ame222_title];
+
+    // 特性行工厂
+    NSArray<NSDictionary *> *ame222_features = @[
+        @{@"icon": @"gamecontroller.fill", @"t": @"welcome.intro.f1.title", @"b": @"welcome.intro.f1.body"},
+        @{@"icon": @"character.book.closed.fill", @"t": @"welcome.intro.f2.title", @"b": @"welcome.intro.f2.body"},
+        @{@"icon": @"hand.tap.fill", @"t": @"welcome.intro.f3.title", @"b": @"welcome.intro.f3.body"},
+        @{@"icon": @"person.2.fill", @"t": @"welcome.intro.f4.title", @"b": @"welcome.intro.f4.body"},
+    ];
+    for (NSDictionary *f in ame222_features) {
+        UIView *row = [[UIView alloc] init];
+        row.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.08];
+        row.layer.cornerRadius = 14.0;
+        row.layer.cornerCurve = kCACornerCurveContinuous;
+        row.layer.borderWidth = 0.5;
+        row.layer.borderColor = [[UIColor whiteColor] colorWithAlphaComponent:0.10].CGColor;
+        row.translatesAutoresizingMaskIntoConstraints = NO;
+
+        UIImageView *icon = [[UIImageView alloc] initWithImage:
+            [UIImage systemImageNamed:f[@"icon"]]];
+        icon.tintColor = accentColor();
+        icon.contentMode = UIViewContentModeScaleAspectFit;
+        icon.translatesAutoresizingMaskIntoConstraints = NO;
+        [row addSubview:icon];
+
+        UILabel *t = [[UILabel alloc] init];
+        t.text = localize(f[@"t"], nil);
+        t.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+        t.textColor = [UIColor labelColor];
+        t.translatesAutoresizingMaskIntoConstraints = NO;
+        [row addSubview:t];
+
+        UILabel *b = [[UILabel alloc] init];
+        b.text = localize(f[@"b"], nil);
+        b.font = [UIFont systemFontOfSize:12];
+        b.textColor = [UIColor secondaryLabelColor];
+        b.numberOfLines = 0;
+        b.translatesAutoresizingMaskIntoConstraints = NO;
+        [row addSubview:b];
+
+        [ame222_stack addArrangedSubview:row];
+        [NSLayoutConstraint activateConstraints:@[
+            [icon.leadingAnchor constraintEqualToAnchor:row.leadingAnchor constant:14],
+            [icon.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
+            [icon.widthAnchor constraintEqualToConstant:28],
+            [icon.heightAnchor constraintEqualToConstant:28],
+            [t.leadingAnchor constraintEqualToAnchor:icon.trailingAnchor constant:12],
+            [t.topAnchor constraintEqualToAnchor:row.topAnchor constant:12],
+            [b.leadingAnchor constraintEqualToAnchor:t.leadingAnchor],
+            [b.trailingAnchor constraintEqualToAnchor:row.trailingAnchor constant:-14],
+            [b.topAnchor constraintEqualToAnchor:t.bottomAnchor constant:3],
+            [b.bottomAnchor constraintEqualToAnchor:row.bottomAnchor constant:-12],
+        ]];
+        row.alpha = 0;
+    }
+
+    // 社区卡（QQ 群 + 爱发电；zl2 欢迎页同款收尾）
+    UIView *ame222_comm = [[UIView alloc] init];
+    ame222_comm.backgroundColor = [accentColor() colorWithAlphaComponent:0.12];
+    ame222_comm.layer.cornerRadius = 14.0;
+    ame222_comm.layer.cornerCurve = kCACornerCurveContinuous;
+    ame222_comm.translatesAutoresizingMaskIntoConstraints = NO;
+
+    UILabel *ame222_commTitle = [[UILabel alloc] init];
+    ame222_commTitle.text = localize(@"welcome.intro.community.title", nil);
+    ame222_commTitle.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+    ame222_commTitle.textColor = [UIColor labelColor];
+    ame222_commTitle.textAlignment = NSTextAlignmentCenter;
+    ame222_commTitle.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame222_comm addSubview:ame222_commTitle];
+
+    UILabel *ame222_commHint = [[UILabel alloc] init];
+    ame222_commHint.text = localize(@"welcome.intro.community.hint", nil);
+    ame222_commHint.font = [UIFont systemFontOfSize:12];
+    ame222_commHint.textColor = [UIColor secondaryLabelColor];
+    ame222_commHint.textAlignment = NSTextAlignmentCenter;
+    ame222_commHint.numberOfLines = 0;
+    ame222_commHint.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame222_comm addSubview:ame222_commHint];
+
+    [ame222_stack addArrangedSubview:ame222_comm];
+    [NSLayoutConstraint activateConstraints:@[
+        [ame222_commTitle.topAnchor constraintEqualToAnchor:ame222_comm.topAnchor constant:12],
+        [ame222_commTitle.leadingAnchor constraintEqualToAnchor:ame222_comm.leadingAnchor constant:14],
+        [ame222_commTitle.trailingAnchor constraintEqualToAnchor:ame222_comm.trailingAnchor constant:-14],
+        [ame222_commHint.topAnchor constraintEqualToAnchor:ame222_commTitle.bottomAnchor constant:4],
+        [ame222_commHint.leadingAnchor constraintEqualToAnchor:ame222_comm.leadingAnchor constant:14],
+        [ame222_commHint.trailingAnchor constraintEqualToAnchor:ame222_comm.trailingAnchor constant:-14],
+        [ame222_commHint.bottomAnchor constraintEqualToAnchor:ame222_comm.bottomAnchor constant:-12],
+    ]];
+
+    // 底部提示：下一步自动打开关于页
+    UILabel *ame222_next = [[UILabel alloc] init];
+    ame222_next.text = localize(@"welcome.intro.next_hint", nil);
+    ame222_next.font = [UIFont systemFontOfSize:11];
+    ame222_next.textColor = [UIColor tertiaryLabelColor];
+    ame222_next.textAlignment = NSTextAlignmentCenter;
+    ame222_next.numberOfLines = 0;
+    ame222_next.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame222_stack addArrangedSubview:ame222_next];
+
+    // 特性行 stagger 入场（与关于页同节奏：80ms 间隔淡入+上移）
+    NSArray<UIView *> *ame222_rows = [ame222_stack.arrangedSubviews copy];
+    for (NSUInteger i = 1; i < ame222_rows.count; i++) {
+        UIView *v = ame222_rows[i];
+        CGAffineTransform base = v.transform;
+        v.transform = CGAffineTransformTranslate(base, 0, 12);
+        [UIView animateWithDuration:0.4 delay:0.05 + 0.08 * (i - 1)
+         usingSpringWithDamping:0.82 initialSpringVelocity:0.35
+                        options:UIViewAnimationOptionAllowUserInteraction
+                     animations:^{
+            v.alpha = 1.0;
+            v.transform = base;
+        } completion:nil];
+    }
+}
+
+#pragma mark - 步骤内容：6 完成
 
 - (void)ame218_buildDoneStep:(UIView *)container {
     UIView *ame218_center = [[UIView alloc] init];

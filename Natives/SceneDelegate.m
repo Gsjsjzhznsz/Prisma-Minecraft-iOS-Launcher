@@ -7,11 +7,16 @@
 #import "BackgroundManager.h"
 #import "BingWallpaperManager.h" // Task151
 #import "WelcomeViewController.h" // Task218：首次使用欢迎向导
-// Terracotta 暂时移除（排查启动崩溃）
-// #import "TerracottaManager.h"
-// #import "TerracottaBridge.h"
+// ★ [MP-RESTORE] Task222：Terracotta 联机恢复（上游同日恢复）
+#import "TerracottaManager.h"
+#import "TerracottaBridge.h"
 
 extern __weak UIWindow *mainWindow;
+
+// ★ [FG] 上游 d76301816 同步（Task222）：Air Task32 的呈现面执法入口（定义在
+//   SurfaceViewController.m）。设计上可周期性重复调用且幂等：pojavWindow 为空时
+//   直接返回 NO，非游戏态零副作用。
+extern BOOL Amethyst_EnforceSDL3Presentation(void);
 
 @interface SceneDelegate ()
 // Task191：横向窗口的持向基线（首次观察到该横向窗口时的设备方向）。
@@ -186,14 +191,16 @@ extern __weak UIWindow *mainWindow;
 
     [self showTranslationNoticeIfNeeded];
 
-    // Terracotta 暂时移除（排查启动崩溃）
-    // if ([TerracottaBridge isAvailable]) {
-    //     TerracottaManager *mgr = [TerracottaManager shared];
-    //     NSLog(@"[SceneDelegate] Terracotta manager initialized: %d", mgr.initialized);
-    // } else {
-    //     NSLog(@"[SceneDelegate] libterracotta not linked, multiplayer disabled");
-    // }
-    NSLog(@"[SceneDelegate] Terracotta temporarily disabled for crash investigation");
+    // ★ [MP-RESTORE] Task222 联机恢复 —— lazy init：启动路径上**不**创建
+    //   TerracottaManager / 不触发 terracotta_ios_start / 不起 ZeroTier 节点
+    //   （避免把当年"启动崩溃"风险带回）。TerracottaManager 是 dispatch_once
+    //   单例，首次进入联机页 [shared] 时才 init；这里只探测 libterracotta
+    //   是否已链接，供日志诊断。
+    if ([TerracottaBridge isAvailable]) {
+        NSLog(@"[SceneDelegate] libterracotta linked, multiplayer available (lazy init)");
+    } else {
+        NSLog(@"[SceneDelegate] libterracotta not linked, multiplayer disabled");
+    }
 
     // 监听主题切换通知（设置页"外观模式"切换时实时应用，无需重启）
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -286,6 +293,16 @@ extern __weak UIWindow *mainWindow;
     // Task137：window traitCollection KVO 已随 NMTheme 退役（注册与摘除同步移除）
 }
 
+#pragma mark - ★ [FG] 上游 d76301816 同步（Task222）前后台切换：暂停 / 恢复 / 呈现面自愈
+
+// 取证锚点：切后台与回前台各打一次 swap 计数。若回前台后 swapOK 不再增长，
+// 即证实渲染循环在后台被楔死（而不是 MC 单纯停在暂停菜单）。
+static void AmeFGLogSwapStats(NSString *phase) {
+    unsigned long ok = 0, fail = 0;
+    ame_egl_swap_stats(&ok, &fail);
+    NSLog(@"[FG-Lifecycle] %@: swapOK=%lu swapFail=%lu", phase, ok, fail);
+}
+
 - (void)sceneDidBecomeActive:(UIScene *)scene {
     // Task 62（窗口模式平反）：Task 56 曾以 UIRequiresFullScreen 灭小窗来断
     // "几何失控→表面转置→画面分裂"链条，但后续取证（Task 58-61）证明真凶
@@ -298,29 +315,57 @@ extern __weak UIWindow *mainWindow;
     if (@available(iOS 16.0, *)) {
         UIWindowScene *windowScene = (UIWindowScene *)scene;
         UIInterfaceOrientation orient = windowScene.interfaceOrientation;
-        if (UIInterfaceOrientationIsLandscape(orient)) {
-            return;  // 已横屏，无需重试
+        // ★ [FG] Task222 移植注意：原实现横屏时直接 return——但这会连带跳过
+        //   本方法尾部的回前台自愈逻辑（游戏恒为横屏 = FG 修复永远不执行）。
+        //   改为仅跳过几何重试本身，FG 自愈链路无条件走到底。
+        if (!UIInterfaceOrientationIsLandscape(orient)) {
+            UIWindowSceneGeometryPreferencesIOS *geometryPreferences = [[UIWindowSceneGeometryPreferencesIOS alloc] init];
+            geometryPreferences.interfaceOrientations = UIInterfaceOrientationMaskLandscape;
+            [windowScene requestGeometryUpdateWithPreferences:geometryPreferences errorHandler:^(NSError *error) {
+                NSLog(@"[SceneDelegate] Task56 geometry retry on becomeActive failed: %@", error);
+            }];
+            NSLog(@"[SceneDelegate] Task56 geometry retry on becomeActive (orientation=%ld not landscape)",
+                  (long)orient);
         }
-        UIWindowSceneGeometryPreferencesIOS *geometryPreferences = [[UIWindowSceneGeometryPreferencesIOS alloc] init];
-        geometryPreferences.interfaceOrientations = UIInterfaceOrientationMaskLandscape;
-        [windowScene requestGeometryUpdateWithPreferences:geometryPreferences errorHandler:^(NSError *error) {
-            NSLog(@"[SceneDelegate] Task56 geometry retry on becomeActive failed: %@", error);
-        }];
-        NSLog(@"[SceneDelegate] Task56 geometry retry on becomeActive (orientation=%ld not landscape)",
-              (long)orient);
     }
     // Task189：激活时兜底重评估一次内容旋转（willConnect 时场景 bounds 尚未
     // 最终确定、且 didUpdateCoordinateSpace 不保证必有回调的窗口场景）。
     [self ame189_applyLandscapeWindowTransform];
+    // ★ [FG] 上游 d76301816 同步（Task222）：回前台自愈——切后台/多任务切换
+    //   期间，SDL 自建的空 UIWindow 与视图 z 序可能被系统重新抬到宿主窗口之上
+    //   （Air Task32「空窗黑盖子」），宿主 CAMetalLayer 被整块盖住即表现为回
+    //   前台黑屏/卡住（zink/mg 下的"画面冻结"同一链路）。这里补一次执法。
+    //   该函数内部全程 @try 且幂等，非游戏态（pojavWindow==nil）直接返回 NO。
+    @try {
+        BOOL did = Amethyst_EnforceSDL3Presentation();
+        NSLog(@"[FG-Lifecycle] didBecomeActive: presentation enforcement did=%d", (int)did);
+    } @catch (NSException *e) {
+        NSLog(@"[FG-Lifecycle] didBecomeActive: enforcement exception: %@", e);
+    }
+    // 重申窗口尺寸：让 MC 重新同步 framebuffer（内部已做 0 尺寸兜底）。
+    CallbackBridge_resumeGameIfNeed();
+    AmeFGLogSwapStats(@"didBecomeActive");
 }
 
 - (void)sceneWillResignActive:(UIScene *)scene {
+    // ★ [FG] 上游 d76301816 同步（Task222）：立刻暂停。原先只有
+    //   sceneDidEnterBackground 会暂停，但上滑回主屏 / 控制中心 / 通知中心 /
+    //   来电等场景里 didEnterBackground 要么晚到要么不到，且 pauseGameIfNeed
+    //   原先被 isGrabbing 挡住（26.3+ 恒 0，实为空操作）——MC 全程不知自己已
+    //   进后台，仍按前台全速渲染，回前台即卡在半截状态。
+    AmeFGLogSwapStats(@"willResignActive");
+    CallbackBridge_pauseGameIfNeed();
 }
 
 - (void)sceneWillEnterForeground:(UIScene *)scene {
+    // ★ [FG] 上游 d76301816 同步（Task222）：取证锚点——回前台后 swapOK 不再
+    //   增长即证实渲染循环被楔死（而不是 MC 单纯停在暂停菜单）。
+    AmeFGLogSwapStats(@"willEnterForeground");
 }
 
 - (void)sceneDidEnterBackground:(UIScene *)scene {
+    // ★ [FG] 幂等：已经停在暂停菜单时再发一次 ESC 无副作用。
+    AmeFGLogSwapStats(@"didEnterBackground");
     CallbackBridge_pauseGameIfNeed();
 }
 

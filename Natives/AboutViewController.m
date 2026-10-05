@@ -11,6 +11,7 @@
 #import "UpdateChecker.h"
 #import "LauncherPreferences.h"
 #import "utils.h"
+#import <Photos/Photos.h>  // Task222：赞赏码长按存图
 
 /// 本启动器的 QQ 群号（用户指令：README 与关于页都展示）。
 static NSString *const ame217_qqGroup = @"1126547426";
@@ -20,6 +21,7 @@ static NSString *const ame217_qqGroup = @"1126547426";
 @property (nonatomic, strong) UIStackView *stack;
 @property (nonatomic, strong) UILabel *versionValueLabel;
 @property (nonatomic, strong) UISwitch *autoUpdateSwitch;
+@property (nonatomic, assign) BOOL ame222_didPlayEntrance;
 @end
 
 @implementation AboutViewController
@@ -60,6 +62,34 @@ static NSString *const ame217_qqGroup = @"1126547426";
     [self ame217_buildUpdateCard];
     [self ame217_buildLicenseCard];
     [self ame217_buildCreditsCard];
+    // ★ Task222（清单第 18 项）：底部贡献专区（爱发电 + 微信赞赏码）
+    [self ame222_buildDonateCard];
+}
+
+// ★ Task222（清单第 8 项）：关于页入场动画——卡片依次淡入 + 轻微上移
+//   （stagger 80ms，iPadOS 27 设计语言的既有节奏；与设置页 hero 卡的
+//   spring 弹性同族）。只在首次入场播一次，返回/出现不再重播。
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    if (self.ame222_didPlayEntrance) return;
+    self.ame222_didPlayEntrance = YES;
+
+    NSArray<UIView *> *cards = self.stack.arrangedSubviews;
+    for (NSUInteger i = 0; i < cards.count; i++) {
+        UIView *card = cards[i];
+        card.alpha = 0.0;
+        CGAffineTransform baseTransform = card.transform;
+        card.transform = CGAffineTransformTranslate(baseTransform, 0, 14);
+        [UIView animateWithDuration:0.42
+                              delay:0.06 + 0.08 * i
+             usingSpringWithDamping:0.82
+              initialSpringVelocity:0.35
+                            options:UIViewAnimationOptionAllowUserInteraction
+                         animations:^{
+            card.alpha = 1.0;
+            card.transform = baseTransform;
+        } completion:nil];
+    }
 }
 
 #pragma mark - 卡片工厂
@@ -258,6 +288,110 @@ static NSString *const ame217_qqGroup = @"1126547426";
         color:[UIColor secondaryLabelColor]]];
 
     [self ame217_addCard:card inner:inner];
+}
+
+/// ★ Task222（清单第 18 项）：贡献专区卡——底部「支持我们」。
+///   爱发电按钮跳转 https://afdian.com/a/yiqiu4178；
+///   微信赞赏码：bundle 内 donate.png 直显（长按可存图），未打包时
+///   回退为跳转 GitHub 原图链接（用户指令：赞赏码跳 GitHub 链接）。
+- (void)ame222_buildDonateCard {
+    UIView *card = [self ame217_card];
+    UIStackView *inner = [[UIStackView alloc] init];
+    inner.axis = UILayoutConstraintAxisVertical;
+    inner.alignment = UIStackViewAlignmentCenter;
+    inner.spacing = 10;
+    inner.translatesAutoresizingMaskIntoConstraints = NO;
+    [card addSubview:inner];
+
+    [inner addArrangedSubview:[self ame217_labelText:localize(@"about.donate.title", nil)
+        font:[UIFont systemFontOfSize:15 weight:UIFontWeightSemibold]
+        color:[UIColor labelColor]]];
+    [inner addArrangedSubview:[self ame217_labelText:localize(@"about.donate.body", nil)
+        font:[UIFont systemFontOfSize:12]
+        color:[UIColor secondaryLabelColor]]];
+
+    // 爱发电按钮（主按钮：品牌色底）
+    UIButton *afdianButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [afdianButton setTitle:[NSString stringWithFormat:@"❤️ %@", localize(@"about.donate.afdian", nil)]
+                  forState:UIControlStateNormal];
+    [afdianButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    afdianButton.titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
+    afdianButton.backgroundColor = [UIColor colorWithRed:0.95 green:0.36 blue:0.42 alpha:1.0];
+    afdianButton.layer.cornerRadius = 12.0;
+    afdianButton.contentEdgeInsets = UIEdgeInsetsMake(10, 20, 10, 20);
+    afdianButton.translatesAutoresizingMaskIntoConstraints = NO;
+    [afdianButton addTarget:self action:@selector(ame222_openAfdian) forControlEvents:UIControlEventTouchUpInside];
+    [inner addArrangedSubview:afdianButton];
+
+    // 微信赞赏码：bundle 内 donate.png 直显；缺失时回退链接按钮
+    NSString *donatePath = [NSBundle.mainBundle.resourcePath stringByAppendingPathComponent:@"donate.png"];
+    UIImage *donateImage = [UIImage imageWithContentsOfFile:donatePath];
+    if (donateImage != nil) {
+        UIImageView *iv = [[UIImageView alloc] initWithImage:donateImage];
+        iv.contentMode = UIViewContentModeScaleAspectFit;
+        iv.layer.cornerRadius = 12.0;
+        iv.layer.cornerCurve = kCACornerCurveContinuous;
+        iv.layer.masksToBounds = YES;
+        iv.translatesAutoresizingMaskIntoConstraints = NO;
+        iv.userInteractionEnabled = YES;
+        iv.accessibilityLabel = localize(@"about.donate.wechat_code", nil);
+        // 长按存图（扫码场景：存相册后微信扫一扫）
+        UILongPressGestureRecognizer *lp = [[UILongPressGestureRecognizer alloc]
+            initWithTarget:self action:@selector(ame222_saveDonateImage:)];
+        [iv addGestureRecognizer:lp];
+        [inner addArrangedSubview:iv];
+        [NSLayoutConstraint activateConstraints:@[
+            [iv.widthAnchor constraintEqualToConstant:220],
+            [iv.heightAnchor constraintEqualToConstant:220],
+        ]];
+    } else {
+        UIButton *wechatButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        [wechatButton setTitle:[NSString stringWithFormat:@"💬 %@", localize(@"about.donate.wechat_code", nil)]
+                      forState:UIControlStateNormal];
+        wechatButton.titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
+        wechatButton.backgroundColor = [accentColor() colorWithAlphaComponent:0.14];
+        wechatButton.layer.cornerRadius = 12.0;
+        wechatButton.contentEdgeInsets = UIEdgeInsetsMake(10, 20, 10, 20);
+        wechatButton.translatesAutoresizingMaskIntoConstraints = NO;
+        [wechatButton addTarget:self action:@selector(ame222_openGitHubDonate) forControlEvents:UIControlEventTouchUpInside];
+        [inner addArrangedSubview:wechatButton];
+    }
+
+    [self ame217_addCard:card inner:inner];
+}
+
+- (void)ame222_openAfdian {
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://afdian.com/a/yiqiu4178"]
+                                       options:@{} completionHandler:nil];
+}
+
+- (void)ame222_openGitHubDonate {
+    // 用户指令：赞赏码跳 GitHub 链接（仓库主分支原图）
+    [[UIApplication sharedApplication] openURL:[NSURL
+        URLWithString:@"https://github.com/Gsjsjzhznsz/Air-Minecraft-iOS-Launcher/blob/main/donate.png?raw=true"]
+                                       options:@{} completionHandler:nil];
+}
+
+- (void)ame222_saveDonateImage:(UILongPressGestureRecognizer *)lp {
+    if (lp.state != UIGestureRecognizerStateBegan) return;
+    NSString *donatePath = [NSBundle.mainBundle.resourcePath stringByAppendingPathComponent:@"donate.png"];
+    UIImage *donateImage = [UIImage imageWithContentsOfFile:donatePath];
+    if (donateImage == nil) return;
+    [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+        [PHPhotoLibrary creationRequestForAssetFromImage:donateImage];
+    } completionHandler:^(BOOL success, NSError *error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSString *msg = success ? localize(@"about.donate.saved", nil)
+                                    : (error.localizedDescription ?: localize(@"about.donate.save_failed", nil));
+            UIAlertController *alert = [UIAlertController
+                alertControllerWithTitle:localize(@"about.donate.save_title", nil)
+                                 message:msg
+                          preferredStyle:UIAlertControllerStyleAlert];
+            [alert addAction:[UIAlertAction actionWithTitle:localize(@"OK", @"好的")
+                                                      style:UIAlertActionStyleDefault handler:nil]];
+            [self presentViewController:alert animated:YES completion:nil];
+        });
+    }];
 }
 
 - (void)ame217_addCard:(UIView *)card inner:(UIView *)inner {

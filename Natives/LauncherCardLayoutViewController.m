@@ -17,11 +17,11 @@
 #import "ModpackImportViewController.h"
 #import "LauncherPrefGameDirViewController.h"
 #import "CustomControlsViewController.h"
-// ZeroTier/Terracotta 联机暂时移除（排查启动崩溃）
-// #import "MultiplayerViewController.h"
-// #import "TerracottaViewController.h"
-// #import "TerracottaManager.h"
-// #import "TerracottaBridge.h"
+// ★ [MP-RESTORE] Task222：ZeroTier/Terracotta 联机恢复（上游同日恢复）
+#import "MultiplayerViewController.h"
+#import "TerracottaViewController.h"
+#import "TerracottaManager.h"
+#import "TerracottaBridge.h"
 #import "AccountListViewController.h"
 #import "AI/AIViewController.h"
 #import "AI/AiSessionStore.h"
@@ -665,22 +665,38 @@ static CGFloat LauncherCardLayoutRightPanelWidth(UITraitCollection *trait) {
     [self setContentViewController:navVC animated:YES];
 }
 
-// ZeroTier/Terracotta 联机暂时移除（排查启动崩溃）
-// - (void)showMultiplayer { ... TerracottaViewController ... }
-// - (void)showZeroTier { ... MultiplayerViewController ... TerracottaManager ... }
+// ★ [MP-RESTORE] Task222：联机恢复——陶瓦联机 / ZeroTier 两个入口。
+//   容器模式（setContentViewController 包 nav）：TVC 的 isHiddenRoot 分支隐藏
+//   导航栏并注入左上角浮动关闭按钮（close 发 ShowHomePage 通知回主页）。
+//   会话进行中切 ZeroTier 时先停陶瓦会话，以免端口冲突。
 - (void)showMultiplayer {
-    [self showMultiplayerDisabledAlert];
+    // 陶瓦联机界面（与 HMCL/FCL/ZL2 互通）；libterracotta 未链接时提示
+    if (![TerracottaBridge isAvailable]) {
+        UIAlertController *alert = [UIAlertController
+            alertControllerWithTitle:localize(@"i18n_str_320", nil)
+                              message:localize(@"i18n_str_321", nil)
+                       preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_322", nil)
+                                                  style:UIAlertActionStyleDefault handler:nil]];
+        [self presentViewController:alert animated:YES completion:nil];
+        return;
+    }
+    TerracottaViewController *vc = [[TerracottaViewController alloc] init];
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+    nav.navigationBar.prefersLargeTitles = NO;
+    [self setContentViewController:nav animated:YES];
 }
+
 - (void)showZeroTier {
-    [self showMultiplayerDisabledAlert];
-}
-- (void)showMultiplayerDisabledAlert {
-    UIAlertController *alert = [UIAlertController
-        alertControllerWithTitle:localize(@"i18n_str_320", nil)
-                          message:localize(@"i18n_str_321", nil)
-                   preferredStyle:UIAlertControllerStyleAlert];
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_322", nil) style:UIAlertActionStyleDefault handler:nil]];
-    [self presentViewController:alert animated:YES completion:nil];
+    // ZeroTier 联机界面（独立入口）；若陶瓦会话进行中，先停以免端口冲突。
+    if ([TerracottaBridge isAvailable] &&
+        [TerracottaManager shared].status != TerracottaStatusDisconnected) {
+        [[TerracottaManager shared] stopSession];
+    }
+    MultiplayerViewController *vc = [[MultiplayerViewController alloc] initWithMode:MultiplayerVCModeLauncher];
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+    nav.navigationBar.prefersLargeTitles = NO;
+    [self setContentViewController:nav animated:YES];
 }
 
 - (void)showAccountManager {

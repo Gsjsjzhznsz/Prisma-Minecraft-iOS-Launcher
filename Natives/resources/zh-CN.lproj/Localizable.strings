@@ -2704,3 +2704,56 @@
 "ame219.mods.shared_chip" = "共享目录";
 "ame219.virgl.fallback.title" = "VirGL 不可用";
 "ame219.virgl.fallback.body" = "本次 VirGL vtest 服务启动失败，渲染器已回退到 Zink 以避免崩溃。可在实例设置中选择其他渲染器。";
+
+/* Task222: Terracotta 联机界面（上游 10-05 同步；2068-2070 重映射为 2091-2093，本地 Task220 占用原键） */
+"i18n_str_2072" = "正在检测端口…";
+"i18n_str_2073" = "请在 Minecraft 中：暂停 → 对局域网开放。检测到端口后会自动创建房间";
+"i18n_str_2074" = "已检测到端口 %u";
+"i18n_str_2075" = "选择一种方式开始联机";
+"i18n_str_2076" = "扫描本机端口";
+"i18n_str_2077" = "正在扫描本机端口…";
+"i18n_str_2078" = "已检查 %lu / %lu 个端口";
+"i18n_str_2079" = "未找到 Minecraft 端口，请先在游戏内「对局域网开放」";
+"i18n_str_2080" = "取消";
+"i18n_str_2081" = "复制";
+"i18n_str_2082" = "把邀请码发给好友，他们就能加入你的世界";
+"i18n_str_2083" = "在 Minecraft 的「多人游戏」中添加这个地址即可进入";
+"i18n_str_2084" = "开始创建";
+"i18n_str_2085" = "邀请码格式正确";
+"i18n_str_2087" = "未知错误";
+"i18n_str_2088" = "输入好友分享的邀请码";
+"i18n_str_2089" = "邀请码";
+"i18n_str_2090" = "服务器地址";
+"i18n_str_2091" = "把自己的世界开放给好友，自动生成邀请码";
+"i18n_str_2092" = "输入好友分享的邀请码，直接进他的世界";
+"i18n_str_2093" = "自动检测端口";
+
+/* Task222: 关于页贡献专区（清单第 18 项） */
+"about.donate.title" = "支持我们";
+"about.donate.body" = "如果这个启动器对你有帮助，欢迎支持一下——每一份支持都是持续更新的动力。";
+"about.donate.afdian" = "爱发电";
+"about.donate.wechat_code" = "微信赞赏码";
+"about.donate.save_title" = "赞赏码";
+"about.donate.saved" = "已保存到相册，可在微信中扫一扫相册图片。";
+"about.donate.save_failed" = "图片保存失败。";
+
+/* Task222: 欢迎向导 zl2 风格介绍页（清单第 17 项） */
+"welcome.intro.title" = "认识 Prisma";
+"welcome.intro.f1.title" = "完整的 Minecraft Java 版体验";
+"welcome.intro.f1.body" = "多游戏版本、多加载器（Fabric / Forge / NeoForge / Quilt），内置模组、光影与资源包管理。";
+"welcome.intro.f2.title" = "深度中文优化";
+"welcome.intro.f2.body" = "完整中文界面、应用内语言切换、国内友好的下载镜像（BMCLAPI / MCIM）。";
+"welcome.intro.f3.title" = "TouchController 触控";
+"welcome.intro.f3.body" = "配合 TouchController 模组获得完整触屏虚拟按键——随时随地开玩，无需键盘。";
+"welcome.intro.f4.title" = "多人联机";
+"welcome.intro.f4.body" = "陶瓦联机（与 HMCL / FCL / ZL2 互通）+ ZeroTier 房间。";
+"welcome.intro.community.title" = "加入社区";
+"welcome.intro.community.hint" = "QQ 群 1126547426——交流、反馈与构建发布通知。觉得好用？欢迎到「关于」页爱发电支持我们。";
+"welcome.intro.next_hint" = "接下来会为你打开「关于」页——版本信息、QQ 群与更新检查都在那里。";
+
+/* Task222: 启动等待界面阶段文案（清单第 16 项） */
+"launch.stage.0" = "正在准备运行环境…";
+"launch.stage.1" = "正在启动 Java 虚拟机…";
+"launch.stage.2" = "正在加载游戏与模组…";
+"launch.stage.3" = "正在初始化资源…";
+"launch.stage.4" = "正在打开游戏窗口…";

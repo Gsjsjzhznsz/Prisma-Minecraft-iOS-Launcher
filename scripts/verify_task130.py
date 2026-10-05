@@ -316,9 +316,9 @@ sets = []
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     sets.append(set(re.findall(r'^"([^"]+)"\s*=',
                   rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M)))
-# Task138 重锚：+2 键（renderer_missing_dylib + mirror_policy-speed_first）
+# Task222 重锚：2565 = Task212 基线 2520 + 陶瓦联机 21 + 捐赠 7 + 向导介绍页 12 + 启动阶段 5
 check("H3 四语言键集一致（Task157 基线 2228 = Task156 基线 2228 + Task157 组件键 2）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2520,
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2565,  # Task222 重锚：+21 陶瓦联机键
       f"counts={[len(s) for s in sets]}")
 
 delta_ok = True

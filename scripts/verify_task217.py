@@ -180,8 +180,9 @@ check("F8 版本号 6.5.0 + REVISION 21（identity-follows-cache-epoch）",
       and "REVISION 20->21 bump addendum (Task 217)" in vh)
 
 print("== G. README（许可证 + QQ 群） ==")
-rm = rd("README.md")
-rmc = rd("README_CN.md")
+# Task222 重锚：README.md 现为中文默认，英文移至 README_EN.md
+rm = rd("README_EN.md")
+rmc = rd("README.md")
 check("G1 EN：Community 段 QQ 群 + License 段（AGPL + LICENSE 文件说明）",
       "QQ Group: 1126547426" in rm and "## License" in rm
       and "GNU Affero General Public License v3.0" in rm
@@ -208,7 +209,7 @@ print("== I. l10n 基线 ==")
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"I-{lang} 唯一键 2520（Task217 +36）", len(keys) == 2520, f"got {len(keys)}")
+    check(f"I-{lang} 唯一键 2565（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2565, f"got {len(keys)}")
 zh = rd("Natives/resources/zh-Hans.lproj/Localizable.strings")
 en = rd("Natives/resources/en.lproj/Localizable.strings")
 check("I-核心键在位（isolation/导出导入/about/mods/fabricapi）",

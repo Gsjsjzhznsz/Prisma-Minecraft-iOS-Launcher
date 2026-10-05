@@ -136,8 +136,8 @@ for lg in langs:
     check(f"D[{lg}] key set (toggle + mg + backend-warn; picker key retired; detail reworded)",
           n1 and n2 and n3 and n4 and n5)
     sets.append(set(re.findall(r'^"([^"]+)"\s*=', s, re.M)))
-check("D5 Task150: four-language key sets identical (1952 = Task150 1928 + Task151 bing 17)",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2520,
+check("D5 Task150: four-language key sets identical (Task222 重锚：2560 = 2520 + 陶瓦联机 21 + 捐赠 7 + 向导介绍页 12)",
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2565,
       f"counts={[len(x) for x in sets]}")
 
 print("== E. Publish assets ==")
@@ -153,7 +153,8 @@ check("E3 stale Task139 dual-write bullet removed",
       '设置页的选择现在与实例配置同步写入' not in e['content'])
 check("E4 Task150: English tail re-worded to per-game mandatory selection",
       'per-game mandatory' in e['content'] and 'no global default' in e['content'])
-rcn = read('README_CN.md'); ren = read('README.md')
+# Task222：README 重构——README.md 现为中文默认，英文移至 README_EN.md
+rcn = read('README.md'); ren = read('README_EN.md')
 check("E5 Task150: README_CN renderer row per-game mandatory",
       '每游戏强制单选' in rcn and '缺省\"自动\"' in rcn and '唯一的 mg 条目' in rcn)
 check("E6 Task150: README EN renderer row per-game mandatory",
