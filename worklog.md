@@ -1796,3 +1796,16 @@ Stage Summary:
 - 用户操作指引：正版账号（Xiaobumoxie）需在账号列表删除后重新登录一次（keychain 条目已损坏，D5 自清 + 重登覆盖写入即根治；头像 gamerpic 与正版皮肤随重登恢复）
 - 环境遗留：本沙箱无 javac/ECJ（Java 改动以括号平衡门 + 人工复核覆盖，CI 编译兜底）；202/206/174/175 等聚合器在本沙箱需拆分模式或长时间运行（全程已分跑实证全绿）；19 项清单（README 重构/版本隔离/陶瓦联机/等待进度/zl2 介绍页/贡献专区/i18n + 丢失的 1-12 项）留待后续轮次
 - 教训入库：①死链镜像（api.rms.net.cn、111.170.35.224:3000）写进账号文件等于给每个用户埋雷——外部 URL 必须有回退链且写入前验证可达性或至少保持可再派生（crafatar/minotar 由 UUID/username 可再派生）；②内存态修复必须同步考虑落盘路径（否则数据源每次启动复活脏值）；③判别器多处实现必然漂移——单一口径函数 + 显式标记字段（accountType）才是根治；④日志类验证证据 git-pin 后仍要在注释里写明证据源的完备性论证（哪些锚点齐备、哪些法医行是注释非崩溃）
+
+---
+Task ID: 220-ci
+Agent: main (Super Z)
+Task: Task 220 CI 闭环
+
+Work Log:
+- 推送 0f274629（token 恢复后一次成功；远端提示仓库已迁至 Prisma-Minecraft-iOS-Launcher，GitHub 自动重定向，推送/CI 均正常）
+- run 37251949976（0f274629）：completed success——Task 220 全链闭环（verify_task220 43/43 + 舰队触及面全绿 + CI），新 IPA 就绪
+
+Stage Summary:
+- 装机验证清单见 Task 220 主条目（六项修复的日志锚点 + 用户操作指引：正版账号删除重登一次即可根治 keychain 损坏与头像链）
+- 顺带观察：50254b8d / def65d79 两次日志上传提交的 CI 也均为 success（用户上传日志不影响构建）
