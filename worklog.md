@@ -1835,3 +1835,19 @@ Stage Summary:
 - 用户操作指引：装新 IPA 后重点回归清单 1-11 的原始复现路径（后台切换/隔离切换/JIT 等待/导出/导入导出欢迎流程）；TouchController 若曾手动关过，新安装会重新启用（哨兵撤销语义）
 - 环境遗留：209 聚合器全程需 ~15 分钟超沙箱墙钟（各腿已分跑实证全绿）；本沙箱无 ObjC 编译器（语法门为结构代理门，CI 编译兜底）
 - 教训入库：①上游同步必须先做归因分流（Source: Prisma 的提交是自家回流的，直接套用会回退本树改进——Xss1m vs Xss32M 即实例）；②验证器 stripper 的注释/字符串剥离顺序是潜在炸弹（URL 含 // 时先剥注释必坏），house 五态状态机是唯一正确形态；③日志证据 git-pin 的完备性论证要随每次日志上传重新审计（2832c2b 轮替让三份取证检查同时失锚）
+
+---
+Task ID: 223-ci
+Agent: main (Super Z)
+Task: Task 223 CI 闭环（六轮修复 + 终绿 + IPA 锚点验证）
+
+Work Log:
+- 推送链：888112a67（主提交，rebase 过用户网页端 FUNDING.yml 编辑 36ca4b25a）→ 5bf726fad（CI 修复 r1）→ e6c4ce7c7（r2）→ 8a04f0450（审计工具入库）→ ac3790864（r3）→ a05bd7077（r4）→ 71d1523e0（r5）→ d034c63e7（r6）；另有一次 runner 基建取消（37363720192 attempt1 无日志空 zip，rerun attempt2 判真失败）
+- 六轮错误全记录（每轮 make 停在首个失败边 + waiting for unfinished jobs，未调度的 TU 永远藏着下一个错）：r1 DataTransferService __block(值类型) + DataExport UnzipKit/UnzipKit.h 导入路径（仓内约定 "UnzipKit.h" 走 CMake include）；r2 DataExport [UIColor tertiarySystemFill]×3（须 Color 后缀）+ UIWindow.mainWindow 缺 UIKit+hook.h；r3 WelcomeViewController ame219_anchor __block(对象指针)；r4 SurfaceViewController Block_copy/Block_release 与 ARC 不兼容（改 dispatch_block_create——唯一支持 cancel 的创建方式，语义不变）；r5 TerracottaManager parts[0].UTF8String 点语法于 id 接收者；r6 我的 r5 修复把分号写进了行注释
+- 打地鼠方法论沉淀：每轮失败后跑"未调度 TU 全集"的类别扫描（r1 头文件图符号可见性解析器 + r2 线性块体 __block 审计（值类型）+ 指针类型扩展 + id 点语法扫描 + ARC 禁用模式扫描 + 头声明-实现配对），把已见错误类清零后才推送；TU 覆盖进度 69→70→74→119→125→906 全编（Mesa 906/906 + 链接全过）
+- run 37373833724（d034c63e7）completed success；IPA 工件 11371961377 下载解包 strings 验证：Task223×22、dataexport.start、coachmarks.hint、stikjit_unhandled、BG-Park×4、Task223 IME debounce×2、auto-config applied immediately 全部在位（"修了没编进去"防伪通过）
+
+Stage Summary:
+- Task 223 全链闭环：25 项清单 + 两波上游移植 + i18n×4 + verify_task223 77/77 + 舰队再锚 13 个验证器 + CI 六轮修复终绿 + IPA 锚点验证
+- 装机验证锚点见 Task 223 主条目；重点回归清单 1-11 原始复现路径（后台切换/隔离切换/JIT 等待/导出/欢迎流程/IME 连续输入/陶瓦断网提示）
+- 教训入库：①行尾注释吃分号（编辑以表达式收尾的表达式替换时必须显式补标点）；②Block_copy/Block_release 在 ARC 目标 = 编译错误（dispatch_block_create + NULL 赋值是正解）；③make 的"waiting for unfinished jobs"意味着每轮 CI 只验证了部分 TU——未调度集审计比等待下一轮快且省 CI 时长；④id 接收者禁点语法（untyped NSArray 下标元素必须方括号消息）
