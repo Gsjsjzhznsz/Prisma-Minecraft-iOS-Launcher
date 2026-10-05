@@ -2482,8 +2482,7 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     //   结束，键盘保持（不闪断、不打断组字）。
     if (ame223_pendingStopResign) {
         dispatch_block_cancel(ame223_pendingStopResign);
-        Block_release(ame223_pendingStopResign);
-        ame223_pendingStopResign = NULL;
+        ame223_pendingStopResign = NULL;   // Task223 CI 修复：ARC 下赋 NULL 即释放
         NSLog(@"[SurfaceVC] Task223 IME debounce: pending stop-resign cancelled by StartTextInput (rapid Stop->Start cycle)");
     }
     if (self.inputTextField.isFirstResponder) return;
@@ -2519,10 +2518,12 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         //   "每字符 Stop->Start" 整类循环从【必闪断】降级为【零感知】。
         if (ame223_pendingStopResign) {
             dispatch_block_cancel(ame223_pendingStopResign);
-            Block_release(ame223_pendingStopResign);
+            ame223_pendingStopResign = NULL;   // Task223 CI 修复：ARC 下静态强引用赋 NULL 即释放（Block_release 需桥接且与 ARC 双重释放）
         }
         __weak typeof(self) weakSelf = self;
-        ame223_pendingStopResign = Block_copy(^{
+        // Task223 CI 修复：Block_copy → dispatch_block_create（ARC 安全 + 唯一支持
+        // dispatch_block_cancel 的创建方式；被取消的块提交到 dispatch_after 后不再执行）。
+        ame223_pendingStopResign = dispatch_block_create(0, ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
             if (!strongSelf.inputTextField.isFirstResponder) return;
