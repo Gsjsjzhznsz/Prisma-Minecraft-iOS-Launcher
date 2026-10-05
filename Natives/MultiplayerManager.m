@@ -79,10 +79,10 @@ static NSString * const kMultiplayerEnabledKey = @"multiplayer.enabled";
 static NSString * const kDefaultMCPort = @"25565";
 
 /// 分享文本中的各种前缀标记（用于生成和解析）
-static NSString * const kShareHeaderLine = localize(@"i18n_str_599", nil);
-static NSString * const kShareRoomNamePrefix = localize(@"i18n_str_600", nil);
-static NSString * const kShareNetworkIdPrefix = localize(@"i18n_str_601", nil);
-static NSString * const kShareServerAddressPrefix = localize(@"i18n_str_602", nil);
+/// Task222 CI fix：原 static NSString * const = localize(...) 是 C 编译期常量违规
+/// （localize 是函数调用，文件域初始化器必须为编译期常量；基线从未编译过此文件，
+/// MP-RESTORE 重新纳入构建后暴露）。改在使用点直接 localize()，与下方 636-639 同风格，
+/// 且顺带修正语义——分享时按当前语言取值而非进程首次加载时的语言。
 
 /// SOCKS5 代理默认端口（与 SOCKS5Proxy.h 中的 SOCKS5ProxyDefaultPort 一致）
 static uint16_t const kMultiplayerDefaultSOCKS5Port = 1080;
@@ -1932,18 +1932,18 @@ typedef NS_ENUM(NSInteger, MultiplayerErrorCode) {
 
     NSMutableString *text = [NSMutableString string];
 
-    [text appendString:kShareHeaderLine];
+    [text appendString:localize(@"i18n_str_599", nil)];
     [text appendString:@"\n"];
 
-    [text appendString:kShareRoomNamePrefix];
+    [text appendString:localize(@"i18n_str_600", nil)];
     [text appendString:name];
     [text appendString:@"\n"];
 
-    [text appendString:kShareNetworkIdPrefix];
+    [text appendString:localize(@"i18n_str_601", nil)];
     [text appendString:networkId];
     [text appendString:@"\n"];
 
-    [text appendString:kShareServerAddressPrefix];
+    [text appendString:localize(@"i18n_str_602", nil)];
     [text appendString:serverAddress];
     [text appendString:@"\n"];
 
