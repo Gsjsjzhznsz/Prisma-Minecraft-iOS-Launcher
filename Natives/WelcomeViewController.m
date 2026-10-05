@@ -1362,7 +1362,7 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     [self ame219_addHeaderTo:container
                        title:localize(@"welcome.data.title", nil)
                     subtitle:localize(@"welcome.data.subtitle", nil)];
-    UIView *ame219_anchor = container.subviews.lastObject;
+    __block UIView *ame219_anchor = container.subviews.lastObject;   // Task223 CI 修复：ame223_addRow 块内重指锚（ame223 重建数据步骤引入）
 
     // ★ Task223（清单第 15 项）：选项行改真 UIAction 按钮（旧 UITapGestureRecognizer
     //   挂在零高度/被拉伸的普通 UIView 上 = “部分按键仍点击不了”的头号嫌疑；
