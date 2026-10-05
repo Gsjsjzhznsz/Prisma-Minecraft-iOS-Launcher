@@ -1854,7 +1854,33 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             });
             return;
         }
-        
+
+        // Task220：正版账号启动前令牌门控——keychain 令牌缺失/损坏时（换侧载
+        // 方式/恢复备份后的常见态，Task185 取证锚点 "SecItem OK but unarchive
+        // failed"），游戏会带着 accessToken="0" 启动：正版皮肤不加载、多人会话
+        // 校验必败（用户主诉"正版账号皮肤不正常"的根源之一）。此前修复弹窗
+        // 只在选择账号 / 右面板刷新时出现，直接点启动的用户全程无感。现在
+        // 启动前显式拦下并给出一键修复入口（ame187：删账号重登，登录成功后
+        // pendingLaunchAfterLogin 自动接续启动）。Demo 账号（无 MC profile，
+        // 用户名 Demo. 前缀）本就只能离线玩，不拦。
+        if ([currentAuth isKindOfClass:[MicrosoftAuthenticator class]]) {
+            NSString *ame220_xuid = currentAuth.authData[@"xuid"];
+            NSString *ame220_user = currentAuth.authData[@"username"];
+            BOOL ame220_isDemo = [ame220_user isKindOfClass:NSString.class] && [ame220_user hasPrefix:@"Demo."];
+            if (!ame220_isDemo && [ame220_xuid isKindOfClass:NSString.class] && ame220_xuid.length > 0 &&
+                ![MicrosoftAuthenticator tokenDataOfProfile:ame220_xuid]) {
+                NSLog(@"[SurfaceViewController] Task220 launch gate: MS account token missing/corrupt (user=%@, xuid=%@) -- repair dialog shown",
+                      ame220_user, ame220_xuid);
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self dismissLaunchOverlayOnError];
+                    ame187_showAccountRepairDialog(ame220_user,
+                                                   currentAuth.authData[@"accountId"],
+                                                   ame220_xuid);
+                });
+                return;
+            }
+        }
+
         // Validate accountId（用作账户文件名，传给 Java 端加载对应账户）
         NSString *accountId = currentAuth.authData[@"accountId"];
         if (!accountId || accountId.length == 0) {

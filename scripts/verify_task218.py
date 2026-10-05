@@ -216,11 +216,11 @@ check("G-新键在位（welcome 全家 + ame218.crash 全家）",
           "ame218.crash.renderer.body", "ame218.crash.blacklisted", "ame218.crash.view"]))
 ann = json.load(open("announcements.json"))["announcements"]
 check("G-公告 41 条 + 尾锚家族顺延（Task219 后：219@-1 / 218@-2 / 217@-3 / 216@-4 / 206@-5）",
-      len(ann) == 41
-      and ann[-2]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
-      and ann[-3]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-4]["id"] == "task216-ui-2026-10-03"
-      and ann[-5]["id"] == "task206-nggl4es-2026-10-01"
+      len(ann) == 42
+      and ann[-3]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
+      and ann[-4]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-5]["id"] == "task216-ui-2026-10-03"
+      and ann[-6]["id"] == "task206-nggl4es-2026-10-01"
       and ann[0].get("pin") is True)
 
 print("== H. 语法平衡 + 基线 ==")
@@ -269,16 +269,16 @@ check("H4 公告 JSON 可解析且 id 唯一",
 print("== I. 级联抽查（本轮重锚族） ==")
 spot = {
     "scripts/verify_task217.py": ['<string>com.air-devs.air</string>',
-                                  "len(ann) == 41", "#define REVISION 22", "2520"],
-    "scripts/verify_task216.py": ["<string>com.air-devs.air</string>", "len(ann) == 41",
+                                  "len(ann) == 42", "#define REVISION 22", "2520"],
+    "scripts/verify_task216.py": ["<string>com.air-devs.air</string>", "len(ann) == 42",
                                   "#define REVISION 22"],
-    "scripts/verify_task213.py": ["len(ids) == 41"],
-    "scripts/verify_task214.py": ["len(ann) == 41", "2520"],
-    "scripts/verify_task212.py": ["len(ann) == 41", "2520"],
-    "scripts/verify_task211.py": ["len(ann) == 41", "2520"],
-    "scripts/verify_task210.py": ["len(ann) == 41", "2520"],
-    "scripts/verify_task207.py": ["len(ann) == 41"],
-    "scripts/verify_task206.py": ["len(ann) == 41", "ann[-4]", "2520"],
+    "scripts/verify_task213.py": ["len(ids) == 42"],
+    "scripts/verify_task214.py": ["len(ann) == 42", "2520"],
+    "scripts/verify_task212.py": ["len(ann) == 42", "2520"],
+    "scripts/verify_task211.py": ["len(ann) == 42", "2520"],
+    "scripts/verify_task210.py": ["len(ann) == 42", "2520"],
+    "scripts/verify_task207.py": ["len(ann) == 42"],
+    "scripts/verify_task206.py": ["len(ann) == 42", "ann[-5]", "2520"],
 }
 g_ok = True
 g_detail = []

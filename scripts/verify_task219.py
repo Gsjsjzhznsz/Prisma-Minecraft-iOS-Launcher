@@ -208,16 +208,16 @@ for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN"]:
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
     check(f"J-{lang} 唯一键 2520（Task219 +38）", len(keys) == 2520, f"got {len(keys)}")
 check("J-公告 41 条 + task219 尾锚 + 家族顺延（218@-2 / 217@-3 / 216@-4 / 206@-5）",
-      len(ann) == 41
-      and ann[-1]["id"] == "task219-virgl-angle-welcome-rebuild-2026-10-04"
-      and ann[-2]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
-      and ann[-3]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-4]["id"] == "task216-ui-2026-10-03"
-      and ann[-5]["id"] == "task206-nggl4es-2026-10-01")
+      len(ann) == 42
+      and ann[-2]["id"] == "task219-virgl-angle-welcome-rebuild-2026-10-04"
+      and ann[-3]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
+      and ann[-4]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-5]["id"] == "task216-ui-2026-10-03"
+      and ann[-6]["id"] == "task206-nggl4es-2026-10-01")
 check("J-公告内容覆盖本轮主题（VirGL/ANGLE/向导/导出/隔离）",
-      "VirGL" in ann[-1]["content"] and "ANGLE" in ann[-1]["content"]
-      and "欢迎向导" in ann[-1]["content"] and "压缩等级" in ann[-1]["content"]
-      and "隔离" in ann[-1]["content"])
+      "VirGL" in ann[-2]["content"] and "ANGLE" in ann[-2]["content"]
+      and "欢迎向导" in ann[-2]["content"] and "压缩等级" in ann[-2]["content"]
+      and "隔离" in ann[-2]["content"])
 check("J-JSON 可解析 + id 唯一",
       len(set(a["id"] for a in ann)) == len(ann))
 
@@ -271,16 +271,16 @@ for p in ["Natives/ctxbridges/virgl_server.m", "Natives/egl_bridge.m",
 
 print("== M. 舰队重锚（计数与尾窗顺延） ==")
 spot = {
-    "scripts/verify_task218.py": ['len(ann) == 41', "ann[-2][\"id\"] == \"task218-air-interim",
+    "scripts/verify_task218.py": ['len(ann) == 42', "ann[-3][\"id\"] == \"task218-air-interim",
                                   "EnvJitStep", "2520"],
-    "scripts/verify_task217.py": ["len(ann) == 41", "task219-virgl-angle-welcome-rebuild"],
-    "scripts/verify_task216.py": ["== 41", "ids[-4] == \"task216-ui"],
-    "scripts/verify_task214.py": ["ids[-4] == \"task216-ui", "'== 41' in v207"],
-    "scripts/verify_task213.py": ["'== 41' in v207"],
-    "scripts/verify_task211.py": ["== 41"],
-    "scripts/verify_task210.py": ["== 41"],
-    "scripts/verify_task206.py": ["ann[-5][\"id\"] == \"task206-nggl4es"],
-    "scripts/verify_task207.py": ["ann[-3][\"id\"] == \"task217-download-fixes"],
+    "scripts/verify_task217.py": ["len(ann) == 42", "task219-virgl-angle-welcome-rebuild"],
+    "scripts/verify_task216.py": ["== 42", "ids[-5] == \"task216-ui"],
+    "scripts/verify_task214.py": ["ids[-5] == \"task216-ui", "'== 42' in v207"],
+    "scripts/verify_task213.py": ["'== 42' in v207"],
+    "scripts/verify_task211.py": ["== 42"],
+    "scripts/verify_task210.py": ["== 42"],
+    "scripts/verify_task206.py": ["ann[-6][\"id\"] == \"task206-nggl4es"],
+    "scripts/verify_task207.py": ["ann[-4][\"id\"] == \"task217-download-fixes"],
 }
 g_ok, g_detail = True, []
 for path, needles in spot.items():

@@ -20,6 +20,10 @@ typedef char GLchar;
 typedef void GLvoid;
 #define GL_GLEXT_PROTOTYPES
 #include "GL/gl_stub.h"
+/* Task220：标记头先行（生产镜像在文件尾部才 include，Foundation 依赖所迫，
+ * 尾部注入的宏来不及先于本驱动的桩守卫生效——由 transform 生成的独立
+ * 标记头承担顺序解耦） */
+#include "ame179_prod_marker.h"
 
 static char g_captured[65536];
 static int g_capture_count = -1;
@@ -49,16 +53,23 @@ void *eglGetProcAddress(const char *procname) { return NULL; }
 /* ---- harness stubs: ES-side functions referenced by the completion layer ---- */
 void glGetFloatv(GLenum pname, GLfloat *params) { (void)pname; (void)params; }
 void glGetBooleanv(GLenum pname, GLboolean *params) { (void)pname; (void)params; }
+/* Task220 剔重守卫：生产镜像（task179_inc/tinygl4angle_harness.c）自带
+ * Task203 空安全包装器时（AME179_PROD_GL_STUBS），停用本驱动桩，
+ * 语义等价（未解析指针 = no-op，同旧桩）。 */
+#ifndef AME179_PROD_GL_STUBS
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void *indices) { (void)mode; (void)count; (void)type; (void)indices; }
 void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei pc) { (void)mode; (void)count; (void)type; (void)indices; (void)pc; }
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) { (void)mode; (void)first; (void)count; }
+#endif
 void glColorMask(GLboolean r, GLboolean g, GLboolean b, GLboolean a) { (void)r;(void)g;(void)b;(void)a; }
 // Task187: 本地 glEnable 桩退役——镜像 harness 自带 Task187 包装（desktop-only no-op + 转发），语义等价
 void glDisable(GLenum cap) { (void)cap; }
 void glBlendFuncSeparate(GLenum a, GLenum b, GLenum c, GLenum d) { (void)a;(void)b;(void)c;(void)d; }
 void glBlendEquationSeparate(GLenum a, GLenum b) { (void)a;(void)b; }
 void glFramebufferTexture2D(GLenum a, GLenum b, GLenum c, GLuint d, GLint e) { (void)a;(void)b;(void)c;(void)d;(void)e; }
+#ifndef AME179_PROD_GL_STUBS
 void glGetIntegerv(GLenum pname, GLint *params) { (void)pname; (void)params; }
+#endif
 void glVertexAttrib4fv(GLuint index, const GLfloat *v) { (void)index; (void)v; }
 void glClearDepthf(float d) { (void)d; }
 void glDepthRangef(float n, float f) { (void)n; (void)f; }

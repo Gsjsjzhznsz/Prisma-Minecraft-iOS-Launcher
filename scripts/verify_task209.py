@@ -206,8 +206,8 @@ check("D1 version.h Task209 附录（改名 + 红鲱鱼 + 探针 + 尾部 SEP）
 ann = json.loads(rd("announcements.json"))["announcements"]
 a209 = ann[8] if len(ann) > 2 else {}  # Task212 重锚：task212@2 插入顺延
 check("D2 公告 task209@2（Task212 重锚：34 条 + 末位 task206 不动 + 内容双主题）",
-      len(ann) == 41 and a209.get("id") == "task209-krypton-rename-2026-10-01"
-      and ann[-3]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      len(ann) == 42 and a209.get("id") == "task209-krypton-rename-2026-10-01"
+      and ann[-4]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
       and "Krypton Wrapper" in a209.get("title", "")
       and "红鲱鱼" in a209.get("content", "")
       and "Initialising Krypton Wrapper" in a209.get("content", ""))

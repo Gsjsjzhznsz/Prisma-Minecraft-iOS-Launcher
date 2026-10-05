@@ -187,12 +187,25 @@ typedef void(^XSTSCallback)(NSString *xsts, NSString *uhs);
             [uuid substringWithRange:NSMakeRange(16, 4)],
             [uuid substringWithRange:NSMakeRange(20, 12)]
         ];
-        // Task185：先落 username 再拼头像 URL——旧顺序在首登时 username 尚为
-        // nil，profilePicURL 被存成字面 "head/(null)"；之后刷新链若在
-        // checkMCProfile 之前断掉（如 keychain 丢失），坏 URL 永久留在
-        // .json 里 = “正版账号没有皮肤”的直接根源之一。
+        // Task185：先落 username——旧顺序在首登时 username 尚为 nil，拼出的
+        // 头像 URL 存成字面 "head/(null)"；之后刷新链若在 checkMCProfile
+        // 之前断掉（如 keychain 丢失），坏 URL 永久留在 .json 里 =
+        // “正版账号没有皮肤”的直接根源之一。
         self.authData[@"username"] = response[@"name"];
-        self.authData[@"profilePicURL"] = [NSString stringWithFormat:@"https://api.rms.net.cn/head/%@", self.authData[@"username"]];
+        // Task220：不再写 api.rms.net.cn 皮肤头镜像——该域名 DNS 已失效
+        //（装机实测 "Task169 avatar fetch failed ... 未能找到使用指定主机名的
+        // 服务器"，同会话连续 4 次），写进去等于给每个正版账号埋一个必死的
+        // 头像主 URL。同链上一步 acquireXboxProfile 刚写入 Xbox 官方 gamerpic
+        //（带 &h=120&w=120 尾参），保留即可；仅当现值为脏数据（"(null)"
+        // /"(nil)" 子串）时删除该键，让展示层回退链（crafatar UUID /
+        // minotar username）接管。
+        NSString *ame220_pic = self.authData[@"profilePicURL"];
+        if ([ame220_pic isKindOfClass:NSString.class] &&
+            ([ame220_pic containsString:@"(null)"] || [ame220_pic containsString:@"(nil)"])) {
+            [self.authData removeObjectForKey:@"profilePicURL"];
+            NSLog(@"[Task220] checkMCProfile: dropped dirty profilePicURL (gamerpic retained / fallback chain takes over, user=%@)",
+                  self.authData[@"username"]);
+        }
         // 微软账户用 xuid 作为 accountId（全局唯一且稳定），使同名账户可共存
         self.authData[@"accountId"] = self.authData[@"xuid"];
         callback(nil, [self saveChanges]);
@@ -224,17 +237,32 @@ typedef void(^XSTSCallback)(NSString *xsts, NSString *uhs);
 }
 
 - (void)refreshTokenWithCallback:(Callback)callback {
-    // Task185：修复历史脏数据——首登顺序 bug 存下的 "head/(null)" 头像 URL
-    //（他人装机日志实锤：[Task180] RightPanel avatar fetch failed
-    // (url=…head/(null))，同一会话弹 5 次 keychain 报错）。内存态修复即可
-    // 让本会话头像恢复正常；下次登录成功后 .json 自然重写为正确值。
+    // Task185→Task220：历史脏数据（首登顺序 bug 存下的 "head/(null)" 头像
+    // URL）双修。旧版只在内存里换成 api.rms.net.cn 镜像 URL，两个问题：
+    //（a）该域名 DNS 已失效，换过去仍是死链（装机实测拉取必败）；（b）内存
+    // 态修复不落盘，刷新链一旦因 keychain 丢失而走不完，坏值每次启动都从
+    // .json 里满血复活（latestlog (2).txt 实锤：反复 "no clean profilePicURL"
+    // + 回退链接管）。现在：直接删除脏键（展示层回退链 crafatar/minotar
+    // 接管，下次成功重登时 acquireXboxProfile 会写入干净的 gamerpic），并把
+    // 清理结果写回账号文件——绕过 saveChanges（那条路需要 accessToken 写
+    // keychain，无令牌时会弹保存失败对话框）。
     {
         NSString *ame185_pic = self.authData[@"profilePicURL"];
-        NSString *ame185_user = self.authData[@"username"];
-        if ([ame185_pic isKindOfClass:NSString.class] && [ame185_pic containsString:@"(null)"]
-            && [ame185_user isKindOfClass:NSString.class] && ame185_user.length > 0) {
-            self.authData[@"profilePicURL"] = [NSString stringWithFormat:@"https://api.rms.net.cn/head/%@", ame185_user];
-            NSLog(@"[Task185] repaired corrupted profilePicURL (was head/(null), username=%@)", ame185_user);
+        if ([ame185_pic isKindOfClass:NSString.class] &&
+            ([ame185_pic containsString:@"(null)"] || [ame185_pic containsString:@"(nil)"])) {
+            [self.authData removeObjectForKey:@"profilePicURL"];
+            NSString *ame220_aid = self.authData[@"accountId"];
+            if ([ame220_aid isKindOfClass:NSString.class] && ame220_aid.length > 0) {
+                NSString *ame220_path = [NSString stringWithFormat:@"%s/accounts/%@.json",
+                    getenv("POJAV_HOME"), ame220_aid];
+                NSMutableDictionary *ame220_disk = parseJSONFromFile(ame220_path);
+                if ([ame220_disk isKindOfClass:NSDictionary.class] &&
+                    ame220_disk[@"profilePicURL"] != nil) {
+                    [ame220_disk removeObjectForKey:@"profilePicURL"];
+                    saveJSONToFile(ame220_disk, ame220_path);
+                }
+            }
+            NSLog(@"[Task220] scrubbed dirty profilePicURL in memory + on disk (was: %@)", ame185_pic);
         }
     }
     if (!self.tokenData) {
@@ -303,6 +331,12 @@ typedef void(^XSTSCallback)(NSString *xsts, NSString *uhs);
         if (!ame185_tokens) {
             // Task185：取证锚点——条目在但解档失败（数据损坏）
             NSLog(@"[Task185] keychain token read: SecItem OK but unarchive failed for profile %@", profile);
+            // Task220：损坏条目自清——数据已不可用，留着只会让后续每次读取
+            // 都走一遍“损坏”分支，状态含混（存在但读不出，重登前永远如此）。
+            // 清掉后状态收敛为干净的“缺失”；重登（setAccessToken 的
+            // delete+add）本就能覆盖写入，无副作用。
+            SecItemDelete((__bridge CFDictionaryRef)[MicrosoftAuthenticator keychainQueryForKey:profile extraInfo:nil]);
+            NSLog(@"[Task220] keychain corrupt entry self-cleared for profile %@", profile);
         }
         return ame185_tokens;
     }

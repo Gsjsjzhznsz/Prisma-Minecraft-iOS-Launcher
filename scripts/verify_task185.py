@@ -138,8 +138,10 @@ check('"NavCtrl main wait"' in nc and '"NavCtrl reattach wait"' in nc,
 
 # --------------------------------------------------- F. keychain 三处根修
 msa = read("Natives/authenticator/MicrosoftAuthenticator.m")
-check('self.authData[@"username"] = response[@"name"];\n        self.authData[@"profilePicURL"]' in msa,
-      "F1: 先落 username 再拼头像 URL（顺序修复）")
+check('self.authData[@"username"] = response[@"name"];' in msa
+      and msa.find('self.authData[@"username"] = response[@"name"]') < msa.find("ame220_pic"),
+      "F1: 先落 username 再处理头像键（顺序修复；Task220 重锚：不再拼 rms.net.cn 死链镜像，"
+      "改为保留 Xbox gamerpic + 剔除脏值，username 仍先行）")
 check("ame185_shown" in msa,
       "F2: 会话内弹窗去重")
 check("ame187_showAccountRepairDialog(self.authData[@\"username\"]," in msa,

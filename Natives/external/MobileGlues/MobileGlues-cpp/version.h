@@ -557,6 +557,42 @@
 // falling back to the shared mods folder); the mods manager shows an
 // isolation badge. (7) VGPU relabeled "VGPU (<=1.17)". REVISION stays 22:
 // no identity change, launcher-side + renderer-side-internal only.
+// REVISION 22 addendum (Task 220, no bump -- account/avatar/skin integrity
+// round from the 50254b8d/e1f2114e/def65d79 log set, user report: genuine
+// account misjudged as third-party, avatar + skin abnormal). Six fixes,
+// all account-chain, zero renderer/identity touch. (1) checkMCProfile no
+// longer overwrites the just-acquired Xbox gamerpic URL with the
+// api.rms.net.cn head mirror -- that domain's DNS is dead on device
+// ("Task169 avatar fetch failed ... host not found" x4 in one session),
+// so every genuine account carried a guaranteed-dead primary avatar URL;
+// dirty "(null)"/"(nil)" values are dropped instead, letting the
+// crafatar/minotar fallback chain serve. (2) The dirty profilePicURL
+// legacy (first-login-order bug) now heals ON DISK: loadSavedName scrubs
+// + rewrites the account json, and the refresh-path repair scrubs the
+// file too (read-modify-write, bypassing saveChanges which would demand
+// a keychain token) -- previously the fix was memory-only and resurrected
+// from disk at every boot when the refresh chain could not complete
+// (keychain lost). (3) Hybrid account files (microsoft accountType with
+// stray authserver/clientToken, or thirdparty with xuid/xboxGamertag --
+// the exact state that made an MSA launch carry LittleSkin authlib
+// injection while authlib itself logged "Setting accountType to msa")
+// are defensively scrubbed on load by accountType; all four type
+// discriminators (BaseAuthenticator.loadSavedName, AccountList label,
+// context menu + selection, and Java Tools.isThirdPartyAccount via the
+// new MinecraftAccount.accountType field) now share the accountType-first
+// order with legacy sniffing fallback. (4) The retired home-card skin
+// preview methods moved off the dead hardcoded http://111.170.35.224:3000
+// mirror onto crafatar renders/body + minotar body fallback (zero live
+// callers since Task136 -- fixed on the dead code so a revival cannot
+// bring back the dead link). (5) tokenDataOfProfile self-clears a corrupt
+// keychain entry (SecItem OK but unarchive failed) so the state collapses
+// to a clean "missing" instead of a permanent "present but unreadable";
+// re-login (setAccessToken delete+add) overwrites either way. (6) Launch
+// gate: a non-Demo Microsoft account with a missing/corrupt keychain
+// token is stopped pre-launch with the Task187 one-click repair dialog
+// (delete + re-login + pendingLaunchAfterLogin auto-continue) instead of
+// silently launching an unauthenticated session with broken skin and
+// multiplayer auth. REVISION stays 22: no identity change.
 // REVISION 21->22 bump addendum (Task 218): identity follows the cache epoch
 // (Task214 rule) -- the bundle identifier moved AGAIN by explicit user order:
 // com.air-devs -> com.air-devs.air (the upstream's exact id, opening the

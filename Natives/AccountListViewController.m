@@ -350,17 +350,43 @@
 }
 
 /// 账号类型文字（Task190：用户定稿"灰字为账号类型"——原 Task136 彩色
-/// 类型胶囊随卡片同构重写退役，类型判别口径原样保留：微软=Microsoft、第三方、本地、Demo=演示）
+/// 类型胶囊随卡片同构重写退役。Task220：判别口径与 loadSavedName / 选择链
+///（Task128）统一为 accountType 优先，旧文件才回退键位嗅探——旧版先嗅
+/// clientToken 再看 xboxGamertag，混合文件（微软+第三方键并存）会被打成
+/// "第三方"，正版账号误判的病灶之一）
 - (NSString *)ame190_accountTypeTextForAccount:(NSDictionary *)accountData {
     NSString *username = accountData[@"username"] ?: @"";
     if ([username hasPrefix:@"Demo."]) {
         return localize(@"login.option.demo", @"演示");
-    } else if (accountData[@"clientToken"] != nil) {
+    }
+    NSString *ame220_type = accountData[@"accountType"];
+    if ([ame220_type isKindOfClass:NSString.class] && ame220_type.length > 0) {
+        if ([ame220_type isEqualToString:@"thirdparty"]) {
+            return localize(@"login.option.3rdparty", @"第三方");
+        } else if ([ame220_type isEqualToString:@"local"]) {
+            return localize(@"login.option.local", @"本地");
+        }
+        return @"Microsoft";
+    }
+    // 旧文件回退（与 loadSavedName 同口径：clientToken 先于 xboxGamertag）
+    if (accountData[@"clientToken"] != nil) {
         return localize(@"login.option.3rdparty", @"第三方");
     } else if (accountData[@"xboxGamertag"] == nil) {
         return localize(@"login.option.local", @"本地");
     }
     return @"Microsoft";
+}
+
+/// Task220：第三方判别统一口径（accountType 显式优先，旧文件回退
+/// clientToken 嗅探）——标签 / 长按菜单 / 选择链三处同源，杜绝混合文件串类
+///（病历：Oct-4 装机日志，微软账号带着 LittleSkin authlib 注入启动）。
+static BOOL ame220_accountIsThirdParty(NSDictionary *accountData) {
+    if (![accountData isKindOfClass:NSDictionary.class]) return NO;
+    NSString *ame220_type = accountData[@"accountType"];
+    if ([ame220_type isKindOfClass:NSString.class] && ame220_type.length > 0) {
+        return [ame220_type isEqualToString:@"thirdparty"];
+    }
+    return (accountData[@"clientToken"] != nil);
 }
 
 /// 当前选中的账户 accountId（用于卡片显示选中状态）
@@ -430,14 +456,8 @@
     }
     // Task 128：判别统一走显式 accountType（旧文件回退 clientToken 嗅探），
     // 与 BaseAuthenticator.loadSavedName 同口径。
-    NSString *ame128_type = accountData[@"accountType"];
-    BOOL ame128_is3P;
-    if (ame128_type.length > 0) {
-        ame128_is3P = [ame128_type isEqualToString:@"thirdparty"];
-    } else {
-        ame128_is3P = (accountData[@"clientToken"] != nil);
-    }
-    if (ame128_is3P) {
+    // Task220：抽到 ame220_accountIsThirdParty，与标签/长按菜单同源。
+    if (ame220_accountIsThirdParty(accountData)) {
         // This is a third party account
         ThirdPartyAuthenticator *ame128_auth = [ThirdPartyAuthenticator loadSavedName:loadKey];
         if ([self ame128_sessionValidated:loadKey]) {
@@ -529,8 +549,9 @@ static NSMutableSet *ame128_validatedSet(void) {
     }]];
 
     // ② 第三方多角色账户：Task129b 角色切换项原样保留（当前角色打勾）
-    NSString *ame128_type = accountData[@"accountType"];
-    BOOL is3P = [ame128_type isEqualToString:@"thirdparty"] ?: (accountData[@"clientToken"] != nil);
+    // Task220：is3P 改用统一判别器（旧版 elvis 写法在 accountType=microsoft
+    // 但残留 clientToken 的混合文件上会误判为第三方）
+    BOOL is3P = ame220_accountIsThirdParty(accountData);
     NSArray *profiles = accountData[@"availableProfiles"];
     if (is3P && [profiles isKindOfClass:[NSArray class]] && profiles.count >= 2) {
         NSString *currentProfileId = accountData[@"profileId"];

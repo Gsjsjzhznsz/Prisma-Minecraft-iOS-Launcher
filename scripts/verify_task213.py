@@ -190,7 +190,7 @@ check('G14 AI header comments rebranded',
 # ============ H. docs cascade ============
 data = json.load(open('announcements.json', encoding='utf-8'))
 ids = [e['id'] for e in data['announcements']]
-check('H1 announcements 40 items (Task218 append +1)', len(ids) == 41)
+check('H1 announcements 40 items (Task218 append +1)', len(ids) == 42)
 check('H2 task213@4 (Task215 shift)', ids[4].startswith('task213-'))
 check('H2b parallel task212@5 (their ANGLE/CF/VirGL round; Task215 shift)', ids[5].startswith('task212-angle'))
 check('H3 task169 pin @1 intact', ids[1].startswith('task169-'))
@@ -200,7 +200,7 @@ check('H5 version.h Task213 addendum present', 'REVISION 18 addendum (Task 213, 
 check('H6 trailing SEP = 76 equals', re.search(r'\n//\s(={76})\s*$', vh) is not None)
 v207 = rd('scripts/verify_task207.py')
 v211 = rd('scripts/verify_task211.py')
-check('H7 207 length gate shifted 41 (Task219 append)', '== 41' in v207 and '== 40' not in v207)
+check('H7 207 length gate shifted 41 (Task219 append)', '== 42' in v207 and '== 41' not in v207)
 check('H8 211 length gate shifted 40 (Task218 append)', '== 40' in v211)
 check('H9 211 announcement anchors (task211@4 + parallel task212@3 + mine task213@2)',
       'ann[6]["id"] == "task211-exit-cf-angle-gl4es-2026-10-02"' in v211 and

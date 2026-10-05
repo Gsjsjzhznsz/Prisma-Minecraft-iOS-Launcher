@@ -134,7 +134,7 @@ check("H", "version.h Task203 附录（no bump + vtool 病历）",
       "Task 203, no bump" in vh and "vtool" in vh and "ZERO-WIPED" in vh)
 ann = json.load(open(os.path.join(REPO, "announcements.json"), encoding='utf-8'))['announcements']
 check("H", "公告末位是 task206-nggl4es（Task212 重锚：task212@2 插入后 34）",
-      len(ann) == 41 and ann[-3]['id'] == 'task217-download-fixes-about-isolation-2026-10-03')
+      len(ann) == 42 and ann[-4]['id'] == 'task217-download-fixes-about-isolation-2026-10-03')
 bundled = open(os.path.join(REPO, "Natives/resources/help-faq.json"), 'rb').read()
 rootfaq = open(os.path.join(REPO, "help-faq.json"), 'rb').read()
 check("H", "FAQ 根/随包副本逐字节一致（verify_task168 契约）", bundled == rootfaq)

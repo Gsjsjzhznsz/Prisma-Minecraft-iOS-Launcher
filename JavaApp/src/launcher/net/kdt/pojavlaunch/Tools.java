@@ -355,13 +355,23 @@ public final class Tools {
         if (versionInfo.arguments != null) {
             // Support Minecraft 1.13+
             // 检测当前账户是否为第三方认证账户（authlib-injector / Yggdrasil）
-            // 第三方账户的特征：clientToken 非 "0" 且 xuid 为 null 或 "0"
-            // （Microsoft 账户有 xuid，本地账户 clientToken 为 "0"）
+            // Task220：显式 accountType 优先（与原生端 BaseAuthenticator.loadSavedName
+            // / AccountList 标签统一口径）。旧版 clientToken+xuid 键位嗅探在混合
+            // 文件（微软 xuid 与第三方 clientToken 并存）上会误判成微软账户，
+            // 装机日志实锤 authlib-injector 会话打出 "Setting accountType to msa"
+            // 的串类证据（正版账号被按第三方链路启动，皮肤/联机全废）。
             // 对第三方账户，即使版本 JSON 含 --xuid 参数，user_type 也必须保持 "mojang"
             // 而不能改为 "msa"，否则 Minecraft 26.x 内部会按 MSA 流程处理
             // 导致认证失败（无法加载皮肤 / 无法加入服务器 / 崩溃）
-            boolean isThirdPartyAccount = !"0".equals(profile.clientToken)
-                && (profile.xuid == null || "0".equals(profile.xuid));
+            boolean isThirdPartyAccount;
+            if (profile.accountType != null && !profile.accountType.isEmpty()) {
+                isThirdPartyAccount = "thirdparty".equals(profile.accountType);
+            } else {
+                // 旧文件回退：clientToken 非 "0" 且 xuid 为 null 或 "0"
+                //（Microsoft 账户有 xuid，本地账户 clientToken 为 "0"）
+                isThirdPartyAccount = !"0".equals(profile.clientToken)
+                    && (profile.xuid == null || "0".equals(profile.xuid));
+            }
             for (Object arg : versionInfo.arguments.game) {
                 if (arg instanceof String) {
                     minecraftArgs.add((String) arg);

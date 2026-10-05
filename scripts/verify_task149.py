@@ -77,7 +77,7 @@ check("A3  公告标题行退役（announceIconView/announceLabel/detailButton/a
       all(x not in home for x in ["announceIconView", "announceLabel", "detailButton", "announceRowStack"]))
 check("A4  问候语行回归（greetingLabel 14pt medium + festivalGreeting；Task160 文字色规格化）",
       "self.greetingLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];" in home
-      and "self.greetingLabel.textColor = AmeNeumorphSecondaryTextColor(); // Task160" in home
+      and "self.greetingLabel.textColor = AmeCardSecondaryTextColor(); // Task160" in home  # Task220 重锚：Task210 改名 AmeNeumorphSecondaryTextColor -> AmeCardSecondaryTextColor
       and "cell.greetingLabel.text = festivalGreeting();" in home)
 check("A5  欢迎堆叠 = [welcomeLabel, greetingLabel]（相对头像纵轴居中保留）",
       "initWithArrangedSubviews:@[self.welcomeLabel, self.greetingLabel]" in home
@@ -120,7 +120,8 @@ ann_impl = home.split("@implementation HomeAnnouncementTileCell")[1].split("\n@e
 check("C2  标题/简介样式对齐新闻卡片（标题 15pt semibold / 简介 12pt；Task160 简介色规格化）",
       "self.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];" in ann_impl
       and "self.summaryLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];" in ann_impl
-      and "self.summaryLabel.textColor = AmeNeumorphSecondaryTextColor(); // Task160 公告卡简介" in ann_impl)
+      # Task220 重锚：Task210 改名 AmeNeumorphSecondaryTextColor -> AmeCardSecondaryTextColor
+      and "self.summaryLabel.textColor = AmeCardSecondaryTextColor(); // Task160 公告卡简介" in ann_impl)
 check("C3  查看详情按钮内联标题后（titleRowStack 横向栈 + 缩小 12pt/28pt 高）",
       "initWithArrangedSubviews" not in home.split("self.titleRowStack = ")[1].split("];")[0]
       and "[self.titleRowStack addArrangedSubview:self.titleLabel];" in home

@@ -191,7 +191,7 @@ check("H", "version.h REVISION 18 附录（Task202 八节 + no bump 理由）",
 ann = json.load(open(os.path.join(REPO, "announcements.json"), encoding='utf-8'))["announcements"]
 check("H", "公告 31 条且末位仍是 task206-nggl4es（Task209@2 插入 +1）",
       # Task209 重锚：task209@2 插入（30→31）；task202 锚顺延 [28]。
-      len(ann) == 41 and ann[-3]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      len(ann) == 42 and ann[-4]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
       and ann[34]["id"] == "task202-october-fix-wave")
 check("H", "公告索引锚（Task212 重锚：[7]=task196 / [8]=task193 / [0]=server）",
       ann[10]["id"] == "task196-quad-fixes-2026-09-29" and ann[11]["id"] == "task193-app-icon-replace-2026-09-28"

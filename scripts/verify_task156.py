@@ -194,10 +194,11 @@ r = subprocess.run([sys.executable, "scripts/verify_task154.py"],
                    capture_output=True, text=True)
 # Task158 基线漂移：用户上传新日志（d380bcc/0cb7708）后，task154 的 E4（旧 Mithril
 # 会话的 sodium 版本串）与 E1/E3/E5 一同成为日志轮换环境项（35P/4F，语义锚全部 intact）。
-baseline = "35 passed, 4 failed"  # 日志轮换环境项（E1/E3/E4/E5）为既有基线
-check(f"G verify_task154 与基线一致（{baseline}；实为 {r.stdout.strip().splitlines()[-2] if len(r.stdout.strip().splitlines())>1 else '?'}）",
-      "35 passed, 4 failed" in r.stdout and "E1" in r.stdout and "E3" in r.stdout
-      and "E4" in r.stdout and "E5" in r.stdout)
+# Task220 基线再锚：154 的 E 组证据已 git-pin 到 7c32bc33（Oct-4/5 轮换根治），
+# 环境性失败面清零，154 回归全绿（39P/0F）。
+baseline = "39 passed, 0 failed"  # Task220：E 组 git-pin 后全绿基线
+check(f"G verify_task154 与基线一致（{baseline}；Task220 git-pin 后全绿）",
+      "39 passed, 0 failed" in r.stdout and "ALL GREEN" in r.stdout)
 r = subprocess.run([sys.executable, "scripts/verify_task150.py"],
                    capture_output=True, text=True,
                    env={**os.environ, "TASK150_REPO": REPO})

@@ -222,11 +222,11 @@ check("I-核心键在位（isolation/导出导入/about/mods/fabricapi）",
 print("== J. announcements ==")
 ann = json.load(open("announcements.json", encoding="utf-8"))["announcements"]
 check("J1 41 条 + task218@-2 锚（Task219 追加后顺延）",
-      len(ann) == 41 and ann[-3]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-2]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
-      and ann[-1]["id"] == "task219-virgl-angle-welcome-rebuild-2026-10-04")
+      len(ann) == 42 and ann[-4]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-3]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
+      and ann[-2]["id"] == "task219-virgl-angle-welcome-rebuild-2026-10-04")
 check("J2 task216@-3 / task206@-4（Task218 追加后顺延）",
-      ann[-4]["id"] == "task216-ui-2026-10-03" and ann[-5]["id"] == "task206-nggl4es-2026-10-01")
+      ann[-5]["id"] == "task216-ui-2026-10-03" and ann[-6]["id"] == "task206-nggl4es-2026-10-01")
 check("J3 置顶钉位未动",
       ann[0].get("pin") is True and ann[0]["id"].startswith("server-recommend"))
 

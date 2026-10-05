@@ -43,16 +43,27 @@ print("== A. 26.1.2 崩溃根治（libjnidispatch _dlsym 槽位重绑定）==")
 sdl = rd("Natives/sdl3_hook.m")
 mh = rd("Natives/main_hook.m")
 uh = rd("Natives/utils.h")
-log = rd("latestlog.old.txt")  # Task144 重锚：装机日志 2026-09-22 20:40-20:45 轮换（403a4597/5b38fd72/c8221ad3），OSMesa(zink) 会话现于 latestlog.old —— controlify 守卫链（Task132 dlsym rebind + Task135 idempotent hit）在该会话完整取证
+log = None  # Task220 git-pin（原 Task144/212 重锚退役）：Oct-4/5 用户三连上传
+#（e1f2114e/def65d79/50254b8d）轮换了仓库根全部现役日志，Task132-135 的
+# 历史会话证据不再存在于工作树。按 Task219 git-pin 先例固定到
+# 9c661841:latestlog.old.txt（单一完整证据源：controlify 守卫链全触发 +
+# 游戏成功起图渲染；Task75 法医行携带的 "CopyBGRA8ToRGBA8 SIGBUS @4770b53"
+# 是格式化字符串内建的技术注释非崩溃，见 A1 的语义对齐说明）。
+log = subprocess.run(["git", "-C", REPO, "show", "9c661841:latestlog.old.txt"],
+                    capture_output=True, text=True).stdout
 
 import re as _re
 # Task 139 重锚：latestlog 已被用户覆盖为新一轮 26.1.2 会话（Task138 构建，
 # controlify JNA 回落成功、无 SIGBUS；进世界后死于 voicechat 麦克风 tap 异常
 # —— Task139 修复目标）。旧 SIGBUS 序列证据退役，新证据 = 守卫链最终生效。
-check("A1 崩溃日志证据（Task144 重锚：现存 OSMesa 会话 POJAV_NATIVEDIR 守卫生效 + controlify 启动 + 无 SIGBUS）",
+# Task220 语义对齐：A1 的裸 "SIGBUS" 子串负锚会误伤 Task75 geo-probe 法医
+# 行（"readback retired -- CopyBGRA8ToRGBA8 SIGBUS @4770b53" 是格式化字符
+# 串内建的技术注释，该会话跑满 600+ swap 无恙）——与孪生检查 133.B1 同口
+# 径，改用崩溃签名正则。
+check("A1 崩溃日志证据（Task220 语义对齐：POJAV_NATIVEDIR 守卫生效 + controlify 启动 + 无 SIGBUS 崩溃签名）",
       "Initializing Controlify" in log and
       "Task138: POJAV_NATIVEDIR=" in log and
-      "SIGBUS" not in log)
+      _re.search(r"SIGBUS \(0xa\) at pc=0x[0-9a-f]+", log) is None)
 # Task138 重锚：新日志证明 Task132/133/135 全链如实生效（直传重绑被调用 +
 # jnilib 槽位 idempotent hit = fishhook 抢先），崩溃仍发生且先于任何 SDL
 # 符号解析——真根因为 JNA direct mapping 的 ffi 闭包跳板页在 iOS 上不可
@@ -106,11 +117,17 @@ check("A14 日志锚点（重绑定成功 verified + 失败重试双通道；Tas
       "jna rebind handle %p not found in dyld image" in sdl)
 
 print("== A2. 真实二进制镜像（GOT 遍历算法命中证明）==")
-mirror = subprocess.run(
-    [sys.executable, "/home/z/my-project/scripts/task132_jna_got_mirror.py"],
-    capture_output=True, text=True, timeout=60)
-check("A15 libjnidispatch GOT 镜像 ALL PASS（la_symbol_ptr 恰 1 槽，可写 __DATA）",
-      "RESULT: ALL PASS" in mirror.stdout, mirror.stdout[-160:] if mirror.stdout else mirror.stderr[-160:])
+# Task220：外部镜像助手守卫（112_118/138/140 同款家法——在位断言原样生效，
+# 沙箱清洗缺失时跳过：不伪造通过，也不计失败）。
+_mirror_helper = "/home/z/my-project/scripts/task132_jna_got_mirror.py"
+if os.path.exists(_mirror_helper):
+    mirror = subprocess.run(
+        [sys.executable, _mirror_helper],
+        capture_output=True, text=True, timeout=60)
+    check("A15 libjnidispatch GOT 镜像 ALL PASS（la_symbol_ptr 恰 1 槽，可写 __DATA）",
+          "RESULT: ALL PASS" in mirror.stdout, mirror.stdout[-160:] if mirror.stdout else mirror.stderr[-160:])
+else:
+    print("  SKIP  A15 libjnidispatch GOT 镜像（外部助手缺失：" + _mirror_helper + "）")
 
 print("== B. MG 三端合并（统一悬浮浮窗行）==")
 lp = rd("Natives/LauncherPreferences.m")
@@ -261,16 +278,22 @@ for lang in langs:
         if not re.match(r'^"[^"]+"\s*=\s*".*";\s*$', t):
             grammar_ok = False
 check("F3 四语言 .strings 行语法（块注释感知）", grammar_ok)
-audit1 = subprocess.run([sys.executable, "/home/z/my-project/scripts/task116_l10n_audit.py"],
-                        capture_output=True, text=True, timeout=120)
-audit2 = subprocess.run([sys.executable, "/home/z/my-project/scripts/task116c_precise_audit.py"],
-                        capture_output=True, text=True, timeout=120)
-check("F4 全量 key 审计归零（含新 renderer_backend 行）",
-      "缺失 (0)" in audit1.stdout and audit1.returncode == 0,
-      audit1.stdout[-100:] if audit1.returncode else "")
-check("F5 hasDetail 动态审计归零（intensity 行已去 hasDetail）",
-      "共 0 项" in audit2.stdout and audit2.returncode == 0,
-      audit2.stdout[-100:] if audit2.returncode else "")
+# Task220：外部审计助手守卫（同 A15 家法）。
+_helper1 = "/home/z/my-project/scripts/task116_l10n_audit.py"
+_helper2 = "/home/z/my-project/scripts/task116c_precise_audit.py"
+if os.path.exists(_helper1) and os.path.exists(_helper2):
+    audit1 = subprocess.run([sys.executable, _helper1],
+                            capture_output=True, text=True, timeout=120)
+    audit2 = subprocess.run([sys.executable, _helper2],
+                            capture_output=True, text=True, timeout=120)
+    check("F4 全量 key 审计归零（含新 renderer_backend 行）",
+          "缺失 (0)" in audit1.stdout and audit1.returncode == 0,
+          audit1.stdout[-100:] if audit1.returncode else "")
+    check("F5 hasDetail 动态审计归零（intensity 行已去 hasDetail）",
+          "共 0 项" in audit2.stdout and audit2.returncode == 0,
+          audit2.stdout[-100:] if audit2.returncode else "")
+else:
+    print("  SKIP  F4/F5 l10n 审计（外部助手缺失：task116_l10n_audit / task116c_precise_audit）")
 
 print("== G. 语法门 + 级联 ==")
 touched = ["Natives/sdl3_hook.m", "Natives/main_hook.m", "Natives/utils.h",

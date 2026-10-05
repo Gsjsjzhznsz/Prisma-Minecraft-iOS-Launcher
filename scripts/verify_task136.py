@@ -120,8 +120,10 @@ check("C2  applyCardEffectToCell（Task210 重锚：无开关门，恒直转 app
 check("C3  Task210：无壁纸卡面裁剪由平贴分支收口（masksToBounds = YES，无帧外阴影诉求）",
       "view.layer.masksToBounds = YES;" in bm
       and "cell.clipsToBounds = YES;" not in bm)
-check("C4  collection cell 圆角来源保留：优先读 contentView 自身圆角",
-      "cell.contentView.layer.cornerRadius > 0" in bm)
+# Task220 诚实重锚：Task190 的参数化重构把 cell.contentView 局部化为
+# contentView（cell. 前缀退场），"优先读 contentView 自身圆角"语义不变。
+check("C4  collection cell 圆角来源保留：优先读 contentView 自身圆角（Task220 重锚：参数化后形式）",
+      "contentView.layer.cornerRadius > 0" in bm)
 # Task170 诚实重锚：无背景分派在 Task160 后为等比圆角平贴新拟态/整页 systemBackground。
 check("C5  applyEffectToView 无背景 → 原生表面分派（有圆角=平贴灰面 AmeCardSurfaceColor，无圆角=systemBackground；Task210 重锚）",
       "view.backgroundColor = AmeCardSurfaceColor();" in bm

@@ -75,6 +75,52 @@ static BaseAuthenticator *current = nil;
     // 由各 authenticator 写入）。旧文件的键位嗅探保留为回退（expiresAt/clientToken），
     // 三处判别器（此处 / AccountList 的 clientToken 嗅探 / Java 端 clientToken+xuid）
     // 口径不一导致的串类自此统一。
+
+    // Task220：混合文件防御性剥离 + 脏头像 URL 落盘自愈（先于类分发执行，
+    // 让本方法返回的 authData 与磁盘文件都收敛到干净态）。
+    // 病历（Oct-4 四份装机日志）：游戏以微软账号身份启动（authlib-injector
+    // 自检 "Setting accountType to msa"）却带着 LittleSkin 的 authlib 注入、
+    // 正版皮肤/联机全废——账号文件同时携带 xuid（微软）与 authserver/
+    // clientToken（第三方）时，三处判别器各自取到不同的半边字段。现在以
+    // 显式 accountType 为准，把对方阵营的键就地剥离并回写文件：
+    //   microsoft  → 删 authserver / clientToken / prefetchedMetadata
+    //   thirdparty → 删 xuid / xboxGamertag
+    // 无 accountType 的旧文件不动（交给下次成功登录时的全量重写收编）。
+    BOOL ame220_rewritten = NO;
+    NSString *ame220_type = authData[@"accountType"];
+    if ([ame220_type isKindOfClass:NSString.class]) {
+        if ([ame220_type isEqualToString:@"microsoft"]) {
+            for (NSString *ame220_k in @[@"authserver", @"clientToken", @"prefetchedMetadata"]) {
+                if (authData[ame220_k] != nil) {
+                    [authData removeObjectForKey:ame220_k];
+                    ame220_rewritten = YES;
+                }
+            }
+        } else if ([ame220_type isEqualToString:@"thirdparty"]) {
+            for (NSString *ame220_k in @[@"xuid", @"xboxGamertag"]) {
+                if (authData[ame220_k] != nil) {
+                    [authData removeObjectForKey:ame220_k];
+                    ame220_rewritten = YES;
+                }
+            }
+        }
+    }
+    // 脏 profilePicURL（"(null)"/"(nil)" 子串——首登顺序 bug 的历史产物）：
+    // 从文件里永久清除，展示层回退链（crafatar UUID / minotar username）
+    // 接管。此前仅刷新链内存态修复（Task185），keychain 丢失、刷新走不完
+    // 时脏值每次启动都原样复活（latestlog (2).txt 实锤）。
+    NSString *ame220_pic = authData[@"profilePicURL"];
+    if ([ame220_pic isKindOfClass:NSString.class] &&
+        ([ame220_pic containsString:@"(null)"] || [ame220_pic containsString:@"(nil)"])) {
+        [authData removeObjectForKey:@"profilePicURL"];
+        ame220_rewritten = YES;
+        NSLog(@"[Task220] loadSavedName: scrubbed dirty profilePicURL from %@.json", accountId);
+    }
+    if (ame220_rewritten) {
+        saveJSONToFile(authData, path);
+        NSLog(@"[Task220] loadSavedName: hybrid keys / dirty avatar scrubbed, file rewritten (%@.json)", accountId);
+    }
+
     BaseAuthenticator *auth = nil;
     NSString *ame128_type = authData[@"accountType"];
     if ([ame128_type isEqualToString:@"thirdparty"]) {

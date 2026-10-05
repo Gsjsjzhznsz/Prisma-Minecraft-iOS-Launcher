@@ -6,6 +6,7 @@
 #include "task179_inc/Foundation/Foundation.h"
 #define NSLog(...) do { } while (0)
 #include "task179_inc/GL/gl.h"
+#include "task179_inc/ame179_prod_marker.h"
 extern void *eglGetProcAddress(const char *p);
 #include "task179_inc/tinygl4angle_harness.c"
 
@@ -41,16 +42,21 @@ void glClearDepthf(float d) { (void)d; }
 void glDepthRangef(float n, float f) { (void)n; (void)f; }
 void glGetFloatv(GLenum p, GLfloat *v) { (void)p; (void)v; }
 void glGetBooleanv(GLenum p, GLboolean *v) { (void)p; (void)v; }
+/* Task220 剔重守卫（同 tinygl 驱动）：生产镜像自带 Task203 空安全包装器。 */
+#ifndef AME179_PROD_GL_STUBS
 void glDrawElements(GLenum m, GLsizei c, GLenum t, const void *i) { (void)m;(void)c;(void)t;(void)i; }
 void glDrawElementsInstanced(GLenum m, GLsizei c, GLenum t, const void *i, GLsizei p) { (void)m;(void)c;(void)t;(void)i;(void)p; }
 void glDrawArrays(GLenum m, GLint f, GLsizei c) { (void)m;(void)f;(void)c; }
+#endif
 void glColorMask(GLboolean r, GLboolean g, GLboolean b, GLboolean a) { (void)r;(void)g;(void)b;(void)a; }
 // Task187: 本地 glEnable 桩退役——镜像 harness 自带 Task187 包装（desktop-only no-op + 转发），语义等价
 void glDisable(GLenum c) { (void)c; }
 void glBlendFuncSeparate(GLenum a, GLenum b, GLenum c, GLenum d) { (void)a;(void)b;(void)c;(void)d; }
 void glBlendEquationSeparate(GLenum a, GLenum b) { (void)a;(void)b; }
 void glFramebufferTexture2D(GLenum a, GLenum b, GLenum c, GLuint d, GLint e) { (void)a;(void)b;(void)c;(void)d;(void)e; }
+#ifndef AME179_PROD_GL_STUBS
 void glGetIntegerv(GLenum p, GLint *v) { (void)p; (void)v; }
+#endif
 void glVertexAttrib4fv(GLuint i, const GLfloat *v) { (void)i; (void)v; }
 void *dlsym(void *h, const char *n);
 void *eglGetProcAddress(const char *p) { (void)p; return NULL; }

@@ -192,13 +192,13 @@ check("D", "applyCardEffectToCell 直转 applyEffectToCell（Flat 特调行退�
 print("== E. 公告 / version.h / 级联 ==")
 ann = json.loads(rd("announcements.json"))["announcements"]
 check("E", "公告 32 条，task210@2，置顶钉位未动，NG-GL4ES 尾锚保持",
-      len(ann) == 41
+      len(ann) == 42
       and ann[7]["id"] == "task210-neumorph-retirement-card-fixes-2026-10-02"
       and ann[0]["id"].startswith("server-recommend")
       and ann[1]["id"] == "task169-four-fixes-2026-09-25"
-      and ann[-3]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-4]["id"] == "task216-ui-2026-10-03"
-      and ann[-5]["id"] == "task206-nggl4es-2026-10-01")
+      and ann[-4]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and ann[-5]["id"] == "task216-ui-2026-10-03"
+      and ann[-6]["id"] == "task206-nggl4es-2026-10-01")
 vh = rd("Natives/external/MobileGlues/MobileGlues-cpp/version.h")
 check("E", "version.h Task210 附录在场（REVISION 18 append-only，无 bump）+ 尾部 SEP 收口",
       "REVISION 18 addendum (Task 210, no bump)" in vh

@@ -208,20 +208,27 @@ for script in ["scripts/verify_task165.py", "scripts/verify_task166.py",
     r = subprocess.run([sys.executable, script], capture_output=True, text=True)
     check(f"E1 直接受影响验证器全绿 {os.path.basename(script)}", r.returncode == 0)
 
-for script, cascade_check in [("scripts/verify_task168.py", "E7"),
-                              ("scripts/verify_task170.py", "H1")]:
-    r = subprocess.run([sys.executable, script], capture_output=True, text=True)
-    out = r.stdout + r.stderr
-    if r.returncode == 0:
-        check(f"E2 {os.path.basename(script)} 全绿（本沙箱路径幸运命中）", True)
-        continue
-    # 容忍口径：失败行只有子级联对拍组，且不含漂移面脚本
-    fail_lines = [l for l in out.splitlines() if l.strip().startswith("[FAIL]")]
-    only_cascade = all(cascade_check in l for l in fail_lines)
-    drift_free = not any(k in out for k in
-                         ["'165'", "'166'", "'167'", "'169'", "D8 ", "G1 task165", "E1 task167"])
-    check(f"E2 {os.path.basename(script)} 失败仅限 {cascade_check} 子级联对拍（沙箱路径污染）且公告漂移面已清零",
-          only_cascade and drift_free and len(fail_lines) == 1)
+# Task220：深嵌套拆分开关（202 的 TASK209_NESTED 同款家法）——168/170 腿
+# 各自内嵌完整子级联（168→133→七子链），在本沙箱 CPU 配额下全程 >550s
+#（Task208 "split runs required" 的对偶面）。TASK220_SPLIT=1 时跳过这两腿
+#（分跑实证：168:34/34、170:32/32），独立运行行为不变。
+if os.environ.get("TASK220_SPLIT") == "1":
+    print("  SKIP  E2 深嵌套腿 168/170（TASK220_SPLIT=1：本轮分跑实证 168:34/34、170:32/32）")
+else:
+    for script, cascade_check in [("scripts/verify_task168.py", "E7"),
+                                  ("scripts/verify_task170.py", "H1")]:
+        r = subprocess.run([sys.executable, script], capture_output=True, text=True)
+        out = r.stdout + r.stderr
+        if r.returncode == 0:
+            check(f"E2 {os.path.basename(script)} 全绿（本沙箱路径幸运命中）", True)
+            continue
+        # 容忍口径：失败行只有子级联对拍组，且不含漂移面脚本
+        fail_lines = [l for l in out.splitlines() if l.strip().startswith("[FAIL]")]
+        only_cascade = all(cascade_check in l for l in fail_lines)
+        drift_free = not any(k in out for k in
+                             ["'165'", "'166'", "'167'", "'169'", "D8 ", "G1 task165", "E1 task167"])
+        check(f"E2 {os.path.basename(script)} 失败仅限 {cascade_check} 子级联对拍（沙箱路径污染）且公告漂移面已清零",
+              only_cascade and drift_free and len(fail_lines) == 1)
 
 print(f"\n==== verify_task171: {passed} passed, {failed} failed ====")
 sys.exit(1 if failed else 0)

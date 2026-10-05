@@ -1470,12 +1470,20 @@ static NSCache<NSString *, UIImage *> *ame162_avatarCache(void) {
 }
 
 - (void)loadSkinForUUID:(NSString *)uuid {
-    NSString *skinURL = [NSString stringWithFormat:@"http://111.170.35.224:3000/renders/body/%@?overlay", uuid];
-    
+    // Task220：原硬编码 http://111.170.35.224:3000 私有渲染镜像已死（明文
+    // HTTP、无 TLS、无容错），换 crafatar 官方全身渲染 + minotar 回退
+    //（FCL/HMCL 同款公开源，均接受 UUID）。注：本方法自 Task136 皮肤预览
+    // 退役后已无调用者，修在死代码上防复活时带回死链。
+    NSString *skinURL = [NSString stringWithFormat:@"https://crafatar.com/renders/body/%@?overlay", uuid];
+    NSString *ame220_fallbackURL = [NSString stringWithFormat:@"https://minotar.net/body/%@/100.png", uuid];
+
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSData *data = [NSData dataWithContentsOfURL:[NSURL URLWithString:skinURL]];
+        if (!data) {
+            data = [NSData dataWithContentsOfURL:[NSURL URLWithString:ame220_fallbackURL]];
+        }
         UIImage *skin = data ? [UIImage imageWithData:data] : nil;
-        
+
         dispatch_async(dispatch_get_main_queue(), ^{
             if (skin) {
                 self.currentSkin = skin;
@@ -1489,12 +1497,18 @@ static NSCache<NSString *, UIImage *> *ame162_avatarCache(void) {
 }
 
 - (void)loadDefaultSkin {
-    NSString *steveSkinURL = @"http://111.170.35.224:3000/renders/body/8667ba71b85a4004af54457a9734eed7?overlay";
-    
+    // Task220：Steve 默认皮肤同源替换（原同样指向 111.170.35.224:3000 死
+    // 镜像）：crafatar 官方默认皮肤 UUID → minotar 回退 → 本地占位图标。
+    NSString *steveSkinURL = @"https://crafatar.com/renders/body/8667ba71b85a4004af54457a9734eed7?overlay";
+    NSString *ame220_steveFallback = @"https://minotar.net/body/8667ba71b85a4004af54457a9734eed7/100.png";
+
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSData *data = [NSData dataWithContentsOfURL:[NSURL URLWithString:steveSkinURL]];
+        if (!data) {
+            data = [NSData dataWithContentsOfURL:[NSURL URLWithString:ame220_steveFallback]];
+        }
         UIImage *steve = data ? [UIImage imageWithData:data] : nil;
-        
+
         dispatch_async(dispatch_get_main_queue(), ^{
             self.currentSkin = steve ?: [UIImage systemImageNamed:@"person.fill"];
             [self reloadProfileSection];

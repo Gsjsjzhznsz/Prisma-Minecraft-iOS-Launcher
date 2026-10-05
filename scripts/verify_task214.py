@@ -141,14 +141,14 @@ check("F5 Task212/213 addenda untouched",
 print("== G. announcement task214@2 (36 items) ==")
 ann = json.loads(rd("announcements.json"))["announcements"]
 ids = [a["id"] for a in ann]
-check("G1 38 items, id-unique (Task216@2 append)", len(ann) == 41 and len(ids) == len(set(ids)))
+check("G1 38 items, id-unique (Task216@2 append)", len(ann) == 42 and len(ids) == len(set(ids)))
 check("G2 task214@3 (Task215@2 insert shifted +1)", ids[3] == "task214-five-fixes-2026-10-02")
 check("G3 task213@3 + parallel task212@4 shifted intact",
       ids[4].startswith("task213-") and ids[5].startswith("task212-angle"))
 check("G4 pins intact (server@0 pin, task169@1)",
       ann[0].get("pin") is True and ids[1] == "task169-four-fixes-2026-09-25")
 check("G5 tail anchors task219 appended, task217 kept at -3",
-      ids[-3] == "task217-download-fixes-about-isolation-2026-10-03" and ids[-4] == "task216-ui-2026-10-03")
+      ids[-4] == "task217-download-fixes-about-isolation-2026-10-03" and ids[-5] == "task216-ui-2026-10-03")
 a214 = ann[3]
 check("G6 task214 entry metadata complete",
       a214["date"] == "2026-10-02" and "付费开发者证书" in a214["summary"]
@@ -165,8 +165,8 @@ check("H1 v213 B5 re-anchored to kVMCardCornerRadius ring formula",
       has("scripts/verify_task213.py",
           "vm.count('kVMCardCornerRadius - (kVMCardEllipsisInset / 3.0)') >= 2"))
 check("H2 v213 H1/H7/H8 shifted onward (Task219 append)",
-      "len(ids) == 41" in rd("scripts/verify_task213.py")
-      and "'== 41' in v207 and '== 40' not in v207" in rd("scripts/verify_task213.py"))
+      "len(ids) == 42" in rd("scripts/verify_task213.py")
+      and "'== 42' in v207 and '== 41' not in v207" in rd("scripts/verify_task213.py"))
 check("H3 v165/167 windows lifted to 29/27",
       "range(min(30, len(anns)))" in rd("scripts/verify_task165.py")
       and "range(min(28, len(anns)))" in rd("scripts/verify_task167.py"))

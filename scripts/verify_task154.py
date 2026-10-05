@@ -98,9 +98,11 @@ check("A1 ame83 能力表：MobileGL 除名（isMobileGLRenderer -> NO），Mobi
 check("A2 退休病历注释完整（伪 EGL + 输入错位 + 毁帧三重证据链 + da5918a 基准）",
       "Task154" in sv and "伪 EGL" in sv and "左下四分之一" in sv and
       "9f32cb4/1d4ff3a" in sv)
-check("A3 mgl_fsr 硬门禁：入口即 return false + 一次性退休日志（次序：函数头 < 日志 < return < #if 0）",
+# Task220 诚实重锚：Task166 重写退休日志时在 "pre-swap" 后插入 "GL"
+#（pre-swap GL FSR chain），旧锚点形式随之退役，次序断言语义不变。
+check("A3 mgl_fsr 硬门禁：入口即 return false + 一次性退休日志（次序：函数头 < 日志 < return < #if 0；Task220 重锚）",
       mf.find('extern "C" bool ame_mgl_fsr_before_swap(void) {') <
-      mf.find('NSLog(@"[MGLFSR] Task154 MobileGL pre-swap FSR chain RETIRED') <
+      mf.find('NSLog(@"[MGLFSR] Task154 MobileGL pre-swap GL FSR chain RETIRED') <
       mf.find("return false;\n#if 0") and
       "return false;\n#if 0" in mf)
 check("A4 旧链体 #if 0 存档（Task119-153 机制保留，#endif 闭合）",
@@ -189,7 +191,16 @@ check("D5 MinecraftAccount loadLibrary 不再被 boot 加载器劫持（-cp 主�
 
 print("== E. 装机证据锚点（7c32bc3 = 3b35b26 三会话） ==")
 try:
-    vk = rd("latestlog.old.txt"); mt = rd("latestlog.txt"); fg = rd("latestlog.forge")
+    # Task220 git-pin：vk（Vulkan 3b35b26 会话）与 mt（Mithril 会话）同样被
+    # Oct-4/5 轮换出工作树，按 Task219 先例固定到 7c32bc33（与 fg 同源）。
+    vk = subprocess.run(["git", "-C", REPO, "show", "7c32bc33:latestlog.old.txt"],
+                        capture_output=True, text=True).stdout
+    mt = subprocess.run(["git", "-C", REPO, "show", "7c32bc33:latestlog.txt"],
+                        capture_output=True, text=True).stdout
+    # Task220 git-pin：latestlog.forge（Forge 会话）已被 Oct-4/5 轮换出工作树，
+    # 按 Task219 先例固定到 7c32bc33（完整证据集）。
+    fg = subprocess.run(["git", "-C", REPO, "show", "7c32bc33:latestlog.forge"],
+                        capture_output=True, text=True).stdout
     check("E1 Vulkan 会话：3b35b26 构建 + 伪 EGL 查询失败实锤",
           "Commit: 3b35b26" in vk and "backbuffer query unavailable" in vk)
     check("E2 Vulkan 会话：窗口信念恒全尺寸（viewport 2360x1640）+ 窗口全尺寸启动日志",

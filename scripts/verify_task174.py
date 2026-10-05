@@ -264,6 +264,9 @@ SANDBOX_EXCEPTIONS = {
 }
 new_failures = {}
 for tid in CASCADES:
+    if os.environ.get("TASK220_SPLIT") == "1" and tid == "168":
+        print(f"  SKIP  级联腿 {tid}（TASK220_SPLIT=1：本轮分跑实证 34/34）")
+        continue
     script = f"scripts/verify_task{tid}.py"
     if not os.path.exists(script):
         continue

@@ -36,8 +36,14 @@ rvc  = rd("Natives/LauncherRootViewController.m")
 uh   = rd("Natives/utils.h")
 mgl  = rd("Natives/ctxbridges/mgl_fsr.mm")
 osm  = rd("Natives/ctxbridges/osm_bridge.mm")
-log_2612 = rd("latestlog")
-log_gles = rd("latestlog.txt")
+# Task220 git-pin：Oct-4/5 日志轮换后 latestlog（Forge 安装会话）已不在
+# 工作树。按 Task219 先例固定到 8a6307fe（avfaudio/麦克风格式证据完整）。
+log_2612 = subprocess.run(["git", "-C", REPO, "show", "8a6307fe:latestlog"],
+                          capture_output=True, text=True).stdout
+# Task220 git-pin：Task119 FSR 恢复链证据同理固定到 8a6307fe:latestlog.txt
+#（当前工作树 latestlog.txt 已被 Oct-4 会话替换，锚点计数 0）。
+log_gles = subprocess.run(["git", "-C", REPO, "show", "8a6307fe:latestlog.txt"],
+                          capture_output=True, text=True).stdout
 log_static = rd("latestlog.old.txt")
 
 print("== A. 26.1.2 存档崩溃（voicechat 麦克风 avfaudio tap 格式不匹配） ==")
@@ -150,20 +156,28 @@ check("G4 旧行为保留口（debug_skip_wait_jit 放行 + manual 不跳转）"
       "手动模式：不跳转" in jl)
 
 print("== H. iPhone 右侧边栏精简 ==")
-check("H1 宽度 168 → 96（图标轨）",
-      "kRightPanelWidthPhone = 96.0" in rvc and "iPhone 右侧面板宽度（图标轨）" in rvc)
-check("H2 内容精简（用户名 + 信息卡滚动区隐藏）",
-      "self.usernameLabel.hidden = YES;" in rpvc and
-      "self.infoScrollView.hidden = YES;" in rpvc)
-check("H3 三按钮图标化（play.fill / folder / doc.badge.ellipsis）",
-      'systemImageNamed:@"play.fill"' in rpvc and
-      'systemImageNamed:@"folder"' in rpvc and
-      'systemImageNamed:@"doc.badge.ellipsis"' in rpvc)
-check("H4 头像 44pt（等宽约束停用 + 显式宽高）",
-      "constraintEqualToConstant:44].active = YES" in rpvc and rpvc.count("constraintEqualToConstant:44") == 2)
+# Task220 诚实重锚：Task146 明确撤销了 Task139 的紧凑化（96pt 图标轨、
+# 隐藏用户名/信息滚动区、仅图标按钮、44pt 头像全部被退场，恢复 168pt
+# 全内容列 + 文字按钮 + 等宽方形头像）。以下四锚改锚 Task-146 恢复后的
+# 现行状态（原锚点自 Task146 起过时，非本轮回归）。
+check("H1 宽度 168 全内容列（Task146 恢复态；原 96pt 图标轨已撤销）",
+      "kRightPanelWidthPhone = 168.0" in rvc and "全内容列" in rvc)
+check("H2 内容完整（用户名可见 16pt bold + 信息滚动区在位；原隐藏流已撤销）",
+      "self.usernameLabel.font = [UIFont boldSystemFontOfSize:16];" in rpvc and
+      "self.infoScrollView" in rpvc and
+      "self.usernameLabel.hidden = YES;" not in rpvc and
+      "self.infoScrollView.hidden = YES;" not in rpvc)
+check("H3 启动按钮文字化（setTitle localize；原三按钮图标化已撤销）",
+      '[self.launchButton setTitle:localize(@"i18n_str_412", nil) forState:UIControlStateNormal]' in rpvc and
+      'systemImageNamed:@"doc.badge.ellipsis"' not in rpvc)
+check("H4 头像方形等宽（宽=执行钮宽、高=宽；原 44pt 显式约束已撤销）",
+      "[self.avatarImageView.widthAnchor constraintEqualToAnchor:self.executeJarBtn.widthAnchor]" in rpvc and
+      "[self.avatarImageView.heightAnchor constraintEqualToAnchor:self.avatarImageView.widthAnchor]" in rpvc)
 
 print("== I. 语法门 ==")
-r = subprocess.run([sys.executable, "/home/z/my-project/scripts/task139_syntax_gate.py"],
+# Task220：语法门收编仓内（原外层 task139_syntax_gate.py 随沙箱清洗丢失，
+# task82 网关收编同款先例——自包含重建，接口不变）。
+r = subprocess.run([sys.executable, os.path.join(REPO, "scripts", "task139_syntax_gate.py")],
                    capture_output=True, text=True, timeout=120)
 check("I1 十文件括号平衡（含宏续行跳过）",
       "all balanced" in r.stdout, r.stdout[-200:] if r.stdout else r.stderr[-200:])

@@ -38,5 +38,23 @@ src = src.replace(
 assert "#define AliasDecl(NAME, EXT)" in src, "alias neutralization failed"
 
 os.makedirs(os.path.dirname(DST), exist_ok=True)
+
+# 5) Task220 剔重标记：生产镜像现已自带 glDrawElements/glDrawArrays/
+# glDrawElementsInstanced/glGetIntegerv 的 Task203 空安全包装器（
+# if (ptr) ptr(...)，未解析时 no-op——与驱动旧桩语义等价，Task187 停用
+# 桩同款先例）。四个符号齐全时注入标记宏，驱动侧据此停用自己的桩，
+# 消除重定义冲突；生产未来退役这些包装器时标记自动消失，驱动桩自恢复。
+_prod_syms = ["void glDrawElements(GLenum", "void glDrawArrays(GLenum",
+              "void glDrawElementsInstanced(GLenum", "void glGetIntegerv(GLenum"]
+if all(s in src for s in _prod_syms):
+    open(os.path.join(os.path.dirname(DST), "ame179_prod_marker.h"), "w").write(
+        "/* Task220: production defines the four GL entry points; drivers retire their stubs */\n"
+        "#define AME179_PROD_GL_STUBS 1\n")
+    print("prod-gl-stubs marker header written (4/4 symbols present)")
+else:
+    open(os.path.join(os.path.dirname(DST), "ame179_prod_marker.h"), "w").write(
+        "/* Task220: production set incomplete; driver stubs stay active */\n")
+    print("prod-gl-stubs marker NOT written (production set incomplete)")
+
 open(DST, "w").write(src)
 print(f"transformed -> {DST} (forensics={n1}, log_once={n2})")

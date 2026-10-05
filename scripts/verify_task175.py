@@ -239,20 +239,24 @@ check("F5 Task210：规格档随引擎退役（自绘阴影零残留）",
 # ============================================================
 print("== G. 文档 ==")
 anns = json.loads(rd("announcements.json"))["announcements"]
-check("G1 公告 task175@16（Task213 合并态重锚：并行 task212@3 + 本轮 task213@2 双插入后——task190@10/task184@11/task180@12/task179@13/task178@14/task177@15/task175@16/task174@17/172@20/168@23；server/task169 pin 不动）",
+# Task220 重锚：task215/task214 相继 @2/@3 插入后，Task213 时代的全体系数
+# 再整体顺延一步（当前：task190@12/task184@13/task180@14/task179@15/
+# task178@16/task177@17/task175@18/task174@19/172@22/168@25；server/task169
+# pin 不动）。末尾追加（Task216-220）不影响前向索引。
+check("G1 公告 task175@18（Task220 重锚：task215/214 双插入后现行系数）",
       anns[0]["id"] == "server-recommend-2026-09-24"
       and anns[1]["id"] == "task169-four-fixes-2026-09-25"
-      and anns[11]["id"] == "task190-account-card-installer-spacing-2026-09-28"
-      and anns[12]["id"] == "task184-revert-180-ui-whitespace-fix-2026-09-27"
-      and anns[13]["id"] == "task180-opacity-dual-slider-2026-09-26"
-      and anns[14]["id"] == "task179-eight-fixes-2026-09-26"
-      and anns[15]["id"] == "task178-neumorph-decouple-opacity-2026-09-26"
-      and anns[16]["id"] == "task177-neumorph-css-spec-2026-09-26"
-      and anns[17]["id"] == "task175-six-fixes-2026-09-26"
-      and anns[18]["id"] == "task174-neumorph-canvas-opacity-label-2026-09-26"
-      and anns[21]["id"] == "task172-six-fixes-2026-09-25"
-      and anns[24]["id"] == "task168-neumorph-faq-json-2026-09-25")
-t175 = anns[17]
+      and anns[12]["id"] == "task190-account-card-installer-spacing-2026-09-28"
+      and anns[13]["id"] == "task184-revert-180-ui-whitespace-fix-2026-09-27"
+      and anns[14]["id"] == "task180-opacity-dual-slider-2026-09-26"
+      and anns[15]["id"] == "task179-eight-fixes-2026-09-26"
+      and anns[16]["id"] == "task178-neumorph-decouple-opacity-2026-09-26"
+      and anns[17]["id"] == "task177-neumorph-css-spec-2026-09-26"
+      and anns[18]["id"] == "task175-six-fixes-2026-09-26"
+      and anns[19]["id"] == "task174-neumorph-canvas-opacity-label-2026-09-26"
+      and anns[22]["id"] == "task172-six-fixes-2026-09-25"
+      and anns[25]["id"] == "task168-neumorph-faq-json-2026-09-25")
+t175 = anns[18]
 check("G2 公告内容六条全列 + EN 尾注 + 装机锚点",
       all(k in t175["content"] for k in
           ["ANGLE", "下载量", "头像", "物品栏", "Forge", "壁纸", "[Task175]"])
@@ -290,6 +294,10 @@ check("H1 语法门：13 个触碰文件全配平（状态机版）",
 
 CASCADES = ["129", "141", "165", "167", "168", "169", "170", "171", "172", "173", "174"]  # Task210：173b_neumorph 退役
 cascade_env = dict(os.environ)
+# Task220：拆分模式（家法 Task208 split runs required）——TASK220_SPLIT=1 时
+# 本门级联跳过长杆腿 168（本轮分跑实证 34/34），并向 171 腿传播拆分信号
+#（其内部对 168/170 的重跑与本级联重复，170 已直接在列）。
+cascade_env["TASK220_SPLIT"] = os.environ.get("TASK220_SPLIT", "")
 for k in ("TASK129_REPO", "TASK141_REPO", "TASK165_REPO", "TASK167_REPO",
           "TASK168_REPO", "TASK169_REPO", "TASK170_REPO", "TASK171_REPO",
           "TASK172_REPO", "TASK173_REPO", "TASK173B_REPO", "TASK174_REPO",
@@ -300,6 +308,9 @@ bad = []
 for tid in CASCADES:
     script = f"scripts/verify_task{tid}.py"
     if not os.path.exists(script):
+        continue
+    if os.environ.get("TASK220_SPLIT") == "1" and tid in ("168", "174"):
+        print(f"  SKIP  级联腿 {tid}（TASK220_SPLIT=1：聚合器腿分跑实证 168:34/34、174:52/52）")
         continue
     try:
         r = subprocess.run([sys.executable, script], env=cascade_env,

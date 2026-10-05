@@ -117,7 +117,12 @@ mch = rd("Natives/PLMirrorCenter.h")
 log_2612 = rd("latestlog.old.txt")
 log_gles = rd("latestlog.old.txt")
 log_mithril = rd("latestlog.txt")
-log_ok = rd("latestlog.txt")  # Task212: phantom filename re-pointed
+# Task220 git-pin：Oct-4/5 日志三连上传轮换（e1f2114e/def65d79/50254b8d）
+# 后，B1/B2 的 TouchController plist 污染链证据（JsonDecodingException +
+# Failed to read config）不再存在于工作树。按 Task219 先例固定到
+# 63178f89:latestlog.txt（单一完整证据源）。
+log_ok = subprocess.run(["git", "-C", REPO, "show", "63178f89:latestlog.txt"],
+                       capture_output=True, text=True).stdout  # Task212 phantom re-point 退役，Task220 git-pin
 
 print("== A. 26.1.2 崩溃根治（Task138 定案：JNA ffi 闭包页；Task139 重锚：回落成功 + 麦克风层新崩溃） ==")
 check("A1 崩溃日志证据（现存 OSMesa 会话：POJAV_NATIVEDIR 守卫生效 + controlify JNA 守卫 + 无 SIGBUS）",
@@ -274,8 +279,9 @@ ks = []
 for l in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     s = rd(f"Natives/resources/{l}.lproj/Localizable.strings")
     ks.append(set(re.findall(r'^"([^"]+)"\s*=', s, re.M)))
-check("I-l10n 四语言键集一致（Task157 基线 2228 = Task156 基线 2228 + Task157 组件键 2）",
-      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2157,
+# Task220 计数同步：Task158-219 逐轮新增键（+363），四语言一致链保持。
+check("I-l10n 四语言键集一致（Task220 重锚：当前基线 2520）",
+      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2520,
       f"counts={[len(k) for k in ks]}")
 gram_ok = True
 for l in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
