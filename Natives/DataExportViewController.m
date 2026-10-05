@@ -6,6 +6,7 @@
 #import "PLTaskStage.h"
 #import "utils.h"
 #import "LauncherPreferences.h"   // accentColor()（同 AboutViewController 先例）
+#import "UIKit+hook.h"   // UIWindow.mainWindow 分类声明（destination picker 取最顶层 VC）
 #import "UnzipKit.h"   // 仓内约定：CMake include 路径含 external/UnzipKit（同 ModpackImportService）
 
 @interface DataExportViewController () {
@@ -188,7 +189,7 @@
             if (files == 0) {
                 self.summaryLabel.text = localize(@"dataexport.empty", nil);
                 self.startButton.enabled = NO;
-                self.startButton.backgroundColor = [UIColor tertiarySystemFill];
+                self.startButton.backgroundColor = [UIColor tertiarySystemFillColor];
                 return;
             }
             self.summaryLabel.text = [NSString stringWithFormat:localize(@"dataexport.summary.body", nil),
@@ -204,7 +205,7 @@
     self.spinner.hidden = YES;
     self.summaryLabel.text = [NSString stringWithFormat:localize(@"dataexport.failed", nil), reason];
     self.startButton.enabled = NO;
-    self.startButton.backgroundColor = [UIColor tertiarySystemFill];
+    self.startButton.backgroundColor = [UIColor tertiarySystemFillColor];
 }
 
 #pragma mark - Level
@@ -250,7 +251,7 @@
     [manager updateTaskWithId:taskId stageAtIndex:0 status:PLTaskStageStatusRunning];
 
     self.startButton.enabled = NO;
-    self.startButton.backgroundColor = [UIColor tertiarySystemFill];
+    self.startButton.backgroundColor = [UIColor tertiarySystemFillColor];
 
     // ★ Task223 速度根修：并发读 + 串行写流水线（详见 DataTransferService
     //   ame223_runPipelinedBackupExport 注释）。进度回报双维度：文件计数 +
