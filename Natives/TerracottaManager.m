@@ -155,7 +155,7 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
                         memset(&addr, 0, sizeof(addr));
                         addr.sin_family = AF_INET;
                         addr.sin_port = htons((uint16_t)[parts[1] intValue]);
-                        struct hostent *he = gethostbyname([parts[0] UTF8String])   // Task223 CI 修复：id 接收者不能点语法;
+                        struct hostent *he = gethostbyname([parts[0] UTF8String]);   // Task223 CI 修复：id 接收者不能点语法（分号曾误入注释——r6 教训）
                         if (he != NULL && he->h_addrtype == AF_INET && he->h_addr_list[0] != NULL) {
                             memcpy(&addr.sin_addr, he->h_addr_list[0], he->h_length);
                             // 非阻塞 connect + 2s 轮询（无 libevent 依赖的极简探测）
