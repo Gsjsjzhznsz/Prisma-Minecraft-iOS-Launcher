@@ -14,6 +14,7 @@
 #import "MultiplayerViewController.h"
 #import "MultiplayerManager.h"
 #import "TerracottaViewController.h"
+#import "TerracottaBridge.h"  // Task222 CI fix: isAvailable 探测（run 37300697020 报 undeclared identifier）
 #import <objc/runtime.h>
 
 // 暴露 class extension 中的私有属性，供 category 使用
