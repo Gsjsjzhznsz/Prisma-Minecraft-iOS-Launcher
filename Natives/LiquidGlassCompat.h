@@ -117,7 +117,7 @@ FOUNDATION_EXPORT void LGCRemoveGlassFromView(UIView *view);
 FOUNDATION_EXPORT void LGCAdaptNavigationBar(UINavigationBar *navigationBar);
 
 /// 适配 UIToolbar/UITabBar：在 iOS 26+ 移除自定义背景。
-FOUNDATION_EXPORT void LGCAdaptBar(UIBar *bar);
+FOUNDATION_EXPORT void LGCAdaptBar(UIView *bar);   // Task224 CI r2：UIBar 非真实 UIKit 类型（分支原生笔误），UIView 参数承接 UIToolbar/UITabBar
 
 /// 适配 UIBarButtonItem customView：在 iOS 26+ 隐藏共享玻璃背景。
 FOUNDATION_EXPORT void LGCAdaptBarButtonItem(UIBarButtonItem *item);

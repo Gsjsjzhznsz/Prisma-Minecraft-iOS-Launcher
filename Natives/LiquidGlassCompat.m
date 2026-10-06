@@ -348,7 +348,7 @@ void LGCAdaptNavigationBar(UINavigationBar *navigationBar) {
     navigationBar.translucent = YES;
 }
 
-void LGCAdaptBar(UIBar *bar) {
+void LGCAdaptBar(UIView *bar) {
     if (!bar) return;
     if (!LGCIsLiquidGlassAvailable()) return;
     // UIToolbar / UITabBar 通用适配：移除自定义背景
