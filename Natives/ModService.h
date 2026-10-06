@@ -52,8 +52,15 @@ typedef void(^ModDownloadHandler)(NSError * _Nullable error); // Added for downl
 - (nullable NSString *)ensureModsFolderForProfile:(NSString *)profileName error:(NSError **)error;
 
 /// Task219（⑪ 版本隔离自动识别）：profile 的隔离态。0 = 不隔离（gameDir
-/// 缺失或 "."）；1 = 隔离（versions/<id> 或自定义 gameDir）。
+/// 缺失或 "." 且嗅探未命中）；1 = 显式隔离（versions/<id> 或自定义
+/// gameDir）；2 = 嗅探隔离（Task225：gameDir 为 "." 但 versions/<vid>/
+/// 下已有 mods/saves——上游 PCL auto 语义）。
 + (NSInteger)ame219_isolationStateForProfile:(NSString *)profileName;
+
+/// Task225：目录形状嗅探（上游 ameVISniffVersionFolder 同源规则）——
+/// versions/<vid>/game 优先、旧口径 versions/<vid>/ 兑底，mods/saves 有
+/// 任一非隐藏条目即返回该隔离目录绝对路径；不命中返回 nil。
++ (nullable NSString *)ame225_sniffedIsolationGameDirForProfile:(NSDictionary *)prof;
 
 @end
 

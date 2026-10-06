@@ -3974,3 +3974,49 @@
 // carrying a "Source: Prisma" attribution (bidirectional sync -- already
 // in this tree). i18n +1 port key (2606 total) x4 languages.
 // ============================================================================
+// Task 225 addendum (no REVISION bump -- launcher-side only, zero MobileGlues
+// ABI/config surface): 14-item feedback round on the run-658 build (a763f223 +
+// 02a3fe1 log sets). (1) VirGL crash root: TMPDIR resolves to the SHARED /tmp
+// under LiveContainer where bind(AF_UNIX) is EPERM ("Failed to setup socket.:
+// Operation not permitted" -> vtest_main exit(1) kills the process); fix =
+// candidate-chain socket dir with a disposable probe socket (NSTemporaryDirectory
+// -> TMPDIR -> POJAV_HOME -> /tmp), and the vendored vtest_server.c socket-error
+// path now returns instead of exit(1) (bootstrap poll times out -> Zink divert).
+// (2) "ANGLE errors on non-SDL" verdict: renderer chain was HEALTHY (37 swaps,
+// depth-format remap active); the actual death was java.nio NoSuchFileException
+// on a missing assets object -> launch-time asset-integrity heal (index JSON ->
+// per-object stat -> serial re-download, 20s/300-object budget). (3) Right-shift
+// regression root: the Task224 isolation re-layout created a fresh gameDir whose
+// missing one-shot marker let the Task67 canonical WASHER re-run and wash sneak
+// back to left.shift (marker-present-but-washed in the logs); fix = wash retired
+// permanently (dump-only) + one-shot v3 restore for the v2 cohort + markers ride
+// the isolation migration. (4) SDL keyboard open/close loop: per-character
+// UIAsyncTextInput session teardown vs the Task224 heal watcher re-arming
+// first-responder; fix = upstream preventUnexpectedResign port (TrackedTextField
+// refuses non-voluntary resigns; explicit dismissals wrapped). (5) Liquid Glass:
+// nesting crash (UIVisualEffectView inside UIVisualEffectView from the cardTarget
+// adoption loop) + black surfaces (UIGlassEffect does not render reliably in
+// old-SDK processes -- composite blur+sheen base now) both fixed. (6) Isolation
+// upstream-alignment: explicit choice sheet (migrate/enable-only), main-migration-
+// first ordering (legacy leftovers only fill gaps), and PCL-style directory-shape
+// sniffing shared by ModService/ModsManager/JavaLauncher (mods installs auto-
+// target versions/<id>/game when it already holds mods/saves; badge shows the
+// sniffed state and links to version settings). (7) In-game "open folder" no-op
+// on 26.3: CTCDesktopPeer natives were only registered for the Java 8 cacio
+// package -- the com/github 17/21/25 fallback is now registered (clipboard
+// precedent), routing java.awt.Desktop opens into the in-app FolderBrowser.
+// (8) Export destination alert vanishing: the 1.5s auto-dismiss of the progress
+// page tore down the alert presented above it -- guarded + one reschedule.
+// (9) Welcome: intro features rewritten as Prisma-UNIQUE advantages (renderer
+// matrix + device-level tuning, deep input chain, data safety, parallel export,
+// appearance system, deep diagnostics) and the ANCHORED zl2 coach marks
+// (sidebar/content/launch, real UI rects) restored between wizard-dismiss and
+// the About page. (10) Settings appearance rows inlined (interface slider 85-125,
+// TEXT slider 85-130 -- fonts now scale independently via prisma.text_scale,
+// dynamic-contrast toggle prisma.text_auto_contrast with the BackgroundManager
+// color funnel respecting it); the standalone zoom editor retired; the four
+// preference.detail.* keys added (raw-key-name display root-caused to missing
+// detail keys). (11) First-content-placement now fades in on both layouts.
+// Fleet: verify_task225 68/68; l10n baseline swept 2606->2696 across the
+// verifier family; tinygl GL_DEPTH_COMPONENT local define fixes the task193
+// standalone-compile gate (real CI builds resolve it via the gl4es headers).

@@ -213,8 +213,13 @@ check("I2 case 5 = zl2 介绍页 / case 6 = Done",
 check("I3 介绍页：特性行 + 社区卡（Task223 重写为直接布局，见 verify_task223）",
       "ame222_buildIntroStep:(UIView *)container" in wv and
       "welcome.intro.community.title" in wv and "welcome.intro.subtitle" in wv)
-check("I4 Data 跳过目标改为 6",
-      "[self ame218_showStep:6 animated:YES];" in wv)
+# Task225 再锚：Task224 把介绍页后的推进改成了圆盘焦点引导（weakSelf 版
+# showStep:6），Task225 又退役圆盘改回通用步进 + 向导后锚定式焦点引导
+# （ame223_showCoachMarksThenAboutFrom:）。I4 语义 = "介绍页之后直达
+# Done/收尾"，锚点改为通用步进与锚定引导的存在性。
+check("I4 介绍页推进：通用步进（Task225）+ 向导后锚定引导直达 About",
+      "[self ame218_showStep:self.stepIndex + 1 animated:YES];" in wv
+      and "ame223_showCoachMarksThenAboutFrom:" in wv)
 check("I5 About 贡献卡（爱发电按钮 + 赞赏码）",
       "ame222_buildDonateCard" in about and "ame222_openAfdian" in about)
 check("I6 赞赏码 bundle 直显 + 长按存图",
@@ -288,7 +293,8 @@ for lg in langs:
     s = read(f"Natives/resources/{lg}.lproj/Localizable.strings")
     sets.append(set(re.findall(r'^"([^"]+)"\s*=', s, re.M)))
 check("K2 四语言键集一致（2606 = 2565 + Task223 的 41）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2606,
+      # Task225 再锚：Task224 +69 → 2675；Task225 +21 → 2696。
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2696,
       f"counts={[len(x) for x in sets]}")
 need_keys = ["i18n_str_2072", "i18n_str_2090", "i18n_str_2091", "i18n_str_2093",
              "about.donate.title", "about.donate.afdian", "welcome.intro.title",

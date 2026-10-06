@@ -19,6 +19,7 @@
 #import "PLProfiles.h"
 #import "LauncherPreferences.h"
 #import "DownloadViewController.h"
+#import "ProfileSettingsViewController.h"   // Task225：隔离徽标 → 版本设置入口
 #import "utils.h"
 #import <CommonCrypto/CommonDigest.h>
 
@@ -306,11 +307,20 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     // gameDir 自动判定隔离态（隔离 = 蓝底“隔离”，共享 = 灰底“共享目录”），
     // 点击弹说明（下载/扫描只作用于该目录，与 ModService ame219 同口径）。
     NSInteger ame219_iso = [ModService ame219_isolationStateForProfile:(self.profileName ?: @"default")];
-    UIButton *ame219_isoChip = [self makeChipButtonWithTitle:localize(
-        (ame219_iso == 1) ? @"ame219.mods.isolated_chip" : @"ame219.mods.shared_chip", nil)];
-    ame219_isoChip.enabled = NO;
+    // Task225（#5）：三态徽标（显式隔离 / 嗅探隔离 / 共享），可点——弹
+    // 快捷说明 + 前往版本设置的隔离入口（用户反馈"安装模组端依旧默认
+    // 共享目录"：多数是没开隔离或开在了别的 profile，这里给一条明路）。
+    NSString *ame225_chipKey = (ame219_iso == 1) ? @"ame219.mods.isolated_chip"
+        : (ame219_iso == 2) ? @"ame225.mods.sniffed_chip" : @"ame219.mods.shared_chip";
+    UIButton *ame219_isoChip = [self makeChipButtonWithTitle:localize(ame225_chipKey, nil)];
+    ame219_isoChip.enabled = YES;
+    [ame219_isoChip addTarget:self action:@selector(ame225_isolationChipTapped)
+                 forControlEvents:UIControlEventTouchUpInside];
     if (ame219_iso == 1) {
         [ame219_isoChip setImage:[UIImage systemImageNamed:@"lock.shield"]
+                    forState:UIControlStateNormal];
+    } else if (ame219_iso == 2) {
+        [ame219_isoChip setImage:[UIImage systemImageNamed:@"sparkle.magnifyingglass"]
                     forState:UIControlStateNormal];
     } else {
         [ame219_isoChip setImage:[UIImage systemImageNamed:@"externaldrive"]
@@ -318,8 +328,9 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     }
     ame219_isoChip.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
     [self.chipsStack addArrangedSubview:ame219_isoChip];
-    NSLog(@"[ModsManager] Task219: isolation badge for profile %@ -> %@",
-          self.profileName ?: @"default", (ame219_iso == 1) ? @"isolated" : @"shared");
+    NSLog(@"[ModsManager] Task219/225: isolation badge for profile %@ -> %@",
+          self.profileName ?: @"default",
+          (ame219_iso == 1) ? @"isolated" : ((ame219_iso == 2) ? @"sniffed-isolated" : @"shared"));
 
     [NSLayoutConstraint activateConstraints:@[
         // chips 行：紧贴搜索栏下方，tableView 改为锚到 chips 行底部
@@ -387,6 +398,38 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     self.filterMode = (ModsFilterMode)sender.tag;
     [self refreshChipStyles];
     [self applyFilter];
+}
+
+/// Task225（#5）：隔离徽标点击——说明当前 mod 安装/扫描的目标目录语义，
+/// 并提供「前往版本设置」入口（隔离开关在版本设置页）。
+- (void)ame225_isolationChipTapped {
+    NSInteger ame225_iso = [ModService ame219_isolationStateForProfile:(self.profileName ?: @"default")];
+    NSString *ame225_msg = nil;
+    if (ame225_iso == 1) {
+        ame225_msg = localize(@"ame225.mods.isolated_note", nil);
+    } else if (ame225_iso == 2) {
+        ame225_msg = localize(@"ame225.mods.sniffed_note", nil);
+    } else {
+        ame225_msg = localize(@"ame225.mods.shared_note", nil);
+    }
+    UIAlertController *ame225_alert = [UIAlertController
+        alertControllerWithTitle:localize(@"profile.isolation.title", nil)
+                         message:ame225_msg
+                  preferredStyle:UIAlertControllerStyleAlert];
+    [ame225_alert addAction:[UIAlertAction
+        actionWithTitle:localize(@"ame225.mods.open_settings", nil)
+                  style:UIAlertActionStyleDefault
+                handler:^(UIAlertAction * _Nonnull action) {
+        // 前往版本设置页（隔离开关在那里）
+        ProfileSettingsViewController *ame225_ps = [[ProfileSettingsViewController alloc] init];
+        ame225_ps.profileName = self.profileName ?: @"default";
+        UINavigationController *ame225_nav = [[UINavigationController alloc] initWithRootViewController:ame225_ps];
+        ame225_nav.modalPresentationStyle = UIModalPresentationPageSheet;
+        [self presentViewController:ame225_nav animated:YES completion:nil];
+    }]];
+    [ame225_alert addAction:[UIAlertAction actionWithTitle:localize(@"OK", nil)
+                                                      style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:ame225_alert animated:YES completion:nil];
 }
 
 - (void)sortChipTapped {

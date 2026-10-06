@@ -1236,13 +1236,25 @@ static __weak PLTaskProgressViewController *PLTaskProgressActiveInstance = nil;
 }
 
 /// 任务完成且开启自动最小化时，延迟 1.5s dismiss（期间用户可查看终态）
+// ★ Task225（反馈 #8：导出保存弹窗几秒自动关闭——根修）：导出完成回调
+//   在本页之上再 present 目标选择弹窗（DataTransferService
+//   ame223_presentDestinationPickerForTmpPath 从最顶层 presenter 弹出），
+//   1.5s 后本页 dismissViewControllerAnimated 会把【叠在上面的弹窗一起
+//   撤走】——用户还没按到"保存到文件"弹窗就消失了。修法：触发时若本页
+//   之上还叠着其它 presented VC（目标选择弹窗/任何后续 UI），本轮不关、
+//   顺延一次（+2s 再试）；顺延后若仍被叠则放弃自动最小化（用户关闭弹窗
+//   后手动最小化，绝不吃掉任何用户交互）。
 - (void)scheduleAutoDismissIfNeededForTask:(DownloadTaskItem *)task {
     if (task.state != DownloadTaskStateCompleted) return;
     if (!self.autoDismissOnCompletion || self.autoDismissScheduled) return;
     self.autoDismissScheduled = YES;
 
+    [self ame225_autoDismissAfterDelay:kPLTaskProgressAutoDismissDelay rescheduled:NO];
+}
+
+- (void)ame225_autoDismissAfterDelay:(NSTimeInterval)delay rescheduled:(BOOL)rescheduled {
     __weak typeof(self) weakSelf = self;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kPLTaskProgressAutoDismissDelay * NSEC_PER_SEC)),
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
@@ -1250,9 +1262,20 @@ static __weak PLTaskProgressViewController *PLTaskProgressActiveInstance = nil;
         // 若期间已切换到其他任务则不关闭
         DownloadTaskItem *latest = [[DownloadTaskManager sharedManager] taskWithId:strongSelf.taskId];
         BOOL stillCompleted = (!latest || latest.state == DownloadTaskStateCompleted);
-        if (stillCompleted && strongSelf.view.window != nil) {
-            [strongSelf dismissViewControllerAnimated:YES completion:nil];
+        if (!stillCompleted || strongSelf.view.window == nil) return;
+        // Task225：本页之上叠着其它呈现内容（导出目标选择弹窗等）时不关——
+        // dismiss 会连带撤走它们；首轮顺延一次，顺延后仍叠则放弃。
+        if (strongSelf.presentedViewController != nil) {
+            if (!rescheduled) {
+                NSLog(@"[PLTaskProgress] Task225 auto-dismiss deferred: presented VC on top (%@), retrying in 2s",
+                      NSStringFromClass(strongSelf.presentedViewController.class));
+                [strongSelf ame225_autoDismissAfterDelay:2.0 rescheduled:YES];
+            } else {
+                NSLog(@"[PLTaskProgress] Task225 auto-dismiss abandoned: presented VC still on top");
+            }
+            return;
         }
+        [strongSelf dismissViewControllerAnimated:YES completion:nil];
     });
 }
 

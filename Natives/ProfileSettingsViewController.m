@@ -1673,12 +1673,42 @@ static NSString * localizeProfileTitle(NSString *title) {
 /// 目标已存在的条目一律跳过（绝不覆盖）；libraries/assets/versions 保持
 /// 共享不迁移。迁移在后台队列执行（大 mods 目录不再冻结 UI），计数制
 /// 汇总（无百分比——杜绝负数显示）。
+/// ★ Task225（反馈 #5）：入口改【先问再动】（迁移并开启 / 仅开启 /
+/// 取消）；主迁移先行、legacy 升级只补缺口；键位标记随迁。
 - (void)ame217_enableIsolationWithMigration {
     NSString *lastVersionId = self.profile[@"lastVersionId"];
     if (![lastVersionId isKindOfClass:[NSString class]] || lastVersionId.length == 0) {
         [self showComponentAlert:localize(@"i18n_str_899", nil) message:localize(@"i18n_str_901", nil)];
         return;
     }
+    // Task225（反馈 #5）：先问再动（上游 PCL/VER-ISOLATE 哲学 = 只写设置、
+    // 数据永不丢；我们的文件迁移是增强，必须成为显式选择）。
+    UIAlertController *ame225_choice = [UIAlertController
+        alertControllerWithTitle:localize(@"profile.isolation.title", nil)
+                         message:localize(@"profile.isolation.choice_prompt", nil)
+                  preferredStyle:UIAlertControllerStyleActionSheet];
+    [ame225_choice addAction:[UIAlertAction
+        actionWithTitle:localize(@"profile.isolation.choice_migrate", nil)
+                  style:UIAlertActionStyleDefault
+                handler:^(UIAlertAction * _Nonnull action) {
+        [self ame225_enableIsolationWorker:lastVersionId migrate:YES];
+    }]];
+    [ame225_choice addAction:[UIAlertAction
+        actionWithTitle:localize(@"profile.isolation.choice_keep", nil)
+                  style:UIAlertActionStyleDefault
+                handler:^(UIAlertAction * _Nonnull action) {
+        [self ame225_enableIsolationWorker:lastVersionId migrate:NO];
+    }]];
+    [ame225_choice addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+                                                      style:UIAlertActionStyleCancel handler:nil]];
+    ame225_choice.popoverPresentationController.sourceView = self.view;
+    ame225_choice.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0, self.view.bounds.size.height / 2.0, 1.0, 1.0);
+    [self presentViewController:ame225_choice animated:YES completion:nil];
+}
+
+/// Task225：开启隔离执行体。migrate=NO 只写 gameDir（上游"只写设置"语义，
+/// 一个文件不搬）；migrate=YES 按【主迁移先行、legacy 补缺口】顺序执行。
+- (void)ame225_enableIsolationWorker:(NSString *)lastVersionId migrate:(BOOL)migrate {
     NSString *instanceRoot = @(getenv("POJAV_GAME_DIR"));
     if (instanceRoot.length == 0) {
         [self showComponentAlert:localize(@"profile.isolation.title", nil)
@@ -1722,10 +1752,14 @@ static NSString * localizeProfileTitle(NSString *title) {
 
     // 迁移清单：游戏运行时会读写的用户数据。刻意排除 logs/crash-reports
     // （历史垃圾）、versions/libraries/assets（共享层）。
+    // Task225：+ 键位标记（v1/v2/v3）——标记丢失 = 净化器/恢复器 cohort
+    // 判据断链（本轮净化器已退役，标记随迁保证 v3 判据语义连续）。
     NSArray<NSString *> *ame217_items = @[
         @"saves", @"mods", @"config", @"resourcepacks", @"shaderpacks",
         @"options.txt", @"servers.dat", @"servers.dat_old", @"usercache.json",
-        @"screenshots"
+        @"screenshots",
+        @"options.txt.amethyst-keybinds-v1", @"options.txt.amethyst-keybinds-v2",
+        @"options.txt.amethyst-keybinds-v3"
     ];
 
     // Task224：迁移进度弹窗（计数制）——旧实现同步跑在主线程，大 mods
@@ -1733,7 +1767,7 @@ static NSString * localizeProfileTitle(NSString *title) {
     // （本弹窗只显示已迁移条目计数，恒 >= 0）。
     UIAlertController *ame224_progressAlert = [UIAlertController
         alertControllerWithTitle:localize(@"profile.isolation.title", nil)
-                         message:localize(@"profile.isolation.migrating", nil)
+                         message:localize(migrate ? @"profile.isolation.migrating" : @"profile.isolation.applying", nil)
                   preferredStyle:UIAlertControllerStyleAlert];
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.35 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
@@ -1746,26 +1780,9 @@ static NSString * localizeProfileTitle(NSString *title) {
         NSInteger legacyMoved = 0;
         NSMutableArray<NSString *> *skipNames = [NSMutableArray array];
 
-        // (a) Task224 legacy 升级：versions/<id>/ 根上混居的游戏数据 → game/。
-        //     jar/json 等版本元数据不动；目标已存在一律跳过。
-        if (![legacyDir isEqualToString:isoDir] && [fm fileExistsAtPath:legacyDir]) {
-            for (NSString *item in ame217_items) {
-                NSString *src = [legacyDir stringByAppendingPathComponent:item];
-                NSString *dst = [isoDir stringByAppendingPathComponent:item];
-                if (![fm fileExistsAtPath:src]) continue;
-                if ([fm fileExistsAtPath:dst]) continue;
-                if ([fm moveItemAtPath:src toPath:dst error:nil]) {
-                    legacyMoved++;
-                }
-            }
-            if (legacyMoved > 0) {
-                NSLog(@"[ProfileSettings] Task224 legacy isolation upgraded: %ld item(s) versions/<id> -> versions/<id>/game",
-                      (long)legacyMoved);
-            }
-        }
-
-        // (b) 主迁移：migrateSource → isoDir（Task223 语义）。
-        if (!ame223_sameDir) {
+        // ★ Task225：主迁移【先行】——migrateSource（当前 gameDir）是
+        //     用户活数据所在地，优先占位；仅 migrate=YES 时执行。
+        if (migrate && !ame223_sameDir) {
             for (NSString *item in ame217_items) {
                 NSString *src = [migrateSource stringByAppendingPathComponent:item];
                 NSString *dst = [isoDir stringByAppendingPathComponent:item];
@@ -1787,6 +1804,27 @@ static NSString * localizeProfileTitle(NSString *title) {
             }
         }
 
+        // ★ Task225：legacy 升级【后置】——versions/<id>/ 根上混居的游戏
+        //     数据 → game/，只补主迁移后仍缺失的条目（旧顺序让旧残留
+        //     抢先占位 → 主迁移恒 skipped/moved=0，02a3fe1 日志集实锤
+        //     "moved=0 skipped=5"×2 = "迁移一下子完成"的直接根因）。
+        //     jar/json 等版本元数据不动；目标已存在一律跳过。
+        if (migrate && ![legacyDir isEqualToString:isoDir] && [fm fileExistsAtPath:legacyDir]) {
+            for (NSString *item in ame217_items) {
+                NSString *src = [legacyDir stringByAppendingPathComponent:item];
+                NSString *dst = [isoDir stringByAppendingPathComponent:item];
+                if (![fm fileExistsAtPath:src]) continue;
+                if ([fm fileExistsAtPath:dst]) continue;
+                if ([fm moveItemAtPath:src toPath:dst error:nil]) {
+                    legacyMoved++;
+                }
+            }
+            if (legacyMoved > 0) {
+                NSLog(@"[ProfileSettings] Task224 legacy isolation upgraded: %ld item(s) versions/<id> -> versions/<id>/game",
+                      (long)legacyMoved);
+            }
+        }
+
         dispatch_async(dispatch_get_main_queue(), ^{
             self.profile[@"gameDir"] = relative;
             [self saveSettings];
@@ -1796,7 +1834,9 @@ static NSString * localizeProfileTitle(NSString *title) {
                   lastVersionId, relative, (long)moved, (long)skipped, (long)legacyMoved);
 
             NSString *summary;
-            if (moved == 0 && skipped == 0 && legacyMoved == 0) {
+            if (!migrate) {
+                summary = [NSString stringWithFormat:localize(@"profile.isolation.enabled_nomove", nil), relative];
+            } else if (moved == 0 && skipped == 0 && legacyMoved == 0) {
                 summary = [NSString stringWithFormat:localize(@"profile.isolation.migrated_clean", nil), relative];
             } else {
                 summary = [NSString stringWithFormat:localize(@"profile.isolation.migrated", nil),

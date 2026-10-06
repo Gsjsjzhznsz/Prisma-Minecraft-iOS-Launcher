@@ -24,6 +24,7 @@
 #import "LauncherPreferences.h"
 #import "PLLogOutputView.h"
 #import "PLProfiles.h"
+#import "ModService.h"   // Task225：隔离嗅探（与 ModService/ModsManager 同源）
 #import "MinecraftResourceUtils.h"
 
 #define fm NSFileManager.defaultManager
@@ -605,6 +606,104 @@ static NSString *lwjglBareLibName(const char *fileName) {
 // （Fabric 只加载 .jar 结尾的文件；想恢复把文件名改回即可）。
 // 名单原则：只收真机实证过的案犯，宁缺毋滥——missingmodschecker 是叶子工具
 // mod（依赖树里没有任何 mod 依赖它），禁用不会破坏依赖解析。
+// ★ Task225（反馈 #2：ANGLE 非 SDL 版本报错——实为 assets 缺文件）：
+// 02a3fe1 日志集 latestlog.txt（1.20.1 + tinygl4angle）铁证：渲染链健康
+//（37 帧 swap、深度格式重映射生效），死亡点 = enn.<init> 资源加载时
+// java.nio.file.NoSuchFileException:
+// .../assets/objects/f0/f0065754...——assets 个体文件缺失（下载中断/被
+// 清理），MC 1.20.1 直接崩（不会自补）。修法：JVM 启动前的【资源完整性
+// 预检 + 自动补齐】——读 assets/indexes/<id>.json，逐 object stat，
+// 缺失者从官方资源服串行补下（预算 20s / 上限 300 个；超限只告警不强撑，
+// 下轮继续补）。镜像走 PLMirrorCenter 不引入（预检路径保持零依赖）。
+static int ame225_healMissingAssets(NSString *versionId) {
+    if (versionId.length == 0) return 0;
+    const char *gameRootC = getenv("POJAV_GAME_DIR");
+    if (!gameRootC || !*gameRootC) return 0;
+    NSString *gameRoot = [NSString stringWithUTF8String:gameRootC];
+
+    // 1. 版本 JSON → assets 索引名（"assets" 字段，如 "5"）
+    NSString *versionJsonPath = [gameRoot stringByAppendingPathComponent:
+        [NSString stringWithFormat:@"versions/%@/%@.json", versionId, versionId]];
+    NSDictionary *versionJson = [NSJSONSerialization JSONObjectWithData:
+        [NSData dataWithContentsOfFile:versionJsonPath] options:0 error:nil];
+    NSString *indexId = [versionJson isKindOfClass:[NSDictionary class]]
+        ? versionJson[@"assets"] : nil;
+    if (![indexId isKindOfClass:[NSString class]] || indexId.length == 0) {
+        return 0;  // 老版本/异常 JSON：无从预检，交给既有流程
+    }
+
+    // 2. 索引 JSON → objects
+    NSString *indexPath = [gameRoot stringByAppendingPathComponent:
+        [NSString stringWithFormat:@"assets/indexes/%@.json", indexId]];
+    NSDictionary *indexJson = [NSJSONSerialization JSONObjectWithData:
+        [NSData dataWithContentsOfFile:indexPath] options:0 error:nil];
+    NSDictionary *objects = [indexJson isKindOfClass:[NSDictionary class]]
+        ? indexJson[@"objects"] : nil;
+    if (![objects isKindOfClass:[NSDictionary class]] || objects.count == 0) {
+        return 0;  // 索引缺失（全新安装会整包下载）或形状异常
+    }
+
+    // 3. 逐 object stat，收集缺失
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSMutableArray<NSDictionary *> *missing = [NSMutableArray array];
+    NSUInteger checked = 0;
+    for (NSString *name in objects) {
+        NSDictionary *obj = objects[name];
+        NSString *hash = [obj isKindOfClass:[NSDictionary class]] ? obj[@"hash"] : nil;
+        if (![hash isKindOfClass:[NSString class]] || hash.length < 4) continue;
+        checked++;
+        // 1.19+ 的 icns 图标按既有约定跳过（安装器同款）
+        if ([name hasSuffix:@"/minecraft.icns"]) continue;
+        NSString *rel = [NSString stringWithFormat:@"assets/objects/%@/%@",
+            [hash substringToIndex:2], hash];
+        NSString *abs = [gameRoot stringByAppendingPathComponent:rel];
+        if (![fm fileExistsAtPath:abs]) {
+            [missing addObject:@{@"name": name, @"hash": hash, @"rel": rel}];
+        }
+    }
+    if (missing.count == 0) {
+        NSLog(@"[AssetsHeal] Task225 assets integrity OK (%lu objects checked, index=%@)", (unsigned long)checked, indexId);
+        return 0;
+    }
+    NSLog(@"[AssetsHeal] Task225 %lu/%lu asset object(s) MISSING (index=%@) -- healing",
+          (unsigned long)missing.count, (unsigned long)checked, indexId);
+
+    // 4. 串行补齐（预算 20s / 上限 300 个）
+    NSUInteger cap = MIN((NSUInteger)300, missing.count);
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:20.0];
+    int healed = 0;
+    for (NSUInteger i = 0; i < cap; i++) {
+        if ([NSDate.date compare:deadline] == NSOrderedDescending) {
+            NSLog(@"[AssetsHeal] Task225 budget exhausted after %d heal(s); %lu remain for next launch",
+                  healed, (unsigned long)(missing.count - i));
+            break;
+        }
+        NSDictionary *m = missing[i];
+        NSString *url = [NSString stringWithFormat:@"https://resources.download.minecraft.net/%@",
+            m[@"rel"]];
+        NSURL *assetURL = [NSURL URLWithString:url];
+        if (assetURL == nil) continue;
+        NSError *err = nil;
+        NSData *data = [NSData dataWithContentsOfURL:assetURL
+                                         options:NSDataReadingMappedIfSafe
+                                           error:&err];
+        if (data.length > 0) {
+            NSString *dst = [gameRoot stringByAppendingPathComponent:m[@"rel"]];
+            // .tmp 原子落位（半写文件比缺失更难排查）
+            NSString *tmp = [dst stringByAppendingString:@".ametmp"];
+            if ([data writeToFile:tmp atomically:YES] &&
+                [fm moveItemAtPath:tmp toPath:dst error:nil]) {
+                healed++;
+            }
+        } else {
+            NSLog(@"[AssetsHeal] Task225 download failed for %@ (%@)", m[@"name"],
+                  err.localizedDescription ?: @"unknown");
+        }
+    }
+    NSLog(@"[AssetsHeal] Task225 healed %d/%lu missing object(s)", healed, (unsigned long)missing.count);
+    return healed;
+}
+
 static int ame87_disableDesktopDialogMods(NSString *gameDir) {
     if (gameDir.length == 0) {
         return 0;
@@ -1964,11 +2063,41 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
             [PLProfiles resolveKeyForCurrentProfile:@"gameDir"]]
             .stringByStandardizingPath;
 
+        // ★ Task225（反馈 #5：与 ModService 同源的隔离嗅探）：profile 的
+        // gameDir 为 "."/缺失时，若 versions/<vid>/game（或旧口径
+        // versions/<vid>/）下已有 mods/saves 用户数据，启动目录自动解析为
+        // 该隔离目录——与上游 PCL VER-ISOLATE 的 auto 语义及 ModService/
+        // ModsManager 的解析完全一致（三处同规则，杜绝"游戏跑共享目录而
+        // mod 装到隔离目录"的错位）。显式 gameDir（自定义路径）永远优先。
+        {
+            NSString *ame225_profGameDir = [PLProfiles resolveKeyForCurrentProfile:@"gameDir"];
+            BOOL ame225_isShared = ![ame225_profGameDir isKindOfClass:[NSString class]] ||
+                ame225_profGameDir.length == 0 || [ame225_profGameDir isEqualToString:@"."];
+            if (ame225_isShared) {
+                NSDictionary *ame225_prof = [PLProfiles.current.profiles objectForKey:PLProfiles.current.selectedProfileName];
+                NSString *ame225_sniffed = [ModService ame225_sniffedIsolationGameDirForProfile:ame225_prof];
+                if (ame225_sniffed.length > 0) {
+                    gameDir = ame225_sniffed;
+                    NSLog(@"[JavaLauncher] Task225 auto-sniffed isolation gameDir -> %@ (mods/saves present; ModService 同源嗅探)", gameDir);
+                }
+            }
+        }
+
         // Task 87：桌面弹窗类 mod 预检（病历见 ame87_disableDesktopDialogMods 函数头）
         // ——实证案犯自动禁用（改名 .jar.disabled），Fabric 忽略非 .jar 文件。
         int ame87_disabledDialogMods = ame87_disableDesktopDialogMods(gameDir);
         if (ame87_disabledDialogMods > 0) {
             NSLog(@"[ModDialogGuard] Task87: %d desktop dialog mod(s) auto-disabled in %@/mods (rename .disabled -> .jar to restore)", ame87_disabledDialogMods, gameDir.lastPathComponent);
+        }
+
+        // Task225（#2）：资源完整性预检 + 自动补齐（assets 缺个体文件 = MC
+        // 1.20.1 启动期 NoSuchFileException 自杀的根因；详见函数头病历）。
+        {
+            NSString *ame225_vid = [launchTarget isKindOfClass:[NSDictionary class]]
+                ? launchTarget[@"id"] : nil;
+            if (ame225_vid.length > 0) {
+                ame225_healMissingAssets(ame225_vid);
+            }
         }
 
         // Task 95：整合包完整性提醒（病历见 ame95_warnIncompleteImport 函数头）

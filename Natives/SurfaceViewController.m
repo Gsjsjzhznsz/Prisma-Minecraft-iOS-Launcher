@@ -1360,6 +1360,9 @@ void ame139_fsr_heal_reset_input_scale(void) {
     }];
 
     self.inputTextField = [[TrackedTextField alloc] initWithFrame:CGRectMake(0, -32.0, self.view.frame.size.width, 30.0)];
+    // Task225（#7 键盘循环根修）：常驻拒绝非自愿 resign（上游 Zalith 同款）。
+    // 显式收起点一律走 ame225_resignInputTextField 包夹（临时清标志）。
+    self.inputTextField.preventUnexpectedResign = YES;
     self.inputTextField.backgroundColor = UIColor.secondarySystemBackgroundColor;
     self.inputTextField.delegate = self;
     self.inputTextField.font = [UIFont fontWithName:@"Menlo-Regular" size:20];
@@ -1760,13 +1763,14 @@ void ame139_fsr_heal_reset_input_scale(void) {
         if (isGrabbing == JNI_FALSE &&
             !self.inputTextField.isFirstResponder &&
             ame161_lastSentKeyWasChatOpener(1.5)) {
+            self.inputTextField.preventUnexpectedResign = YES;
             [self.inputTextField becomeFirstResponder];
             ame161_autoShown = YES;
             NSLog(@"[SurfaceVC] Task161: chat key + ungrab -> keyboard auto-shown (GLFW path, MC <=26.2)");
         } else if (isGrabbing == JNI_TRUE && ame161_autoShown) {
             if (self.inputTextField.isFirstResponder) {
                 ame171_keyboardDismissGeneration++;   // Task171：主动收起，作废在途自愈检查
-                [self.inputTextField resignFirstResponder];
+                [self ame225_resignInputTextField];
                 self.inputTextField.alpha = 1.0f;
             }
             ame161_autoShown = NO;
@@ -2479,6 +2483,18 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 ///     ✎/手势/发送总能赢）；
 ///   · App 非激活态只观察不自愈（后台期不弹键盘）；
 ///   · 截止时间：arm 时 +120s，打字活动持续续期，超时静默退役。
+// ★ Task225（#7 键盘循环根修）：preventUnexpectedResign 拦截系统临时
+//   resign 后，守望的"会话被拆"事件源本应归零——保留为低频兜底（防
+//   绕过 resign 入口的极端拆会话路径），不再成为每次键击的主角。
+- (void)ame225_resignInputTextField {
+    // 显式收起包夹：临时清标志 → resign → 恢复标志（上游 Zalith 同款）。
+    // preventUnexpectedResign=NO 让 resignFirstResponder 真正下台键盘；
+    // 收起后立即恢复 YES，下次 become 不受影响。
+    self.inputTextField.preventUnexpectedResign = NO;
+    [self.inputTextField resignFirstResponder];
+    self.inputTextField.preventUnexpectedResign = YES;
+}
+
 - (void)ame171_armKeyboardRecheck:(int)depth {
     if (depth == 0 || ame224_kbWatchArmedGen != ame171_keyboardDismissGeneration) {
         // 新一轮用户意图（✎/Start/手势）：清预算、重置截止时间
@@ -2502,6 +2518,7 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             if (ame224_kbHealCount < 10) {
                 ame224_kbHealCount++;
                 strongSelf.inputTextField.text = @" ";
+                strongSelf.inputTextField.preventUnexpectedResign = YES;
                 BOOL ok = [strongSelf.inputTextField becomeFirstResponder];
                 NSLog(@"[SurfaceVC] Task171/224: keyboard session heal #%d depth=%d (mid-typing system teardown; ok=%d)",
                       ame224_kbHealCount, depth, ok);
@@ -2534,6 +2551,7 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     // Task171 哨兵空格先于 becomeFirstResponder 写入（防 UIAsyncTextInput
     // 首会话竞争，与 ✎ 按钮同序）
     self.inputTextField.text = @" ";
+    self.inputTextField.preventUnexpectedResign = YES;
     BOOL ok = [self.inputTextField becomeFirstResponder];
     NSLog(@"[SurfaceVC] Task172 SDL auto-keyboard routed to launcher field (becameFR=%d)", ok);
     [self ame171_armKeyboardRecheck:0];
@@ -2577,7 +2595,7 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
                 return;
             }
             ame171_keyboardDismissGeneration++;
-            [strongSelf.inputTextField resignFirstResponder];
+            [strongSelf ame225_resignInputTextField];
             strongSelf.inputTextField.alpha = 1.0f;
             NSLog(@"[SurfaceVC] Task172 SDL stop-text-input: keyboard resigned with MC text context (debounced 250ms)");
         });
@@ -2599,12 +2617,13 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
         if (self.inputTextField.isFirstResponder) {
             ame171_keyboardDismissGeneration++;
-            [self.inputTextField resignFirstResponder];
+            [self ame225_resignInputTextField];
             self.inputTextField.alpha = 1.0f;
         } else {
             // Task171：哨兵空格先于 becomeFirstResponder 写入（旧序反着来，
             // 与 UIAsyncTextInput 异步会话激活竞争，首会话被系统拆掉）
             self.inputTextField.text = @" ";
+            self.inputTextField.preventUnexpectedResign = YES;
             [self.inputTextField becomeFirstResponder];
             [self ame171_armKeyboardRecheck:0];
         }
@@ -2927,7 +2946,7 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
                         BOOL wasFirst = self.inputTextField.isFirstResponder;
                         if (wasFirst) {
                             ame171_keyboardDismissGeneration++;
-                            [self.inputTextField resignFirstResponder];
+                            [self ame225_resignInputTextField];
                             self.inputTextField.alpha = 1.0f;
                             NSLog(@"[Task82] Keyboard widget: dismissing (was first responder)");
                         } else {
@@ -2942,7 +2961,8 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
                             // 输入才稳定。修法：写入顺序反转 + 清空位退役
                             // （初始化处）+ ame171_armKeyboardRecheck 自愈重挂。
                             self.inputTextField.text = @" ";
-                            BOOL ok = [self.inputTextField becomeFirstResponder];
+                            self.inputTextField.preventUnexpectedResign = YES;
+    BOOL ok = [self.inputTextField becomeFirstResponder];
                             NSLog(@"[Task82] Keyboard widget: becomeFirstResponder=%d (on-screen keyboard should appear; typing delivered via SDL text-input on 26.3)", ok);
                             [self ame171_armKeyboardRecheck:0];
                         }

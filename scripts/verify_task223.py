@@ -97,9 +97,13 @@ check("F1 公共服务器预检（15 秒 EasyTier 搜索超时根因）+ 通过/
 print("== G. 导出重构（清单 12/13） ==")
 check("G1 DataExportViewController 二级入口（设置页直推）",
       "DataExportViewController *vc = [[DataExportViewController alloc] init]" in lpv)
-check("G2 流水线：并行读（信号量限流）+ 串行写（dispatch_group 汇合）",
-      "dispatch_semaphore_create((long)maxInFlight)" in dts
-      and "dispatch_group_t writeGroup" in dts)
+# Task225 再锚：224-B 子代理重写导出引擎后旧 G2 两锚（maxInFlight/
+# writeGroup）已随旧实现退役——新引擎 = 3 worker 并行 + 信号量预算
+#（Ame224BudgetUnits）+ dispatch_group 汇合，语义等价。
+check("G2 流水线：并行压缩 + 信号量预算（Task224 引擎，Task225 再锚）",
+      "dispatch_semaphore_create((long)Ame224BudgetUnits)" in dts
+      and "dispatch_group_enter(group)" in dts
+      and "dispatch_group_leave(group)" in dts)
 check("G3 backup 资源类型 + 版本下载任务体系挂接",
       'DownloadTaskResourceTypeBackup = @"backup"' in rd("Natives/DownloadTaskItem.m")
       and "DownloadTaskResourceTypeBackup" in rd("Natives/DataExportViewController.m"))
@@ -206,7 +210,10 @@ for lang in LANGS:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
     keysets.append(keys)
-    check(f"M-{lang} 唯一键 2606（基线 2564 + Task223 42：清单 41 + 端口 1）", len(keys) == 2606, f"got {len(keys)}")
+    # Task225 再锚：Task224 +69（导出分区/界面风格族）→ 2675；Task225 +21
+    #（隔离选择/三态徽标/缩放反色/欢迎页 f5-f6）→ 2696。四语对等由
+    # task225_strings_audit.py 独立复验。
+    check(f"M-{lang} 唯一键 2696（2564 + Task223 42 + Task224 69 + Task225 21）", len(keys) == 2696, f"got {len(keys)}")
 check("M-四语言键集一致", keysets[0] == keysets[1] == keysets[2] == keysets[3])
 # used-vs-defined sweep
 used = set()

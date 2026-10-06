@@ -409,7 +409,17 @@ static void vtest_server_open_read_file(void)
    }
 }
 
-static void vtest_server_open_socket(void)
+/* Task225 (VirGL still-crash round): the upstream error path here called
+ * exit(1), killing the whole launcher process when bind() fails (iOS
+ * sandbox denies unix sockets in shared dirs, e.g. TMPDIR=/tmp under
+ * LiveContainer -- device log "Failed to setup socket.: Operation not
+ * permitted"). The launcher-side probe now picks a bind-able dir, but this
+ * path must degrade instead of dying: mark the socket invalid and let the
+ * run loop exit; the guest-side negotiate fails, the bootstrap poll times
+ * out, and the launcher diverts to Zink. No process exit from this vendored
+ * library.
+ */
+static bool vtest_server_open_socket(void)
 {
    struct sockaddr_un un;
 
@@ -433,11 +443,16 @@ static void vtest_server_open_socket(void)
       goto err;
    }
 
-   return;
+   return true;
 
 err:
    perror("Failed to setup socket.");
-   exit(1);
+   fprintf(stderr, "vtest: socket setup failed (errno above); server thread returning instead of exit -- guest should divert\n");
+   if (server.socket >= 0) {
+      close(server.socket);
+   }
+   server.socket = -1;
+   return false;
 }
 
 static void vtest_server_wait_clients(void)
@@ -642,7 +657,13 @@ static void vtest_server_run(void)
    if (server.read_file) {
       vtest_server_open_read_file();
    } else {
-      vtest_server_open_socket();
+      /* Task225: socket setup failure no longer exits the process; bail out
+       * of the run loop so the server thread returns to the launcher, which
+       * diverts the guest to Zink.
+       */
+      if (!vtest_server_open_socket()) {
+         return;
+      }
    }
 
    while (run) {

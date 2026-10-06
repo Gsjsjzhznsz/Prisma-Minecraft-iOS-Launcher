@@ -1108,12 +1108,27 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
 }
 
 - (UIColor *)ame223_adaptiveTextColor {
+    // Task225（#12/#13）：文字动态反色开关关闭时退回语义色（浅/深色模式
+    // 自适应），不再随壁纸亮度反色。集中漏斗：欢迎页 directTextColor、
+    // ame224_adaptive* 全族、attributed title 都经本组方法取色。
+    if (!LGCTextAutoContrastEnabled()) {
+        if (@available(iOS 13.0, *)) {
+            return [UIColor labelColor];
+        }
+        return [UIColor darkTextColor];
+    }
     return [self ame223_wallpaperLuminanceIsDark]
         ? [UIColor whiteColor]
         : [UIColor colorWithRed:0.10 green:0.10 blue:0.12 alpha:1.0];
 }
 
 - (UIColor *)ame223_adaptiveSecondaryTextColor {
+    if (!LGCTextAutoContrastEnabled()) {
+        if (@available(iOS 13.0, *)) {
+            return [UIColor secondaryLabelColor];
+        }
+        return [UIColor lightGrayColor];
+    }
     return [self ame223_wallpaperLuminanceIsDark]
         ? [UIColor colorWithWhite:1.0 alpha:0.72]
         : [UIColor colorWithWhite:0.0 alpha:0.62];
@@ -1146,7 +1161,8 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
     if (!label) return;
     label.textColor = secondary ? [BackgroundManager ame224_adaptiveSecondaryTextColor]
                                 : [BackgroundManager ame224_adaptiveTextColor];
-    if ([[BackgroundManager sharedManager] hasBackground]) {
+    // Task225（#12）：开关关闭时不铺反色阴影（语义色外观零回归）
+    if ([[BackgroundManager sharedManager] hasBackground] && LGCTextAutoContrastEnabled()) {
         // 软阴影兜底：亮度居中/局部反差的壁纸上给文字一圈对比衬底
         UIColor *ame224_shadow = [[BackgroundManager sharedManager] ame223_wallpaperLuminanceIsDark]
             ? [UIColor colorWithWhite:0.0 alpha:0.45]
@@ -1351,8 +1367,13 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
         UIView *cardTarget = nil;
         CGFloat cardRadius = 0;
         for (UIView *subview in contentView.subviews) {
-            if ([subview isKindOfClass:[UIVisualEffectView class]] && subview.tag == kBackgroundBlurTag) {
-                continue; // blur 层不参与容器探测
+            // ★ Task225（#4 嵌套崩溃根修）：一切 UIVisualEffectView 都不当
+            // 卡面容器（旧判据只跳 kBackgroundBlurTag——玻璃层的 888901/
+            // 888902 与页面底层的 kAme160GlassBackdropTag 均可被选中，
+            // 下一轮 LGCApplyGlassToView 往效果视图里插效果视图 =
+            // NSInternalInconsistencyException，设备实锤 latestlog.1 终末）。
+            if ([subview isKindOfClass:[UIVisualEffectView class]]) {
+                continue;
             }
             if (!cardTarget && subview.layer.cornerRadius > 0 &&
                 ![subview isKindOfClass:[UIImageView class]] &&

@@ -966,12 +966,25 @@ void registerOpenHandler(JNIEnv *env) {
     (*env)->RegisterNatives(env, cls, clipboardMethods, 2);
 
     // Register CTCDesktopPeer natives
+    // ★ Task225（反馈 #6：SDL 版本打开文件夹无反应——根修）：旧代码只注册
+    // Java 8 包名 net/java/openjdk/cacio/ctc/CTCDesktopPeer，FindClass 失败
+    // 即 return——Java 17/21/25（caciocavallo 1.18，包名
+    // com/github/caciocavallosilano/cacio/ctc）上 openFile/openUri
+    // native 从未注册，MC 26.3 的 java.awt.Desktop 打开调用落到 cacio
+    // 默认实现直接失败（装机实锤：[Download-1/WARN] "Failed to open uri
+    // file:///...resourcepacks/: No handler registered for this type of URL"
+    // ×6，用户看到点击无反应）。照 CTCClipboard 的双包名回退模式补全：
+    // 8 失败 → 17/21/25 包名再试，任一命中即注册。
     cls = (*env)->FindClass(env, "net/java/openjdk/cacio/ctc/CTCDesktopPeer");
     if ((*env)->ExceptionOccurred(env)) {
-        // Java 17, not available
-        //(*env)->ExceptionDescribe(env);
         (*env)->ExceptionClear(env);
-        return;
+        cls = (*env)->FindClass(env, "com/github/caciocavallosilano/cacio/ctc/CTCDesktopPeer");
+        if ((*env)->ExceptionOccurred(env)) {
+            // Java 17+ 非 cacio 环境（理论上不会——启动链必挂 cacio），保持旧兜底语义
+            (*env)->ExceptionClear(env);
+            return;
+        }
+        NSLog(@"[input_bridge] Task225 CTCDesktopPeer resolved via com/github package (Java 17/21/25 caciocavallo)");
     }
     JNINativeMethod peerOpenMethods[] = {
         {"openFile", "(Ljava/lang/String;)V", (void *)&CTCDesktopPeer_openGlobal},
@@ -1386,9 +1399,18 @@ void ame67_sanitizeOptionsKeybinds(void) {
     // 时代的绑定捕获，Task66 之后不会再产生）。标记文件与 options.txt 同
     // 目录；存在则只保留 dump 取证、不再改写任何键位。删标记可重新强制
     // 一次（分诊逃生口）。
+    // ★ Task225（反馈 #3：右 Shift 又失效——根因实锤）：Task224 的隔离
+    // 目录换代（versions/<id>/game）造出新 gameDir，旧标记文件不随迁 →
+    // 一次性强制净化【重跑】把用户绑在 right.shift 的潜行键洗回 left.shift
+    //（02a3fe1 日志集铁证：latestlog.old.txt “keybind marker WRITTEN”+
+    // 后续会话 “marker present” 但 sneak 仍处 left.shift 被洗态，v2 恢复
+    // 已消耗不再触发——用户按键事件链全绿但 MC 键位已不在右 Shift）。
+    // 双根修：①【强制洗涤永久退役】——历史使命（输入损坏时代的绑定捕获
+    // 清洗）早已完成，净化器从今只做 dump 取证，任何情况下都不改写用户
+    // 键位；②v3 一次性恢复——v2 标记在场（=被洗 cohort）且 sneak 仍处
+    // 被洗默认态时恢复 right.shift，写 v3 防重复。全新安装（无 v2）不触发。
     char ame181_marker[PATH_MAX];
     if (snprintf(ame181_marker, sizeof(ame181_marker), "%s.amethyst-keybinds-v1", path) >= (int)sizeof(ame181_marker)) {
-        // 路径超长：保守起见继续走旧逻辑（强制净化，宁洗勿坏）
         ame181_marker[0] = '\0';
     }
     BOOL ame181_alreadySanitized = NO;
@@ -1397,30 +1419,37 @@ void ame67_sanitizeOptionsKeybinds(void) {
         if (mf != NULL) {
             fclose(mf);
             ame181_alreadySanitized = YES;
-            NSLog(@"[Task181] keybind marker present (%s) — user customizations preserved, no forced reset this launch", ame181_marker);
         }
     }
-    // Task183（右 Shift 键位损伤修复）：v1 标记存在 = 用户经历过 Task67
-    // 洗回时代（每次启动把 sneak 强制重置 left.shift，用户改绑的
-    // right.shift 被反复洗掉）。v1 修复只止住了未来洗涤，但【最后一次
-    // 洗涤造成的损伤还在档里】（59d4b48 装机实锤：latestlog.txt 显示
-    // marker present + sneak 仍处 left.shift 被洗态 = "shift 依旧用不了"）。
-    // v2 一次性反向修复：v1 存在 && v2 不存在 && sneak 处于被洗默认态时
-    // 恢复 right.shift（新旧两种键值格式都处理）；用户已自行改绑则尊重
-    // 现状。全新安装（无 v1）直接写 v2，不受影响。
     char ame183_marker[PATH_MAX];
     if (snprintf(ame183_marker, sizeof(ame183_marker), "%s.amethyst-keybinds-v2", path) >= (int)sizeof(ame183_marker)) {
         ame183_marker[0] = '\0';
     }
-    BOOL ame183_v2Needed = NO;
+    BOOL ame183_v2Present = NO;
     if (ame183_marker[0] != '\0') {
         FILE *mf = fopen(ame183_marker, "rb");
         if (mf != NULL) {
             fclose(mf);
-        } else {
-            ame183_v2Needed = ame181_alreadySanitized;  // 仅损伤 cohorts
+            ame183_v2Present = YES;
         }
     }
+    // Task225 v3：仅在被洗 cohort（v2 在场）上做一次 sneak 恢复。
+    char ame225_marker[PATH_MAX];
+    if (snprintf(ame225_marker, sizeof(ame225_marker), "%s.amethyst-keybinds-v3", path) >= (int)sizeof(ame225_marker)) {
+        ame225_marker[0] = '\0';
+    }
+    BOOL ame225_v3Needed = NO;
+    if (ame225_marker[0] != '\0' && ame183_v2Present) {
+        FILE *mf = fopen(ame225_marker, "rb");
+        if (mf == NULL) {
+            ame225_v3Needed = YES;  // v2 在场 + v3 缺席 = 隔离换代后未恢复的 cohort
+        } else {
+            fclose(mf);
+        }
+    }
+    NSLog(@"[Task225] keybind wash RETIRED (dump-only; markers v1=%d v2=%d, v3 restore %@)",
+          (int)ame181_alreadySanitized, (int)ame183_v2Present,
+          ame225_v3Needed ? @"PENDING" : @"off");
     // 读全文（options.txt 通常 < 64KB）
     fseek(f, 0, SEEK_END);
     long sz = ftell(f);
@@ -1460,34 +1489,28 @@ void ame67_sanitizeOptionsKeybinds(void) {
                 BOOL repaired = NO;
                 for (size_t i = 0; i < AME67_CANONICAL_COUNT; i++) {
                     if ([name isEqualToString:@(ame67_canonicalKeys[i].opt)]) {
-                        // Task181：一次性化——标记存在后不再强制重置（用户
-                        // 自定义键位存活；仅无标记的首轮执行历史坏档清洗）。
-                        if (!ame181_alreadySanitized &&
-                            ![value isEqualToString:@(ame67_canonicalKeys[i].defv)]) {
-                            NSLog(@"[Task67] REPAIR %@: %@ -> %@ (canonical default; was broken-era remap?)",
-                                  name, value, @(ame67_canonicalKeys[i].defv));
-                            nsline = [NSString stringWithFormat:@"%@:%@",
-                                      name, @(ame67_canonicalKeys[i].defv)];
-                            repairs++;
-                            repaired = YES;
-                        }
+                        // ★ Task225：强制洗涤永久退役——历史使命（输入损坏
+                        // 时代的绑定捕获清洗）已完成，且已两次造成用户键位
+                        // 损伤（Task181 时代 + Task224 隔离换代重跑）。净化器
+                        // 从今只 dump 取证，任何情况下不再改写键位。
+                        (void)ame181_alreadySanitized;  // 仅日志用途保留
                         break;
                     }
                 }
-                // Task183：v2 一次性恢复——仅 sneak、仅被洗默认态。新格式
-                //（key.keyboard.*，MC 1.13+）与旧数字格式（LWJGL2，MC<=1.12）
-                // 分别对应 right.shift / 54。
-                if (ame183_v2Needed && [name isEqualToString:@"key_key.sneak"]) {
-                    NSString *ame183_target = nil;
+                // Task225 v3：一次性恢复被洗 sneak——仅 v2 cohort（v2 标记
+                // 在场 + v3 缺席），且当前仍处被洗默认态（用户若已自行改绑
+                // 到其他键则尊重现状）。新/旧两种键值格式分别处理。
+                if (ame225_v3Needed && [name isEqualToString:@"key_key.sneak"]) {
+                    NSString *ame225_target = nil;
                     if ([value isEqualToString:@"key.keyboard.left.shift"]) {
-                        ame183_target = @"key.keyboard.right.shift";
+                        ame225_target = @"key.keyboard.right.shift";
                     } else if ([value isEqualToString:@"42"]) {
-                        ame183_target = @"54";
+                        ame225_target = @"54";
                     }
-                    if (ame183_target != nil) {
-                        NSLog(@"[Task183] keybind v2 RESTORE sneak: %@ -> %@ (repairing Task67-era wash damage; one-shot)",
-                              value, ame183_target);
-                        nsline = [NSString stringWithFormat:@"key_key.sneak:%@", ame183_target];
+                    if (ame225_target != nil) {
+                        NSLog(@"[Task225] keybind v3 RESTORE sneak: %@ -> %@ (isolation relayout re-wash repair; one-shot)",
+                              value, ame225_target);
+                        nsline = [NSString stringWithFormat:@"key_key.sneak:%@", ame225_target];
                         repairs++;
                         repaired = YES;
                     }
@@ -1531,36 +1554,24 @@ void ame67_sanitizeOptionsKeybinds(void) {
     } else {
         NSLog(@"[Task67] ===== keybind sanitize: 0 repairs needed (all canonical / defaults) =====");
     }
-    // Task181：本轮净化跑完（无论是否发生修复）落一次性标记——下轮起用户
-    // 键位自定义不再被强制重置。标记创建失败只影响下次多做一次强制（安全
-    // 方向失败），不阻断启动。
-    if (ame181_marker[0] != '\0' && !ame181_alreadySanitized) {
+    // Task225：标记落盘语义收窄——洗涤已退役，v1/v2 只在【既有 cohort】
+    // （v1 已在场 = 本 gameDir 曾被净化器光顾）上维护；全新 gameDir 不再
+    // 落任何标记（否则新装用户第二启 v3 会误把默认 left.shift 翻成
+    // right.shift）。v3 标记在本轮做过恢复判定后落盘防重复。
+    if (ame181_marker[0] != '\0' && !ame181_alreadySanitized && ame183_v2Present) {
+        // 仅当 v2 已在场（老 cohort 重建 gameDir 的极端场景）补 v1
         FILE *mf = fopen(ame181_marker, "wb");
         if (mf != NULL) {
-            fputs("Amethyst one-shot keybind canonicalization done (Task181). Delete this file to re-run.\n", mf);
+            fputs("Amethyst keybind wash retired (Task225); marker kept for forensics.\n", mf);
             fclose(mf);
-            NSLog(@"[Task181] keybind marker written (%s) — future launches preserve user customizations", ame181_marker);
-        } else {
-            NSLog(@"[Task181] WARN: marker write failed (%s) — forced reset will run once more next launch", ame181_marker);
         }
     }
-    // Task183：v2 标记落盘（无论本轮是否发生恢复——只要 v1 存在或本轮跑
-    // 过 v1 首次净化，就视为损伤 cohorts 已处理完毕；全新安装也直接落 v2
-    // 免得未来重装组合出误恢复窗口）。
-    if (ame183_marker[0] != '\0' && !ame183_v2Needed) {
-        // v2Needed==NO 且 v1 标记刚写或本就是新安装：写 v2
-        FILE *mf = fopen(ame183_marker, "wb");
+    if (ame225_marker[0] != '\0' && ame225_v3Needed) {
+        FILE *mf = fopen(ame225_marker, "wb");
         if (mf != NULL) {
-            fputs("Amethyst keybind v2 right-shift restore evaluated (Task183). Delete this file to re-run.\n", mf);
+            fputs("Amethyst keybind v3 right-shift restore evaluated (Task225). Delete to re-run.\n", mf);
             fclose(mf);
-        }
-    } else if (ame183_marker[0] != '\0' && ame183_v2Needed) {
-        // v2Needed==YES：本轮已做恢复判定（恢复或尊重现状），落标记防重复
-        FILE *mf = fopen(ame183_marker, "wb");
-        if (mf != NULL) {
-            fputs("Amethyst keybind v2 right-shift restore evaluated (Task183). Delete this file to re-run.\n", mf);
-            fclose(mf);
-            NSLog(@"[Task183] keybind v2 marker written (%s)", ame183_marker);
+            NSLog(@"[Task225] keybind v3 marker written (%s)", ame225_marker);
         }
     }
 }

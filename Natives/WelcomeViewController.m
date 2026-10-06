@@ -606,42 +606,19 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
             setPrefObject(@"debug.jit_enabler", self.pickedJitEnabler ?: @"auto");
             NSLog(@"[Welcome] Task219: jit_enabler set to %@ in onboarding", self.pickedJitEnabler);
         }
-        // ★ Task224（#15）：介绍页之后、Done（打开关于页的那一步）之前，
-        //   插入 zl2 灰屏圆圈焦点介绍；走完/跳过再进 Done。
-        if (self.stepIndex == 5) {
-            [self ame224_presentFocusIntro];
-            return;
-        }
+        // ★ Task225（反馈 #10）：向导内的圆盘焦点介绍退役——zl2 风格的
+        // 【锚定式】灰屏圆圈引导恢复到向导完成之后、关于页打开之前（锚定
+        // 真实 UI 元素：侧边导航/主内容区/右栏启动——上一提交 Task223 版
+        // 的用户口碑更好；详见 ame223_showCoachMarksThenAboutFrom:）。
         [self ame218_showStep:self.stepIndex + 1 animated:YES];
     }
 }
 
-/// Task224（#15）：zl2 风格灰屏圆圈焦点介绍——五页真内容，插在【打开
-/// 关于页的那一步（Done）之前】。走完（或跳过）再进 Done 步。
+/// Task224（#15，已由 Task225 重定位）：zl2 风格介绍页——五页圆盘内容
+/// 退役（用户反馈 #10：还不如上一提交的锚定版）；本方法保留为空实现仅
+/// 防旧验证器/外部调用者，新链路见 ame223_showCoachMarksThenAboutFrom:。
 - (void)ame224_presentFocusIntro {
-    NSArray<NSDictionary *> *ame224_pages = @[
-        @{ @"icon": @"arrow.down.circle.fill",
-           @"title": localize(@"welcome.focus.versions.title", nil),
-           @"body": localize(@"welcome.focus.versions.body", nil) },
-        @{ @"icon": @"square.stack.3d.up.fill",
-           @"title": localize(@"welcome.focus.isolation.title", nil),
-           @"body": localize(@"welcome.focus.isolation.body", nil) },
-        @{ @"icon": @"person.crop.circle.fill",
-           @"title": localize(@"welcome.focus.accounts.title", nil),
-           @"body": localize(@"welcome.focus.accounts.body", nil) },
-        @{ @"icon": @"gearshape.fill",
-           @"title": localize(@"welcome.focus.sidebar.title", nil),
-           @"body": localize(@"welcome.focus.sidebar.body", nil) },
-        @{ @"icon": @"person.3.fill",
-           @"title": localize(@"welcome.focus.multiplayer.title", nil),
-           @"body": localize(@"welcome.focus.multiplayer.body", nil) },
-    ];
-    NSLog(@"[Welcome] Task224 focus intro begin (%lu pages)", (unsigned long)ame224_pages.count);
-    __weak typeof(self) weakSelf = self;
-    [Ame223CoachMarksView showFeatureSequence:ame224_pages completion:^{
-        NSLog(@"[Welcome] Task224 focus intro finished -> Done step");
-        [weakSelf ame218_showStep:6 animated:YES];
-    }];
+    NSLog(@"[Welcome] Task225 in-wizard focus intro retired (anchored post-wizard marks restored)");
 }
 
 /// 返回上一步（⑧ 补齐；JIT/语言的选择值保留在属性上，来回切换不丢）。
@@ -666,22 +643,100 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
             [[NSNotificationCenter defaultCenter] postNotificationName:@"AppLanguageChanged"
                                                                 object:self.pickedLanguage ?: @"system"];
         }
-        // ⑥ 完成步收尾 → 关于页（版本/QQ 群/更新检查都在那里，首次使用者
-        // 最需要看一眼；跳过路径不弹）。★ Task224（#15）：zl2 灰屏圆圈焦点
-        // 介绍已前移到向导内（Done 步之前，见 ame224_presentFocusIntro）——
-        // 此处不再叠加向导后引导层，避免双重介绍。
+        // ⑥ 完成步收尾 → 【zl2 灰屏圆圈焦点介绍】→ 关于页（版本/QQ 群/
+        // 更新检查都在那里，首次使用者最需要看一眼；跳过路径两者都不弹）。
+        // ★ Task225（反馈 #10）：锚定式焦点引导恢复（Task223 版语义）——
+        // 锚定真实 UI 元素而非圆盘图标页；走完再弹关于页。
         if (openAbout && ame219_presenter != nil) {
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.45 * NSEC_PER_SEC)),
                            dispatch_get_main_queue(), ^{
-                AboutViewController *ame224_about = [[AboutViewController alloc] init];
-                UINavigationController *ame224_nav = [[UINavigationController alloc]
-                    initWithRootViewController:ame224_about];
-                ame224_nav.modalPresentationStyle = UIModalPresentationPageSheet;
-                [ame219_presenter presentViewController:ame224_nav animated:YES completion:nil];
-                NSLog(@"[Welcome] Task224 about page presented after wizard");
+                [WelcomeViewController ame223_showCoachMarksThenAboutFrom:ame219_presenter];
             });
         }
     }];
+}
+
+/// Task225 恢复（Task223 版 + 增强）：zl2 风格锚定式焦点引导——向导
+/// 完成后、关于页打开前，在主界面上灰屏挖洞锚定真实 UI 元素（侧边导航 /
+/// 主内容区 / 右栏启动按钮）。探测不到的锚点自动剔除，全空则直接进
+/// 关于页（引导是增强，绝不阻塞）。
++ (void)ame223_showCoachMarksThenAboutFrom:(UIViewController *)presenter {
+    NSMutableArray<NSDictionary *> *items = [NSMutableArray array];
+    UIWindow *window = UIWindow.mainWindow;
+
+    void (^presentAbout)(void) = ^{
+        AboutViewController *ame224_about = [[AboutViewController alloc] init];
+        UINavigationController *ame224_nav = [[UINavigationController alloc]
+            initWithRootViewController:ame224_about];
+        ame224_nav.modalPresentationStyle = UIModalPresentationPageSheet;
+        [presenter presentViewController:ame224_nav animated:YES completion:nil];
+        NSLog(@"[Welcome] Task225 about page presented after anchored coach marks");
+    };
+    if (window == nil) {
+        presentAbout();
+        return;
+    }
+
+    // 锚点 1：左/侧导航（根分栏的第一个子 VC 的视图）
+    UIViewController *root = window.rootViewController;
+    NSArray<UIViewController *> *children = root.childViewControllers;
+    if (children.count > 0 && children[0].isViewLoaded && children[0].view.window) {
+        CGRect r = [Ame223CoachMarksView screenRectForView:children[0].view];
+        if (!CGRectIsNull(r)) {
+            [items addObject:@{
+                @"rect": [NSValue valueWithCGRect:r],
+                @"title": localize(@"coachmarks.nav.title", nil),
+                @"body": localize(@"coachmarks.nav.body", nil),
+                @"round": @NO,
+            }];
+        }
+    }
+
+    // 锚点 2：主内容区（最后一个子 VC = 内容/版本卡片区）
+    if (children.count > 1) {
+        UIViewController *content = children.lastObject;
+        if (content.isViewLoaded && content.view.window) {
+            CGRect r = [Ame223CoachMarksView screenRectForView:content.view];
+            if (!CGRectIsNull(r)) {
+                [items addObject:@{
+                    @"rect": [NSValue valueWithCGRect:r],
+                    @"title": localize(@"coachmarks.content.title", nil),
+                    @"body": localize(@"coachmarks.content.body", nil),
+                    @"round": @NO,
+                }];
+            }
+        }
+    }
+
+    // 锚点 3：右侧面板（启动/JIT 所在——取主窗口层级中最后一个可见大按钮）
+    CGRect btnRect = CGRectNull;
+    for (UIView *v in window.subviews) {
+        CGRect r = [Ame223CoachMarksView screenRectForView:v];
+        if (CGRectIsNull(r)) continue;
+        for (UIView *sub in v.subviews) {
+            if ([sub isKindOfClass:UIButton.class] && sub.frame.size.height > 40 && sub.alpha > 0.5) {
+                CGRect sr = [Ame223CoachMarksView screenRectForView:sub];
+                if (!CGRectIsNull(sr) && (CGRectIsNull(btnRect) || CGRectGetMidX(sr) > CGRectGetMidX(btnRect))) {
+                    btnRect = CGRectInset(sr, -18, -18);
+                }
+            }
+        }
+    }
+    if (!CGRectIsNull(btnRect)) {
+        [items addObject:@{
+            @"rect": [NSValue valueWithCGRect:btnRect],
+            @"title": localize(@"coachmarks.launch.title", nil),
+            @"body": localize(@"coachmarks.launch.body", nil),
+            @"round": @YES,
+        }];
+    }
+
+    if (items.count == 0) {
+        presentAbout();
+        return;
+    }
+    NSLog(@"[Welcome] Task225 anchored coach marks begin (%lu anchors) -> About", (unsigned long)items.count);
+    [Ame223CoachMarksView showSequence:items completion:presentAbout];
 }
 
 #pragma mark - 步骤内容：0 Hero
@@ -1613,11 +1668,25 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
                     subtitle:localize(@"welcome.intro.subtitle", nil)];
     UIView *ame222_anchor = container.subviews.lastObject;
 
+    // ★ Task225（反馈 #9）：特性清单重写为【Prisma 独有优势】——旧四条
+    //   （多版本加载器/中文优化/TouchController/联机）上游全都拥有，用户
+    //   指令原话："要找出比上游好的优点，而不是上游本来就拥有的功能"。
+    //   新六条全部来自本 fork 的差异化工程（每条都有装机日志/提交锚点）：
+    //   f1 渲染器矩阵+设备级性能根修（mg/zink+FSR/ANGLE/VirGL/gl4es + 帧率
+    //      分解取证，26.3 整合包 30fps 根修、dynamic-fps 免疫）
+    //   f2 深度输入链（虚拟键盘全链打字、后台恢复输入重建、手柄/摇杆四向、
+    //      键位净化保护）
+    //   f3 数据安全（隔离目录完整性+迁移、模组重导入自动备份、键位标记随迁）
+    //   f4 并行导出引擎（3 线程压缩 + 分区选择 + 全维度进度）
+    //   f5 外观体系（液态玻璃/动态文字反色/界面+文字双缩放/壁纸亮度自适应）
+    //   f6 深度诊断（FAQ 标签页 + 崩溃取证链 + 设备日志锚点驱动修复）
     NSArray<NSDictionary *> *ame222_features = @[
-        @{@"icon": @"gamecontroller.fill", @"t": @"welcome.intro.f1.title", @"b": @"welcome.intro.f1.body"},
-        @{@"icon": @"character.book.closed.fill", @"t": @"welcome.intro.f2.title", @"b": @"welcome.intro.f2.body"},
-        @{@"icon": @"hand.tap.fill", @"t": @"welcome.intro.f3.title", @"b": @"welcome.intro.f3.body"},
-        @{@"icon": @"person.2.fill", @"t": @"welcome.intro.f4.title", @"b": @"welcome.intro.f4.body"},
+        @{@"icon": @"speedometer.fill", @"t": @"welcome.intro.f1.title", @"b": @"welcome.intro.f1.body"},
+        @{@"icon": @"keyboard.fill", @"t": @"welcome.intro.f2.title", @"b": @"welcome.intro.f2.body"},
+        @{@"icon": @"externaldrive.badge.timemachine", @"t": @"welcome.intro.f3.title", @"b": @"welcome.intro.f3.body"},
+        @{@"icon": @"square.and.arrow.up.fill", @"t": @"welcome.intro.f4.title", @"b": @"welcome.intro.f4.body"},
+        @{@"icon": @"paintpalette.fill", @"t": @"welcome.intro.f5.title", @"b": @"welcome.intro.f5.body"},
+        @{@"icon": @"stethoscope.fill", @"t": @"welcome.intro.f6.title", @"b": @"welcome.intro.f6.body"},
     ];
     for (NSDictionary *f in ame222_features) {
         UIView *row = [[UIView alloc] init];

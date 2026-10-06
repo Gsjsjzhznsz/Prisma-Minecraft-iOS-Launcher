@@ -930,6 +930,15 @@ static CGFloat LauncherCardLayoutRightPanelWidth(UITraitCollection *trait) {
         [self.contentCard addSubview:viewController.view];
         [NSLayoutConstraint activateConstraints:newConstraints];
         [viewController didMoveToParentViewController:self];
+        // Task225 (#11 缺失动画补充)：无 oldVC（首次内容落位）或 animated=NO
+        // 的兜底路径——先落位约束再轻淡入，代替瞬时出现（菜单/右栏入口
+        // 第一次打开设置等也有过渡；不与 animated 分支的弹簧滑动重叠）。
+        [self.contentCard layoutIfNeeded];
+        viewController.view.alpha = 0.0;
+        [UIView animateWithDuration:0.30 delay:0 options:UIViewAnimationOptionCurveEaseOut
+                         animations:^{
+            viewController.view.alpha = 1.0;
+        } completion:nil];
     }
 
     self.currentContentConstraints = newConstraints;

@@ -209,7 +209,7 @@ print("== J. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"J-{lang} 唯一键 2606（Task223 重锚：+41）", len(keys) == 2606, f"got {len(keys)}")
+    check(f"J-{lang} 唯一键 2696（Task223 +41 / Task224 +69 / Task225 +21）", len(keys) == 2696, f"got {len(keys)}")
 check("J-公告 42 条 + task219 尾锚 + 家族顺延（Task223 追加后：220@-2 / 219@-3 / 218@-4 / 217@-5 / 216@-6 / 206@-7）",
       len(ann) == 43
       and ann[-3]["id"] == "task219-virgl-angle-welcome-rebuild-2026-10-04"

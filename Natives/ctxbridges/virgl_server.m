@@ -112,16 +112,87 @@ static void *ame219_dlopen_first(const char *const *candidates) {
 /// bind() 必败（上游错误路径直接 exit(1)）。改用 App 沙盒 tmp 下的短路径
 /// + pid 后缀（guest 与 server 同进程，任何可写路径都可用；pid 后缀防
 /// LiveContainer 多开撞名）。仍保留长度守卫：极端长 tmp 兜底 /tmp 根。
+/// Task225（反馈 #1：VirGL 依旧崩溃——02a3fe1 日志集 latestlog.old.txt 实锤）：
+/// 旧实现 getenv("TMPDIR") 在 LiveContainer 环境下解析到全局 /tmp——iOS
+/// 沙盒对共享目录禁止 bind(AF_UNIX)（"Failed to setup socket.: Operation not
+/// permitted" → vtest_main exit(1) 杀进程，用户表现为闪退）。修法：【目录
+/// 候选链 + 探测验证】——NSTemporaryDirectory()（App 容器内 tmp，沙盒保证
+/// 可写可 bind）优先，TMPDIR / POJAV_HOME 兜底；每个候选目录用一次性 probe
+/// socket（bind+close+unlink；探针是我们自己的，不碰 vtest 单发服务的唯一
+/// 连接名额）验证 bind 权限，首个通过者胜。全部失败时保留 /tmp 短路径
+/// （长度守卫不变）——此时 vtest_server.c 的 Task225 修复把失败从 exit(1)
+/// 降级为线程返回，客户端 15s 等待超时后走 zink 兜底，绝不杀进程。
+static BOOL ame225_dir_allows_unix_bind(const char *dir) {
+    if (!dir || !*dir) return NO;
+    char probe[512];
+    int n = snprintf(probe, sizeof(probe), "%s/ame_virgl_probe_%d.sock", dir, (int)getpid());
+    if (n < 0 || (size_t)n >= sizeof(probe) ||
+        n >= (int)(sizeof(((struct sockaddr_un *)0)->sun_path)) - 2) {
+        return NO;  // 目录过长 → 后续真 socket 也会超限，直接判不过
+    }
+    int fd = socket(PF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0) return NO;
+    struct sockaddr_un un;
+    memset(&un, 0, sizeof(un));
+    un.sun_family = AF_UNIX;
+    strncpy(un.sun_path, probe, sizeof(un.sun_path) - 1);
+    unlink(probe);  // 清旧探针
+    BOOL ok = NO;
+    if (bind(fd, (struct sockaddr *)&un, sizeof(un)) == 0) {
+        // bind 成功即为充分证据（listen 紧随 bind，无独立失败面）；立即拆探针
+        ok = YES;
+    } else {
+        NSLog(@"[VirGL] Task225 unix-bind probe FAILED in %s (errno=%d: %s)",
+              dir, errno, strerror(errno));
+    }
+    close(fd);
+    unlink(probe);
+    return ok;
+}
+
 static void ame219_compute_socket_path(void) {
-    const char *tmp = getenv("TMPDIR");
-    if (!tmp || !*tmp) tmp = "/tmp/";
+    // Task225：候选链 = NSTemporaryDirectory() → TMPDIR → POJAV_HOME → /tmp，
+    // 每个候选先探针验证 bind 权限（旧版直接信 TMPDIR，LiveContainer 下
+    // TMPDIR=/tmp → EPERM → exit(1) 闪退，装机实锤）。
+    const char *candidates[4] = { NULL, NULL, NULL, NULL };
+    static char ame225_nstmp[384];
+    NSString *nstmp = NSTemporaryDirectory();
+    if (nstmp.length > 0 && nstmp.length < sizeof(ame225_nstmp) - 1) {
+        // 统一尾部斜杠语义（拼接时不再双斜杠）
+        strncpy(ame225_nstmp, nstmp.UTF8String, sizeof(ame225_nstmp) - 1);
+        ame225_nstmp[sizeof(ame225_nstmp) - 1] = '\0';
+        size_t ame225_len = strlen(ame225_nstmp);
+        if (ame225_len > 0 && ame225_nstmp[ame225_len - 1] == '/') {
+            ame225_nstmp[ame225_len - 1] = '\0';
+        }
+        candidates[0] = ame225_nstmp;
+    }
+    const char *tmpdir_env = getenv("TMPDIR");
+    if (tmpdir_env && *tmpdir_env) candidates[1] = tmpdir_env;
+    const char *pojav_home = getenv("POJAV_HOME");
+    if (pojav_home && *pojav_home) candidates[2] = pojav_home;
+    candidates[3] = "/tmp";
+
+    const char *chosen = NULL;
+    for (int i = 0; i < 4 && chosen == NULL; ++i) {
+        const char *dir = candidates[i];
+        if (!dir || !*dir) continue;
+        if (ame225_dir_allows_unix_bind(dir)) {
+            chosen = dir;
+        }
+    }
+    if (chosen == NULL) {
+        chosen = "/tmp";
+        NSLog(@"[VirGL] Task225 NO candidate dir allows unix bind -- keeping /tmp (vtest failure will degrade, not crash)");
+    }
     int n = snprintf(ame_vs_socket_path, sizeof(ame_vs_socket_path),
-                     "%s/ame_virgl_%d.sock", tmp, (int)getpid());
+                     "%s/ame_virgl_%d.sock", chosen, (int)getpid());
     if (n < 0 || (size_t)n >= sizeof(ame_vs_socket_path) ||
         n >= (int)(sizeof(((struct sockaddr_un *)0)->sun_path)) - 2) {
         snprintf(ame_vs_socket_path, sizeof(ame_vs_socket_path),
                  "/tmp/ame_virgl_%d.sock", (int)getpid());
     }
+    NSLog(@"[VirGL] Task225 socket dir chosen: %s (socket=%s)", chosen, ame_vs_socket_path);
     // 换代滑理：旧会话可能残留同 pid 的 socket 文件（vtest unlink+bind 兜底，
     // 这里先行清理一次双保险）。
     unlink(ame_vs_socket_path);

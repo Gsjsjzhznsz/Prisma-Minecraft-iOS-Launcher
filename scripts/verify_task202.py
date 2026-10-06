@@ -143,7 +143,7 @@ for lg in ("zh-Hans", "zh-Hant", "en", "zh-CN"):
     keys = re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M)
     langs[lg] = set(keys)
 check("F", "四主表键集一致且 2520（2408 + 10 ame202 - 2 Task210 退役）",
-      len(langs["zh-Hans"]) == len(langs["zh-Hant"]) == len(langs["en"]) == len(langs["zh-CN"]) == 2606
+      len(langs["zh-Hans"]) == len(langs["zh-Hant"]) == len(langs["en"]) == len(langs["zh-CN"]) == 2696
       and langs["zh-Hans"] == langs["zh-Hant"] == langs["en"] == langs["zh-CN"])
 ame202_keys = {k for k in langs["zh-Hans"] if k.startswith("ame202.")}
 check("F", "恰 10 个 ame202.* 键（partial + surface×2 + ai×6 + copy）",

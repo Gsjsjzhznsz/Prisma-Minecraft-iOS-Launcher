@@ -1888,3 +1888,26 @@ Stage Summary:
 - Task 224 全链闭环：20 项反馈全落地 + i18n 69 键 ×4 + 语法门三门绿 + CI 五轮终绿 + 新 IPA
 - 装机验证锚点（重点）：VirGL "post-bootstrap check ok (bound after Nms of Task224 wait)" 且不再 divert；1.20.1 ANGLE 过 RenderTarget 初始化；"[InputDiag] Task224 SDL input re-established on resume"（MG 后台回来）；"[InputDiag] Task224 shiftKey: key=344 path=B(SDL)"（右 Shift 取证）；"[ProfileSettings] Task224 ... isolation ON ... gameDir=versions/<id>/game"；"[SurfaceVC] Task171/224: keyboard session heal"；"[ExportOps] Task224 export done ... MB/s avg"
 - 环境遗留：验证舰队 l10n 基线（2606→2675）与旧锚点重锚留待专门轮次；右 Shift 根因待下轮日志取证；JVM flags 混入的 -Xss1M 来源待取证
+
+---
+Task ID: 225
+Agent: main (Super Z)
+Task: 14 项反馈轮（a763f223 + 02a3fe1 日志集判读，构建 67321407/run 658）——渲染双根修 + 输入链双根修 + 液态玻璃三连修 + 隔离上游对齐 + UI/设置/i18n 大轮
+
+Work Log:
+- 沙箱同步：本沙箱停摆于 Task110（fa3c154），fetch 对齐远端（Task219-224 全链已闭环，run 658 IPA = 用户本轮测试对象）；新增 upstream remote 供隔离实现对照
+- 日志判读（四日志定位根因）：①VirGL = "Failed to setup socket.: Operation not permitted"——TMPDIR 在 LiveContainer 下指向共享 /tmp，沙盒禁 bind(AF_UNIX)，vtest_main exit(1) 杀进程（Task224 符号修复已生效，vtest_main 真正跑起来了）；②"ANGLE 非 SDL 报错" = 渲染链健康（37 swap、深度重映射生效），真死因 = assets/objects/f0/f006... 缺失 → NoSuchFileException 自杀 + 令牌失效告警；③右 Shift = 事件链全绿（Task224 取证日志 path=B(SDL) MC-side 消费 ✓）但 Task224 隔离换代造出新 gameDir，标记文件不随迁 → 一次性净化器重跑把 sneak 洗回 left.shift（"marker WRITTEN" + 后续 "marker present 但被洗态" 铁证）；④键盘循环 = 每字符 UIAsyncTextInput 拆会话（heal #1 depth=1 → #3 depth=8 连环）vs Task224 守望重拉 = 开关循环；⑤液态玻璃 = EVV 嵌套 EVV（NSInternalInconsistencyException 实锤 tag=888901×2）+ UIGlassEffect 旧 SDK 进程渲染不完整（effect=none → 黑屏）；⑥迁移秒完成 = legacy 先行抢位 → 主迁移恒 moved=0 skipped=5；⑦SDL 打开文件夹无反应 = CTCDesktopPeer 只注册 Java 8 包名（"No handler registered" ×6）；⑧导出弹窗自动关 = 进度页 1.5s 自动 dismiss 连带撤走上方弹窗；⑨显示键名 = preference.detail.interface_style/ui_zoom 两键缺失
+- 渲染链：(1) VirGL socket 目录候选链 + 一次性 probe 探测（NSTemporaryDirectory 优先）+ vtest_server.c err 路降级（exit(1) → 线程返回，15s 等待超时走 zink 兜底）；(2) assets 启动前完整性预检 + 自动补齐（索引 JSON 逐 object stat，缺失串行补下，20s/300 预算，.ametmp 原子落位）
+- 输入链：(3) 键位净化器永久退役（dump-only）+ v3 一次性恢复（v2 cohort + 被洗默认态 → right.shift）+ 标记随迁（v1/v2/v3 入隔离迁移清单）；(4) 上游 preventUnexpectedResign 移植（TrackedTextField 拒绝非自愿 resign + 4 处显式收起包夹 ame225_resignInputTextField，守望降级为兜底）
+- 液态玻璃三连修：(5) LGCApplyGlassToView 嵌套守卫（宿主 EVV → 上移 superview）+ cardTarget 选择跳过一切 UIVisualEffectView；(6) 组合玻璃（UIGlassEffect 直用退役 → SystemThinMaterial 保底 + sheen/描边，标准控件仍交还系统真玻璃）
+- 隔离上游对齐（用户指令"看看上游为什么写的这么好"——上游 = PCL VER-ISOLATE"只写设置不搬文件"+目录形状嗅探）：(7) 开启前选择单（迁移并开启/仅开启/取消）；(8) 主迁移先行 + legacy 只补缺口；(9) ModService/ModsManager/JavaLauncher 三处同源嗅探（versions/<vid>/game 有 mods/saves → 自动隔离；徽标三态可点 + 前往版本设置）；(10) 仅开启路径 = 上游"只写设置"语义
+- 其它：(11) CTCDesktopPeer Java 17/21/25 包名注册补全（照 clipboard 双包名先例）；(12) 导出弹窗自动 dismiss 加 presentedViewController 守卫 + 顺延一次；(13) 欢迎页特性行重写为 Prisma 独有优势 6 条（渲染矩阵/输入链/数据安全/并行导出/外观体系/深度诊断）+ zl2 锚定式焦点引导恢复（向导后 About 前，锚真实 UI 三点）；(14) 设置外观分区内联三行（界面缩放 85-125 / 文字缩放 85-130 / 文字反色开关——prisma.text_scale 与 ui_scale 分家、prisma.text_auto_contrast 集中漏斗）+ zoom editor 专区退役 + preference.detail.* 四键补全；(15) 首次内容落位淡入（两布局）；(16) tinygl4angle 补 GL_DEPTH_COMPONENT 本地定义（修 Task224 遗留的 193 语法门独立编译错误）
+- i18n（#14）：+21 新键 ×4 语言（2675→2696 四语完全对等）；task223_i18n_audit 全量审计 used 1944 ⊆ defined、零硬编码
+- 显示层吞字三次实证：LauncherRightPanelViewController 的 `![host` 在工具输出层被吞成 `!ost`（hex 级核对字节完好）——Task216 教训复用，未做任何"修复"
+- 验证：verify_task225 68/68 ALL GREEN；舰队 l10n 基线全链扫荡 2606→2696（223/222/219/218/217/214/212/211/210/206/202/196-201/193/190/151/142/130/133/129/131/132/135/150/156/157/159 + Task225 新增）；预存债再锚：218 D1（refreshLangButtons 早期退役→pickedLanguage）、190 C（徽章为 ⋯ 菜单让位）、222 I4（圆盘退役→通用步进+锚定引导）、223 G2（224-B 引擎换代）、130 F3（224-A 菜单复用切换入口）、223 M 族；终态全绿：225:68、223:77、222:77、220:43、219:81、218:44、217:59、214:53、212:36、211:42、210:41、208:17(分跑)、206、205:47、196-201:51、193 门、151:46、142:49、130:59、167:31；语法门 139/175/103/193 + house 括号五态门全绿
+
+Stage Summary:
+- 14 项全数落地：1 VirGL（socket 探测链+防崩降级）/2 assets 预检补齐/3 右 Shift（净化退役+v3 恢复）/4 液态玻璃三连修/5 隔离上游对齐（选择单+顺序+三处嗅探）/6 SDL 文件夹（CTC 包名）/7 键盘循环（preventUnexpectedResign）/8 导出弹窗守卫/9-10 欢迎页（独有优势+锚定引导）/11 首开淡入/12-13 反色开关+文字缩放内联+i18n/14 全量审计
+- 装机验证锚点：①VirGL "[VirGL] Task225 socket dir chosen: <容器tmp>" + 不再闪退（bind 失败也只 divert zink）；②"[AssetsHeal] Task225 ... MISSING -- healing" 后 1.20.1 过资源加载；③"[Task225] keybind v3 RESTORE sneak: left.shift -> right.shift" 后右 Shift 潜行生效；④打字不再开关循环（"[SurfaceVC] Task171/224: keyboard session heal" 归零或极低频）；⑤液态玻璃无黑屏、切换不闪退（"[ThemeOps] Task225 glass host was a UIVisualEffectView" 仅日志不崩）；⑥隔离选择单出现、迁移计数 >0、"[ModService] Task225 auto-sniffed isolation"；⑦26.3 游戏内打开文件夹弹浏览器；⑧导出保存弹窗等用户操作；⑨设置外观三行直调、键名消失
+- 环境遗留：209 聚合器仍需分跑（沙箱墙钟）；本沙箱无 ObjC 编译器（语法门为结构代理门，CI 编译兜底）
+- 教训入库：①工具输出显示层会吞 `![h` 前缀（第三次实证）——对拍前必须 hex/base64 级核对，绝不按显示层"修"代码；②滑条行不派发 action（sliderMoved 只走 setPreference）——live 更新必须挂 setPreference 通路，action 块是死代码；③switch action 签名是 void(^)(BOOL)——写成 NSString* 签名 = 运行时崩溃；④隔离类功能改目录口径时，所有随目录走的哨兵/标记文件必须进迁移清单（键位净化器重跑即此伤）

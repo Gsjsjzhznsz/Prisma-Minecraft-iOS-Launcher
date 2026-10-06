@@ -126,169 +126,11 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
 }
 
 // ============================================================================
-// Task224（#19）：「界面缩放」编辑器——0.85-1.25 步进 0.05 的实时滑条浮层。
-// 自包含呈现（OverFullScreen + 遮罩 + 居中卡片）：拖动即时落键并广播
-// LGCUIScaleChangedNotification（主菜单/右栏实时重排）；卡片表面走
-// BackgroundManager 中央管线（界面风格 = 液态玻璃时即为玻璃卡，#4 活样张）。
-// 动效 ≤ 0.45s（入场 0.35s 弹簧、离场 0.2s），符合本轮动画预算。
+// Task225（反馈 #13）：Ame224ZoomEditorViewController（独立缩放编辑页）退役
+// ——用户指令"不要单独开一个专区，要放到启动器设置"。缩放（界面/文字）
+// 与文字反色开关已内联为外观分区的滑条/开关行；本类与 ame224_openZoomEditor
+// 一并删除（调用点已同步清理）。
 // ============================================================================
-@interface Ame224ZoomEditorViewController : UIViewController
-@property (nonatomic, strong) UIView *dimView;
-@property (nonatomic, strong) UIView *cardView;
-@property (nonatomic, strong) UILabel *valueLabel;
-@property (nonatomic, strong) UISlider *slider;
-@property (nonatomic, assign) CGFloat lastApplied;
-@property (nonatomic, copy, nullable) void (^onDismiss)(void);
-@end
-
-@implementation Ame224ZoomEditorViewController
-
-- (void)viewDidLoad {
-    [super viewDidLoad];
-    self.view.backgroundColor = [UIColor clearColor];
-
-    // 遮罩（点击关闭）
-    self.dimView = [[UIView alloc] initWithFrame:self.view.bounds];
-    self.dimView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    self.dimView.backgroundColor = [UIColor colorWithWhite:0 alpha:0.35];
-    self.dimView.alpha = 0;
-    UITapGestureRecognizer *ame224_dimTap =
-        [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(ame224_dismiss)];
-    [self.dimView addGestureRecognizer:ame224_dimTap];
-    [self.view addSubview:self.dimView];
-
-    // 居中卡片：表面走中央管线（玻璃/毛玻璃/平贴随界面风格与壁纸状态）
-    self.cardView = [[UIView alloc] init];
-    self.cardView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.cardView.layer.cornerRadius = 20;
-    self.cardView.layer.cornerCurve = kCACornerCurveContinuous;
-    [[BackgroundManager sharedManager] applyEffectToView:self.cardView];
-    [self.view addSubview:self.cardView];
-
-    UILabel *titleLabel = [[UILabel alloc] init];
-    titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    titleLabel.text = localize(@"preference.title.ui_zoom", nil);
-    titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightSemibold];
-    titleLabel.textColor = AmeCardPrimaryTextColor();
-    [self.cardView addSubview:titleLabel];
-
-    self.valueLabel = [[UILabel alloc] init];
-    self.valueLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    self.valueLabel.font = [UIFont monospacedDigitSystemFontOfSize:28 weight:UIFontWeightBold];
-    self.valueLabel.textColor = AmeCardPrimaryTextColor();
-    self.valueLabel.textAlignment = NSTextAlignmentCenter;
-    [self.cardView addSubview:self.valueLabel];
-
-    self.slider = [[UISlider alloc] init];
-    self.slider.translatesAutoresizingMaskIntoConstraints = NO;
-    self.slider.minimumValue = 0.85f;
-    self.slider.maximumValue = 1.25f;
-    self.slider.value = LGCUIScaleMultiplier();
-    [self.slider addTarget:self action:@selector(ame224_sliderChanged:)
-        forControlEvents:UIControlEventValueChanged];
-    [self.cardView addSubview:self.slider];
-
-    // 按钮排：重置 | 完成
-    UIButton *resetButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    resetButton.translatesAutoresizingMaskIntoConstraints = NO;
-    [resetButton setTitle:localize(@"prisma.ui_zoom.reset", nil) forState:UIControlStateNormal];
-    [resetButton addTarget:self action:@selector(ame224_reset)
-        forControlEvents:UIControlEventTouchUpInside];
-    [self.cardView addSubview:resetButton];
-
-    UIButton *doneButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    doneButton.translatesAutoresizingMaskIntoConstraints = NO;
-    [doneButton setTitle:localize(@"OK", nil) forState:UIControlStateNormal];
-    doneButton.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
-    [doneButton addTarget:self action:@selector(ame224_dismiss)
-        forControlEvents:UIControlEventTouchUpInside];
-    [self.cardView addSubview:doneButton];
-
-    // 卡片宽度：iPhone 窄屏自适应（读屏宽 - 64，最大 320）
-    CGFloat ame224_cardWidth = MIN(320.0, self.view.bounds.size.width - 64.0);
-    [NSLayoutConstraint activateConstraints:@[
-        [self.cardView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [self.cardView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor],
-        [self.cardView.widthAnchor constraintEqualToConstant:ame224_cardWidth],
-
-        [titleLabel.topAnchor constraintEqualToAnchor:self.cardView.topAnchor constant:18],
-        [titleLabel.leadingAnchor constraintEqualToAnchor:self.cardView.leadingAnchor constant:20],
-        [titleLabel.trailingAnchor constraintEqualToAnchor:self.cardView.trailingAnchor constant:-20],
-
-        [self.valueLabel.topAnchor constraintEqualToAnchor:titleLabel.bottomAnchor constant:10],   // Task224 CI r5：数组元素逗号收尾（r3 注释吃标点 + r4 误补分号两错归一）：r3 的行尾注释吃掉了分号（Task223 教训第 1 条现场重犯）,
-        [self.valueLabel.leadingAnchor constraintEqualToAnchor:self.cardView.leadingAnchor constant:20],
-        [self.valueLabel.trailingAnchor constraintEqualToAnchor:self.cardView.trailingAnchor constant:-20],
-
-        [self.slider.topAnchor constraintEqualToAnchor:self.valueLabel.bottomAnchor constant:10],
-        [self.slider.leadingAnchor constraintEqualToAnchor:self.cardView.leadingAnchor constant:20],
-        [self.slider.trailingAnchor constraintEqualToAnchor:self.cardView.trailingAnchor constant:-20],
-
-        [resetButton.topAnchor constraintEqualToAnchor:self.slider.bottomAnchor constant:14],
-        [resetButton.leadingAnchor constraintEqualToAnchor:self.cardView.leadingAnchor constant:20],
-        [resetButton.bottomAnchor constraintEqualToAnchor:self.cardView.bottomAnchor constant:-18],
-
-        [doneButton.centerYAnchor constraintEqualToAnchor:resetButton.centerYAnchor],
-        [doneButton.trailingAnchor constraintEqualToAnchor:self.cardView.trailingAnchor constant:-20],
-    ]];
-
-    self.lastApplied = LGCUIScaleMultiplier();
-    [self ame224_refreshValueLabel];
-}
-
-- (void)viewDidAppear:(BOOL)animated {
-    [super viewDidAppear:animated];
-    // 入场：遮罩淡入 + 卡片 0.92 弹簧放大（0.35s）
-    self.cardView.transform = CGAffineTransformMakeScale(0.92, 0.92);
-    [UIView animateWithDuration:0.35 delay:0
-         usingSpringWithDamping:0.78 initialSpringVelocity:0.5
-                        options:UIViewAnimationOptionAllowUserInteraction
-                     animations:^{
-        self.dimView.alpha = 1.0;
-        self.cardView.transform = CGAffineTransformIdentity;
-    } completion:nil];
-}
-
-- (void)ame224_refreshValueLabel {
-    self.valueLabel.text = [NSString stringWithFormat:@"%d%%",
-        (int)round(LGCUIScaleMultiplier() * 100.0)];
-}
-
-- (void)ame224_sliderChanged:(UISlider *)sender {
-    // 0.05 步进取整后落键（LGCSetUIScaleMultiplier 内部再做双端钳制）
-    CGFloat ame224_snapped = (CGFloat)(roundf(sender.value / 0.05f) * 0.05f);
-    sender.value = ame224_snapped;
-    if (fabs(ame224_snapped - self.lastApplied) < 0.001) return;
-    self.lastApplied = ame224_snapped;
-    LGCSetUIScaleMultiplier(ame224_snapped);
-    [self ame224_refreshValueLabel];
-}
-
-- (void)ame224_reset {
-    self.slider.value = 1.0;
-    [self ame224_sliderChanged:self.slider];
-    NSLog(@"[ThemeOps] Task224 ui zoom reset to 100%%");
-}
-
-- (void)ame224_dismiss {
-    // 离场：0.2s 收场后无动画移除（总时长远低于 0.45s 预算）
-    [UIView animateWithDuration:0.2 delay:0
-                        options:UIViewAnimationOptionCurveEaseIn
-                     animations:^{
-        self.dimView.alpha = 0.0;
-        self.cardView.transform = CGAffineTransformMakeScale(0.95, 0.95);
-        self.cardView.alpha = 0.0;
-    } completion:^(BOOL finished) {
-        [self dismissViewControllerAnimated:NO completion:^{
-            if (self.onDismiss) self.onDismiss();
-        }];
-    }];
-}
-
-- (void)dealloc {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
-
-@end
 
 @interface LauncherPreferencesViewController()
 // Task 150（[可撤销] 删除渲染器全局控制）：rendererKeys/rendererList 属性
@@ -623,8 +465,17 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
             if ([key isEqualToString:@"interface_style"]) {
                 return LGCStringFromInterfaceStyle(LGCStoredInterfaceStyle());
             }
-            if ([key isEqualToString:@"ui_zoom"]) {
-                return [NSString stringWithFormat:@"%.2f", (double)LGCUIScaleMultiplier()];
+            // Task225（#13）：界面/文字缩放以【整数百分比】呈现给滑条
+            //（85-125 / 85-130），存储仍是 prisma.ui_scale / prisma.text_scale
+            // 双精度倍率。旧 ui_zoom 键退役（独立编辑页一并退役）。
+            if ([key isEqualToString:@"ui_scale"]) {
+                return @((NSInteger)round(LGCUIScaleMultiplier() * 100.0));
+            }
+            if ([key isEqualToString:@"text_scale"]) {
+                return @((NSInteger)round(LGCTextScaleMultiplier() * 100.0));
+            }
+            if ([key isEqualToString:@"text_auto_contrast"]) {
+                return @(LGCTextAutoContrastEnabled());
             }
         }
         return getPrefObject(keyFull);
@@ -732,12 +583,22 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
                 }
                 return;
             }
-            if ([key isEqualToString:@"ui_zoom"]) {
-                if ([value isKindOfClass:[NSNumber class]]) {
-                    LGCSetUIScaleMultiplier([value floatValue]);
-                } else if ([value isKindOfClass:[NSString class]]) {
-                    LGCSetUIScaleMultiplier([value floatValue]);
-                }
+            if ([key isEqualToString:@"ui_scale"]) {
+                // 滑条回调每 tick 都走这里（sliderMoved 不派发 action）——
+                // LGCSetUIScaleMultiplier 内部做步进铉制 + 广播，主菜单/
+                // 右栏实时重排即由该广播驱动。
+                double ame225_pct = [value isKindOfClass:[NSNumber class]]
+                    ? [value doubleValue] : [value doubleValue];
+                LGCSetUIScaleMultiplier(ame225_pct / 100.0);
+                return;
+            }
+            if ([key isEqualToString:@"text_scale"]) {
+                double ame225_pct = [value doubleValue];
+                LGCSetTextScaleMultiplier(ame225_pct / 100.0);
+                return;
+            }
+            if ([key isEqualToString:@"text_auto_contrast"]) {
+                LGCSetTextAutoContrastEnabled([value boolValue]);
                 return;
             }
         }
@@ -1862,14 +1723,38 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
                   [[NSNotificationCenter defaultCenter] postNotificationName:@"BackgroundUIEffectChanged" object:nil];
               }
             },
-            @{@"key": @"ui_zoom",
-              @"title": localize(@"preference.title.ui_zoom", nil),
+            // ★ Task225（反馈 #13）：缩放/反色全部内联进启动器设置——旧的
+            // ui_zoom 按钮弹出独立编辑页（用户称"专区"）退役；界面缩放与
+            // 文字缩放分家（各自滑条），文字动态反色补开关。detail 键补全
+            //（旧版 preference.detail.ui_zoom 缺失 = 灰字直接显示键名）。
+            @{@"key": @"ui_scale",
+              @"title": localize(@"preference.title.ui_scale", nil),
               @"hasDetail": @YES,
               @"icon": @"arrow.up.left.and.arrow.down.right",
-              @"type": self.typeButton,
+              @"type": self.typeSlider,
+              @"min": @(85),
+              @"max": @(125),
+              @"enableCondition": whenNotInGame
+            },
+            @{@"key": @"text_scale",
+              @"title": localize(@"preference.title.text_scale", nil),
+              @"hasDetail": @YES,
+              @"icon": @"textformat.size",
+              @"type": self.typeSlider,
+              @"min": @(85),
+              @"max": @(130),
+              @"enableCondition": whenNotInGame
+            },
+            @{@"key": @"text_auto_contrast",
+              @"title": localize(@"preference.title.text_auto_contrast", nil),
+              @"hasDetail": @YES,
+              @"icon": @"circle.lefthalf.filled",
+              @"type": self.typeSwitch,
               @"enableCondition": whenNotInGame,
-              @"action": ^void(){
-                  [self ame224_openZoomEditor];
+              @"action": ^void(BOOL on){
+                  // 反色开关切换 → 全量重刷取色（集中漏斗在 BackgroundManager；
+                  // 通知已由 setPreference 外观分支发出，这里补发布景重铺）
+                  [[NSNotificationCenter defaultCenter] postNotificationName:@"BackgroundUIEffectChanged" object:nil];
               }
             }
         ]
@@ -1971,16 +1856,7 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
 }
 
 // Task224（#19）：打开「界面缩放」实时滑条编辑器。
-- (void)ame224_openZoomEditor {
-    Ame224ZoomEditorViewController *ame224_editor = [[Ame224ZoomEditorViewController alloc] init];
-    ame224_editor.modalPresentationStyle = UIModalPresentationOverFullScreen;
-    ame224_editor.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
-    __weak typeof(self) weakSelf = self;
-    ame224_editor.onDismiss = ^{
-        [weakSelf.tableView reloadData];
-    };
-    [self presentViewController:ame224_editor animated:YES completion:nil];
-}
+// Task225：ame224_openZoomEditor 已随独立缩放编辑页退役（滑条内联）。
 
 #pragma mark - Hero Header（顶部 App 信息卡片）
 

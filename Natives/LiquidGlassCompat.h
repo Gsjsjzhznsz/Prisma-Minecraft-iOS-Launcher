@@ -14,6 +14,14 @@
 //  同文件附带界面缩放（prisma.ui_scale，0.85-1.25 步进 0.05，默认 1.0）
 //  的取值/写值与换算助手（反馈 #19）。
 //
+//  Task225（反馈 #4/#12/#13）：
+//  ★ 卡面玻璃改【组合玻璃】（保底系统材质模糊 + 高光渐变 + 发丝描边），
+//    不再直接使用 UIGlassEffect（旧 SDK 进程上渲染不完整 → 黑屏实锤）；
+//    标准控件仍交还系统绘制真液态玻璃。
+//  ★ 文字缩放（prisma.text_scale，0.85-1.30）独立成键——字号只乘它，
+//    界面尺寸只乘 ui_scale。
+//  ★ 文字动态反色开关（prisma.text_auto_contrast，默认开）。
+//
 
 #import <UIKit/UIKit.h>
 
@@ -30,6 +38,10 @@ typedef NS_ENUM(NSInteger, LGCInterfaceStyle) {
 FOUNDATION_EXPORT NSNotificationName const LGCInterfaceStyleChangedNotification;
 /// 界面缩放变化广播（object = 新倍率包装为 NSNumber）
 FOUNDATION_EXPORT NSNotificationName const LGCUIScaleChangedNotification;
+/// 文字缩放变化广播（Task225 #13；object = 新倍率包装为 NSNumber）
+FOUNDATION_EXPORT NSNotificationName const LGCTextScaleChangedNotification;
+/// 文字动态反色开关变化广播（Task225 #12；object = NSNumber BOOL）
+FOUNDATION_EXPORT NSNotificationName const LGCTextContrastChangedNotification;
 
 /// 判断当前系统是否支持液态玻璃（iOS 26+）
 FOUNDATION_EXPORT BOOL LGCIsLiquidGlassAvailable(void);
@@ -69,11 +81,31 @@ FOUNDATION_EXPORT CGFloat LGCUIScaleMultiplier(void);
 /// LGCUIScaleChangedNotification
 FOUNDATION_EXPORT void LGCSetUIScaleMultiplier(CGFloat scale);
 
-/// 字号换算：基准字号 x 倍率（1.0 时与传入值逐字节一致）
+/// 字号换算：基准字号 x 【文字缩放倍率】（Task225 #13 分家；1.0 时与传入值逐字节一致）
 FOUNDATION_EXPORT CGFloat LGCScaledFontSize(CGFloat baseSize);
 
-/// 间距/尺寸换算：基准值 x 倍率
+/// 间距/尺寸换算：基准值 x 【界面缩放倍率】
 FOUNDATION_EXPORT CGFloat LGCScaledValue(CGFloat baseValue);
+
+// ============================================================================
+// Task225（#13）：文字缩放（Text Scale）存取
+// ============================================================================
+
+/// 读取文字缩放倍率（NSUserDefaults 键 prisma.text_scale，默认 1.0，钳制 0.85-1.30）
+FOUNDATION_EXPORT CGFloat LGCTextScaleMultiplier(void);
+
+/// 写入文字缩放（0.05 步进取整 + 0.85-1.30 钳制）并广播 LGCTextScaleChangedNotification
+FOUNDATION_EXPORT void LGCSetTextScaleMultiplier(CGFloat scale);
+
+// ============================================================================
+// Task225（#12/#13）：文字动态反色开关存取
+// ============================================================================
+
+/// 读取文字动态反色开关（键 prisma.text_auto_contrast，默认开）
+FOUNDATION_EXPORT BOOL LGCTextAutoContrastEnabled(void);
+
+/// 写入开关并广播 LGCTextContrastChangedNotification
+FOUNDATION_EXPORT void LGCSetTextAutoContrastEnabled(BOOL enabled);
 
 // ============================================================================
 // 液态玻璃视图工厂与适配（自 ui/fcl-liquid-glass 分支 23cd527e 移植）

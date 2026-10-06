@@ -197,6 +197,11 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
                                              selector:@selector(ame224_refreshScaledFonts)
                                                  name:LGCUIScaleChangedNotification
                                                object:nil];
+    // Task225（#13）：文字缩放独立成键——字号变化同样触发刷新
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_refreshScaledFonts)
+                                                 name:LGCTextScaleChangedNotification
+                                               object:nil];
     // Task224（#4）：界面风格切换 → 面板表面随活重铺（可见状态下）。
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(reapplyBackgroundEffect)

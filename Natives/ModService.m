@@ -203,6 +203,12 @@
 /// profile gameDir 通常是相对路径（如 "./custom_gamedir/{name}"），需相对于 POJAV_GAME_DIR 解析。
 /// 之前直接使用相对路径会导致 mods 文件夹找不到（fileExistsAtPath 对相对路径基于 cwd 解析，
 /// 而 cwd 不一定是 POJAV_GAME_DIR）。
+/// ★ Task225（反馈 #5：安装模组端默认共享目录——上游 PCL VER-ISOLATE 嗅探
+///   语义补齐）：gameDir 缺失或 "." 时，若 versions/<lastVersionId>/game
+///   （或旧口径 versions/<lastVersionId>/）下已有 mods/saves 等用户数据，
+///   【自动解析为该隔离目录】——与上游 amePCLVersionIsolationForProfile 的
+///   第 2 步（ShouldBeIndie 启发式）同源：目录形状说明用户已把该版本当
+///   隔离实例用，mod 安装/扫描只认隔离目录，不再落到共享根。
 - (nullable NSString *)resolveAbsoluteGameDirForProfile:(NSString *)profileName {
     NSString *profile = profileName.length ? profileName : @"default";
     @try {
@@ -210,8 +216,14 @@
         NSDictionary *prof = profiles[profile];
         if (![prof isKindOfClass:[NSDictionary class]]) return nil;
         NSString *gameDir = prof[@"gameDir"];
-        if (![gameDir isKindOfClass:[NSString class]] || gameDir.length == 0) return nil;
-        if ([gameDir isEqualToString:@"."]) {
+        if (![gameDir isKindOfClass:[NSString class]] || gameDir.length == 0 || [gameDir isEqualToString:@"."]) {
+            // Task225：无显式隔离 → 嗅探版本目录形状（auto 语义）。
+            NSString *ame225_sniffed = [ModService ame225_sniffedIsolationGameDirForProfile:prof];
+            if (ame225_sniffed.length > 0) {
+                NSLog(@"[ModService] Task225 auto-sniffed isolation for profile %@ -> %@ (mods/saves present)",
+                      profile, ame225_sniffed.lastPathComponent);
+                return ame225_sniffed;
+            }
             // "." 表示主目录
             const char *env = getenv("POJAV_GAME_DIR");
             return env ? [NSString stringWithUTF8String:env] : NSHomeDirectory();
@@ -228,6 +240,38 @@
     } @catch (NSException *ex) {
         return nil;
     }
+}
+
+/// Task225：目录形状嗅探（上游 ameVISniffVersionFolder / PCL ShouldBeIndie
+/// 同源规则）——versions/<vid>/game 优先，旧口径 versions/<vid>/ 兑底；
+/// mods 或 saves 目录下存在任一非隐藏条目即判“已隔离”。返回隔离目录的
+/// 绝对路径；不命中返回 nil。静态方法：ModsManager 徽标 / 启动链都可调。
++ (nullable NSString *)ame225_sniffedIsolationGameDirForProfile:(NSDictionary *)prof {
+    if (![prof isKindOfClass:[NSDictionary class]]) return nil;
+    NSString *vid = prof[@"lastVersionId"];
+    if (![vid isKindOfClass:[NSString class]] || vid.length == 0) return nil;
+    const char *env = getenv("POJAV_GAME_DIR");
+    if (!env || !*env) return nil;
+    NSString *base = [NSString stringWithUTF8String:env];
+    if (base.length == 0) return nil;
+
+    NSFileManager *fm = [NSFileManager defaultManager];
+    for (NSString *rel in @[
+        [NSString stringWithFormat:@"versions/%@/game", vid],
+        [NSString stringWithFormat:@"versions/%@", vid],
+    ]) {
+        NSString *dir = [base stringByAppendingPathComponent:rel];
+        for (NSString *leaf in @[@"mods", @"saves"]) {
+            NSString *probe = [dir stringByAppendingPathComponent:leaf];
+            NSArray<NSString *> *entries = [fm contentsOfDirectoryAtPath:probe error:nil];
+            for (NSString *e in entries) {
+                if (![e hasPrefix:@"."]) {
+                    return dir;
+                }
+            }
+        }
+    }
+    return nil;
 }
 
 - (nullable NSString *)existingModsFolderForProfile:(NSString *)profileName {
@@ -275,7 +319,9 @@
 }
 
 /// Task219：当前 profile 的隔离态对外暴露（ModsManager 徽标用）。
-/// 0 = 不隔离（gameDir 缺失或 "."）；1 = 隔离（versions/<id> 或自定义目录）。
+/// 0 = 不隔离（gameDir 缺失或 "." 且嗅探未命中）；1 = 显式隔离
+/// （gameDir 为 versions/<id>/... 或自定义目录）；2 = 嗅探隔离（Task225：
+/// gameDir 为 "." 但 versions/<vid>/ 下已有 mods/saves——上游 auto 语义）。
 + (NSInteger)ame219_isolationStateForProfile:(NSString *)profileName {
     NSString *profile = profileName.length ? profileName : @"default";
     @try {
@@ -283,8 +329,13 @@
         NSDictionary *prof = profiles[profile];
         if (![prof isKindOfClass:[NSDictionary class]]) return 0;
         NSString *gameDir = prof[@"gameDir"];
-        if (![gameDir isKindOfClass:[NSString class]] || gameDir.length == 0) return 0;
-        if ([gameDir isEqualToString:@"."]) return 0;
+        if (![gameDir isKindOfClass:[NSString class]] || gameDir.length == 0) {
+            // Task225：无显式 gameDir → 嗅探（auto 语义）
+            return [self ame225_sniffedIsolationGameDirForProfile:prof] != nil ? 2 : 0;
+        }
+        if ([gameDir isEqualToString:@"."]) {
+            return [self ame225_sniffedIsolationGameDirForProfile:prof] != nil ? 2 : 0;
+        }
         return 1;
     } @catch (NSException *ex) {
         return 0;

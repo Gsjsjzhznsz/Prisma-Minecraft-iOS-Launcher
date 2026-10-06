@@ -911,6 +911,11 @@ static NSString *festivalGreeting(void) {
                                              selector:@selector(ame224_refreshForThemeChange)
                                                  name:LGCUIScaleChangedNotification
                                                object:nil];
+    // Task225（#13）：文字缩放独立成键——字号变化同样触发刷新
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_refreshForThemeChange)
+                                                 name:LGCTextScaleChangedNotification
+                                               object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(ame224_refreshForThemeChange)
                                                  name:LGCInterfaceStyleChangedNotification

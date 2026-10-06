@@ -23,6 +23,13 @@ extern void *eglGetProcAddress(const char *procname);
 // ANGLE 会话 latestlog.txt 2026-10-06 实证：glTexImage2D ifmt=0x1902
 // fmt=0x1902 type=0x1406 → 1282 → egv.b 抛 RuntimeException）。
 // vendored 头文件对以下常量覆盖不全，全部 #ifndef 本地定义。
+// Task225（Task212 A6 语法门债务修复）：GL_DEPTH_COMPONENT（0x1902）与
+// GL_STENCIL_INDEX（0x1901）在 vendored 头覆盖不全——真实构建的 include
+// 链里有，但 193 语法门的独立编译环境没有（Task224 深度重映射引入的
+// 引用）。补 #ifndef 本地定义，两个环境都对。
+#ifndef GL_DEPTH_COMPONENT
+#define GL_DEPTH_COMPONENT 0x1902
+#endif
 #ifndef GL_DEPTH_COMPONENT16
 #define GL_DEPTH_COMPONENT16 0x81A5
 #endif

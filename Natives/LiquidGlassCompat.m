@@ -28,9 +28,15 @@
 static NSString * const kLGCPrefInterfaceStyleKey = @"prisma.interface_style";
 /// 界面缩放存储键（0.85-1.25 步进 0.05，默认 1.0）
 static NSString * const kLGCPrefUIScaleKey = @"prisma.ui_scale";
+/// 文字缩放存储键（Task225 #13：0.85-1.30 步进 0.05，默认 1.0；只作用于字号）
+static NSString * const kLGCPrefTextScaleKey = @"prisma.text_scale";
+/// 文字动态反色开关（Task225 #12/#13：默认开；关 = 固定 labelColor 语义）
+static NSString * const kLGCPrefTextAutoContrastKey = @"prisma.text_auto_contrast";
 
 NSNotificationName const LGCInterfaceStyleChangedNotification = @"LGCInterfaceStyleChanged";
 NSNotificationName const LGCUIScaleChangedNotification = @"LGCUIScaleChanged";
+NSNotificationName const LGCTextScaleChangedNotification = @"LGCTextScaleChanged";
+NSNotificationName const LGCTextContrastChangedNotification = @"LGCTextContrastChanged";
 
 /// 玻璃效果层 tag（安装于宿主视图的 UIVisualEffectView）
 static NSInteger const kLGCGlassEffectTag = 888901;
@@ -122,7 +128,10 @@ void LGCSetUIScaleMultiplier(CGFloat scale) {
 }
 
 CGFloat LGCScaledFontSize(CGFloat baseSize) {
-    CGFloat scale = LGCUIScaleMultiplier();
+    // Task225（#13）：字号只乘【文字缩放】——与界面缩放（LGCScaledValue）
+    // 分家。旧版字号乘 ui_scale，用户调界面缩放时文字跟着变，且没有独立的
+    // 文字缩放入口（反馈原话：“界面缩放有了，文字缩放怎么没有了”）。
+    CGFloat scale = LGCTextScaleMultiplier();
     if (scale == 1.0) return baseSize;
     return baseSize * scale;
 }
@@ -131,6 +140,43 @@ CGFloat LGCScaledValue(CGFloat baseValue) {
     CGFloat scale = LGCUIScaleMultiplier();
     if (scale == 1.0) return baseValue;
     return baseValue * scale;
+}
+
+#pragma mark - Task225 文字缩放（#13）与文字反色开关（#12）
+
+CGFloat LGCTextScaleMultiplier(void) {
+    // 0.85-1.30 之外的历史/异常值一律钳回默认 1.0
+    double raw = [[NSUserDefaults standardUserDefaults] doubleForKey:kLGCPrefTextScaleKey];
+    if (raw < 0.849 || raw > 1.301) return 1.0;
+    return (CGFloat)raw;
+}
+
+void LGCSetTextScaleMultiplier(CGFloat scale) {
+    // 0.05 步进取整 + 双端钳制（0.85-1.30，文字上限比界面略宽——小字号
+    // 提到大 1.30 是常见的可及性诉求）
+    CGFloat ame225_snapped = (CGFloat)(roundf((float)scale / 0.05f) * 0.05f);
+    if (ame225_snapped < 0.85f) ame225_snapped = 0.85f;
+    if (ame225_snapped > 1.30f) ame225_snapped = 1.30f;
+    [[NSUserDefaults standardUserDefaults] setDouble:(double)ame225_snapped
+                                             forKey:kLGCPrefTextScaleKey];
+    NSLog(@"[ThemeOps] Task225 text scale -> %.2f", (double)ame225_snapped);
+    [[NSNotificationCenter defaultCenter] postNotificationName:LGCTextScaleChangedNotification
+                                                        object:@(ame225_snapped)];
+}
+
+BOOL LGCTextAutoContrastEnabled(void) {
+    // 默认开：只有显式写 NO 才关（objectForKey nil = 从未设置 = 开）
+    NSNumber *raw = [[NSUserDefaults standardUserDefaults] objectForKey:kLGCPrefTextAutoContrastKey];
+    if (![raw isKindOfClass:[NSNumber class]]) return YES;
+    return raw.boolValue;
+}
+
+void LGCSetTextAutoContrastEnabled(BOOL enabled) {
+    [[NSUserDefaults standardUserDefaults] setBool:enabled
+                                             forKey:kLGCPrefTextAutoContrastKey];
+    NSLog(@"[ThemeOps] Task225 text auto contrast -> %d", (int)enabled);
+    [[NSNotificationCenter defaultCenter] postNotificationName:LGCTextContrastChangedNotification
+                                                        object:@(enabled ? @YES : @NO)];
 }
 
 #pragma mark - iOS 26+ 运行时效果访问（自 FETCH_HEAD 移植）
@@ -186,23 +232,25 @@ static UIVisualEffect *_LGCCreateGlassContainerEffect(CGFloat spacing) {
 
 /// 创建模糊效果（低版本回退）
 static UIVisualEffect *_LGCCreateBlurEffect(BOOL isDark) {
+    // ★ Task225（#4）：组合玻璃的保底层改用 SystemThinMaterial（明暗随系统），
+    // 避免旧版 SystemMaterialDark 恒深色在浅色模式下现得突兀；深色请求
+    // （isDark=YES）保留深色变体。
     if (@available(iOS 13.0, *)) {
-        // UIBlurEffectStyleSystemMaterialDark 始终深色变体
-        // UIBlurEffectStyleSystemMaterial 系统自适应
-        return [UIBlurEffect effectWithStyle:isDark ? UIBlurEffectStyleSystemMaterialDark : UIBlurEffectStyleSystemMaterial];
+        return [UIBlurEffect effectWithStyle:isDark ? UIBlurEffectStyleSystemMaterialDark
+                                                   : UIBlurEffectStyleSystemThinMaterial];
     } else {
         return [UIBlurEffect effectWithStyle:isDark ? UIBlurEffectStyleDark : UIBlurEffectStyleLight];
     }
 }
 
 UIVisualEffectView *LGCCreateGlassEffectView(BOOL isDark) {
-    UIVisualEffect *effect = nil;
-    if (LGCIsLiquidGlassAvailable()) {
-        effect = _LGCCreateGlassEffect(isDark);
-    }
-    if (!effect) {
-        effect = _LGCCreateBlurEffect(isDark);
-    }
+    // ★ Task225（#4 黑屏根修）：组合玻璃——不再直接使用 UIGlassEffect。
+    // 旧 SDK（17.5）构建的进程在 iPadOS 27 上该私有效果的 backdrop 渲染
+    // 不完整（装机崩溃转储显示 effect=none → 全屏 backdrop/卡面纯黑）。
+    // 保底可读的系统材质模糊（明暗自适应）+ 调用方叠加的高光渐变层
+    // + 发丝描边 = 玻璃观感保留、黑色界面根治。标准控件的真液态玻璃
+    // 由 LGCAdaptNavigationBar/LGCAdaptBar 交还系统绘制（不受影响）。
+    UIVisualEffect *effect = _LGCCreateBlurEffect(isDark);
     UIVisualEffectView *effectView = [[UIVisualEffectView alloc] initWithEffect:effect];
     effectView.frame = CGRectZero;
     effectView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -211,13 +259,10 @@ UIVisualEffectView *LGCCreateGlassEffectView(BOOL isDark) {
 }
 
 UIVisualEffectView *LGCCreateGlassContainerView(CGFloat spacing, BOOL isDark) {
-    UIVisualEffect *effect = nil;
-    if (LGCIsLiquidGlassAvailable()) {
-        effect = _LGCCreateGlassContainerEffect(spacing);
-    }
-    if (!effect) {
-        effect = _LGCCreateBlurEffect(isDark);
-    }
+    // ★ Task225 同上：容器玻璃同样退回系统材质模糊（spacing 语义仅在真
+    // UIGlassContainerEffect 下有意义，组合玻璃下由调用方的卡片间距承担）。
+    (void)spacing;
+    UIVisualEffect *effect = _LGCCreateBlurEffect(isDark);
     UIVisualEffectView *effectView = [[UIVisualEffectView alloc] initWithEffect:effect];
     effectView.frame = CGRectZero;
     effectView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -293,6 +338,20 @@ void LGCRemoveGlassFromView(UIView *view) {
 
 BOOL LGCApplyGlassToView(UIView *view, CGFloat cornerRadius) {
     if (!view) return NO;
+    // ★ Task225（#4 崩溃根修）：宿主自身是 UIVisualEffectView 时绝不在其
+    // 内部再加效果视图（UIKit 断言 UIVisualEffectView 只能加 contentView；
+    // 装机实锤：latestlog.1 终末 NSInternalInconsistencyException
+    // "effect=none has been added as a subview to <UIVisualEffectView...>"）。
+    // 上移到 superview 再铺（玻璃盖住整个卡面容器，视觉等价）；没有
+    // superview 则拒绝（返回 NO 走原生管线，绝不崩溃）。
+    if ([view isKindOfClass:[UIVisualEffectView class]]) {
+        if (view.superview != nil) {
+            NSLog(@"[ThemeOps] Task225 glass host was a UIVisualEffectView -- hoisting to superview (nest guard)");
+            view = view.superview;
+        } else {
+            return NO;
+        }
+    }
     // 幂等：先清旧层再重建（重复调用安全）
     LGCRemoveGlassFromView(view);
     if (!LGCIsGlassStyleActive()) return NO;

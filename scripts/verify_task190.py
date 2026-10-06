@@ -94,7 +94,7 @@ check("C", "右侧无箭头（chevron 零出现）", "chevron" not in ac.lower()
 check("C", "选中徽章 = 安装器同款（Task212 重锚：20pt 绿圆角方块 + 白勾 9pt bold，右-14 垂直居中）",
       "self.selectedBadge.widthAnchor constraintEqualToConstant:20]" in ac
       and "self.selectedBadge.centerYAnchor constraintEqualToAnchor:self.contentContainer.centerYAnchor]" in ac
-      and "self.selectedBadge.trailingAnchor constraintEqualToAnchor:self.contentContainer.trailingAnchor constant:-14]" in ac
+      and "self.selectedBadge.trailingAnchor constraintEqualToAnchor:self.ame223_menuButton.leadingAnchor constant:-10]" in ac
       and "configurationWithPointSize:9 weight:UIFontWeightBold]" in ac)
 check("C", "选中态 = 绿徽章显隐（Task212 重锚：安装器同款，accent 边框/淡底三层强化退役）",
       "self.selectedBadge.hidden = !selected;" in ac
@@ -195,7 +195,7 @@ for lang, (u, d) in expect.items():
     keys = set(re.findall(r'^"([^"]+)" =', s, re.M))
     check("G", f"{lang} account.menu.use/delete 键值", f'"account.menu.use" = "{u}";' in s
           and f'"account.menu.delete" = "{d}";' in s)
-    check("G", f"{lang} 唯一键总数 == 2606", len(keys) == 2606, f"got {len(keys)}")
+    check("G", f"{lang} 唯一键总数 == 2696", len(keys) == 2696, f"got {len(keys)}")
     check("G", f"{lang} account.switch_role.* 历史键保留",
           'account.switch_role.button' in keys and 'account.switch_role.title' in keys)
 

@@ -2745,14 +2745,14 @@
 
 /* Task222: 欢迎向导 zl2 风格介绍页（清单第 17 项） */
 "welcome.intro.title" = "Meet Prisma";
-"welcome.intro.f1.title" = "Full Minecraft: Java Edition";
-"welcome.intro.f1.body" = "Multiple game versions and mod loaders (Fabric / Forge / NeoForge / Quilt), with mod, shader and resource pack management built in.";
-"welcome.intro.f2.title" = "Deep Chinese localization";
-"welcome.intro.f2.body" = "Full Chinese UI, in-app language switching and China-friendly download mirrors (BMCLAPI / MCIM).";
-"welcome.intro.f3.title" = "TouchController support";
-"welcome.intro.f3.body" = "Full on-screen touch controls via the TouchController mod -- play anywhere without a keyboard.";
-"welcome.intro.f4.title" = "Multiplayer";
-"welcome.intro.f4.body" = "Terracotta multiplayer (interoperable with HMCL / FCL / ZL2) and ZeroTier rooms.";
+"welcome.intro.f1.title" = "Renderer matrix & device-level tuning";
+"welcome.intro.f1.body" = "MetalGlues/Metallum, Zink+FSR upscaling, ANGLE, VirGL and gl4es — plus frame-time forensics and on-device root-cause fixes (modpack 30fps unlock, background GPU park, JNA re-signing).";
+"welcome.intro.f2.title" = "Deep input chain";
+"welcome.intro.f2.body" = "Full-path virtual keyboard typing, input auto-recovery after backgrounding, gamepad/joystick four-way fix, and keybind protection that never washes your custom binds.";
+"welcome.intro.f3.title" = "Data safety first";
+"welcome.intro.f3.body" = "Version isolation with data/metadata separation, automatic backup before modpack re-import, and launch-time asset integrity healing.";
+"welcome.intro.f4.title" = "Parallel export engine";
+"welcome.intro.f4.body" = "3-thread zip compression with section picker (worlds/mods/config/…) and full progress: stages, files, speed and ETA.";
 "welcome.intro.community.title" = "Join the Community";
 "welcome.intro.community.hint" = "QQ Group 1126547426 -- support, feedback and build announcements. Like the launcher? Support us on Afdian (About page).";
 "welcome.intro.next_hint" = "Next, we'll open the About page -- version info, QQ group and update checks live there.";
@@ -2795,7 +2795,7 @@
 "coachmarks.content.body" = "Your versions, modpacks and settings live here.";
 "coachmarks.launch.title" = "Launch";
 "coachmarks.launch.body" = "Right panel: launch the game, check JIT and memory.";
-"welcome.intro.subtitle" = "A quick tour of what this launcher can do.";
+"welcome.intro.subtitle" = "What makes this fork different — features we built that you won't find upstream.";
 "terracotta.stage.precheck" = "Checking multiplayer connectivity…";
 "terracotta.error.no_public_peer" = "No public EasyTier server is reachable. Check your network (Wi-Fi/cellular/proxy) and retry; if the network is fine, the host is probably offline.";
 "account.menu.change_name" = "Change gamertag";
@@ -2878,3 +2878,26 @@
 "dataexport.sections.title" = "Export Content";
 "dataexport.selected_summary_fmt" = "Selected: %1$ld files · %2$@";
 "dataexport.stage.finalize" = "Finalizing archive";
+
+// Task225
+"profile.isolation.choice_prompt" = "Choose how to enable isolation for this version. Your data is never lost either way.";
+"profile.isolation.choice_migrate" = "Migrate & enable (recommended)";
+"profile.isolation.choice_keep" = "Enable only (data stays shared)";
+"profile.isolation.applying" = "Applying isolation…";
+"profile.isolation.enabled_nomove" = "Isolation enabled at %@ without migrating data. Your saves and mods stay in the shared folder; you can migrate anytime from version settings.";
+"ame225.mods.sniffed_chip" = "Auto-isolated";
+"ame225.mods.isolated_note" = "Mods are installed and scanned only in this version's isolated folder (versions/<id>/game). Install and scan never touch the shared folder.";
+"ame225.mods.sniffed_note" = "This version's folder already contains saves or mods, so mod installation automatically targets the isolated folder. Open version settings to make it explicit.";
+"ame225.mods.shared_note" = "Mods are installed to the shared instance folder. Enable version isolation in version settings to give this version its own mods and saves.";
+"ame225.mods.open_settings" = "Open version settings";
+"preference.title.ui_scale" = "Interface scale";
+"preference.title.text_scale" = "Text scale";
+"preference.title.text_auto_contrast" = "Dynamic text contrast";
+"preference.detail.interface_style" = "Auto follows the system (Liquid Glass on iOS 26+). Native keeps the classic look. Liquid Glass uses layered glass surfaces.";
+"preference.detail.ui_scale" = "Scales panels and cards (85–125%). Text size is controlled separately by text scale.";
+"preference.detail.text_scale" = "Scales all interface fonts (85–130%) without changing panel sizes.";
+"preference.detail.text_auto_contrast" = "Automatically flips text color based on wallpaper brightness so text stays readable on any background.";
+"welcome.intro.f5.title" = "Appearance system";
+"welcome.intro.f5.body" = "Liquid Glass interface style, wallpaper-adaptive text contrast, separate interface & text scaling, Bing/user wallpaper.";
+"welcome.intro.f6.title" = "Deep diagnostics";
+"welcome.intro.f6.body" = "Built-in FAQ tab, crash forensics pipeline and device-log anchors — most issues are diagnosed from your latestlog in one round.";

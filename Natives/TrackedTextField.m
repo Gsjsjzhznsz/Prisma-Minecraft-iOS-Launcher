@@ -35,6 +35,23 @@ static uint64_t ame156_mach_ms(void) {
 
 @implementation TrackedTextField
 
+// ★ Task225（反馈 #7：SDL 版输入循环根修，上游 Zalith 同款移植）：
+// 病历（02a3fe1 日志集 latestlog.old，26.3 mg 会话）：每打一个字符，
+// UIAsyncTextInput 拆一次会话（iOS 18+ 行为）→ 系统 resign 键盘 →
+// Task224 的常驻守望 0.4s 后重新 becomeFirstResponder → 用户看到
+// "输入会关闭键盘，然后恢复程序会打开键盘，就这样一直循环"
+// （[SurfaceVC] Task171/224: keyboard session heal #1 depth=1 → #2
+// depth=5 → #3 depth=8 连环实锤）。根修 = 在 resign 入口拦截：
+// preventUnexpectedResign 置位期间拒绝一切 resign（系统临时下台不再
+// 发生，守望自然不再触发）；显式收起（⌨/输入法按钮/聊天关闭）由
+// SurfaceViewController 临时清标志后 resign——包夹语义与上游一致。
+- (BOOL)resignFirstResponder {
+    if (self.preventUnexpectedResign && self.isFirstResponder) {
+        return NO;
+    }
+    return [super resignFirstResponder];
+}
+
 - (void)sendMultiBackspaces:(int)times {
     for (int i = 0; i < times; i++) {
         self.sendKey(GLFW_KEY_BACKSPACE, 0, 1, 0);

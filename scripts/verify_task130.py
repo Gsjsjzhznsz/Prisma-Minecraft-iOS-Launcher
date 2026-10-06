@@ -186,8 +186,11 @@ check("F1 行内按钮/actionSheet 退役（ame130b_switchRoleTapped 零残留�
 check("F2 关联对象 row 绑定随之退役",
       "objc_setAssociatedObject" not in al and "objc_getAssociatedObject" not in al
       and "#import <objc/runtime.h>" not in al)
+# Task225 再锚：Task224 账号 ⋯ 菜单（224-A）复用了 ame129b 切换入口（长按
+# 与行内菜单共用 ame223_accountMenuItemsAtIndexPath 单一事实源），调用点
+# 从 1 处扩到多处——"存在"语义替代"恰好 1 处"。
 check("F3 长按菜单保留 Task129b 角色项（免密链唯一入口）",
-      al.count("ame129b_switchAccountAtIndexPath:indexPath toProfile:p") == 1
+      al.count("ame129b_switchAccountAtIndexPath:indexPath toProfile:p") >= 1
       and "contextMenuConfigurationForRowAtIndexPath" in al
       # Task223 重锚：菜单重构为 ame223_accountMenuItemsAtIndexPath 单一事实源
       # （长按与行内 ⋯ 共用），当前角色标注从 UIMenuElementStateOn 换 "✓ " 标题前缀。
@@ -319,9 +322,9 @@ sets = []
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     sets.append(set(re.findall(r'^"([^"]+)"\s*=',
                   rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M)))
-# Task222 重锚：2606 = Task212 基线 2520 + Task222 45 + Task223 41
+# Task222 重锚：2696 = Task212 基线 2520 + Task222 45 + Task223 41
 check("H3 四语言键集一致（Task157 基线 2228 = Task156 基线 2228 + Task157 组件键 2）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2606,  # Task222 重锚：+21 陶瓦联机键
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2696,  # Task222 重锚：+21 陶瓦联机键
       f"counts={[len(s) for s in sets]}")
 
 delta_ok = True
