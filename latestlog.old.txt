@@ -4,7 +4,7 @@
 [Pre-Init] Upstream: https://github.com/herbrine8403/Amethyst-iOS-MyRemastered
 [Pre-Init] Please try not to post this log of the remastered launcher to the original GitHub Issues for help.
 [Pre-Init] Version: 6.5.0
-[Pre-Init] Commit: 5f222b4 (main)
+[Pre-Init] Commit: 6732140 (main)
 [Pre-Init] Device: iPad Air 11-inch (M4)
 [Pre-Init] iPadOS 27.0.1 (24A446) (Unjailbroken)
 [Pre-init] Entitlements availability:
@@ -18,7 +18,6 @@
 [main_hook] Task202: CAMetalLayer nextDrawable hook installed (Metal first-frame signal; fires only in AMETHYST_METAL sessions while running)
 [Debugging] Debug log enabled: YES
 [Pre-init] Restored game directory preference (default)
-[AppDelegate] Task189: uncaught-exception handler re-armed after container setup
 [SceneDelegate] Task191: uncaught-exception handler re-armed at willConnect
 [SceneDelegate] Task188: geometry request declined (expected in window mode; Info.plist UIRequiresFullScreen is the primary fix): 当前窗口模式不允许以编程方式更改界面方向。
 [PLPreferences] Getter could not find preference download.speed_probe.bmclapi
@@ -38,18 +37,75 @@
 [HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
 [HomeAvatar] Task172 fetch completion: img=yes (128x128)
 [HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
-[BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261005)
+[BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261006)
 [PLPreferences] Getter could not find preference general.disable_window_rotation_shim
 [FG-Lifecycle] didBecomeActive: presentation enforcement did=0
 [FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+[HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
 [PLPreferences] Getter could not find preference download.speed_probe.mcim
 [IconLoader] Initialization complete, disk cache directory: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Library/Caches/IconLoader, mirror enabled: YES
 [PLPreferences] Getter could not find preference download.speed_probe.mcim
-[HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
-[PLPreferences] Getter could not find preference download.speed_probe.bmclapi
-[MCDL] Replacing JNA 5.12.1 with 5.13.0 for iOS compatibility (required by 1.20.1)
 [PLPreferences] Setter could not find preference download.speed_probe.mcim
-2026-10-06 20:23:10.383 AngelAuraAmethyst[9311:2657409] [PLMirrorCenter] Task138 speed probe (family=1): official won (official=131ms mirror=1191ms)
+2026-10-07 01:07:16.276 AngelAuraAmethyst[10658:2865745] [PLMirrorCenter] Task138 speed probe (family=1): official won (official=128ms mirror=1081ms)
+[LauncherRootVC] Task218 loaded 919 remote versions from bmclapi2.bangbang93.com
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+2s
+[Task173] safe heap ceiling: os_proc_available_memory=12209MB -> Xmx ceiling 11009MB (native reserve 1200MB, no floor on authoritative path)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+4s
+[PLPreferences] Setter could not find preference download.speed_probe.bmclapi
+2026-10-07 01:07:19.854 AngelAuraAmethyst[10658:2865747] [PLMirrorCenter] Task138 speed probe (family=0): official won (official=953ms mirror=4660ms)
+[FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
+[InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[BG-Park] Task223 render thread parking armed (willResignActive)
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
+[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+[BG-Park] Task223 render thread released (foreground lifecycle)
+[FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
+[InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[BG-Park] Task223 render thread parking armed (willResignActive)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+6s
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
+[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+[BG-Park] Task223 render thread released (foreground lifecycle)
+[FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
+[InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[BG-Park] Task223 render thread parking armed (willResignActive)
+[FG-Lifecycle] didEnterBackground: swapOK=0 swapFail=0
+[InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[IconLoader] App entered background: cancelled all ongoing downloads
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+8s
+[FG-Lifecycle] willEnterForeground: swapOK=0 swapFail=0
+[BG-Park] Task223 render thread released (foreground lifecycle)
+[BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261006)
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
+[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+10s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+12s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+14s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+16s
+[ProfileSettings] Task223/224 isolation migration source: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft (old gameDir=versions/1.20.1, same-as-target=0)
+[ProfileSettings] Task224 legacy isolation upgraded: 5 item(s) versions/<id> -> versions/<id>/game
+[ProfileSettings] Task150: renderer written to PROFILE ONLY '1.20.1' = libOSMesa.8.dylib
+[ProfileSettings] Task217/224: version isolation ON for 1.20.1 (gameDir=versions/1.20.1/game; moved=0 skipped=5 legacyUpgraded=5)
+[ProfileSettings] Task150: renderer written to PROFILE ONLY '1.20.1' = libOSMesa.8.dylib
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+18s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+20s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+22s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+24s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+26s
+[ProfileSettings] Task223/224 isolation migration source: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft (old gameDir=., same-as-target=0)
+[ProfileSettings] Task150: renderer written to PROFILE ONLY '1.20.1' = libOSMesa.8.dylib
+[ProfileSettings] Task217/224: version isolation ON for 1.20.1 (gameDir=versions/1.20.1/game; moved=0 skipped=5 legacyUpgraded=0)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+28s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+30s
+[ProfileSettings] Task150: renderer picker opened (11 options incl. single 'mg'; follow-global retired)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+32s
+[ProfileSettings] Task150: renderer written to PROFILE ONLY '1.20.1' = libOSMesaVirgl.dylib
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+34s
+[MCDL] SHA1 passed for 1.20.1.json
+[MCDL] Replacing JNA 5.12.1 with 5.13.0 for iOS compatibility (required by 1.20.1)
 [MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1
 [MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-linux
 [MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-macos
@@ -92,37 +148,36 @@
 [MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-windows
 [MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-windows-arm64
 [MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-windows-x86
-[LauncherRootVC] Task218 loaded 919 remote versions from bmclapi2.bangbang93.com
-[MCDL] Task187: verify stage entered (elapsed 0.7s since downloadVersion:)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+36s
+[MCDL] Task187: verify stage entered (elapsed 2.6s since downloadVersion:)
+[JIT] [RightPanel] Task224 closing presented stack ('PLTaskProgressViewController') + 0.8s settle before JIT wait
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+38s
 [JIT] [RightPanel] invokeAfterJITEnabled: dynamicCS=0 trollStore=0 CS_DEBUGGED=0 ppid=1 traced=0 exn=0 JIT_FLAGS=0x7
 [JIT] [RightPanel] Task134 enabler=auto noScript=0
 sandbox_extension_issue_file failed for : 2 (No such file or directory)
-[JIT] [RightPanel] Task179 background task assertion: id=3 valid=1 (remaining bg time fg(n/a))
+[JIT] [RightPanel] Task179 background task assertion: id=9 valid=1 (remaining bg time fg(n/a))
 [JIT] Task181 isJITEnabled wait begin: startForeground=1 traced=0 exn=0 csdbg=0
 [JIT] Task169 isJITEnabled: still waiting after 0s (traced=0 exn=0)
 [FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
 [InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
 [BG-Park] Task223 render thread parking armed (willResignActive)
 [JIT] [RightPanel] Task176 openURL stikjit:// -> 1
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x102691224) -- re-armed at t+2s
 [JIT] Task181 isJITEnabled app went to BACKGROUND while waiting (traced=0 exn=0)
 [FG-Lifecycle] didEnterBackground: swapOK=0 swapFail=0
 [InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
 [IconLoader] App entered background: cancelled all ongoing downloads
 [FG-Lifecycle] willEnterForeground: swapOK=0 swapFail=0
 [BG-Park] Task223 render thread released (foreground lifecycle)
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x102691224) -- re-armed at t+4s
-[JIT] Task181 isJITEnabled condition satisfied after 3.0s (traced=1 exn=1)
-[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
-[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
-[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
-[PLPreferences] Setter could not find preference download.speed_probe.bmclapi
-[JIT] Task185 self-healing dispatch: refire on foreground (label=RightPanel main wait)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+40s
+[JIT] Task181 isJITEnabled condition satisfied after 3.2s (traced=1 exn=1)
 [JIT] [RightPanel] Task183 wait-completed block entered on main (ok=1)
 [JIT] [RightPanel] Task183 invoking launch handler
 [TouchController] Task172 profile '1.20.1' TouchController off -- global settings untouched
 [SurfaceSwap] Task183 launching SurfaceViewController (synchronous root swap; version=(null))
-[BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261005)
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
+[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+[BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261006)
 [SurfaceViewController] FPS counter setup: profileRenderer=libOSMesaVirgl.dylib, envRenderer=(null), graphicsApi=(null), isVulkan=0, configuredVulkanExpected=0 (actual path decided at runtime via pojavIsActualVulkanPath)
 [PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
 [PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
@@ -157,7 +212,6 @@ sandbox_extension_issue_file failed for : 2 (No such file or directory)
 [JavaLauncher] RENDERER is set to libOSMesaVirgl.dylib
 [JavaLauncher] VirGL renderer active: GALLIUM_DRIVER=virgl + in-process vtest server (Task 215)
 [JavaLauncher] GRAPHICS_API is set to default
-[Task181] keybind marker present (/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/options.txt.amethyst-keybinds-v1) — user customizations preserved, no forced reset this launch
 [Task67] ===== options.txt keybind dump (pre-sanitize) =====
 [Task67]   toggleCrouch:false (sneak/sprint toggle mode)
 [Task67]   toggleSprint:false (sneak/sprint toggle mode)
@@ -226,15 +280,15 @@ sandbox_extension_issue_file failed for : 2 (No such file or directory)
 [Task67]   key_key.debug.lightmapTexture:key.keyboard.4
 [Task67]   key_key.debug.improvedTransparency:key.keyboard.x
 [Task67] ===== keybind sanitize: 0 repairs needed (all canonical / defaults) =====
+[Task181] keybind marker written (/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/1.20.1/game/options.txt.amethyst-keybinds-v1) — future launches preserve user customizations
 [JavaLauncher] Looking for Java 17 or later
 [JavaLauncher] JAVA_HOME has been set to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk
 [Task141] launch memory from instance profile: 2048 MB
-[Task173] safe heap ceiling: os_proc_available_memory=12057MB -> Xmx ceiling 10857MB (native reserve 1200MB, no floor on authoritative path)
 [JavaLauncher] Max RAM allocation is set to 2048 MB
 [JavaLauncher] Task68 GC/safepoint pause logging enabled (-Xlog:gc,safepoint -> stdout)
 [JavaLauncher] library.path = /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks
 [Amethyst] Task112: OpenAL pinned to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/libopenal.dylib
-[JavaLauncher] Published Metallum surface view: 0x15b3df640 (scale=2)
+[JavaLauncher] Published Metallum surface view: 0x118b2f2c0 (scale=2)
 [JavaLauncher] Added JVM property -Dmax.fps=260 (frame rate unlock layer 4)
 [JavaLauncher] Adding authlib-injector arguments for third party account
 [ThirdPartyAuthenticator] Added prefetched metadata parameter (length=1780)
@@ -243,7 +297,6 @@ sandbox_extension_issue_file failed for : 2 (No such file or directory)
 [JavaLauncher] Added authlib-injector arg: -Dauthlibinjector.yggdrasil.prefetched=eyJtZXRhIjp7ImZlYXR1cmUuZW5hYmxlX21vamFuZ19hbnRpX2ZlYXR1cmVzIjp0cnVlLCJmZWF0dXJlLmVuYWJsZV9wcm9maWxlX2tleSI6dHJ1ZSwiZmVhdHVyZS5ub25fZW1haWxfbG9naW4iOnRydWUsImZlYXR1cmUub3BlbmlkX2NvbmZpZ3VyYXRpb25fdXJsIjoiaHR0cHM6Ly9vcGVuLmxpdHRsZXNraW4uY24vLndlbGwta25vd24vb3BlbmlkLWNvbmZpZ3VyYXRpb24iLCJpbXBsZW1lbnRhdGlvbk5hbWUiOiJZZ2dkcmFzaWwgQ29ubmVjdCIsImltcGxlbWVudGF0aW9uVmVyc2lvbiI6IjAuMC44IiwibGlua3MiOnsiYW5ub3VuY2VtZW50IjoiaHR0cHM6Ly9saXR0bGVza2luLmNuL2FwaS9hbm5vdW5jZW1lbnRzIiwiaG9tZXBhZ2UiOiJodHRwczovL2xpdHRsZXNraW4uY24iLCJyZWdpc3RlciI6Imh0dHBzOi8vbGl0dGxlc2tpbi5jbi9hdXRoL3JlZ2lzdGVyIn0sInNlcnZlck5hbWUiOiJMaXR0bGVTa2luIn0sInNpZ25hdHVyZVB1YmxpY2tleSI6Ii0tLS0tQkVHSU4gUFVCTElDIEtFWS0tLS0tXG5NSUlDSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQWc4QU1JSUNDZ0tDQWdFQXJHY05PT0ZJcUxKU3FvRTN1MGhqXG50T0VuT2NFVDN3ajlEcnNzMUJFNnNCcWdQbzBiTXVsT1VMaHFqa2MvdUgvd3lvc1luenczeGFhekp0ODdqVEhoXG5KOEJQTXhDZVFNb3lFZFJvUzNKbmoxRzBLZXpqNEEyYjYxUEpKTTFEcHZEQWNxUUJZc3JTZHBCSis1Mk1qb0dTXG52Sm9lUU81WFVsSlZRbTIxL0htSm5xc1BoemNBNkhnWTcxUkhZRTV4bmhwV0ppUHhMS1VQdG10NkNOWVVRUW9TXG5vMnYzNlhXZ01tTEJaaEFiTk9QeFlYKzFpb3hLYW1qaExPMjlVaHd0Z1k5VTZQV0VPNy9TQmZYenlSUFR6aFBWXG4ybkhxN0tKcWQ4SUlybHRzbHY2aS80RkVNODFpdlMvbW0rUE4zaFlsSVlLNno2WW1paTFuclFBcGxzSjY3T0dxXG5ZSHRXS092cGZUek9vbGx1Z3NSaWhrQUc0T0I2aE0wUHI0NWpqQzNUSWM3ZU83a09nSWNHVUdVUUd1dXVnREV6XG5KMU45RkZXbk4vSDZQOXVrRmVnNVNtR0M1K3dtVVBaWkN0TkJMcjhvOHNJNUg3UWhLN05nd0NhR0ZvWXVpQUdMXG5nejNrLzNZd0o0MEJid1FheVEyZ0lxZW56K1hPRklBbGFqdisvbnlmY0R2Wkg5dkdOS1A5bFZjSFhVVDVZUm5TXG5aU0hvNWx3dlZyWVVycUVBYmgvekR6OFFNRXlpdWpXdlVrUGhaczlmaDZmaW1VR3h0bThtRklQQ3RQSlZYamVZXG53RDNMdnQzYUlCMUpIZFVUSlIzZUVjNGVJYVRLTXdNUHlKUnpWbjV6S3NpdGFaejNubi9jT0Evd1pDOW9xeUVVXG5tYzloNlpNUlRSVUVFNFR0YUp5ZzlsTUNBd0VBQVE9PVxuLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tXG4iLCJza2luRG9tYWlucyI6WyJsaXR0bGVza2luLmNuIl19
 [JavaLauncher] Task201: Metallum agent skipped: MC major 1 < 26 (agent needs Java 21+ class files, this session runs Java 8)
 [JavaLauncher] JVM GC optimization: G1GC + MaxGCPauseMillis=50 + StringDeduplication (Java 17+)
-[PLDisplayLinkTarget] displayLinkTick #1 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
 [SDLHook] Task133: libjli image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/libjli.dylib) -- rebinding its _dlopen slots
 [SDLHook] Task133: _dlopen slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlopen chain now routes through the hook
 [SDLHook] Task133: _dlsym slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlsym chain now routes through the hook
@@ -253,32 +306,34 @@ sandbox_extension_issue_file failed for : 2 (No such file or directory)
 [Init] Found JLI lib
 [JavaLauncher] Using LWJGL 333 (mcVersion=1.20.1)
 [JavaLauncher] Using LWJGL jar at /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/libs/lwjgl-333/lwjgl.jar
-[CwdAlign] Task97: process CWD aligned to game dir: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default
+[CwdAlign] Task97: process CWD aligned to game dir: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/1.20.1/game
 [AppKitStub] Task99: NSApplication/NSMenu/NSMenuItem stubs installed (iOS has no AppKit; MC 26.3 MacosUtil menu walk no-ops, numberOfItems=0)
 [Init] Calling JLI_Launch
-[PLDisplayLinkTarget] displayLinkTick #2 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
-[PLDisplayLinkTarget] displayLinkTick #3 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
-[PLDisplayLinkTarget] displayLinkTick #4 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #1 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
 [SDLHook] Task133: libjvm image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib) -- rebinding its _dlopen slots
 [SDLHook] Task133: _dlopen slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlopen chain now routes through the hook
 [SDLHook] Task133: _dlsym slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlsym chain now routes through the hook
-[PLDisplayLinkTarget] displayLinkTick #5 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #2 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #3 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #4 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
 [JIT26] Requesting 64 MB for JIT mapping
-[JIT26] Got JIT mapping 0x160e28000 from debugger
-[JIT26] mapping at RW=0x164e28000, RX=0x160e28000
-[2026-10-06T20:23:14.563+0800][0.275s] Using G1
+[JIT26] Got JIT mapping 0x164e28000 from debugger
+[PLDisplayLinkTarget] displayLinkTick #5 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[JIT26] mapping at RW=0x168e28000, RX=0x164e28000
+[2026-10-07T01:08:45.044+0800][0.274s] Using G1
 WARNING: Unknown module: cpw.mods.bootstraplauncher specified to --add-exports
-[authlib-injector] [INFO] Logging file: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/authlib-injector.log
+[authlib-injector] [INFO] Logging file: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/1.20.1/game/authlib-injector.log
 [authlib-injector] [INFO] Version: 1.2.8
 [authlib-injector] [INFO] Authentication server: https://littleskin.cn/api/yggdrasil/
 PatchJNAAgent: premain called
 Arc Capes DNS Injector
 Parts of Alibaba's DCM library were used, please read https://github.com/alibaba/java-dns-cache-manipulator/blob/main/README.md for more info
-[2026-10-06T20:23:14.743+0800][0.456s] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 6M->2M(128M) 1.028ms
-[2026-10-06T20:23:14.743+0800][0.456s] Safepoint "G1CollectForAllocation", Time since last: 156313709 ns, Reaching safepoint: 875 ns, Cleanup: 24666 ns, At safepoint: 1047834 ns, Total: 1073375 ns
+[2026-10-07T01:08:45.206+0800][0.436s] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 6M->2M(128M) 1.468ms
+[2026-10-07T01:08:45.206+0800][0.436s] Safepoint "G1CollectForAllocation", Time since last: 136994458 ns, Reaching safepoint: 1042 ns, Cleanup: 25042 ns, At safepoint: 1493416 ns, Total: 1519500 ns
 Added DNS cache entry: s.optifine.net/23.95.137.176
-[2026-10-06T20:23:14.826+0800][0.539s] GC(1) Pause Young (Normal) (G1 Evacuation Pause) 22M->17M(128M) 0.688ms
-[2026-10-06T20:23:14.826+0800][0.539s] Safepoint "G1CollectForAllocation", Time since last: 82305875 ns, Reaching safepoint: 16208 ns, Cleanup: 16958 ns, At safepoint: 718250 ns, Total: 751416 ns
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+42s
+[2026-10-07T01:08:45.284+0800][0.514s] GC(1) Pause Young (Normal) (G1 Evacuation Pause) 22M->17M(128M) 0.679ms
+[2026-10-07T01:08:45.284+0800][0.514s] Safepoint "G1CollectForAllocation", Time since last: 77256667 ns, Reaching safepoint: 1167 ns, Cleanup: 17916 ns, At safepoint: 695834 ns, Total: 714917 ns
 [PojavLauncher] VSync disabled, maxFps/maxFramerate/framerateLimit set to 260
 [PojavLauncher]   enableVsync=false
 [PojavLauncher]   maxFps=260
@@ -287,8 +342,8 @@ Added DNS cache entry: s.optifine.net/23.95.137.176
 [PojavLauncher]   inactivityFpsLimit=minimized
 [PojavLauncher] Task104 on-disk verification: inactivityFpsLimit=minimized maxFps=260 enableVsync=false
 [PojavLauncher] MC 26.2+ graphicsApi cleared (default)
-[2026-10-06T20:23:14.859+0800][0.571s] GC(2) Pause Young (Normal) (G1 Evacuation Pause) 26M->17M(128M) 0.516ms
-[2026-10-06T20:23:14.859+0800][0.571s] Safepoint "G1CollectForAllocation", Time since last: 32033917 ns, Reaching safepoint: 1208 ns, Cleanup: 17709 ns, At safepoint: 533041 ns, Total: 551958 ns
+[2026-10-07T01:08:45.321+0800][0.551s] GC(2) Pause Young (Normal) (G1 Evacuation Pause) 26M->17M(128M) 0.536ms
+[2026-10-07T01:08:45.321+0800][0.551s] Safepoint "G1CollectForAllocation", Time since last: 36864750 ns, Reaching safepoint: 1500 ns, Cleanup: 17250 ns, At safepoint: 553166 ns, Total: 571916 ns
 Launching Minecraft 1.20.1
 [PojavLauncher] LWJGL selected by launcher: 333, reported version: 3.3.1 (metadata: not captured)
 [Tools] Replacing JNA 5.12.1 with 5.13.0 for iOS compatibility
@@ -301,131 +356,123 @@ Launching Minecraft 1.20.1
 [Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
 Args init finished. Now starting game
 [authlib-injector] [INFO] Transformed [net.minecraft.client.main.Main] with [Main Arguments Transformer]
-[2026-10-06T20:23:15.009+0800][0.722s] Safepoint "ICBufferFull", Time since last: 150527459 ns, Reaching safepoint: 1541 ns, Cleanup: 42750 ns, At safepoint: 334 ns, Total: 44625 ns
-[2026-10-06T20:23:15.114+0800][0.827s] Safepoint "ICBufferFull", Time since last: 104957750 ns, Reaching safepoint: 3541 ns, Cleanup: 66875 ns, At safepoint: 2417 ns, Total: 72833 ns
-[2026-10-06T20:23:15.143+0800][0.855s] GC(3) Pause Young (Normal) (G1 Evacuation Pause) 111M->37M(129M) 5.335ms
-[2026-10-06T20:23:15.143+0800][0.855s] Safepoint "G1CollectForAllocation", Time since last: 23072583 ns, Reaching safepoint: 3959 ns, Cleanup: 25625 ns, At safepoint: 5365583 ns, Total: 5395167 ns
-[2026-10-06T20:23:15.199+0800][0.911s] GC(4) Pause Young (Concurrent Start) (Metadata GC Threshold) 46M->38M(129M) 2.459ms
-[2026-10-06T20:23:15.199+0800][0.911s] Safepoint "CollectForMetadataAllocation", Time since last: 53480500 ns, Reaching safepoint: 1417 ns, Cleanup: 26958 ns, At safepoint: 2485208 ns, Total: 2513583 ns
-[2026-10-06T20:23:15.199+0800][0.911s] GC(5) Concurrent Mark Cycle
-[2026-10-06T20:23:15.204+0800][0.916s] GC(5) Pause Remark 39M->39M(129M) 0.675ms
-[2026-10-06T20:23:15.204+0800][0.916s] Safepoint "G1PauseRemark", Time since last: 3960667 ns, Reaching safepoint: 8958 ns, Cleanup: 4375 ns, At safepoint: 688625 ns, Total: 701958 ns
-[2026-10-06T20:23:15.206+0800][0.918s] GC(5) Pause Cleanup 39M->39M(129M) 0.016ms
-[2026-10-06T20:23:15.206+0800][0.918s] Safepoint "G1PauseCleanup", Time since last: 1953292 ns, Reaching safepoint: 187875 ns, Cleanup: 1750 ns, At safepoint: 24208 ns, Total: 213833 ns
-[2026-10-06T20:23:15.206+0800][0.918s] GC(5) Concurrent Mark Cycle 7.035ms
+[2026-10-07T01:08:45.471+0800][0.701s] Safepoint "ICBufferFull", Time since last: 149386542 ns, Reaching safepoint: 18375 ns, Cleanup: 41708 ns, At safepoint: 1417 ns, Total: 61500 ns
+[2026-10-07T01:08:45.559+0800][0.789s] Safepoint "ICBufferFull", Time since last: 88036417 ns, Reaching safepoint: 1333 ns, Cleanup: 31417 ns, At safepoint: 458 ns, Total: 33208 ns
+[2026-10-07T01:08:45.593+0800][0.823s] GC(3) Pause Young (Normal) (G1 Evacuation Pause) 111M->37M(129M) 5.859ms
+[2026-10-07T01:08:45.593+0800][0.823s] Safepoint "G1CollectForAllocation", Time since last: 28707458 ns, Reaching safepoint: 1417 ns, Cleanup: 12958 ns, At safepoint: 5879417 ns, Total: 5893792 ns
+[2026-10-07T01:08:45.648+0800][0.878s] GC(4) Pause Young (Concurrent Start) (Metadata GC Threshold) 46M->39M(129M) 3.261ms
+[2026-10-07T01:08:45.648+0800][0.878s] GC(5) Concurrent Mark Cycle
+[2026-10-07T01:08:45.648+0800][0.878s] Safepoint "CollectForMetadataAllocation", Time since last: 51826167 ns, Reaching safepoint: 1208 ns, Cleanup: 23708 ns, At safepoint: 3309167 ns, Total: 3334083 ns
+[2026-10-07T01:08:45.652+0800][0.882s] GC(5) Pause Remark 39M->39M(129M) 0.755ms
+[2026-10-07T01:08:45.652+0800][0.882s] Safepoint "G1PauseRemark", Time since last: 3286750 ns, Reaching safepoint: 20417 ns, Cleanup: 8166 ns, At safepoint: 769292 ns, Total: 797875 ns
+[2026-10-07T01:08:45.652+0800][0.883s] GC(5) Pause Cleanup 39M->39M(129M) 0.003ms
+[2026-10-07T01:08:45.652+0800][0.883s] Safepoint "G1PauseCleanup", Time since last: 13375 ns, Reaching safepoint: 22542 ns, Cleanup: 1958 ns, At safepoint: 32292 ns, Total: 56792 ns
+[2026-10-07T01:08:45.653+0800][0.883s] GC(5) Concurrent Mark Cycle 4.345ms
 [authlib-injector] [INFO] Setting accountType to msa
 [authlib-injector] [INFO] Transformed [com.mojang.authlib.properties.Property] with [Yggdrasil Public Key Transformer]
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x102691224) -- re-armed at t+6s
-[2026-10-06T20:23:15.313+0800][1.026s] GC(6) Pause Young (Normal) (G1 Evacuation Pause) 107M->65M(129M) 5.500ms
-[2026-10-06T20:23:15.313+0800][1.026s] Safepoint "G1CollectForAllocation", Time since last: 101789709 ns, Reaching safepoint: 3583 ns, Cleanup: 60500 ns, At safepoint: 5538417 ns, Total: 5602500 ns
-[2026-10-06T20:23:15.357+0800][1.069s] GC(7) Pause Young (Concurrent Start) (G1 Humongous Allocation) 79M->67M(129M) 2.651ms
-[2026-10-06T20:23:15.357+0800][1.069s] Safepoint "G1TryInitiateConcMark", Time since last: 40758250 ns, Reaching safepoint: 8208 ns, Cleanup: 11375 ns, At safepoint: 2673792 ns, Total: 2693375 ns
-[2026-10-06T20:23:15.357+0800][1.069s] GC(8) Concurrent Mark Cycle
+[2026-10-07T01:08:45.753+0800][0.983s] GC(6) Pause Young (Normal) (G1 Evacuation Pause) 106M->64M(129M) 4.493ms
+[2026-10-07T01:08:45.753+0800][0.983s] Safepoint "G1CollectForAllocation", Time since last: 95705083 ns, Reaching safepoint: 1625 ns, Cleanup: 34500 ns, At safepoint: 4513708 ns, Total: 4549833 ns
+[2026-10-07T01:08:45.792+0800][1.022s] GC(7) Pause Young (Concurrent Start) (G1 Humongous Allocation) 80M->60M(155M) 2.492ms
+[2026-10-07T01:08:45.792+0800][1.022s] GC(8) Concurrent Undo Cycle
+[2026-10-07T01:08:45.792+0800][1.022s] Safepoint "G1TryInitiateConcMark", Time since last: 36754834 ns, Reaching safepoint: 21083 ns, Cleanup: 19167 ns, At safepoint: 2516583 ns, Total: 2556833 ns
+[2026-10-07T01:08:45.792+0800][1.022s] GC(8) Concurrent Undo Cycle 0.241ms
 PatchJNAAgent: Replacing class
-[2026-10-06T20:23:15.369+0800][1.082s] GC(8) Pause Remark 80M->71M(129M) 0.815ms
-[2026-10-06T20:23:15.369+0800][1.082s] Safepoint "G1PauseRemark", Time since last: 11673666 ns, Reaching safepoint: 2917 ns, Cleanup: 18250 ns, At safepoint: 836333 ns, Total: 857500 ns
-[2026-10-06T20:23:15.373+0800][1.086s] GC(8) Pause Cleanup 71M->71M(129M) 0.056ms
-[2026-10-06T20:23:15.373+0800][1.086s] Safepoint "G1PauseCleanup", Time since last: 3689792 ns, Reaching safepoint: 137833 ns, Cleanup: 10375 ns, At safepoint: 82542 ns, Total: 230750 ns
-[2026-10-06T20:23:15.373+0800][1.086s] GC(8) Concurrent Mark Cycle 16.604ms
 Platform.isMac called from com.sun.jna.Native
-[SDLHook] Task133: libjnidispatch image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/${natives_directory}/jna7464940604489534768.tmp / install libjnidispatch.jnilib) -- invoking Task132 dlsym rebind (direct hdr+slide)
-[SDLHook] Task135: _dlsym slot 0x12ae8c040 already == hooked_dlsym (idempotent hit, __DATA,__la_symbol_ptr) -- fishhook add-image callback or earlier pass won the race
+[SDLHook] Task133: libjnidispatch image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/1.20.1/game/${natives_directory}/jna17381159705762668962.tmp / install libjnidispatch.jnilib) -- invoking Task132 dlsym rebind (direct hdr+slide)
+[SDLHook] Task135: _dlsym slot 0x10b910040 already == hooked_dlsym (idempotent hit, __DATA,__la_symbol_ptr) -- fishhook add-image callback or earlier pass won the race
 Platform.isMac called from com.sun.jna.Native
 Platform.isMac called from com.sun.jna.NativeLibrary
 Platform.isMac called from com.sun.jna.NativeLibrary
-[20:23:15] [main/WARN]: Failed sysctl call: hw.packages, Error code: 1
+[01:08:45] [main/WARN]: Failed sysctl call: hw.packages, Error code: 1
 Platform.isMac called from com.sun.jna.NativeLibrary
 Platform.isMac called from com.sun.jna.NativeLibrary
 Platform.isMac called from com.sun.jna.NativeLibrary
 Platform.isMac called from com.sun.jna.NativeLibrary
 Platform.isMac called from com.sun.jna.NativeLibrary
 Platform.isMac called from com.sun.jna.NativeLibrary
-[20:23:15] [main/WARN]: Failed sysctl call: machdep.cpu.brand_string, Error code: 1
-[20:23:15] [main/WARN]: Failed sysctl call: machdep.cpu.vendor, Error code: 2
-[20:23:15] [main/WARN]: Failed sysctl call: machdep.cpu.stepping, Error code: 2
-[20:23:15] [main/WARN]: Failed sysctl call: machdep.cpu.model, Error code: 2
-[20:23:15] [main/WARN]: Failed sysctl call: machdep.cpu.family, Error code: 2
-[20:23:15] [main/WARN]: Failed sysctl call: machdep.cpu.signature, Error code: 2
-[20:23:15] [main/WARN]: Failed sysctl call: machdep.cpu.feature_bits, Error code: 2
-[20:23:15] [main/WARN]: Failed sysctl call: hw.cpufrequency, Error code: 2
-[20:23:15] [main/WARN]: Failed sysctl call: vm.swapusage, Error code: 1
-[2026-10-06T20:23:15.509+0800][1.222s] GC(9) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 97M->71M(155M) 2.349ms
-[2026-10-06T20:23:15.509+0800][1.222s] Safepoint "G1CollectForAllocation", Time since last: 133782500 ns, Reaching safepoint: 17583 ns, Cleanup: 45250 ns, At safepoint: 2368750 ns, Total: 2431583 ns
-[2026-10-06T20:23:15.523+0800][1.235s] GC(10) Pause Young (Mixed) (G1 Evacuation Pause) 75M->68M(155M) 2.097ms
-[2026-10-06T20:23:15.523+0800][1.235s] Safepoint "G1CollectForAllocation", Time since last: 11504834 ns, Reaching safepoint: 21291 ns, Cleanup: 17417 ns, At safepoint: 2144958 ns, Total: 2183666 ns
-[2026-10-06T20:23:15.568+0800][1.280s] Safepoint "ICBufferFull", Time since last: 44794459 ns, Reaching safepoint: 17625 ns, Cleanup: 40625 ns, At safepoint: 1625 ns, Total: 59875 ns
-[2026-10-06T20:23:15.577+0800][1.289s] Safepoint "ICBufferFull", Time since last: 8791791 ns, Reaching safepoint: 3125 ns, Cleanup: 65292 ns, At safepoint: 2167 ns, Total: 70584 ns
-[2026-10-06T20:23:15.618+0800][1.331s] GC(11) Pause Young (Normal) (G1 Evacuation Pause) 115M->73M(155M) 4.325ms
-[2026-10-06T20:23:15.618+0800][1.331s] Safepoint "G1CollectForAllocation", Time since last: 37372125 ns, Reaching safepoint: 2041 ns, Cleanup: 27667 ns, At safepoint: 4350208 ns, Total: 4379916 ns
-[2026-10-06T20:23:15.642+0800][1.355s] Safepoint "ICBufferFull", Time since last: 23980959 ns, Reaching safepoint: 22083 ns, Cleanup: 42083 ns, At safepoint: 2834 ns, Total: 67000 ns
-[2026-10-06T20:23:15.685+0800][1.398s] GC(12) Pause Young (Normal) (G1 Evacuation Pause) 117M->79M(155M) 4.527ms
-[2026-10-06T20:23:15.685+0800][1.398s] Safepoint "G1CollectForAllocation", Time since last: 38070791 ns, Reaching safepoint: 3750 ns, Cleanup: 60542 ns, At safepoint: 4549375 ns, Total: 4613667 ns
-[2026-10-06T20:23:15.706+0800][1.418s] Safepoint "ICBufferFull", Time since last: 20518542 ns, Reaching safepoint: 2208 ns, Cleanup: 42958 ns, At safepoint: 2709 ns, Total: 47875 ns
-[2026-10-06T20:23:15.723+0800][1.435s] Safepoint "ICBufferFull", Time since last: 17178125 ns, Reaching safepoint: 24041 ns, Cleanup: 61584 ns, At safepoint: 1833 ns, Total: 87458 ns
-[2026-10-06T20:23:15.749+0800][1.462s] GC(13) Pause Young (Concurrent Start) (G1 Evacuation Pause) 120M->85M(273M) 4.135ms
-[2026-10-06T20:23:15.749+0800][1.462s] Safepoint "G1CollectForAllocation", Time since last: 22146958 ns, Reaching safepoint: 2875 ns, Cleanup: 50875 ns, At safepoint: 4161459 ns, Total: 4215209 ns
-[2026-10-06T20:23:15.749+0800][1.462s] GC(14) Concurrent Mark Cycle
-[2026-10-06T20:23:15.768+0800][1.480s] GC(14) Pause Remark 102M->102M(273M) 1.084ms
-[2026-10-06T20:23:15.768+0800][1.480s] Safepoint "G1PauseRemark", Time since last: 17169000 ns, Reaching safepoint: 25000 ns, Cleanup: 20916 ns, At safepoint: 1115834 ns, Total: 1161750 ns
-[2026-10-06T20:23:15.778+0800][1.490s] GC(14) Pause Cleanup 110M->110M(273M) 0.048ms
-[2026-10-06T20:23:15.778+0800][1.490s] Safepoint "G1PauseCleanup", Time since last: 10017208 ns, Reaching safepoint: 21500 ns, Cleanup: 6917 ns, At safepoint: 61750 ns, Total: 90167 ns
-[2026-10-06T20:23:15.778+0800][1.491s] GC(14) Concurrent Mark Cycle 28.732ms
-[2026-10-06T20:23:15.854+0800][1.567s] GC(15) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 206M->99M(273M) 5.826ms
-[2026-10-06T20:23:15.854+0800][1.567s] Safepoint "G1CollectForAllocation", Time since last: 70597791 ns, Reaching safepoint: 3875 ns, Cleanup: 57667 ns, At safepoint: 5849792 ns, Total: 5911334 ns
-[2026-10-06T20:23:15.859+0800][1.572s] GC(16) Pause Young (Mixed) (G1 Evacuation Pause) 100M->100M(273M) 4.196ms
-[2026-10-06T20:23:15.859+0800][1.572s] Safepoint "G1CollectForAllocation", Time since last: 542000 ns, Reaching safepoint: 16708 ns, Cleanup: 1375 ns, At safepoint: 4218542 ns, Total: 4236625 ns
-[2026-10-06T20:23:15.913+0800][1.626s] Safepoint "ICBufferFull", Time since last: 54220125 ns, Reaching safepoint: 1333 ns, Cleanup: 57542 ns, At safepoint: 416 ns, Total: 59291 ns
-[2026-10-06T20:23:15.923+0800][1.636s] GC(17) Pause Young (Normal) (G1 Evacuation Pause) 200M->110M(273M) 3.778ms
-[2026-10-06T20:23:15.923+0800][1.636s] Safepoint "G1CollectForAllocation", Time since last: 6169750 ns, Reaching safepoint: 1292 ns, Cleanup: 14458 ns, At safepoint: 3798584 ns, Total: 3814334 ns
-[2026-10-06T20:23:15.950+0800][1.662s] Safepoint "ICBufferFull", Time since last: 26576458 ns, Reaching safepoint: 1500 ns, Cleanup: 46000 ns, At safepoint: 1875 ns, Total: 49375 ns
-[2026-10-06T20:23:15.976+0800][1.689s] Safepoint "ICBufferFull", Time since last: 26090042 ns, Reaching safepoint: 20541 ns, Cleanup: 64167 ns, At safepoint: 1917 ns, Total: 86625 ns
-[2026-10-06T20:23:15.984+0800][1.696s] Safepoint "ICBufferFull", Time since last: 7520750 ns, Reaching safepoint: 18333 ns, Cleanup: 82125 ns, At safepoint: 4292 ns, Total: 104750 ns
-[2026-10-06T20:23:15.993+0800][1.705s] Safepoint "ICBufferFull", Time since last: 9088291 ns, Reaching safepoint: 20709 ns, Cleanup: 67125 ns, At safepoint: 2333 ns, Total: 90167 ns
-[2026-10-06T20:23:16.064+0800][1.776s] Safepoint "ICBufferFull", Time since last: 70646542 ns, Reaching safepoint: 2958 ns, Cleanup: 72958 ns, At safepoint: 3250 ns, Total: 79166 ns
-[2026-10-06T20:23:16.116+0800][1.829s] GC(18) Pause Young (Normal) (G1 Evacuation Pause) 206M->115M(273M) 5.735ms
-[2026-10-06T20:23:16.116+0800][1.829s] Safepoint "G1CollectForAllocation", Time since last: 47037250 ns, Reaching safepoint: 3375 ns, Cleanup: 43167 ns, At safepoint: 5758583 ns, Total: 5805125 ns
-[2026-10-06T20:23:16.185+0800][1.898s] Safepoint "ICBufferFull", Time since last: 68910125 ns, Reaching safepoint: 1417 ns, Cleanup: 44833 ns, At safepoint: 542 ns, Total: 46792 ns
-[2026-10-06T20:23:16.185+0800][1.898s] Safepoint "ICBufferFull", Time since last: 54042 ns, Reaching safepoint: 24333 ns, Cleanup: 3708 ns, At safepoint: 2875 ns, Total: 30916 ns
-[2026-10-06T20:23:16.206+0800][1.919s] Safepoint "ICBufferFull", Time since last: 20505000 ns, Reaching safepoint: 24375 ns, Cleanup: 54667 ns, At safepoint: 3625 ns, Total: 82667 ns
-[2026-10-06T20:23:16.265+0800][1.978s] Safepoint "ICBufferFull", Time since last: 58854833 ns, Reaching safepoint: 1792 ns, Cleanup: 41958 ns, At safepoint: 2542 ns, Total: 46292 ns
-[2026-10-06T20:23:16.309+0800][2.022s] Safepoint "ICBufferFull", Time since last: 44332958 ns, Reaching safepoint: 1292 ns, Cleanup: 44000 ns, At safepoint: 1542 ns, Total: 46834 ns
-[2026-10-06T20:23:16.352+0800][2.065s] Safepoint "ICBufferFull", Time since last: 43078750 ns, Reaching safepoint: 35208 ns, Cleanup: 44083 ns, At safepoint: 1584 ns, Total: 80875 ns
-[2026-10-06T20:23:16.384+0800][2.096s] Safepoint "G1CollectForAllocation", Time since last: 31098625 ns, Reaching safepoint: 3250 ns, Cleanup: 46083 ns, At safepoint: 3750 ns, Total: 53083 ns
-[2026-10-06T20:23:16.392+0800][2.104s] GC(19) Pause Young (Normal) (GCLocker Initiated GC) 215M->137M(765M) 8.206ms
-[2026-10-06T20:23:16.392+0800][2.104s] Safepoint "G1CollectForAllocation", Time since last: 30708 ns, Reaching safepoint: 1667 ns, Cleanup: 1000 ns, At safepoint: 8233917 ns, Total: 8236584 ns
-[20:23:16] [Datafixer Bootstrap/INFO]: 188 Datafixer optimizations took 76 milliseconds
-[2026-10-06T20:23:16.452+0800][2.165s] Safepoint "ICBufferFull", Time since last: 60062375 ns, Reaching safepoint: 21000 ns, Cleanup: 80583 ns, At safepoint: 2750 ns, Total: 104333 ns
-[2026-10-06T20:23:16.467+0800][2.179s] Safepoint "ICBufferFull", Time since last: 14737917 ns, Reaching safepoint: 30125 ns, Cleanup: 63041 ns, At safepoint: 1792 ns, Total: 94958 ns
-[2026-10-06T20:23:16.509+0800][2.221s] Safepoint "ICBufferFull", Time since last: 41576125 ns, Reaching safepoint: 29958 ns, Cleanup: 52667 ns, At safepoint: 2667 ns, Total: 85292 ns
-[2026-10-06T20:23:16.569+0800][2.282s] Safepoint "ICBufferFull", Time since last: 60747625 ns, Reaching safepoint: 23333 ns, Cleanup: 89167 ns, At safepoint: 3416 ns, Total: 115916 ns
-[2026-10-06T20:23:16.642+0800][2.355s] Safepoint "ICBufferFull", Time since last: 72919375 ns, Reaching safepoint: 2834 ns, Cleanup: 68125 ns, At safepoint: 2125 ns, Total: 73084 ns
-[2026-10-06T20:23:16.765+0800][2.477s] Safepoint "ICBufferFull", Time since last: 122277791 ns, Reaching safepoint: 3042 ns, Cleanup: 71292 ns, At safepoint: 750 ns, Total: 75084 ns
-[2026-10-06T20:23:16.817+0800][2.529s] GC(20) Pause Young (Normal) (G1 Evacuation Pause) 366M->153M(765M) 10.215ms
-[2026-10-06T20:23:16.817+0800][2.529s] Safepoint "G1CollectForAllocation", Time since last: 41621416 ns, Reaching safepoint: 2667 ns, Cleanup: 38750 ns, At safepoint: 10239500 ns, Total: 10280917 ns
+[01:08:45] [main/WARN]: Failed sysctl call: machdep.cpu.brand_string, Error code: 1
+[01:08:45] [main/WARN]: Failed sysctl call: machdep.cpu.vendor, Error code: 2
+[01:08:45] [main/WARN]: Failed sysctl call: machdep.cpu.stepping, Error code: 2
+[01:08:45] [main/WARN]: Failed sysctl call: machdep.cpu.model, Error code: 2
+[01:08:45] [main/WARN]: Failed sysctl call: machdep.cpu.family, Error code: 2
+[01:08:45] [main/WARN]: Failed sysctl call: machdep.cpu.signature, Error code: 2
+[01:08:45] [main/WARN]: Failed sysctl call: machdep.cpu.feature_bits, Error code: 2
+[01:08:45] [main/WARN]: Failed sysctl call: hw.cpufrequency, Error code: 2
+[01:08:45] [main/WARN]: Failed sysctl call: vm.swapusage, Error code: 1
+[2026-10-07T01:08:45.890+0800][1.121s] Safepoint "ICBufferFull", Time since last: 98392417 ns, Reaching safepoint: 1250 ns, Cleanup: 52875 ns, At safepoint: 416 ns, Total: 54541 ns
+[2026-10-07T01:08:45.954+0800][1.184s] Safepoint "ICBufferFull", Time since last: 63705709 ns, Reaching safepoint: 1750 ns, Cleanup: 36416 ns, At safepoint: 1542 ns, Total: 39708 ns
+[2026-10-07T01:08:45.967+0800][1.197s] Safepoint "ICBufferFull", Time since last: 12682792 ns, Reaching safepoint: 1375 ns, Cleanup: 29791 ns, At safepoint: 2375 ns, Total: 33541 ns
+[2026-10-07T01:08:45.981+0800][1.211s] GC(9) Pause Young (Normal) (G1 Evacuation Pause) 122M->75M(155M) 3.054ms
+[2026-10-07T01:08:45.981+0800][1.211s] Safepoint "G1CollectForAllocation", Time since last: 11080500 ns, Reaching safepoint: 1542 ns, Cleanup: 27292 ns, At safepoint: 3076541 ns, Total: 3105375 ns
+[2026-10-07T01:08:46.026+0800][1.256s] Safepoint "ICBufferFull", Time since last: 44660667 ns, Reaching safepoint: 21875 ns, Cleanup: 59750 ns, At safepoint: 1833 ns, Total: 83458 ns
+[2026-10-07T01:08:46.035+0800][1.266s] GC(10) Pause Young (Normal) (G1 Evacuation Pause) 117M->79M(155M) 4.042ms
+[2026-10-07T01:08:46.036+0800][1.266s] Safepoint "G1CollectForAllocation", Time since last: 5546000 ns, Reaching safepoint: 16000 ns, Cleanup: 9209 ns, At safepoint: 4059250 ns, Total: 4084459 ns
+[2026-10-07T01:08:46.067+0800][1.297s] Safepoint "ICBufferFull", Time since last: 31422208 ns, Reaching safepoint: 3500 ns, Cleanup: 46125 ns, At safepoint: 2875 ns, Total: 52500 ns
+[2026-10-07T01:08:46.082+0800][1.312s] GC(11) Pause Young (Concurrent Start) (G1 Evacuation Pause) 119M->84M(155M) 4.021ms
+[2026-10-07T01:08:46.082+0800][1.312s] Safepoint "G1CollectForAllocation", Time since last: 10621375 ns, Reaching safepoint: 1625 ns, Cleanup: 8125 ns, At safepoint: 4041583 ns, Total: 4051333 ns
+[2026-10-07T01:08:46.082+0800][1.312s] GC(12) Concurrent Mark Cycle
+[2026-10-07T01:08:46.093+0800][1.323s] GC(12) Pause Remark 94M->91M(155M) 1.057ms
+[2026-10-07T01:08:46.093+0800][1.323s] Safepoint "G1PauseRemark", Time since last: 10342459 ns, Reaching safepoint: 19875 ns, Cleanup: 36500 ns, At safepoint: 1072416 ns, Total: 1128791 ns
+[2026-10-07T01:08:46.101+0800][1.331s] GC(12) Pause Cleanup 93M->93M(155M) 0.044ms
+[2026-10-07T01:08:46.101+0800][1.331s] Safepoint "G1PauseCleanup", Time since last: 7410084 ns, Reaching safepoint: 21250 ns, Cleanup: 8625 ns, At safepoint: 59541 ns, Total: 89416 ns
+[2026-10-07T01:08:46.101+0800][1.331s] GC(12) Concurrent Mark Cycle 19.160ms
+[2026-10-07T01:08:46.121+0800][1.351s] Safepoint "ICBufferFull", Time since last: 20549542 ns, Reaching safepoint: 17250 ns, Cleanup: 45375 ns, At safepoint: 1375 ns, Total: 64000 ns
+[2026-10-07T01:08:46.132+0800][1.362s] GC(13) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 118M->87M(155M) 3.353ms
+[2026-10-07T01:08:46.132+0800][1.362s] Safepoint "G1CollectForAllocation", Time since last: 7761500 ns, Reaching safepoint: 3750 ns, Cleanup: 16875 ns, At safepoint: 3384292 ns, Total: 3404917 ns
+[2026-10-07T01:08:46.135+0800][1.365s] GC(14) Pause Young (Mixed) (G1 Evacuation Pause) 88M->84M(262M) 2.070ms
+[2026-10-07T01:08:46.135+0800][1.365s] Safepoint "G1CollectForAllocation", Time since last: 746333 ns, Reaching safepoint: 625 ns, Cleanup: 1000 ns, At safepoint: 2088792 ns, Total: 2090417 ns
+[2026-10-07T01:08:46.230+0800][1.460s] GC(15) Pause Young (Normal) (G1 Evacuation Pause) 190M->97M(262M) 5.101ms
+[2026-10-07T01:08:46.230+0800][1.460s] Safepoint "G1CollectForAllocation", Time since last: 89718916 ns, Reaching safepoint: 2042 ns, Cleanup: 39750 ns, At safepoint: 5124250 ns, Total: 5166042 ns
+[2026-10-07T01:08:46.297+0800][1.527s] GC(16) Pause Young (Normal) (G1 Evacuation Pause) 190M->108M(262M) 4.918ms
+[2026-10-07T01:08:46.297+0800][1.527s] Safepoint "G1CollectForAllocation", Time since last: 61529375 ns, Reaching safepoint: 1500 ns, Cleanup: 19042 ns, At safepoint: 4938666 ns, Total: 4959208 ns
+[2026-10-07T01:08:46.332+0800][1.562s] Safepoint "ICBufferFull", Time since last: 35494542 ns, Reaching safepoint: 20875 ns, Cleanup: 49250 ns, At safepoint: 2500 ns, Total: 72625 ns
+[2026-10-07T01:08:46.351+0800][1.581s] Safepoint "ICBufferFull", Time since last: 18477375 ns, Reaching safepoint: 23000 ns, Cleanup: 43042 ns, At safepoint: 1583 ns, Total: 67625 ns
+[2026-10-07T01:08:46.358+0800][1.588s] Safepoint "ICBufferFull", Time since last: 7386000 ns, Reaching safepoint: 2083 ns, Cleanup: 78667 ns, At safepoint: 1625 ns, Total: 82375 ns
+[2026-10-07T01:08:46.374+0800][1.604s] Safepoint "ICBufferFull", Time since last: 15402083 ns, Reaching safepoint: 1500 ns, Cleanup: 41375 ns, At safepoint: 334 ns, Total: 43209 ns
+[2026-10-07T01:08:46.389+0800][1.619s] Safepoint "ICBufferFull", Time since last: 14916500 ns, Reaching safepoint: 10666 ns, Cleanup: 53667 ns, At safepoint: 2000 ns, Total: 66333 ns
+[2026-10-07T01:08:46.400+0800][1.630s] Safepoint "ICBufferFull", Time since last: 11123667 ns, Reaching safepoint: 3083 ns, Cleanup: 60250 ns, At safepoint: 2208 ns, Total: 65541 ns
+[2026-10-07T01:08:46.424+0800][1.654s] Safepoint "ICBufferFull", Time since last: 23778625 ns, Reaching safepoint: 22417 ns, Cleanup: 52125 ns, At safepoint: 2500 ns, Total: 77042 ns
+[2026-10-07T01:08:46.433+0800][1.663s] GC(17) Pause Young (Normal) (G1 Evacuation Pause) 197M->114M(262M) 5.550ms
+[2026-10-07T01:08:46.433+0800][1.663s] Safepoint "G1CollectForAllocation", Time since last: 3982958 ns, Reaching safepoint: 18875 ns, Cleanup: 20750 ns, At safepoint: 5581959 ns, Total: 5621584 ns
+[2026-10-07T01:08:46.470+0800][1.700s] Safepoint "ICBufferFull", Time since last: 36961166 ns, Reaching safepoint: 1375 ns, Cleanup: 29500 ns, At safepoint: 209 ns, Total: 31084 ns
+[2026-10-07T01:08:46.528+0800][1.758s] Safepoint "ICBufferFull", Time since last: 57368541 ns, Reaching safepoint: 1084 ns, Cleanup: 39666 ns, At safepoint: 1542 ns, Total: 42292 ns
+[2026-10-07T01:08:46.542+0800][1.772s] Safepoint "ICBufferFull", Time since last: 14195250 ns, Reaching safepoint: 17458 ns, Cleanup: 30625 ns, At safepoint: 2459 ns, Total: 50542 ns
+[2026-10-07T01:08:46.596+0800][1.826s] Safepoint "ICBufferFull", Time since last: 53951375 ns, Reaching safepoint: 1208 ns, Cleanup: 39292 ns, At safepoint: 458 ns, Total: 40958 ns
+[2026-10-07T01:08:46.630+0800][1.860s] GC(18) Pause Young (Normal) (G1 Evacuation Pause) 205M->132M(673M) 6.780ms
+[2026-10-07T01:08:46.630+0800][1.860s] Safepoint "G1CollectForAllocation", Time since last: 26793792 ns, Reaching safepoint: 1333 ns, Cleanup: 26958 ns, At safepoint: 6800625 ns, Total: 6828916 ns
+[2026-10-07T01:08:46.666+0800][1.896s] Safepoint "ICBufferFull", Time since last: 36085209 ns, Reaching safepoint: 21458 ns, Cleanup: 43583 ns, At safepoint: 2375 ns, Total: 67416 ns
+[2026-10-07T01:08:46.688+0800][1.918s] Safepoint "ICBufferFull", Time since last: 22551167 ns, Reaching safepoint: 18292 ns, Cleanup: 45375 ns, At safepoint: 3208 ns, Total: 66875 ns
+[2026-10-07T01:08:46.710+0800][1.940s] Safepoint "ICBufferFull", Time since last: 21431792 ns, Reaching safepoint: 1583 ns, Cleanup: 38375 ns, At safepoint: 2167 ns, Total: 42125 ns
+[01:08:46] [Datafixer Bootstrap/INFO]: 188 Datafixer optimizations took 60 milliseconds
+[2026-10-07T01:08:46.753+0800][1.983s] Safepoint "ICBufferFull", Time since last: 43134166 ns, Reaching safepoint: 1542 ns, Cleanup: 41542 ns, At safepoint: 2041 ns, Total: 45125 ns
+[2026-10-07T01:08:46.841+0800][2.071s] Safepoint "ICBufferFull", Time since last: 87543500 ns, Reaching safepoint: 1000 ns, Cleanup: 47459 ns, At safepoint: 416 ns, Total: 48875 ns
+[2026-10-07T01:08:46.917+0800][2.147s] Safepoint "ICBufferFull", Time since last: 76044084 ns, Reaching safepoint: 16416 ns, Cleanup: 45209 ns, At safepoint: 1666 ns, Total: 63291 ns
+[2026-10-07T01:08:47.034+0800][2.264s] Safepoint "ICBufferFull", Time since last: 117425667 ns, Reaching safepoint: 24708 ns, Cleanup: 45667 ns, At safepoint: 1958 ns, Total: 72333 ns
 [SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl.dylib / install bin/libs/native/macos/arm64/org/lwjgl/liblwjgl.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
-[SDLHook] Task135: _dlsym slot 0x12afb80e0 already == hooked_dlsym (idempotent hit, __DATA_CONST,__got) -- fishhook add-image callback or earlier pass won the race
-[authlib-injector] [INFO] Httpd is running on port 58332
+[SDLHook] Task135: _dlsym slot 0x10dea80e0 already == hooked_dlsym (idempotent hit, __DATA_CONST,__got) -- fishhook add-image callback or earlier pass won the race
+[authlib-injector] [INFO] Httpd is running on port 50971
 [authlib-injector] [INFO] Transformed [fiv] with [Constant URL Transformer]
+[2026-10-07T01:08:47.133+0800][2.364s] Safepoint "ICBufferFull", Time since last: 99199959 ns, Reaching safepoint: 4375 ns, Cleanup: 142875 ns, At safepoint: 3625 ns, Total: 150875 ns
 [authlib-injector] [INFO] Transformed [com.mojang.authlib.HttpAuthenticationService] with [ConcatenateURL Workaround]
 [authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.YggdrasilEnvironment] with [Constant URL Transformer]
-[2026-10-06T20:23:16.933+0800][2.645s] Safepoint "ICBufferFull", Time since last: 115689792 ns, Reaching safepoint: 1625 ns, Cleanup: 157250 ns, At safepoint: 2958 ns, Total: 161833 ns
-[20:23:16] [Render thread/INFO]: Environment: authHost='https://littleskin.cn/api/yggdrasil/authserver', accountsHost='http://127.0.0.1:58332/https/api.mojang.com', sessionHost='http://127.0.0.1:58332/https/sessionserver.mojang.com', servicesHost='http://127.0.0.1:58332/https/api.minecraftservices.com', name='PROD'
+[01:08:47] [Render thread/INFO]: Environment: authHost='https://littleskin.cn/api/yggdrasil/authserver', accountsHost='http://127.0.0.1:50971/https/api.mojang.com', sessionHost='http://127.0.0.1:50971/https/sessionserver.mojang.com', servicesHost='http://127.0.0.1:50971/https/api.minecraftservices.com', name='PROD'
 [authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.YggdrasilServicesKeyInfo] with [Yggdrasil Public Key Transformer]
-[2026-10-06T20:23:16.977+0800][2.690s] GC(21) Pause Young (Concurrent Start) (Metadata GC Threshold) 182M->160M(765M) 9.689ms
-[2026-10-06T20:23:16.977+0800][2.690s] GC(22) Concurrent Mark Cycle
-[2026-10-06T20:23:16.977+0800][2.690s] Safepoint "CollectForMetadataAllocation", Time since last: 35005875 ns, Reaching safepoint: 2083 ns, Cleanup: 40209 ns, At safepoint: 9727875 ns, Total: 9770167 ns
-[2026-10-06T20:23:16.987+0800][2.699s] Safepoint "CollectForMetadataAllocation", Time since last: 9399041 ns, Reaching safepoint: 12750 ns, Cleanup: 13500 ns, At safepoint: 18750 ns, Total: 45000 ns
-[2026-10-06T20:23:17.002+0800][2.715s] Safepoint "CollectForMetadataAllocation", Time since last: 15514709 ns, Reaching safepoint: 18041 ns, Cleanup: 8584 ns, At safepoint: 14125 ns, Total: 40750 ns
-[2026-10-06T20:23:17.006+0800][2.718s] Safepoint "CollectForMetadataAllocation", Time since last: 3341625 ns, Reaching safepoint: 21333 ns, Cleanup: 6500 ns, At safepoint: 17458 ns, Total: 45291 ns
-[2026-10-06T20:23:17.010+0800][2.723s] Safepoint "CollectForMetadataAllocation", Time since last: 4775959 ns, Reaching safepoint: 20500 ns, Cleanup: 4541 ns, At safepoint: 7875 ns, Total: 32916 ns
-[2026-10-06T20:23:17.021+0800][2.733s] GC(22) Pause Remark 167M->167M(564M) 1.085ms
-[2026-10-06T20:23:17.021+0800][2.733s] Safepoint "G1PauseRemark", Time since last: 9137875 ns, Reaching safepoint: 1542 ns, Cleanup: 1167 ns, At safepoint: 1098000 ns, Total: 1100709 ns
-[2026-10-06T20:23:17.040+0800][2.752s] GC(22) Pause Cleanup 167M->167M(564M) 0.052ms
-[2026-10-06T20:23:17.040+0800][2.752s] Safepoint "G1PauseCleanup", Time since last: 18813916 ns, Reaching safepoint: 1875 ns, Cleanup: 1667 ns, At safepoint: 63583 ns, Total: 67125 ns
-[2026-10-06T20:23:17.040+0800][2.753s] GC(22) Concurrent Mark Cycle 62.752ms
-[2026-10-06T20:23:17.106+0800][2.819s] Safepoint "ICBufferFull", Time since last: 66694209 ns, Reaching safepoint: 3291 ns, Cleanup: 76417 ns, At safepoint: 2458 ns, Total: 82166 ns
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x102691224) -- re-armed at t+8s
-[20:23:17] [Render thread/ERROR]: Failed to verify authentication
+[2026-10-07T01:08:47.156+0800][2.386s] GC(19) Pause Young (Concurrent Start) (Metadata GC Threshold) 418M->160M(673M) 11.811ms
+[2026-10-07T01:08:47.156+0800][2.386s] GC(20) Concurrent Mark Cycle
+[2026-10-07T01:08:47.156+0800][2.386s] Safepoint "CollectForMetadataAllocation", Time since last: 10737875 ns, Reaching safepoint: 20958 ns, Cleanup: 10333 ns, At safepoint: 11851750 ns, Total: 11883041 ns
+[2026-10-07T01:08:47.170+0800][2.400s] Safepoint "CollectForMetadataAllocation", Time since last: 13726084 ns, Reaching safepoint: 81750 ns, Cleanup: 11750 ns, At safepoint: 13375 ns, Total: 106875 ns
+[2026-10-07T01:08:47.176+0800][2.406s] Safepoint "CollectForMetadataAllocation", Time since last: 5662458 ns, Reaching safepoint: 29917 ns, Cleanup: 10000 ns, At safepoint: 5708 ns, Total: 45625 ns
+[2026-10-07T01:08:47.176+0800][2.406s] Safepoint "CollectForMetadataAllocation", Time since last: 68875 ns, Reaching safepoint: 182875 ns, Cleanup: 500 ns, At safepoint: 7667 ns, Total: 191042 ns
+[2026-10-07T01:08:47.180+0800][2.410s] Safepoint "CollectForMetadataAllocation", Time since last: 4300791 ns, Reaching safepoint: 21584 ns, Cleanup: 3291 ns, At safepoint: 4917 ns, Total: 29792 ns
+[2026-10-07T01:08:47.191+0800][2.421s] Safepoint "CollectForMetadataAllocation", Time since last: 10925208 ns, Reaching safepoint: 16667 ns, Cleanup: 20958 ns, At safepoint: 6209 ns, Total: 43834 ns
+[2026-10-07T01:08:47.201+0800][2.431s] GC(20) Pause Remark 169M->169M(570M) 1.133ms
+[2026-10-07T01:08:47.201+0800][2.431s] Safepoint "G1PauseRemark", Time since last: 8258375 ns, Reaching safepoint: 19833 ns, Cleanup: 5958 ns, At safepoint: 1153000 ns, Total: 1178791 ns
+[2026-10-07T01:08:47.217+0800][2.447s] GC(20) Pause Cleanup 173M->173M(570M) 0.070ms
+[2026-10-07T01:08:47.217+0800][2.447s] Safepoint "G1PauseCleanup", Time since last: 16404584 ns, Reaching safepoint: 41416 ns, Cleanup: 6834 ns, At safepoint: 87708 ns, Total: 135958 ns
+[2026-10-07T01:08:47.218+0800][2.448s] GC(20) Concurrent Mark Cycle 61.801ms
+[2026-10-07T01:08:47.312+0800][2.542s] Safepoint "ICBufferFull", Time since last: 94397167 ns, Reaching safepoint: 4125 ns, Cleanup: 75791 ns, At safepoint: 2709 ns, Total: 82625 ns
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+44s
+[01:08:47] [Render thread/ERROR]: Failed to verify authentication
 com.mojang.authlib.exceptions.InsufficientPrivilegesException: 访问令牌无效，请重新登录。Invalid access token, please re-login.
 	at com.mojang.authlib.exceptions.MinecraftClientHttpException.toAuthenticationException(MinecraftClientHttpException.java:52) ~[authlib-4.0.43.jar:?]
 	at com.mojang.authlib.yggdrasil.YggdrasilUserApiService.fetchProperties(YggdrasilUserApiService.java:156) ~[authlib-4.0.43.jar:?]
@@ -446,182 +493,68 @@ Caused by: com.mojang.authlib.exceptions.MinecraftClientHttpException: 访问令
 	at com.mojang.authlib.minecraft.client.MinecraftClient.get(MinecraftClient.java:48) ~[authlib-4.0.43.jar:?]
 	at com.mojang.authlib.yggdrasil.YggdrasilUserApiService.fetchProperties(YggdrasilUserApiService.java:129) ~[authlib-4.0.43.jar:?]
 	... 12 more
-[20:23:17] [Render thread/INFO]: Setting user: yiqiu4178
+[01:08:47] [Render thread/INFO]: Setting user: yiqiu4178
 [SDLHook] hooked SDL_GetKeyboardState (real=0x0, Task67 kb-state poll observability)
-[InputDiag] initSDLEventFuncs: PushEvent=0x0 GetWindowID=0x0 g_sdlWindow=0x0 Task66GetKBState=0x10b962158 SetModState=0x0
-[JNI] JNI_OnLoadGLFW registered, class=0x13caca8d0, method=0x13ff4d0c8, keyDownBuffer=0x14666f700
-[20:23:17] [Render thread/INFO]: Backend library: LWJGL version 3.3.1
+[InputDiag] initSDLEventFuncs: PushEvent=0x0 GetWindowID=0x0 g_sdlWindow=0x0 Task66GetKBState=0x10a19ac48 SetModState=0x0
+[JNI] JNI_OnLoadGLFW registered, class=0x15ee40fe0, method=0x13a4b5d48, keyDownBuffer=0x13f6f8000
+[01:08:47] [Render thread/INFO]: Backend library: LWJGL version 3.3.1
 [egl_bridge] VirGL renderer: bootstrapping in-process vtest server (Task 215)
-[VirGL] Task219 socket path = /tmp/ame_virgl_9311.sock (len=24, sun_path cap=104)
+[VirGL] Task219 socket path = /tmp/ame_virgl_10658.sock (len=25, sun_path cap=104)
 [VirGL] Task219 eglChooseConfig pass#1 (ES3_BIT) ok (1 config)
-[VirGL] Task219 vtest server thread entering (socket=/tmp/ame_virgl_9311.sock)
-[VirGL] Task111 vtest_main not found in libvtestserver.dylib
-[VirGL] Task219 post-bootstrap check FAILED: socket file missing or not a socket (/tmp/ame_virgl_9311.sock) -- server never bound
-[egl_bridge] Task219 VirGL server bootstrap FAILED (rc=-2) -- diverting renderer to Zink (crash prevention)
-[egl_bridge] pojavCreateContext: clientAPI=196609 (GLFW_NO_API=0), renderer=libOSMesa.8.dylib, graphicsApi=default
-[egl_bridge] OpenGL path: creating EGL/GL context via br_init_context
-[2026-10-06T20:23:18.904+0800][4.617s] Safepoint "Cleanup", Time since last: 1797525542 ns, Reaching safepoint: 3125 ns, Cleanup: 59333 ns, At safepoint: 625 ns, Total: 63083 ns
-[mvk-warn] Extension VK_MVK_moltenvk is deprecated. For access to Metal objects, use extension VK_EXT_metal_objects. For MoltenVK configuration, use extension VK_EXT_layer_settings,  or environment variables. For other VK_MVK_moltenvk functions, use with extreme caution. Calling these functions with handles and objects retrieved from other Vulkan layers will cause crashes.
-zink: MoltenVK 1.4.2 Vulkan 1.4.357 
-[mvk-warn] vkSetMoltenVKConfigurationMVK() is deprecated. To set MoltenVK configuration parameters, the VK_EXT_layer_settings extension, or environment variables.
-WARNING: Some incorrect rendering might occur because the selected Vulkan device (Apple M4 GPU) doesn't support base Zink requirements: feats.features.logicOp have_EXT_custom_border_color 
-[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl_opengl.dylib / install bin/libs/native/macos/arm64/org/lwjgl/opengl/liblwjgl_opengl.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
-[SDLHook] Task132: libjnidispatch image missing symtab/linkedit (layout change?), dlsym rebind skipped
-[20:23:18] [Render thread/ERROR]: Couldn't set icon
-java.nio.file.NoSuchFileException: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft/assets/objects/f0/f00657542252858a721e715a2e888a9226404e35
-	at sun.nio.fs.UnixException.translateToIOException(Unknown Source) ~[?:?]
-	at sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source) ~[?:?]
-	at sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source) ~[?:?]
-	at sun.nio.fs.UnixFileSystemProvider.newByteChannel(Unknown Source) ~[?:?]
-	at java.nio.file.Files.newByteChannel(Unknown Source) ~[?:?]
-	at ajt.newByteChannel(SourceFile:68) ~[1.20.1.jar:?]
-	at java.nio.file.Files.newByteChannel(Unknown Source) ~[?:?]
-	at java.nio.file.Files.newByteChannel(Unknown Source) ~[?:?]
-	at java.nio.file.spi.FileSystemProvider.newInputStream(Unknown Source) ~[?:?]
-	at java.nio.file.Files.newInputStream(Unknown Source) ~[?:?]
-	at akp.a(SourceFile:13) ~[1.20.1.jar:?]
-	at ehg.a(SourceFile:40) ~[1.20.1.jar:?]
-	at ehn.a(SourceFile:154) ~[1.20.1.jar:?]
-	at enn.<init>(SourceFile:492) ~[1.20.1.jar:?]
-	at net.minecraft.client.main.Main.main(SourceFile:211) ~[1.20.1.jar:?]
-	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?]
-	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source) ~[?:?]
-	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source) ~[?:?]
-	at java.lang.reflect.Method.invoke(Unknown Source) ~[?:?]
-	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134) ~[launcher.jar:?]
-	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372) ~[launcher.jar:?]
-	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53) ~[launcher.jar:?]
-[20:23:18] [Render thread/WARN]: Failed sysctl call: hw.packages, Error code: 1
-[20:23:18] [Render thread/WARN]: Failed sysctl call: machdep.cpu.brand_string, Error code: 1
-[20:23:18] [Render thread/WARN]: Failed sysctl call: machdep.cpu.vendor, Error code: 2
-[20:23:18] [Render thread/WARN]: Failed sysctl call: machdep.cpu.stepping, Error code: 2
-[20:23:18] [Render thread/WARN]: Failed sysctl call: machdep.cpu.model, Error code: 2
-[20:23:18] [Render thread/WARN]: Failed sysctl call: machdep.cpu.family, Error code: 2
-[20:23:18] [Render thread/WARN]: Failed sysctl call: machdep.cpu.signature, Error code: 2
-[20:23:18] [Render thread/WARN]: Failed sysctl call: machdep.cpu.feature_bits, Error code: 2
-[20:23:18] [Render thread/WARN]: Failed sysctl call: hw.cpufrequency, Error code: 2
-[Amethyst] Task129: OpenAL shim active (ALC_SOFT_system_events stubs advertised over openal-soft 1.20.1 impl; isSupported->ALC_FALSE => MC polling fallback)
-[RenderDiag] fps=0 swapOK=0 swapFail=0 maxGap=0ms avgGap=0ms pres=0/0ms build=0/0ms mem=639MB layer=0x124e6f660 drawable=0x0 scale=2.00 bounds=1180x820 inWindow=1
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x102691224) -- re-armed at t+10s
-[2026-10-06T20:23:19.322+0800][5.035s] Safepoint "ICBufferFull", Time since last: 418358334 ns, Reaching safepoint: 17708 ns, Cleanup: 46792 ns, At safepoint: 2708 ns, Total: 67208 ns
-[20:23:19] [Worker-Main-3/ERROR]: Failed to retrieve profile key pair
-java.io.IOException: Could not retrieve profile key pair
-	at fes.a(SourceFile:139) ~[1.20.1.jar:?]
-	at fes.b(SourceFile:79) ~[1.20.1.jar:?]
-	at java.util.concurrent.CompletableFuture$AsyncSupply.run(Unknown Source) ~[?:?]
-	at java.util.concurrent.CompletableFuture$AsyncSupply.exec(Unknown Source) ~[?:?]
-	at java.util.concurrent.ForkJoinTask.doExec(Unknown Source) ~[?:?]
-	at java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(Unknown Source) ~[?:?]
-	at java.util.concurrent.ForkJoinPool.scan(Unknown Source) ~[?:?]
-	at java.util.concurrent.ForkJoinPool.runWorker(Unknown Source) ~[?:?]
-	at java.util.concurrent.ForkJoinWorkerThread.run(Unknown Source) ~[?:?]
-[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl_stb.dylib / install /tmp/liblwjgl_stb.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
-[SDLHook] Task132: libjnidispatch loaded but no verified _dlsym pointer slot (unexpected layout or write race -- retry scheduled)
-[20:23:19] [Render thread/INFO]: Reloading ResourceManager: vanilla
-[2026-10-06T20:23:19.373+0800][5.085s] Safepoint "ICBufferFull", Time since last: 50314708 ns, Reaching safepoint: 39875 ns, Cleanup: 39834 ns, At safepoint: 10666 ns, Total: 90375 ns
-[20:23:19] [Worker-Main-1/INFO]: Found unifont_all_no_pua-15.0.06.hex, loading
-[2026-10-06T20:23:19.410+0800][5.123s] Safepoint "ICBufferFull", Time since last: 37331750 ns, Reaching safepoint: 24375 ns, Cleanup: 55750 ns, At safepoint: 9792 ns, Total: 89917 ns
-[2026-10-06T20:23:19.412+0800][5.124s] Safepoint "ICBufferFull", Time since last: 1513375 ns, Reaching safepoint: 22875 ns, Cleanup: 6083 ns, At safepoint: 12042 ns, Total: 41000 ns
-[2026-10-06T20:23:19.413+0800][5.126s] Safepoint "ICBufferFull", Time since last: 1225250 ns, Reaching safepoint: 22875 ns, Cleanup: 2000 ns, At safepoint: 12875 ns, Total: 37750 ns
-[InputDiag] pojavPumpEvents: isInputReady set to YES, showingWindow=0x0
-[InputDiag] pojavPumpEvents #1: window=0x107b1f660 GLFW_invoke_Key=0x10b8240d0 GLFW_invoke_CursorPos=0x10b824090 GLFW_invoke_Char=0x0 isGrabbing=0 isUseStackQueue=1 eventCounter=0
-[egl_bridge] First swap attempted, removing launch overlay (present confirmation: [RenderDiag] first eglSwapBuffers OK)
-[OSMBridge] Task105 viewport evidence: MC present viewport 0,0 2360x1640 vs launcher window belief 2360x1640 -- match (vanilla path, no adaptation)
-MESA: warning: WARNING: Incorrect rendering will happen because the Vulkan device doesn't support the 'VK_EXT_depth_clip_enable' feature
-[2026-10-06T20:23:19.494+0800][5.206s] Safepoint "ICBufferFull", Time since last: 80694417 ns, Reaching safepoint: 24500 ns, Cleanup: 40666 ns, At safepoint: 5917 ns, Total: 71083 ns
-[2026-10-06T20:23:19.498+0800][5.211s] Safepoint "ICBufferFull", Time since last: 4638167 ns, Reaching safepoint: 35041 ns, Cleanup: 9542 ns, At safepoint: 7875 ns, Total: 52458 ns
-[2026-10-06T20:23:19.548+0800][5.261s] GC(23) Pause Young (Prepare Mixed) (G1 Preventive Collection) 474M->183M(564M) 17.308ms
-[2026-10-06T20:23:19.548+0800][5.261s] Safepoint "G1CollectForAllocation", Time since last: 32664542 ns, Reaching safepoint: 24791 ns, Cleanup: 14042 ns, At safepoint: 17339667 ns, Total: 17378500 ns
-[2026-10-06T20:23:19.562+0800][5.274s] GC(24) Pause Young (Mixed) (G1 Evacuation Pause) 184M->184M(564M) 11.050ms
-[2026-10-06T20:23:19.562+0800][5.274s] Safepoint "G1CollectForAllocation", Time since last: 1957541 ns, Reaching safepoint: 34875 ns, Cleanup: 1209 ns, At safepoint: 11076083 ns, Total: 11112167 ns
-[20:23:19] [Realms Notification Availability checker #1/INFO]: Could not authorize you against Realms server: javax.ws.rs.NotAuthorizedException: HTTP 401 Unauthorized
-[2026-10-06T20:23:19.610+0800][5.322s] Safepoint "ICBufferFull", Time since last: 47995958 ns, Reaching safepoint: 23084 ns, Cleanup: 49708 ns, At safepoint: 2917 ns, Total: 75709 ns
-[mvk-warn] VK_ERROR_FEATURE_NOT_PRESENT: Metal does not support disabling primitive restart.
-[2026-10-06T20:23:19.664+0800][5.377s] Safepoint "ICBufferFull", Time since last: 54225250 ns, Reaching safepoint: 19791 ns, Cleanup: 49334 ns, At safepoint: 8500 ns, Total: 77625 ns
-[mvk-warn] VK_ERROR_FEATURE_NOT_PRESENT: Metal does not support disabling primitive restart.
-[2026-10-06T20:23:19.738+0800][5.451s] Safepoint "ICBufferFull", Time since last: 73885125 ns, Reaching safepoint: 26500 ns, Cleanup: 69791 ns, At safepoint: 6792 ns, Total: 103083 ns
-[2026-10-06T20:23:19.777+0800][5.490s] GC(25) Pause Young (Concurrent Start) (G1 Evacuation Pause) 442M->200M(564M) 4.170ms
-[2026-10-06T20:23:19.777+0800][5.490s] Safepoint "G1CollectForAllocation", Time since last: 35088458 ns, Reaching safepoint: 3167 ns, Cleanup: 24667 ns, At safepoint: 4198625 ns, Total: 4226459 ns
-[2026-10-06T20:23:19.777+0800][5.490s] GC(26) Concurrent Mark Cycle
-[mvk-warn] VK_ERROR_FEATURE_NOT_PRESENT: Metal does not support disabling primitive restart.
-[InputDiag] pojavPumpEvents #2: window=0x107b1f660 GLFW_invoke_Key=0x10b8240d0 GLFW_invoke_CursorPos=0x10b824090 GLFW_invoke_Char=0x0 isGrabbing=0 isUseStackQueue=1 eventCounter=0
-[InputDiag] pojavPumpEvents #3: window=0x107b1f660 GLFW_invoke_Key=0x10b8240d0 GLFW_invoke_CursorPos=0x10b824090 GLFW_invoke_Char=0x0 isGrabbing=0 isUseStackQueue=1 eventCounter=0
-[mvk-warn] VK_ERROR_FEATURE_NOT_PRESENT: Metal does not support disabling primitive restart.
-[2026-10-06T20:23:19.868+0800][5.581s] GC(26) Pause Remark 275M->275M(564M) 4.710ms
-[2026-10-06T20:23:19.868+0800][5.581s] Safepoint "G1PauseRemark", Time since last: 85863000 ns, Reaching safepoint: 26708 ns, Cleanup: 34500 ns, At safepoint: 4733917 ns, Total: 4795125 ns
-[InputDiag] pojavPumpEvents #4: window=0x107b1f660 GLFW_invoke_Key=0x10b8240d0 GLFW_invoke_CursorPos=0x10b824090 GLFW_invoke_Char=0x0 isGrabbing=0 isUseStackQueue=1 eventCounter=0
-[InputDiag] pojavPumpEvents #5: window=0x107b1f660 GLFW_invoke_Key=0x10b8240d0 GLFW_invoke_CursorPos=0x10b824090 GLFW_invoke_Char=0x0 isGrabbing=0 isUseStackQueue=1 eventCounter=0
-[2026-10-06T20:23:19.911+0800][5.624s] GC(26) Pause Cleanup 325M->325M(564M) 0.110ms
-[2026-10-06T20:23:19.911+0800][5.624s] Safepoint "G1PauseCleanup", Time since last: 43432208 ns, Reaching safepoint: 8125 ns, Cleanup: 11708 ns, At safepoint: 133709 ns, Total: 153542 ns
-[2026-10-06T20:23:19.912+0800][5.625s] GC(26) Concurrent Mark Cycle 134.773ms
-[SurfaceViewController] Launch overlay dismissed after 5.3 seconds
-[2026-10-06T20:23:20.041+0800][5.754s] GC(27) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 438M->217M(564M) 7.591ms
-[2026-10-06T20:23:20.042+0800][5.754s] Safepoint "G1CollectForAllocation", Time since last: 122345375 ns, Reaching safepoint: 50375 ns, Cleanup: 60041 ns, At safepoint: 7615500 ns, Total: 7725916 ns
-[2026-10-06T20:23:20.054+0800][5.766s] GC(28) Pause Young (Mixed) (G1 Evacuation Pause) 227M->216M(564M) 5.312ms
-[2026-10-06T20:23:20.054+0800][5.766s] Safepoint "G1CollectForAllocation", Time since last: 6845042 ns, Reaching safepoint: 2750 ns, Cleanup: 4833 ns, At safepoint: 5355417 ns, Total: 5363000 ns
-[2026-10-06T20:23:20.195+0800][5.908s] Safepoint "ICBufferFull", Time since last: 141689833 ns, Reaching safepoint: 4334 ns, Cleanup: 72958 ns, At safepoint: 2417 ns, Total: 79709 ns
-[20:23:20] [Render thread/WARN]: Missing sound for event: minecraft:item.goat_horn.play
-[20:23:20] [Render thread/WARN]: Missing sound for event: minecraft:entity.goat.screaming.horn_break
-[20:23:20] [Render thread/INFO]: OpenAL initialized on device CoreAudio Default
-[20:23:20] [Render thread/INFO]: Sound engine started
-[20:23:20] [Render thread/INFO]: Created: 1024x512x0 minecraft:textures/atlas/blocks.png-atlas
-MESA: warning: zink: PERF WARNING! > 100 copy boxes detected for 0x14bbbea00
-[20:23:20] [Render thread/INFO]: Created: 256x256x0 minecraft:textures/atlas/signs.png-atlas
-[20:23:20] [Render thread/INFO]: Created: 512x512x0 minecraft:textures/atlas/shield_patterns.png-atlas
-[20:23:20] [Render thread/INFO]: Created: 512x512x0 minecraft:textures/atlas/banner_patterns.png-atlas
-[20:23:20] [Render thread/INFO]: Created: 1024x1024x0 minecraft:textures/atlas/armor_trims.png-atlas
-MESA: warning: zink: PERF WARNING! > 100 copy boxes detected for 0x14bbbf480
-[20:23:20] [Render thread/INFO]: Created: 128x64x0 minecraft:textures/atlas/decorated_pot.png-atlas
-[20:23:20] [Render thread/INFO]: Created: 256x256x0 minecraft:textures/atlas/chest.png-atlas
-[20:23:20] [Render thread/INFO]: Created: 512x256x0 minecraft:textures/atlas/shulker_boxes.png-atlas
-[20:23:20] [Render thread/INFO]: Created: 512x256x0 minecraft:textures/atlas/beds.png-atlas
-[2026-10-06T20:23:20.374+0800][6.086s] Safepoint "ICBufferFull", Time since last: 178022250 ns, Reaching safepoint: 18416 ns, Cleanup: 47917 ns, At safepoint: 2458 ns, Total: 68791 ns
-[2026-10-06T20:23:20.485+0800][6.198s] Safepoint "ICBufferFull", Time since last: 111475584 ns, Reaching safepoint: 5041 ns, Cleanup: 92375 ns, At safepoint: 3125 ns, Total: 100541 ns
-[20:23:20] [Render thread/WARN]: Shader rendertype_entity_translucent_emissive could not find sampler named Sampler2 in the specified shader program.
-[20:23:20] [Render thread/INFO]: Created: 256x256x0 minecraft:textures/atlas/particles.png-atlas
-[20:23:20] [Render thread/INFO]: Created: 256x256x0 minecraft:textures/atlas/paintings.png-atlas
-[20:23:20] [Render thread/INFO]: Created: 128x128x0 minecraft:textures/atlas/mob_effects.png-atlas
-[2026-10-06T20:23:20.927+0800][6.640s] Safepoint "ICBufferFull", Time since last: 442058042 ns, Reaching safepoint: 2750 ns, Cleanup: 38000 ns, At safepoint: 625 ns, Total: 41375 ns
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x102691224) -- re-armed at t+12s
-[FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
-[InputDiag] pauseGameIfNeed: ESC -> MC (isGrabbing=0 isInputReady=1 sdlWindow=0x0)
-[InputDiag] sendKey #1: key=256 scancode=0 action=1 mods=0 GLFW_invoke_Key=0x10b8240d0 isInputReady=1 g_sdlWindow=0x0
-[InputDiag] sendKey #2: key=256 scancode=0 action=0 mods=0 GLFW_invoke_Key=0x10b8240d0 isInputReady=1 g_sdlWindow=0x0
-[BG-Park] Task223 render thread parking armed (willResignActive)
-[BG-Park] Task223 render thread PARKED at osm_swap -- no GPU submission while inactive
-[HotbarDiag] REJECT isGrabbing=0 | x=1844.3 y=443.8 | phys=2360x1640 guiScale=1 resScale=1.00 sdlWin=0x0
-[InputDiag] sendCursorPos #1: event=0 x=1844.3 y=443.8 GLFW_invoke_CursorPos=0x10b824090 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
-[InputDiag] sendCursorPos #2: event=2 x=1864.1 y=343.3 GLFW_invoke_CursorPos=0x10b824090 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
-[InputDiag] sendCursorPos #3: event=2 x=1893.6 y=230.7 GLFW_invoke_CursorPos=0x10b824090 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
-[InputDiag] sendCursorPos #4: event=2 x=1926.7 y=120.7 GLFW_invoke_CursorPos=0x10b824090 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
-[InputDiag] sendCursorPos #5: event=2 x=1956.9 y=38.0 GLFW_invoke_CursorPos=0x10b824090 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
-[2026-10-06T20:23:21.932+0800][7.645s] Safepoint "Cleanup", Time since last: 1005047208 ns, Reaching safepoint: 6125 ns, Cleanup: 32042 ns, At safepoint: 1083 ns, Total: 39250 ns
-[InputDiag] sendCursorPos #6: event=2 x=1970.7 y=1.5 GLFW_invoke_CursorPos=0x10b824090 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
-[InputDiag] sendCursorPos #7: event=2 x=1968.8 y=-1.2 GLFW_invoke_CursorPos=0x10b824090 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
-[InputDiag] sendCursorPos #8: event=1 x=1967.8 y=-1.2 GLFW_invoke_CursorPos=0x10b824090 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
-[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
-[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
-[InputDiag] resumeGameIfNeed: live session (isGrabbing=0 isInputReady=1 sdlWindow=0x0)
-[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
-[BG-Park] Task223 render thread released (foreground lifecycle)
-[BG-Park] Task223 render thread RESUMED at osm_swap
-[20:23:22] [Render thread/INFO]: [STDOUT]: GLFW: Set size for window 4424070752, width=2360, height=1640
-[20:23:22] [Render thread/INFO]: [STDOUT]: GLFW: Set size for window 4424070752, width=2360, height=1640
-[mvk-warn] VK_ERROR_FEATURE_NOT_PRESENT: Metal does not support disabling primitive restart.
-[mvk-warn] VK_ERROR_FEATURE_NOT_PRESENT: Metal does not support disabling primitive restart.
-[mvk-warn] VK_ERROR_FEATURE_NOT_PRESENT: Metal does not support disabling primitive restart.
-[InputDiag] sendCursorPos #9: event=0 x=1430.4 y=401.0 GLFW_invoke_CursorPos=0x10b824090 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
-[InputDiag] sendCursorPos #10: event=2 x=1430.6 y=400.7 GLFW_invoke_CursorPos=0x10b824090 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
-[FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
-[InputDiag] pauseGameIfNeed: ESC -> MC (isGrabbing=0 isInputReady=1 sdlWindow=0x0)
-[InputDiag] sendKey #3: key=256 scancode=0 action=1 mods=0 GLFW_invoke_Key=0x10b8240d0 isInputReady=1 g_sdlWindow=0x0
-[InputDiag] sendKey #4: key=256 scancode=0 action=0 mods=0 GLFW_invoke_Key=0x10b8240d0 isInputReady=1 g_sdlWindow=0x0
-[BG-Park] Task223 render thread parking armed (willResignActive)
-[BG-Park] Task223 render thread PARKED at osm_swap -- no GPU submission while inactive
-[2026-10-06T20:23:22.937+0800][8.650s] Safepoint "Cleanup", Time since last: 1005085750 ns, Reaching safepoint: 6375 ns, Cleanup: 25667 ns, At safepoint: 875 ns, Total: 32917 ns
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x102691224) -- re-armed at t+14s
-[FG-Lifecycle] didEnterBackground: swapOK=0 swapFail=0
-[InputDiag] pauseGameIfNeed: ESC -> MC (isGrabbing=0 isInputReady=1 sdlWindow=0x0)
-[InputDiag] sendKey #5: key=256 scancode=0 action=1 mods=0 GLFW_invoke_Key=0x10b8240d0 isInputReady=1 g_sdlWindow=0x0
-[InputDiag] sendKey #6: key=256 scancode=0 action=0 mods=0 GLFW_invoke_Key=0x10b8240d0 isInputReady=1 g_sdlWindow=0x0
-[IconLoader] App entered background: cancelled all ongoing downloads
+[VirGL] Task219 vtest server thread entering (socket=/tmp/ame_virgl_10658.sock)
+[VirGL] Task111 starting vtest server (no-loop-or-fork, use-gles, socket=/tmp/ame_virgl_10658.sock)
+Failed to setup socket.: Operation not permitted
+[RenderDiag] exit(1) snapshot: swapOK=0 swapFail=0
+exit(1) called
+
+===== [Amethyst fatal trace] 2026-10-07 01:08:47.894 =====
+reason: exit(1) called
+thread: (unnamed)
+  #00 0x10a18cf74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
+  #01 0x10a18d88c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71820
+  #02 0x11b4b79c4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/libvtestserver.dylib  vtest_main.cold.10 + 752068
+  #03 0x11b404f98  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/libvtestserver.dylib  vtest_main + 20376
+  #04 0x10a1eb604  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_vs_server_thread + 456196
+  #05 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
+  #06 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
+
+[2026-10-07T01:08:48.877+0800][4.107s] Safepoint "Cleanup", Time since last: 1565433333 ns, Reaching safepoint: 8750 ns, Cleanup: 86000 ns, At safepoint: 1125 ns, Total: 95875 ns
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100d09224) -- re-armed at t+46s
+[RenderDiag] fps=0 swapOK=0 swapFail=0 maxGap=0ms avgGap=0ms pres=0/0ms build=0/0ms mem=755MB layer=0x12bbf69d0 drawable=0x0 scale=2.00 bounds=1180x820 inWindow=1
+[PLCrashView] User tapped exit launcher, exiting process directly
+[RenderDiag] exit(0) snapshot: swapOK=0 swapFail=0
+exit(0) called
+
+===== [Amethyst fatal trace] 2026-10-07 01:08:50.174 =====
+reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
+thread: (unnamed)
+  #00 0x10a18cf74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
+  #01 0x10a18d848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
+  #02 0x10a497cf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  -[PLCrashView dismissAndReturnToLauncher] + 3259632
+  #03 0x1935b20c4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5718212
+  #04 0x1935b1ef4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5717748
+  #05 0x1935b17f8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5715960
+  #06 0x19370fe94  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7151252
+  #07 0x193757374  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7443316
+  #08 0x193123bfc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 941052
+  #09 0x193e43a90  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 14703248
+  #10 0x193128648  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 960072
+  #11 0x19312a298  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 967320
+  #12 0x193623874  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 6183028
+  #13 0x193120bdc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 928732
+  #14 0x1930a8d78  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 437624
+  #15 0x1930a7b88  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 433032
+  #16 0x1930a7928  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 432424
+  #17 0x2c1755bc0  /System/Library/PrivateFrameworks/UpdateCycle.framework/UpdateCycle  <redacted> + 3008
+  #18 0x18ee38c20  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367648
+  #19 0x18ee38b94  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367508
+  #20 0x18ee1a268  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 242280
+  #21 0x18ee19384  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 238468
+  #22 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
+  #23 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
+  #24 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
+  #25 0x10a18cc40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68672
+  #26 0x100d0b0f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
+  #27 0x100d08b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
+  #28 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
+
