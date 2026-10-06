@@ -644,7 +644,7 @@ static int ame225_healMissingAssets(NSString *versionId) {
     }
 
     // 3. 逐 object stat，收集缺失
-    NSFileManager *fm = [NSFileManager defaultManager];
+    NSFileManager *ame225_fm = [NSFileManager defaultManager];
     NSMutableArray<NSDictionary *> *missing = [NSMutableArray array];
     NSUInteger checked = 0;
     for (NSString *name in objects) {
@@ -657,7 +657,7 @@ static int ame225_healMissingAssets(NSString *versionId) {
         NSString *rel = [NSString stringWithFormat:@"assets/objects/%@/%@",
             [hash substringToIndex:2], hash];
         NSString *abs = [gameRoot stringByAppendingPathComponent:rel];
-        if (![fm fileExistsAtPath:abs]) {
+        if (![ame225_fm fileExistsAtPath:abs]) {
             [missing addObject:@{@"name": name, @"hash": hash, @"rel": rel}];
         }
     }
@@ -692,7 +692,7 @@ static int ame225_healMissingAssets(NSString *versionId) {
             // .tmp 原子落位（半写文件比缺失更难排查）
             NSString *tmp = [dst stringByAppendingString:@".ametmp"];
             if ([data writeToFile:tmp atomically:YES] &&
-                [fm moveItemAtPath:tmp toPath:dst error:nil]) {
+                [ame225_fm moveItemAtPath:tmp toPath:dst error:nil]) {
                 healed++;
             }
         } else {

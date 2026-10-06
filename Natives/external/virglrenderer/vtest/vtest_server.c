@@ -126,7 +126,7 @@ static void vtest_server_parse_args(int argc, char **argv);
 static void vtest_server_set_signal_child(void);
 static void vtest_server_set_signal_segv(void);
 static void vtest_server_open_read_file(void);
-static void vtest_server_open_socket(void);
+static bool vtest_server_open_socket(void);
 static void vtest_server_run(void);
 static void vtest_server_close_socket(void);
 static int vtest_client_dispatch_commands(struct vtest_client *client);
