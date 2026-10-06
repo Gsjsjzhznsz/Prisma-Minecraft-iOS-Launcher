@@ -8,6 +8,7 @@
 
 #import "BackgroundManager.h"
 #import "UIKit+NativeSurface.h"
+#import "LiquidGlassCompat.h"   // Task224（#4）：界面风格（液态玻璃/原生）解析与分层玻璃安装
 #import <Photos/Photos.h>
 #import <ImageIO/ImageIO.h>   // Task223：CGImageSource 降采样直取壁纸
 
@@ -698,8 +699,15 @@ static const NSInteger kAme160GlassBackdropTag = 99994;
             UITableView *ame161_table = ((UITableViewController *)viewController).tableView;
             UIView *ame161_existing = ame161_table.backgroundView;
             if (ame161_existing.tag != kAme160GlassBackdropTag) {
-                UIBlurEffect *ame161_effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterial];
-                UIVisualEffectView *ame161_glass = [[UIVisualEffectView alloc] initWithEffect:ame161_effect];
+                UIVisualEffectView *ame161_glass;
+                if (LGCIsGlassStyleActive()) {
+                    // Task224（#4）：玻璃风格用 UIGlassEffect（26+；低版
+                    // 本回退系统材质——解析层已保证玻璃风格仅在 26+ 生效）
+                    ame161_glass = LGCCreateGlassEffectView(NO);
+                } else {
+                    UIBlurEffect *ame161_effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterial];
+                    ame161_glass = [[UIVisualEffectView alloc] initWithEffect:ame161_effect];
+                }
                 ame161_glass.tag = kAme160GlassBackdropTag;
                 ame161_glass.frame = ame161_table.bounds;
                 ame161_glass.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -714,8 +722,14 @@ static const NSInteger kAme160GlassBackdropTag = 99994;
             if (sub.tag == kAme160GlassBackdropTag) [sub removeFromSuperview];
         }
 
-        UIBlurEffect *effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterial];
-        UIVisualEffectView *glass = [[UIVisualEffectView alloc] initWithEffect:effect];
+        UIVisualEffectView *glass;
+        if (LGCIsGlassStyleActive()) {
+            // Task224（#4）：同上——玻璃风格的模态页底层用玻璃效果视图
+            glass = LGCCreateGlassEffectView(NO);
+        } else {
+            UIBlurEffect *effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterial];
+            glass = [[UIVisualEffectView alloc] initWithEffect:effect];
+        }
         glass.tag = kAme160GlassBackdropTag;
         glass.frame = viewController.view.bounds;
         glass.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -828,6 +842,14 @@ static const NSInteger kAme160GlassBackdropTag = 99994;
 }
 
 - (void)applyEffectToNavigationBar:(UINavigationBar *)navigationBar {
+    // Task224（#4）：液态玻璃风格下导航栏交还系统——iOS 26+ 移除自定义
+    // 背景后系统自动绘制液态玻璃。native 解析时下方既有毛玻璃/半透明
+    // 管线原样执行（零回归）。
+    if (LGCIsGlassStyleActive()) {
+        LGCAdaptNavigationBar(navigationBar);
+        return;
+    }
+
     // 关键修复（UI 累积异常 + 小白条根治）：
     // 1. 之前每次调用都重建 UINavigationBarAppearance，iOS 内部会重新生成 hairline
     //    UIImageView，累积后表现为"上方一行小白条"。现改为静态单例 Appearance，
@@ -1097,10 +1119,94 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
         : [UIColor colorWithWhite:0.0 alpha:0.62];
 }
 
+#pragma mark - Task224（#18）：通用动态反色文字（壁纸透出的界面文字）
+
+// 欢迎页之外的动态反色机制：主菜单磁贴文字、右面板标题等直接/半透明地
+// 压在壁纸上的文字，统一经本组类方法取色。无壁纸时回落 Task210 卡面规格
+// 色（与今日外观逐字节一致，零回归）；有壁纸时按亮度反色 + 软阴影兜底。
+// 壁纸变化重算：Ame223WallpaperChangedNotification（复用欢迎页链路）。
+
++ (UIColor *)ame224_adaptiveTextColor {
+    BackgroundManager *ame224_mgr = [BackgroundManager sharedManager];
+    if (![ame224_mgr hasBackground]) {
+        return AmeCardPrimaryTextColor();
+    }
+    return [ame224_mgr ame223_adaptiveTextColor];
+}
+
++ (UIColor *)ame224_adaptiveSecondaryTextColor {
+    BackgroundManager *ame224_mgr = [BackgroundManager sharedManager];
+    if (![ame224_mgr hasBackground]) {
+        return AmeCardSecondaryTextColor();
+    }
+    return [ame224_mgr ame223_adaptiveSecondaryTextColor];
+}
+
++ (void)ame224_applyAdaptiveTextToLabel:(UILabel *)label secondary:(BOOL)secondary {
+    if (!label) return;
+    label.textColor = secondary ? [BackgroundManager ame224_adaptiveSecondaryTextColor]
+                                : [BackgroundManager ame224_adaptiveTextColor];
+    if ([[BackgroundManager sharedManager] hasBackground]) {
+        // 软阴影兜底：亮度居中/局部反差的壁纸上给文字一圈对比衬底
+        UIColor *ame224_shadow = [[BackgroundManager sharedManager] ame223_wallpaperLuminanceIsDark]
+            ? [UIColor colorWithWhite:0.0 alpha:0.45]
+            : [UIColor colorWithWhite:1.0 alpha:0.55];
+        label.layer.shadowColor = ame224_shadow.CGColor;
+        label.layer.shadowOpacity = 1.0;
+        label.layer.shadowRadius = 1.5;
+        label.layer.shadowOffset = CGSizeMake(0, 1);
+        label.layer.masksToBounds = NO;
+    } else {
+        // 无壁纸：不引入任何新视觉（原生外观零回归）
+        label.layer.shadowColor = nil;
+        label.layer.shadowOpacity = 0.0;
+        label.layer.shadowRadius = 0.0;
+        label.layer.shadowOffset = CGSizeZero;
+    }
+}
+
++ (NSAttributedString *)ame224_adaptiveAttributedTitle:(NSString *)title
+                                              fontSize:(CGFloat)fontSize
+                                             secondary:(BOOL)secondary {
+    NSDictionary *ame224_attrs = @{
+        NSFontAttributeName: [UIFont systemFontOfSize:fontSize
+                                           weight:secondary ? UIFontWeightMedium : UIFontWeightSemibold],
+        NSForegroundColorAttributeName: secondary
+            ? [BackgroundManager ame224_adaptiveSecondaryTextColor]
+            : [BackgroundManager ame224_adaptiveTextColor],
+    };
+    NSMutableAttributedString *ame224_str =
+        [[NSMutableAttributedString alloc] initWithString:(title ?: @"") attributes:ame224_attrs];
+    if (ame224_str.length > 0 && [[BackgroundManager sharedManager] hasBackground]) {
+        NSShadow *ame224_shadow = [[NSShadow alloc] init];
+        ame224_shadow.shadowColor = [[BackgroundManager sharedManager] ame223_wallpaperLuminanceIsDark]
+            ? [UIColor colorWithWhite:0.0 alpha:0.45]
+            : [UIColor colorWithWhite:1.0 alpha:0.55];
+        ame224_shadow.shadowBlurRadius = 1.5;
+        ame224_shadow.shadowOffset = CGSizeMake(0, 1);
+        [ame224_str addAttribute:NSShadowAttributeName value:ame224_shadow
+                            range:NSMakeRange(0, ame224_str.length)];
+    }
+    return ame224_str;
+}
+
 #pragma mark - Unified View Effect Application
 
 - (void)applyEffectToView:(UIView *)view {
     if (!view) return;
+
+    // Task224（#4）：界面风格 = 液态玻璃时，带圆角的卡片表面由分层玻璃
+    // （效果层 + 高光层 + 发丝描边）接管。native 解析时 LGCApplyGlassToView
+    // 只做旧玻璃层清理即返回 NO，本方法继续既有管线——native 零视觉回归。
+    if (LGCApplyGlassToView(view, view.layer.cornerRadius)) {
+        // 玻璃接管后清掉原生管线此前铺过的 blur 层，避免双层叠加
+        for (UIView *sub in [view.subviews copy]) {
+            if ([sub isKindOfClass:[UIVisualEffectView class]] && sub.tag == kBackgroundBlurTag) {
+                [sub removeFromSuperview];
+            }
+        }
+        return;
+    }
 
     // Task111：检测并切换——有自定义背景时毛玻璃/半透明卡片效果
     // （背景图从卡片下方透出）；无背景时平贴灰面/原生平铺（Task210 单路径）。
@@ -1264,6 +1370,19 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
         }
 
         // Task210：残留阴影承载层清理原语随新拟态引擎一并删除（无挂载即无残留）。
+
+        // Task224（#4）：液态玻璃风格接管 cell 卡面（native 时为清理旧玻璃
+        // 层后返回 NO，直落下方毛玻璃/半透明既有分支）。
+        if (LGCApplyGlassToView(cardTarget, cardRadius)) {
+            for (UIView *subview in [cardTarget.subviews copy]) {
+                if ([subview isKindOfClass:[UIVisualEffectView class]] && subview.tag == kBackgroundBlurTag) {
+                    [subview removeFromSuperview];
+                }
+            }
+            cell.backgroundColor = [UIColor clearColor];
+            contentView.backgroundColor = [UIColor clearColor];
+            return;
+        }
 
         if (self.uiEffect == BackgroundUIEffectBlur) {
             // 毛玻璃

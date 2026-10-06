@@ -344,7 +344,6 @@ int ame_virgl_start_server(void)
 
     // ZL2 同款：给服务端 100ms 完成 bind+listen 进入 accept（backlog 也会兜住
     // 更早到来的连接，这里只是额外保险）。
-    usleep(100 * 1000);
     // Task219：引导后验证（socket 文件已建 + 确为 socket 类型）。旧代码
     // pthread_create 成功即返 0，但 vtest_main 的 bind/listen 可能同步瞬间
     // 失败（上游错误路径直接 exit(1) 或线程早退）——guest 连不上就在
@@ -354,12 +353,33 @@ int ame_virgl_start_server(void)
     // guest 真连接反而被拒——等于自己造出引导失败。bind() 成功必然创建
     // socket 文件，文件存在 + S_ISSOCK 即为“服务已 bind”的充分证据
     //（bind 是长路径/权限类的失败点；listen 紧随 bind，无独立失败面）。
+    // Task224: vrend init (epoxy dlsym + Mesa virgl driver + shader cache
+    // warm-up) takes far longer than the old fixed 100ms sleep on device.
+    // Poll for the socket file (bind() creates it) up to 15s, 250ms steps,
+    // 3s-interval wait anchors. Still file-stat only, never connect-probing
+    // (single-shot server semantics, see Task219 comment above).
     struct stat ame219_st;
-    if (stat(ame_vs_socket_path, &ame219_st) != 0 || !S_ISSOCK(ame219_st.st_mode)) {
-        NSLog(@"[VirGL] Task219 post-bootstrap check FAILED: socket file missing or not a socket (%s) -- server never bound", ame_vs_socket_path);
+    int ame224_bound = 0;
+    int ame224_waited_ms = 0;
+    while (ame224_waited_ms <= 15000) {
+        if (stat(ame_vs_socket_path, &ame219_st) == 0 && S_ISSOCK(ame219_st.st_mode)) {
+            ame224_bound = 1;
+            break;
+        }
+        usleep(250 * 1000);
+        ame224_waited_ms += 250;
+        if (ame224_waited_ms > 0 && (ame224_waited_ms % 3000) == 0) {
+            NSLog(@"[VirGL] Task224 still waiting for vtest bind (%.1fs, socket=%s)",
+                  ame224_waited_ms / 1000.0, ame_vs_socket_path);
+        }
+    }
+    if (!ame224_bound) {
+        NSLog(@"[VirGL] Task219 post-bootstrap check FAILED after %dms (Task224 wait): socket file missing or not a socket (%s) -- server never bound",
+              ame224_waited_ms, ame_vs_socket_path);
         return -2;
     }
-    NSLog(@"[VirGL] Task219 post-bootstrap check ok: socket bound at %s", ame_vs_socket_path);
+    NSLog(@"[VirGL] Task219 post-bootstrap check ok (bound after %dms of Task224 wait): socket at %s",
+          ame224_waited_ms, ame_vs_socket_path);
 
     ame_vs_started = 1;
     NSLog(@"[VirGL] Task111 server bootstrap complete (socket=%s, ES3 host ctx=%p, surfaceless=%d)",

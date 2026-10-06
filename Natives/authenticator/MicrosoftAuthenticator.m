@@ -6,6 +6,85 @@
 
 typedef void(^XSTSCallback)(NSString *xsts, NSString *uhs);
 
+// ---------------------------------------------------------------------------
+// Task 224：应用内皮肤 / 改名（Minecraft profile services 直连）
+//
+// 背景（反馈第 17 项）：旧 Task223 的“换皮肤 / 改名”只是打开 minecraft.net
+// 网页——移动端网页登录态不通、体验割裂。本轮改为直连官方 API：
+//   - 皮肤：multipart POST /minecraft/profile/skins（variant + file）
+//   - 改名：PUT /minecraft/name（JSON name）
+// 令牌策略：优先用 keychain 里的 Minecraft services bearer token，过期则先
+// 走既有刷新链（refreshTokenWithCallback 全链，含 keychain 重写）再执行。
+// ---------------------------------------------------------------------------
+
+/// Task224：multipart/form-data 请求体（一个文本字段 + skin.png 文件段）。
+static NSData *ame224_buildMultipartBody(NSString *boundary,
+                                         NSString *fieldName,
+                                         NSString *fieldValue,
+                                         NSData *fileData) {
+    NSMutableData *body = [NSMutableData data];
+    NSString *fieldPart = [NSString
+        stringWithFormat:@"--%@\r\nContent-Disposition: form-data; name=\"%@\"\r\n\r\n%@\r\n",
+                         boundary, fieldName, fieldValue];
+    [body appendData:[fieldPart dataUsingEncoding:NSUTF8StringEncoding]];
+    NSString *filePart = [NSString
+        stringWithFormat:@"--%@\r\nContent-Disposition: form-data; name=\"file\"; filename=\"skin.png\"\r\nContent-Type: image/png\r\n\r\n",
+                         boundary];
+    [body appendData:[filePart dataUsingEncoding:NSUTF8StringEncoding]];
+    [body appendData:fileData];
+    [body appendData:[[NSString stringWithFormat:@"\r\n--%@--\r\n", boundary]
+        dataUsingEncoding:NSUTF8StringEncoding]];
+    return body;
+}
+
+/// Task224：从错误响应正文里提取服务器 errorMessage / error 字段（可提则返）。
+static NSString *ame224_serverErrorMessage(NSString *bodyString) {
+    if (![bodyString isKindOfClass:[NSString class]] || bodyString.length == 0) return nil;
+    NSData *jsonData = [bodyString dataUsingEncoding:NSUTF8StringEncoding];
+    NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:jsonData options:kNilOptions error:nil];
+    if (![dict isKindOfClass:[NSDictionary class]]) return nil;
+    NSString *msg = dict[@"errorMessage"] ?: dict[@"error"];
+    if ([msg isKindOfClass:[NSString class]] && msg.length > 0) return msg;
+    return nil;
+}
+
+/// Task224：皮肤上传错误 → 本地化文案（服务器原因可提时拼接在后面）。
+static NSString *ame224_skinUploadErrorMessage(NSInteger code, NSString *bodyString) {
+    NSString *localized = nil;
+    if (code == 400) {
+        localized = localize(@"account.skin.error.invalid_png", nil);
+    } else if (code == 401) {
+        localized = localize(@"account.error.relogin_required", nil);
+    } else if (code == 403) {
+        localized = localize(@"account.skin.error.forbidden", nil);
+    } else {
+        localized = localize(@"account.skin.error.request_failed", nil);
+    }
+    NSString *serverMessage = ame224_serverErrorMessage(bodyString);
+    if (serverMessage.length > 0) {
+        return [NSString stringWithFormat:@"%@\n%@", localized, serverMessage];
+    }
+    return localized;
+}
+
+/// Task224：改名错误 → 本地化文案（400 无效 / 403 细分占用、无机会、不允许）。
+static NSString *ame224_nameChangeErrorMessage(NSInteger code, NSString *bodyString) {
+    if (code == 400) return localize(@"account.name.error.invalid", nil);
+    if (code == 401) return localize(@"account.error.relogin_required", nil);
+    if (code == 403) {
+        NSString *lower = [bodyString.lowercaseString ?: @"" copy];
+        if ([lower containsString:@"taken"]) return localize(@"account.name.error.taken", nil);
+        if ([lower containsString:@"name change"]) return localize(@"account.name.error.no_change_available", nil);
+        return localize(@"account.name.error.not_allowed", nil);
+    }
+    NSString *serverMessage = ame224_serverErrorMessage(bodyString);
+    if (serverMessage.length > 0) {
+        return [NSString stringWithFormat:@"%@\n%@",
+                localize(@"account.skin.error.request_failed", nil), serverMessage];
+    }
+    return localize(@"account.skin.error.request_failed", nil);
+}
+
 @implementation MicrosoftAuthenticator
 
 - (void)acquireAccessToken:(NSString *)authcode refresh:(BOOL)refresh callback:(Callback)callback {
@@ -375,6 +454,117 @@ typedef void(^XSTSCallback)(NSString *xsts, NSString *uhs);
 
 - (NSDictionary *)tokenData {
     return [MicrosoftAuthenticator tokenDataOfProfile:self.authData[@"xuid"]];
+}
+
+#pragma mark - Task 224: in-app Minecraft profile operations
+
+/// Task224：保证 Minecraft services bearer token 可用后执行 body(token)。
+/// 过期（expiresAt）则先走既有刷新链；刷新链的进度回调（非 nil status + YES）
+/// 按既有语义跳过，只在完成回调（nil + YES 或任意 NO）后继续。
+- (void)ame224_withServicesTokenPerform:(void (^)(NSString *accessToken))body
+                             completion:(Callback)completion {
+    NSString *token = self.tokenData[@"accessToken"];
+    BOOL expired = [NSDate.date timeIntervalSince1970] > [self.authData[@"expiresAt"] longValue];
+    if (token.length > 0 && !expired) {
+        body(token);
+        return;
+    }
+    __weak typeof(self) weakSelf = self;
+    [self refreshTokenWithCallback:^(id status, BOOL success) {
+        if (!success) {
+            if (completion) completion(status, NO);
+            return;
+        }
+        if (status != nil) return; // 刷新链进度消息，等待完成回调
+        NSString *fresh = weakSelf.tokenData[@"accessToken"];
+        if (![fresh isKindOfClass:[NSString class]] || fresh.length == 0) {
+            NSLog(@"[AccountOps] Task224 MS token unavailable after refresh (re-login needed)");
+            if (completion) completion(localize(@"account.error.relogin_required", nil), NO);
+            return;
+        }
+        body(fresh);
+    }];
+}
+
+- (void)ame224_uploadSkinPNGData:(NSData *)pngData variant:(NSString *)variant callback:(Callback)callback {
+    NSLog(@"[AccountOps] Task224 MS skin upload begin (variant=%@, bytes=%lu)",
+          variant, (unsigned long)pngData.length);
+    [self ame224_withServicesTokenPerform:^(NSString *accessToken) {
+        NSString *boundary = [NSString stringWithFormat:@"ame224-ms-skin-%@", [NSUUID UUID].UUIDString];
+        NSData *body = ame224_buildMultipartBody(boundary, @"variant", variant, pngData);
+        NSMutableURLRequest *request = [NSMutableURLRequest
+            requestWithURL:[NSURL URLWithString:@"https://api.minecraftservices.com/minecraft/profile/skins"]
+            cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:60.0];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = body;
+        [request setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary]
+            forHTTPHeaderField:@"Content-Type"];
+        [request setValue:[NSString stringWithFormat:@"Bearer %@", accessToken]
+            forHTTPHeaderField:@"Authorization"];
+        [[[NSURLSession sharedSession] dataTaskWithRequest:request
+            completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSInteger code = [response isKindOfClass:[NSHTTPURLResponse class]]
+                    ? ((NSHTTPURLResponse *)response).statusCode : 0;
+                if (error != nil) {
+                    NSLog(@"[AccountOps] Task224 MS skin upload network error: %@", error.localizedDescription);
+                    if (callback) callback(error, NO);
+                    return;
+                }
+                if (code >= 200 && code < 300) {
+                    NSLog(@"[AccountOps] Task224 MS skin upload OK (HTTP %ld)", (long)code);
+                    if (callback) callback(nil, YES);
+                    return;
+                }
+                NSString *detail = [[NSString alloc] initWithData:data ?: [NSData data]
+                                                        encoding:NSUTF8StringEncoding];
+                NSLog(@"[AccountOps] Task224 MS skin upload failed (HTTP %ld): %@", (long)code, detail);
+                if (callback) callback([NSString stringWithFormat:@"%@ (HTTP %ld)",
+                    ame224_skinUploadErrorMessage(code, detail), (long)code], NO);
+            });
+        }] resume];
+    } completion:callback];
+}
+
+- (void)ame224_changePlayerName:(NSString *)newName callback:(Callback)callback {
+    NSLog(@"[AccountOps] Task224 MS name change begin (name=%@)", newName);
+    [self ame224_withServicesTokenPerform:^(NSString *accessToken) {
+        NSData *payload = [NSJSONSerialization dataWithJSONObject:@{@"name": newName}
+                                                        options:0 error:nil];
+        if (payload == nil) {
+            if (callback) callback(localize(@"account.name.error.invalid", nil), NO);
+            return;
+        }
+        NSMutableURLRequest *request = [NSMutableURLRequest
+            requestWithURL:[NSURL URLWithString:@"https://api.minecraftservices.com/minecraft/name"]
+            cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:60.0];
+        request.HTTPMethod = @"PUT";
+        request.HTTPBody = payload;
+        [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+        [request setValue:[NSString stringWithFormat:@"Bearer %@", accessToken]
+            forHTTPHeaderField:@"Authorization"];
+        [[[NSURLSession sharedSession] dataTaskWithRequest:request
+            completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSInteger code = [response isKindOfClass:[NSHTTPURLResponse class]]
+                    ? ((NSHTTPURLResponse *)response).statusCode : 0;
+                if (error != nil) {
+                    NSLog(@"[AccountOps] Task224 MS name change network error: %@", error.localizedDescription);
+                    if (callback) callback(error, NO);
+                    return;
+                }
+                if (code >= 200 && code < 300) {
+                    NSLog(@"[AccountOps] Task224 MS name change OK (HTTP %ld)", (long)code);
+                    if (callback) callback(nil, YES);
+                    return;
+                }
+                NSString *detail = [[NSString alloc] initWithData:data ?: [NSData data]
+                                                        encoding:NSUTF8StringEncoding];
+                NSLog(@"[AccountOps] Task224 MS name change failed (HTTP %ld): %@", (long)code, detail);
+                if (callback) callback(ame224_nameChangeErrorMessage(code, detail), NO);
+            });
+        }] resume];
+    } completion:callback];
 }
 
 @end

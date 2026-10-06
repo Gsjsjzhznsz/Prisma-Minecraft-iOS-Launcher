@@ -59,6 +59,9 @@ extern void AmeControlJoystickOnGrabChange(BOOL grabbed);
 // 点制 1180x820 被 MC 按像素消费导致分辨率减半，正是利用此语义改写）。
 // nativeSendScreenSize 的 SDL3 路径用它把窗口信念下发给 MC。
 #define SDL3_EVENT_WINDOW_RESIZED  0x207
+// Task224：后台恢复链重建 SDL/MC 焦点态的标准事件对（resumeGameIfNeed）。
+#define SDL3_EVENT_WINDOW_MOUSE_ENTER  0x20C
+#define SDL3_EVENT_WINDOW_FOCUS_GAINED 0x20E
 
 typedef uint32_t SDL3_WindowID;
 typedef uint32_t SDL3_MouseID;
@@ -171,6 +174,8 @@ static int    ame66_kbNumKeys = 0;   // Task66：数组长度（SDL3 = 512 = SDL
 static unsigned short ame66_virtualMods = 0;  // Task66：虚拟修饰键掩码（我们注入的 shift/ctrl/alt/gui）
 static void *g_sdlWindow = NULL;  // The real SDL3 window pointer
 static void ame104_armAfkHeartbeat(void);  // Task104：AFK 心跳（前向声明，实现见 pushSDLMouseWheel 之后）
+// Task224：SDL 嵌入视图 z 序重钉的公开包装（sdl3_hook.m，自带主线程调度）
+extern void ame224_refrontEmbeddedViewSafe(void);
 
 static void initSDLEventFuncs(void) {
     static BOOL inited = NO;
@@ -2117,6 +2122,17 @@ void CallbackBridge_nativeSendKey(int key, int scancode, int action, int mods) {
             (void*)GLFW_invoke_Key, isInputReady, g_sdlWindow);
     }
 
+    // Task224：shift 键全量取证（用户报"右 Shift 又失效"——静态链左右对称、
+    // 端到端核验无缺失；下一轮装机日志须能直接定位断点：控件未触发 /
+    // 映射丢弃 / 双路径均未命中 / 事件送达但 MC 不消费）。
+    if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) {
+        const char *ame224_path =
+            (GLFW_invoke_Key && isInputReady) ? "A(GLFW)"
+            : ((!GLFW_invoke_Key && g_sdlWindow) ? "B(SDL)" : "NONE(event lost)");
+        NSLog(@"[InputDiag] Task224 shiftKey: key=%d action=%d mods=%d path=%s GLFW_invoke_Key=%p isInputReady=%d g_sdlWindow=%p",
+              key, action, mods, ame224_path, (void*)GLFW_invoke_Key, isInputReady, g_sdlWindow);
+    }
+
     // Task161：记录最近一次按下（action==1）的键——聊天自动弹键盘判定用。
     if (action == 1) {
         ame161_lastSentKey = key;
@@ -2314,6 +2330,42 @@ void CallbackBridge_resumeGameIfNeed(void) {
     } else {
         NSLog(@"[InputDiag] resumeGameIfNeed: skip resize re-announce (size %dx%d invalid)",
               windowWidth, windowHeight);
+    }
+
+    // ===== Task224：SDL 输入能力重建（“MG 后台回来后屏幕无法输入”根修）=====
+    // 装机证据（10-06 latestlog.2，Metallum/SDL 会话）：恢复后渲染健康
+    // （fps=58、swapOK 持续增长）、键盘事件可达 MC（Task64 #3/#4 MC-side），
+    // 但触控全无反应——sendCursorPos #50/#100/#150 持续推进（UIKit 触达
+    // 且事件照常 SDL_PushEvent）。断点只能在 SDL/MC 侧输入状态：后台化时
+    // SDL UIKit backend 拆了 mouse focus/内部鼠标态，恢复时无人重建。
+    // 三针齐下（全部幂等无害）：
+    //   1. SDL_WarpMouseInWindow（公开 API）——内部走 SDL_SendMouseMotion，
+    //      把 mouse focus 重新钉到 g_sdlWindow 并同步 SDL 内部鼠标位置；
+    //   2. 合成 WINDOW_MOUSE_ENTER + WINDOW_FOCUS_GAINED——SDL 焦点态的
+    //      标准事件对（Task118 只改 GetWindowFlags 谎言位，MC 事件驱动的
+    //      焦点状态没喂）；
+    //   3. 嵌入视图 z 序 + 宿主 key window 重钉（sdl3_hook 公开包装；
+    //      SDL 后台期窗口操作可能打乱 z 序，此前只有 ShowWindow 钩子修）。
+    if (g_sdlWindow && pSDL_PushEvent) {
+        static bool (*ame224_pWarpMouseInWindow)(void *window, float x, float y) = NULL;
+        static bool ame224_warpResolved = false;
+        if (!ame224_warpResolved) {
+            ame224_warpResolved = true;
+            ame224_pWarpMouseInWindow = (bool (*)(void *, float, float))dlsym(RTLD_DEFAULT, "SDL_WarpMouseInWindow");
+        }
+        if (ame224_pWarpMouseInWindow) {
+            ame224_pWarpMouseInWindow(g_sdlWindow, ame51_px_to_pt((float)cursorX), ame51_px_to_pt((float)cursorY));
+        }
+        SDL3_WindowEvent ame224_we;
+        memset(&ame224_we, 0, sizeof(ame224_we));
+        ame224_we.windowID = getSDLWindowID();
+        ame224_we.type = SDL3_EVENT_WINDOW_MOUSE_ENTER;
+        pSDL_PushEvent(&ame224_we);
+        ame224_we.type = SDL3_EVENT_WINDOW_FOCUS_GAINED;
+        pSDL_PushEvent(&ame224_we);
+        ame224_refrontEmbeddedViewSafe();
+        NSLog(@"[InputDiag] Task224 SDL input re-established on resume (warp=%d mouseEnter+focusGained pushed windowID=%u cursor=%ld,%ld)",
+              ame224_pWarpMouseInWindow ? 1 : 0, (unsigned)getSDLWindowID(), (long)cursorX, (long)cursorY);
     }
 }
 

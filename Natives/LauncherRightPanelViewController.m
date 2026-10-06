@@ -16,6 +16,7 @@
 #import "PLTaskProgressViewController.h"
 #import "ALTServerConnection.h"
 #import "BackgroundManager.h"
+#import "LiquidGlassCompat.h"   // Task224（#19）：界面缩放（右栏字号/间距）
 #import "AboutViewController.h"   // Task217：启动器版本卡 about 路由
 #import "ios_uikit_bridge.h"
 #import "utils.h"
@@ -185,6 +186,23 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
                                                  name:@"BackgroundUIEffectChanged"
                                                object:nil];
 
+    // Task224（#18）：壁纸变化 → 亮度自适应文字重算（Ame223WallpaperChanged
+    // 复用欢迎页链路；面板半透明时壁纸直接透到文字底下）。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_handleWallpaperChanged)
+                                                 name:Ame223WallpaperChangedNotification
+                                               object:nil];
+    // Task224（#19）：界面缩放变化 → 右栏字号/间距实时重排。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_refreshScaledFonts)
+                                                 name:LGCUIScaleChangedNotification
+                                               object:nil];
+    // Task224（#4）：界面风格切换 → 面板表面随活重铺（可见状态下）。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(reapplyBackgroundEffect)
+                                                 name:LGCInterfaceStyleChangedNotification
+                                               object:nil];
+
     // JIT 状态必须实时反映：StikJIT/SideJIT 常在启动器已打开后才完成附加（甚至
     // 附加后自身退出，应用被 launchd 收养），若只在 viewWillAppear 刷新，标签会
     // 一直停留在"未开启"。应用回到前台时同步刷新一次。
@@ -301,8 +319,9 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     // 用户名标签
     self.usernameLabel = [[UILabel alloc] init];
     self.usernameLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    self.usernameLabel.font = [UIFont boldSystemFontOfSize:16];
-    self.usernameLabel.textColor = AmeCardPrimaryTextColor(); // Task160 规格主文字
+    // Task224（#19）：字号乘界面缩放倍率（1.0 时与原 16pt 逐字节一致）
+    self.usernameLabel.font = [UIFont boldSystemFontOfSize:LGCScaledFontSize(16)];
+    self.usernameLabel.textColor = AmeCardPrimaryTextColor(); // Task160 规格主文字（#18 动态反色在 applyCustomAppearance 内接管）
     self.usernameLabel.textAlignment = NSTextAlignmentCenter;
     // iPhone 上侧栏宽度更窄，开启字号自适应避免长用户名被截断
     self.usernameLabel.adjustsFontSizeToFitWidth = YES;
@@ -1043,10 +1062,10 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     iconView.tintColor = accent;
     [card addSubview:iconView];
 
-    // 小号彩色标题
+    // 小号彩色标题（Task224（#19）：字号乘界面缩放倍率）
     UILabel *titleLabel = [[UILabel alloc] init];
     titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    titleLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
+    titleLabel.font = [UIFont systemFontOfSize:LGCScaledFontSize(11) weight:UIFontWeightMedium];
     titleLabel.textColor = accent;
     titleLabel.text = title;
     [card addSubview:titleLabel];
@@ -1054,7 +1073,7 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     // 大号正文（Task91 字色规范：浅色 #222222 / 深色 #EEEEEE，动态色自动跟随）
     UILabel *valueLabel = [[UILabel alloc] init];
     valueLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    valueLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+    valueLabel.font = [UIFont systemFontOfSize:LGCScaledFontSize(15) weight:UIFontWeightSemibold]; // Task224（#19）缩放
     valueLabel.textColor = [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *traitCollection) {
         return traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark
             ? [UIColor colorWithRed:0xEE / 255.0 green:0xEE / 255.0 blue:0xEE / 255.0 alpha:1.0]
@@ -1142,11 +1161,41 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         self.usernameLabel.textColor = customColor;
         self.progressLabel.textColor = [customColor colorWithAlphaComponent:0.75];
     } else {
-        // 未设置自定义字体颜色时，恢复系统自适应颜色
-        self.usernameLabel.textColor = AmeCardPrimaryTextColor(); // Task160 规格主文字
-        self.progressLabel.textColor = AmeCardSecondaryTextColor(); // Task160 规格次要文字
+        // 未设置自定义字体颜色时：
+        // Task224（#18）——用户名/进度文字直接压在（半透明）面板表面、
+        // 壁纸可透出的位置，改走壁纸亮度自适应色（深壁纸→白字 +
+        // 软阴影 / 亮壁纸→黑字）；无壁纸时 ame224_* 回落 Task160 规格
+        // 色——与今日外观逐字节一致（零回归）。
+        [BackgroundManager ame224_applyAdaptiveTextToLabel:self.usernameLabel secondary:NO];
+        [BackgroundManager ame224_applyAdaptiveTextToLabel:self.progressLabel secondary:YES];
         // 信息卡正文颜色随深浅色自动切换（动态色），不参与自定义文字色
     }
+}
+
+// Task224（#19）：界面缩放变化 → 右栏字号实时重排（usernameLabel /
+// 三枚按钮 / 下载中心 / 进度文字 + 七张信息卡正文）。
+- (void)ame224_refreshScaledFonts {
+    self.usernameLabel.font = [UIFont boldSystemFontOfSize:LGCScaledFontSize(16)];
+    self.launchButton.titleLabel.font = [UIFont systemFontOfSize:LGCScaledFontSize(15) weight:UIFontWeightSemibold];
+    self.manageVersionBtn.titleLabel.font = [UIFont systemFontOfSize:LGCScaledFontSize(14) weight:UIFontWeightMedium];
+    self.executeJarBtn.titleLabel.font = [UIFont systemFontOfSize:LGCScaledFontSize(14) weight:UIFontWeightMedium];
+    self.downloadCenterButton.titleLabel.font = [UIFont systemFontOfSize:LGCScaledFontSize(13) weight:UIFontWeightMedium];
+    self.progressLabel.font = [UIFont systemFontOfSize:LGCScaledFontSize(12)];
+    NSArray<UILabel *> *ame224_values = @[self.launcherVersionCardValue, self.gameVersionCardValue,
+                                          self.deviceCardValue, self.systemCardValue,
+                                          self.jitCardValue, self.memLimitCardValue,
+                                          self.extVMCardValue];
+    for (UILabel *ame224_label in ame224_values) {
+        ame224_label.font = [UIFont systemFontOfSize:LGCScaledFontSize(15) weight:UIFontWeightSemibold];
+    }
+    [self updateInfoContentInset];
+}
+
+// Task224（#18）：壁纸变化 → 亮度自适应颜色重算（复用欢迎页的
+// Ame223WallpaperChanged 广播链路）。
+- (void)ame224_handleWallpaperChanged {
+    [self applyCustomAppearance];
+    NSLog(@"[ThemeOps] Task224 right panel adaptive text refreshed after wallpaper change");
 }
 
 - (nullable UIColor *)colorFromHexString:(id)hex {
@@ -1628,9 +1677,36 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
                 }
             }
             
-            [self invokeAfterJITEnabled:^{
-                UIKit_launchMinecraftSurfaceVC(self.view.window, self.task.metadata);
-            }];
+            // Task224：版本设置页启动偶发 JIT 楔死（Task185 病历：二级编辑页
+            // 文本框 + 拼音键盘在后台化时楔住主队列；resign + 自愈重派已上，
+            // 仍偶发）。按用户方案根治：先把面板之上呈现的整条 UI 链（版本
+            // 设置/编辑页等）dismiss 干净，延迟 0.8s 让 UIKit 完成视图卸载
+            // 与输入会话清理，之后才进入 JIT 等待与 SurfaceVC 启动链。
+            {
+                UIWindow *ame224_window = self.view.window;
+                UIViewController *ame224_root = ame224_window.rootViewController;
+                UIViewController *ame224_top = ame224_root;
+                while (ame224_top.presentedViewController) {
+                    ame224_top = ame224_top.presentedViewController;
+                }
+                void (^ame224_beginJITWait)(void) = ^{
+                    [self invokeAfterJITEnabled:^{
+                        UIKit_launchMinecraftSurfaceVC(ame224_window, self.task.metadata);
+                    }];
+                };
+                if (ame224_top != ame224_root && ame224_top.presentingViewController) {
+                    NSLog(@"[JIT] [RightPanel] Task224 closing presented stack ('%@') + 0.8s settle before JIT wait",
+                          NSStringFromClass([ame224_top class]));
+                    [ame224_top.presentingViewController dismissViewControllerAnimated:YES completion:^{
+                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.8 * NSEC_PER_SEC)),
+                                       dispatch_get_main_queue(), ame224_beginJITWait);
+                    }];
+                } else {
+                    // 无叠加 UI：仍给半拍让 resign/清理落地
+                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)),
+                                   dispatch_get_main_queue(), ame224_beginJITWait);
+                }
+            }
         } else {
             self.task = nil;
             [self setInteractionEnabled:YES];

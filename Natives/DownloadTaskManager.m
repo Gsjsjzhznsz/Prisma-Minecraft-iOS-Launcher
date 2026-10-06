@@ -793,9 +793,14 @@ static const NSTimeInterval kUIProgressNotifyThrottleInterval = 0.2;
         // 100%（下载中心以 %.0f/%.1f 四舍五入，0.999 会被显示成 100%）。
         // 网络进度封顶 0.99，仅真正进入 Completed 终态时 progress 才置 1.0。
         if (progress >= 1.0) progress = 0.99;
+        // Task224：负数显示根修——断点失效重下时 PLDownloadClient 的增量
+        // 自纠会给出负 delta，累计值可能短暂为负；进度/字节数据对 UI 必须
+        // 钳在 [0, ...]（用户实测“迁移显示的是负数”，同族哨兵值 -1.0 亦
+        // 经此管道下发）。显示层不再可能出现 -12MB / -3%。
+        if (progress < 0.0) progress = 0.0;
         item.progress = progress;
         if (totalBytes >= 0) item.totalSize = totalBytes;
-        item.downloadedSize = downloadedBytes;
+        item.downloadedSize = (downloadedBytes > 0) ? downloadedBytes : 0;
         if (item.state == DownloadTaskStatePending && ![self isQueuedLocked:taskId]) {
             // 首次进度上报：尝试进入 Downloading（占用槽位；满则排队并挂起底层任务）
             if ([self acquireSlotForTaskLocked:taskId]) {

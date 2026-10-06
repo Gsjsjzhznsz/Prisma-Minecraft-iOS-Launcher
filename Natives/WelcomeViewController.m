@@ -8,6 +8,26 @@
 //  LiveContainer 环境检测（②）、JIT 开启方式选择（③）、完成后自动打开
 //  关于页（⑥）。详见 WelcomeViewController.h 头注释。
 //
+//  Task224（反馈 #14/#15）欢迎页重修：
+//   - 命中测试根治：Task223 版各步骤叶子高度【歧义】（列表链没有底锚、
+//     Hero/Done 只有 centerY）——AutoLayout 把 step 解成 0/任意高度，子
+//     视图渲染在 bounds 外（不裁剪所以看得见）但 hitTest 逐级 pointInside
+//     失败 = “按钮仍然点不了”。本轮：step 高度下限 = 可视高度
+//     （frameLayoutGuide），列表链尾 ≤ 底锚、居中页 ≥/≤ 包边——高度唯一
+//     可解 = max(内容高, 可视高)。
+//   - 语言步重建：单条标准“设置行”（图标 + Language + 当前值 + chevron，
+//     54pt 固定高 UIButton）点按弹 ActionSheet——“拉得特别长”的选项组
+//     退役；JIT/下载源选项行同样改 UIButton + 固定行高（54/68pt）。
+//   - 视觉（iPadOS 26/27 材质语言）：毛玻璃分组卡（systemMaterial +
+//     24pt 连续圆角）、SF Symbols、壁纸直排文字全部走 BackgroundManager
+//     亮度自适应色（ame223_adaptiveTextColor 族）。
+//   - 图标：新 Assets 图片集 WelcomeAppIcon（复用 AppIcon-Light 既有
+//     1024 美术，不发明图形），ame219_loadAppIcon 候选链首位。
+//   - #15：zl2 灰屏圆圈焦点介绍（Ame223CoachMarksView 重建为 45% 半透明
+//     灰幕 + mask 挖洞 + 光晕圈 + Next/Skip）插在【打开关于页的那一步
+//     （Done）之前】，五页真内容：版本下载 / 版本隔离 / 账号皮肤 /
+//     右侧设置栏 / 联机局域网。
+//
 //  布局架构（⑧ 根治）：
 //   - 常驻骨架一次成型：背景 / 圆点行 / 返回按钮 / 主按钮 / 跳过按钮 /
 //     内容滚动视图（UIScrollView，约束只引用常驻视图，永不失效）。
@@ -33,7 +53,6 @@
 #import "DataTransferService.h"
 #import "UIKit+NativeSurface.h"
 #import "utils.h"
-#import <objc/runtime.h>
 #import "UIKit+hook.h"   // Task223：UIWindow.mainWindow 分类声明（zl2 焦点遮罩取主窗口）
 #include <mach-o/dyld.h>
 #include <unistd.h>
@@ -64,8 +83,8 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
 @property (nonatomic, copy) NSString *pickedJitEnabler;
 /// 是否在向导里改过语言（完成 dismissal 后补发 AppLanguageChanged）。
 @property (nonatomic, assign) BOOL languageChanged;
-/// 语言选项行（选中态切换用）。
-@property (nonatomic, strong) NSMutableArray<UIView *> *langRows;
+/// Task224：语言设置行的当前值标签（ActionSheet 选中后刷新）。
+@property (nonatomic, strong, nullable) UILabel *ame224_langValueLabel;
 /// JIT 方式选项行（选中态切换用）。
 @property (nonatomic, strong) NSMutableArray<UIView *> *jitRows;
 /// 下载源选项卡片（选中态切换用）。
@@ -175,6 +194,8 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
 
     [self ame218_buildChrome];
     [self ame218_showStep:0 animated:NO];
+    NSLog(@"[Welcome] Task224 chrome ready (wallpaper=%d, steps=%ld)",
+          (int)(self.ame223_wallpaperView != nil), (long)ame218_welcomeStepCount);
 
     // 回前台刷新 JIT 状态（StikJIT/SideJIT 常在切后台完成附加——右面板
     // Task96 同款时机；向导期间用户可能去开 JIT 再回来）。
@@ -204,22 +225,28 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     [self.ame223_scrimView removeFromSuperview];
     self.ame223_scrimView = nil;
     UIImage *wall = [[BackgroundManager sharedManager] ame223_currentWallpaperImage];
-    if (wall == nil) return;
-    self.view.backgroundColor = [UIColor clearColor];
-    UIImageView *iv = [[UIImageView alloc] initWithImage:wall];
-    iv.contentMode = UIViewContentModeScaleAspectFill;
-    iv.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    iv.frame = self.view.bounds;
-    [self.view insertSubview:iv atIndex:0];
-    self.ame223_wallpaperView = iv;
-    // 压暗蒙层：暗壁纸轻压（保对比）、亮壁纸重压（白字可读）。
-    BOOL dark = [[BackgroundManager sharedManager] ame223_wallpaperLuminanceIsDark];
-    UIView *scrim = [[UIView alloc] initWithFrame:self.view.bounds];
-    scrim.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    scrim.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:dark ? 0.25 : 0.45];
-    [self.view insertSubview:scrim aboveSubview:iv];
-    self.ame223_scrimView = scrim;
-    NSLog(@"[Welcome] Task223 wallpaper layer applied (dark=%d)", (int)dark);
+    if (wall != nil) {
+        self.view.backgroundColor = [UIColor clearColor];
+        UIImageView *iv = [[UIImageView alloc] initWithImage:wall];
+        iv.contentMode = UIViewContentModeScaleAspectFill;
+        iv.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        iv.frame = self.view.bounds;
+        [self.view insertSubview:iv atIndex:0];
+        self.ame223_wallpaperView = iv;
+        // 压暗蒙层：暗壁纸轻压（保对比）、亮壁纸重压（白字可读）。
+        BOOL dark = [[BackgroundManager sharedManager] ame223_wallpaperLuminanceIsDark];
+        UIView *scrim = [[UIView alloc] initWithFrame:self.view.bounds];
+        scrim.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        scrim.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:dark ? 0.25 : 0.45];
+        [self.view insertSubview:scrim aboveSubview:iv];
+        self.ame223_scrimView = scrim;
+        NSLog(@"[Welcome] Task223 wallpaper layer applied (dark=%d)", (int)dark);
+    } else {
+        self.view.backgroundColor = [UIColor systemBackgroundColor];
+        NSLog(@"[Welcome] Task224 wallpaper layer absent, semantic colors");
+    }
+    // Task224：直排文字/圆点颜色跟随壁纸亮度刷新（无壁纸 = 语义色）。
+    [self ame224_refreshChromeColors];
 }
 
 - (void)ame223_wallpaperChanged:(NSNotification *)n {
@@ -336,10 +363,47 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     NSLayoutConstraint *ame219_scrollCx = [self.contentScrollView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor];
     ame219_scrollCx.priority = UILayoutPriorityRequired - 2;
     ame219_scrollCx.active = YES;
+
+    // Task224：直排元素（跳过按钮/圆点）颜色随壁纸亮度自适应。
+    [self ame224_refreshChromeColors];
+}
+
+#pragma mark - Task224：壁纸直排文字自适应色（BackgroundManager 延伸）
+
+/// 直接坐在壁纸上的主文字色（无壁纸 = 语义色照常）。
+- (UIColor *)ame224_directTextColor {
+    if (self.ame223_wallpaperView != nil) {
+        return [[BackgroundManager sharedManager] ame223_adaptiveTextColor];
+    }
+    return [UIColor labelColor];
+}
+
+/// 直接坐在壁纸上的次级文字色。
+- (UIColor *)ame224_directSecondaryColor {
+    if (self.ame223_wallpaperView != nil) {
+        return [[BackgroundManager sharedManager] ame223_adaptiveSecondaryTextColor];
+    }
+    return [UIColor secondaryLabelColor];
+}
+
+/// 未选中进度圆点色（壁纸上用自适应次级色的六成透明度）。
+- (UIColor *)ame224_dotIdleColor {
+    if (self.ame223_wallpaperView != nil) {
+        return [[self ame224_directSecondaryColor] colorWithAlphaComponent:0.6];
+    }
+    return [UIColor separatorColor];
+}
+
+/// 直排控件颜色刷新（跳过按钮标题 + 未选中圆点）。
+- (void)ame224_refreshChromeColors {
+    [self.secondaryButton setTitleColor:[self ame224_directSecondaryColor]
+                             forState:UIControlStateNormal];
+    [self ame218_updateDots];
 }
 
 /// 圆点状态刷新（选中放大着色 + 弹性动画）。
 - (void)ame218_updateDots {
+    UIColor *ame224_idle = [self ame224_dotIdleColor];
     for (NSInteger i = 0; i < self.stepDots.count; i++) {
         UIView *ame218_dot = self.stepDots[i];
         BOOL ame218_sel = (i == self.stepIndex);
@@ -348,7 +412,7 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
                             animations:^{
             ame218_dot.backgroundColor = ame218_sel
                 ? accentColor()
-                : [UIColor separatorColor];
+                : ame224_idle;
             ame218_dot.transform = ame218_sel
                 ? CGAffineTransformMakeScale(1.55, 1.55)
                 : CGAffineTransformIdentity;
@@ -358,11 +422,13 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
 
 #pragma mark - 通用部件工厂（iPadOS 卡片语言）
 
-/// App 图标加载（⑧ "没有图标装饰" 根治）：多候选——Asset 目录名 + bundle
-/// 根 PNG 实名（resources/ 直拷的 AppIcon-Light60x60@2x.png 等，
-/// imageNamed 需要【不带 @2x 后缀的实名】才能命中）。
+/// App 图标加载（⑧ "没有图标装饰" 根治）：多候选——Task224 新建的
+/// WelcomeAppIcon 图片集（复用 AppIcon-Light 既有 1024 美术，actool 编进
+/// Assets.car）+ bundle 根 PNG 实名（resources/ 直拷的 AppIcon-Light60x60
+/// @2x.png 等，imageNamed 需要【不带 @2x 后缀的实名】才能命中）。
 + (UIImage *)ame219_loadAppIcon {
     NSArray<NSString *> *ame219_names = @[
+        @"WelcomeAppIcon",
         @"AppIcon-Light60x60", @"AppIcon-Light76x76",
         @"AppIcon60x60", @"AppIcon-Light", @"AppIcon",
     ];
@@ -373,13 +439,16 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     return [UIImage systemImageNamed:@"app.fill"];
 }
 
-/// 分组卡片底（iOS 设置风格的行容器）。
-- (UIView *)ame219_card {
-    UIView *ame219_c = [[UIView alloc] init];
-    ame219_c.layer.cornerRadius = 14;
-    ame219_c.layer.cornerCurve = kCACornerCurveContinuous;
-    ame219_c.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
-    return ame219_c;
+/// Task224（#14）：毛玻璃分组卡（systemMaterial + 24pt 连续圆角）——
+/// iPadOS 26/27 材质语言。systemMaterial 自 iOS 13 起可用，无需
+/// @available 分层；子视图必须加到 contentView 上（调用方注意）。
+- (UIVisualEffectView *)ame224_materialCard {
+    UIVisualEffectView *ame224_card = [[UIVisualEffectView alloc]
+        initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial]];
+    ame224_card.layer.cornerRadius = 24.0;
+    ame224_card.layer.cornerCurve = kCACornerCurveContinuous;
+    ame224_card.layer.masksToBounds = YES;
+    return ame224_card;
 }
 
 /// SF Symbol 图标位（圆角方块 + 主色调背景——iPadOS 设置行同款）。
@@ -402,20 +471,20 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     return ame219_tile;
 }
 
-/// 大标题 + 副标题（页面头部）。
+/// 大标题 + 副标题（页面头部；壁纸直排 → 亮度自适应色）。
 - (void)ame219_addHeaderTo:(UIView *)container
                     title:(NSString *)title
                  subtitle:(NSString *)subtitle {
     UILabel *ame219_t = [[UILabel alloc] init];
     ame219_t.text = title;
-    ame219_t.font = [UIFont systemFontOfSize:27 weight:UIFontWeightBold];
-    ame219_t.textColor = [UIColor labelColor];
+    ame219_t.font = [UIFont systemFontOfSize:30 weight:UIFontWeightBold];
+    ame219_t.textColor = [self ame224_directTextColor];
     ame219_t.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:ame219_t];
     UILabel *ame219_s = [[UILabel alloc] init];
     ame219_s.text = subtitle;
-    ame219_s.font = [UIFont systemFontOfSize:14 weight:UIFontWeightRegular];
-    ame219_s.textColor = [UIColor secondaryLabelColor];
+    ame219_s.font = [UIFont systemFontOfSize:15 weight:UIFontWeightRegular];
+    ame219_s.textColor = [self ame224_directSecondaryColor];
     ame219_s.numberOfLines = 0;
     ame219_s.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:ame219_s];
@@ -465,8 +534,15 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         [ame218_new.trailingAnchor constraintEqualToAnchor:self.contentScrollView.contentLayoutGuide.trailingAnchor],
         [ame218_new.bottomAnchor constraintEqualToAnchor:self.contentScrollView.contentLayoutGuide.bottomAnchor],
         [ame218_new.widthAnchor constraintEqualToAnchor:self.contentScrollView.frameLayoutGuide.widthAnchor],
+        // ★ Task224（#14 根治）：step 高度下限 = 可视高度。配合各步内容链
+        //   尾的 ≤ 底锚（Hero/Done 为 ≥/≤ 包边 + centerY），步骤高度唯一
+        //   可解 = max(内容高, 可视高)——Task223 版列表链无底锚的高度歧义
+        //   （step 被解成 0/任意值，子视图渲染在 bounds 外 → hitTest 逐级
+        //   pointInside 失败 = “按钮仍点不了”）从此不可达。
+        [ame218_new.heightAnchor constraintGreaterThanOrEqualToAnchor:self.contentScrollView.frameLayoutGuide.heightAnchor],
     ]];
     self.currentStepView = ame218_new;
+    NSLog(@"[Welcome] Task224 showStep %ld (self-sizing floor active)", (long)index);
 
     switch (index) {
         case 0: [self ame218_buildHeroStep:ame218_new]; break;
@@ -530,8 +606,42 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
             setPrefObject(@"debug.jit_enabler", self.pickedJitEnabler ?: @"auto");
             NSLog(@"[Welcome] Task219: jit_enabler set to %@ in onboarding", self.pickedJitEnabler);
         }
+        // ★ Task224（#15）：介绍页之后、Done（打开关于页的那一步）之前，
+        //   插入 zl2 灰屏圆圈焦点介绍；走完/跳过再进 Done。
+        if (self.stepIndex == 5) {
+            [self ame224_presentFocusIntro];
+            return;
+        }
         [self ame218_showStep:self.stepIndex + 1 animated:YES];
     }
+}
+
+/// Task224（#15）：zl2 风格灰屏圆圈焦点介绍——五页真内容，插在【打开
+/// 关于页的那一步（Done）之前】。走完（或跳过）再进 Done 步。
+- (void)ame224_presentFocusIntro {
+    NSArray<NSDictionary *> *ame224_pages = @[
+        @{ @"icon": @"arrow.down.circle.fill",
+           @"title": localize(@"welcome.focus.versions.title", nil),
+           @"body": localize(@"welcome.focus.versions.body", nil) },
+        @{ @"icon": @"square.stack.3d.up.fill",
+           @"title": localize(@"welcome.focus.isolation.title", nil),
+           @"body": localize(@"welcome.focus.isolation.body", nil) },
+        @{ @"icon": @"person.crop.circle.fill",
+           @"title": localize(@"welcome.focus.accounts.title", nil),
+           @"body": localize(@"welcome.focus.accounts.body", nil) },
+        @{ @"icon": @"gearshape.fill",
+           @"title": localize(@"welcome.focus.sidebar.title", nil),
+           @"body": localize(@"welcome.focus.sidebar.body", nil) },
+        @{ @"icon": @"person.3.fill",
+           @"title": localize(@"welcome.focus.multiplayer.title", nil),
+           @"body": localize(@"welcome.focus.multiplayer.body", nil) },
+    ];
+    NSLog(@"[Welcome] Task224 focus intro begin (%lu pages)", (unsigned long)ame224_pages.count);
+    __weak typeof(self) weakSelf = self;
+    [Ame223CoachMarksView showFeatureSequence:ame224_pages completion:^{
+        NSLog(@"[Welcome] Task224 focus intro finished -> Done step");
+        [weakSelf ame218_showStep:6 animated:YES];
+    }];
 }
 
 /// 返回上一步（⑧ 补齐；JIT/语言的选择值保留在属性上，来回切换不丢）。
@@ -556,94 +666,22 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
             [[NSNotificationCenter defaultCenter] postNotificationName:@"AppLanguageChanged"
                                                                 object:self.pickedLanguage ?: @"system"];
         }
-        // ⑥ 完成步收尾 → 【zl2 灰屏圆圈焦点介绍】→ 关于页（版本/QQ 群/
-        // 更新检查都在那里，首次使用者最需要看一眼；跳过路径两者都不弹）。
+        // ⑥ 完成步收尾 → 关于页（版本/QQ 群/更新检查都在那里，首次使用者
+        // 最需要看一眼；跳过路径不弹）。★ Task224（#15）：zl2 灰屏圆圈焦点
+        // 介绍已前移到向导内（Done 步之前，见 ame224_presentFocusIntro）——
+        // 此处不再叠加向导后引导层，避免双重介绍。
         if (openAbout && ame219_presenter != nil) {
-            // ★ Task223（清单第 16 项）：先焦点引导（向导完成后主界面的
-            //   灰屏圆圈介绍），走完再弹关于页——顺序即用户描述。
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.45 * NSEC_PER_SEC)),
                            dispatch_get_main_queue(), ^{
-                [WelcomeViewController ame223_showCoachMarksThenAboutFrom:ame219_presenter];
+                AboutViewController *ame224_about = [[AboutViewController alloc] init];
+                UINavigationController *ame224_nav = [[UINavigationController alloc]
+                    initWithRootViewController:ame224_about];
+                ame224_nav.modalPresentationStyle = UIModalPresentationPageSheet;
+                [ame219_presenter presentViewController:ame224_nav animated:YES completion:nil];
+                NSLog(@"[Welcome] Task224 about page presented after wizard");
             });
         }
     }];
-}
-
-/// Task223：zl2 风格焦点引导（主界面三个锚点：导航/版本卡/右侧面板），
-/// 走完后打开关于页。锚点从呈现者的视图树里按导航控制器与按钮位置
-/// 现场探测（两种主布局通吃）；探测不到的锚点自动剔除，全空则直接
-/// 进关于页（引导是增强，绝不阻塞）。
-+ (void)ame223_showCoachMarksThenAboutFrom:(UIViewController *)presenter {
-    NSMutableArray<NSDictionary *> *items = [NSMutableArray array];
-    UIWindow *window = UIWindow.mainWindow;
-
-    // 锚点 1：左/侧导航（根分栏的第一个子 VC 的视图）
-    UIViewController *root = window.rootViewController;
-    NSArray<UIViewController *> *children = root.childViewControllers;
-    if (children.count > 0 && children[0].isViewLoaded && children[0].view.window) {
-        CGRect r = [Ame223CoachMarksView screenRectForView:children[0].view];
-        if (!CGRectIsNull(r)) {
-            [items addObject:@{
-                @"rect": [NSValue valueWithCGRect:r],
-                @"title": localize(@"coachmarks.nav.title", nil),
-                @"body": localize(@"coachmarks.nav.body", nil),
-                @"round": @NO,
-            }];
-        }
-    }
-
-    // 锚点 2：主内容区（最后一个子 VC = 内容/版本卡片区）
-    if (children.count > 1) {
-        UIViewController *content = children.lastObject;
-        if (content.isViewLoaded && content.view.window) {
-            CGRect r = [Ame223CoachMarksView screenRectForView:content.view];
-            if (!CGRectIsNull(r)) {
-                [items addObject:@{
-                    @"rect": [NSValue valueWithCGRect:r],
-                    @"title": localize(@"coachmarks.content.title", nil),
-                    @"body": localize(@"coachmarks.content.body", nil),
-                    @"round": @NO,
-                }];
-            }
-        }
-    }
-
-    // 锚点 3：右侧面板（启动/JIT 所在——从内容区里找最右侧的大按钮组；
-    // 通用探测：取主窗口层级中最后一个可见 UIButton 的父容器）。
-    CGRect btnRect = CGRectNull;
-    for (UIView *v in window.subviews) {
-        CGRect r = [Ame223CoachMarksView screenRectForView:v];
-        if (CGRectIsNull(r)) continue;
-        for (UIView *sub in v.subviews) {
-            if ([sub isKindOfClass:UIButton.class] && sub.frame.size.height > 40 && sub.alpha > 0.5) {
-                CGRect sr = [Ame223CoachMarksView screenRectForView:sub];
-                if (!CGRectIsNull(sr) && (CGRectIsNull(btnRect) || CGRectGetMidX(sr) > CGRectGetMidX(btnRect))) {
-                    btnRect = CGRectInset(sr, -18, -18);
-                }
-            }
-        }
-    }
-    if (!CGRectIsNull(btnRect)) {
-        [items addObject:@{
-            @"rect": [NSValue valueWithCGRect:btnRect],
-            @"title": localize(@"coachmarks.launch.title", nil),
-            @"body": localize(@"coachmarks.launch.body", nil),
-            @"round": @YES,
-        }];
-    }
-
-    void (^presentAbout)(void) = ^{
-        AboutViewController *ame219_about = [[AboutViewController alloc] init];
-        UINavigationController *ame219_nav = [[UINavigationController alloc]
-            initWithRootViewController:ame219_about];
-        ame219_nav.modalPresentationStyle = UIModalPresentationPageSheet;
-        [presenter presentViewController:ame219_nav animated:YES completion:nil];
-    };
-    if (items.count == 0) {
-        presentAbout();
-        return;
-    }
-    [Ame223CoachMarksView showSequence:items completion:presentAbout];
 }
 
 #pragma mark - 步骤内容：0 Hero
@@ -670,7 +708,7 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     NSDictionary *ame218_info = NSBundle.mainBundle.infoDictionary;
     ame218_name.text = ame218_info[@"CFBundleDisplayName"] ?: @"Prisma";
     ame218_name.font = [UIFont systemFontOfSize:34 weight:UIFontWeightBold];
-    ame218_name.textColor = [UIColor labelColor];
+    ame218_name.textColor = [self ame224_directTextColor];   // Task224：壁纸直排自适应
     ame218_name.textAlignment = NSTextAlignmentCenter;
     ame218_name.translatesAutoresizingMaskIntoConstraints = NO;
     [ame218_center addSubview:ame218_name];
@@ -679,7 +717,7 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     ame218_version.text = [NSString stringWithFormat:@"v%@",
         ame218_info[@"CFBundleShortVersionString"] ?: @"6.5.0"];
     ame218_version.font = [UIFont monospacedDigitSystemFontOfSize:14 weight:UIFontWeightMedium];
-    ame218_version.textColor = [UIColor secondaryLabelColor];
+    ame218_version.textColor = [self ame224_directSecondaryColor];   // Task224：壁纸直排自适应
     ame218_version.textAlignment = NSTextAlignmentCenter;
     ame218_version.translatesAutoresizingMaskIntoConstraints = NO;
     [ame218_center addSubview:ame218_version];
@@ -687,7 +725,7 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     UILabel *ame218_tagline = [[UILabel alloc] init];
     ame218_tagline.text = localize(@"welcome.hero.subtitle", nil);
     ame218_tagline.font = [UIFont systemFontOfSize:15 weight:UIFontWeightRegular];
-    ame218_tagline.textColor = [UIColor secondaryLabelColor];
+    ame218_tagline.textColor = [self ame224_directSecondaryColor];   // Task224：壁纸直排自适应
     ame218_tagline.textAlignment = NSTextAlignmentCenter;
     ame218_tagline.numberOfLines = 0;
     ame218_tagline.translatesAutoresizingMaskIntoConstraints = NO;
@@ -698,6 +736,10 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         [ame218_center.centerYAnchor constraintEqualToAnchor:container.centerYAnchor],
         [ame218_center.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
         [ame218_center.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        // Task224（#14 根治）：≥/≤ 包边——配合 showStep 的高度下限，居中页
+        // 高度唯一可解（Task223 版只有 centerY = 歧义高度 → 触点出界）。
+        [ame218_center.topAnchor constraintGreaterThanOrEqualToAnchor:container.topAnchor constant:16],
+        [ame218_center.bottomAnchor constraintLessThanOrEqualToAnchor:container.bottomAnchor constant:-16],
 
         [ame218_icon.centerXAnchor constraintEqualToAnchor:ame218_center.centerXAnchor],
         [ame218_icon.topAnchor constraintEqualToAnchor:ame218_center.topAnchor],
@@ -739,7 +781,7 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     } completion:nil];
 }
 
-#pragma mark - 步骤内容：1 语言
+#pragma mark - 步骤内容：1 语言（Task224 重建：设置行 + ActionSheet）
 
 - (void)ame218_buildLanguageStep:(UIView *)container {
     [self ame219_addHeaderTo:container
@@ -747,135 +789,225 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
                     subtitle:localize(@"welcome.lang.subtitle", nil)];
     UIView *ame219_anchor = container.subviews.lastObject;
 
-    // iOS 设置风格选项卡（白卡 + 图标位 + 勾选徽标）
-    UIView *ame219_group = [self ame219_card];
-    ame219_group.translatesAutoresizingMaskIntoConstraints = NO;
-    [container addSubview:ame219_group];
-    UIStackView *ame219_rows = [[UIStackView alloc] init];
-    ame219_rows.axis = UILayoutConstraintAxisVertical;
-    ame219_rows.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame219_group addSubview:ame219_rows];
+    // ★ Task224（#14）：语言选择改单条标准“设置行”（图标 + Language +
+    //   当前值 + chevron，54pt 固定高 UIButton）——点按弹 ActionSheet 四选
+    //   一。病历：Task223 版是四条挂 UITapGestureRecognizer 的普通视图行，
+    //   且步骤叶子高度歧义 → 行渲染在 step bounds 外 = 点不了 + 行被拉得
+    //   特别长不像选项行。UIControl 命中测试 + 固定行高 + 步骤高度下限三
+    //   保险齐上。
+    UIVisualEffectView *ame224_group = [self ame224_materialCard];
+    ame224_group.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:ame224_group];
 
-    self.langRows = [NSMutableArray array];
-    NSArray<NSString *> *ame218_codes = @[@"system", @"zh-Hans", @"zh-Hant", @"en"];
-    NSArray<NSString *> *ame218_labels = @[
-        localize(@"i18n_str_382", nil),   // 跟随系统（复用语言行同键）
-        @"简体中文",
-        @"繁體中文",
-        @"English",
-    ];
-    NSArray<NSString *> *ame219_icons = @[@"gearshape", @"globe", @"globe", @"globe"];
-    for (NSUInteger i = 0; i < ame218_codes.count; i++) {
-        UIView *ame219_row = [self ame219_optionRowWithIcon:ame219_icons[i]
-                                                       title:ame218_labels[i]
-                                                    subtitle:nil];
-        objc_setAssociatedObject(ame219_row, "ame219.idx", @(i), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        ame219_row.userInteractionEnabled = YES;
-        UITapGestureRecognizer *ame219_tap = [[UITapGestureRecognizer alloc]
-            initWithTarget:self action:@selector(ame218_langPicked:)];
-        [ame219_row addGestureRecognizer:ame219_tap];
-        [ame219_rows addArrangedSubview:ame219_row];
-        [self.langRows addObject:ame219_row];
-    }
+    UIButton *ame224_row = [UIButton buttonWithType:UIButtonTypeSystem];
+    ame224_row.accessibilityLabel = localize(@"welcome.lang.row.title", nil);
+    ame224_row.backgroundColor = [UIColor clearColor];
+    ame224_row.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame224_row addTarget:self action:@selector(ame224_langRowTapped:)
+         forControlEvents:UIControlEventTouchUpInside];
+
+    UIView *ame224_tile = [self ame219_iconTile:@"globe" filled:NO];
+    ame224_tile.translatesAutoresizingMaskIntoConstraints = NO;
+    ame224_tile.userInteractionEnabled = NO;
+    [ame224_row addSubview:ame224_tile];
+
+    UILabel *ame224_title = [[UILabel alloc] init];
+    ame224_title.text = localize(@"welcome.lang.row.title", nil);
+    ame224_title.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
+    ame224_title.textColor = [UIColor labelColor];
+    ame224_title.userInteractionEnabled = NO;
+    ame224_title.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame224_row addSubview:ame224_title];
+
+    self.ame224_langValueLabel = [[UILabel alloc] init];
+    self.ame224_langValueLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightRegular];
+    self.ame224_langValueLabel.textColor = [UIColor secondaryLabelColor];
+    self.ame224_langValueLabel.userInteractionEnabled = NO;
+    self.ame224_langValueLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame224_row addSubview:self.ame224_langValueLabel];
+
+    UIImageView *ame224_chev = [[UIImageView alloc]
+        initWithImage:[UIImage systemImageNamed:@"chevron.right"]];
+    ame224_chev.tintColor = [UIColor tertiaryLabelColor];
+    ame224_chev.contentMode = UIViewContentModeScaleAspectFit;
+    ame224_chev.userInteractionEnabled = NO;
+    ame224_chev.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame224_row addSubview:ame224_chev];
+
+    [ame224_group.contentView addSubview:ame224_row];
+    [NSLayoutConstraint activateConstraints:@[
+        [ame224_row.topAnchor constraintEqualToAnchor:ame224_group.contentView.topAnchor constant:6],
+        [ame224_row.leadingAnchor constraintEqualToAnchor:ame224_group.contentView.leadingAnchor constant:6],
+        [ame224_row.trailingAnchor constraintEqualToAnchor:ame224_group.contentView.trailingAnchor constant:-6],
+        [ame224_row.bottomAnchor constraintEqualToAnchor:ame224_group.contentView.bottomAnchor constant:-6],
+        [ame224_row.heightAnchor constraintEqualToConstant:54],
+
+        [ame224_tile.leadingAnchor constraintEqualToAnchor:ame224_row.leadingAnchor constant:12],
+        [ame224_tile.centerYAnchor constraintEqualToAnchor:ame224_row.centerYAnchor],
+        [ame224_tile.widthAnchor constraintEqualToConstant:30],
+        [ame224_tile.heightAnchor constraintEqualToConstant:30],
+
+        [ame224_title.leadingAnchor constraintEqualToAnchor:ame224_tile.trailingAnchor constant:12],
+        [ame224_title.centerYAnchor constraintEqualToAnchor:ame224_row.centerYAnchor],
+        [ame224_title.trailingAnchor constraintLessThanOrEqualToAnchor:self.ame224_langValueLabel.leadingAnchor constant:-8],
+
+        [ame224_chev.trailingAnchor constraintEqualToAnchor:ame224_row.trailingAnchor constant:-14],
+        [ame224_chev.centerYAnchor constraintEqualToAnchor:ame224_row.centerYAnchor],
+        [ame224_chev.widthAnchor constraintEqualToConstant:14],
+        [ame224_chev.heightAnchor constraintEqualToConstant:20],
+
+        [self.ame224_langValueLabel.trailingAnchor constraintEqualToAnchor:ame224_chev.leadingAnchor constant:-8],
+        [self.ame224_langValueLabel.centerYAnchor constraintEqualToAnchor:ame224_row.centerYAnchor],
+    ]];
 
     UILabel *ame218_more = [[UILabel alloc] init];
     ame218_more.text = localize(@"welcome.lang.more", nil);
     ame218_more.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
-    ame218_more.textColor = [UIColor tertiaryLabelColor];
+    ame218_more.textColor = [self ame224_directSecondaryColor];
     ame218_more.numberOfLines = 0;
     ame218_more.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:ame218_more];
 
     [NSLayoutConstraint activateConstraints:@[
-        [ame219_group.topAnchor constraintEqualToAnchor:ame219_anchor.bottomAnchor constant:22],
-        [ame219_group.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
-        [ame219_group.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-        [ame219_rows.topAnchor constraintEqualToAnchor:ame219_group.topAnchor constant:6],
-        [ame219_rows.leadingAnchor constraintEqualToAnchor:ame219_group.leadingAnchor constant:6],
-        [ame219_rows.trailingAnchor constraintEqualToAnchor:ame219_group.trailingAnchor constant:-6],
-        [ame219_rows.bottomAnchor constraintEqualToAnchor:ame219_group.bottomAnchor constant:-6],
-
-        [ame218_more.topAnchor constraintEqualToAnchor:ame219_group.bottomAnchor constant:12],
+        [ame224_group.topAnchor constraintEqualToAnchor:ame219_anchor.bottomAnchor constant:22],
+        [ame224_group.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [ame224_group.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [ame218_more.topAnchor constraintEqualToAnchor:ame224_group.bottomAnchor constant:12],
         [ame218_more.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:4],
         [ame218_more.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-4],
+        // Task224：链尾 ≤ 底锚（配合 showStep 高度下限——步骤高度唯一可解）
+        [ame218_more.bottomAnchor constraintLessThanOrEqualToAnchor:container.bottomAnchor constant:-10],
     ]];
 
-    [self ame218_refreshLangButtons];
+    [self ame224_refreshLangValue];
 }
 
-- (void)ame218_langPicked:(UITapGestureRecognizer *)gesture {
-    NSNumber *ame219_idx = objc_getAssociatedObject(gesture.view, "ame219.idx");
-    if (![ame219_idx isKindOfClass:NSNumber.class]) return;
-    NSArray<NSString *> *ame218_codes = @[@"system", @"zh-Hans", @"zh-Hant", @"en"];
-    self.pickedLanguage = ame218_codes[(NSUInteger)ame219_idx.integerValue];
-    self.languageChanged = YES;
-    [self ame218_refreshLangButtons];
-}
-
-- (void)ame218_refreshLangButtons {
-    NSArray<NSString *> *ame218_codes = @[@"system", @"zh-Hans", @"zh-Hant", @"en"];
-    for (NSUInteger i = 0; i < self.langRows.count; i++) {
-        [self ame219_refreshOptionRow:self.langRows[i]
-                            selected:[self.pickedLanguage isEqualToString:ame218_codes[i]]];
+/// Task224：语言行点按 → ActionSheet（四选项，当前项 ✓ 前缀）。
+- (void)ame224_langRowTapped:(UIButton *)sender {
+    NSArray<NSString *> *ame224_codes = @[@"system", @"zh-Hans", @"zh-Hant", @"en"];
+    NSArray<NSString *> *ame224_names = @[
+        localize(@"i18n_str_382", nil),   // 跟随系统（语言行同键复用）
+        @"简体中文",
+        @"繁體中文",
+        @"English",
+    ];
+    NSLog(@"[Welcome] Task224 language picker opened (current=%@)", self.pickedLanguage);
+    UIAlertController *ame224_sheet = [UIAlertController
+        alertControllerWithTitle:localize(@"welcome.lang.row.title", nil)
+                         message:nil
+                  preferredStyle:UIAlertControllerStyleActionSheet];
+    for (NSUInteger i = 0; i < ame224_codes.count; i++) {
+        NSString *ame224_code = ame224_codes[i];
+        NSString *ame224_name = ame224_names[i];
+        BOOL ame224_current = [self.pickedLanguage isEqualToString:ame224_code];
+        [ame224_sheet addAction:[UIAlertAction
+            actionWithTitle:ame224_current ? [NSString stringWithFormat:@"✓ %@", ame224_name] : ame224_name
+                     style:UIAlertActionStyleDefault
+                   handler:^(UIAlertAction *ame224_act) {
+            self.pickedLanguage = ame224_code;
+            self.languageChanged = YES;
+            NSLog(@"[Welcome] Task224 language picked: %@", ame224_code);
+            [self ame224_refreshLangValue];
+        }]];
     }
+    [ame224_sheet addAction:[UIAlertAction actionWithTitle:localize(@"Cancel", nil)
+                                                     style:UIAlertActionStyleCancel
+                                                   handler:nil]];
+    ame224_sheet.popoverPresentationController.sourceView = sender;
+    ame224_sheet.popoverPresentationController.sourceRect = sender.bounds;
+    [self presentViewController:ame224_sheet animated:YES completion:nil];
 }
 
-#pragma mark - 选项行工厂（iOS 设置风格：图标位 + 标题 + 勾选徽标）
+/// Task224：语言行当前值刷新。
+- (void)ame224_refreshLangValue {
+    if (self.ame224_langValueLabel == nil) return;
+    NSArray<NSString *> *ame224_codes = @[@"system", @"zh-Hans", @"zh-Hant", @"en"];
+    NSArray<NSString *> *ame224_names = @[
+        localize(@"i18n_str_382", nil), @"简体中文", @"繁體中文", @"English",
+    ];
+    NSString *ame224_value = ame224_names[0];
+    NSUInteger ame224_i = [ame224_codes indexOfObject:(self.pickedLanguage ?: @"system")];
+    if (ame224_i != NSNotFound && ame224_i < ame224_names.count) {
+        ame224_value = ame224_names[ame224_i];
+    }
+    self.ame224_langValueLabel.text = ame224_value;
+}
 
-- (UIView *)ame219_optionRowWithIcon:(NSString *)symbol title:(NSString *)title subtitle:(nullable NSString *)subtitle {
-    UIView *ame219_row = [[UIView alloc] init];
-    ame219_row.backgroundColor = [UIColor clearColor];
+#pragma mark - 选项行工厂（Task224 重建：UIButton 承载命中测试 + 固定行高）
 
-    UIView *ame219_tile = [self ame219_iconTile:symbol filled:NO];
-    ame219_tile.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame219_row addSubview:ame219_tile];
+/// 选项行：图标块（显式 30x30）+ 标题（+副标题）+ 勾选徽标。UIButton =
+/// UIControl 命中测试（整行可点）；固定行高 54（无副标题）/ 68（有副标
+/// 题）——杜绝 Task223 版“行被拉得特别长”。行内子视图
+/// userInteractionEnabled=NO，触点全部归按钮。
+- (UIButton *)ame224_selectionRowWithIcon:(NSString *)symbol
+                                    title:(NSString *)title
+                                 subtitle:(nullable NSString *)subtitle {
+    UIButton *ame224_row = [UIButton buttonWithType:UIButtonTypeSystem];
+    ame224_row.backgroundColor = [UIColor clearColor];
+    ame224_row.accessibilityLabel = title;
 
-    UILabel *ame219_title = [[UILabel alloc] init];
-    ame219_title.text = title;
-    ame219_title.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
-    ame219_title.textColor = [UIColor labelColor];
-    ame219_title.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame219_row addSubview:ame219_title];
+    UIView *ame224_tile = [self ame219_iconTile:symbol filled:NO];
+    ame224_tile.translatesAutoresizingMaskIntoConstraints = NO;
+    ame224_tile.userInteractionEnabled = NO;
+    [ame224_row addSubview:ame224_tile];
 
-    // 勾选徽标（选中时弹入；关联取用）
-    UIImageView *ame219_check = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"checkmark.circle.fill"]];
-    ame219_check.tintColor = accentColor();
-    ame219_check.contentMode = UIViewContentModeScaleAspectFit;
-    ame219_check.translatesAutoresizingMaskIntoConstraints = NO;
-    ame219_check.tag = 0xA219;
-    [ame219_row addSubview:ame219_check];
+    UILabel *ame224_title = [[UILabel alloc] init];
+    ame224_title.text = title;
+    ame224_title.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+    ame224_title.textColor = [UIColor labelColor];
+    ame224_title.userInteractionEnabled = NO;
+    ame224_title.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame224_row addSubview:ame224_title];
+
+    // 勾选徽标（选中时弹入；tag 供 ame219_refreshOptionRow 查找）
+    UIImageView *ame224_check = [[UIImageView alloc]
+        initWithImage:[UIImage systemImageNamed:@"checkmark.circle.fill"]];
+    ame224_check.tintColor = accentColor();
+    ame224_check.contentMode = UIViewContentModeScaleAspectFit;
+    ame224_check.userInteractionEnabled = NO;
+    ame224_check.translatesAutoresizingMaskIntoConstraints = NO;
+    ame224_check.tag = 0xA219;
+    [ame224_row addSubview:ame224_check];
 
     [NSLayoutConstraint activateConstraints:@[
-        [ame219_tile.leadingAnchor constraintEqualToAnchor:ame219_row.leadingAnchor constant:12],
-        [ame219_tile.centerYAnchor constraintEqualToAnchor:ame219_row.centerYAnchor],
+        [ame224_tile.leadingAnchor constraintEqualToAnchor:ame224_row.leadingAnchor constant:12],
+        [ame224_tile.centerYAnchor constraintEqualToAnchor:ame224_row.centerYAnchor],
+        [ame224_tile.widthAnchor constraintEqualToConstant:30],
+        [ame224_tile.heightAnchor constraintEqualToConstant:30],
 
-        [ame219_title.leadingAnchor constraintEqualToAnchor:ame219_tile.trailingAnchor constant:12],
-        [ame219_title.centerYAnchor constraintEqualToAnchor:ame219_row.centerYAnchor],
-
-        [ame219_check.trailingAnchor constraintEqualToAnchor:ame219_row.trailingAnchor constant:-12],
-        [ame219_check.centerYAnchor constraintEqualToAnchor:ame219_row.centerYAnchor],
-        [ame219_check.widthAnchor constraintEqualToConstant:22],
-        [ame219_check.heightAnchor constraintEqualToConstant:22],
+        [ame224_check.trailingAnchor constraintEqualToAnchor:ame224_row.trailingAnchor constant:-12],
+        [ame224_check.centerYAnchor constraintEqualToAnchor:ame224_row.centerYAnchor],
+        [ame224_check.widthAnchor constraintEqualToConstant:22],
+        [ame224_check.heightAnchor constraintEqualToConstant:22],
     ]];
 
     if (subtitle.length > 0) {
-        UILabel *ame219_sub = [[UILabel alloc] init];
-        ame219_sub.text = subtitle;
-        ame219_sub.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
-        ame219_sub.textColor = [UIColor secondaryLabelColor];
-        ame219_sub.numberOfLines = 0;
-        ame219_sub.translatesAutoresizingMaskIntoConstraints = NO;
-        [ame219_row addSubview:ame219_sub];
+        UILabel *ame224_sub = [[UILabel alloc] init];
+        ame224_sub.text = subtitle;
+        ame224_sub.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
+        ame224_sub.textColor = [UIColor secondaryLabelColor];
+        ame224_sub.numberOfLines = 2;
+        ame224_sub.userInteractionEnabled = NO;
+        ame224_sub.translatesAutoresizingMaskIntoConstraints = NO;
+        [ame224_row addSubview:ame224_sub];
         [NSLayoutConstraint activateConstraints:@[
-            [ame219_sub.leadingAnchor constraintEqualToAnchor:ame219_title.leadingAnchor],
-            [ame219_sub.trailingAnchor constraintEqualToAnchor:ame219_check.leadingAnchor constant:-8],
-            [ame219_sub.topAnchor constraintEqualToAnchor:ame219_title.bottomAnchor constant:1],
-            [ame219_row.heightAnchor constraintGreaterThanOrEqualToConstant:60],
+            [ame224_title.leadingAnchor constraintEqualToAnchor:ame224_tile.trailingAnchor constant:12],
+            [ame224_title.topAnchor constraintEqualToAnchor:ame224_row.topAnchor constant:12],
+            [ame224_sub.leadingAnchor constraintEqualToAnchor:ame224_title.leadingAnchor],
+            [ame224_sub.trailingAnchor constraintLessThanOrEqualToAnchor:ame224_check.leadingAnchor constant:-8],
+            [ame224_sub.topAnchor constraintEqualToAnchor:ame224_title.bottomAnchor constant:2],
+            [ame224_sub.bottomAnchor constraintLessThanOrEqualToAnchor:ame224_row.bottomAnchor constant:-10],
+            [ame224_row.heightAnchor constraintEqualToConstant:68],
         ]];
     } else {
-        [ame219_row.heightAnchor constraintEqualToConstant:52].active = YES;
+        [NSLayoutConstraint activateConstraints:@[
+            [ame224_title.leadingAnchor constraintEqualToAnchor:ame224_tile.trailingAnchor constant:12],
+            [ame224_title.centerYAnchor constraintEqualToAnchor:ame224_row.centerYAnchor],
+            [ame224_title.trailingAnchor constraintLessThanOrEqualToAnchor:ame224_check.leadingAnchor constant:-8],
+            [ame224_row.heightAnchor constraintEqualToConstant:54],
+        ]];
     }
-    return ame219_row;
+    return ame224_row;
 }
 
 /// 选中态刷新（勾选弹入 + 行背景脉冲）。
@@ -916,14 +1048,14 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     NSLog(@"[Welcome] Task219 env: LiveContainer=%d mainBundleId=%@ hostBundleId=%@ idMatch=%d",
           ame219_inLC, ame219_mainId, ame219_hostId, ame219_idOk);
 
-    UIView *ame219_lcCard = [self ame219_card];
+    UIVisualEffectView *ame219_lcCard = [self ame224_materialCard];
     ame219_lcCard.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:ame219_lcCard];
     UIStackView *ame219_lcStack = [[UIStackView alloc] init];
     ame219_lcStack.axis = UILayoutConstraintAxisVertical;
     ame219_lcStack.spacing = 8;
     ame219_lcStack.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame219_lcCard addSubview:ame219_lcStack];
+    [ame219_lcCard.contentView addSubview:ame219_lcStack];
 
     UIView *ame219_lcHead = [[UIView alloc] init];
     UIView *ame219_lcTile = [self ame219_iconTile:ame219_inLC ? @"square.3.layers.3d" : @"checkmark.shield"
@@ -941,6 +1073,8 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     [NSLayoutConstraint activateConstraints:@[
         [ame219_lcTile.leadingAnchor constraintEqualToAnchor:ame219_lcHead.leadingAnchor constant:14],
         [ame219_lcTile.centerYAnchor constraintEqualToAnchor:ame219_lcHead.centerYAnchor],
+        [ame219_lcTile.widthAnchor constraintEqualToConstant:34],
+        [ame219_lcTile.heightAnchor constraintEqualToConstant:34],
         [ame219_lcTitle.leadingAnchor constraintEqualToAnchor:ame219_lcTile.trailingAnchor constant:12],
         [ame219_lcTitle.trailingAnchor constraintEqualToAnchor:ame219_lcHead.trailingAnchor constant:-14],
         [ame219_lcTitle.topAnchor constraintEqualToAnchor:ame219_lcHead.topAnchor constant:12],
@@ -1007,25 +1141,25 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     UILabel *ame219_jitSection = [[UILabel alloc] init];
     ame219_jitSection.text = localize(@"welcome.jit.title", nil);
     ame219_jitSection.font = [UIFont systemFontOfSize:19 weight:UIFontWeightBold];
-    ame219_jitSection.textColor = [UIColor labelColor];
+    ame219_jitSection.textColor = [self ame224_directTextColor];   // Task224：壁纸直排自适应
     ame219_jitSection.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:ame219_jitSection];
 
     UILabel *ame219_jitSub = [[UILabel alloc] init];
     ame219_jitSub.text = localize(@"welcome.jit.subtitle", nil);
     ame219_jitSub.font = [UIFont systemFontOfSize:13 weight:UIFontWeightRegular];
-    ame219_jitSub.textColor = [UIColor secondaryLabelColor];
+    ame219_jitSub.textColor = [self ame224_directSecondaryColor];   // Task224：壁纸直排自适应
     ame219_jitSub.numberOfLines = 0;
     ame219_jitSub.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:ame219_jitSub];
 
     // 状态行（图标 + 文案 + 立即开启按钮）
-    UIView *ame219_statusCard = [self ame219_card];
+    UIVisualEffectView *ame219_statusCard = [self ame224_materialCard];
     ame219_statusCard.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:ame219_statusCard];
     UIView *ame219_statusRow = [[UIView alloc] init];
     ame219_statusRow.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame219_statusCard addSubview:ame219_statusRow];
+    [ame219_statusCard.contentView addSubview:ame219_statusRow];
 
     UIImageView *ame219_jitIcon = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"hare"]];
     ame219_jitIcon.tintColor = [UIColor systemOrangeColor];
@@ -1068,13 +1202,13 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     ]];
 
     // 方式选择卡（debug.jit_enabler 七选项，键文案复用设置页）
-    UIView *ame219_jitGroup = [self ame219_card];
+    UIVisualEffectView *ame219_jitGroup = [self ame224_materialCard];
     ame219_jitGroup.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:ame219_jitGroup];
     UIStackView *ame219_jitRows = [[UIStackView alloc] init];
     ame219_jitRows.axis = UILayoutConstraintAxisVertical;
     ame219_jitRows.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame219_jitGroup addSubview:ame219_jitRows];
+    [ame219_jitGroup.contentView addSubview:ame219_jitRows];
 
     self.jitRows = [NSMutableArray array];
     NSArray<NSString *> *ame219_keys = @[@"auto", @"stikjit", @"sidestore", @"stosdebug",
@@ -1089,23 +1223,22 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         localize(@"preference.debug.jit_enabler.manual", nil),
     ];
     for (NSUInteger i = 0; i < ame219_keys.count; i++) {
-        UIView *ame219_row = [self ame219_optionRowWithIcon:@"bolt"
-                                                       title:ame219_names[i]
-                                                    subtitle:nil];
-        objc_setAssociatedObject(ame219_row, "ame219.jitIdx", @(i), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        ame219_row.userInteractionEnabled = YES;
-        UITapGestureRecognizer *ame219_tap = [[UITapGestureRecognizer alloc]
-            initWithTarget:self action:@selector(ame219_jitPicked:)];
-        [ame219_row addGestureRecognizer:ame219_tap];
-        [ame219_jitRows addArrangedSubview:ame219_row];
-        [self.jitRows addObject:ame219_row];
+        // Task224：选项行改 UIButton + tag（UIControl 命中测试 + 固定 54pt）
+        UIButton *ame224_row = [self ame224_selectionRowWithIcon:@"bolt"
+                                                           title:ame219_names[i]
+                                                        subtitle:nil];
+        ame224_row.tag = 1000 + (NSInteger)i;
+        [ame224_row addTarget:self action:@selector(ame224_jitRowTapped:)
+           forControlEvents:UIControlEventTouchUpInside];
+        [ame219_jitRows addArrangedSubview:ame224_row];
+        [self.jitRows addObject:ame224_row];
     }
 
     // JIT 说明（LiveContainer 下的包名识别口径）
     UILabel *ame219_jitHint = [[UILabel alloc] init];
     ame219_jitHint.text = localize(ame219_inLC ? @"welcome.jit.hint.lc" : @"welcome.jit.hint", nil);
     ame219_jitHint.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
-    ame219_jitHint.textColor = [UIColor tertiaryLabelColor];
+    ame219_jitHint.textColor = [self ame224_directSecondaryColor];
     ame219_jitHint.numberOfLines = 0;
     ame219_jitHint.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:ame219_jitHint];
@@ -1114,10 +1247,10 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         [ame219_lcCard.topAnchor constraintEqualToAnchor:ame219_anchor.bottomAnchor constant:18],
         [ame219_lcCard.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
         [ame219_lcCard.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-        [ame219_lcStack.topAnchor constraintEqualToAnchor:ame219_lcCard.topAnchor constant:8],
-        [ame219_lcStack.leadingAnchor constraintEqualToAnchor:ame219_lcCard.leadingAnchor constant:6],
-        [ame219_lcStack.trailingAnchor constraintEqualToAnchor:ame219_lcCard.trailingAnchor constant:-14],
-        [ame219_lcStack.bottomAnchor constraintEqualToAnchor:ame219_lcCard.bottomAnchor constant:-10],
+        [ame219_lcStack.topAnchor constraintEqualToAnchor:ame219_lcCard.contentView.topAnchor constant:8],
+        [ame219_lcStack.leadingAnchor constraintEqualToAnchor:ame219_lcCard.contentView.leadingAnchor constant:6],
+        [ame219_lcStack.trailingAnchor constraintEqualToAnchor:ame219_lcCard.contentView.trailingAnchor constant:-14],
+        [ame219_lcStack.bottomAnchor constraintEqualToAnchor:ame219_lcCard.contentView.bottomAnchor constant:-10],
 
         [ame219_jitSection.topAnchor constraintEqualToAnchor:ame219_lcCard.bottomAnchor constant:22],
         [ame219_jitSection.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
@@ -1130,35 +1263,37 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         [ame219_statusCard.topAnchor constraintEqualToAnchor:ame219_jitSub.bottomAnchor constant:12],
         [ame219_statusCard.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
         [ame219_statusCard.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-        [ame219_statusRow.topAnchor constraintEqualToAnchor:ame219_statusCard.topAnchor],
-        [ame219_statusRow.leadingAnchor constraintEqualToAnchor:ame219_statusCard.leadingAnchor],
-        [ame219_statusRow.trailingAnchor constraintEqualToAnchor:ame219_statusCard.trailingAnchor],
-        [ame219_statusRow.bottomAnchor constraintEqualToAnchor:ame219_statusCard.bottomAnchor],
+        [ame219_statusRow.topAnchor constraintEqualToAnchor:ame219_statusCard.contentView.topAnchor],
+        [ame219_statusRow.leadingAnchor constraintEqualToAnchor:ame219_statusCard.contentView.leadingAnchor],
+        [ame219_statusRow.trailingAnchor constraintEqualToAnchor:ame219_statusCard.contentView.trailingAnchor],
+        [ame219_statusRow.bottomAnchor constraintEqualToAnchor:ame219_statusCard.contentView.bottomAnchor],
 
         [ame219_jitGroup.topAnchor constraintEqualToAnchor:ame219_statusCard.bottomAnchor constant:12],
         [ame219_jitGroup.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
         [ame219_jitGroup.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-        [ame219_jitRows.topAnchor constraintEqualToAnchor:ame219_jitGroup.topAnchor constant:6],
-        [ame219_jitRows.leadingAnchor constraintEqualToAnchor:ame219_jitGroup.leadingAnchor constant:6],
-        [ame219_jitRows.trailingAnchor constraintEqualToAnchor:ame219_jitGroup.trailingAnchor constant:-6],
-        [ame219_jitRows.bottomAnchor constraintEqualToAnchor:ame219_jitGroup.bottomAnchor constant:-6],
+        [ame219_jitRows.topAnchor constraintEqualToAnchor:ame219_jitGroup.contentView.topAnchor constant:6],
+        [ame219_jitRows.leadingAnchor constraintEqualToAnchor:ame219_jitGroup.contentView.leadingAnchor constant:6],
+        [ame219_jitRows.trailingAnchor constraintEqualToAnchor:ame219_jitGroup.contentView.trailingAnchor constant:-6],
+        [ame219_jitRows.bottomAnchor constraintEqualToAnchor:ame219_jitGroup.contentView.bottomAnchor constant:-6],
 
         [ame219_jitHint.topAnchor constraintEqualToAnchor:ame219_jitGroup.bottomAnchor constant:10],
         [ame219_jitHint.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:4],
         [ame219_jitHint.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-4],
-        [ame219_jitHint.bottomAnchor constraintEqualToAnchor:container.bottomAnchor constant:-8],
+        // Task224：链尾 ≤ 底锚（原 == 与高度下限冲突 → 歧义/断链；≤ 唯一可解）
+        [ame219_jitHint.bottomAnchor constraintLessThanOrEqualToAnchor:container.bottomAnchor constant:-8],
     ]];
 
     [self ame219_refreshJitStatus];
     [self ame219_refreshJitRows];
 }
 
-- (void)ame219_jitPicked:(UITapGestureRecognizer *)gesture {
-    NSNumber *ame219_idx = objc_getAssociatedObject(gesture.view, "ame219.jitIdx");
-    if (![ame219_idx isKindOfClass:NSNumber.class]) return;
+/// Task224：JIT 方式行点按（UIButton tag 回带索引）。
+- (void)ame224_jitRowTapped:(UIButton *)sender {
+    NSInteger ame224_i = (NSInteger)sender.tag - 1000;
     NSArray<NSString *> *ame219_keys = @[@"auto", @"stikjit", @"sidestore", @"stosdebug",
                                          @"jitstreamer", @"trollstore", @"manual"];
-    self.pickedJitEnabler = ame219_keys[(NSUInteger)ame219_idx.integerValue];
+    if (ame224_i < 0 || (NSUInteger)ame224_i >= ame219_keys.count) return;
+    self.pickedJitEnabler = ame219_keys[(NSUInteger)ame224_i];
     [self ame219_refreshJitRows];
 }
 
@@ -1275,13 +1410,13 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
                     subtitle:localize(@"welcome.source.subtitle", nil)];
     UIView *ame219_anchor = container.subviews.lastObject;
 
-    UIView *ame219_group = [self ame219_card];
+    UIVisualEffectView *ame219_group = [self ame224_materialCard];
     ame219_group.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:ame219_group];
     UIStackView *ame219_rows = [[UIStackView alloc] init];
     ame219_rows.axis = UILayoutConstraintAxisVertical;
     ame219_rows.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame219_group addSubview:ame219_rows];
+    [ame219_group.contentView addSubview:ame219_rows];
 
     self.sourceCards = [NSMutableArray array];
     NSArray<NSString *> *ame218_values = @[@"official_first", @"mirror_first", @"speed_first"];
@@ -1298,36 +1433,38 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     NSArray<NSString *> *ame218_icons = @[@"globe", @"bolt.horizontal", @"speedometer"];
 
     for (NSUInteger i = 0; i < ame218_values.count; i++) {
-        UIView *ame219_row = [self ame219_optionRowWithIcon:ame218_icons[i]
-                                                       title:ame218_names[i]
-                                                    subtitle:ame218_descs[i]];
-        objc_setAssociatedObject(ame219_row, "ame218.idx", @(i), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        ame219_row.userInteractionEnabled = YES;
-        UITapGestureRecognizer *ame218_tap = [[UITapGestureRecognizer alloc]
-            initWithTarget:self action:@selector(ame218_sourcePicked:)];
-        [ame219_row addGestureRecognizer:ame218_tap];
-        [ame219_rows addArrangedSubview:ame219_row];
-        [self.sourceCards addObject:ame219_row];
+        // Task224：选项行改 UIButton + tag（UIControl 命中测试 + 固定 68pt）
+        UIButton *ame224_row = [self ame224_selectionRowWithIcon:ame218_icons[i]
+                                                           title:ame218_names[i]
+                                                        subtitle:ame218_descs[i]];
+        ame224_row.tag = 2000 + (NSInteger)i;
+        [ame224_row addTarget:self action:@selector(ame224_sourceRowTapped:)
+           forControlEvents:UIControlEventTouchUpInside];
+        [ame219_rows addArrangedSubview:ame224_row];
+        [self.sourceCards addObject:ame224_row];
     }
 
     [NSLayoutConstraint activateConstraints:@[
         [ame219_group.topAnchor constraintEqualToAnchor:ame219_anchor.bottomAnchor constant:22],
         [ame219_group.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
         [ame219_group.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-        [ame219_rows.topAnchor constraintEqualToAnchor:ame219_group.topAnchor constant:6],
-        [ame219_rows.leadingAnchor constraintEqualToAnchor:ame219_group.leadingAnchor constant:6],
-        [ame219_rows.trailingAnchor constraintEqualToAnchor:ame219_group.trailingAnchor constant:-6],
-        [ame219_rows.bottomAnchor constraintEqualToAnchor:ame219_group.bottomAnchor constant:-6],
+        [ame219_rows.topAnchor constraintEqualToAnchor:ame219_group.contentView.topAnchor constant:6],
+        [ame219_rows.leadingAnchor constraintEqualToAnchor:ame219_group.contentView.leadingAnchor constant:6],
+        [ame219_rows.trailingAnchor constraintEqualToAnchor:ame219_group.contentView.trailingAnchor constant:-6],
+        [ame219_rows.bottomAnchor constraintEqualToAnchor:ame219_group.contentView.bottomAnchor constant:-6],
+        // Task224：链尾 ≤ 底锚（配合 showStep 高度下限——步骤高度唯一可解）
+        [ame219_group.bottomAnchor constraintLessThanOrEqualToAnchor:container.bottomAnchor constant:-10],
     ]];
 
     [self ame218_refreshSourceCards];
 }
 
-- (void)ame218_sourcePicked:(UITapGestureRecognizer *)gesture {
-    NSNumber *ame218_idx = objc_getAssociatedObject(gesture.view, "ame218.idx");
-    if (![ame218_idx isKindOfClass:NSNumber.class]) return;
+/// Task224：下载源行点按（UIButton tag 回带索引）。
+- (void)ame224_sourceRowTapped:(UIButton *)sender {
+    NSInteger ame224_i = (NSInteger)sender.tag - 2000;
     NSArray<NSString *> *ame218_values = @[@"official_first", @"mirror_first", @"speed_first"];
-    self.pickedSource = ame218_values[(NSUInteger)ame218_idx.integerValue];
+    if (ame224_i < 0 || (NSUInteger)ame224_i >= ame218_values.count) return;
+    self.pickedSource = ame218_values[(NSUInteger)ame224_i];
     [self ame218_applySourceSelection];
     [self ame218_refreshSourceCards];
 }
@@ -1452,7 +1589,10 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
 }
 
 - (void)ame218_dataSkipTapped2 {
-    [self ame218_showStep:6 animated:YES];  // Task222：改为 zl2 介绍页（原 5 Done）
+    // Task224：跳过数据迁移 → 特性介绍页（5）——Next 会先走灰屏圆圈焦点
+    // 介绍再进 Done（旧代码直达 6，把介绍页也跳掉了——Task222 注释与行为
+    // 不符的存量偏差，本轮顺手对齐）。
+    [self ame218_showStep:5 animated:YES];
 }
 
 #pragma mark - 步骤内容：5 zl2 风格介绍页（Task222，清单第 17 项）
@@ -1564,9 +1704,9 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
 
     // 底部提示 + 内容链尾锚（高度无歧义）
     UILabel *next = [[UILabel alloc] init];
-    next.text = localize(@"welcome.intro.next_hint", nil);
+    next.text = localize(@"welcome.intro.focus_hint", nil);   // Task224：Next 先走焦点引导再进完成页
     next.font = [UIFont systemFontOfSize:11];
-    next.textColor = [UIColor tertiaryLabelColor];
+    next.textColor = [self ame224_directSecondaryColor];   // Task224：壁纸直排自适应
     next.textAlignment = NSTextAlignmentCenter;
     next.numberOfLines = 0;
     next.translatesAutoresizingMaskIntoConstraints = NO;
@@ -1595,7 +1735,7 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     UILabel *ame218_title = [[UILabel alloc] init];
     ame218_title.text = localize(@"welcome.done.title", nil);
     ame218_title.font = [UIFont systemFontOfSize:30 weight:UIFontWeightBold];
-    ame218_title.textColor = [UIColor labelColor];
+    ame218_title.textColor = [self ame224_directTextColor];   // Task224：壁纸直排自适应
     ame218_title.textAlignment = NSTextAlignmentCenter;
     ame218_title.translatesAutoresizingMaskIntoConstraints = NO;
     [ame218_center addSubview:ame218_title];
@@ -1603,7 +1743,7 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     UILabel *ame218_sub = [[UILabel alloc] init];
     ame218_sub.text = localize(@"welcome.done.subtitle", nil);
     ame218_sub.font = [UIFont systemFontOfSize:15 weight:UIFontWeightRegular];
-    ame218_sub.textColor = [UIColor secondaryLabelColor];
+    ame218_sub.textColor = [self ame224_directSecondaryColor];   // Task224：壁纸直排自适应
     ame218_sub.textAlignment = NSTextAlignmentCenter;
     ame218_sub.numberOfLines = 0;
     ame218_sub.translatesAutoresizingMaskIntoConstraints = NO;
@@ -1614,6 +1754,10 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         [ame218_center.centerYAnchor constraintEqualToAnchor:container.centerYAnchor],
         [ame218_center.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
         [ame218_center.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        // Task224（#14 根治）：≥/≤ 包边——配合 showStep 的高度下限，居中页
+        // 高度唯一可解（Task223 版只有 centerY = 歧义高度 → 触点出界）。
+        [ame218_center.topAnchor constraintGreaterThanOrEqualToAnchor:container.topAnchor constant:16],
+        [ame218_center.bottomAnchor constraintLessThanOrEqualToAnchor:container.bottomAnchor constant:-16],
 
         [ame218_check.centerXAnchor constraintEqualToAnchor:ame218_center.centerXAnchor],
         [ame218_check.topAnchor constraintEqualToAnchor:ame218_center.topAnchor],

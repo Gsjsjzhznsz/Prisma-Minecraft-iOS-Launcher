@@ -132,6 +132,13 @@ static void vtest_server_close_socket(void);
 static int vtest_client_dispatch_commands(struct vtest_client *client);
 
 
+/* Task224: meson 全项目 -fvisibility=hidden 把 vtest_main 也藏进了
+ * .private_extern —— 装机日志实锤 dlsym("vtest_main") 返回 NULL，进程内
+ * vtest server 永不 bind socket（"Task111 vtest_main not found in
+ * libvtestserver.dylib" → bootstrap rc=-2 → 被 Protective divert 到 Zink）。
+ * 显式 default 可见性恢复导出（定义处声明即可，链接进 libvtestserver.dylib
+ * 后进 export trie，dlsym 复活）。 */
+__attribute__((visibility("default")))
 int vtest_main(int argc, char **argv)
 {
 #ifdef __AFL_LOOP

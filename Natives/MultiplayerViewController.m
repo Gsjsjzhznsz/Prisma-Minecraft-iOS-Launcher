@@ -218,10 +218,10 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
                         // 这样用户下次打开启动器时开关会显示 ON 并自动重试启动节点。
                         // 只有 framework 不可用（永久不可用）时才清除意图。
                         NSLog(@"[MultiplayerVC] Auto-restart node failed (preserving user intent, retry next time): %@", error.localizedDescription);
-                        [strongSelf.tableView reloadData];
+                        [strongSelf ame224_reloadTablePreservingEditing];
                     } else {
                         NSLog(@"[MultiplayerVC] Auto-restart node succeeded");
-                        [strongSelf.tableView reloadData];
+                        [strongSelf ame224_reloadTablePreservingEditing];
                     }
                 }];
             } else {
@@ -252,7 +252,7 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
         // 重新应用导航栏毛玻璃效果
         [[BackgroundManager sharedManager] applyEffectToNavigationBar:self.navigationController.navigationBar];
         // 刷新表格，让所有 cell 重新读取背景状态并适配颜色
-        [self.tableView reloadData];
+        [self ame224_reloadTablePreservingEditing];
     });
 }
 
@@ -379,7 +379,7 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
                                               message:error.localizedDescription ?: MPLocalized(@"mp.node.start_failed_msg", localize(@"ame193.mp.5", @"ZeroTier 节点启动失败，请重试。"))];
             } else {
                 // 启动成功：刷新表格以更新开关行的辅助文字
-                [strongSelf.tableView reloadData];
+                [strongSelf ame224_reloadTablePreservingEditing];
             }
         }];
     } else {
@@ -454,7 +454,7 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
 
         // 保存为预设 Network ID
         [[MultiplayerManager sharedManager] setPresetNetworkId:adhocNetId];
-        [strongSelf.tableView reloadData];
+        [strongSelf ame224_reloadTablePreservingEditing];
 
         // 提示用户
         [strongSelf showSimpleAlertWithTitle:MPLocalized(@"mp.network_id.adhoc_success_title", localize(@"ame193.mp.14", @"已启用快速模式"))
@@ -475,7 +475,7 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
         if (value.length == 0) {
             // 空字符串：清除预设
             [[MultiplayerManager sharedManager] setPresetNetworkId:nil];
-            [strongSelf.tableView reloadData];
+            [strongSelf ame224_reloadTablePreservingEditing];
             return;
         }
 
@@ -487,7 +487,7 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
         }
 
         [[MultiplayerManager sharedManager] setPresetNetworkId:value];
-        [strongSelf.tableView reloadData];
+        [strongSelf ame224_reloadTablePreservingEditing];
     }]];
 
     [self presentViewController:alert animated:YES completion:nil];
@@ -630,7 +630,7 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
 
         // 保存为预设 Network ID
         [[MultiplayerManager sharedManager] setPresetNetworkId:adhocNetId];
-        [strongSelf.tableView reloadData];
+        [strongSelf ame224_reloadTablePreservingEditing];
 
         // 提示用户
         [strongSelf showSimpleAlertWithTitle:MPLocalized(@"mp.network_id.adhoc_success_title", localize(@"ame193.mp.14", @"已启用快速模式"))
@@ -1053,10 +1053,10 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
                                               message:error.localizedDescription ?: MPLocalized(@"mp.connect.failed_msg", localize(@"ame193.mp.71", @"无法连接到 ZeroTier 网络，请检查 Network ID 是否正确以及网络是否畅通。"))];
             }
         }];
-        [strongSelf.tableView reloadData];
+        [strongSelf ame224_reloadTablePreservingEditing];
     }];
 
-    [self.tableView reloadData];
+    [self ame224_reloadTablePreservingEditing];
 }
 
 /// 显示房主连接成功后的手动输入端口对话框
@@ -1223,7 +1223,7 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
     }
 
     // 刷新表格，让 Section 1 显示最新的分享代码
-    [self.tableView reloadData];
+    [self ame224_reloadTablePreservingEditing];
 
     // 弹出提示告知用户分享代码已生成
     [self showHostShareCodeAlert];
@@ -1418,10 +1418,10 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
                                               message:error.localizedDescription ?: MPLocalized(@"mp.connect.failed_msg", localize(@"ame193.mp.107", @"无法连接到房主的网络，请检查分享代码是否正确以及网络是否畅通。"))];
             }
         }];
-        [strongSelf.tableView reloadData];
+        [strongSelf ame224_reloadTablePreservingEditing];
     }];
 
-    [self.tableView reloadData];
+    [self ame224_reloadTablePreservingEditing];
 }
 
 /// 显示房客连接成功后的提示
@@ -1495,31 +1495,31 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
 /// ZeroTier 节点已上线：刷新房间列表与状态
 - (void)multiplayerNodeOnline {
     [self refreshRooms];
-    [self.tableView reloadData];
+    [self ame224_reloadTablePreservingEditing];
 }
 
 /// ZeroTier 节点已离线：刷新房间列表与状态
 - (void)multiplayerNodeOffline {
     [self refreshRooms];
-    [self.tableView reloadData];
+    [self ame224_reloadTablePreservingEditing];
 }
 
 /// 指定房间已连接成功：刷新房间列表与状态
 - (void)multiplayerRoomConnected:(MultiplayerRoom *)room {
     [self refreshRooms];
-    [self.tableView reloadData];
+    [self ame224_reloadTablePreservingEditing];
 }
 
 /// 指定房间连接失败：刷新房间列表与状态
 - (void)multiplayerRoom:(MultiplayerRoom *)room didFailWithError:(NSError *)error {
     [self refreshRooms];
-    [self.tableView reloadData];
+    [self ame224_reloadTablePreservingEditing];
 }
 
 /// ZeroTier 框架可用性检测结果：刷新房间列表
 - (void)multiplayerFrameworkAvailabilityChecked:(BOOL)available {
     [self refreshRooms];
-    [self.tableView reloadData];
+    [self ame224_reloadTablePreservingEditing];
 }
 
 /// 连接流程进度更新
@@ -1550,8 +1550,31 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
 - (void)refreshRooms {
     dispatch_async(dispatch_get_main_queue(), ^{
         self.rooms = [[MultiplayerManager sharedManager] savedRooms] ?: @[];
-        [self.tableView reloadData];
+        [self ame224_reloadTablePreservingEditing];
     });
+}
+
+/// Task224：编辑期安全刷新（直连输入框“打一个字键盘就收一次”根修）。
+/// 病历：directIPField/directPortField 是 VC 级共享实例，每次
+/// reloadData 重出队 DirectInputCell 都要 re-parent（removeFromSuperview
+/// + addSubview）——re-parent 会 resign first responder → 键盘收起；
+/// 而 refreshRooms / 六个 ManagerDelegate 回调 / 节点自恢复 /
+/// backgroundEffectChanged 都在打字期间频繁全表 reloadData。修法：
+/// 任一直连输入框正在编辑时只重载第 0/1 区（设置 + 房间），第 2 区
+///（直连输入）不碰 → 字段不 re-parent → 键盘不收；非编辑态与旧
+/// reloadData 完全等价。
+- (void)ame224_reloadTablePreservingEditing {
+    BOOL ame224_editing = (self.directIPField.isFirstResponder || self.directPortField.isFirstResponder);
+    if (!ame224_editing || self.mode == MultiplayerVCModeInGame) {
+        [self.tableView reloadData];   // 非编辑态：全量刷新（本行是安全变体的兑底，勿再替换）
+        return;
+    }
+    NSMutableIndexSet *ame224_sections = [NSMutableIndexSet indexSet];
+    if ([self numberOfSectionsInTableView:self.tableView] > 0) [ame224_sections addIndex:0];
+    if ([self numberOfSectionsInTableView:self.tableView] > 1) [ame224_sections addIndex:1];
+    [UIView performWithoutAnimation:^{
+        [self.tableView reloadSections:ame224_sections withRowAnimation:UITableViewRowAnimationNone];
+    }];
 }
 
 /// 显示简单的 Alert 提示
@@ -1620,7 +1643,7 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
         strongSelf.isGuestFlowActive = NO;
         [[MultiplayerManager sharedManager] disconnectCurrentRoom];
         strongSelf.connectionProgressAlert = nil;
-        [strongSelf.tableView reloadData];
+        [strongSelf ame224_reloadTablePreservingEditing];
     }]];
 
     self.connectionProgressAlert = alert;
@@ -2036,8 +2059,11 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
         MPLocalized(@"mp.room.network_id", @"Network ID"),
         room.networkId ?: @"-"];
     [detail appendFormat:@"\n%@", statusText];
-    if (room.status == MultiplayerRoomStatusConnected) {
-        // 已连接时显示完整服务器地址
+    // Task224：端口可见性（用户报“联机菜单无法找到游戏端口”）——旧代码
+    // 只在 Connected 状态显示 host:port；发现/加入中/断开等状态一概不显
+    // 示，端口无从得知。改为：任何状态只要地址可解析即显示（IP 空时回退
+    // 本机 IP、端口空时回退 25565 —— 与旧 Connected 分支同一套回退口径）。
+    {
         NSString *hostIP = room.hostIP.length ? room.hostIP : [[MultiplayerManager sharedManager] currentLocalIP];
         NSString *hostPort = room.hostPort.length ? room.hostPort : @"25565";
         if (hostIP.length) {

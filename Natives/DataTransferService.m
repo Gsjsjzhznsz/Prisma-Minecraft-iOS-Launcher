@@ -18,13 +18,65 @@
 #import "DataTransferService.h"
 #import "external/UnzipKit/UZKArchive.h"
 #import "utils.h"
+#import "LauncherPreferences.h"   // getPrefObject（Task224 分区口径读当前实例名）
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
+// Task224：自研 zip 写器直接使用 zlib（deflate/crc32）。libz 已随 UnzipKit
+// 加载（其 load commands 链接 /usr/lib/libz.1.dylib），符号经 dlsym 解析，
+// 避免本轮修改链接脚本（TouchControllerBridge 的 dlsym 先例）。zlib.h 仅
+// 提供 z_stream 与常量定义，代码不直接调用其声明函数，不产生链接期符号。
+#include <zlib.h>
+#include <dlfcn.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <time.h>
 
 @interface DataTransferService () <UIDocumentPickerDelegate>
 @property (nonatomic, weak) UIViewController *presenter;
 /// 导出流程的文件选择器正在等待落点（区分导出/导入两条 delegate 回调——
 /// 导出落点文件名同样以 .zip 结尾，不能靠扩展名判流）。
 @property (nonatomic, assign) BOOL awaitingExportDestination;
+@end
+
+/// Task224 导出条目：worker 与写线程之间的交接单元（字段先填好，
+/// 全内存屏障后置 ready——写线程仅在 ready 后读取结果）。
+@interface Ame224ExportEntry : NSObject
+@property (nonatomic, copy) NSString *rel;                 // zip 条目名（相对 POJAV_HOME，与旧版一致）
+@property (nonatomic, copy) NSString *abs;                 // 源文件绝对路径
+@property (nonatomic, assign) unsigned long long usize;    // stat 尺寸
+@property (nonatomic, assign) uint16_t dosTime;            // 条目时间戳（DOS 格式）
+@property (nonatomic, assign) uint16_t dosDate;
+@property (nonatomic, assign) BOOL serialStream;           // 大文件：写线程流式压缩（data descriptor 收尾）
+@property (nonatomic, strong) NSData *payload;             // worker 压缩产物（小文件 deflate）
+@property (nonatomic, assign) uint32_t crc;                // worker 预算的 CRC32
+@property (nonatomic, assign) unsigned long long csize;    // 实际压缩尺寸
+@property (nonatomic, assign) int64_t budgetUnits;         // 领先量预算单位数（1MB/单位）
+@property (nonatomic, assign) BOOL skipped;                // 源文件不可读/中途消失：跳过
+@property (nonatomic, assign) BOOL ready;                  // worker 结果就绪（或已判 skipped）
+@property (nonatomic, assign) uint64_t headerOffset;       // local header 落点（中央目录用）
+@end
+
+@implementation Ame224ExportEntry
+@end
+
+/// Task224 流水线共享态：数值计数用 C 结构体 + __sync 原子（多 worker 并发），
+/// 字符串字段经 atomic 属性上锁（写线程写、10Hz tick 线程读）。
+@interface Ame224PipelineCounters : NSObject
+@property (nonatomic, copy) NSString *currentFile;   // 写线程当前条目（阶段详情文案）
+@property (nonatomic, copy) NSString *failMessage;   // 首个失败原因（失败路径展示）
+@end
+
+@implementation Ame224PipelineCounters
+@end
+
+/// Task224 速率跟踪：10Hz tick 队列串行访问（无需加锁）。
+@interface Ame224SpeedTracker : NSObject
+@property (nonatomic, assign) double lastTime;
+@property (nonatomic, assign) unsigned long long lastBytes;
+@property (nonatomic, assign) double speed;   // EMA 平滑后的字节速率
+@end
+
+@implementation Ame224SpeedTracker
 @end
 
 @implementation DataTransferService
@@ -431,16 +483,335 @@
     });
 }
 
-#pragma mark - Task223：并发读 + 串行写流水线导出（清单第 12/13 项根修）
+#pragma mark - Task224：分区选择导出 + 并行压缩 zip 写器（清单第 12/13 项二轮根修）
 
-- (void)ame223_runPipelinedBackupExportWithMethod:(NSInteger)method
-                                          progress:(void(^)(NSUInteger done, NSUInteger total, unsigned long long writtenBytes))progress
-                                      stageAdvance:(void(^)(NSUInteger stage))stageAdvance
-                                        completion:(void(^)(NSString *tmpPath, NSError *error))completion {
+NSString * const Ame224SectionIdWorlds = @"worlds";
+NSString * const Ame224SectionIdResourcePacks = @"resourcepacks";
+NSString * const Ame224SectionIdMods = @"mods";
+NSString * const Ame224SectionIdScreenshots = @"screenshots";
+NSString * const Ame224SectionIdServers = @"servers";
+NSString * const Ame224SectionIdInstance = @"instance";
+NSString * const Ame224SectionIdLauncher = @"launcher";
+NSString * const Ame224SectionIdGameFiles = @"gamefiles";
+
+/// 流水线常量：4MB 读块（热循环每块一次 read，替代旧 64KB 级碎读）；
+/// 3 个压缩 worker（A 系 6 核留余量给 UI/IO）；> 64MB 的文件不走
+/// 并行压缩（改由写线程流式处理，内存上界 = 4MB 入 + 4MB 出）；
+/// worker 领先量预算 192MB（结果缓冲驻留内存上界）。
+static const NSUInteger Ame224ReadChunkBytes = 4u * 1024u * 1024u;
+static const NSUInteger Ame224ParallelFileCap = 64u * 1024u * 1024u;
+static const NSUInteger Ame224WorkerCount = 3;
+static const NSUInteger Ame224BudgetUnits = 192;
+
+typedef struct {
+    volatile int64_t nextIndex;    // worker 领号（原子 fetch_add）
+    volatile int64_t bytesDone;    // 写线程累计，tick 原子读
+    volatile int64_t filesDone;
+    volatile int32_t failed;       // 任一 worker/写线程失败
+    volatile int32_t phase;        // 0 collect / 1 pipeline / 2 finalize
+} Ame224PipelineState;
+
+// zlib 函数指针（dlsym 解析，签名对齐 zlib.h）
+typedef int (*ame224_z_deflateInit2_fn)(z_streamp, int, int, int, int, int, const char *, int);
+typedef int (*ame224_z_deflate_fn)(z_streamp, int);
+typedef int (*ame224_z_deflateEnd_fn)(z_streamp);
+typedef unsigned long (*ame224_z_crc32_fn)(unsigned long, const Bytef *, unsigned int);
+typedef unsigned long (*ame224_z_deflateBound_fn)(z_streamp, unsigned long);
+
+static ame224_z_deflateInit2_fn ame224_z_deflateInit2_ = NULL;
+static ame224_z_deflate_fn ame224_z_deflate = NULL;
+static ame224_z_deflateEnd_fn ame224_z_deflateEnd = NULL;
+static ame224_z_crc32_fn ame224_z_crc32 = NULL;
+static ame224_z_deflateBound_fn ame224_z_deflateBound = NULL;
+
+static BOOL ame224_zlibResolve(void) {
+    static dispatch_once_t ame224_once;
+    static BOOL ame224_ok = NO;
+    dispatch_once(&ame224_once, ^{
+        ame224_z_deflateInit2_ = (ame224_z_deflateInit2_fn)dlsym(RTLD_DEFAULT, "deflateInit2_");
+        ame224_z_deflate = (ame224_z_deflate_fn)dlsym(RTLD_DEFAULT, "deflate");
+        ame224_z_deflateEnd = (ame224_z_deflateEnd_fn)dlsym(RTLD_DEFAULT, "deflateEnd");
+        ame224_z_crc32 = (ame224_z_crc32_fn)dlsym(RTLD_DEFAULT, "crc32");
+        ame224_z_deflateBound = (ame224_z_deflateBound_fn)dlsym(RTLD_DEFAULT, "deflateBound");
+        ame224_ok = (ame224_z_deflateInit2_ != NULL && ame224_z_deflate != NULL &&
+                     ame224_z_deflateEnd != NULL && ame224_z_crc32 != NULL);
+        if (!ame224_ok) {
+            NSLog(@"[ExportOps] Task224 zlib resolve FAILED (deflateInit2_=%p deflate=%p crc32=%p)",
+                  ame224_z_deflateInit2_, ame224_z_deflate, ame224_z_crc32);
+        }
+    });
+    return ame224_ok;
+}
+
+static inline BOOL ame224_isCancelled(NSProgress *p) {
+    return (p != nil && [p isCancelled]);
+}
+
+static BOOL ame224_writeAll(int fd, const void *buf, size_t len) {
+    const unsigned char *p = (const unsigned char *)buf;
+    while (len > 0) {
+        ssize_t w = write(fd, p, len);
+        if (w < 0) {
+            if (errno == EINTR) continue;
+            return NO;
+        }
+        p += w;
+        len -= (size_t)w;
+    }
+    return YES;
+}
+
+static void ame224_put16(unsigned char *p, uint16_t v) {
+    p[0] = (unsigned char)(v & 0xFFu);
+    p[1] = (unsigned char)((v >> 8) & 0xFFu);
+}
+
+static void ame224_put32(unsigned char *p, uint32_t v) {
+    p[0] = (unsigned char)(v & 0xFFu);
+    p[1] = (unsigned char)((v >> 8) & 0xFFu);
+    p[2] = (unsigned char)((v >> 16) & 0xFFu);
+    p[3] = (unsigned char)((v >> 24) & 0xFFu);
+}
+
+static void ame224_put64(unsigned char *p, uint64_t v) {
+    ame224_put32(p, (uint32_t)(v & 0xFFFFFFFFu));
+    ame224_put32(p + 4, (uint32_t)(v >> 32));
+}
+
+static void ame224_dosDateTime(NSDate *date, uint16_t *dosTime, uint16_t *dosDate) {
+    time_t t = (time_t)[date timeIntervalSince1970];
+    struct tm tmv;
+    localtime_r(&t, &tmv);
+    if (tmv.tm_year < 80) {
+        tmv.tm_year = 80; tmv.tm_mon = 0; tmv.tm_mday = 1;
+        tmv.tm_hour = 0; tmv.tm_min = 0; tmv.tm_sec = 0;
+    }
+    uint16_t y = (uint16_t)(tmv.tm_year - 80);
+    if (y > 127) y = 127;
+    *dosDate = (uint16_t)(((uint16_t)y << 9) | (((uint16_t)tmv.tm_mon + 1) << 5) | (uint16_t)tmv.tm_mday);
+    *dosTime = (uint16_t)(((uint16_t)tmv.tm_hour << 11) | ((uint16_t)tmv.tm_min << 5) | ((uint16_t)tmv.tm_sec >> 1));
+}
+
++ (NSArray<NSDictionary *> *)ame224_sectionDefinitions {
+    return @[
+        @{ @"id": Ame224SectionIdWorlds, @"icon": @"globe", @"defaultOn": @YES },
+        @{ @"id": Ame224SectionIdResourcePacks, @"icon": @"paintpalette", @"defaultOn": @YES },
+        @{ @"id": Ame224SectionIdMods, @"icon": @"puzzlepiece", @"defaultOn": @YES },
+        @{ @"id": Ame224SectionIdScreenshots, @"icon": @"camera", @"defaultOn": @YES },
+        @{ @"id": Ame224SectionIdServers, @"icon": @"server.rack", @"defaultOn": @YES },
+        @{ @"id": Ame224SectionIdInstance, @"icon": @"folder", @"defaultOn": @NO },
+        @{ @"id": Ame224SectionIdLauncher, @"icon": @"gearshape", @"defaultOn": @YES },
+        @{ @"id": Ame224SectionIdGameFiles, @"icon": @"arrow.down.circle", @"defaultOn": @NO },
+    ];
+}
+
+/// 互斥分桶（顺序敏感：当前实例的五个子目录优先于 instance 整树桶）。
+- (NSString *)ame224_bucketForRelPath:(NSString *)rel gameDirPrefix:(NSString *)gdPrefix {
+    if ([rel hasPrefix:gdPrefix]) {
+        NSString *sub = [rel substringFromIndex:gdPrefix.length];
+        if ([sub hasPrefix:@"saves/"]) return Ame224SectionIdWorlds;
+        if ([sub hasPrefix:@"resourcepacks/"]) return Ame224SectionIdResourcePacks;
+        if ([sub hasPrefix:@"shaderpacks/"]) return Ame224SectionIdResourcePacks;
+        if ([sub hasPrefix:@"mods/"]) return Ame224SectionIdMods;
+        if ([sub hasPrefix:@"config/"]) return Ame224SectionIdMods;
+        if ([sub hasPrefix:@"screenshots/"]) return Ame224SectionIdScreenshots;
+        if ([sub isEqualToString:@"servers.dat"]) return Ame224SectionIdServers;
+        if ([sub isEqualToString:@"servers.dat_old"]) return Ame224SectionIdServers;
+    }
+    if ([rel hasPrefix:@"instances/"]) return Ame224SectionIdInstance;
+    if ([rel hasPrefix:@"versions/"]) return Ame224SectionIdGameFiles;
+    if ([rel hasPrefix:@"libraries/"]) return Ame224SectionIdGameFiles;
+    if ([rel hasPrefix:@"assets/"]) return Ame224SectionIdGameFiles;
+    if ([rel hasPrefix:@"java_runtimes/"]) return Ame224SectionIdGameFiles;
+    return Ame224SectionIdLauncher;
+}
+
+/// 深度遍历 POJAV_HOME：剔除运行期垃圾与符号链接，跳过根级 Library/
+/// （内含指向实例目录的符号链接，旧实现把它当目录展开 = 实例数据双份
+/// 导出，是"无压缩也 1MB/s"的隐藏成因之一）。visitor 在后台线程触发；
+/// cancelProgress 非 nil 时每 512 个条目检查一次协作取消，返回 NO 表示
+/// 因取消提前中止。
+- (BOOL)ame224_walkHome:(NSString *)home
+          cancelProgress:(nullable NSProgress *)cancelProgress
+                visitor:(void(^)(NSString *rel, unsigned long long size, NSDate *mtime))visitor {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSDirectoryEnumerator *e = [fm enumeratorAtPath:home];
+    NSString *rel = nil;
+    NSUInteger ame224_ticks = 0;
+    while ((rel = [e nextObject])) {
+        if ((++ame224_ticks & 0x1FF) == 0 && [cancelProgress isCancelled]) return NO;
+        if ([self ame217_shouldSkipExportEntry:rel.lastPathComponent] ||
+            [rel isEqualToString:@"Library"] || [rel hasPrefix:@"Library/"]) {
+            [e skipDescendants];
+            continue;
+        }
+        NSString *abs = [home stringByAppendingPathComponent:rel];
+        NSDictionary *attrs = [fm attributesOfItemAtPath:abs error:nil];
+        if (!attrs) continue;
+        NSString *ft = [attrs fileType];
+        if ([ft isEqualToString:NSFileTypeSymbolicLink]) {
+            // 防御：无论枚举器是否跟随链接，符号链接一律不导出
+            [e skipDescendants];
+            continue;
+        }
+        if ([ft isEqualToString:NSFileTypeDirectory]) continue;
+        visitor(rel, [attrs fileSize], [attrs fileModificationDate]);
+    }
+    return YES;
+}
+
+- (void)ame224_scanSectionsWithCompletion:(void(^)(NSArray<NSDictionary *> *stats, NSError *error))completion {
     NSString *home = @(getenv("POJAV_HOME"));
     if (home.length == 0) {
         completion(nil, [NSError errorWithDomain:@"DataTransferService" code:100
                                      userInfo:@{NSLocalizedDescriptionKey: @"POJAV_HOME unset"}]);
+        return;
+    }
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        id ame224_gdRaw = getPrefObject(@"general.game_directory");
+        NSString *ame224_gd = [ame224_gdRaw isKindOfClass:[NSString class]] ? (NSString *)ame224_gdRaw : @"default";
+        if ([ame224_gd length] == 0) ame224_gd = @"default";
+        NSString *ame224_gdPrefix = [NSString stringWithFormat:@"instances/%@/", ame224_gd];
+        NSMutableDictionary *ame224_counts = [NSMutableDictionary dictionary];
+        NSMutableDictionary *ame224_sizes = [NSMutableDictionary dictionary];
+        unsigned long long ame224_instanceFullBytes = 0;
+        NSUInteger ame224_instanceFullFiles = 0;
+        [self ame224_walkHome:home cancelProgress:nil visitor:^(NSString *rel, unsigned long long size, NSDate *mtime) {
+            NSString *bucket = [self ame224_bucketForRelPath:rel gameDirPrefix:ame224_gdPrefix];
+            ame224_counts[bucket] = @([ame224_counts[bucket] unsignedIntegerValue] + 1);
+            ame224_sizes[bucket] = @([ame224_sizes[bucket] unsignedLongLongValue] + size);
+            if ([rel hasPrefix:@"instances/"]) {
+                ame224_instanceFullBytes += size;
+                ame224_instanceFullFiles++;
+            }
+        }];
+        NSMutableArray *ame224_result = [NSMutableArray array];
+        for (NSDictionary *def in [DataTransferService ame224_sectionDefinitions]) {
+            NSString *sid = def[@"id"];
+            [ame224_result addObject:@{
+                @"id": sid,
+                @"files": ame224_counts[sid] ?: @0,
+                @"bytes": ame224_sizes[sid] ?: @0,
+            }];
+        }
+        // instance 分区行显示整树规模（含五个子分区），勾选逻辑在导出侧覆盖
+        [ame224_result addObject:@{
+            @"id": @"instance_full",
+            @"files": @(ame224_instanceFullFiles),
+            @"bytes": @(ame224_instanceFullBytes),
+        }];
+        NSLog(@"[ExportOps] Task224 scan: %@", ame224_result);
+        completion(ame224_result, nil);
+    });
+}
+
+/// worker 侧：整文件 CRC32（store 模式；顺带预热页缓存，写线程重读走内存）。
+- (uint32_t)ame224_crcFileAtPath:(NSString *)absPath
+                          readBuf:(unsigned char *)rbuf
+                     expectedSize:(unsigned long long)usize
+                        sizeDrift:(BOOL *)driftOut {
+    uint32_t crc = (uint32_t)ame224_z_crc32(0, Z_NULL, 0);
+    unsigned long long got = 0;
+    int fd = open([absPath fileSystemRepresentation], O_RDONLY);
+    if (fd < 0) {
+        if (driftOut) *driftOut = YES;
+        return crc;
+    }
+    for (;;) {
+        ssize_t r = read(fd, rbuf, Ame224ReadChunkBytes);
+        if (r == 0) break;
+        if (r < 0) {
+            if (errno == EINTR) continue;
+            if (driftOut) *driftOut = YES;
+            break;
+        }
+        crc = (uint32_t)ame224_z_crc32(crc, rbuf, (unsigned)r);
+        got += (unsigned long long)r;
+    }
+    close(fd);
+    if (got != usize && driftOut) *driftOut = YES;
+    return crc;
+}
+
+/// worker 侧：整文件压缩（≤ 64MB；输出缓冲按 deflateBound 一次到位，
+/// 零中间拷贝）。返回 nil 表示读失败（调用方跳过该条目）。
+- (NSData *)ame224_deflateFileAtPath:(NSString *)absPath
+                              readBuf:(unsigned char *)rbuf
+                                level:(int)level
+                             expected:(unsigned long long)usize
+                                  crc:(uint32_t *)crcOut {
+    int fd = open([absPath fileSystemRepresentation], O_RDONLY);
+    if (fd < 0) return nil;
+    z_stream zs;
+    memset(&zs, 0, sizeof(zs));
+    if (ame224_z_deflateInit2_(&zs, level, Z_DEFLATED, -15, 9, Z_DEFAULT_STRATEGY, ZLIB_VERSION, (int)sizeof(z_stream)) != Z_OK) {
+        close(fd);
+        return nil;
+    }
+    unsigned long bound = ame224_z_deflateBound ? (unsigned long)ame224_z_deflateBound(&zs, usize)
+                                                : (unsigned long)(usize + usize / 64 + 4096);
+    if (bound < 4096) bound = 4096;
+    NSMutableData *out = [NSMutableData dataWithLength:(NSUInteger)bound];
+    unsigned char *ob = (unsigned char *)[out mutableBytes];
+    size_t olen = 0;
+    uint32_t crc = (uint32_t)ame224_z_crc32(0, Z_NULL, 0);
+    BOOL ok = YES;
+    unsigned long long got = 0;
+    for (;;) {
+        ssize_t r = read(fd, rbuf, Ame224ReadChunkBytes);
+        if (r == 0) break;
+        if (r < 0) {
+            if (errno == EINTR) continue;
+            ok = NO;   // 读失败：跳过该条目（沿用旧版容错语义）
+            break;
+        }
+        crc = (uint32_t)ame224_z_crc32(crc, rbuf, (unsigned)r);
+        got += (unsigned long long)r;
+        zs.next_in = rbuf;
+        zs.avail_in = (unsigned)r;
+        while (zs.avail_in > 0) {
+            zs.next_out = ob + olen;
+            zs.avail_out = (unsigned)(bound - olen);
+            int ret = ame224_z_deflate(&zs, Z_NO_FLUSH);
+            olen = (size_t)(bound - zs.avail_out);
+            if (ret != Z_OK || (zs.avail_out == 0 && zs.avail_in > 0)) { ok = NO; break; }   // 界定不足防御（理论不可达）
+        }
+        if (!ok) break;
+    }
+    if (ok) {
+        for (;;) {
+            zs.next_in = NULL;
+            zs.avail_in = 0;
+            zs.next_out = ob + olen;
+            zs.avail_out = (unsigned)(bound - olen);
+            int ret = ame224_z_deflate(&zs, Z_FINISH);
+            olen = (size_t)(bound - zs.avail_out);
+            if (ret == Z_STREAM_END) break;
+            if (ret != Z_OK || zs.avail_out == 0) { ok = NO; break; }
+        }
+    }
+    ame224_z_deflateEnd(&zs);
+    close(fd);
+    if (!ok || got != usize) return nil;
+    [out setLength:olen];
+    if (crcOut) *crcOut = crc;
+    return out;
+}
+
+- (void)ame224_runBackupExportWithMethod:(NSInteger)method
+                                sectionIds:(NSArray<NSString *> *)sectionIds
+                             cancelProgress:(NSProgress *)cancelProgress
+                                   progress:(Ame224ExportProgressBlock)progress
+                                 completion:(void(^)(NSString *tmpPath, NSError *error))completion {
+    NSString *home = @(getenv("POJAV_HOME"));
+    if (home.length == 0) {
+        completion(nil, [NSError errorWithDomain:@"DataTransferService" code:100
+                                     userInfo:@{NSLocalizedDescriptionKey: @"POJAV_HOME unset"}]);
+        return;
+    }
+    if (!ame224_zlibResolve()) {
+        completion(nil, [NSError errorWithDomain:@"DataTransferService" code:104
+                                     userInfo:@{NSLocalizedDescriptionKey: @"zlib unavailable"}]);
         return;
     }
     NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
@@ -450,116 +821,490 @@
     [[NSFileManager defaultManager] removeItemAtPath:tmpPath error:nil];
 
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        NSFileManager *fm = [NSFileManager defaultManager];
-        // ---- 阶段 0：收集（枚举 + 属性一次拿全，避免写入循环里二次 stat）----
-        NSDirectoryEnumerator *enumerator = [fm enumeratorAtPath:home];
-        NSMutableArray<NSDictionary *> *entries = [NSMutableArray array];
-        NSString *rel;
-        while ((rel = [enumerator nextObject])) {
-            if ([self ame217_shouldSkipExportEntry:rel.lastPathComponent]) {
-                [enumerator skipDescendants];
-                continue;
-            }
-            NSString *abs = [home stringByAppendingPathComponent:rel];
-            NSDictionary *attrs = [fm attributesOfItemAtPath:abs error:nil];
-            if (attrs && ![attrs.fileType isEqualToString:NSFileTypeDirectory]) {
-                [entries addObject:@{@"rel": rel, @"abs": abs, @"size": @(attrs.fileSize)}];
-            }
+        NSDate *t0 = [NSDate date];
+        // method 沿用 UZKCompressionMethod 语义：0=None（store）、-1=Default、9=Best
+        BOOL storeMode = (method == 0);
+        int level = (method == 9) ? 9 : Z_DEFAULT_COMPRESSION;
+
+        // ---- 阶段 0：收集（分类 + 单文件 zip32 守卫）----
+        if (progress) progress(0, 0, 0, 0, 0, 0.0, @"");
+        id gdRaw = getPrefObject(@"general.game_directory");
+        NSString *gd = [gdRaw isKindOfClass:[NSString class]] ? (NSString *)gdRaw : @"default";
+        if ([gd length] == 0) gd = @"default";
+        NSString *gdPrefix = [NSString stringWithFormat:@"instances/%@/", gd];
+        NSSet *selected = [NSSet setWithArray:(sectionIds ?: @[])];
+        BOOL instanceFull = [selected containsObject:Ame224SectionIdInstance];
+
+        NSMutableArray<NSDictionary *> *found = [NSMutableArray array];
+        [self ame224_walkHome:home cancelProgress:cancelProgress visitor:^(NSString *rel, unsigned long long size, NSDate *mtime) {
+            [found addObject:@{ @"rel": rel, @"size": @(size), @"mtime": mtime ?: [NSDate date] }];
+        }];
+        if (ame224_isCancelled(cancelProgress)) {
+            completion(nil, [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil]);
+            return;
         }
-        NSUInteger total = entries.count;
-        if (total == 0) {
+
+        NSMutableArray<Ame224ExportEntry *> *entries = [NSMutableArray array];
+        NSString *oversizeFile = nil;
+        for (NSDictionary *f in found) {
+            NSString *rel = f[@"rel"];
+            NSString *bucket = [self ame224_bucketForRelPath:rel gameDirPrefix:gdPrefix];
+            BOOL include = [selected containsObject:bucket];
+            if (!include && instanceFull) {
+                include = ([bucket isEqualToString:Ame224SectionIdWorlds] ||
+                           [bucket isEqualToString:Ame224SectionIdResourcePacks] ||
+                           [bucket isEqualToString:Ame224SectionIdMods] ||
+                           [bucket isEqualToString:Ame224SectionIdScreenshots] ||
+                           [bucket isEqualToString:Ame224SectionIdServers]);
+            }
+            if (!include) continue;
+            unsigned long long size = [f[@"size"] unsignedLongLongValue];
+            if (size >= 0xFFFFFFFFull) {
+                // zip32 单条目上限（本写器不做单文件 zip64，明确报错优于静默截断）
+                oversizeFile = rel;
+                break;
+            }
+            Ame224ExportEntry *entry = [[Ame224ExportEntry alloc] init];
+            entry.rel = rel;
+            entry.abs = [home stringByAppendingPathComponent:rel];
+            entry.usize = size;
+            ame224_dosDateTime(f[@"mtime"], &entry.dosTime, &entry.dosDate);
+            entry.serialStream = (!storeMode && size > Ame224ParallelFileCap);
+            entry.budgetUnits = (int64_t)((size + 1048575ull) / 1048576ull);
+            [entries addObject:entry];
+        }
+        if (oversizeFile) {
+            completion(nil, [NSError errorWithDomain:@"DataTransferService" code:105
+                userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:
+                    localize(@"dataexport.error.toolarge", @"File too large for zip: %@"), oversizeFile]}]);
+            return;
+        }
+        [entries sortUsingComparator:^NSComparisonResult(Ame224ExportEntry *a, Ame224ExportEntry *b) {
+            return [a.rel compare:b.rel];
+        }];
+        NSUInteger count = entries.count;
+        unsigned long long totalBytes = 0;
+        for (Ame224ExportEntry *entry in entries) totalBytes += entry.usize;
+        if (count == 0) {
             completion(nil, [NSError errorWithDomain:@"DataTransferService" code:101
-                                         userInfo:@{NSLocalizedDescriptionKey: localize(@"ame219.export.empty", @"No data to export")}]);
+                userInfo:@{NSLocalizedDescriptionKey: localize(@"ame219.export.empty", @"No data to export")}]);
             return;
         }
-        if (stageAdvance) stageAdvance(0);   // collect 完成 → compress 开始
+        NSLog(@"[ExportOps] Task224 export start: method=%ld store=%d files=%lu bytes=%llu workers=%lu sections=%lu",
+              (long)method, (int)storeMode, (unsigned long)count, totalBytes,
+              (unsigned long)Ame224WorkerCount, (unsigned long)selected.count);
+        if (progress) progress(1, 0, count, 0, totalBytes, 0.0, @"");
 
-        // ---- 阶段 1：流水线（4 路并发读 + 串行写）----
-        NSError *archiveErr = nil;
-        UZKArchive *archive = [[UZKArchive alloc] initWithPath:tmpPath error:&archiveErr];
-        if (archive == nil) {
-            completion(nil, archiveErr ?: [NSError errorWithDomain:@"DataTransferService" code:102
-                                                      userInfo:@{NSLocalizedDescriptionKey: @"archive init failed"}]);
-            return;
-        }
+        // ---- 流水线共享态 ----
+        Ame224PipelineState *st = (Ame224PipelineState *)calloc(1, sizeof(Ame224PipelineState));
+        Ame224PipelineCounters *counters = [[Ame224PipelineCounters alloc] init];
+        Ame224SpeedTracker *tracker = [[Ame224SpeedTracker alloc] init];
+        dispatch_queue_t workerQueue = dispatch_queue_create_with_target(
+            "ame224.export.workers", DISPATCH_QUEUE_CONCURRENT,
+            dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0));
+        dispatch_group_t group = dispatch_group_create();
+        dispatch_semaphore_t slotReady = dispatch_semaphore_create(0);
+        dispatch_semaphore_t budget = dispatch_semaphore_create((long)Ame224BudgetUnits);
 
-        // 在飞上限：平均文件 < 8MB 时取 8 个文件、否则按 64MB 预算折算，
-        // 防大文件会话（材质包/.jar 数百 MB）读侧内存失控。
-        unsigned long long totalSize = 0;
-        for (NSDictionary *e in entries) totalSize += [e[@"size"] unsignedLongLongValue];
-        NSUInteger avg = (NSUInteger)MAX((double)totalSize / (double)total, 1.0);
-        NSUInteger maxInFlight = (NSUInteger)MAX(8.0, MIN(48.0, 64.0 * 1048576.0 / (double)avg));
+        // 10Hz 进度合并上报（热循环零主线程派发；tick 串行队列独享 tracker）
+        dispatch_queue_t tickQueue = dispatch_queue_create("ame224.export.tick", DISPATCH_QUEUE_SERIAL);
+        dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, tickQueue);
+        NSUInteger tickTotalFiles = count;
+        unsigned long long tickTotalBytes = totalBytes;
+        dispatch_source_set_timer(timer, dispatch_time(DISPATCH_TIME_NOW, 100LL * NSEC_PER_MSEC),
+                                  100LL * NSEC_PER_MSEC, 20LL * NSEC_PER_MSEC);
+        dispatch_source_set_event_handler(timer, ^{
+            if (!progress) return;
+            double now = CFAbsoluteTimeGetCurrent();
+            unsigned long long b = (unsigned long long)__sync_add_and_fetch(&st->bytesDone, 0);
+            if (tracker.lastTime <= 0.0) {
+                tracker.lastTime = now;
+                tracker.lastBytes = b;
+                return;
+            }
+            double dt = now - tracker.lastTime;
+            if (dt >= 0.4) {
+                double inst = ((double)b - (double)tracker.lastBytes) / dt;
+                tracker.speed = (tracker.speed <= 0.0) ? inst : tracker.speed * 0.6 + inst * 0.4;
+                tracker.lastTime = now;
+                tracker.lastBytes = b;
+            }
+            progress((NSUInteger)st->phase,
+                     (NSUInteger)__sync_add_and_fetch(&st->filesDone, 0), tickTotalFiles,
+                     b, tickTotalBytes, tracker.speed, counters.currentFile);
+        });
+        dispatch_resume(timer);
 
-        dispatch_queue_t writeQueue = dispatch_queue_create("ame223.export.write", DISPATCH_QUEUE_SERIAL);
-        dispatch_group_t writeGroup = dispatch_group_create();
-        dispatch_semaphore_t inFlight = dispatch_semaphore_create((long)maxInFlight);
-        __block NSUInteger done = 0;
-        __block unsigned long long writtenBytes = 0;
-        __block BOOL failed = NO;
-        __block NSError *failErr = nil;
-        __block NSDate *lastUi = [NSDate distantPast];
-
-        // 读侧：全局并发队列按序取号（保持条目顺序，zip 内目录顺序友好）。
-        for (NSDictionary *e in entries) {
-            if (failed) break;
-            dispatch_semaphore_wait(inFlight, DISPATCH_TIME_FOREVER);
-            if (failed) break;
-            NSString *abs = e[@"abs"];
-            NSString *relPath = e[@"rel"];
-            dispatch_group_enter(writeGroup);
-            dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        // ---- 阶段 1：3 路 worker 并行压缩（或 store 模式并行 CRC）----
+        for (NSUInteger w = 0; w < Ame224WorkerCount; w++) {
+            dispatch_group_enter(group);
+            dispatch_async(workerQueue, ^{
                 @autoreleasepool {
-                    if (!failed) {
-                        NSData *data = [NSData dataWithContentsOfFile:abs];
-                        // 写侧：串行队列保证 UZKArchive 单线程访问（线程安全硬约束）；
-                        // 读完成即释放一个在飞名额（读写重叠的稳态来源）。
-                        dispatch_async(writeQueue, ^{
-                            @autoreleasepool {
-                                if (!failed && data != nil) {
-                                    NSError *werr = nil;
-                                    if (![archive writeData:data filePath:relPath fileDate:nil
-                                                compressionMethod:(UZKCompressionMethod)method
-                                                      password:nil overwrite:YES error:&werr]) {
-                                        failed = YES;
-                                        failErr = werr;
-                                    } else {
-                                        done++;
-                                        writtenBytes += data.length;
-                                    }
-                                } else if (!failed && data == nil) {
-                                    // 读失败（文件被并发删除等）：跳过该条目，不判整体失败
-                                    done++;
-                                }
-                                dispatch_group_leave(writeGroup);
+                    unsigned char *rbuf = (unsigned char *)malloc(Ame224ReadChunkBytes);
+                    if (!rbuf) {
+                        __sync_lock_test_and_set(&st->failed, 1);
+                        counters.failMessage = @"worker buffer alloc failed";
+                        dispatch_group_leave(group);
+                        return;
+                    }
+                    int64_t idx;
+                    while ((idx = __sync_fetch_and_add(&st->nextIndex, 1)) < (int64_t)count) {
+                        if (st->failed || ame224_isCancelled(cancelProgress)) break;
+                        Ame224ExportEntry *e = entries[idx];
+                        if (e.serialStream) continue;   // 大文件由写线程流式处理
+                        // 领先量预算（1MB/单位；写线程消费后归还）
+                        BOOL budgeted = YES;
+                        for (int64_t u = 0; u < e.budgetUnits && budgeted; u++) {
+                            while (dispatch_semaphore_wait(budget, dispatch_time(DISPATCH_TIME_NOW, 20LL * NSEC_PER_MSEC)) != 0) {
+                                if (st->failed || ame224_isCancelled(cancelProgress)) { budgeted = NO; break; }
                             }
-                        });
-                    } else {
-                        dispatch_group_leave(writeGroup);
+                        }
+                        if (!budgeted) break;
+                        if (storeMode) {
+                            BOOL drift = NO;
+                            e.crc = [self ame224_crcFileAtPath:e.abs readBuf:rbuf expectedSize:e.usize sizeDrift:&drift];
+                            e.skipped = drift;
+                        } else {
+                            uint32_t crc = 0;
+                            NSData *payload = [self ame224_deflateFileAtPath:e.abs readBuf:rbuf
+                                                                       level:level expected:e.usize crc:&crc];
+                            if (payload) {
+                                e.payload = payload;
+                                e.crc = crc;
+                                e.csize = payload.length;
+                            } else {
+                                // 单文件读失败：跳过（沿用旧版容错语义）
+                                e.skipped = YES;
+                            }
+                        }
+                        if (e.skipped) {
+                            for (int64_t u = 0; u < e.budgetUnits; u++) dispatch_semaphore_signal(budget);
+                        }
+                        __sync_synchronize();
+                        e.ready = YES;
+                        dispatch_semaphore_signal(slotReady);
                     }
-                    // 进度节流（150ms）+ 尾部强刷
-                    NSDate *now = [NSDate date];
-                    if (progress && ([now timeIntervalSinceDate:lastUi] > 0.15 || done == total)) {
-                        lastUi = now;
-                        NSUInteger d = done, t = total;
-                        unsigned long long b = writtenBytes;
-                        progress(d, t, b);
-                    }
-                    dispatch_semaphore_signal(inFlight);
+                    free(rbuf);
+                    dispatch_group_leave(group);
                 }
             });
         }
-        // 等全部写入落盘
-        dispatch_group_wait(writeGroup, DISPATCH_TIME_FOREVER);
 
-        if (failed) {
+        // ---- 写线程（本线程）：按序写 local header + 数据，条目顺序即 zip 布局 ----
+        int outFd = open([tmpPath fileSystemRepresentation], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        BOOL writeFailed = (outFd < 0);
+        if (writeFailed) counters.failMessage = @"archive create failed";
+        uint64_t curOffset = 0;
+        NSUInteger skippedCount = 0;
+        NSMutableData *hdr = [NSMutableData dataWithCapacity:256];
+        unsigned char *wbuf = NULL;
+        unsigned char *sout = NULL;
+        if (!writeFailed) {
+            wbuf = (unsigned char *)malloc(Ame224ReadChunkBytes);
+            unsigned long chunkBound = ame224_z_deflateBound ? (unsigned long)ame224_z_deflateBound(NULL, Ame224ReadChunkBytes) + 64u : Ame224ReadChunkBytes + Ame224ReadChunkBytes / 64u + 4096u;
+            sout = (unsigned char *)malloc(chunkBound);
+            if (!wbuf || !sout) {
+                writeFailed = YES;
+                counters.failMessage = @"writer buffer alloc failed";
+            }
+        }
+        for (NSUInteger i = 0; i < count && !writeFailed; i++) {
+            if (st->failed || ame224_isCancelled(cancelProgress)) break;
+            Ame224ExportEntry *e = entries[i];
+            if (!e.serialStream) {
+                while (!e.ready) {
+                    if (st->failed || ame224_isCancelled(cancelProgress)) break;
+                    if (dispatch_semaphore_wait(slotReady, dispatch_time(DISPATCH_TIME_NOW, 50LL * NSEC_PER_MSEC)) != 0) continue;
+                }
+                if (!e.ready) break;
+                __sync_synchronize();   // acquire：ready 之后的 payload/crc 读取屏障
+            }
+            if (e.skipped) {
+                skippedCount++;
+                continue;
+            }
+            counters.currentFile = e.rel;
+            e.headerOffset = curOffset;
+            const char *nameBytes = [e.rel UTF8String];
+            size_t nlen = strlen(nameBytes);
+            uint16_t flags = 0x0800;   // UTF-8 名称位
+            uint16_t methodField = 8;
+            uint32_t lfhCrc = e.crc;
+            uint32_t lfhCsize = (uint32_t)e.csize;
+            uint32_t lfhUsize = (uint32_t)e.usize;
+            if (e.serialStream) {
+                flags |= 0x0008;       // data descriptor（尺寸压缩后才知晓）
+                lfhCrc = 0; lfhCsize = 0; lfhUsize = 0;
+            }
+            if (storeMode) methodField = 0;
+            [hdr setLength:30 + nlen];
+            unsigned char *h = (unsigned char *)[hdr mutableBytes];
+            ame224_put32(h, 0x04034b50u);
+            ame224_put16(h + 4, 20);
+            ame224_put16(h + 6, flags);
+            ame224_put16(h + 8, methodField);
+            ame224_put16(h + 10, e.dosTime);
+            ame224_put16(h + 12, e.dosDate);
+            ame224_put32(h + 14, lfhCrc);
+            ame224_put32(h + 18, lfhCsize);
+            ame224_put32(h + 22, lfhUsize);
+            ame224_put16(h + 26, (uint16_t)nlen);
+            ame224_put16(h + 28, 0);
+            memcpy(h + 30, nameBytes, nlen);
+            if (!ame224_writeAll(outFd, h, 30 + nlen)) { writeFailed = YES; break; }
+            curOffset += 30 + nlen;
+
+            if (e.serialStream) {
+                // 大文件：写线程流式 deflate（4MB 入 + 界定输出块）
+                int inFd = open([e.abs fileSystemRepresentation], O_RDONLY);
+                if (inFd < 0) {
+                    writeFailed = YES;
+                    counters.failMessage = [NSString stringWithFormat:@"open failed: %@", e.rel];
+                    break;
+                }
+                z_stream zs;
+                memset(&zs, 0, sizeof(zs));
+                if (ame224_z_deflateInit2_(&zs, level, Z_DEFLATED, -15, 9, Z_DEFAULT_STRATEGY, ZLIB_VERSION, (int)sizeof(z_stream)) != Z_OK) {
+                    close(inFd);
+                    writeFailed = YES;
+                    counters.failMessage = @"deflateInit2 failed";
+                    break;
+                }
+                uint32_t crc = (uint32_t)ame224_z_crc32(0, Z_NULL, 0);
+                unsigned long long gotU = 0, gotC = 0;
+                BOOL streamOk = YES;
+                for (;;) {
+                    ssize_t r = read(inFd, wbuf, Ame224ReadChunkBytes);
+                    if (r == 0) break;
+                    if (r < 0) {
+                        if (errno == EINTR) continue;
+                        streamOk = NO;
+                        break;
+                    }
+                    crc = (uint32_t)ame224_z_crc32(crc, wbuf, (unsigned)r);
+                    gotU += (unsigned long long)r;
+                    zs.next_in = wbuf;
+                    zs.avail_in = (unsigned)r;
+                    while (zs.avail_in > 0 && streamOk) {
+                        zs.next_out = sout;
+                        zs.avail_out = (unsigned)chunkBound;
+                        int ret = ame224_z_deflate(&zs, Z_NO_FLUSH);
+                        unsigned long produced = chunkBound - zs.avail_out;
+                        if (ret != Z_OK || (zs.avail_out == 0 && zs.avail_in > 0)) { streamOk = NO; break; }
+                        if (produced > 0) {
+                            if (!ame224_writeAll(outFd, sout, produced)) { streamOk = NO; break; }
+                            gotC += produced;
+                            curOffset += produced;
+                            __sync_add_and_fetch(&st->bytesDone, (int64_t)r);
+                        }
+                    }
+                    if (ame224_isCancelled(cancelProgress) || st->failed) { streamOk = NO; break; }
+                }
+                if (streamOk) {
+                    for (;;) {
+                        zs.next_in = NULL;
+                        zs.avail_in = 0;
+                        zs.next_out = sout;
+                        zs.avail_out = (unsigned)chunkBound;
+                        int ret = ame224_z_deflate(&zs, Z_FINISH);
+                        unsigned long produced = chunkBound - zs.avail_out;
+                        if (produced > 0) {
+                            if (!ame224_writeAll(outFd, sout, produced)) { streamOk = NO; break; }
+                            gotC += produced;
+                            curOffset += produced;
+                        }
+                        if (ret == Z_STREAM_END) break;
+                        if (ret != Z_OK || zs.avail_out == 0) { streamOk = NO; break; }
+                    }
+                }
+                ame224_z_deflateEnd(&zs);
+                close(inFd);
+                if (!streamOk && !ame224_isCancelled(cancelProgress) && !st->failed) {
+                    writeFailed = YES;
+                    counters.failMessage = [NSString stringWithFormat:@"stream deflate failed: %@", e.rel];
+                    break;
+                }
+                if (streamOk) {
+                    e.crc = crc;
+                    e.csize = gotC;
+                    e.usize = gotU;
+                    unsigned char dd[16];
+                    ame224_put32(dd, 0x08074b50u);
+                    ame224_put32(dd + 4, e.crc);
+                    ame224_put32(dd + 8, (uint32_t)e.csize);
+                    ame224_put32(dd + 12, (uint32_t)e.usize);
+                    if (!ame224_writeAll(outFd, dd, 16)) { writeFailed = YES; break; }
+                    curOffset += 16;
+                }
+            } else if (storeMode) {
+                // store：4MB 直通写盘（CRC 已由 worker 并行算好）
+                int inFd = open([e.abs fileSystemRepresentation], O_RDONLY);
+                if (inFd < 0) {
+                    writeFailed = YES;
+                    counters.failMessage = [NSString stringWithFormat:@"open failed: %@", e.rel];
+                    break;
+                }
+                unsigned long long got = 0;
+                BOOL copyOk = YES;
+                for (;;) {
+                    ssize_t r = read(inFd, wbuf, Ame224ReadChunkBytes);
+                    if (r == 0) break;
+                    if (r < 0) {
+                        if (errno == EINTR) continue;
+                        copyOk = NO;
+                        break;
+                    }
+                    if (!ame224_writeAll(outFd, wbuf, (size_t)r)) { copyOk = NO; break; }
+                    got += (unsigned long long)r;
+                    curOffset += (uint64_t)r;
+                    __sync_add_and_fetch(&st->bytesDone, (int64_t)r);
+                    if (ame224_isCancelled(cancelProgress)) { copyOk = NO; break; }
+                }
+                close(inFd);
+                if (!copyOk) {
+                    writeFailed = YES;
+                    counters.failMessage = [NSString stringWithFormat:@"store copy failed: %@", e.rel];
+                    break;
+                }
+                if (got != e.usize) {
+                    writeFailed = YES;
+                    counters.failMessage = [NSString stringWithFormat:@"size drift: %@", e.rel];
+                    break;
+                }
+            } else {
+                // 小文件 deflate：整块写 worker 产物
+                if (!ame224_writeAll(outFd, e.payload.bytes, e.payload.length)) { writeFailed = YES; break; }
+                curOffset += e.payload.length;
+                __sync_add_and_fetch(&st->bytesDone, (int64_t)e.usize);
+            }
+            if (!writeFailed) {
+                __sync_add_and_fetch(&st->filesDone, 1);
+                if (!e.serialStream) {
+                    // 预算归还仅限 worker 预留过的条目（流式大文件从未占用）
+                    for (int64_t u = 0; u < e.budgetUnits; u++) dispatch_semaphore_signal(budget);
+                }
+                e.payload = nil;   // 归还内存（预算信号量同步释放）
+            }
+        }
+        dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+
+        // ---- 阶段 2：中央目录 + EOCD（zip64 按需）----
+        st->phase = 2;
+        BOOL cancelled = ame224_isCancelled(cancelProgress);
+        BOOL failed = (writeFailed || st->failed != 0);
+        NSString *failMsg = (writeFailed || st->failed != 0) ? (counters.failMessage ?: @"zip write failed") : nil;
+        if (!failed && !cancelled) {
+            uint64_t cdOffset = curOffset;
+            uint64_t cdSize = 0;
+            for (Ame224ExportEntry *e in entries) {
+                if (e.skipped) continue;
+                const char *nameBytes = [e.rel UTF8String];
+                size_t nlen = strlen(nameBytes);
+                BOOL entryZip64 = (e.headerOffset >= 0xFFFFFFFFull);
+                size_t extraLen = entryZip64 ? 28 : 0;
+                [hdr setLength:46 + extraLen + nlen];
+                unsigned char *h = (unsigned char *)[hdr mutableBytes];
+                ame224_put32(h, 0x02014b50u);
+                ame224_put16(h + 4, 20);
+                ame224_put16(h + 6, entryZip64 ? 45 : 20);
+                ame224_put16(h + 8, (uint16_t)(0x0800 | (e.serialStream ? 0x0008 : 0)));
+                ame224_put16(h + 10, storeMode ? 0 : 8);
+                ame224_put16(h + 12, e.dosTime);
+                ame224_put16(h + 14, e.dosDate);
+                ame224_put32(h + 16, e.crc);
+                ame224_put32(h + 20, (uint32_t)(entryZip64 ? 0xFFFFFFFFull : e.csize));
+                ame224_put32(h + 24, (uint32_t)(entryZip64 ? 0xFFFFFFFFull : e.usize));
+                ame224_put16(h + 28, (uint16_t)nlen);
+                ame224_put16(h + 30, (uint16_t)extraLen);
+                ame224_put16(h + 32, 0);
+                ame224_put16(h + 34, 0);
+                ame224_put16(h + 36, 0);
+                ame224_put16(h + 38, 0);
+                ame224_put32(h + 40, 0);
+                ame224_put32(h + 42, (uint32_t)(entryZip64 ? 0xFFFFFFFFull : e.headerOffset));
+                if (entryZip64) {
+                    ame224_put16(h + 46, 0x0001);
+                    ame224_put16(h + 48, 24);
+                    ame224_put64(h + 50, e.usize);
+                    ame224_put64(h + 58, e.csize);
+                    ame224_put64(h + 66, e.headerOffset);
+                }
+                memcpy(h + 46 + extraLen, nameBytes, nlen);
+                if (!ame224_writeAll(outFd, h, 46 + extraLen + nlen)) {
+                    writeFailed = YES;
+                    failed = YES;
+                    failMsg = @"central directory write failed";
+                    break;
+                }
+                cdSize += 46 + extraLen + nlen;
+            }
+            if (!writeFailed) {
+                NSUInteger writtenCount = 0;
+                for (Ame224ExportEntry *e in entries) { if (!e.skipped) writtenCount++; }
+                BOOL needZip64EOCD = (writtenCount > 0xFFFF || cdOffset >= 0xFFFFFFFFull || cdSize >= 0xFFFFFFFFull);
+                if (needZip64EOCD) {
+                    unsigned char z64[56];
+                    ame224_put32(z64, 0x06064b50u);
+                    ame224_put64(z64 + 4, 44);
+                    ame224_put16(z64 + 12, 45);
+                    ame224_put16(z64 + 14, 45);
+                    ame224_put32(z64 + 16, 0);
+                    ame224_put32(z64 + 20, 0);
+                    ame224_put64(z64 + 24, (uint64_t)writtenCount);
+                    ame224_put64(z64 + 32, (uint64_t)writtenCount);
+                    ame224_put64(z64 + 40, cdSize);
+                    ame224_put64(z64 + 48, cdOffset);
+                    unsigned char loc[20];
+                    ame224_put32(loc, 0x07064b50u);
+                    ame224_put32(loc + 4, 0);
+                    ame224_put64(loc + 8, cdOffset + cdSize);
+                    ame224_put32(loc + 16, 1);
+                    if (!ame224_writeAll(outFd, z64, 56) || !ame224_writeAll(outFd, loc, 20)) {
+                        writeFailed = YES; failed = YES; failMsg = @"zip64 eocd write failed";
+                    }
+                }
+                if (!writeFailed) {
+                    unsigned char eocd[22];
+                    ame224_put32(eocd, 0x06054b50u);
+                    ame224_put16(eocd + 4, 0);
+                    ame224_put16(eocd + 6, 0);
+                    ame224_put16(eocd + 8, (uint16_t)(writtenCount > 0xFFFF ? 0xFFFF : writtenCount));
+                    ame224_put16(eocd + 10, (uint16_t)(writtenCount > 0xFFFF ? 0xFFFF : writtenCount));
+                    ame224_put32(eocd + 12, (uint32_t)(cdSize >= 0xFFFFFFFFull ? 0xFFFFFFFFull : cdSize));
+                    ame224_put32(eocd + 16, (uint32_t)(cdOffset >= 0xFFFFFFFFull ? 0xFFFFFFFFull : cdOffset));
+                    ame224_put16(eocd + 20, 0);
+                    if (!ame224_writeAll(outFd, eocd, 22)) {
+                        writeFailed = YES; failed = YES; failMsg = @"eocd write failed";
+                    }
+                }
+            }
+        }
+        if (outFd >= 0) close(outFd);
+        dispatch_source_cancel(timer);
+        free(wbuf);
+        free(sout);
+
+        unsigned long long finalBytes = (unsigned long long)__sync_add_and_fetch(&st->bytesDone, 0);
+        NSUInteger finalFiles = (NSUInteger)__sync_add_and_fetch(&st->filesDone, 0);
+        free(st);
+
+        if (cancelled || failed) {
             [[NSFileManager defaultManager] removeItemAtPath:tmpPath error:nil];
-            completion(nil, failErr ?: [NSError errorWithDomain:@"DataTransferService" code:103
-                                                    userInfo:@{NSLocalizedDescriptionKey: @"zip write failed"}]);
+            if (cancelled) {
+                NSLog(@"[ExportOps] Task224 cancelled at %lu/%lu files (%llu bytes)", (unsigned long)finalFiles, (unsigned long)count, finalBytes);
+                completion(nil, [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil]);
+            } else {
+                NSLog(@"[ExportOps] Task224 export FAILED: %@", failMsg);
+                completion(nil, [NSError errorWithDomain:@"DataTransferService" code:103
+                    userInfo:@{NSLocalizedDescriptionKey: failMsg}]);
+            }
             return;
         }
-        if (progress) progress(done, total, writtenBytes);
-        NSLog(@"[DataTransfer] Task223 pipelined export: %lu files, %llu bytes, method=%ld -> %@",
-              (unsigned long)done, writtenBytes, (long)method, tmpPath.lastPathComponent);
+        if (progress) progress(2, count, count, totalBytes, totalBytes, 0.0, @"");
+        NSTimeInterval elapsed = -[t0 timeIntervalSinceNow];
+        NSLog(@"[ExportOps] Task224 summary: files=%lu bytes=%llu seconds=%.2f avg=%.1f MB/s archive=%@ method=%ld skipped=%lu",
+              (unsigned long)finalFiles, finalBytes, elapsed, finalBytes / 1048576.0 / MAX(elapsed, 0.001),
+              tmpPath.lastPathComponent, (long)method, (unsigned long)skippedCount);
         completion(tmpPath, nil);
     });
 }

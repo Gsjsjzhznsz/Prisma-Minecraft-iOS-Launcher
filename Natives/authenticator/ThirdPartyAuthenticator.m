@@ -1126,6 +1126,102 @@ static NSString *ame131_readCredentials(NSString *authserver, NSString *loginIde
     return error.localizedDescription;
 }
 
+/// ★ Task224（反馈第 17 项）：应用内上传皮肤（替代旧 Task223 跳转皮肤站网页）。
+/// authlib-injector 生态（Blessing Skin 系）的皮肤用户 API 挂在站点根的
+/// /api/user/profile/ 命名空间下，而 authData 存的 authserver 是 API Root
+///（如 https://littleskin.cn/api/yggdrasil）——先剥掉 /api/yggdrasil 段取
+/// 站点根，再拼 <根>/api/user/profile/<无连字符UUID>/skin。令牌过期时先走
+/// 既有刷新链（进度回调按非 nil status + YES 语义跳过）。
+- (void)ame224_uploadSkinPNGData:(NSData *)pngData model:(NSString *)model callback:(Callback)callback {
+    NSString *serverURL = self.authData[@"authserver"] ?: @"https://authserver.ely.by";
+    if (![serverURL hasSuffix:@"/"]) {
+        serverURL = [serverURL stringByAppendingString:@"/"];
+    }
+    NSRange ame224_apiRoot = [serverURL rangeOfString:@"/api/yggdrasil"];
+    if (ame224_apiRoot.location != NSNotFound) {
+        serverURL = [serverURL substringToIndex:ame224_apiRoot.location];
+        if (![serverURL hasSuffix:@"/"]) {
+            serverURL = [serverURL stringByAppendingString:@"/"];
+        }
+    }
+    NSString *skinURL = [NSString stringWithFormat:@"%@api/user/profile/%@/skin",
+        serverURL, ame133_undashedProfileId(self.authData[@"profileId"])];
+
+    void (^ame224_perform)(NSString *) = ^(NSString *accessToken) {
+        NSLog(@"[AccountOps] Task224 3P skin upload begin (%@)", skinURL);
+        NSString *boundary = [NSString stringWithFormat:@"ame224-3p-skin-%@", [NSUUID UUID].UUIDString];
+        NSMutableData *body = [NSMutableData data];
+        NSString *modelPart = [NSString
+            stringWithFormat:@"--%@\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\n%@\r\n",
+                             boundary, model];
+        [body appendData:[modelPart dataUsingEncoding:NSUTF8StringEncoding]];
+        NSString *filePart = [NSString
+            stringWithFormat:@"--%@\r\nContent-Disposition: form-data; name=\"file\"; filename=\"skin.png\"\r\nContent-Type: image/png\r\n\r\n",
+                             boundary];
+        [body appendData:[filePart dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:pngData];
+        [body appendData:[[NSString stringWithFormat:@"\r\n--%@--\r\n", boundary]
+            dataUsingEncoding:NSUTF8StringEncoding]];
+
+        NSMutableURLRequest *request = [NSMutableURLRequest
+            requestWithURL:[NSURL URLWithString:skinURL]
+            cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:60.0];
+        request.HTTPMethod = @"PUT";
+        request.HTTPBody = body;
+        [request setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary]
+            forHTTPHeaderField:@"Content-Type"];
+        [request setValue:[NSString stringWithFormat:@"Bearer %@", accessToken]
+            forHTTPHeaderField:@"Authorization"];
+        [[[NSURLSession sharedSession] dataTaskWithRequest:request
+            completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSInteger code = [response isKindOfClass:[NSHTTPURLResponse class]]
+                    ? ((NSHTTPURLResponse *)response).statusCode : 0;
+                if (error != nil) {
+                    NSLog(@"[AccountOps] Task224 3P skin upload network error: %@", error.localizedDescription);
+                    if (callback) callback(error, NO);
+                    return;
+                }
+                if (code >= 200 && code < 300) {
+                    NSLog(@"[AccountOps] Task224 3P skin upload OK (HTTP %ld)", (long)code);
+                    if (callback) callback(nil, YES);
+                    return;
+                }
+                NSString *detail = [[NSString alloc] initWithData:data ?: [NSData data]
+                                                        encoding:NSUTF8StringEncoding];
+                NSLog(@"[AccountOps] Task224 3P skin upload failed (HTTP %ld): %@", (long)code, detail);
+                NSString *ame224_msg = detail;
+                if (![ame224_msg isKindOfClass:[NSString class]] || ame224_msg.length == 0) {
+                    ame224_msg = localize(@"account.skin.error.request_failed", nil);
+                }
+                if (callback) callback([NSString stringWithFormat:@"%@ (HTTP %ld)",
+                    ame224_msg, (long)code], NO);
+            });
+        }] resume];
+    };
+
+    NSString *accessToken = self.authData[@"accessToken"];
+    BOOL expired = [NSDate.date timeIntervalSince1970] > [self.authData[@"expiresAt"] longValue];
+    if ([accessToken isKindOfClass:[NSString class]] && accessToken.length > 0 && !expired) {
+        ame224_perform(accessToken);
+        return;
+    }
+    [self refreshTokenWithCallback:^(id status, BOOL success) {
+        if (!success) {
+            if (callback) callback(status, NO);
+            return;
+        }
+        if (status != nil) return; // 刷新链进度消息，等待完成回调
+        NSString *fresh = self.authData[@"accessToken"];
+        if (![fresh isKindOfClass:[NSString class]] || fresh.length == 0) {
+            NSLog(@"[AccountOps] Task224 3P token unavailable after refresh (re-login needed)");
+            if (callback) callback(localize(@"account.error.relogin_required", nil), NO);
+            return;
+        }
+        ame224_perform(fresh);
+    }];
+}
+
 - (void)sendAuthenticateRequest:(NSDictionary *)data manager:(AFHTTPSessionManager *)manager callback:(Callback)callback {
     // Get server URL from authData or use default Ely.by server
     NSString *serverURL = self.authData[@"authserver"] ?: @"https://authserver.ely.by";

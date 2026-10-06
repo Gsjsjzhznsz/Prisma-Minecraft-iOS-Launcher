@@ -25,6 +25,8 @@
 #ifndef VTEST_SERVER_H
 #define VTEST_SERVER_H
 
+/* Task224: 对抗 meson -fvisibility=hidden（见 vtest_server.c 同名注释） */
+__attribute__((visibility("default")))
 int vtest_main(int argc, char **argv);
 
 #endif

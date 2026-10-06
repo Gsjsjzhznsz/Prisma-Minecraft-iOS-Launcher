@@ -274,6 +274,12 @@ typedef NS_ENUM(NSInteger, TouchControllerCommMode) {
             NSLog(@"[TouchController] Enabled with Static Library mode");
             break;
     }
+
+    // Task224：广播全局键变化——版本设置页等已开页面即时刷新"有效状态"
+    //（旧代码只有自动配置侧发广播，用户手动改模式不发 → 版本设置仍显示
+    // 过期的 "UDP 协议"）。观察侧见 ProfileSettingsViewController
+    // ame224_touchControllerSettingsChanged。
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"TouchControllerSettingsChanged" object:nil];
 }
 
 - (void)setUDPEnvironmentVariable {

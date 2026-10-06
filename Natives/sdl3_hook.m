@@ -1642,6 +1642,22 @@ static void ame_refrontEmbeddedViewOnMain(void) {
     }
 }
 
+/// Task224：公开包装——后台恢复链（CallbackBridge_resumeGameIfNeed）在
+/// SDL/MC 焦点态重建后调用，把嵌入视图 z 序与宿主 key window 再钉一遍。
+/// 病历：后台化期间 SDL UIKit 的窗口操作可能打乱 z 序/焦点；此前只有
+/// ShowWindow 钩子路径会修（游戏主动 ShowWindow 时），后台恢复链无人
+/// 调用 = "MG 后台回来后屏幕无法输入"的候选根因之一。自带主线程调度。
+void ame224_refrontEmbeddedViewSafe(void) {
+    if (ame_embeddedSDLView == nil) return;
+    if ([NSThread isMainThread]) {
+        ame_refrontEmbeddedViewOnMain();
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            ame_refrontEmbeddedViewOnMain();
+        });
+    }
+}
+
 /// Task 52：gl_bridge 的每帧可见性卫兵需要拿到嵌入的 SDL 触摸视图（z 序执法）。
 /// 返回裸指针（__bridge，不转移所有权；调用方只做只读比较，不当 ARC 对象持有）。
 void *ame_hook_getEmbeddedSDLView(void) {

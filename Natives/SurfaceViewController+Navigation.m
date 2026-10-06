@@ -275,13 +275,36 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
     vc.getDefaultCtrl = ^{
         return [PLProfiles resolveKeyForCurrentProfile:@"defaultTouchCtrl"];
     };
-    [self presentViewController:vc animated:NO completion:nil];
+    // Task224（#16）：按键布局编辑器此前 animated:NO 裸切（用户反馈
+    // “侧栏打开设置完全没动画”同族）。改为无动画呈现 + 尾缘滑入弹簧过渡
+    // （与右栏方向语言一致；0.42s 不超过 0.45s 本轮动画预算）。
+    [self presentViewController:vc animated:NO completion:^{
+        UIView *ame224_editorView = vc.view;
+        CGAffineTransform ame224_rest = ame224_editorView.transform;
+        ame224_editorView.transform = CGAffineTransformTranslate(
+            ame224_rest, ame224_editorView.bounds.size.width * 0.35, 0);
+        ame224_editorView.alpha = 0.4;
+        [UIView animateWithDuration:0.42 delay:0
+             usingSpringWithDamping:0.85 initialSpringVelocity:0.4
+                            options:UIViewAnimationOptionAllowUserInteraction
+                         animations:^{
+            ame224_editorView.transform = ame224_rest;
+            ame224_editorView.alpha = 1.0;
+        } completion:nil];
+        NSLog(@"[ThemeOps] Task224 custom controls presented with trailing slide-in");
+    }];
 }
 
 - (void)actionOpenPreferences {
     [self dismissMenu];
+    // Task224（#16）：游戏内设置包上导航控制器（此前裸 present——设置页
+    // 二级页的推入依赖 navigationController，裸呈现时全部静默失效）；
+    // PageSheet 呈现保持系统动画（侧栏到目标页的标准模态语言）。
     LauncherPreferencesViewController *vc = [[LauncherPreferencesViewController alloc] init];
-    [self presentViewController:vc animated:YES completion:nil];
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+    nav.modalPresentationStyle = UIModalPresentationPageSheet;
+    [self presentViewController:nav animated:YES completion:nil];
+    NSLog(@"[ThemeOps] Task224 in-game settings presented (page sheet + nav wrapper)");
 }
 
 /// 游戏内打开联机界面（陶瓦联机，与 HMCL/FCL/ZL2 互通）
@@ -458,6 +481,29 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
     [self didSelectMenuItem:indexPath.row];
+}
+
+// Task224（#16）：菜单行按压反馈——按下快速缩到 0.96，松手弹簧回弹
+// （右面板信息卡 ame156 同款交互语言；按下 0.12s + 回弹 0.32s）。
+- (void)tableView:(UITableView *)tableView didHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    UITableViewCell *ame224_cell = [tableView cellForRowAtIndexPath:indexPath];
+    if (!ame224_cell) return;
+    [UIView animateWithDuration:0.12 delay:0
+                        options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
+                     animations:^{
+        ame224_cell.transform = CGAffineTransformMakeScale(0.96, 0.96);
+    } completion:nil];
+}
+
+- (void)tableView:(UITableView *)tableView didUnhighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    UITableViewCell *ame224_cell = [tableView cellForRowAtIndexPath:indexPath];
+    if (!ame224_cell) return;
+    [UIView animateWithDuration:0.32 delay:0
+         usingSpringWithDamping:0.55 initialSpringVelocity:0.5
+                        options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
+                     animations:^{
+        ame224_cell.transform = CGAffineTransformIdentity;
+    } completion:nil];
 }
 
 - (void)didSelectMenuItem:(int)item {

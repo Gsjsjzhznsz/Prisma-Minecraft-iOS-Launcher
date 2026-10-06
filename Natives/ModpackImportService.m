@@ -849,6 +849,33 @@ static NSString * const kImportedModpacksKey = @"ImportedModpacks";
 
     // 清理可能存在的旧目录
     if ([fm fileExistsAtPath:gameDirAbsolute]) {
+        // Task224：用户数据保底——重导入的目录里可能有上次导入后玩家积累的
+        // 存档/截图/配置（隔离 gameDir 与版本元数据分居后，modpack 目录仍是
+        // 重导入的整删对象）。先把这些挪到同级 -backup-<时间戳> 目录再删，
+        // 绝不静默销毁存档（10-06 用户实测“重启后两个版本的存档都没了”族）。
+        NSArray<NSString *> *ame224_userItems = @[@"saves", @"screenshots", @"config", @"servers.dat", @"options.txt"];
+        NSString *ame224_backupDir = [gameDirAbsolute stringByAppendingPathComponent:
+            [NSString stringWithFormat:@"../%@-backup-%ld", gameDirAbsolute.lastPathComponent, (long)[[NSDate date] timeIntervalSince1970]]];
+        for (NSString *ame224_item in ame224_userItems) {
+            NSString *ame224_src = [gameDirAbsolute stringByAppendingPathComponent:ame224_item];
+            if (![fm fileExistsAtPath:ame224_src]) continue;
+            [fm createDirectoryAtPath:ame224_backupDir withIntermediateDirectories:YES attributes:nil error:nil];
+            NSError *ame224_mvErr = nil;
+            if ([fm moveItemAtPath:ame224_src toPath:[ame224_backupDir stringByAppendingPathComponent:ame224_item] error:&ame224_mvErr]) {
+                NSLog(@"[ModpackImport] Task224 user data backed up before re-import: %@ -> %@",
+                      ame224_item, ame224_backupDir.lastPathComponent);
+            } else {
+                NSLog(@"[ModpackImport] Task224 user data backup FAILED for %@ (%@) -- keeping in place, dir removal skipped for safety",
+                      ame224_item, ame224_mvErr.localizedDescription);
+                // 任何一项备份失败都不再整删目录（宁失败不丢档）
+                [fm removeItemAtPath:ame224_backupDir error:nil];
+                if (error) *error = [NSError errorWithDomain:@"ModpackImportService"
+                                                        code:997
+                                                    userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:@"Re-import aborted: user data '%@' could not be backed up", ame224_item]}];
+                return NO;
+            }
+        }
         [fm removeItemAtPath:gameDirAbsolute error:nil];
     }
     NSError *dirError = nil;

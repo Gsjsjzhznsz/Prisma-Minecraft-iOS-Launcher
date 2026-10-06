@@ -229,6 +229,11 @@ static GameSurfaceView* pojavWindow;
 // 的 ame171_armKeyboardRecheck；此处前置声明供 updateGrabState 等早于定义
 // 的收起点使用）。
 static NSUInteger ame171_keyboardDismissGeneration = 0;
+// Task224：键盘会话常驻守望状态（新语义见 ame171_armKeyboardRecheck 内注释）：
+// 每世代自愈预算 + 守望截止时间（打字活动经 ame224_keyboardActivityRefresh 续期）。
+static NSUInteger ame224_kbWatchArmedGen = 0;
+static int ame224_kbHealCount = 0;
+static CFAbsoluteTime ame224_kbWatchDeadline = 0;
 // Task223：Stop 路由的延迟收起块（去抖窗口 250ms，Start 到达即取消；
 // markedTextRange 双重守卫 + 手动 ✎ 开关不受影响——那两处直接走
 // ame171_keyboardDismissGeneration++ + resign，不经本块）。
@@ -1369,6 +1374,11 @@ void ame139_fsr_heal_reset_input_scale(void) {
     self.inputTextField.sendChar = ^(jchar keychar){ CallbackBridge_nativeSendChar(keychar); };
     self.inputTextField.sendCharMods = ^(jchar keychar, int mods){ CallbackBridge_nativeSendCharMods(keychar, mods); };
     self.inputTextField.sendKey = ^(int key, int scancode, int action, int mods) { CallbackBridge_nativeSendKey(key, scancode, action, mods); };
+    // Task224：打字活动刷新守望截止时间（长输入会话不断续期，
+    // 见 ame171_armKeyboardRecheck 新语义）。
+    [self.inputTextField addTarget:self
+                             action:@selector(ame224_keyboardActivityRefresh)
+                   forControlEvents:UIControlEventEditingChanged];
 
     self.swipeableButtons = [[NSMutableArray alloc] init];
 
@@ -2452,20 +2462,55 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 // "触发键盘后直接输入各种问题，必须再按一次输入法按钮才能正常输入"
 // ——本方法就是把用户手动做的那"再按一次"自动化。
 // （ame171_keyboardDismissGeneration 的定义在文件前部静态区。）
+/// Task224：打字活动回调——每次字符/组字更新把守望截止时间续到 +120s。
+- (void)ame224_keyboardActivityRefresh {
+    ame224_kbWatchDeadline = CFAbsoluteTimeGetCurrent() + 120.0;
+}
+
+/// Task224：键盘会话【常驻守望】（“输一个字键盘关闭一次”根修）。
+/// Task171 旧设计的缺口：✎/Start 一次性 arm → 首查 0.4s 见会话健康即
+/// return 退役守望——而 iPadOS 26+ UIAsyncTextInput 的每字符拆会话发生
+/// 在【打字过程中】，首查时几乎必然健康：之后的系统拆会话无人自愈，
+/// 键盘关闭后只能手动重开（用户 10-06 实测：“输入会关闭键盘，需要
+/// 重新打开键盘一个一个输入”）。新语义：
+///   · 世代未变（无人主动收起）期间守望常驻：健康时也每 0.4s 续查；
+///   · 会话被系统拆掉（!isFirstResponder）→ 哨兵空格 + 重 become 自愈；
+///   · 每世代自愈预算 10 次（防与系统“隐藏键盘”意图打架，用户
+///     ✎/手势/发送总能赢）；
+///   · App 非激活态只观察不自愈（后台期不弹键盘）；
+///   · 截止时间：arm 时 +120s，打字活动持续续期，超时静默退役。
 - (void)ame171_armKeyboardRecheck:(int)depth {
-    if (depth > 2) return;
+    if (depth == 0 || ame224_kbWatchArmedGen != ame171_keyboardDismissGeneration) {
+        // 新一轮用户意图（✎/Start/手势）：清预算、重置截止时间
+        ame224_kbWatchArmedGen = ame171_keyboardDismissGeneration;
+        ame224_kbHealCount = 0;
+        ame224_kbWatchDeadline = CFAbsoluteTimeGetCurrent() + 120.0;
+    }
     NSUInteger gen = ame171_keyboardDismissGeneration;
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.4 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
-        if (gen != ame171_keyboardDismissGeneration) return;   // 用户已主动收起
-        if (strongSelf.inputTextField.isFirstResponder) return; // 会话健康
-        strongSelf.inputTextField.text = @" ";
-        BOOL ok = [strongSelf.inputTextField becomeFirstResponder];
-        NSLog(@"[SurfaceVC] Task171: keyboard auto re-arm depth=%d (system dismissed the field after show; ok=%d)",
-              depth, ok);
+        if (gen != ame171_keyboardDismissGeneration) return;   // 主动收起：停火
+        if (CFAbsoluteTimeGetCurrent() > ame224_kbWatchDeadline) {
+            NSLog(@"[SurfaceVC] Task224: keyboard watch deadline reached (idle), retiring quietly");
+            return;   // 静默退役
+        }
+        BOOL ame224_appActive = ([UIApplication sharedApplication].applicationState == UIApplicationStateActive);
+        if (!strongSelf.inputTextField.isFirstResponder && ame224_appActive) {
+            if (ame224_kbHealCount < 10) {
+                ame224_kbHealCount++;
+                strongSelf.inputTextField.text = @" ";
+                BOOL ok = [strongSelf.inputTextField becomeFirstResponder];
+                NSLog(@"[SurfaceVC] Task171/224: keyboard session heal #%d depth=%d (mid-typing system teardown; ok=%d)",
+                      ame224_kbHealCount, depth, ok);
+            } else {
+                NSLog(@"[SurfaceVC] Task224: keyboard heal budget exhausted (10); watch retiring (user-side dismiss wins)");
+                return;
+            }
+        }
+        // Task224：健康也续 arm（常驻守望）——旧代码此处 return 正是缺口本身
         [strongSelf ame171_armKeyboardRecheck:depth + 1];
     });
 }

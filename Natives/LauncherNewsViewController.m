@@ -7,6 +7,7 @@
 #import "ModpackImportViewController.h"
 #import "BackgroundSettingsViewController.h"
 #import "BackgroundManager.h"
+#import "LiquidGlassCompat.h"   // Task224（#19）：界面缩放（主菜单字号/磁贴高度）
 #import "UIKit+NativeSurface.h" // Task160 新拟态规格色
 #import "PLProfiles.h"
 #import "utils.h"
@@ -21,6 +22,29 @@
 #import "AvatarManager.h"
 #import <SafariServices/SafariServices.h>
 #import <QuartzCore/QuartzCore.h>
+
+// MARK: - Task224（#18/#19）：主菜单磁贴文字统一刷新点
+// 字号乘界面缩放倍率（1.0 时与原值逐字节一致）；壁纸存在时颜色换为
+// 亮度自适应色 + 软阴影（深壁纸→白字 / 亮壁纸→黑字）。preserveNativeColor
+// = YES 的标签在无壁纸时保留调用点的系统语义色（tertiary/quaternary 等，
+// 零回归）；NO 的标签无壁纸时回落 Task160 卡面规格色并清阴影。
+
+static void ame224_styleHomeTileLabel(UILabel *label, CGFloat baseSize, UIFontWeight weight,
+                                      BOOL adaptiveSecondary, BOOL preserveNativeColor) {
+    if (!label) return;
+    label.font = [UIFont systemFontOfSize:LGCScaledFontSize(baseSize) weight:weight];
+    if ([[BackgroundManager sharedManager] hasBackground]) {
+        [BackgroundManager ame224_applyAdaptiveTextToLabel:label secondary:adaptiveSecondary];
+    } else {
+        if (!preserveNativeColor) {
+            label.textColor = adaptiveSecondary ? AmeCardSecondaryTextColor() : AmeCardPrimaryTextColor();
+        }
+        label.layer.shadowColor = nil;
+        label.layer.shadowOpacity = 0.0;
+        label.layer.shadowRadius = 0.0;
+        label.layer.shadowOffset = CGSizeZero;
+    }
+}
 
 // MARK: - Shortcut Action Constants
 
@@ -308,6 +332,11 @@ static NSString *festivalGreeting(void) {
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(handleBackgroundUIEffectChanged)
                                                      name:@"BackgroundUIEffectChanged"
+                                                   object:nil];
+        // Task224（#4）：界面风格切换 → 磁贴表面随活重铺（玻璃↔原生）。
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(handleBackgroundUIEffectChanged)
+                                                     name:LGCInterfaceStyleChangedNotification
                                                    object:nil];
     }
     return self;
@@ -870,6 +899,44 @@ static NSString *festivalGreeting(void) {
                                              selector:@selector(updateSkinDisplay)
                                                  name:@"UpdateAccountInfo"
                                                object:nil];
+
+    // Task224（#18/#19）：壁纸/界面缩放/界面风格变化 → 主页磁贴与标题
+    // 全链刷新（颜色重算 + 字号/磁贴高度重排；可见状态下即时生效，
+    // 不可见时由 viewWillAppear 之后的 cellForItem 链自然覆盖）。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_refreshForThemeChange)
+                                                 name:Ame223WallpaperChangedNotification
+                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_refreshForThemeChange)
+                                                 name:LGCUIScaleChangedNotification
+                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_refreshForThemeChange)
+                                                 name:LGCInterfaceStyleChangedNotification
+                                               object:nil];
+}
+
+// Task224（#18/#19）：磁贴刷新——cellForItemAt 的 ame224_styleHomeTileLabel
+// 逐标签重算（颜色/字号），磁贴高度经 heightForTileConfig 随倍率变化，
+// reloadData 一并重排；标题行同步刷新。
+- (void)ame224_refreshForThemeChange {
+    if (self.headerTitleLabel) {
+        self.headerTitleLabel.font = [UIFont systemFontOfSize:LGCScaledFontSize(26) weight:UIFontWeightBold];
+        if ([[BackgroundManager sharedManager] hasBackground]) {
+            [BackgroundManager ame224_applyAdaptiveTextToLabel:self.headerTitleLabel secondary:NO];
+        } else {
+            self.headerTitleLabel.textColor = [UIColor labelColor];
+            self.headerTitleLabel.layer.shadowColor = nil;
+            self.headerTitleLabel.layer.shadowOpacity = 0.0;
+            self.headerTitleLabel.layer.shadowRadius = 0.0;
+            self.headerTitleLabel.layer.shadowOffset = CGSizeZero;
+        }
+    }
+    if (self.collectionView) {
+        [self.collectionView reloadData];
+    }
+    NSLog(@"[ThemeOps] Task224 home menu refreshed (adaptive text + zoom + style)");
 }
 
 // Task149：首帧默认头像保险——viewWillAppear 再跑一次 updateSkinDisplay
@@ -979,8 +1046,13 @@ static NSString *festivalGreeting(void) {
     self.headerTitleLabel = [[UILabel alloc] init];
     self.headerTitleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.headerTitleLabel.text = localize(@"i18n_str_349", nil);
-    self.headerTitleLabel.font = [UIFont systemFontOfSize:26 weight:UIFontWeightBold];
+    self.headerTitleLabel.font = [UIFont systemFontOfSize:LGCScaledFontSize(26) weight:UIFontWeightBold];
     self.headerTitleLabel.textColor = [UIColor labelColor];
+    // Task224（#18）：标题直接压在（半透明）卡面上、壁纸可透出——
+    // 壁纸存在时换亮度自适应色 + 软阴影（无壁纸保持 labelColor）。
+    if ([[BackgroundManager sharedManager] hasBackground]) {
+        [BackgroundManager ame224_applyAdaptiveTextToLabel:self.headerTitleLabel secondary:NO];
+    }
     [self.headerView addSubview:self.headerTitleLabel];
     
     self.customizeButton = [UIButton buttonWithType:UIButtonTypeSystem];
@@ -1039,22 +1111,23 @@ static NSString *festivalGreeting(void) {
 /// ——公告/新闻磁贴与「最新正式版」磁贴等高（用户指令，固定 100），
 /// 高度不够时简介优先截断到能显示的行（各 cell 内压缩序已就位）。
 - (CGFloat)heightForTileConfig:(HomeTileConfig *)config {
+    // Task224（#19）：磁贴高度乘界面缩放倍率（1.0 时与原值逐字节一致）。
     switch (config.tileType) {
         case HomeTileTypeProfile:
-            return config.tileSize == HomeTileSizeFull ? 170 : 140;
+            return config.tileSize == HomeTileSizeFull ? LGCScaledValue(170) : LGCScaledValue(140);
         case HomeTileTypeAnnouncement:
             // Task149：与最新正式版卡片等高
-            return 100;
+            return LGCScaledValue(100);
         case HomeTileTypeVersionRelease:
         case HomeTileTypeVersionSnapshot:
-            return 100;
+            return LGCScaledValue(100);
         case HomeTileTypeNews:
             // Task149：与最新正式版卡片等高（原 120/100 双档退役）
-            return 100;
+            return LGCScaledValue(100);
         case HomeTileTypeShortcut:
-            return 76;
+            return LGCScaledValue(76);
         default:
-            return 100;
+            return LGCScaledValue(100);
     }
 }
 
@@ -1133,6 +1206,9 @@ static NSString *festivalGreeting(void) {
             
             NSString *name = self.currentUsername ?: localize(@"i18n_str_351", nil);
             cell.welcomeLabel.text = [NSString stringWithFormat:localize(@"i18n_str_352", nil), name];
+            // Task224（#18/#19）：欢迎句两行——缩放字号 + 壁纸亮度自适应色。
+            ame224_styleHomeTileLabel(cell.welcomeLabel, 21, UIFontWeightBold, NO, NO);
+            ame224_styleHomeTileLabel(cell.greetingLabel, 14, UIFontWeightMedium, YES, NO);
             // Task149：第二行回归原灰字问候语（Task141 公告标题行+按钮已退役，
             // 公告预览回归主页面公告卡片本体）
             cell.greetingLabel.text = festivalGreeting();
@@ -1162,6 +1238,9 @@ static NSString *festivalGreeting(void) {
             [cell setAccentColor:[config accentColor]];
             cell.titleLabel.text = config.customTitle ?: localize(@"i18n_str_283", nil);
             cell.valueLabel.text = self.latestRelease;
+            // Task224（#18/#19）：版本信息卡两行（无壁纸时保留系统语义色）。
+            ame224_styleHomeTileLabel(cell.titleLabel, 12, UIFontWeightMedium, YES, YES);
+            ame224_styleHomeTileLabel(cell.valueLabel, 18, UIFontWeightBold, NO, YES);
             cell.iconView.image = [UIImage systemImageNamed:config.iconName ?: @"cube.box.fill"];
             cell.iconView.tintColor = [config accentColor];
             return cell;
@@ -1172,6 +1251,9 @@ static NSString *festivalGreeting(void) {
             [cell setAccentColor:[config accentColor]];
             cell.titleLabel.text = config.customTitle ?: localize(@"i18n_str_284", nil);
             cell.valueLabel.text = self.latestSnapshot;
+            // Task224（#18/#19）：同上。
+            ame224_styleHomeTileLabel(cell.titleLabel, 12, UIFontWeightMedium, YES, YES);
+            ame224_styleHomeTileLabel(cell.valueLabel, 18, UIFontWeightBold, NO, YES);
             cell.iconView.image = [UIImage systemImageNamed:config.iconName ?: @"ant.fill"];
             cell.iconView.tintColor = [config accentColor];
             return cell;
@@ -1180,6 +1262,9 @@ static NSString *festivalGreeting(void) {
         case HomeTileTypeAnnouncement: {
             HomeAnnouncementTileCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"AnnouncementCell" forIndexPath:indexPath];
             [cell setAccentColor:[config accentColor]];
+            // Task224（#18/#19）：公告卡标题/简介——缩放字号 + 壁纸亮度自适应色。
+            ame224_styleHomeTileLabel(cell.titleLabel, 15, UIFontWeightSemibold, NO, NO);
+            ame224_styleHomeTileLabel(cell.summaryLabel, 12, UIFontWeightRegular, YES, NO);
 
             // Task149：公告卡重排——标题/简介分离（样式对齐新闻卡片），
             // 查看详情按钮内联标题后；预览档位仅控制简介是否显示
@@ -1226,6 +1311,10 @@ static NSString *festivalGreeting(void) {
         case HomeTileTypeNews: {
             HomeNewsTileCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"NewsCell" forIndexPath:indexPath];
             [cell setAccentColor:[config accentColor]];
+            // Task224（#18/#19）：新闻卡标题/简介/日期（无壁纸时日期保留 quaternary）。
+            ame224_styleHomeTileLabel(cell.titleLabel, 15, UIFontWeightSemibold, NO, NO);
+            ame224_styleHomeTileLabel(cell.summaryLabel, 12, UIFontWeightRegular, YES, NO);
+            ame224_styleHomeTileLabel(cell.placeholderLabel, 11, UIFontWeightMedium, YES, YES);
 
             if (self.latestNewsItem) {
                 // 显示最新一条新闻的标题/摘要/封面
@@ -1262,6 +1351,8 @@ static NSString *festivalGreeting(void) {
             HomeShortcutTileCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"ShortcutCell" forIndexPath:indexPath];
             [cell setAccentColor:[config accentColor]];
             cell.titleLabel.text = config.customTitle ?: localize(@"i18n_str_286", nil);
+            // Task224（#18/#19）：快捷磁贴标题。
+            ame224_styleHomeTileLabel(cell.titleLabel, 14, UIFontWeightSemibold, NO, NO);
             cell.iconView.image = [UIImage systemImageNamed:config.iconName ?: @"arrow.right.circle.fill"];
             cell.iconView.tintColor = [config accentColor];
             return cell;

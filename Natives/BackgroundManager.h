@@ -98,6 +98,21 @@ typedef NS_ENUM(NSInteger, BackgroundUIEffect) {
 
 FOUNDATION_EXPORT NSNotificationName const Ame223WallpaperChangedNotification;
 
+// ============================================================================
+// Task224（反馈 #18）：通用动态反色文字——欢迎页之外的壁纸透出文字
+// （主菜单磁贴、右面板标题等）统一取色入口。无壁纸时回落 Task210 卡面
+// 规格色（与既有外观逐字节一致）；有壁纸时按亮度反色 + 软阴影兜底。
+// 壁纸变化重算走 Ame223WallpaperChangedNotification（复用欢迎页链路）。
+// ============================================================================
++ (UIColor *)ame224_adaptiveTextColor;
++ (UIColor *)ame224_adaptiveSecondaryTextColor;
+/// 颜色 + 软阴影一次到位（无壁纸时清阴影，零新视觉）
++ (void)ame224_applyAdaptiveTextToLabel:(UILabel *)label secondary:(BOOL)secondary;
+/// 富文本版（标题等需要整体属性的场景）
++ (NSAttributedString *)ame224_adaptiveAttributedTitle:(NSString *)title
+                                              fontSize:(CGFloat)fontSize
+                                             secondary:(BOOL)secondary;
+
 // Pause/Resume video (for app lifecycle)
 - (void)pauseVideo;
 - (void)resumeVideo;

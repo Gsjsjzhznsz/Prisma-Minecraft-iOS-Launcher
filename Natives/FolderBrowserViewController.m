@@ -1,5 +1,6 @@
 #import "FolderBrowserViewController.h"
 #import "BackgroundManager.h"
+#import "LiquidGlassCompat.h"   // Task224（#4）：界面风格解析（文件夹浏览器头部随风格）
 #import "utils.h"
 #import <QuickLook/QuickLook.h>
 #include <objc/runtime.h>
@@ -32,9 +33,21 @@
     [super viewDidLoad];
     // 适配自定义启动器背景（毛玻璃/半透明规则与其它页一致）。
     [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
+    // Task224（#4）：界面风格 = 液态玻璃时，浏览器头部（导航栏）交还系统——
+    // iOS 26+ 移除自定义背景后自动获得液态玻璃；native 解析时
+    // LGCAdaptNavigationBar 内部自检不过即 no-op，保持既有外观。
+    if (LGCIsGlassStyleActive()) {
+        LGCAdaptNavigationBar(self.navigationController.navigationBar);
+        NSLog(@"[ThemeOps] Task224 folder browser header handed to system glass");
+    }
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(reapplyBackgroundEffect)
                                                  name:@"BackgroundUIEffectChanged"
+                                               object:nil];
+    // Task224（#4）：风格切换广播——可见状态下浏览器头部跟随重铺。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_handleInterfaceStyleChanged)
+                                                 name:LGCInterfaceStyleChangedNotification
                                                object:nil];
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc]
         initWithBarButtonSystemItem:UIBarButtonSystemItemDone
@@ -50,6 +63,14 @@
 
 - (void)reapplyBackgroundEffect {
     [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
+    if (LGCIsGlassStyleActive()) {
+        LGCAdaptNavigationBar(self.navigationController.navigationBar);
+    }
+}
+
+// Task224（#4）：风格切换 → 头部重铺（液态玻璃时交还系统，native 保持）。
+- (void)ame224_handleInterfaceStyleChanged {
+    [self reapplyBackgroundEffect];
 }
 
 - (void)dealloc {
@@ -64,10 +85,25 @@
 }
 
 - (void)ame223_loadPath:(NSString *)path {
+    [self ame224_loadPath:path retryCount:0];
+}
+
+/// Task224：0 条目自动重试 + 错误浮出 + 空态显示。
+/// 病历（10-06 latestlog.old:678-700）：mcworld 提取目录 3 次打开均
+/// "loaded 0 entries"——旧代码吞掉 contentsOfDirectory 的 NSError，
+/// 无法区分真空目录 / 读取失败 / 提取器竞态（目录已建、内容未落盘或
+/// 落在别的 tmp 根）。修法：错误入日志；空结果退避重试（0.3s/1s/3s，
+/// 用户导航离开即中止）；重试耗尽仍空 → 空态文案（真空目录语义）。
+- (void)ame224_loadPath:(NSString *)path retryCount:(int)retry {
     self.currentPath = path;
     NSMutableArray<NSDictionary *> *rows = [NSMutableArray array];
     NSFileManager *fm = NSFileManager.defaultManager;
-    NSArray<NSString *> *names = [fm contentsOfDirectoryAtPath:path error:nil];
+    NSError *ame224_err = nil;
+    NSArray<NSString *> *names = [fm contentsOfDirectoryAtPath:path error:&ame224_err];
+    if (ame224_err != nil) {
+        NSLog(@"[FolderBrowser] Task224 contentsOfDirectory error (domain=%@ code=%ld): %@",
+              ame224_err.domain, (long)ame224_err.code, ame224_err.localizedDescription);
+    }
     for (NSString *name in names) {
         NSString *full = [path stringByAppendingPathComponent:name];
         BOOL isDir = NO;
@@ -98,7 +134,40 @@
         self.title = [NSString stringWithFormat:@"%@ / %@", rootName, rel];
     }
     [self.tableView reloadData];
-    NSLog(@"[FolderBrowser] Task223 loaded %lu entries: %@", (unsigned long)rows.count, path);
+    NSLog(@"[FolderBrowser] Task223 loaded %lu entries (retry=%d): %@",
+          (unsigned long)rows.count, retry, path);
+
+    // Task224：空结果退避重试（提取器竞态窗口）
+    if (rows.count == 0 && retry < 3) {
+        NSTimeInterval ame224_delay = (retry == 0) ? 0.3 : ((retry == 1) ? 1.0 : 3.0);
+        NSString *ame224_target = path;
+        __weak typeof(self) weakSelf = self;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(ame224_delay * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
+            if (![strongSelf.currentPath isEqualToString:ame224_target]) return;
+            NSLog(@"[FolderBrowser] Task224 empty result auto-retry #%d after %.1fs",
+                  retry + 1, ame224_delay);
+            [strongSelf ame224_loadPath:ame224_target retryCount:retry + 1];
+        });
+    }
+
+    // Task224：空态显示（重试期间提示等待，耗尽后提示空目录）
+    if (rows.count == 0) {
+        UILabel *ame224_empty = [[UILabel alloc] init];
+        ame224_empty.numberOfLines = 0;
+        ame224_empty.textAlignment = NSTextAlignmentCenter;
+        ame224_empty.textColor = [UIColor secondaryLabelColor];
+        ame224_empty.font = [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline];
+        ame224_empty.text = (retry < 3)
+            ? localize(@"folderbrowser.empty.retrying", nil)
+            : localize(@"folderbrowser.empty.title", nil);
+        [ame224_empty sizeToFit];
+        self.tableView.backgroundView = ame224_empty;
+    } else {
+        self.tableView.backgroundView = nil;
+    }
 }
 
 - (NSString *)ame223_relativeDisplayOf:(NSString *)path {

@@ -10,6 +10,7 @@
 #import "LauncherPreferences.h"
 #import "PLMirrorCenter.h"   // Task218: version manifest candidate chain
 #import "BackgroundManager.h"
+#import "LiquidGlassCompat.h"   // Task224（#4/#19）：界面风格 + 界面缩放
 #import "PLProfiles.h"
 #import "utils.h"
 #import "ModsManagerViewController.h"
@@ -55,17 +56,30 @@ static CGFloat LauncherCardLayoutOuterMargin(UITraitCollection *trait) {
 /// 根据物理设备类型决定侧栏宽度
 /// - iPhone 横屏（含 SE/8/Plus/X/Pro Max）：56pt（菜单只有图标，56pt 足够）
 /// - iPad：70pt
+/// Task224（#19）：乘界面缩放倍率；iPhone 上另以屏宽 12% 封顶（放大
+/// 不挤占中间内容区——缩放上限场景侧栏+右栏+间距合计不超屏宽 45%）
 static CGFloat LauncherCardLayoutSidebarWidth(UITraitCollection *trait) {
-    if (LauncherCardLayoutIsPhysicalPhone()) return kSidebarWidthPhone;
-    return kSidebarWidthPad;
+    CGFloat ame224_base = LauncherCardLayoutIsPhysicalPhone() ? kSidebarWidthPhone : kSidebarWidthPad;
+    CGFloat ame224_width = LGCScaledValue(ame224_base);
+    if (LauncherCardLayoutIsPhysicalPhone()) {
+        CGFloat ame224_cap = UIScreen.mainScreen.bounds.size.width * 0.12;
+        if (ame224_width > ame224_cap) ame224_width = ame224_cap;
+    }
+    return ame224_width;
 }
 
 /// 根据物理设备类型决定右侧面板宽度
 /// - iPhone 横屏：168pt（保证启动/编辑控件/执行 Jar 按钮文字不截断）
 /// - iPad：220pt
+/// Task224（#19）：同上——倍率 + iPhone 屏宽 32% 封顶（读得下优先）
 static CGFloat LauncherCardLayoutRightPanelWidth(UITraitCollection *trait) {
-    if (LauncherCardLayoutIsPhysicalPhone()) return kRightPanelWidthPhone;
-    return kRightPanelWidthPad;
+    CGFloat ame224_base = LauncherCardLayoutIsPhysicalPhone() ? kRightPanelWidthPhone : kRightPanelWidthPad;
+    CGFloat ame224_width = LGCScaledValue(ame224_base);
+    if (LauncherCardLayoutIsPhysicalPhone()) {
+        CGFloat ame224_cap = UIScreen.mainScreen.bounds.size.width * 0.32;
+        if (ame224_width > ame224_cap) ame224_width = ame224_cap;
+    }
+    return ame224_width;
 }
 
 @interface LauncherCardLayoutViewController ()
@@ -514,6 +528,17 @@ static CGFloat LauncherCardLayoutRightPanelWidth(UITraitCollection *trait) {
                                              selector:@selector(uiEffectChanged:)
                                                  name:@"BackgroundUIEffectChanged"
                                                object:nil];
+    // Task224（#4/#19）：风格/缩放直连广播——风格重铺三卡表面（玻璃↔原生
+    // 双向还原），缩放重算侧栏/右栏宽度。两路均幂等，与
+    // BackgroundUIEffectChanged 通路（风格 action 同发）双保险。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_handleInterfaceStyleChanged)
+                                                 name:LGCInterfaceStyleChangedNotification
+                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_handleUIScaleChanged)
+                                                 name:LGCUIScaleChangedNotification
+                                               object:nil];
     // 监听版本切换，重新加载编辑器
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(reloadProfileEditorIfNeeded)
@@ -766,9 +791,34 @@ static CGFloat LauncherCardLayoutRightPanelWidth(UITraitCollection *trait) {
 
 - (void)uiEffectChanged:(NSNotification *)notification {
     // 重新应用毛玻璃/半透明效果到卡片容器视图
+    // Task224（#4）：applyEffectToView 内部已接液态玻璃接管——玻璃风格时
+    // 三卡自动换分层玻璃，native 自动回落既有材质（双向还原）。
     [[BackgroundManager sharedManager] applyEffectToView:self.sidebarCard];
     [[BackgroundManager sharedManager] applyEffectToView:self.contentCard];
     [[BackgroundManager sharedManager] applyEffectToView:self.rightPanelCard];
+}
+
+// Task224（#4）：界面风格切换 → 三卡表面重铺。
+- (void)ame224_handleInterfaceStyleChanged {
+    [self uiEffectChanged:nil];
+    NSLog(@"[ThemeOps] Task224 card-layout surfaces re-applied (resolved=%d)",
+          (int)LGCResolvedInterfaceStyle());
+}
+
+// Task224（#19）：界面缩放变化 → 侧栏/右栏宽度重算 + 重布局。
+- (void)ame224_handleUIScaleChanged {
+    CGFloat ame224_sidebar = LauncherCardLayoutSidebarWidth(self.traitCollection);
+    CGFloat ame224_right = LauncherCardLayoutRightPanelWidth(self.traitCollection);
+    if (self.sidebarWidthConstraint && self.sidebarWidthConstraint.constant != ame224_sidebar) {
+        self.sidebarWidthConstraint.constant = ame224_sidebar;
+    }
+    if (self.rightPanelWidthConstraint && self.rightPanelWidthConstraint.constant != ame224_right) {
+        self.rightPanelWidthConstraint.constant = ame224_right;
+    }
+    for (UIViewController *child in self.childViewControllers) {
+        [child.view setNeedsLayout];
+    }
+    [self.view setNeedsLayout];
 }
 
 - (void)dealloc {

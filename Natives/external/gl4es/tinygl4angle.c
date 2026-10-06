@@ -16,6 +16,32 @@
 extern void *eglGetProcAddress(const char *procname);
 #include "string_utils.h"
 
+// Task224：ES3/ANGLE 需要 sized 深度内部格式。桌面 GL 调用方传非 sized 的
+// GL_DEPTH_COMPONENT/GL_DEPTH_STENCIL，ANGLE(Metal) 直接 1282 拒绝
+// （“Invalid combination of format, type and internalFormat”），深度附件
+// 永不成立 → MC 死于 GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT（1.20.1
+// ANGLE 会话 latestlog.txt 2026-10-06 实证：glTexImage2D ifmt=0x1902
+// fmt=0x1902 type=0x1406 → 1282 → egv.b 抛 RuntimeException）。
+// vendored 头文件对以下常量覆盖不全，全部 #ifndef 本地定义。
+#ifndef GL_DEPTH_COMPONENT16
+#define GL_DEPTH_COMPONENT16 0x81A5
+#endif
+#ifndef GL_DEPTH_COMPONENT24
+#define GL_DEPTH_COMPONENT24 0x81A6
+#endif
+#ifndef GL_DEPTH_COMPONENT32F
+#define GL_DEPTH_COMPONENT32F 0x8CAC
+#endif
+#ifndef GL_DEPTH24_STENCIL8
+#define GL_DEPTH24_STENCIL8 0x88F0
+#endif
+#ifndef GL_DEPTH_STENCIL
+#define GL_DEPTH_STENCIL 0x84F1
+#endif
+#ifndef GL_UNSIGNED_INT_24_8
+#define GL_UNSIGNED_INT_24_8 0x84FA
+#endif
+
 // ============================================================================
 // Task182: gles_ 解析钉死（ANGLE 渲染器 pipeline/gui 崩溃根修——命名空间
 // 分裂）。病历（bc1941b 装机 latestlog.txt，ANGLE 26.3 FO 会话，Task181
@@ -2364,6 +2390,22 @@ void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei widt
 
     if (type == GL_UNSIGNED_INT_8_8_8_8_REV) {
         type = GL_UNSIGNED_BYTE;
+    }
+
+    // Task224：非 sized 深度内部格式 → ES3 sized 等价物（ANGLE 必须）。
+    // 按 type 语义映射：FLOAT→32F、UNSIGNED_INT→24、其余→16；
+    // DEPTH_STENCIL 组合 → DEPTH24_STENCIL8。format 不动（ES3 的
+    // glTexImage2D format 仍接受 GL_DEPTH_COMPONENT）。
+    if (internalformat == GL_DEPTH_COMPONENT) {
+        if (type == GL_FLOAT) {
+            internalformat = GL_DEPTH_COMPONENT32F;
+        } else if (type == GL_UNSIGNED_INT) {
+            internalformat = GL_DEPTH_COMPONENT24;
+        } else {
+            internalformat = GL_DEPTH_COMPONENT16;
+        }
+    } else if (internalformat == GL_DEPTH_STENCIL) {
+        internalformat = GL_DEPTH24_STENCIL8;
     }
 
     if (isProxyTexture(target)) {

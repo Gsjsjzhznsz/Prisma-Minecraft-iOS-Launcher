@@ -30,4 +30,13 @@ typedef void(^Callback)(id status, BOOL success);
 + (void)clearTokenDataOfProfile:(NSString *)profile;
 + (NSDictionary *)tokenDataOfProfile:(NSString *)profile;
 
+// ★ Task224（反馈第 17 项）：微软账号高级操作改为应用内直连 Minecraft
+// profile services（旧 Task223 实现仅跳转 minecraft.net 网页）。
+// 上传皮肤：multipart POST /minecraft/profile/skins（variant=classic|slim
+// + file=skin.png，PNG 64x64 由调用方先行校验）。
+- (void)ame224_uploadSkinPNGData:(NSData *)pngData variant:(NSString *)variant callback:(Callback)callback;
+// 修改游戏名字：PUT /minecraft/name（JSON name 字段）。400/403 在实现侧
+// 映射为本地化错误（名字被占用 / 不允许 / 无可用改名机会）。
+- (void)ame224_changePlayerName:(NSString *)newName callback:(Callback)callback;
+
 @end

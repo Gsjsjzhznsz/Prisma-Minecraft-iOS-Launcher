@@ -1,4 +1,5 @@
 #import <AuthenticationServices/AuthenticationServices.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #import "NMToast.h"
 
 #import "authenticator/BaseAuthenticator.h"
@@ -18,10 +19,22 @@
 #import "ios_uikit_bridge.h"
 #import "utils.h"
 
-@interface AccountListViewController()<ASWebAuthenticationPresentationContextProviding>
+@interface AccountListViewController()<ASWebAuthenticationPresentationContextProviding, UIDocumentPickerDelegate>
 
 @property(nonatomic, strong) NSMutableArray *accountList;
 @property(nonatomic) ASWebAuthenticationSession *authVC;
+
+// ★ Task224（反馈第 17 项）：当前选中账户的可见快捷操作区（列表头部横排
+//   胶囊按钮：换皮肤 / 改名（微软）/ 默认皮肤 Steve、Alex（离线）/ 切换角色
+//   （第三方多角色）/ 删除）——用户实测“长按才能发现菜单”，现把高级操作
+//   直接摆到台面上。
+@property(nonatomic, strong) UIView *ame224_quickHeader;
+@property(nonatomic, strong) UILabel *ame224_quickTitleLabel;
+@property(nonatomic, strong) UIScrollView *ame224_quickScrollView;
+@property(nonatomic, strong) UIStackView *ame224_quickStack;
+@property(nonatomic, strong) NSMutableArray<void (^)(void)> *ame224_quickHandlers;
+// Task224：皮肤文件选择器的挂起上下文（选完文件后仍需回指账户行）。
+@property(nonatomic, strong) NSIndexPath *ame224_pendingSkinIndexPath;
 
 @end
 
@@ -41,8 +54,8 @@
 //   - 标题 = 账号名 sp:16 semibold AmeCard 主文字色（旧 sp:15 label 色升级，
 //     "其字号和样式也改"）
 //   - 灰字 = 账号类型 sp:12 AmeCard 次文字色（旧 sp:11 secondary 升级）
-//   - 选中徽章 = 20pt 绿圆角方块 + 白勾、右 -14 垂直居中（安装器
-//     selectedBadge 同位同色；旧 accent top+10 位 + 边框/淡底三层强化退役）
+//   - 选中徽章 = 20pt 绿圆角方块 + 白勾（Task224 起让位居左——行尾最右
+//     给 ⋯ 菜单按钮；右距菜单 10pt 垂直居中，颜色/尺寸不变）
 //   - 触摸缩放弹簧动画删除（Task210"全部磁贴移除"动效冻结的账内清欠）
 //   - 上下 4pt 内缩（版本卡 item contentInsets 语义，相邻卡面净距 8pt =
 //     版本页 iPhone 档）+ 左右 24pt 总边距（版本页 section 16 + item 8）
@@ -52,8 +65,9 @@
 @property (nonatomic, strong) UILabel *usernameLabel;
 @property (nonatomic, strong) UILabel *typeLabel;
 @property (nonatomic, strong) UIView *selectedBadge;
-// ★ Task223（清单第 20 项）：行内可见操作按钮（“现在是要长按才能看到菜单，
-//   需要在基础上添加元素进行操作”）——点开与长按同源的完整菜单。
+// ★ Task223（清单第 20 项）：行内可见操作按钮。★ Task224（反馈第 17 项）
+//   升级：置于行尾（最右）、44pt 命中区、accentColor 淡底胶囊圆——旧 32pt
+//   灰图标仍被用户感知为“要长按才能找到菜单”，现在点按即开与长按同源菜单。
 @property (nonatomic, strong) UIButton *ame223_menuButton;
 @property (nonatomic, copy, nullable) void (^ame223_onMenuTapped)(void);
 - (void)ame190_configureWithUsername:(NSString *)username
@@ -154,13 +168,19 @@
     checkmark.tintColor = [UIColor whiteColor];
     [self.selectedBadge addSubview:checkmark];
 
-    // ★ Task223（清单第 20 项）：行内 “⋯” 菜单按钮（长按菜单的可见入口，
-    //   置于选中徽章左侧；未选中时也常驻——长按发现性问题根治）。
+    // ★ Task223（清单第 20 项）：行内 “⋯” 菜单按钮（长按菜单的可见入口）。
+    //   ★ Task224（反馈第 17 项）：改为行尾最右 + 44pt 命中区 + accentColor
+    //   淡底胶囊圆 + accentColor 图标——看得见、像可点的按钮（旧 32pt 灰图标
+    //   被用户实测反馈为“只能长按发现”）。
     self.ame223_menuButton = [UIButton buttonWithType:UIButtonTypeSystem];
     [self.ame223_menuButton setImage:[UIImage systemImageNamed:@"ellipsis.circle"
-        withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIFontWeightMedium]]
+        withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:22 weight:UIFontWeightSemibold]]
         forState:UIControlStateNormal];
-    self.ame223_menuButton.tintColor = AmeCardSecondaryTextColor();
+    self.ame223_menuButton.tintColor = accentColor();
+    self.ame223_menuButton.backgroundColor = [accentColor() colorWithAlphaComponent:0.14];
+    self.ame223_menuButton.layer.cornerRadius = 22;
+    self.ame223_menuButton.layer.cornerCurve = kCACornerCurveContinuous;
+    self.ame223_menuButton.layer.masksToBounds = YES;
     self.ame223_menuButton.translatesAutoresizingMaskIntoConstraints = NO;
     [self.ame223_menuButton addTarget:self action:@selector(ame223_menuTapped)
                      forControlEvents:UIControlEventTouchUpInside];
@@ -188,26 +208,28 @@
         // 高度链完整，自动行高（头像 68 + 8pt 呼吸 = 主导高度）
         [self.usernameLabel.leadingAnchor constraintEqualToAnchor:self.contentContainer.leadingAnchor constant:ame190_textLead],
         [self.usernameLabel.topAnchor constraintEqualToAnchor:self.contentContainer.topAnchor constant:16],
-        [self.usernameLabel.trailingAnchor constraintLessThanOrEqualToAnchor:self.ame223_menuButton.leadingAnchor constant:-8],
+        [self.usernameLabel.trailingAnchor constraintLessThanOrEqualToAnchor:self.selectedBadge.leadingAnchor constant:-8],
 
         [self.typeLabel.leadingAnchor constraintEqualToAnchor:self.usernameLabel.leadingAnchor],
         [self.typeLabel.topAnchor constraintEqualToAnchor:self.usernameLabel.bottomAnchor constant:3],
-        [self.typeLabel.trailingAnchor constraintLessThanOrEqualToAnchor:self.ame223_menuButton.leadingAnchor constant:-8],
+        [self.typeLabel.trailingAnchor constraintLessThanOrEqualToAnchor:self.selectedBadge.leadingAnchor constant:-8],
         [self.typeLabel.bottomAnchor constraintEqualToAnchor:self.contentContainer.bottomAnchor constant:-16],
 
-        // 选中徽章：右 -14 垂直居中（安装器同位）
-        [self.selectedBadge.trailingAnchor constraintEqualToAnchor:self.contentContainer.trailingAnchor constant:-14],
+        // 选中徽章：Task224 改居菜单按钮左侧（右距菜单 10pt，垂直居中——
+        // 安装器同色 20pt 绿方块 + 白勾不变，仅让位给行尾菜单按钮）
+        [self.selectedBadge.trailingAnchor constraintEqualToAnchor:self.ame223_menuButton.leadingAnchor constant:-10],
         [self.selectedBadge.centerYAnchor constraintEqualToAnchor:self.contentContainer.centerYAnchor],
         [self.selectedBadge.widthAnchor constraintEqualToConstant:20],
         [self.selectedBadge.heightAnchor constraintEqualToConstant:20],
         [checkmark.centerXAnchor constraintEqualToAnchor:self.selectedBadge.centerXAnchor],
         [checkmark.centerYAnchor constraintEqualToAnchor:self.selectedBadge.centerYAnchor],
 
-        // Task223: menu button sits left of the badge, vertically centered.
-        [self.ame223_menuButton.trailingAnchor constraintEqualToAnchor:self.selectedBadge.leadingAnchor constant:-10],
+        // Task224（反馈第 17 项）：菜单按钮 = 行尾最右（右 -14 垂直居中，
+        // 44pt 命中区），未选中行也常驻可见。
+        [self.ame223_menuButton.trailingAnchor constraintEqualToAnchor:self.contentContainer.trailingAnchor constant:-14],
         [self.ame223_menuButton.centerYAnchor constraintEqualToAnchor:self.contentContainer.centerYAnchor],
-        [self.ame223_menuButton.widthAnchor constraintEqualToConstant:32],
-        [self.ame223_menuButton.heightAnchor constraintEqualToConstant:32],
+        [self.ame223_menuButton.widthAnchor constraintEqualToConstant:44],
+        [self.ame223_menuButton.heightAnchor constraintEqualToConstant:44],
     ]];
 }
 
@@ -284,6 +306,10 @@
     // 注册卡片 cell（Task190：已安装版本页同构 AME190AccountCardCell，
     // 正规复用替代旧"出列拆光重建"内联卡）
     [self.tableView registerClass:AME190AccountCardCell.class forCellReuseIdentifier:@"accountCardCell"];
+
+    // ★ Task224（反馈第 17 项）：当前选中账户的可见快捷操作区（tableHeaderView
+    //   横排胶囊按钮）——具体按钮组在 reloadAccountList 里按选中账户类型重建。
+    [self ame224_setupQuickActionsHeader];
 
     // 添加底部"添加账户"浮动按钮（FCL 风格）
     [self setupAddAccountButton];
@@ -634,31 +660,30 @@ static NSMutableSet *ame128_validatedSet(void) {
         }
     }
 
-    // ★ Task223（清单第 20 项）高级项：
-    //   微软 → 更换游戏名字 / 更换皮肤（minecraft.net 官方页）；
-    //   第三方 → 更换皮肤（认证服务器皮肤页）；
-    //   离线 → 默认皮肤 Steve/Alex。
+    // ★ Task223 高级项（★ Task224 反馈第 17 项改为应用内直连，不再跳网页）：
+    //   微软 → 更换游戏名字 / 更换皮肤（Minecraft profile services API）；
+    //   第三方 → 更换皮肤（认证服务器皮肤用户 API）；
+    //   离线 → 默认皮肤 Steve/Alex（auth_uuid 奇偶 + 头像同步）。
+    // 旧文件回退与 ame190_accountTypeTextForAccount 同口径（无显式类型时
+    // xuid/xboxGamertag 存在 → 微软，否则本地），避免存量文件丢失高级项。
     NSString *accountType = accountData[@"accountType"];
-    BOOL isLocal = [accountType isEqualToString:@"local"];
-    BOOL isMicrosoft = [accountType isEqualToString:@"microsoft"];
+    BOOL ame224_hasType = [accountType isKindOfClass:[NSString class]] && accountType.length > 0;
+    BOOL isLocal = ame224_hasType && [accountType isEqualToString:@"local"];
+    BOOL isMicrosoft = ame224_hasType && [accountType isEqualToString:@"microsoft"];
+    if (!ame224_hasType && !is3P) {
+        isMicrosoft = (accountData[@"xuid"] != nil || accountData[@"xboxGamertag"] != nil);
+        isLocal = !isMicrosoft;
+    }
     if (isMicrosoft) {
         ame223_add(localize(@"account.menu.change_name", @"更换游戏名字"), @"pencil.circle", NO, ^{
-            [self ame223_openURLString:@"https://www.minecraft.net/profile"];
+            [self ame224_changeNameForAccountAtIndexPath:indexPath];
         });
         ame223_add(localize(@"account.menu.change_skin", @"更换皮肤"), @"paintbrush", NO, ^{
-            [self ame223_openURLString:@"https://www.minecraft.net/profile"];
+            [self ame224_changeSkinForAccountAtIndexPath:indexPath];
         });
     } else if (is3P) {
         ame223_add(localize(@"account.menu.change_skin", @"更换皮肤"), @"paintbrush", NO, ^{
-            NSString *authserver = accountData[@"authserver"];
-            NSString *url = @"https://littleskin.cn/user/profile";
-            if ([authserver isKindOfClass:NSString.class] && authserver.length > 0) {
-                NSString *base = authserver;
-                NSRange apir = [base rangeOfString:@"/api/yggdrasil"];
-                if (apir.location != NSNotFound) base = [base substringToIndex:apir.location];
-                url = [base stringByAppendingString:@"/user/profile"];
-            }
-            [self ame223_openURLString:url];
+            [self ame224_changeSkinForAccountAtIndexPath:indexPath];
         });
     } else if (isLocal) {
         ame223_add(localize(@"account.menu.default_skin", @"默认皮肤"), @"person.crop.square", NO, ^{
@@ -697,13 +722,6 @@ static NSMutableSet *ame128_validatedSet(void) {
     [self presentViewController:sheet animated:YES completion:nil];
 }
 
-/// Task223：URL 打开（菜单高级项共用）。
-- (void)ame223_openURLString:(NSString *)urlString {
-    NSURL *url = [NSURL URLWithString:urlString];
-    if (url == nil) return;
-    [UIApplication.sharedApplication openURL:url options:@{} completionHandler:nil];
-}
-
 /// Task223（清单第 20 项）：离线账号默认皮肤选择（Steve / Alex 两张原版默认）。
 /// 头像与 profilePicURL 同步落盘（账号文件 + keychain 无关字段），
 /// 并提示其作用范围（启动器头像/支持皮肤协议的联机服务）。
@@ -720,14 +738,14 @@ static NSMutableSet *ame128_validatedSet(void) {
     [sheet addAction:[UIAlertAction actionWithTitle:@"Steve"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction *a) {
-        [self ame223_applyOfflineSkinURL:@"https://minotar.net/helm/Steve/64.png"
-                              forAccountAtIndexPath:indexPath loadKey:loadKey];
+        [self ame224_applyOfflineDefaultSkin:@"Steve"
+                          forAccountAtIndexPath:indexPath loadKey:loadKey];
     }]];
     [sheet addAction:[UIAlertAction actionWithTitle:@"Alex"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction *a) {
-        [self ame223_applyOfflineSkinURL:@"https://minotar.net/helm/Alex/64.png"
-                              forAccountAtIndexPath:indexPath loadKey:loadKey];
+        [self ame224_applyOfflineDefaultSkin:@"Alex"
+                          forAccountAtIndexPath:indexPath loadKey:loadKey];
     }]];
     [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", @"取消")
                                               style:UIAlertActionStyleCancel handler:nil]];
@@ -736,9 +754,27 @@ static NSMutableSet *ame128_validatedSet(void) {
     [self presentViewController:sheet animated:YES completion:nil];
 }
 
-- (void)ame223_applyOfflineSkinURL:(NSString *)skinURL forAccountAtIndexPath:(NSIndexPath *)indexPath loadKey:(NSString *)loadKey {
-    // 落盘：账号 json 的 profilePicURL（启动器头像链会重读；任务220 的
-    // 脏 URL 自愈链同样读这里——写入合法可再派生 URL 即安全）。
+/// ★ Task224（反馈第 17 项）：离线账号默认皮肤落地（在 Task223 仅改头像的
+/// 基础上补齐游戏内生效）。三层同步：
+///   1. 启动器头像：profilePicURL = minotar Steve/Alex 头像（合法可再派生
+///      URL，Task220 脏 URL 自愈链安全）；
+///   2. 游戏内默认皮肤：profileId = auth_uuid——原版按 UUID 哈希奇偶二选一
+///      （Steve=全零 UUID 哈希 0 偶 / Alex=末位 1 的 UUID 哈希 1 奇；
+///      1.20.2+ 默认皮肤池扩到 18 张，奇偶只能近似控制，装机验证确认）；
+///   3. 账号文件落盘 + 当前实例内存态 + 列表/UI 刷新。
+/// 注意：auth_uuid 变更后旧单机存档按新 UUID 归档（进度不迁移）——离线
+/// 默认皮肤定位为轻量选择，此权衡随日志锚点留档。
+- (void)ame224_applyOfflineDefaultSkin:(NSString *)skinName
+                  forAccountAtIndexPath:(NSIndexPath *)indexPath
+                                 loadKey:(NSString *)loadKey {
+    if (![skinName isKindOfClass:[NSString class]] || skinName.length == 0) return;
+    BOOL ame224_isAlex = [skinName isEqualToString:@"Alex"];
+    NSString *skinURL = ame224_isAlex
+        ? @"https://minotar.net/helm/Alex/64.png"
+        : @"https://minotar.net/helm/Steve/64.png";
+    NSString *profileId = ame224_isAlex
+        ? @"00000000-0000-0000-0000-000000000001"
+        : @"00000000-0000-0000-0000-000000000000";
     NSString *accountsDir = [@(getenv("POJAV_HOME")) ?: NSHomeDirectory()
         stringByAppendingPathComponent:@"accounts"];
     NSString *jsonPath = [accountsDir stringByAppendingPathComponent:
@@ -749,10 +785,500 @@ static NSMutableSet *ame128_validatedSet(void) {
         return;
     }
     acct[@"profilePicURL"] = skinURL;
+    acct[@"profileId"] = profileId;
     [acct writeToFile:jsonPath atomically:YES];
+    // 内存态同步（该账号若为当前选中实例，避免旧 authData 残留至下次重载）
+    BaseAuthenticator *ame224_current = [BaseAuthenticator current];
+    if (ame224_current != nil) {
+        NSMutableDictionary *ame224_curData = [ame224_current authData];
+        NSString *ame224_curId = ame224_curData[@"accountId"];
+        if ([ame224_curId isKindOfClass:[NSString class]] &&
+            [ame224_curId isEqualToString:loadKey]) {
+            ame224_curData[@"profilePicURL"] = skinURL;
+            ame224_curData[@"profileId"] = profileId;
+        }
+    }
     [self reloadAccountList];
-    [NMToast showMessage:[NSString stringWithFormat:localize(@"account.default_skin.done", @"已更新头像：%@"), skinURL.lastPathComponent]];
-    NSLog(@"[AccountList] Task223: offline default skin set for %@ -> %@", loadKey, skinURL);
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"UpdateAccountInfo"
+                                                        object:nil
+                                                      userInfo:nil];
+    [NMToast showMessage:[NSString stringWithFormat:
+        localize(@"account.default_skin.applied", @"默认皮肤已设定：%@（启动器头像已同步）"), skinName]];
+    NSLog(@"[AccountOps] Task224 offline default skin set for %@ -> %@ (auth_uuid parity via %@)",
+          loadKey, skinName, profileId);
+}
+
+#pragma mark - Task 224: visible quick actions for the selected account
+
+// 用户反馈（第 17 项）：“现在是要长按才能看到菜单”——快捷操作区把当前
+// 选中账户的高级操作直接摆在列表头部（横排胶囊按钮，可横滚）：
+//   微软：换皮肤 / 改名 / 删除；第三方：换皮肤 / 切换角色 / 删除；
+//   离线：Steve / Alex 默认皮肤 / 删除。行尾 ⋯ 菜单与长按菜单保持同源
+//（ame223_accountMenuItemsAtIndex 单一事实源不变）。
+
+- (void)ame224_setupQuickActionsHeader {
+    if (self.ame224_quickHeader != nil) return;
+    UIView *header = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, 92)];
+    header.backgroundColor = [UIColor clearColor];
+    UILabel *titleLabel = [[UILabel alloc] init];
+    titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    titleLabel.font = [UIFont systemFontOfSize:[ScreenUtils sp:13] weight:UIFontWeightSemibold];
+    titleLabel.textColor = AmeCardSecondaryTextColor();
+    [header addSubview:titleLabel];
+    UIScrollView *scrollView = [[UIScrollView alloc] init];
+    scrollView.translatesAutoresizingMaskIntoConstraints = NO;
+    scrollView.showsHorizontalScrollIndicator = NO;
+    [header addSubview:scrollView];
+    UIStackView *stack = [[UIStackView alloc] init];
+    stack.translatesAutoresizingMaskIntoConstraints = NO;
+    stack.axis = UILayoutConstraintAxisHorizontal;
+    stack.spacing = 8;
+    [scrollView addSubview:stack];
+    [NSLayoutConstraint activateConstraints:@[
+        [titleLabel.topAnchor constraintEqualToAnchor:header.topAnchor constant:14],
+        [titleLabel.leadingAnchor constraintEqualToAnchor:header.leadingAnchor constant:20],
+        [titleLabel.trailingAnchor constraintLessThanOrEqualToAnchor:header.trailingAnchor constant:-20],
+        [scrollView.topAnchor constraintEqualToAnchor:titleLabel.bottomAnchor constant:8],
+        [scrollView.leadingAnchor constraintEqualToAnchor:header.leadingAnchor constant:20],
+        [scrollView.trailingAnchor constraintEqualToAnchor:header.trailingAnchor constant:-20],
+        // 底边用不等式：头容器高度由 92pt frame 钉死，动态字体放大时标题
+        // 变高不应造成不可满足约束（滚动条高度自有 40pt 固定链）。
+        [scrollView.bottomAnchor constraintLessThanOrEqualToAnchor:header.bottomAnchor constant:-12],
+        [scrollView.heightAnchor constraintEqualToConstant:40],
+        [stack.leadingAnchor constraintEqualToAnchor:scrollView.contentLayoutGuide.leadingAnchor],
+        [stack.trailingAnchor constraintEqualToAnchor:scrollView.contentLayoutGuide.trailingAnchor],
+        [stack.topAnchor constraintEqualToAnchor:scrollView.contentLayoutGuide.topAnchor],
+        [stack.bottomAnchor constraintEqualToAnchor:scrollView.contentLayoutGuide.bottomAnchor],
+        [stack.centerYAnchor constraintEqualToAnchor:scrollView.frameLayoutGuide.centerYAnchor],
+    ]];
+    self.ame224_quickHeader = header;
+    self.ame224_quickTitleLabel = titleLabel;
+    self.ame224_quickScrollView = scrollView;
+    self.ame224_quickStack = stack;
+    self.ame224_quickHandlers = [NSMutableArray array];
+}
+
+/// Task224：按当前选中账户重建头部快捷按钮组（reloadAccountList / 删除后调用）。
+- (void)ame224_refreshQuickActionsHeader {
+    [self ame224_setupQuickActionsHeader];
+    NSIndexPath *selectedPath = [self ame224_indexPathOfSelectedAccount];
+    NSDictionary *selected = (selectedPath != nil && selectedPath.row < (NSInteger)self.accountList.count)
+        ? self.accountList[selectedPath.row] : nil;
+    [self.ame224_quickHandlers removeAllObjects];
+    for (UIView *ame224_sub in self.ame224_quickStack.arrangedSubviews) {
+        [self.ame224_quickStack removeArrangedSubview:ame224_sub];
+        [ame224_sub removeFromSuperview];
+    }
+    BOOL hasActions = NO;
+    if ([selected isKindOfClass:[NSDictionary class]]) {
+        NSString *displayName = selected[@"username"] ?: @"";
+        if ([displayName hasPrefix:@"Demo."]) {
+            displayName = [displayName substringFromIndex:5];
+        }
+        self.ame224_quickTitleLabel.text = [NSString
+            stringWithFormat:localize(@"account.quick_actions.title_fmt", @"账户操作 — %@"), displayName];
+        NSString *accountType = selected[@"accountType"];
+        BOOL ame224_hasType = [accountType isKindOfClass:[NSString class]] && accountType.length > 0;
+        BOOL is3P = ame220_accountIsThirdParty(selected);
+        BOOL isLocal = ame224_hasType && [accountType isEqualToString:@"local"];
+        BOOL isMicrosoft = ame224_hasType && [accountType isEqualToString:@"microsoft"];
+        if (!ame224_hasType && !is3P) {
+            isMicrosoft = (selected[@"xuid"] != nil || selected[@"xboxGamertag"] != nil);
+            isLocal = !isMicrosoft;
+        }
+        BOOL isDemo = [(selected[@"username"] ?: @"") hasPrefix:@"Demo."];
+        if (!isDemo) {
+            if (isMicrosoft || is3P) {
+                [self ame224_addQuickButtonWithTitle:localize(@"account.menu.change_skin", @"更换皮肤")
+                                          systemImage:@"paintbrush" destructive:NO handler:^{
+                    [self ame224_changeSkinForAccountAtIndexPath:selectedPath];
+                }];
+                hasActions = YES;
+            }
+            if (isMicrosoft) {
+                [self ame224_addQuickButtonWithTitle:localize(@"account.menu.change_name", @"更换游戏名字")
+                                          systemImage:@"pencil.circle" destructive:NO handler:^{
+                    [self ame224_changeNameForAccountAtIndexPath:selectedPath];
+                }];
+            }
+            if (isLocal) {
+                NSString *ame224_loadKey = selected[@"accountId"] ?: selected[@"username"];
+                if ([ame224_loadKey isKindOfClass:[NSString class]] && ame224_loadKey.length > 0) {
+                    [self ame224_addQuickButtonWithTitle:@"Steve"
+                                              systemImage:@"person.crop.square" destructive:NO handler:^{
+                        [self ame224_applyOfflineDefaultSkin:@"Steve"
+                                          forAccountAtIndexPath:selectedPath loadKey:ame224_loadKey];
+                    }];
+                    [self ame224_addQuickButtonWithTitle:@"Alex"
+                                              systemImage:@"person.crop.square" destructive:NO handler:^{
+                        [self ame224_applyOfflineDefaultSkin:@"Alex"
+                                          forAccountAtIndexPath:selectedPath loadKey:ame224_loadKey];
+                    }];
+                    hasActions = YES;
+                }
+            }
+            NSArray *ame224_profiles = selected[@"availableProfiles"];
+            if (is3P && [ame224_profiles isKindOfClass:[NSArray class]] && ame224_profiles.count >= 2) {
+                [self ame224_addQuickButtonWithTitle:localize(@"account.switch_role.button", @"切换角色")
+                                          systemImage:@"arrow.triangle.2.circlepath" destructive:NO handler:^{
+                    [self ame224_switchRoleSheetForSelectedAccount];
+                }];
+            }
+        }
+        // 删除账号：所有类型通用（与左滑删除 / 长按菜单同一条删除链）
+        [self ame224_addQuickButtonWithTitle:localize(@"account.menu.delete", @"删除账号")
+                                  systemImage:@"trash" destructive:YES handler:^{
+            [self ame190_deleteAccountAtIndexPath:selectedPath];
+        }];
+        hasActions = YES;
+    }
+    // tableHeaderView 重挂强制重排；无选中账户时整块隐藏。
+    self.tableView.tableHeaderView = nil;
+    self.tableView.tableHeaderView = hasActions ? self.ame224_quickHeader : nil;
+    if (hasActions) {
+        [self.ame224_quickScrollView setContentOffset:CGPointZero animated:NO];
+        NSLog(@"[AccountOps] Task224 quick actions header rebuilt (visible=%d)", hasActions);
+    }
+}
+
+/// Task224：胶囊快捷按钮（accentColor 淡底胶囊 + 图标 + 标题；破坏性红色变体）。
+- (void)ame224_addQuickButtonWithTitle:(NSString *)title
+                           systemImage:(NSString *)sysImage
+                           destructive:(BOOL)destructive
+                                handler:(void (^)(void))handler {
+    UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
+    btn.translatesAutoresizingMaskIntoConstraints = NO;
+    UIColor *tint = destructive ? [UIColor systemRedColor] : accentColor();
+    btn.tintColor = tint;
+    btn.backgroundColor = [tint colorWithAlphaComponent:0.14];
+    btn.layer.cornerRadius = 18;
+    btn.layer.cornerCurve = kCACornerCurveContinuous;
+    btn.layer.masksToBounds = YES;
+    btn.titleLabel.font = [UIFont systemFontOfSize:[ScreenUtils sp:13] weight:UIFontWeightSemibold];
+    [btn setTitle:title forState:UIControlStateNormal];
+    UIImage *icon = [UIImage systemImageNamed:sysImage
+        withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:13 weight:UIFontWeightSemibold]];
+    if (icon != nil) {
+        [btn setImage:icon forState:UIControlStateNormal];
+        btn.imageEdgeInsets = UIEdgeInsetsMake(0, -4, 0, 4);
+    }
+    btn.contentEdgeInsets = UIEdgeInsetsMake(0, 14, 0, 14);
+    [btn addTarget:self action:@selector(ame224_quickActionFired:) forControlEvents:UIControlEventTouchUpInside];
+    btn.tag = (NSInteger)self.ame224_quickHandlers.count;
+    [self.ame224_quickHandlers addObject:(handler ?: ^{})];
+    [self.ame224_quickStack addArrangedSubview:btn];
+    [btn.heightAnchor constraintEqualToConstant:36].active = YES;
+}
+
+- (void)ame224_quickActionFired:(UIButton *)sender {
+    NSUInteger ame224_idx = (NSUInteger)sender.tag;
+    if (ame224_idx >= self.ame224_quickHandlers.count) return;
+    void (^ame224_handler)(void) = self.ame224_quickHandlers[ame224_idx];
+    if (ame224_handler) ame224_handler();
+}
+
+/// Task224：当前选中账户所在行（accountId 精确比对；找不到返回 nil）。
+- (NSIndexPath *)ame224_indexPathOfSelectedAccount {
+    NSString *selectedId = [self currentSelectedAccountId];
+    if (selectedId.length == 0) return nil;
+    for (NSUInteger i = 0; i < self.accountList.count; i++) {
+        NSDictionary *ame224_data = self.accountList[i];
+        NSString *ame224_id = ame224_data[@"accountId"] ?: ame224_data[@"username"];
+        if ([ame224_id isKindOfClass:[NSString class]] &&
+            [ame224_id isEqualToString:selectedId]) {
+            return [NSIndexPath indexPathForRow:(NSInteger)i inSection:0];
+        }
+    }
+    return nil;
+}
+
+/// Task224：换皮肤入口（微软/第三方 → 文件选择器；离线 → 默认皮肤表）。
+- (void)ame224_changeSkinForAccountAtIndexPath:(NSIndexPath *)indexPath {
+    if (indexPath.row >= (NSInteger)self.accountList.count) return;
+    NSDictionary *accountData = self.accountList[indexPath.row];
+    NSString *username = accountData[@"username"] ?: @"";
+    if ([username hasPrefix:@"Demo."]) {
+        [NMToast showMessage:localize(@"account.action.demo_unsupported", @"演示账户不支持此操作")];
+        return;
+    }
+    NSString *accountType = accountData[@"accountType"];
+    BOOL ame224_hasType = [accountType isKindOfClass:[NSString class]] && accountType.length > 0;
+    BOOL is3P = ame220_accountIsThirdParty(accountData);
+    BOOL isLocal = ame224_hasType && [accountType isEqualToString:@"local"];
+    if (!ame224_hasType && !is3P) {
+        isLocal = (accountData[@"xuid"] == nil && accountData[@"xboxGamertag"] == nil);
+    }
+    if (isLocal) {
+        [self ame223_pickOfflineDefaultSkinAtIndexPath:indexPath];
+        return;
+    }
+    [self ame224_pickSkinFileForAccountAtIndexPath:indexPath];
+}
+
+/// Task224：皮肤文件选择（UIDocumentPicker，public.image——Task151/issue#92
+/// 同款安全范围 URL 读取）。选完先校验 PNG 尺寸，再弹模型选择表。
+- (void)ame224_pickSkinFileForAccountAtIndexPath:(NSIndexPath *)indexPath {
+    NSLog(@"[AccountOps] Task224 skin file picker presented (row %ld)", (long)indexPath.row);
+    self.ame224_pendingSkinIndexPath = indexPath;
+    NSArray<UTType *> *contentTypes = @[UTTypePNG, UTTypeImage];
+    UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:contentTypes];
+    picker.delegate = self;
+    picker.allowsMultipleSelection = NO;
+    [self presentViewController:picker animated:YES completion:nil];
+}
+
+- (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls {
+    if (urls.count == 0) return;
+    NSIndexPath *indexPath = self.ame224_pendingSkinIndexPath;
+    self.ame224_pendingSkinIndexPath = nil;
+    if (indexPath == nil || indexPath.row >= (NSInteger)self.accountList.count) return;
+    NSDictionary *accountData = self.accountList[indexPath.row];
+    NSURL *url = urls[0];
+    // 安全范围 URL 必须先 start 再读（BackgroundSettingsViewController 同款）
+    BOOL accessing = [url startAccessingSecurityScopedResource];
+    NSData *raw = [NSData dataWithContentsOfURL:url];
+    if (accessing) [url stopAccessingSecurityScopedResource];
+    UIImage *image = [raw isKindOfClass:[NSData class]] ? [UIImage imageWithData:raw] : nil;
+    if (image == nil || image.CGImage == nil) {
+        [NMToast showMessage:localize(@"account.skin.error.invalid_png", @"皮肤文件无效：需要 PNG 图片")];
+        return;
+    }
+    NSData *png = UIImagePNGRepresentation(image);
+    if (png == nil) {
+        [NMToast showMessage:localize(@"account.skin.error.invalid_png", @"皮肤文件无效：需要 PNG 图片")];
+        return;
+    }
+    BOOL is3P = ame220_accountIsThirdParty(accountData);
+    size_t ame224_w = CGImageGetWidth(image.CGImage);
+    size_t ame224_h = CGImageGetHeight(image.CGImage);
+    if (!is3P) {
+        // 微软 API 严格要求 64x64 皮肤 PNG
+        if (ame224_w != 64 || ame224_h != 64) {
+            [NMToast showMessage:localize(@"account.skin.error.invalid_png", @"皮肤文件无效：需要 PNG 图片")];
+            return;
+        }
+    } else {
+        // 皮肤站普遍接受 64x64 / 64x32 / 等比 HD
+        if (ame224_w < 64 || (ame224_h != ame224_w && ame224_h * 2 != ame224_w)) {
+            [NMToast showMessage:localize(@"account.skin.error.invalid_png_3p", @"皮肤文件无效：需要 64x64（或等比 HD）PNG 图片")];
+            return;
+        }
+    }
+    [self ame224_presentVariantSheetForAccountAtIndexPath:indexPath pngData:png fileName:url.lastPathComponent];
+}
+
+- (void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller {
+    self.ame224_pendingSkinIndexPath = nil;
+}
+
+/// Task224：皮肤模型选择（微软 variant=classic|slim；皮肤站 model=wide|slim）。
+- (void)ame224_presentVariantSheetForAccountAtIndexPath:(NSIndexPath *)indexPath
+                                                pngData:(NSData *)pngData
+                                                fileName:(NSString *)fileName {
+    if (indexPath.row >= (NSInteger)self.accountList.count) return;
+    NSDictionary *accountData = self.accountList[indexPath.row];
+    BOOL is3P = ame220_accountIsThirdParty(accountData);
+    UIAlertController *sheet = [UIAlertController
+        alertControllerWithTitle:localize(@"account.skin.pick_variant.title", @"选择皮肤模型")
+                         message:[NSString stringWithFormat:@"%@\n%@",
+                             localize(@"account.skin.pick_variant.hint", @"经典 = Steve 宽体模型，纤细 = Alex 窄体模型"),
+                             fileName ?: @""]
+                  preferredStyle:UIAlertControllerStyleActionSheet];
+    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"account.skin.variant.classic", @"经典（Steve）")
+                                              style:UIAlertActionStyleDefault
+                                            handler:^(UIAlertAction *a) {
+        [self ame224_uploadSkinPNGData:pngData atIndexPath:indexPath model:(is3P ? @"wide" : @"classic")];
+    }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"account.skin.variant.slim", @"纤细（Alex）")
+                                              style:UIAlertActionStyleDefault
+                                            handler:^(UIAlertAction *a) {
+        [self ame224_uploadSkinPNGData:pngData atIndexPath:indexPath model:@"slim"];
+    }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", @"取消")
+                                              style:UIAlertActionStyleCancel handler:nil]];
+    sheet.popoverPresentationController.sourceView = self.view;
+    sheet.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0,
+                                                                self.view.bounds.size.height / 2.0, 1, 1);
+    [self presentViewController:sheet animated:YES completion:nil];
+}
+
+/// Task224：上传皮肤（微软 / 第三方分派；成功后刷新头像与 UI）。
+- (void)ame224_uploadSkinPNGData:(NSData *)pngData atIndexPath:(NSIndexPath *)indexPath model:(NSString *)model {
+    if (indexPath.row >= (NSInteger)self.accountList.count) return;
+    NSDictionary *accountData = self.accountList[indexPath.row];
+    NSString *loadKey = accountData[@"accountId"] ?: accountData[@"username"];
+    if (![loadKey isKindOfClass:[NSString class]] || loadKey.length == 0) return;
+    BOOL is3P = ame220_accountIsThirdParty(accountData);
+    [NMToast showMessage:localize(@"account.skin.uploading", @"正在上传皮肤…")];
+    if (is3P) {
+        ThirdPartyAuthenticator *auth = [ThirdPartyAuthenticator loadSavedName:loadKey];
+        [auth ame224_uploadSkinPNGData:pngData model:model callback:^(id status, BOOL success) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (!success) {
+                    [NMToast showMessage:[NSString
+                        stringWithFormat:localize(@"account.skin.error.upload_failed", @"皮肤上传失败：%@"),
+                        [self ame224_statusText:status]] duration:6.0];
+                    return;
+                }
+                // 重取皮肤纹理：fetchProfileTextureWithCallback 内部完成真实
+                // 皮肤 PNG 下载 + 本地头像重渲 + saveChanges（Task133 链）。
+                [auth fetchProfileTextureWithCallback:^(id status2, BOOL ok2) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self reloadAccountList];
+                        [[NSNotificationCenter defaultCenter] postNotificationName:@"UpdateAccountInfo"
+                                                                            object:nil
+                                                                          userInfo:nil];
+                        [NMToast showMessage:localize(@"account.skin.done", @"皮肤已更新")];
+                        NSLog(@"[AccountOps] Task224 3P skin avatar refreshed after upload (ok=%d)", ok2);
+                    });
+                }];
+            });
+        }];
+    } else {
+        MicrosoftAuthenticator *auth = (MicrosoftAuthenticator *)[BaseAuthenticator loadSavedName:loadKey];
+        [auth ame224_uploadSkinPNGData:pngData variant:model callback:^(id status, BOOL success) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (!success) {
+                    [NMToast showMessage:[NSString
+                        stringWithFormat:localize(@"account.skin.error.upload_failed", @"皮肤上传失败：%@"),
+                        [self ame224_statusText:status]] duration:6.0];
+                    return;
+                }
+                [self reloadAccountList];
+                [NMToast showMessage:localize(@"account.skin.done", @"皮肤已更新")];
+                NSLog(@"[AccountOps] Task224 MS skin upload flow complete");
+            });
+        }];
+    }
+}
+
+/// Task224：微软账号改名入口（弹窗输入 + 校验 + PUT /minecraft/name）。
+- (void)ame224_changeNameForAccountAtIndexPath:(NSIndexPath *)indexPath {
+    if (indexPath.row >= (NSInteger)self.accountList.count) return;
+    NSDictionary *accountData = self.accountList[indexPath.row];
+    NSString *username = accountData[@"username"] ?: @"";
+    if ([username hasPrefix:@"Demo."]) {
+        [NMToast showMessage:localize(@"account.action.demo_unsupported", @"演示账户不支持此操作")];
+        return;
+    }
+    NSString *loadKey = accountData[@"accountId"] ?: accountData[@"username"];
+    if (![loadKey isKindOfClass:[NSString class]] || loadKey.length == 0) return;
+    UIAlertController *alert = [UIAlertController
+        alertControllerWithTitle:localize(@"account.name.change.title", @"更改游戏名字")
+                         message:localize(@"account.name.change.hint", @"输入新名字：3-16 个字符，仅限字母、数字和下划线")
+                  preferredStyle:UIAlertControllerStyleAlert];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+        textField.placeholder = localize(@"login.alert.field.username", nil);
+        textField.text = username;
+        textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+        textField.borderStyle = UITextBorderStyleRoundedRect;
+    }];
+    [alert addAction:[UIAlertAction actionWithTitle:localize(@"OK", nil)
+                                              style:UIAlertActionStyleDefault
+                                            handler:^(UIAlertAction *action) {
+        NSArray *ame224_fields = [alert textFields];
+        UITextField *ame224_field = ame224_fields.count > 0 ? ame224_fields[0] : nil;
+        NSString *newName = [[ame224_field text] stringByTrimmingCharactersInSet:
+            [NSCharacterSet whitespaceCharacterSet]];
+        NSCharacterSet *ame224_allowed = [NSCharacterSet characterSetWithCharactersInString:
+            @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"];
+        BOOL ame224_valid = (newName.length >= 3 && newName.length <= 16 &&
+            [newName rangeOfCharacterFromSet:[ame224_allowed invertedSet]].location == NSNotFound);
+        if (!ame224_valid) {
+            [NMToast showMessage:localize(@"account.name.error.invalid", nil)];
+            return;
+        }
+        NSLog(@"[AccountOps] Task224 MS name change requested: %@", newName);
+        [NMToast showMessage:localize(@"account.name.working", @"正在改名…")];
+        MicrosoftAuthenticator *auth = (MicrosoftAuthenticator *)[BaseAuthenticator loadSavedName:loadKey];
+        [auth ame224_changePlayerName:newName callback:^(id status, BOOL success) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (!success) {
+                    [NMToast showMessage:[NSString
+                        stringWithFormat:localize(@"account.name.error.failed", @"改名失败：%@"),
+                        [self ame224_statusText:status]] duration:6.0];
+                    return;
+                }
+                // 持久化：账号 json + 当前实例内存态（微软 saveChanges 需要
+                // keychain 令牌对齐全，改名不涉及令牌轮换，直接改文件更稳）。
+                [self ame224_updateAccountFileForLoadKey:loadKey mutate:^(NSMutableDictionary *acct) {
+                    acct[@"username"] = newName;
+                }];
+                [[auth authData] setObject:newName forKey:@"username"];
+                [self reloadAccountList];
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"UpdateAccountInfo"
+                                                                    object:nil
+                                                                  userInfo:nil];
+                [NMToast showMessage:[NSString
+                    stringWithFormat:localize(@"account.name.done", @"已改名为 %@"), newName]];
+                NSLog(@"[AccountOps] Task224 MS name change applied: %@", newName);
+            });
+        }];
+    }]];
+    [alert addAction:[UIAlertAction actionWithTitle:localize(@"Cancel", nil)
+                                              style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+/// Task224：快捷操作区的切换角色表（Task129b 免密链的可见入口；当前角色
+/// ✓ 前缀标注，与长按菜单同款约定）。
+- (void)ame224_switchRoleSheetForSelectedAccount {
+    NSIndexPath *indexPath = [self ame224_indexPathOfSelectedAccount];
+    if (indexPath == nil || indexPath.row >= (NSInteger)self.accountList.count) return;
+    NSDictionary *accountData = self.accountList[indexPath.row];
+    NSArray *profiles = accountData[@"availableProfiles"];
+    if (![profiles isKindOfClass:[NSArray class]] || profiles.count < 2) return;
+    NSString *currentProfileId = accountData[@"profileId"];
+    UIAlertController *sheet = [UIAlertController
+        alertControllerWithTitle:localize(@"account.switch_role.button", @"切换角色")
+                         message:nil
+                  preferredStyle:UIAlertControllerStyleActionSheet];
+    for (NSDictionary *p in profiles) {
+        if (![p isKindOfClass:[NSDictionary class]]) continue;
+        NSString *pid = [p[@"id"] isKindOfClass:[NSString class]] ? p[@"id"] : nil;
+        NSString *pname = [p[@"name"] isKindOfClass:[NSString class]] ? p[@"name"] : @"?";
+        if (pid.length == 0) continue;
+        NSString *pidNorm = [pid stringByReplacingOccurrencesOfString:@"-" withString:@""];
+        NSString *curNorm = [currentProfileId stringByReplacingOccurrencesOfString:@"-" withString:@""];
+        NSString *title = [pidNorm isEqualToString:curNorm]
+            ? [NSString stringWithFormat:@"✓ %@", pname] : pname;
+        [sheet addAction:[UIAlertAction actionWithTitle:title
+                                                  style:UIAlertActionStyleDefault
+                                                handler:^(UIAlertAction *a) {
+            [self ame129b_switchAccountAtIndexPath:indexPath toProfile:p];
+        }]];
+    }
+    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", @"取消")
+                                              style:UIAlertActionStyleCancel handler:nil]];
+    sheet.popoverPresentationController.sourceView = self.view;
+    sheet.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0,
+                                                                self.view.bounds.size.height / 2.0, 1, 1);
+    [self presentViewController:sheet animated:YES completion:nil];
+}
+
+/// Task224：就地改写账号 json（读-改-写；离线默认皮肤 / 改名共用）。
+- (BOOL)ame224_updateAccountFileForLoadKey:(NSString *)loadKey
+                                     mutate:(void (^)(NSMutableDictionary *acct))mutateBlock {
+    if (![loadKey isKindOfClass:[NSString class]] || loadKey.length == 0) return NO;
+    NSString *accountsDir = [@(getenv("POJAV_HOME")) ?: NSHomeDirectory()
+        stringByAppendingPathComponent:@"accounts"];
+    NSString *jsonPath = [accountsDir stringByAppendingPathComponent:
+        [NSString stringWithFormat:@"%@.json", loadKey]];
+    NSMutableDictionary *acct = [NSMutableDictionary dictionaryWithContentsOfFile:jsonPath];
+    if (![acct isKindOfClass:[NSDictionary class]]) return NO;
+    if (mutateBlock) mutateBlock(acct);
+    return [acct writeToFile:jsonPath atomically:YES];
+}
+
+/// Task224：回调 status（NSError / NSString）转可读文案。
+- (NSString *)ame224_statusText:(id)status {
+    if ([status isKindOfClass:[NSError class]]) {
+        return [(NSError *)status localizedDescription] ?: @"?";
+    }
+    if ([status isKindOfClass:[NSString class]]) {
+        return (NSString *)status;
+    }
+    return localize(@"Error", nil);
 }
 
 // Task190：Task130b 行内「切换角色」按钮（person.2 + actionSheet）随账号
@@ -823,6 +1349,9 @@ static NSMutableSet *ame128_validatedSet(void) {
         setPrefObject(@"internal.selected_account", @"");
         [BaseAuthenticator setCurrent:nil];
     }
+    // Task224：删除后同步刷新头部快捷操作区（若删的正是选中账户，
+    // selected_account 已清空，头部应随之隐藏）。
+    [self ame224_refreshQuickActionsHeader];
     [self.accountList removeObjectAtIndex:indexPath.row];
     [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
 }
@@ -1108,6 +1637,8 @@ static NSMutableSet *ame128_validatedSet(void) {
         }
     }
     [self.tableView reloadData];
+    // Task224：列表重建后同步刷新选中账户的头部快捷操作区。
+    [self ame224_refreshQuickActionsHeader];
 }
 
 #pragma mark - UIPopoverPresentationControllerDelegate

@@ -221,10 +221,47 @@ static NSString * localizeProfileTitle(NSString *title) {
                                              selector:@selector(reloadVersionList)
                                                  name:@"ReloadProfileList"
                                                object:nil];
+
+    // Task224：全局 TouchController 设置变化 → 刷新本页“有效状态”显示
+    //（状态不同步根修的观察侧；广播侧在 TouchControllerPreferencesViewController
+    // updateTouchControllerSetting: 尾部补发）。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_touchControllerSettingsChanged)
+                                                 name:@"TouchControllerSettingsChanged"
+                                               object:nil];
 }
 
 - (void)dealloc {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+#pragma mark - Task224: TouchController 有效状态显示
+
+/// 版本设置 TouchController 行的“有效状态”文案（状态不同步根修）。
+/// 旧代码只看 profile 开关 + 硬编码 “UDP 协议”文案——全局设置页已禁用时
+/// 此处仍显示 “UDP 协议”（用户实测反馈）。口径对齐启动链
+/// ame172_applyProfileTouchController：profile 开 AND 全局
+/// control.mod_touch_enable；模式取全局 control.mod_touch_mode
+/// （1=UDP，2=静态库）；全局关闭 → 新键 profile.touchcontroller.global_off。
+- (NSString *)ame224_touchControllerModeLabel {
+    if (!getPrefBool(@"control.mod_touch_enable")) {
+        return localize(@"profile.touchcontroller.global_off", nil);
+    }
+    NSInteger ame224_mode = getPrefInt(@"control.mod_touch_mode");
+    if (ame224_mode == 2) {
+        return localize(@"preference.touchcontroller.mode.staticlib", nil);
+    }
+    return localize(@"preference.touchcontroller.mode.udp", nil);
+}
+
+/// Task224：TouchControllerSettingsChanged 广播到达时重载双列表格
+///（设置页可能正叠在本页之上，改完全局设置返回即刻可见，不再显示
+/// 过期的 “UDP 协议”）。
+- (void)ame224_touchControllerSettingsChanged {
+    self.touchControllerEnabled = [self.profile[@"touchController"] boolValue];
+    [self.leftTableView reloadData];
+    [self.rightTableView reloadData];
+    NSLog(@"[ProfileSettings] Task224 TouchController row refreshed (global settings changed)");
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -487,7 +524,21 @@ static NSString * localizeProfileTitle(NSString *title) {
             } else {
                 NSString *gameDir = self.profile[@"gameDir"] ?: @".";
                 NSString *instanceName = getPrefObject(@"general.game_directory") ?: @"default";
-                label.text = [NSString stringWithFormat:@"%@ → /instances/%@", gameDir, instanceName];
+                // Task224：完整解析路径 + 语义标签 + 选中态提示（"开了隔离
+                // 还是共享"的显示层错位根修——旧文案只有相对片段且方向
+                // 奇怪，用户无从核对数据实际落点）。
+                NSInteger ame224_isoState = [self ame217_isolationState];
+                NSString *ame224_dirLabel = (ame224_isoState == 0) ? localize(@"profile.isolation.none", nil)
+                    : (ame224_isoState == 1) ? localize(@"profile.isolation.isolate", nil)
+                    : localize(@"profile.isolation.custom", nil);
+                NSString *ame224_suffix = @"";
+                NSString *ame224_editedKey = self.profileName;
+                if (ame224_editedKey.length > 0 &&
+                    ![ame224_editedKey isEqualToString:PLProfiles.current.selectedProfileName]) {
+                    ame224_suffix = [NSString stringWithFormat:@" · %@", localize(@"profile.isolation.not_selected", nil)];
+                }
+                label.text = [NSString stringWithFormat:@"%@ · /instances/%@/%@%@",
+                    ame224_dirLabel, instanceName, gameDir, ame224_suffix];
             }
         }
     }
@@ -928,7 +979,7 @@ static NSString * localizeProfileTitle(NSString *title) {
                 cell.detailTextLabel.text = ![self isFabricProfile]
                     ? localize(@"i18n_str_885", nil)
                     : (self.touchControllerEnabled
-                        ? localize(@"preference.touchcontroller.mode.udp", nil)
+                        ? [self ame224_touchControllerModeLabel]
                         : localize(@"i18n_str_2043", nil));
             } else if ([title isEqualToString:@"OptiFine"]) {
                 cell.imageView.image = [UIImage systemImageNamed:@"speedometer"];
@@ -1559,8 +1610,13 @@ static NSString * localizeProfileTitle(NSString *title) {
 - (NSInteger)ame217_isolationState {
     NSString *gameDir = self.profile[@"gameDir"];
     if (![gameDir isKindOfClass:[NSString class]] || [gameDir isEqualToString:@"."]) return 0;
-    NSString *expected = [NSString stringWithFormat:@"versions/%@", self.profile[@"lastVersionId"] ?: @""];
-    if ([gameDir isEqualToString:expected]) return 1;
+    NSString *vid = self.profile[@"lastVersionId"] ?: @"";
+    // Task224：隔离目录与版本元数据分居（数据完整性根修）——新口径
+    // versions/<id>/game；旧口径 versions/<id>（jar/json 同目录混居，
+    // 版本重校验/清理/modpack 重导入可伤及存档）识别为隔离态，由迁移
+    // 路径自动升级搬入 game/ 子目录。
+    if ([gameDir isEqualToString:[NSString stringWithFormat:@"versions/%@/game", vid]]) return 1;
+    if ([gameDir isEqualToString:[NSString stringWithFormat:@"versions/%@", vid]]) return 1;
     return 2;
 }
 
@@ -1586,14 +1642,9 @@ static NSString * localizeProfileTitle(NSString *title) {
         style:UIAlertActionStyleDefault
         handler:^(UIAlertAction * _Nonnull action) {
             if (state == 0) return;
-            self.profile[@"gameDir"] = @".";
-            [self saveSettings];
-            [self reloadAllTableViews];
-            [self updateHeroCard];
-            // 回切不隔离不自动搬回（多隔离版本各自有存档时无法安全合流）；
-            // 数据留在隔离目录，需要时可在文件 App 或自定义路径里取回。
-            [self showComponentAlert:localize(@"profile.isolation.title", nil)
-                              message:localize(@"profile.isolation.disabled_note", nil)];
+            // Task224：回切共享改为【可选搬回】（旧实现单向不搬回 = 数据
+            // 滞留隔离目录，用户视角“存档消失”——两轮实测实测铁）。
+            [self ame224_disableIsolationWithOptionalMigration];
         }]];
 
     NSString *isoMark = (state == 1) ? @" ✓" : @"";
@@ -1616,9 +1667,12 @@ static NSString * localizeProfileTitle(NSString *title) {
 }
 
 /// 开启隔离 + 旧版升级自动迁移。把实例根目录下的运行时用户数据移入
-/// versions/<lastVersionId>/：目标已存在的条目一律跳过（绝不覆盖）；
-/// libraries/assets/versions 保持共享不迁移（隔离目录只装游戏运行时
-/// 数据——与 FCL/HMCL 的 versions/<id> 隔离口径一致）。
+/// versions/<lastVersionId>/game/（Task224：数据与版本元数据分居——旧口径
+/// 直接放 versions/<id>/，与 jar/json 混居，版本重校验/清理/modpack 重导入
+/// 都可能伤及存档；本函数同时把旧口径数据自动升级搬入 game/ 子目录）：
+/// 目标已存在的条目一律跳过（绝不覆盖）；libraries/assets/versions 保持
+/// 共享不迁移。迁移在后台队列执行（大 mods 目录不再冻结 UI），计数制
+/// 汇总（无百分比——杜绝负数显示）。
 - (void)ame217_enableIsolationWithMigration {
     NSString *lastVersionId = self.profile[@"lastVersionId"];
     if (![lastVersionId isKindOfClass:[NSString class]] || lastVersionId.length == 0) {
@@ -1632,8 +1686,11 @@ static NSString * localizeProfileTitle(NSString *title) {
                               @"POJAV_GAME_DIR unset"]];
         return;
     }
-    NSString *relative = [NSString stringWithFormat:@"versions/%@", lastVersionId];
+    // Task224：隔离目标 = versions/<id>/game（数据与版本 jar/json 分居）。
+    NSString *relative = [NSString stringWithFormat:@"versions/%@/game", lastVersionId];
+    NSString *legacyRelative = [NSString stringWithFormat:@"versions/%@", lastVersionId];
     NSString *isoDir = [instanceRoot stringByAppendingPathComponent:relative];
+    NSString *legacyDir = [instanceRoot stringByAppendingPathComponent:legacyRelative];
     NSFileManager *fm = [NSFileManager defaultManager];
     NSError *mkErr = nil;
     if (![fm fileExistsAtPath:isoDir] &&
@@ -1644,19 +1701,13 @@ static NSString * localizeProfileTitle(NSString *title) {
         return;
     }
 
-    // ★ Task223（清单第 5/6 项——“原本是版本隔离的客户端，切换成版本隔离后
-    //   模组找不到”根修）：迁移源改为【当前 gameDir 的已解析目录】，而非只
-    //   看实例根。病历：profile 原本隔离在 versions/<旧id>（或自定义目录）
-    //   时，用户再开“隔离此版本”（lastVersionId 已变，如整合包升级/唯一化
-    //   id 变化），旧代码只从实例根搬——那里什么都没有，mods/saves 留在旧
-    //   隔离目录里，新隔离目录空空如也 = “模组找不到”（2832c2b 装机
-    //   latestlog.2 实锤该族症状：26.2 实例的 mods 里混入 26.3 的
-    //   fabric-api = 各版本 mods 串位）。
+    // ★ Task223（清单第 5/6 项）：迁移源改为【当前 gameDir 的已解析目录】，
+    // 而非只看实例根（modpack 客户端 mods 得以保留的根修，语义不变）。
     NSString *oldGameDirRaw = self.profile[@"gameDir"];
     NSString *migrateSource = instanceRoot;
     if ([oldGameDirRaw isKindOfClass:[NSString class]] && oldGameDirRaw.length > 0 &&
-        ![oldGameDirRaw isEqualToString:@"."] && ![oldGameDirRaw isEqualToString:relative]) {
-        // 旧隔离/自定义目录（相对路径相对实例根解析；绝对路径原样）。
+        ![oldGameDirRaw isEqualToString:@"."] && ![oldGameDirRaw isEqualToString:relative] &&
+        ![oldGameDirRaw isEqualToString:legacyRelative]) {
         if ([oldGameDirRaw isAbsolutePath]) {
             migrateSource = oldGameDirRaw;
         } else {
@@ -1666,58 +1717,216 @@ static NSString * localizeProfileTitle(NSString *title) {
     }
     BOOL ame223_sameDir = [migrateSource.stringByResolvingSymlinksInPath
         isEqualToString:isoDir.stringByResolvingSymlinksInPath];
-    NSLog(@"[ProfileSettings] Task223 isolation migration source: %@ (old gameDir=%@, same-as-target=%d)",
+    NSLog(@"[ProfileSettings] Task223/224 isolation migration source: %@ (old gameDir=%@, same-as-target=%d)",
           migrateSource, oldGameDirRaw, (int)ame223_sameDir);
 
-    // 迁移清单：游戏运行时会读写的用户数据（旧版升级前都在实例根）。
-    // 刻意排除：logs/crash-reports（历史垃圾）、versions/libraries/assets
-    //（共享层，隔离目录里不存在这些概念——启动链从实例根读）。
+    // 迁移清单：游戏运行时会读写的用户数据。刻意排除 logs/crash-reports
+    // （历史垃圾）、versions/libraries/assets（共享层）。
     NSArray<NSString *> *ame217_items = @[
         @"saves", @"mods", @"config", @"resourcepacks", @"shaderpacks",
         @"options.txt", @"servers.dat", @"servers.dat_old", @"usercache.json",
         @"screenshots"
     ];
-    NSInteger moved = 0;
-    NSInteger skipped = 0;
-    NSMutableArray<NSString *> *skipNames = [NSMutableArray array];
-    if (!ame223_sameDir) {
-        for (NSString *item in ame217_items) {
-            NSString *src = [migrateSource stringByAppendingPathComponent:item];
-            NSString *dst = [isoDir stringByAppendingPathComponent:item];
-            if (![fm fileExistsAtPath:src]) continue;
-            if ([fm fileExistsAtPath:dst]) {
-                skipped++;
-                [skipNames addObject:item];
-                continue;
+
+    // Task224：迁移进度弹窗（计数制）——旧实现同步跑在主线程，大 mods
+    // 目录冻结 UI；且“迁移显示的是负数”族症状与本轮 -1 哨兵哨值无关
+    // （本弹窗只显示已迁移条目计数，恒 >= 0）。
+    UIAlertController *ame224_progressAlert = [UIAlertController
+        alertControllerWithTitle:localize(@"profile.isolation.title", nil)
+                         message:localize(@"profile.isolation.migrating", nil)
+                  preferredStyle:UIAlertControllerStyleAlert];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.35 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        [self presentViewController:ame224_progressAlert animated:NO completion:nil];
+    });
+
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSInteger moved = 0;
+        NSInteger skipped = 0;
+        NSInteger legacyMoved = 0;
+        NSMutableArray<NSString *> *skipNames = [NSMutableArray array];
+
+        // (a) Task224 legacy 升级：versions/<id>/ 根上混居的游戏数据 → game/。
+        //     jar/json 等版本元数据不动；目标已存在一律跳过。
+        if (![legacyDir isEqualToString:isoDir] && [fm fileExistsAtPath:legacyDir]) {
+            for (NSString *item in ame217_items) {
+                NSString *src = [legacyDir stringByAppendingPathComponent:item];
+                NSString *dst = [isoDir stringByAppendingPathComponent:item];
+                if (![fm fileExistsAtPath:src]) continue;
+                if ([fm fileExistsAtPath:dst]) continue;
+                if ([fm moveItemAtPath:src toPath:dst error:nil]) {
+                    legacyMoved++;
+                }
             }
-            NSError *mvErr = nil;
-            if ([fm moveItemAtPath:src toPath:dst error:&mvErr]) {
-                moved++;
-                NSLog(@"[ProfileSettings] Task217: isolation migration moved '%@' -> %@", item, relative);
-            } else {
-                skipped++;
-                [skipNames addObject:item];
-                NSLog(@"[ProfileSettings] Task217: isolation migration FAILED for '%@': %@", item, mvErr);
+            if (legacyMoved > 0) {
+                NSLog(@"[ProfileSettings] Task224 legacy isolation upgraded: %ld item(s) versions/<id> -> versions/<id>/game",
+                      (long)legacyMoved);
             }
         }
+
+        // (b) 主迁移：migrateSource → isoDir（Task223 语义）。
+        if (!ame223_sameDir) {
+            for (NSString *item in ame217_items) {
+                NSString *src = [migrateSource stringByAppendingPathComponent:item];
+                NSString *dst = [isoDir stringByAppendingPathComponent:item];
+                if (![fm fileExistsAtPath:src]) continue;
+                if ([fm fileExistsAtPath:dst]) {
+                    skipped++;
+                    [skipNames addObject:item];
+                    continue;
+                }
+                NSError *mvErr = nil;
+                if ([fm moveItemAtPath:src toPath:dst error:&mvErr]) {
+                    moved++;
+                    NSLog(@"[ProfileSettings] Task217/224: isolation migration moved '%@' -> %@", item, relative);
+                } else {
+                    skipped++;
+                    [skipNames addObject:item];
+                    NSLog(@"[ProfileSettings] Task217: isolation migration FAILED for '%@': %@", item, mvErr);
+                }
+            }
+        }
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.profile[@"gameDir"] = relative;
+            [self saveSettings];
+            [self reloadAllTableViews];
+            [self updateHeroCard];
+            NSLog(@"[ProfileSettings] Task217/224: version isolation ON for %@ (gameDir=%@; moved=%ld skipped=%ld legacyUpgraded=%ld)",
+                  lastVersionId, relative, (long)moved, (long)skipped, (long)legacyMoved);
+
+            NSString *summary;
+            if (moved == 0 && skipped == 0 && legacyMoved == 0) {
+                summary = [NSString stringWithFormat:localize(@"profile.isolation.migrated_clean", nil), relative];
+            } else {
+                summary = [NSString stringWithFormat:localize(@"profile.isolation.migrated", nil),
+                    @(moved), @(skipped),
+                    skipNames.count > 0 ? [skipNames componentsJoinedByString:@", "] : @"-"];
+                if (legacyMoved > 0) {
+                    summary = [summary stringByAppendingString:
+                        [NSString stringWithFormat:localize(@"profile.isolation.legacy_upgraded", nil), @(legacyMoved)]];
+                }
+            }
+            void (^ame224_showSummary)(void) = ^{
+                [self showComponentAlert:localize(@"profile.isolation.title", nil) message:summary];
+                // Task224：编辑页 ≠ 选中实例时提醒选用（启动链读选中 profile）。
+                [self ame224_offerSelectIfNotSelected];
+            };
+            // Task224：呈现竞态守卫——progress 弹窗可能从未呈现（用户已离开
+            // 本页 / 0.35s 延迟窗口内被顶掉），此时 dismiss 的 completion
+            // 不会执行，汇总必须直发。
+            if (ame224_progressAlert.presentingViewController != nil) {
+                [ame224_progressAlert dismissViewControllerAnimated:NO completion:ame224_showSummary];
+            } else {
+                ame224_showSummary();
+            }
+        });
+    });
+}
+
+/// Task224：回切共享 + 可选搬回。旧实现单向不搬回 = 数据滞留隔离目录，
+/// 用户视角"存档消失"（10-06 实测："换回隔离/重启后两个版本都看不到"）。
+/// 先切共享（立即生效），再询问是否把隔离目录的数据搬回共享根
+/// （冲突一律跳过，绝不覆盖）。
+- (void)ame224_disableIsolationWithOptionalMigration {
+    NSString *instanceRoot = @(getenv("POJAV_GAME_DIR"));
+    NSString *oldGameDirRaw = self.profile[@"gameDir"];
+    NSString *isoSource = nil;
+    if (instanceRoot.length > 0 && [oldGameDirRaw isKindOfClass:[NSString class]] &&
+        oldGameDirRaw.length > 0 && ![oldGameDirRaw isEqualToString:@"."]) {
+        isoSource = [oldGameDirRaw isAbsolutePath] ? oldGameDirRaw
+            : [instanceRoot stringByAppendingPathComponent:
+                ([oldGameDirRaw hasPrefix:@"./"] ? [oldGameDirRaw substringFromIndex:2] : oldGameDirRaw)];
     }
 
-    self.profile[@"gameDir"] = relative;
+    // 先切共享（立即生效）
+    self.profile[@"gameDir"] = @".";
     [self saveSettings];
     [self reloadAllTableViews];
     [self updateHeroCard];
-    NSLog(@"[ProfileSettings] Task217: version isolation ON for %@ (gameDir=%@; moved=%ld skipped=%ld)",
-          lastVersionId, relative, (long)moved, (long)skipped);
+    [self ame224_offerSelectIfNotSelected];
 
-    NSString *summary;
-    if (moved == 0 && skipped == 0) {
-        summary = [NSString stringWithFormat:localize(@"profile.isolation.migrated_clean", nil), relative];
-    } else {
-        summary = [NSString stringWithFormat:localize(@"profile.isolation.migrated", nil),
-            @(moved), @(skipped),
-            skipNames.count > 0 ? [skipNames componentsJoinedByString:@", "] : @"-"];
+    if (isoSource.length == 0 || ![NSFileManager.defaultManager fileExistsAtPath:isoSource]) {
+        [self showComponentAlert:localize(@"profile.isolation.title", nil)
+                          message:localize(@"profile.isolation.disabled_note", nil)];
+        return;
     }
-    [self showComponentAlert:localize(@"profile.isolation.title", nil) message:summary];
+
+    UIAlertController *ask = [UIAlertController
+        alertControllerWithTitle:localize(@"profile.isolation.title", nil)
+                         message:localize(@"profile.isolation.moveback_prompt", nil)
+                  preferredStyle:UIAlertControllerStyleAlert];
+    [ask addAction:[UIAlertAction actionWithTitle:localize(@"profile.isolation.moveback", nil)
+        style:UIAlertActionStyleDefault
+        handler:^(UIAlertAction * _Nonnull action) {
+            dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+                NSFileManager *fm = NSFileManager.defaultManager;
+                NSArray<NSString *> *items = @[
+                    @"saves", @"mods", @"config", @"resourcepacks", @"shaderpacks",
+                    @"options.txt", @"servers.dat", @"servers.dat_old", @"usercache.json",
+                    @"screenshots"
+                ];
+                NSInteger movedBack = 0;
+                NSInteger skippedBack = 0;
+                for (NSString *item in items) {
+                    NSString *src = [isoSource stringByAppendingPathComponent:item];
+                    NSString *dst = [instanceRoot stringByAppendingPathComponent:item];
+                    if (![fm fileExistsAtPath:src]) continue;
+                    if ([fm fileExistsAtPath:dst]) {
+                        skippedBack++;
+                        continue;
+                    }
+                    if ([fm moveItemAtPath:src toPath:dst error:nil]) {
+                        movedBack++;
+                    } else {
+                        skippedBack++;
+                    }
+                }
+                NSLog(@"[ProfileSettings] Task224 isolation move-back: moved=%ld skipped=%ld (from %@)",
+                      (long)movedBack, (long)skippedBack, isoSource);
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self showComponentAlert:localize(@"profile.isolation.title", nil)
+                        message:[NSString stringWithFormat:localize(@"profile.isolation.moved_back", nil),
+                                  @(movedBack), @(skippedBack)]];
+                });
+            });
+        }]];
+    [ask addAction:[UIAlertAction actionWithTitle:localize(@"profile.isolation.keep_isolated", nil)
+        style:UIAlertActionStyleCancel
+        handler:^(UIAlertAction * _Nonnull action) {
+            [self showComponentAlert:localize(@"profile.isolation.title", nil)
+                              message:localize(@"profile.isolation.disabled_note", nil)];
+        }]];
+    [self presentViewController:ask animated:YES completion:nil];
+}
+
+/// Task224：编辑页 ≠ 选中实例（Task207 解耦语义：⋯ 只编辑不选用）时，
+/// 改完隔离配置后主动提醒选用——启动链 resolveKeyForCurrentProfile 读的
+/// 是【选中】profile 的 gameDir，不提醒 = "开了隔离还是共享文件夹"
+/// 的错位源头（10-06 实测："手动开了隔离还是共享文件夹"）。
+- (void)ame224_offerSelectIfNotSelected {
+    NSString *editedKey = self.profileName;
+    NSString *selectedKey = PLProfiles.current.selectedProfileName;
+    if (editedKey.length == 0 || [editedKey isEqualToString:selectedKey]) return;
+    NSLog(@"[ProfileSettings] Task224 isolation changed on non-selected profile (edited=%@ selected=%@) -- offering selection",
+          editedKey, selectedKey);
+    UIAlertController *ask = [UIAlertController
+        alertControllerWithTitle:localize(@"profile.isolation.title", nil)
+                         message:[NSString stringWithFormat:localize(@"profile.isolation.select_prompt", nil),
+                                   editedKey, selectedKey]
+                  preferredStyle:UIAlertControllerStyleAlert];
+    [ask addAction:[UIAlertAction actionWithTitle:localize(@"profile.isolation.select_now", nil)
+        style:UIAlertActionStyleDefault
+        handler:^(UIAlertAction * _Nonnull action) {
+            PLProfiles.current.selectedProfileName = editedKey;
+            [PLProfiles.current save];
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"SelectedProfileChanged" object:nil];
+            [self updateHeroCard];
+            NSLog(@"[ProfileSettings] Task224 profile '%@' selected after isolation change", editedKey);
+        }]];
+    [ask addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+        style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:ask animated:YES completion:nil];
 }
 
 - (void)openShadersManager {

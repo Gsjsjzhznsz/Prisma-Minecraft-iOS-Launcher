@@ -11,6 +11,7 @@
 #import "LauncherPreferences.h"
 #import "PLMirrorCenter.h"   // Task218: version manifest candidate chain
 #import "BackgroundManager.h"
+#import "LiquidGlassCompat.h"   // Task224（#4/#19）：界面风格 + 界面缩放
 #import "PLProfiles.h"
 #import "utils.h"
 #import "ModsManagerViewController.h"
@@ -49,15 +50,28 @@ static BOOL LauncherRootIsPhysicalPhone(void) {
 }
 
 /// 根据物理设备类型决定侧栏宽度（与 LauncherCardLayoutViewController 保持一致）
+/// Task224（#19）：乘界面缩放倍率；iPhone 上另以屏宽 12% 封顶（放大不挤占
+/// 中间内容区——缩放上限场景侧栏+右栏+间距合计不超屏宽 45%）
 static CGFloat LauncherRootLayoutSidebarWidth(UITraitCollection *trait) {
-    if (LauncherRootIsPhysicalPhone()) return kSidebarWidthPhone;
-    return kSidebarWidthPad;
+    CGFloat ame224_base = LauncherRootIsPhysicalPhone() ? kSidebarWidthPhone : kSidebarWidthPad;
+    CGFloat ame224_width = LGCScaledValue(ame224_base);
+    if (LauncherRootIsPhysicalPhone()) {
+        CGFloat ame224_cap = UIScreen.mainScreen.bounds.size.width * 0.12;
+        if (ame224_width > ame224_cap) ame224_width = ame224_cap;
+    }
+    return ame224_width;
 }
 
 /// 根据物理设备类型决定右侧面板宽度
+/// Task224（#19）：同上——倍率 + iPhone 屏宽 32% 封顶（读得下优先）
 static CGFloat LauncherRootLayoutRightPanelWidth(UITraitCollection *trait) {
-    if (LauncherRootIsPhysicalPhone()) return kRightPanelWidthPhone;
-    return kRightPanelWidthPad;
+    CGFloat ame224_base = LauncherRootIsPhysicalPhone() ? kRightPanelWidthPhone : kRightPanelWidthPad;
+    CGFloat ame224_width = LGCScaledValue(ame224_base);
+    if (LauncherRootIsPhysicalPhone()) {
+        CGFloat ame224_cap = UIScreen.mainScreen.bounds.size.width * 0.32;
+        if (ame224_width > ame224_cap) ame224_width = ame224_cap;
+    }
+    return ame224_width;
 }
 
 @interface LauncherRootViewController ()
@@ -474,9 +488,21 @@ static CGFloat LauncherRootLayoutRightPanelWidth(UITraitCollection *trait) {
                                              selector:@selector(backgroundChanged)
                                                  name:@"BackgroundChanged"
                                                object:nil];
+    // 监听背景 UI 效果变化通知（Task224（#4）：界面风格切换的 action 同样
+    // 发该通知——全量重铺卡片表面）
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(uiEffectChanged:)
                                                  name:@"BackgroundUIEffectChanged"
+                                               object:nil];
+    // Task224（#4/#19）：风格/缩放直连广播——风格重铺面板表面，缩放重算
+    // 面板宽度（两路均幂等，与 BackgroundUIEffectChanged 通路双保险）。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_handleInterfaceStyleChanged)
+                                                 name:LGCInterfaceStyleChangedNotification
+                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame224_handleUIScaleChanged)
+                                                 name:LGCUIScaleChangedNotification
                                                object:nil];
     // 监听版本切换，重新加载编辑器
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -740,6 +766,19 @@ static CGFloat LauncherRootLayoutRightPanelWidth(UITraitCollection *trait) {
     // SurfaceWithRadius 已退役阴影——全屏高大容器的等比阴影会溢出压到
     // 中央卡片上，用户实测"不该改的你改了"；现为规格表面色+圆角平贴）。
     // cornerRadius/maskedCorners/masksToBounds 由调用点维护，此处只换表面。
+    //
+    // Task224（#4）：液态玻璃风格时面板表面升级为分层玻璃（效果层+高光层+
+    // 发丝描边，maskedCorners 跟随宿主——VS 布局仅外侧圆角）；native 解析
+    // 时先清残留玻璃层再走既有分支（从玻璃切回原生完全还原）。
+    if (LGCIsGlassStyleActive()) {
+        if (LGCApplyGlassToView(self.sidebarContainer, 16) &&
+            LGCApplyGlassToView(self.rightPanelContainer, 16)) {
+            return;
+        }
+    } else {
+        LGCRemoveGlassFromView(self.sidebarContainer);
+        LGCRemoveGlassFromView(self.rightPanelContainer);
+    }
     if ([[BackgroundManager sharedManager] hasBackground]) {
         [[BackgroundManager sharedManager] applyEffectToView:self.sidebarContainer];
         [[BackgroundManager sharedManager] applyEffectToView:self.rightPanelContainer];
@@ -753,6 +792,29 @@ static CGFloat LauncherRootLayoutRightPanelWidth(UITraitCollection *trait) {
     // Task111：毛玻璃/半透明/背景模式变化后统一重刷容器表面
     // （attachment 幂等重建，表面色随主题）
     [self updateChromeSurfaces];
+}
+
+// Task224（#4）：界面风格切换 → 面板表面重铺（玻璃↔原生双向还原）。
+- (void)ame224_handleInterfaceStyleChanged {
+    [self updateChromeSurfaces];
+    NSLog(@"[ThemeOps] Task224 VS-layout chrome surfaces re-applied (resolved=%d)",
+          (int)LGCResolvedInterfaceStyle());
+}
+
+// Task224（#19）：界面缩放变化 → 面板宽度重算 + 子 VC 重布局。
+- (void)ame224_handleUIScaleChanged {
+    CGFloat ame224_sidebar = LauncherRootLayoutSidebarWidth(self.traitCollection);
+    CGFloat ame224_right = LauncherRootLayoutRightPanelWidth(self.traitCollection);
+    if (self.sidebarWidthConstraint && self.sidebarWidthConstraint.constant != ame224_sidebar) {
+        self.sidebarWidthConstraint.constant = ame224_sidebar;
+    }
+    if (self.rightPanelWidthConstraint && self.rightPanelWidthConstraint.constant != ame224_right) {
+        self.rightPanelWidthConstraint.constant = ame224_right;
+    }
+    for (UIViewController *child in self.childViewControllers) {
+        [child.view setNeedsLayout];
+    }
+    [self.view setNeedsLayout];
 }
 
 - (void)dealloc {
