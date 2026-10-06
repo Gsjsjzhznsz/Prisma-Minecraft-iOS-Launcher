@@ -1911,3 +1911,22 @@ Stage Summary:
 - 装机验证锚点：①VirGL "[VirGL] Task225 socket dir chosen: <容器tmp>" + 不再闪退（bind 失败也只 divert zink）；②"[AssetsHeal] Task225 ... MISSING -- healing" 后 1.20.1 过资源加载；③"[Task225] keybind v3 RESTORE sneak: left.shift -> right.shift" 后右 Shift 潜行生效；④打字不再开关循环（"[SurfaceVC] Task171/224: keyboard session heal" 归零或极低频）；⑤液态玻璃无黑屏、切换不闪退（"[ThemeOps] Task225 glass host was a UIVisualEffectView" 仅日志不崩）；⑥隔离选择单出现、迁移计数 >0、"[ModService] Task225 auto-sniffed isolation"；⑦26.3 游戏内打开文件夹弹浏览器；⑧导出保存弹窗等用户操作；⑨设置外观三行直调、键名消失
 - 环境遗留：209 聚合器仍需分跑（沙箱墙钟）；本沙箱无 ObjC 编译器（语法门为结构代理门，CI 编译兜底）
 - 教训入库：①工具输出显示层会吞 `![h` 前缀（第三次实证）——对拍前必须 hex/base64 级核对，绝不按显示层"修"代码；②滑条行不派发 action（sliderMoved 只走 setPreference）——live 更新必须挂 setPreference 通路，action 块是死代码；③switch action 签名是 void(^)(BOOL)——写成 NSString* 签名 = 运行时崩溃；④隔离类功能改目录口径时，所有随目录走的哨兵/标记文件必须进迁移清单（键位净化器重跑即此伤）
+
+---
+Task ID: 225-ci
+Agent: main (Super Z)
+Task: Task 225 CI 修复两轮梯（r1 = ca4b798e 失败，r2 = 91ff52e9 终绿）+ 闭环确认
+
+Work Log:
+- 沙箱恢复：上一会话停摆于 r1 推送后，本轮 fetch 对齐（r1 = ca4b798e）；凭证换代——仓库内嵌 token 已失效（401），用户消息尾提供的 token 接管（remote URL 已刷新 + 规范仓地址换代 Air→Prisma-Minecraft-iOS-Launcher，旧地址 301 重定向仍可用）
+- r1 判读（run 37519853657 failure）：恰好 1 错——LiquidGlassCompat.m:179:64 "illegal type 'NSNumber *' used in a boxed expression"：LGCSetTextAutoContrastEnabled 发通知写了 object:@(enabled ? @YES : @NO)，外层 @() 试图装箱一个本身已是 NSNumber 字面量的三元式（装箱操作数必须是非对象标量）；"1 error generated" 即全日志错误总量，其余全部 Task225 触碰源文件在该 run 均干净编过（JavaLauncher/BackgroundManager/ModService/ModsManager/TrackedTextField/DataTransferService/sdl3_hook/LauncherPreferences/CoachMarks/Welcome/LauncherHelp/FolderBrowser/virgl_server/input_bridge_v3/SurfaceViewController/PLTaskProgress/ProfileSettings/RightPanel/Root/CardLayout/News 全数到达 Building AngelAuraAmethyst.dir 零诊断），r1 的 ame225_fm 改名与 vtest bool 同步均生效（libvtest.a 于 [57/60] 链接成功），编译进度 100%、仅主目标链接被这一个 .o 卡死
+- r2 修复：object:@(...) → object:(...)——圆括号三元式本身产出 NSNumber*（合法 id），装箱层直接去掉；字节级核对先行（hex 验证 179 行确为非法模式，非显示层吞字假象）
+- r2 预检（scripts/task225_r2_preflight.py 入库，打地鼠方法论）：①全仓 boxed 字面量嵌套扫描（修后 0 残留）；②@selector 名 vs 全 Natives 实现解析（全命中）；③重复方法定义扫描（5 命中均为单文件多类的正则误报——r1 run 里 clang 已证明干净）；④单行 NSLog 格式串/实参 arity 对拍；⑤声明名 vs #define 宏冲突扫（fm 教训类，0 命中）；⑥C 函数声明/定义签名比对（vtest 教训类，命中均为 "return xxx(...);" 语句误匹配）
+- 验证复跑：verify_task225 68/68 ALL GREEN；task225_bracket_audit LGC 平衡（[]=87/87 {}=56/56 ()=166/166）；task139 语法门全平衡；task193 tinygl 门 SYNTAX OK
+- r2 CI（run 37546109801 on 91ff52e9）：completed success——"Build for ios" 绿，ipa/tipa/dSYM 三产物上传（220/220/6MB）；后台轮询脚本 scripts/poll_ci_task225_r2.py（注意：前台 600s 工具上限不够跑完整 CI，必须 nohup 后台化）
+- 打地鼠账本（Task225 梯队）：d436c7c4 初版（2 错类：fm 宏冲突 ×3 行 + vtest 前向声明 void/bool 不同步）→ r1 修毕仅剩 1 错（本条 boxed 装箱）→ r2 终绿；新教训入库：**NSNumber 字面量（@YES/@NO）参与三元式时外层不得再包 @() 装箱**——装箱语法只接受标量，对象指针直接圆括号传递
+
+Stage Summary:
+- Task 225 全链闭环：14 项反馈全落地 + CI 两轮修复终绿 + 新 IPA 就绪（run 37546109801，91ff52e9）
+- 装机待验证锚点不变（见 Task 225 条目 ①-⑨）：VirGL socket 探测 / AssetsHeal / keybind v3 RESTORE / 键盘循环归零 / 液态玻璃无黑屏 / 隔离选择单+迁移计数 / 26.3 文件夹浏览器 / 导出弹窗守卫 / 设置外观三行
+- 遗留：用户装机日志回传后判读（尤其 VirGL socket dir chosen 与 zink divert 分叉、液态玻璃切换稳定性）
