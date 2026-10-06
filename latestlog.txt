@@ -1,9 +1,10 @@
 [shaderc-sandbox] fork() failed errno=1 -- sandbox disabled (iOS sandbox denies fork on this install?)
-[Pre-Init] Amethyst iOS Remastered INIT!
-[Pre-Init] GitHub: https://github.com/herbrine8403/Amethyst-iOS-MyRemastered
+[Pre-Init] Prisma Launcher (fork of Amethyst iOS Remastered) INIT!
+[Pre-Init] Fork: https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher
+[Pre-Init] Upstream: https://github.com/herbrine8403/Amethyst-iOS-MyRemastered
 [Pre-Init] Please try not to post this log of the remastered launcher to the original GitHub Issues for help.
 [Pre-Init] Version: 6.5.0
-[Pre-Init] Commit: 2832c2b (main)
+[Pre-Init] Commit: 5f222b4 (main)
 [Pre-Init] Device: iPad Air 11-inch (M4)
 [Pre-Init] iPadOS 27.0.1 (24A446) (Unjailbroken)
 [Pre-init] Entitlements availability:
@@ -12,13 +13,17 @@
 * com.apple.private.security.no-sandbox: NO
 * jb.pmap_cs.custom_trust: NO
 * dynamic-codesigning: NO
+[PLPreferences] Getter could not find preference download.speed_probe.bmclapi
+[PLPreferences] Getter could not find preference download.speed_probe.mcim
 [main_hook] Task202: CAMetalLayer nextDrawable hook installed (Metal first-frame signal; fires only in AMETHYST_METAL sessions while running)
 [Debugging] Debug log enabled: YES
 [Pre-init] Restored game directory preference (default)
 [SceneDelegate] Task191: uncaught-exception handler re-armed at willConnect
 [SceneDelegate] Task188: geometry request declined (expected in window mode; Info.plist UIRequiresFullScreen is the primary fix): 当前窗口模式不允许以编程方式更改界面方向。
+[PLPreferences] Getter could not find preference download.speed_probe.bmclapi
 [HomeAvatar] Task172 branch: network fetch started (URL present, length=211)
 [HomeAvatar] Task172 sync skipped: currentAvatar is nil (check branch log above)
+[PLPreferences] Getter could not find preference general.download_source
 [PLPreferences] Getter could not find preference internal.autolaunch_profile
 [HomeAvatar] Task172 branch: network fetch started (URL present, length=211)
 [HomeAvatar] Task172 sync skipped: currentAvatar is nil (check branch log above)
@@ -27,105 +32,109 @@
 [SceneDelegate] libterracotta linked, multiplayer available (lazy init)
 [FG-Lifecycle] willEnterForeground: swapOK=0 swapFail=0
 [PLPreferences] Getter could not find preference general.disable_window_rotation_shim
-[LauncherRootVC] Task218 loaded 919 remote versions from piston-meta.mojang.com
 [HomeAvatar] Task172 sync skipped: currentAvatar is nil (check branch log above)
 [HomeAvatar] Task172 fetch completion: img=yes (128x128)
 [HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
 [HomeAvatar] Task172 fetch completion: img=yes (128x128)
 [HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
+[BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261005)
 [PLPreferences] Getter could not find preference general.disable_window_rotation_shim
 [FG-Lifecycle] didBecomeActive: presentation enforcement did=0
 [FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+[PLPreferences] Setter could not find preference download.speed_probe.mcim
+2026-10-06 20:23:28.143 AngelAuraAmethyst[9315:2657882] [PLMirrorCenter] Task138 speed probe (family=1): official won (official=144ms mirror=414ms)
 [HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
-[IconLoader] Initialization complete, disk cache directory: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Library/Caches/IconLoader, mirror enabled: NO
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104795224) -- re-armed at t+2s
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104795224) -- re-armed at t+4s
-[Task173] safe heap ceiling: os_proc_available_memory=12197MB -> Xmx ceiling 10997MB (native reserve 1200MB)
+[IconLoader] Initialization complete, disk cache directory: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Library/Caches/IconLoader, mirror enabled: NO
+[Task173] safe heap ceiling: os_proc_available_memory=12224MB -> Xmx ceiling 11024MB (native reserve 1200MB, no floor on authoritative path)
+[LauncherRootVC] Task218 loaded 919 remote versions from bmclapi2.bangbang93.com
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104b39224) -- re-armed at t+2s
 [ProfileSettings] Task150: renderer picker opened (11 options incl. single 'mg'; follow-global retired)
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104795224) -- re-armed at t+6s
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104795224) -- re-armed at t+8s
-[ProfileSettings] Task162: save keyed by dict key '1.8.9 (2)' (display name '1.8.9' differs -- no phantom write)
-[ProfileSettings] Task150: renderer written to PROFILE ONLY '1.8.9 (2)' = libOSMesaVirgl.dylib
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104795224) -- re-armed at t+10s
-[MCDL] SHA1 passed for 1.8.9.json
-[MCDL] insertSafety: how to insert assetIndex?
-[MCDL] Replacing JNA 3.4.0 with 5.13.0 for iOS compatibility (required by 1.8.9-forge-11.15.1.2318-2250addc)
-[MCDL] Unknown artifact object for net.sf.jopt-simple:jopt-simple:4.6, attempting to generate one
-[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/Library/Application Support/minecraft/libraries/net/sf/jopt-simple/jopt-simple/4.6/jopt-simple-4.6.jar, have to assume it's good.
-[MDCL] Skipped library org.lwjgl.lwjgl:lwjgl:2.9.4-nightly-20150209
-[MDCL] Skipped library org.lwjgl.lwjgl:lwjgl_util:2.9.4-nightly-20150209
-[MDCL] Skipped library org.lwjgl.lwjgl:lwjgl-platform:2.9.4-nightly-20150209
-[MDCL] Skipped library org.lwjgl.lwjgl:lwjgl:2.9.2-nightly-20140822
-[MDCL] Skipped library org.lwjgl.lwjgl:lwjgl_util:2.9.2-nightly-20140822
-[MCDL] Unknown artifact object for org.lwjgl.lwjgl:lwjgl-platform:2.9.2-nightly-20140822, attempting to generate one
-[MDCL] Skipped library org.lwjgl.lwjgl:lwjgl-platform:2.9.2-nightly-20140822
-[MCDL] Unknown artifact object for net.java.jinput:jinput-platform:2.0.5, attempting to generate one
-[MDCL] Skipped library net.java.jinput:jinput-platform:2.0.5
-[MCDL] Unknown artifact object for tv.twitch:twitch-platform:6.5, attempting to generate one
-[MDCL] Skipped library tv.twitch:twitch-platform:6.5
-[MCDL] Unknown artifact object for tv.twitch:twitch-external-platform:4.5, attempting to generate one
-[MDCL] Skipped library tv.twitch:twitch-external-platform:4.5
-[MCDL] Unknown artifact object for net.minecraftforge:forge:1.8.9-11.15.1.2318-1.8.9, attempting to generate one
-[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/Library/Application Support/minecraft/libraries/net/minecraftforge/forge/1.8.9-11.15.1.2318-1.8.9/forge-1.8.9-11.15.1.2318-1.8.9.jar, have to assume it's good.
-[MCDL] Unknown artifact object for net.minecraft:launchwrapper:1.12, attempting to generate one
-[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/Library/Application Support/minecraft/libraries/net/minecraft/launchwrapper/1.12/launchwrapper-1.12.jar, have to assume it's good.
-[MCDL] Unknown artifact object for org.ow2.asm:asm-all:5.0.3, attempting to generate one
-[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/Library/Application Support/minecraft/libraries/org/ow2/asm/asm-all/5.0.3/asm-all-5.0.3.jar, have to assume it's good.
-[MCDL] Unknown artifact object for jline:jline:2.13, attempting to generate one
-[MCDL] Unknown artifact object for com.typesafe.akka:akka-actor_2.11:2.3.3, attempting to generate one
-[MCDL] Unknown artifact object for com.typesafe:config:1.2.1, attempting to generate one
-[MCDL] Unknown artifact object for org.scala-lang:scala-actors-migration_2.11:1.1.0, attempting to generate one
-[MCDL] Unknown artifact object for org.scala-lang:scala-compiler:2.11.1, attempting to generate one
-[MCDL] Unknown artifact object for org.scala-lang.plugins:scala-continuations-library_2.11:1.0.2, attempting to generate one
-[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/Library/Application Support/minecraft/libraries/org/scala-lang/plugins/scala-continuations-library_2.11/1.0.2/scala-continuations-library_2.11-1.0.2.jar, have to assume it's good.
-[MCDL] Unknown artifact object for org.scala-lang.plugins:scala-continuations-plugin_2.11.1:1.0.2, attempting to generate one
-[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/Library/Application Support/minecraft/libraries/org/scala-lang/plugins/scala-continuations-plugin_2.11.1/1.0.2/scala-continuations-plugin_2.11.1-1.0.2.jar, have to assume it's good.
-[MCDL] Unknown artifact object for org.scala-lang:scala-library:2.11.1, attempting to generate one
-[MCDL] Unknown artifact object for org.scala-lang:scala-parser-combinators_2.11:1.0.1, attempting to generate one
-[MCDL] Unknown artifact object for org.scala-lang:scala-reflect:2.11.1, attempting to generate one
-[MCDL] Unknown artifact object for org.scala-lang:scala-swing_2.11:1.0.1, attempting to generate one
-[MCDL] Unknown artifact object for org.scala-lang:scala-xml_2.11:1.0.2, attempting to generate one
-[MCDL] Unknown artifact object for lzma:lzma:0.0.1, attempting to generate one
-[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/Library/Application Support/minecraft/libraries/lzma/lzma/0.0.1/lzma-0.0.1.jar, have to assume it's good.
-[MCDL] Unknown artifact object for java3d:vecmath:1.5.2, attempting to generate one
-[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/Library/Application Support/minecraft/libraries/java3d/vecmath/1.5.2/vecmath-1.5.2.jar, have to assume it's good.
-[MCDL] Unknown artifact object for net.sf.trove4j:trove4j:3.0.3, attempting to generate one
-[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/Library/Application Support/minecraft/libraries/net/sf/trove4j/trove4j/3.0.3/trove4j-3.0.3.jar, have to assume it's good.
-[MCDL] Task187: verify stage entered (elapsed 0.5s since downloadVersion:)
+[PLPreferences] Setter could not find preference download.speed_probe.bmclapi
+2026-10-06 20:23:30.569 AngelAuraAmethyst[9315:2657877] [PLMirrorCenter] Task138 speed probe (family=0): official won (official=880ms mirror=2840ms)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104b39224) -- re-armed at t+4s
+[ProfileSettings] Task150: renderer written to PROFILE ONLY '1.20.1' = libtinygl4angle.dylib
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104b39224) -- re-armed at t+6s
+[MCDL] SHA1 passed for 1.20.1.json
+[MCDL] Replacing JNA 5.12.1 with 5.13.0 for iOS compatibility (required by 1.20.1)
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-windows-x86
+[MCDL] Task187: verify stage entered (elapsed 1.4s since downloadVersion:)
 [JIT] [RightPanel] invokeAfterJITEnabled: dynamicCS=0 trollStore=0 CS_DEBUGGED=0 ppid=1 traced=0 exn=0 JIT_FLAGS=0x7
 [JIT] [RightPanel] Task134 enabler=auto noScript=0
 sandbox_extension_issue_file failed for : 2 (No such file or directory)
-[JIT] [RightPanel] Task179 background task assertion: id=2 valid=1 (remaining bg time fg(n/a))
+[JIT] [RightPanel] Task179 background task assertion: id=3 valid=1 (remaining bg time fg(n/a))
 [JIT] Task181 isJITEnabled wait begin: startForeground=1 traced=0 exn=0 csdbg=0
 [JIT] Task169 isJITEnabled: still waiting after 0s (traced=0 exn=0)
 [FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
 [InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[BG-Park] Task223 render thread parking armed (willResignActive)
 [JIT] [RightPanel] Task176 openURL stikjit:// -> 1
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104795224) -- re-armed at t+12s
 [JIT] Task181 isJITEnabled app went to BACKGROUND while waiting (traced=0 exn=0)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104b39224) -- re-armed at t+8s
 [FG-Lifecycle] didEnterBackground: swapOK=0 swapFail=0
 [InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
 [IconLoader] App entered background: cancelled all ongoing downloads
 [FG-Lifecycle] willEnterForeground: swapOK=0 swapFail=0
-[JIT] Task181 isJITEnabled condition satisfied after 3.0s (traced=1 exn=1)
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104795224) -- re-armed at t+14s
+[BG-Park] Task223 render thread released (foreground lifecycle)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104b39224) -- re-armed at t+10s
+[JIT] Task181 isJITEnabled condition satisfied after 3.2s (traced=1 exn=1)
+[JIT] [RightPanel] Task183 wait-completed block entered on main (ok=1)
+[JIT] [RightPanel] Task183 invoking launch handler
+[TouchController] Task172 profile '1.20.1' TouchController off -- global settings untouched
+[SurfaceSwap] Task183 launching SurfaceViewController (synchronous root swap; version=(null))
 [PLPreferences] Getter could not find preference general.disable_window_rotation_shim
 [FG-Lifecycle] didBecomeActive: presentation enforcement did=0
 [FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
-[JIT] Task185 self-healing dispatch: refire on foreground (label=RightPanel main wait)
-[JIT] [RightPanel] Task183 wait-completed block entered on main (ok=1)
-[JIT] [RightPanel] Task183 invoking launch handler
-[TouchController] Task172 profile '1.8.9 (2)' TouchController off -- global settings untouched
-[SurfaceSwap] Task183 launching SurfaceViewController (synchronous root swap; version=(null))
-[SurfaceViewController] FPS counter setup: profileRenderer=libOSMesaVirgl.dylib, envRenderer=(null), graphicsApi=(null), isVulkan=0, configuredVulkanExpected=0 (actual path decided at runtime via pojavIsActualVulkanPath)
-[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
-[SurfaceVC] Task83 FSR linkage: renderer=libOSMesaVirgl.dylib preset=2 scale=1.50 -- MC render window = surface/1.50 (renderer-side upscale: zink EASU (Task83)); resolution=100%
+[BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261005)
+[SurfaceViewController] FPS counter setup: profileRenderer=libtinygl4angle.dylib, envRenderer=(null), graphicsApi=(null), isVulkan=0, configuredVulkanExpected=0 (actual path decided at runtime via pojavIsActualVulkanPath)
 [PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
 [PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[SurfaceVC] CAMetalLayer configured: drawableSize=2360x1640, maximumDrawableCount=3, presentsWithTransaction=0, drawsAsynchronously=1, contentsScale=2.00
 [CustomControls] Task83b decorative sub-button pass-through enabled #1 (name=, touch no longer swallowed)
 [CustomControls] Task83b decorative sub-button pass-through enabled #2 (name=, touch no longer swallowed)
 [TouchController] Sender ready on port 12450
-[SurfaceViewController] Launching Minecraft with accountId: 47e84d5d-0c12-4d51-b768-236bd1779682, version: 8, size: 1572x1092
+[SurfaceViewController] Launching Minecraft with accountId: 47e84d5d-0c12-4d51-b768-236bd1779682, version: 17, size: 2360x1640
 [JavaLauncher] Beginning JVM launch
 [JavaLauncher] Task205: AMETHYST_LOG_LEVEL=debug (renderer diagnostics verbose)
 [JavaLauncher] MoltenVK performance tracking + IMMEDIATE present mode requested for VSync diagnosis
@@ -143,99 +152,135 @@ sandbox_extension_issue_file failed for : 2 (No such file or directory)
 [DyldLVBypass] found dyld_fcntl at 0x18ec716cc
 [DyldLVBypass] hook dyld_fcntl succeed!
 [PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
-[JavaLauncher] init_loadMobileGluesConfig: renderer=libOSMesaVirgl.dylib
+[JavaLauncher] init_loadMobileGluesConfig: renderer=libtinygl4angle.dylib
 [JavaLauncher] MobileGlues config not written (renderer is not mobileglues/auto/vulkan/mgfamily)
 [JavaLauncher] Task130: AMETHYST_FSR_RCAS_SHARPNESS=0.2000 exported (RCAS sharpness, mpv scale, default 0.2, negative = off)
-[JavaLauncher] Task138: POJAV_NATIVEDIR=/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents (controlify JNA direct-mapping guard: libsdl4j ffi closure thunks are non-executable on iOS, steer Pojav-aware mods to graceful GLFW fallback)
-[JavaLauncher] Task158: library gate clean (25 present, 31 skipped)
-[PLProfiles] Applying javaVersion (8)
+[JavaLauncher] Task138: POJAV_NATIVEDIR=/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents (controlify JNA direct-mapping guard: libsdl4j ffi closure thunks are non-executable on iOS, steer Pojav-aware mods to graceful GLFW fallback)
+[JavaLauncher] Task158: library gate clean (36 present, 53 skipped)
 [PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
-[JavaLauncher] RENDERER is set to libOSMesaVirgl.dylib
-[JavaLauncher] VirGL renderer active: GALLIUM_DRIVER=virgl + in-process vtest server (Task 215)
+[JavaLauncher] RENDERER is set to libtinygl4angle.dylib
 [JavaLauncher] GRAPHICS_API is set to default
-[Task181] keybind marker present (/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/instances/default/custom_gamedir/modrinth_30D075D2-8050-495E-8CE5-D254AEADB80A/options.txt.amethyst-keybinds-v1) — user customizations preserved, no forced reset this launch
+[Task181] keybind marker present (/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/options.txt.amethyst-keybinds-v1) — user customizations preserved, no forced reset this launch
 [Task67] ===== options.txt keybind dump (pre-sanitize) =====
-[Task67]   key_key.attack:-100
-[Task67]   key_key.use:-99
-[Task67]   key_key.forward:17
-[Task67]   key_key.left:30
-[Task67]   key_key.back:31
-[Task67]   key_key.right:32
-[Task67]   key_key.jump:57
-[Task67]   key_key.sneak:54
-[Task67]   key_key.sprint:29
-[Task67]   key_key.drop:16
-[Task67]   key_key.inventory:18
-[Task67]   key_key.chat:20
-[Task67]   key_key.playerlist:15
-[Task67]   key_key.pickItem:-98
-[Task67]   key_key.command:53
-[Task67]   key_key.screenshot:60
-[Task67]   key_key.togglePerspective:63
-[Task67]   key_key.smoothCamera:0
-[Task67]   key_key.streamStartStop:64
-[Task67]   key_key.streamPauseUnpause:65
-[Task67]   key_key.streamCommercial:0
-[Task67]   key_key.streamToggleMic:0
-[Task67]   key_key.fullscreen:87
-[Task67]   key_key.spectatorOutlines:0
-[Task67]   key_key.hotbar.1:2
-[Task67]   key_key.hotbar.2:3
-[Task67]   key_key.hotbar.3:4
-[Task67]   key_key.hotbar.4:5
-[Task67]   key_key.hotbar.5:6
-[Task67]   key_key.hotbar.6:7
-[Task67]   key_key.hotbar.7:8
-[Task67]   key_key.hotbar.8:9
-[Task67]   key_key.hotbar.9:10
-[Task67]   key_key.reveal:34
-[Task67]   key_key.entityculling.toggle:-1
+[Task67]   toggleCrouch:false (sneak/sprint toggle mode)
+[Task67]   toggleSprint:false (sneak/sprint toggle mode)
+[Task67]   key_key.attack:key.mouse.left
+[Task67]   key_key.use:key.mouse.right
+[Task67]   key_key.forward:key.keyboard.w
+[Task67]   key_key.left:key.keyboard.a
+[Task67]   key_key.back:key.keyboard.s
+[Task67]   key_key.right:key.keyboard.d
+[Task67]   key_key.jump:key.keyboard.space
+[Task67]   key_key.sneak:key.keyboard.left.shift
+[Task67]   key_key.sprint:key.keyboard.left.control
+[Task67]   key_key.drop:key.keyboard.q
+[Task67]   key_key.inventory:key.keyboard.e
+[Task67]   key_key.chat:key.keyboard.t
+[Task67]   key_key.playerlist:key.keyboard.tab
+[Task67]   key_key.pickItem:key.mouse.middle
+[Task67]   key_key.command:key.keyboard.slash
+[Task67]   key_key.friends:key.keyboard.o
+[Task67]   key_key.socialInteractions:key.keyboard.p
+[Task67]   key_key.toggleGui:key.keyboard.f1
+[Task67]   key_key.toggleSpectatorShaderEffects:key.keyboard.f4
+[Task67]   key_key.screenshot:key.keyboard.f2
+[Task67]   key_key.togglePerspective:key.keyboard.f5
+[Task67]   key_key.smoothCamera:key.keyboard.unknown
+[Task67] SUSPICIOUS (unknown-scancode binding, left as-is): key_key.smoothCamera:key.keyboard.unknown
+[Task67]   key_key.fullscreen:key.keyboard.f11
+[Task67]   key_key.spectatorOutlines:key.keyboard.unknown
+[Task67] SUSPICIOUS (unknown-scancode binding, left as-is): key_key.spectatorOutlines:key.keyboard.unknown
+[Task67]   key_key.spectatorHotbar:key.mouse.middle
+[Task67]   key_key.swapOffhand:key.keyboard.f
+[Task67]   key_key.saveToolbarActivator:key.keyboard.c
+[Task67]   key_key.loadToolbarActivator:key.keyboard.x
+[Task67]   key_key.advancements:key.keyboard.l
+[Task67]   key_key.quickActions:key.keyboard.g
+[Task67]   key_key.debug.overlay:key.keyboard.f3
+[Task67]   key_key.debug.modifier:key.keyboard.f3
+[Task67]   key_key.hotbar.1:key.keyboard.1
+[Task67]   key_key.hotbar.2:key.keyboard.2
+[Task67]   key_key.hotbar.3:key.keyboard.3
+[Task67]   key_key.hotbar.4:key.keyboard.4
+[Task67]   key_key.hotbar.5:key.keyboard.5
+[Task67]   key_key.hotbar.6:key.keyboard.6
+[Task67]   key_key.hotbar.7:key.keyboard.7
+[Task67]   key_key.hotbar.8:key.keyboard.8
+[Task67]   key_key.hotbar.9:key.keyboard.9
+[Task67]   key_key.debug.reloadChunk:key.keyboard.a
+[Task67]   key_key.debug.showHitboxes:key.keyboard.b
+[Task67]   key_key.debug.clearChat:key.keyboard.d
+[Task67]   key_key.debug.crash:key.keyboard.c
+[Task67]   key_key.debug.showChunkBorders:key.keyboard.g
+[Task67]   key_key.debug.showAdvancedTooltips:key.keyboard.h
+[Task67]   key_key.debug.copyRecreateCommand:key.keyboard.i
+[Task67]   key_key.debug.spectate:key.keyboard.n
+[Task67]   key_key.debug.switchGameMode:key.keyboard.f4
+[Task67]   key_key.debug.debugOptions:key.keyboard.f6
+[Task67]   key_key.debug.focusPause:key.keyboard.p
+[Task67]   key_key.debug.dumpDynamicTextures:key.keyboard.s
+[Task67]   key_key.debug.reloadResourcePacks:key.keyboard.t
+[Task67]   key_key.debug.profiling:key.keyboard.l
+[Task67]   key_key.debug.copyLocation:key.keyboard.c
+[Task67]   key_key.debug.dumpVersion:key.keyboard.v
+[Task67]   key_key.debug.profilingChart:key.keyboard.1
+[Task67]   key_key.debug.fpsCharts:key.keyboard.2
+[Task67]   key_key.debug.networkCharts:key.keyboard.3
+[Task67]   key_key.debug.lightmapTexture:key.keyboard.4
+[Task67]   key_key.debug.improvedTransparency:key.keyboard.x
 [Task67] ===== keybind sanitize: 0 repairs needed (all canonical / defaults) =====
-[JavaLauncher] Looking for Java 8 or later
-[JavaLauncher] JAVA_HOME has been set to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/java_runtimes/java-8-openjdk
+[JavaLauncher] Looking for Java 17 or later
+[JavaLauncher] JAVA_HOME has been set to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk
 [Task141] launch memory from instance profile: 2048 MB
 [JavaLauncher] Max RAM allocation is set to 2048 MB
-[JavaLauncher] library.path = /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/Frameworks
-[Amethyst] Task112: OpenAL pinned to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/Frameworks/libopenal.dylib
-[JavaLauncher] Published Metallum surface view: 0x12cd28000 (scale=2)
+[JavaLauncher] Task68 GC/safepoint pause logging enabled (-Xlog:gc,safepoint -> stdout)
+[JavaLauncher] library.path = /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks
+[Amethyst] Task112: OpenAL pinned to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/libopenal.dylib
+[JavaLauncher] Published Metallum surface view: 0x128381dc0 (scale=2)
 [JavaLauncher] Added JVM property -Dmax.fps=260 (frame rate unlock layer 4)
 [JavaLauncher] Adding authlib-injector arguments for third party account
 [ThirdPartyAuthenticator] Added prefetched metadata parameter (length=1780)
-[JavaLauncher] Added authlib-injector arg: -javaagent:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/authlib-injector/authlib-injector.jar=https://littleskin.cn/api/yggdrasil/
+[JavaLauncher] Added authlib-injector arg: -javaagent:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/authlib-injector/authlib-injector.jar=https://littleskin.cn/api/yggdrasil/
 [JavaLauncher] Added authlib-injector arg: -Dauthlibinjector.side=client
 [JavaLauncher] Added authlib-injector arg: -Dauthlibinjector.yggdrasil.prefetched=eyJtZXRhIjp7ImZlYXR1cmUuZW5hYmxlX21vamFuZ19hbnRpX2ZlYXR1cmVzIjp0cnVlLCJmZWF0dXJlLmVuYWJsZV9wcm9maWxlX2tleSI6dHJ1ZSwiZmVhdHVyZS5ub25fZW1haWxfbG9naW4iOnRydWUsImZlYXR1cmUub3BlbmlkX2NvbmZpZ3VyYXRpb25fdXJsIjoiaHR0cHM6Ly9vcGVuLmxpdHRsZXNraW4uY24vLndlbGwta25vd24vb3BlbmlkLWNvbmZpZ3VyYXRpb24iLCJpbXBsZW1lbnRhdGlvbk5hbWUiOiJZZ2dkcmFzaWwgQ29ubmVjdCIsImltcGxlbWVudGF0aW9uVmVyc2lvbiI6IjAuMC44IiwibGlua3MiOnsiYW5ub3VuY2VtZW50IjoiaHR0cHM6Ly9saXR0bGVza2luLmNuL2FwaS9hbm5vdW5jZW1lbnRzIiwiaG9tZXBhZ2UiOiJodHRwczovL2xpdHRsZXNraW4uY24iLCJyZWdpc3RlciI6Imh0dHBzOi8vbGl0dGxlc2tpbi5jbi9hdXRoL3JlZ2lzdGVyIn0sInNlcnZlck5hbWUiOiJMaXR0bGVTa2luIn0sInNpZ25hdHVyZVB1YmxpY2tleSI6Ii0tLS0tQkVHSU4gUFVCTElDIEtFWS0tLS0tXG5NSUlDSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQWc4QU1JSUNDZ0tDQWdFQXJHY05PT0ZJcUxKU3FvRTN1MGhqXG50T0VuT2NFVDN3ajlEcnNzMUJFNnNCcWdQbzBiTXVsT1VMaHFqa2MvdUgvd3lvc1luenczeGFhekp0ODdqVEhoXG5KOEJQTXhDZVFNb3lFZFJvUzNKbmoxRzBLZXpqNEEyYjYxUEpKTTFEcHZEQWNxUUJZc3JTZHBCSis1Mk1qb0dTXG52Sm9lUU81WFVsSlZRbTIxL0htSm5xc1BoemNBNkhnWTcxUkhZRTV4bmhwV0ppUHhMS1VQdG10NkNOWVVRUW9TXG5vMnYzNlhXZ01tTEJaaEFiTk9QeFlYKzFpb3hLYW1qaExPMjlVaHd0Z1k5VTZQV0VPNy9TQmZYenlSUFR6aFBWXG4ybkhxN0tKcWQ4SUlybHRzbHY2aS80RkVNODFpdlMvbW0rUE4zaFlsSVlLNno2WW1paTFuclFBcGxzSjY3T0dxXG5ZSHRXS092cGZUek9vbGx1Z3NSaWhrQUc0T0I2aE0wUHI0NWpqQzNUSWM3ZU83a09nSWNHVUdVUUd1dXVnREV6XG5KMU45RkZXbk4vSDZQOXVrRmVnNVNtR0M1K3dtVVBaWkN0TkJMcjhvOHNJNUg3UWhLN05nd0NhR0ZvWXVpQUdMXG5nejNrLzNZd0o0MEJid1FheVEyZ0lxZW56K1hPRklBbGFqdisvbnlmY0R2Wkg5dkdOS1A5bFZjSFhVVDVZUm5TXG5aU0hvNWx3dlZyWVVycUVBYmgvekR6OFFNRXlpdWpXdlVrUGhaczlmaDZmaW1VR3h0bThtRklQQ3RQSlZYamVZXG53RDNMdnQzYUlCMUpIZFVUSlIzZUVjNGVJYVRLTXdNUHlKUnpWbjV6S3NpdGFaejNubi9jT0Evd1pDOW9xeUVVXG5tYzloNlpNUlRSVUVFNFR0YUp5ZzlsTUNBd0VBQVE9PVxuLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tXG4iLCJza2luRG9tYWlucyI6WyJsaXR0bGVza2luLmNuIl19
 [JavaLauncher] Task201: Metallum agent skipped: MC major 1 < 26 (agent needs Java 21+ class files, this session runs Java 8)
-[JavaLauncher] Java 8 detected, skipping G1GC tuning (using default GC)
-[SDLHook] Task133: libjli image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/java_runtimes/java-8-openjdk/lib/jli/libjli.dylib) -- rebinding its _dlopen slots
+[JavaLauncher] JVM GC optimization: G1GC + MaxGCPauseMillis=50 + StringDeduplication (Java 17+)
+[PLDisplayLinkTarget] displayLinkTick #1 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[SDLHook] Task133: libjli image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/libjli.dylib) -- rebinding its _dlopen slots
 [SDLHook] Task133: _dlopen slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlopen chain now routes through the hook
 [SDLHook] Task133: _dlsym slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlsym chain now routes through the hook
 [SDLHook] Task134: JVM image watchdog started (200ms dyld scan, chain-independent JNA rebind backstop)
-[JavaLauncher] Caciocavallo: isJava8=1 libs=libs_caciocavallo mode=/p
+[JavaLauncher] Caciocavallo: isJava8=0 libs=libs_caciocavallo17 mode=/a
 [JavaLauncher] Reading custom JVM flags
 [Init] Found JLI lib
-[JavaLauncher] Using LWJGL 333 (mcVersion=1.8.9-forge-11.15.1.2318-2250addc)
-[JavaLauncher] Using LWJGL jar at /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/libs/lwjgl-333/lwjgl.jar
-[CwdAlign] Task97: process CWD aligned to game dir: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/instances/default/custom_gamedir/modrinth_30D075D2-8050-495E-8CE5-D254AEADB80A
+[JavaLauncher] Using LWJGL 333 (mcVersion=1.20.1)
+[JavaLauncher] Using LWJGL jar at /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/libs/lwjgl-333/lwjgl.jar
+[CwdAlign] Task97: process CWD aligned to game dir: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default
 [AppKitStub] Task99: NSApplication/NSMenu/NSMenuItem stubs installed (iOS has no AppKit; MC 26.3 MacosUtil menu walk no-ops, numberOfItems=0)
 [Init] Calling JLI_Launch
-[PLDisplayLinkTarget] displayLinkTick #1 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
-[SDLHook] Task133: libjvm image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/java_runtimes/java-8-openjdk/lib/server/libjvm.dylib) -- rebinding its _dlopen slots
-[SDLHook] Task133: _dlopen slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlopen chain now routes through the hook
-[SDLHook] Task133: _dlsym slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlsym chain now routes through the hook
 [PLDisplayLinkTarget] displayLinkTick #2 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
 [PLDisplayLinkTarget] displayLinkTick #3 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
 [PLDisplayLinkTarget] displayLinkTick #4 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
-[JIT26] Requesting 64 MB for JIT mapping
-[JIT26] Got JIT mapping 0x13dc00000 from debugger
+[SDLHook] Task133: libjvm image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib) -- rebinding its _dlopen slots
+[SDLHook] Task133: _dlopen slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlopen chain now routes through the hook
+[SDLHook] Task133: _dlsym slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlsym chain now routes through the hook
 [PLDisplayLinkTarget] displayLinkTick #5 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
-[JIT26] mapping at RW=0x141c00000, RX=0x13dc00000
-[authlib-injector] [INFO] Logging file: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/instances/default/custom_gamedir/modrinth_30D075D2-8050-495E-8CE5-D254AEADB80A/authlib-injector.log
+[JIT26] Requesting 64 MB for JIT mapping
+[JIT26] Got JIT mapping 0x165a28000 from debugger
+[JIT26] mapping at RW=0x16bcfc000, RX=0x165a28000
+[2026-10-06T20:23:38.892+0800][0.258s] Using G1
+WARNING: Unknown module: cpw.mods.bootstraplauncher specified to --add-exports
+[authlib-injector] [INFO] Logging file: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/authlib-injector.log
 [authlib-injector] [INFO] Version: 1.2.8
 [authlib-injector] [INFO] Authentication server: https://littleskin.cn/api/yggdrasil/
 PatchJNAAgent: premain called
 Arc Capes DNS Injector
 Parts of Alibaba's DCM library were used, please read https://github.com/alibaba/java-dns-cache-manipulator/blob/main/README.md for more info
+[2026-10-06T20:23:39.060+0800][0.427s] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 6M->2M(128M) 1.249ms
+[2026-10-06T20:23:39.060+0800][0.427s] Safepoint "G1CollectForAllocation", Time since last: 143847167 ns, Reaching safepoint: 958 ns, Cleanup: 25208 ns, At safepoint: 1269417 ns, Total: 1295583 ns
 Added DNS cache entry: s.optifine.net/23.95.137.176
+[2026-10-06T20:23:39.141+0800][0.507s] GC(1) Pause Young (Normal) (G1 Evacuation Pause) 22M->17M(128M) 0.665ms
+[2026-10-06T20:23:39.141+0800][0.507s] Safepoint "G1CollectForAllocation", Time since last: 79584167 ns, Reaching safepoint: 16416 ns, Cleanup: 17000 ns, At safepoint: 684750 ns, Total: 718166 ns
 [PojavLauncher] VSync disabled, maxFps/maxFramerate/framerateLimit set to 260
 [PojavLauncher]   enableVsync=false
 [PojavLauncher]   maxFps=260
@@ -244,474 +289,422 @@ Added DNS cache entry: s.optifine.net/23.95.137.176
 [PojavLauncher]   inactivityFpsLimit=minimized
 [PojavLauncher] Task104 on-disk verification: inactivityFpsLimit=minimized maxFps=260 enableVsync=false
 [PojavLauncher] MC 26.2+ graphicsApi cleared (default)
-Library net.sf.jopt-simple:jopt-simple: Replaced version jopt-simple with jopt-simple
-[Tools] Replacing JNA 3.4.0 with 5.13.0 for iOS compatibility
-Launching Minecraft 1.8.9-forge-11.15.1.2318-2250addc
+[2026-10-06T20:23:39.173+0800][0.539s] GC(2) Pause Young (Normal) (G1 Evacuation Pause) 26M->17M(128M) 0.620ms
+[2026-10-06T20:23:39.173+0800][0.539s] Safepoint "G1CollectForAllocation", Time since last: 31281917 ns, Reaching safepoint: 3708 ns, Cleanup: 36334 ns, At safepoint: 639625 ns, Total: 679667 ns
+Launching Minecraft 1.20.1
 [PojavLauncher] LWJGL selected by launcher: 333, reported version: 3.3.1 (metadata: not captured)
-Ignored non-exists file: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/Library/Application Support/minecraft/libraries/net/java/jinput/jinput-platform/2.0.5/jinput-platform-2.0.5.jar
+[Tools] Replacing JNA 5.12.1 with 5.13.0 for iOS compatibility
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
 Args init finished. Now starting game
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104795224) -- re-armed at t+16s
-[20:09:39] [main/INFO]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLTweaker
-[20:09:39] [main/INFO]: Using primary tweak class name net.minecraftforge.fml.common.launcher.FMLTweaker
-[20:09:39] [main/INFO]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLTweaker
-[20:09:39] [main/INFO]: Forge Mod Loader version 11.15.1.2318 for Minecraft 1.8.9 loading
-[20:09:39] [main/INFO]: Java is OpenJDK 64-Bit Server VM, version 1.8.0_472-internal, running on Mac OS X:aarch64:27.0.1, installed at /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/java_runtimes/java-8-openjdk
-[20:09:39] [main/WARN]: The coremod com.chocohead.biab.BornInABarn does not have a MCVersion annotation, it may cause issues with this version of Minecraft
-[20:09:39] [main/INFO]: Loading tweaker org.spongepowered.asm.launch.MixinTweaker from entityculling-forge-mc1.8.9-1.5.0.jar
-[20:09:39] [main/WARN]: The coremod pl.asie.foamfix.coremod.FoamFixCore does not have a MCVersion annotation, it may cause issues with this version of Minecraft
-[20:09:39] [main/ERROR]: Coremod Healer: Unable to class load the plugin net.glease.healer.Healer
-java.lang.ClassNotFoundException: net.glease.healer.Healer
-	at java.net.URLClassLoader.findClass(URLClassLoader.java:387) ~[?:1.8.0_472-internal]
-	at net.minecraft.launchwrapper.LaunchClassLoader.findClass(LaunchClassLoader.java:117) ~[launchwrapper-1.12.jar:?]
-	at java.lang.ClassLoader.loadClass(ClassLoader.java:418) ~[?:1.8.0_472-internal]
-	at java.lang.ClassLoader.loadClass(ClassLoader.java:351) ~[?:1.8.0_472-internal]
-	at java.lang.Class.forName0(Native Method) ~[?:1.8.0_472-internal]
-	at java.lang.Class.forName(Class.java:348) ~[?:1.8.0_472-internal]
-	at net.minecraftforge.fml.relauncher.CoreModManager.loadCoreMod(CoreModManager.java:536) [forge-1.8.9-11.15.1.2318-1.8.9.jar:?]
-	at net.minecraftforge.fml.relauncher.CoreModManager.discoverCoreMods(CoreModManager.java:416) [forge-1.8.9-11.15.1.2318-1.8.9.jar:?]
-	at net.minecraftforge.fml.relauncher.CoreModManager.handleLaunch(CoreModManager.java:246) [forge-1.8.9-11.15.1.2318-1.8.9.jar:?]
-	at net.minecraftforge.fml.relauncher.FMLLaunchHandler.setupHome(FMLLaunchHandler.java:95) [forge-1.8.9-11.15.1.2318-1.8.9.jar:?]
-	at net.minecraftforge.fml.relauncher.FMLLaunchHandler.setupClient(FMLLaunchHandler.java:72) [forge-1.8.9-11.15.1.2318-1.8.9.jar:?]
-	at net.minecraftforge.fml.relauncher.FMLLaunchHandler.configureForClientLaunch(FMLLaunchHandler.java:34) [forge-1.8.9-11.15.1.2318-1.8.9.jar:?]
-	at net.minecraftforge.fml.common.launcher.FMLTweaker.injectIntoClassLoader(FMLTweaker.java:119) [forge-1.8.9-11.15.1.2318-1.8.9.jar:?]
-	at net.minecraft.launchwrapper.Launch.launch(Launch.java:115) [launchwrapper-1.12.jar:?]
-	at net.minecraft.launchwrapper.Launch.main(Launch.java:28) [launchwrapper-1.12.jar:?]
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:1.8.0_472-internal]
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[?:1.8.0_472-internal]
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:1.8.0_472-internal]
-	at java.lang.reflect.Method.invoke(Method.java:498) ~[?:1.8.0_472-internal]
-	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134) [launcher.jar:?]
-	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372) [launcher.jar:?]
-	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53) [launcher.jar:?]
-[20:09:39] [main/INFO]: Loading tweaker org.spongepowered.asm.launch.MixinTweaker from IdleTweaks-1.0.5.jar
-[20:09:39] [main/INFO]: Loading tweaker optifine.OptiFineForgeTweaker from OptiFine_1.8.9_HD_U_H5.jar
-[20:09:39] [main/INFO]: Loading tweaker org.spongepowered.asm.launch.MixinTweaker from phosphor-universal.jar
-[20:09:39] [main/WARN]: The coremod com.therandomlabs.randompatches.core.RPCore does not have a MCVersion annotation, it may cause issues with this version of Minecraft
-[20:09:39] [main/WARN]: The coremod bre.smoothfont.asm.CorePlugin does not have a MCVersion annotation, it may cause issues with this version of Minecraft
-[20:09:39] [main/INFO]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
-[20:09:39] [main/INFO]: Loading tweak class name org.spongepowered.asm.launch.MixinTweaker
-[20:09:39] [main/INFO]: SpongePowered MIXIN Subsystem Version=0.7.11 Source=file:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/instances/default/custom_gamedir/modrinth_30D075D2-8050-495E-8CE5-D254AEADB80A/mods/entityculling-forge-mc1.8.9-1.5.0.jar Service=LaunchWrapper Env=CLIENT
-[20:09:40] [main/DEBUG]: Instantiating coremod class PhosphorFMLPlugin
-[20:09:40] [main/WARN]: The coremod me.jellysquid.mods.phosphor.core.PhosphorFMLPlugin does not have a MCVersion annotation, it may cause issues with this version of Minecraft
-[20:09:40] [main/INFO]: Compatibility level set to JAVA_8
-[20:09:40] [main/DEBUG]: Enqueued coremod PhosphorFMLPlugin
-[20:09:40] [main/WARN]: Tweak class name org.spongepowered.asm.launch.MixinTweaker has already been visited -- skipping
-[20:09:40] [main/INFO]: Loading tweak class name optifine.OptiFineForgeTweaker
-[20:09:40] [main/WARN]: Tweak class name org.spongepowered.asm.launch.MixinTweaker has already been visited -- skipping
-[20:09:40] [main/INFO]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLDeobfTweaker
-[20:09:40] [main/INFO]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
-[20:09:40] [main/INFO]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
-[20:09:40] [main/INFO]: Calling tweak class optifine.OptiFineForgeTweaker
-[20:09:40] [main/INFO]: [optifine.OptiFineForgeTweaker:dbg:49]: OptiFineForgeTweaker: acceptOptions
-[20:09:40] [main/INFO]: [optifine.OptiFineForgeTweaker:dbg:49]: OptiFineForgeTweaker: injectIntoClassLoader
-[20:09:40] [main/INFO]: [optifine.OptiFineClassTransformer:dbg:275]: OptiFine ClassTransformer
-[20:09:40] [main/INFO]: [optifine.OptiFineClassTransformer:dbg:275]: OptiFine URL: file:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/instances/default/custom_gamedir/modrinth_30D075D2-8050-495E-8CE5-D254AEADB80A/mods/OptiFine_1.8.9_HD_U_H5.jar
-[20:09:40] [main/INFO]: [optifine.OptiFineClassTransformer:dbg:275]: OptiFine ZIP file: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/instances/default/custom_gamedir/modrinth_30D075D2-8050-495E-8CE5-D254AEADB80A/mods/OptiFine_1.8.9_HD_U_H5.jar
-[20:09:40] [main/INFO]: [optifine.OptiFineClassTransformer:dbg:275]: OptiFine Version: OptiFine_1.8.9_HD_U_H5
-[20:09:40] [main/INFO]: [optifine.OptiFineClassTransformer:dbg:275]: Minecraft Version: 1.8.9
-[20:09:40] [main/INFO]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
-[20:09:40] [main/DEBUG]: Injecting coremod FMLCorePlugin {net.minecraftforge.fml.relauncher.FMLCorePlugin} class transformers
-[20:09:40] [main/TRACE]: Registering transformer net.minecraftforge.fml.common.asm.transformers.BlamingTransformer
-[20:09:40] [main/TRACE]: Registering transformer net.minecraftforge.fml.common.asm.transformers.SideTransformer
-[20:09:40] [main/TRACE]: Registering transformer net.minecraftforge.fml.common.asm.transformers.EventSubscriptionTransformer
-[20:09:40] [main/TRACE]: Registering transformer net.minecraftforge.fml.common.asm.transformers.EventSubscriberTransformer
-[20:09:40] [main/DEBUG]: Injection complete
-[20:09:40] [main/DEBUG]: Running coremod plugin for FMLCorePlugin {net.minecraftforge.fml.relauncher.FMLCorePlugin}
-[20:09:40] [main/DEBUG]: Running coremod plugin FMLCorePlugin
-[20:09:40] [main/DEBUG]: Read 825 binary patches
-[20:09:40] [main/DEBUG]: Loading deobfuscation resource /deobfuscation_data-1.8.9.lzma with 27891 records
-[20:09:41] [main/INFO]: Found valid fingerprint for Minecraft. Certificate fingerprint cd99959656f753dc28d863b46769f7f8fbaefcfc
-[20:09:41] [main/ERROR]: FML appears to be missing any signature data. This is not a good thing
-[20:09:41] [main/DEBUG]: Coremod plugin class FMLCorePlugin run successfully
-[20:09:41] [main/INFO]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
-[20:09:41] [main/DEBUG]: Injecting coremod FMLForgePlugin {net.minecraftforge.classloading.FMLForgePlugin} class transformers
-[20:09:41] [main/DEBUG]: Injection complete
-[20:09:41] [main/DEBUG]: Running coremod plugin for FMLForgePlugin {net.minecraftforge.classloading.FMLForgePlugin}
-[20:09:41] [main/DEBUG]: Running coremod plugin FMLForgePlugin
-[20:09:41] [main/DEBUG]: Coremod plugin class FMLForgePlugin run successfully
-[20:09:41] [main/INFO]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
-[20:09:41] [main/DEBUG]: Injecting coremod CorePlugin {bre.smoothfont.asm.CorePlugin} class transformers
-[20:09:41] [main/TRACE]: Registering transformer bre.smoothfont.asm.Transformer
-[20:09:41] [main/DEBUG]: Injection complete
-[20:09:41] [main/DEBUG]: Running coremod plugin for CorePlugin {bre.smoothfont.asm.CorePlugin}
-[20:09:41] [main/DEBUG]: Running coremod plugin CorePlugin
-[20:09:41] [main/INFO]: OptiFine was detected.
-[20:09:41] [main/DEBUG]: Coremod plugin class CorePlugin run successfully
-[20:09:41] [main/INFO]: Calling tweak class org.spongepowered.asm.launch.MixinTweaker
-[20:09:41] [main/ERROR]: Mixin config entityculling.mixins.json does not specify "minVersion" property
-[20:09:41] [main/INFO]: Initialised Mixin FML Remapper Adapter with net.minecraftforge.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper@6c44052e
-[20:09:41] [main/DEBUG]: Injecting coremod PhosphorFMLPlugin {me.jellysquid.mods.phosphor.core.PhosphorFMLPlugin} class transformers
-[20:09:41] [main/DEBUG]: Injection complete
-[20:09:41] [main/DEBUG]: Running coremod plugin for PhosphorFMLPlugin {me.jellysquid.mods.phosphor.core.PhosphorFMLPlugin}
-[20:09:41] [main/DEBUG]: Running coremod plugin PhosphorFMLPlugin
-[20:09:41] [main/DEBUG]: Coremod plugin class PhosphorFMLPlugin run successfully
-[20:09:41] [main/INFO]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLDeobfTweaker
-[20:09:41] [main/DEBUG]: Loaded 165 rules from AccessTransformer config file forge_at.cfg
-[20:09:41] [main/DEBUG]: Loaded 10 rules from AccessTransformer mod jar file /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/instances/default/custom_gamedir/modrinth_30D075D2-8050-495E-8CE5-D254AEADB80A/mods/AIImprovements-1.8.9-0.0.1b20160401184840-universal.jar!META-INF/AI_at.cfg
-
-[20:09:41] [main/DEBUG]: Loaded 1 rules from AccessTransformer mod jar file /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/instances/default/custom_gamedir/modrinth_30D075D2-8050-495E-8CE5-D254AEADB80A/mods/randompatches-1.12.2-1.22.1.10.jar!META-INF/randompatches_at.cfg
-
-[20:09:41] [main/DEBUG]: Loaded 10 rules from AccessTransformer mod jar file /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/instances/default/custom_gamedir/modrinth_30D075D2-8050-495E-8CE5-D254AEADB80A/mods/SmoothFont-1.8.9-1.15.2.jar!META-INF/SmoothFont_at.cfg
-
-[20:09:41] [main/DEBUG]: Loaded 9 rules from AccessTransformer mod jar file /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/instances/default/custom_gamedir/modrinth_30D075D2-8050-495E-8CE5-D254AEADB80A/mods/Controlling-7.0.0.1.jar!META-INF/controlling_at.cfg
-
-[20:09:41] [main/DEBUG]: Loaded 3 rules from AccessTransformer mod jar file /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/instances/default/custom_gamedir/modrinth_30D075D2-8050-495E-8CE5-D254AEADB80A/mods/phosphor-universal.jar!META-INF/phosphor_at.cfg
-
-[20:09:41] [main/DEBUG]: Validating minecraft
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104795224) -- re-armed at t+18s
-[20:09:41] [main/INFO]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
-[20:09:41] [main/INFO]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
-[20:09:41] [main/INFO]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
-[SDLHook] hooked SDL_GetKeyboardState (real=0x0, Task67 kb-state poll observability)
-[InputDiag] initSDLEventFuncs: PushEvent=0x0 GetWindowID=0x0 g_sdlWindow=0x0 Task66GetKBState=0x10d8eb8a8 SetModState=0x0
-[JNI] JNI_OnLoadGLFW registered, class=0x12714bed0, method=0x12e1c5c78, keyDownBuffer=0x10d49b980
-[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/Frameworks/liblwjgl.dylib / install bin/libs/native/macos/arm64/org/lwjgl/liblwjgl.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
-[SDLHook] Task135: _dlsym slot 0x13c6880e0 already == hooked_dlsym (idempotent hit, __DATA_CONST,__got) -- fishhook add-image callback or earlier pass won the race
-[20:09:42] [main/INFO]: Loading tweak class name net.minecraftforge.fml.common.launcher.TerminalTweaker
-[20:09:42] [main/INFO]: Loading tweak class name org.spongepowered.asm.mixin.EnvironmentStateTweaker
-[20:09:42] [main/INFO]: Calling tweak class net.minecraftforge.fml.common.launcher.TerminalTweaker
-[20:09:42] [main/INFO]: Calling tweak class org.spongepowered.asm.mixin.EnvironmentStateTweaker
-[20:09:42] [main/INFO]: [optifine.OptiFineForgeTweaker:dbg:49]: OptiFineForgeTweaker: getLaunchArguments
-[20:09:42] [main/INFO]: Detected MC Version : Minecraft 1.8.9
-[20:09:42] [main/INFO]: A re-entrant transformer '$wrapper.com.therandomlabs.randompatches.core.RPTransformer' was detected and will no longer process meta class data
+[2026-10-06T20:23:39.318+0800][0.684s] Safepoint "ICBufferFull", Time since last: 144954041 ns, Reaching safepoint: 1625 ns, Cleanup: 39334 ns, At safepoint: 2416 ns, Total: 43375 ns
 [authlib-injector] [INFO] Transformed [net.minecraft.client.main.Main] with [Main Arguments Transformer]
-[20:09:42] [main/INFO]: Launching wrapped minecraft {net.minecraft.client.main.Main}
-[authlib-injector] [INFO] Enable MC-52974 Workaround
+[2026-10-06T20:23:39.440+0800][0.806s] Safepoint "ICBufferFull", Time since last: 121788000 ns, Reaching safepoint: 3834 ns, Cleanup: 65041 ns, At safepoint: 667 ns, Total: 69542 ns
+[2026-10-06T20:23:39.462+0800][0.829s] GC(3) Pause Young (Normal) (G1 Evacuation Pause) 111M->37M(129M) 4.915ms
+[2026-10-06T20:23:39.462+0800][0.829s] Safepoint "G1CollectForAllocation", Time since last: 17791958 ns, Reaching safepoint: 3334 ns, Cleanup: 10083 ns, At safepoint: 4943458 ns, Total: 4956875 ns
+[2026-10-06T20:23:39.521+0800][0.887s] GC(4) Pause Young (Concurrent Start) (Metadata GC Threshold) 47M->39M(129M) 2.904ms
+[2026-10-06T20:23:39.521+0800][0.887s] Safepoint "CollectForMetadataAllocation", Time since last: 55711084 ns, Reaching safepoint: 1500 ns, Cleanup: 27125 ns, At safepoint: 2966875 ns, Total: 2995500 ns
+[2026-10-06T20:23:39.521+0800][0.887s] GC(5) Concurrent Mark Cycle
+[2026-10-06T20:23:39.529+0800][0.895s] GC(5) Pause Remark 40M->40M(129M) 0.860ms
+[2026-10-06T20:23:39.529+0800][0.895s] Safepoint "G1PauseRemark", Time since last: 6861333 ns, Reaching safepoint: 27042 ns, Cleanup: 12875 ns, At safepoint: 884625 ns, Total: 924542 ns
+[2026-10-06T20:23:39.532+0800][0.898s] GC(5) Pause Cleanup 41M->41M(129M) 0.037ms
+[2026-10-06T20:23:39.532+0800][0.898s] Safepoint "G1PauseCleanup", Time since last: 3020166 ns, Reaching safepoint: 8500 ns, Cleanup: 1709 ns, At safepoint: 57375 ns, Total: 67584 ns
+[2026-10-06T20:23:39.532+0800][0.898s] GC(5) Concurrent Mark Cycle 11.016ms
 [authlib-injector] [INFO] Setting accountType to msa
-[authlib-injector] [INFO] Httpd is running on port 61360
-[authlib-injector] [INFO] Transformed [net.minecraft.client.entity.AbstractClientPlayer] with [Constant URL Transformer]
-[20:09:42] [main/INFO]: Transform: net.minecraftforge.client.GuiIngameForge
-[20:09:42] [main/INFO]: Internal name = net.minecraftforge.client.GuiIngameForge
-[20:09:42] [main/INFO]: Transformed name = net.minecraftforge.client.GuiIngameForge
-[20:09:42] [main/INFO]: Modified renderExperience method.
-[20:09:42] [main/INFO]: RENDER_EXPERIENCE:true
-[20:09:42] [main/INFO]: ** GuiIngameForge was transformed successfully.
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.properties.Property] with [Yggdrasil Public Key Transformer]
+[2026-10-06T20:23:39.632+0800][0.998s] GC(6) Pause Young (Normal) (G1 Evacuation Pause) 108M->65M(129M) 5.345ms
+[2026-10-06T20:23:39.632+0800][0.998s] Safepoint "G1CollectForAllocation", Time since last: 94674875 ns, Reaching safepoint: 1625 ns, Cleanup: 30833 ns, At safepoint: 5389375 ns, Total: 5421833 ns
+[2026-10-06T20:23:39.675+0800][1.041s] GC(7) Pause Young (Concurrent Start) (G1 Humongous Allocation) 79M->60M(155M) 2.366ms
+[2026-10-06T20:23:39.675+0800][1.041s] GC(8) Concurrent Undo Cycle
+[2026-10-06T20:23:39.675+0800][1.041s] Safepoint "G1TryInitiateConcMark", Time since last: 40200417 ns, Reaching safepoint: 3250 ns, Cleanup: 15833 ns, At safepoint: 2394625 ns, Total: 2413708 ns
+[2026-10-06T20:23:39.675+0800][1.041s] GC(8) Concurrent Undo Cycle 0.178ms
+PatchJNAAgent: Replacing class
+Platform.isMac called from com.sun.jna.Native
+[SDLHook] Task133: libjnidispatch image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/${natives_directory}/jna13822124769293871124.tmp / install libjnidispatch.jnilib) -- invoking Task132 dlsym rebind (direct hdr+slide)
+[SDLHook] Task135: _dlsym slot 0x12fe48040 already == hooked_dlsym (idempotent hit, __DATA,__la_symbol_ptr) -- fishhook add-image callback or earlier pass won the race
+Platform.isMac called from com.sun.jna.Native
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+[20:23:39] [main/WARN]: Failed sysctl call: hw.packages, Error code: 1
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+[20:23:39] [main/WARN]: Failed sysctl call: machdep.cpu.brand_string, Error code: 1
+[20:23:39] [main/WARN]: Failed sysctl call: machdep.cpu.vendor, Error code: 2
+[20:23:39] [main/WARN]: Failed sysctl call: machdep.cpu.stepping, Error code: 2
+[20:23:39] [main/WARN]: Failed sysctl call: machdep.cpu.model, Error code: 2
+[20:23:39] [main/WARN]: Failed sysctl call: machdep.cpu.family, Error code: 2
+[20:23:39] [main/WARN]: Failed sysctl call: machdep.cpu.signature, Error code: 2
+[20:23:39] [main/WARN]: Failed sysctl call: machdep.cpu.feature_bits, Error code: 2
+[20:23:39] [main/WARN]: Failed sysctl call: hw.cpufrequency, Error code: 2
+[20:23:39] [main/WARN]: Failed sysctl call: vm.swapusage, Error code: 1
+[2026-10-06T20:23:39.795+0800][1.161s] Safepoint "ICBufferFull", Time since last: 120489042 ns, Reaching safepoint: 19541 ns, Cleanup: 53084 ns, At safepoint: 2583 ns, Total: 75208 ns
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104b39224) -- re-armed at t+12s
+[2026-10-06T20:23:39.880+0800][1.246s] Safepoint "ICBufferFull", Time since last: 84365417 ns, Reaching safepoint: 21916 ns, Cleanup: 41959 ns, At safepoint: 3791 ns, Total: 67666 ns
+[2026-10-06T20:23:39.888+0800][1.254s] Safepoint "ICBufferFull", Time since last: 7986875 ns, Reaching safepoint: 3084 ns, Cleanup: 38916 ns, At safepoint: 2459 ns, Total: 44459 ns
+[2026-10-06T20:23:39.905+0800][1.272s] GC(9) Pause Young (Normal) (G1 Evacuation Pause) 122M->75M(155M) 4.986ms
+[2026-10-06T20:23:39.905+0800][1.272s] Safepoint "G1CollectForAllocation", Time since last: 12826708 ns, Reaching safepoint: 3583 ns, Cleanup: 58292 ns, At safepoint: 5013125 ns, Total: 5075000 ns
+[2026-10-06T20:23:39.950+0800][1.317s] Safepoint "ICBufferFull", Time since last: 44886625 ns, Reaching safepoint: 3417 ns, Cleanup: 52208 ns, At safepoint: 4500 ns, Total: 60125 ns
+[2026-10-06T20:23:39.980+0800][1.346s] Safepoint "ICBufferFull", Time since last: 29517667 ns, Reaching safepoint: 2958 ns, Cleanup: 67625 ns, At safepoint: 750 ns, Total: 71333 ns
+[2026-10-06T20:23:39.988+0800][1.354s] GC(10) Pause Young (Normal) (G1 Evacuation Pause) 116M->80M(155M) 5.316ms
+[2026-10-06T20:23:39.988+0800][1.354s] Safepoint "G1CollectForAllocation", Time since last: 2365625 ns, Reaching safepoint: 3042 ns, Cleanup: 12375 ns, At safepoint: 5348125 ns, Total: 5363542 ns
+[2026-10-06T20:23:40.024+0800][1.390s] Safepoint "ICBufferFull", Time since last: 35799625 ns, Reaching safepoint: 3875 ns, Cleanup: 77833 ns, At safepoint: 2375 ns, Total: 84083 ns
+[2026-10-06T20:23:40.035+0800][1.402s] GC(11) Pause Young (Concurrent Start) (G1 Evacuation Pause) 118M->85M(155M) 4.408ms
+[2026-10-06T20:23:40.035+0800][1.402s] Safepoint "G1CollectForAllocation", Time since last: 7142042 ns, Reaching safepoint: 3625 ns, Cleanup: 17583 ns, At safepoint: 4442333 ns, Total: 4463541 ns
+[2026-10-06T20:23:40.035+0800][1.402s] GC(12) Concurrent Mark Cycle
+[2026-10-06T20:23:40.049+0800][1.416s] Safepoint "ICBufferFull", Time since last: 14111167 ns, Reaching safepoint: 14292 ns, Cleanup: 41666 ns, At safepoint: 3375 ns, Total: 59333 ns
+[2026-10-06T20:23:40.051+0800][1.417s] GC(12) Pause Remark 96M->92M(157M) 1.117ms
+[2026-10-06T20:23:40.051+0800][1.417s] Safepoint "G1PauseRemark", Time since last: 252042 ns, Reaching safepoint: 25208 ns, Cleanup: 5292 ns, At safepoint: 1133458 ns, Total: 1163958 ns
+[2026-10-06T20:23:40.057+0800][1.423s] GC(12) Pause Cleanup 93M->93M(157M) 0.060ms
+[2026-10-06T20:23:40.057+0800][1.423s] Safepoint "G1PauseCleanup", Time since last: 5844709 ns, Reaching safepoint: 20375 ns, Cleanup: 6291 ns, At safepoint: 145750 ns, Total: 172416 ns
+[2026-10-06T20:23:40.057+0800][1.423s] GC(12) Concurrent Mark Cycle 21.852ms
+[2026-10-06T20:23:40.086+0800][1.452s] GC(13) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 116M->87M(157M) 4.346ms
+[2026-10-06T20:23:40.086+0800][1.452s] Safepoint "G1CollectForAllocation", Time since last: 24299750 ns, Reaching safepoint: 23459 ns, Cleanup: 56791 ns, At safepoint: 4387500 ns, Total: 4467750 ns
+[2026-10-06T20:23:40.090+0800][1.457s] GC(14) Pause Young (Mixed) (G1 Evacuation Pause) 88M->85M(282M) 2.600ms
+[2026-10-06T20:23:40.090+0800][1.457s] Safepoint "G1CollectForAllocation", Time since last: 1967709 ns, Reaching safepoint: 2583 ns, Cleanup: 6000 ns, At safepoint: 2630917 ns, Total: 2639500 ns
+[2026-10-06T20:23:40.186+0800][1.553s] GC(15) Pause Young (Normal) (G1 Evacuation Pause) 207M->99M(282M) 4.836ms
+[2026-10-06T20:23:40.186+0800][1.553s] Safepoint "G1CollectForAllocation", Time since last: 91192791 ns, Reaching safepoint: 2042 ns, Cleanup: 40417 ns, At safepoint: 4859166 ns, Total: 4901625 ns
+[2026-10-06T20:23:40.274+0800][1.640s] GC(16) Pause Young (Normal) (G1 Evacuation Pause) 203M->112M(282M) 6.944ms
+[2026-10-06T20:23:40.274+0800][1.640s] Safepoint "G1CollectForAllocation", Time since last: 80445709 ns, Reaching safepoint: 3666 ns, Cleanup: 80667 ns, At safepoint: 6982625 ns, Total: 7066958 ns
+[2026-10-06T20:23:40.300+0800][1.667s] Safepoint "ICBufferFull", Time since last: 26525083 ns, Reaching safepoint: 4042 ns, Cleanup: 79875 ns, At safepoint: 4292 ns, Total: 88209 ns
+[2026-10-06T20:23:40.331+0800][1.697s] Safepoint "ICBufferFull", Time since last: 30419041 ns, Reaching safepoint: 18834 ns, Cleanup: 41291 ns, At safepoint: 2625 ns, Total: 62750 ns
+[2026-10-06T20:23:40.340+0800][1.707s] Safepoint "ICBufferFull", Time since last: 9318667 ns, Reaching safepoint: 3750 ns, Cleanup: 81250 ns, At safepoint: 1917 ns, Total: 86917 ns
+[2026-10-06T20:23:40.351+0800][1.717s] Safepoint "ICBufferFull", Time since last: 10649250 ns, Reaching safepoint: 1333 ns, Cleanup: 33833 ns, At safepoint: 2084 ns, Total: 37250 ns
+[2026-10-06T20:23:40.367+0800][1.733s] Safepoint "ICBufferFull", Time since last: 15865583 ns, Reaching safepoint: 3375 ns, Cleanup: 66458 ns, At safepoint: 3000 ns, Total: 72833 ns
+[2026-10-06T20:23:40.467+0800][1.833s] Safepoint "ICBufferFull", Time since last: 99718875 ns, Reaching safepoint: 23875 ns, Cleanup: 41750 ns, At safepoint: 2417 ns, Total: 68042 ns
+[2026-10-06T20:23:40.561+0800][1.927s] GC(17) Pause Young (Normal) (G1 Evacuation Pause) 211M->118M(282M) 6.938ms
+[2026-10-06T20:23:40.561+0800][1.927s] Safepoint "G1CollectForAllocation", Time since last: 86834708 ns, Reaching safepoint: 1375 ns, Cleanup: 24625 ns, At safepoint: 6982125 ns, Total: 7008125 ns
+[2026-10-06T20:23:40.615+0800][1.981s] Safepoint "ICBufferFull", Time since last: 54332459 ns, Reaching safepoint: 3458 ns, Cleanup: 62125 ns, At safepoint: 2875 ns, Total: 68458 ns
+[2026-10-06T20:23:40.646+0800][2.012s] Safepoint "ICBufferFull", Time since last: 30891250 ns, Reaching safepoint: 18250 ns, Cleanup: 34958 ns, At safepoint: 3500 ns, Total: 56708 ns
+[2026-10-06T20:23:40.716+0800][2.082s] Safepoint "ICBufferFull", Time since last: 69890584 ns, Reaching safepoint: 23083 ns, Cleanup: 53042 ns, At safepoint: 2875 ns, Total: 79000 ns
+[2026-10-06T20:23:40.743+0800][2.109s] Safepoint "ICBufferFull", Time since last: 27148750 ns, Reaching safepoint: 1583 ns, Cleanup: 49042 ns, At safepoint: 2875 ns, Total: 53500 ns
+[2026-10-06T20:23:40.768+0800][2.134s] Safepoint "ICBufferFull", Time since last: 24581625 ns, Reaching safepoint: 3083 ns, Cleanup: 59292 ns, At safepoint: 4500 ns, Total: 66875 ns
+[2026-10-06T20:23:40.805+0800][2.172s] Safepoint "ICBufferFull", Time since last: 37609625 ns, Reaching safepoint: 3833 ns, Cleanup: 62083 ns, At safepoint: 4375 ns, Total: 70291 ns
+[2026-10-06T20:23:40.838+0800][2.205s] Safepoint "ICBufferFull", Time since last: 32665250 ns, Reaching safepoint: 22875 ns, Cleanup: 67000 ns, At safepoint: 4000 ns, Total: 93875 ns
+[20:23:40] [Datafixer Bootstrap/INFO]: 188 Datafixer optimizations took 72 milliseconds
+[2026-10-06T20:23:40.886+0800][2.252s] GC(18) Pause Young (Normal) (G1 Evacuation Pause) 222M->140M(639M) 10.050ms
+[2026-10-06T20:23:40.886+0800][2.252s] Safepoint "G1CollectForAllocation", Time since last: 37703542 ns, Reaching safepoint: 3083 ns, Cleanup: 38042 ns, At safepoint: 10090625 ns, Total: 10131750 ns
+[2026-10-06T20:23:40.912+0800][2.279s] Safepoint "ICBufferFull", Time since last: 26388042 ns, Reaching safepoint: 3458 ns, Cleanup: 86458 ns, At safepoint: 3167 ns, Total: 93083 ns
+[2026-10-06T20:23:40.917+0800][2.283s] Safepoint "ICBufferFull", Time since last: 3926542 ns, Reaching safepoint: 53083 ns, Cleanup: 104667 ns, At safepoint: 3541 ns, Total: 161291 ns
+[2026-10-06T20:23:40.939+0800][2.305s] Safepoint "ICBufferFull", Time since last: 22118250 ns, Reaching safepoint: 36084 ns, Cleanup: 47375 ns, At safepoint: 4125 ns, Total: 87584 ns
+[2026-10-06T20:23:41.013+0800][2.380s] Safepoint "ICBufferFull", Time since last: 74348041 ns, Reaching safepoint: 22375 ns, Cleanup: 53042 ns, At safepoint: 2625 ns, Total: 78042 ns
+[2026-10-06T20:23:41.071+0800][2.438s] Safepoint "ICBufferFull", Time since last: 57936208 ns, Reaching safepoint: 1417 ns, Cleanup: 53042 ns, At safepoint: 2750 ns, Total: 57209 ns
+[2026-10-06T20:23:41.215+0800][2.582s] Safepoint "ICBufferFull", Time since last: 144214208 ns, Reaching safepoint: 20875 ns, Cleanup: 52917 ns, At safepoint: 2416 ns, Total: 76208 ns
+[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl.dylib / install bin/libs/native/macos/arm64/org/lwjgl/liblwjgl.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
+[SDLHook] Task135: _dlsym slot 0x12ffac0e0 already == hooked_dlsym (idempotent hit, __DATA_CONST,__got) -- fishhook add-image callback or earlier pass won the race
+[authlib-injector] [INFO] Httpd is running on port 58681
+[authlib-injector] [INFO] Transformed [fiv] with [Constant URL Transformer]
+[2026-10-06T20:23:41.346+0800][2.713s] Safepoint "ICBufferFull", Time since last: 130567125 ns, Reaching safepoint: 1792 ns, Cleanup: 138625 ns, At safepoint: 500 ns, Total: 140917 ns
 [authlib-injector] [INFO] Transformed [com.mojang.authlib.HttpAuthenticationService] with [ConcatenateURL Workaround]
-[authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService] with [Constant URL Transformer]
-[authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService] with [Texture Whitelist Transformer]
-[authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService] with [MC-52974 Workaround]
-[20:09:42] [Client thread/INFO]: Setting user: yiqiu4178
-[authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.YggdrasilGameProfileRepository] with [Constant URL Transformer]
-[RenderDiag] fps=0 swapOK=0 swapFail=0 maxGap=0ms avgGap=0ms pres=0/0ms build=0/0ms mem=627MB layer=0x12e3ee580 drawable=0x0 scale=2.00 bounds=1180x820 inWindow=1
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104795224) -- re-armed at t+20s
-[egl_bridge] pojavSwapInterval(0) called but br_swap_interval is NULL (likely Vulkan mode). POJAV_DISABLE_VSYNC=1. Vulkan present mode is controlled by vkCreateSwapchainKHR, not eglSwapInterval.
-[egl_bridge] pojavSwapInterval(0) called but br_swap_interval is NULL (likely Vulkan mode). POJAV_DISABLE_VSYNC=1. Vulkan present mode is controlled by vkCreateSwapchainKHR, not eglSwapInterval.
-[20:09:44] [Client thread/INFO]: Transform: net.minecraft.client.gui.FontRenderer
-[20:09:44] [Client thread/INFO]: Internal name = avn
-[20:09:44] [Client thread/INFO]: Transformed name = net.minecraft.client.gui.FontRenderer
-[20:09:44] [Client thread/INFO]: Inserted the EnterHook in constructor.
-[20:09:44] [Client thread/INFO]: Inserted the ExitHook in constructor.
-[20:09:44] [Client thread/INFO]: Inserted the ExitHook in readFontTexture method.
-[20:09:44] [Client thread/INFO]: Inserted the ExitHook in readFontTexture method.
-[20:09:44] [Client thread/INFO]: Inserted the ExitHook in readGlyphSizes method.
-[20:09:44] [Client thread/INFO]: Inserted the ExitHook in readGlyphSizes method.
-[20:09:44] [Client thread/INFO]: Inserted the ExitHook in readGlyphSizes method.
-[20:09:44] [Client thread/INFO]: Inserted the EnterHook in renderChar() method.
-[20:09:44] [Client thread/INFO]: Inserted the EnterHook in renderDefaultChar method.
-[20:09:44] [Client thread/INFO]: Inserted the EnterHook in renderUnicodeChar() method.
-[20:09:44] [Client thread/INFO]: Inserted the EnterHook in renderStringAtPos method.
-[20:09:44] [Client thread/INFO]: Replaced unicodeFlag(x2) in renderStringAtPos().
-[20:09:44] [Client thread/INFO]: Inserted boldFlag related code in renderStringAtPos().
-[20:09:44] [Client thread/INFO]: Inserted the ExitHook in renderStringAtPos method.
-[20:09:44] [Client thread/INFO]: Inserted the EnterHook in renderString method.
-[20:09:44] [Client thread/INFO]: Inserted the ExitHook in renderString method.
-[20:09:44] [Client thread/INFO]: Inserted the ExitHook in renderString method.
-[20:09:44] [Client thread/INFO]: Inserted the EnterHook in getStringWidth method.
-[20:09:44] [Client thread/INFO]: Inserted the EnterHook in getCharWidth method.
-[20:09:44] [Client thread/INFO]: Inserted the EnterHook in trimStringToWidth method.
-[20:09:44] [Client thread/INFO]: Inserted the ExitHook in setUnicodeFlag method.
-[20:09:44] [Client thread/INFO]: Inserted the EnterHook in sizeStringToWidth method.
-[20:09:44] [Client thread/INFO]: INIT:true
-[20:09:44] [Client thread/INFO]: READ_FONT_TEXTURE:true
-[20:09:44] [Client thread/INFO]: READ_GLYPH_SIZES:true
-[20:09:44] [Client thread/INFO]: RENDER_CHAR:true
-[20:09:44] [Client thread/INFO]: RENDER_DEFAULT_CHAR:true
-[20:09:44] [Client thread/INFO]: RENDER_UNICODE_CHAR:true
-[20:09:44] [Client thread/INFO]: RENDER_STRING_AT_POS:true
-[20:09:44] [Client thread/INFO]: DO_DRAW:false
-[20:09:44] [Client thread/INFO]: RENDER_STRING:true
-[20:09:44] [Client thread/INFO]: GET_STRING_WIDTH:true
-[20:09:44] [Client thread/INFO]: GET_CHAR_WIDTH:true
-[20:09:44] [Client thread/INFO]: TRIM_STRING_TO_WIDTH:true
-[20:09:44] [Client thread/INFO]: SET_UNICODE_FLAG:true
-[20:09:44] [Client thread/INFO]: SIZE_STRING_TO_WIDTH:true
-[20:09:44] [Client thread/INFO]: Transform: net.minecraft.client.renderer.texture.TextureManager
-[20:09:44] [Client thread/INFO]: Internal name = bmj
-[20:09:44] [Client thread/INFO]: Transformed name = net.minecraft.client.renderer.texture.TextureManager
-[20:09:44] [Client thread/INFO]: Inserted the ExitHook in loadTexture() method.
-[20:09:44] [Client thread/INFO]: Inserted the ExitHook in loadTexture() method.
-[20:09:44] [Client thread/INFO]: LOAD_TEXTURE:true
-[20:09:44] [Client thread/INFO]: ** TextureManager was transformed successfully.
-[20:09:44] [Client thread/INFO]: Transform: net.minecraft.client.gui.ScaledResolution
-[20:09:44] [Client thread/INFO]: Internal name = avr
-[20:09:44] [Client thread/INFO]: Transformed name = net.minecraft.client.gui.ScaledResolution
-[20:09:44] [Client thread/INFO]: Inserted the hook in ScaledResolution.<init>.
-[20:09:44] [Client thread/INFO]: INIT:true
-[20:09:44] [Client thread/INFO]: ** ScaledResolution was transformed successfully.
-[OptiFine] (Reflector) Class not present: mods.betterfoliage.client.BetterFoliageClient
-[20:09:44] [Client thread/INFO]: LWJGL Version: 3.3.1
-[egl_bridge] VirGL renderer: bootstrapping in-process vtest server (Task 215)
-[VirGL] Task219 socket path = /tmp/ame_virgl_7012.sock (len=24, sun_path cap=104)
-[VirGL] Task219 eglChooseConfig pass#1 (ES3_BIT) found no pbuffer config
-[VirGL] Task219 eglChooseConfig pass#2 (ES2_BIT) found no pbuffer config
-[egl_bridge] Task219 VirGL server bootstrap FAILED (rc=-1) -- diverting renderer to Zink (crash prevention)
-[egl_bridge] pojavCreateContext: clientAPI=196609 (GLFW_NO_API=0), renderer=libOSMesa.8.dylib, graphicsApi=default
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.YggdrasilEnvironment] with [Constant URL Transformer]
+[20:23:41] [Render thread/INFO]: Environment: authHost='https://littleskin.cn/api/yggdrasil/authserver', accountsHost='http://127.0.0.1:58681/https/api.mojang.com', sessionHost='http://127.0.0.1:58681/https/sessionserver.mojang.com', servicesHost='http://127.0.0.1:58681/https/api.minecraftservices.com', name='PROD'
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.YggdrasilServicesKeyInfo] with [Yggdrasil Public Key Transformer]
+[2026-10-06T20:23:41.384+0800][2.750s] GC(19) Pause Young (Concurrent Start) (Metadata GC Threshold) 374M->161M(639M) 11.367ms
+[2026-10-06T20:23:41.384+0800][2.750s] GC(20) Concurrent Mark Cycle
+[2026-10-06T20:23:41.384+0800][2.750s] Safepoint "CollectForMetadataAllocation", Time since last: 25598250 ns, Reaching safepoint: 492125 ns, Cleanup: 32042 ns, At safepoint: 11414833 ns, Total: 11939000 ns
+[2026-10-06T20:23:41.399+0800][2.765s] Safepoint "CollectForMetadataAllocation", Time since last: 15010208 ns, Reaching safepoint: 30000 ns, Cleanup: 24459 ns, At safepoint: 20250 ns, Total: 74709 ns
+[2026-10-06T20:23:41.401+0800][2.767s] Safepoint "CollectForMetadataAllocation", Time since last: 2075625 ns, Reaching safepoint: 21041 ns, Cleanup: 2667 ns, At safepoint: 5333 ns, Total: 29041 ns
+[2026-10-06T20:23:41.408+0800][2.774s] Safepoint "CollectForMetadataAllocation", Time since last: 6928417 ns, Reaching safepoint: 44500 ns, Cleanup: 11833 ns, At safepoint: 13000 ns, Total: 69333 ns
+[2026-10-06T20:23:41.419+0800][2.786s] Safepoint "CollectForMetadataAllocation", Time since last: 11411709 ns, Reaching safepoint: 28416 ns, Cleanup: 11000 ns, At safepoint: 15750 ns, Total: 55166 ns
+[2026-10-06T20:23:41.436+0800][2.802s] Safepoint "CollectForMetadataAllocation", Time since last: 16344209 ns, Reaching safepoint: 12666 ns, Cleanup: 7167 ns, At safepoint: 6708 ns, Total: 26541 ns
+[2026-10-06T20:23:41.440+0800][2.807s] Safepoint "CollectForMetadataAllocation", Time since last: 4686792 ns, Reaching safepoint: 27167 ns, Cleanup: 875 ns, At safepoint: 4875 ns, Total: 32917 ns
+[2026-10-06T20:23:41.443+0800][2.809s] GC(20) Pause Remark 170M->170M(570M) 1.122ms
+[2026-10-06T20:23:41.443+0800][2.809s] Safepoint "G1PauseRemark", Time since last: 1149375 ns, Reaching safepoint: 20708 ns, Cleanup: 792 ns, At safepoint: 1137500 ns, Total: 1159000 ns
+[2026-10-06T20:23:41.461+0800][2.827s] GC(20) Pause Cleanup 171M->171M(570M) 0.058ms
+[2026-10-06T20:23:41.461+0800][2.827s] Safepoint "G1PauseCleanup", Time since last: 18234291 ns, Reaching safepoint: 1750 ns, Cleanup: 5667 ns, At safepoint: 67625 ns, Total: 75042 ns
+[2026-10-06T20:23:41.462+0800][2.828s] GC(20) Concurrent Mark Cycle 77.889ms
+[2026-10-06T20:23:41.513+0800][2.879s] Safepoint "ICBufferFull", Time since last: 51499917 ns, Reaching safepoint: 4416 ns, Cleanup: 75667 ns, At safepoint: 2500 ns, Total: 82583 ns
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104b39224) -- re-armed at t+14s
+[2026-10-06T20:23:42.518+0800][3.884s] Safepoint "Cleanup", Time since last: 1005040750 ns, Reaching safepoint: 13333 ns, Cleanup: 59167 ns, At safepoint: 1375 ns, Total: 73875 ns
+[HotbarDiag] REJECT isGrabbing=0 | x=2167.0 y=1536.0 | phys=2360x1640 guiScale=1 resScale=1.00 sdlWin=0x0
+[InputDiag] sendCursorPos #1: event=0 x=2167.0 y=1536.0 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #2: event=2 x=2157.0 y=1538.0 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #3: event=2 x=2131.0 y=1551.0 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #4: event=2 x=2120.0 y=1576.0 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #5: event=0 x=1841.0 y=1446.0 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #6: event=1 x=1891.0 y=1530.0 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[20:23:43] [Render thread/ERROR]: Failed to verify authentication
+com.mojang.authlib.exceptions.InsufficientPrivilegesException: 访问令牌无效，请重新登录。Invalid access token, please re-login.
+	at com.mojang.authlib.exceptions.MinecraftClientHttpException.toAuthenticationException(MinecraftClientHttpException.java:52) ~[authlib-4.0.43.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilUserApiService.fetchProperties(YggdrasilUserApiService.java:156) ~[authlib-4.0.43.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilUserApiService.<init>(YggdrasilUserApiService.java:55) ~[authlib-4.0.43.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService.createUserApiService(YggdrasilAuthenticationService.java:124) ~[authlib-4.0.43.jar:?]
+	at enn.a(SourceFile:733) ~[1.20.1.jar:?]
+	at enn.<init>(SourceFile:442) ~[1.20.1.jar:?]
+	at net.minecraft.client.main.Main.main(SourceFile:211) ~[1.20.1.jar:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source) ~[?:?]
+	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source) ~[?:?]
+	at java.lang.reflect.Method.invoke(Unknown Source) ~[?:?]
+	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134) ~[launcher.jar:?]
+	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372) ~[launcher.jar:?]
+	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53) ~[launcher.jar:?]
+Caused by: com.mojang.authlib.exceptions.MinecraftClientHttpException: 访问令牌无效，请重新登录。Invalid access token, please re-login.
+	at com.mojang.authlib.minecraft.client.MinecraftClient.readInputStream(MinecraftClient.java:85) ~[authlib-4.0.43.jar:?]
+	at com.mojang.authlib.minecraft.client.MinecraftClient.get(MinecraftClient.java:48) ~[authlib-4.0.43.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilUserApiService.fetchProperties(YggdrasilUserApiService.java:129) ~[authlib-4.0.43.jar:?]
+	... 12 more
+[20:23:43] [Render thread/INFO]: Setting user: yiqiu4178
+[SDLHook] hooked SDL_GetKeyboardState (real=0x0, Task67 kb-state poll observability)
+[InputDiag] initSDLEventFuncs: PushEvent=0x0 GetWindowID=0x0 g_sdlWindow=0x0 Task66GetKBState=0x10dd62158 SetModState=0x0
+[JNI] JNI_OnLoadGLFW registered, class=0x12cc5cd58, method=0x10ccad0c8, keyDownBuffer=0x13e6e6a80
+[20:23:43] [Render thread/INFO]: Backend library: LWJGL version 3.3.1
+[egl_bridge] pojavCreateContext: clientAPI=196609 (GLFW_NO_API=0), renderer=libtinygl4angle.dylib, graphicsApi=default
 [egl_bridge] OpenGL path: creating EGL/GL context via br_init_context
-[mvk-warn] Extension VK_MVK_moltenvk is deprecated. For access to Metal objects, use extension VK_EXT_metal_objects. For MoltenVK configuration, use extension VK_EXT_layer_settings,  or environment variables. For other VK_MVK_moltenvk functions, use with extreme caution. Calling these functions with handles and objects retrieved from other Vulkan layers will cause crashes.
-zink: MoltenVK 1.4.2 Vulkan 1.4.357 
-[mvk-warn] vkSetMoltenVKConfigurationMVK() is deprecated. To set MoltenVK configuration parameters, the VK_EXT_layer_settings extension, or environment variables.
-WARNING: Some incorrect rendering might occur because the selected Vulkan device (Apple M4 GPU) doesn't support base Zink requirements: feats.features.logicOp have_EXT_custom_border_color 
-[20:09:44] [Client thread/INFO]: [org.lwjgl.opengl.ContextGL:<init>:105]: LWJGLX: ready-handle context created
-[20:09:45] [Client thread/INFO]: [org.lwjgl.opengl.GLContext:initCapabilities:13]: LWJGLX: GL caps init
-[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/Frameworks/liblwjgl_opengl.dylib / install bin/libs/native/macos/arm64/org/lwjgl/opengl/liblwjgl_opengl.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
+EGLBridge: Task179 ANGLE on real ES3 context (config ES3_BIT + eglBindAPI(ES) + CLIENT_VERSION=3; desktop identity spoofed in tinygl4angle glGetString; shader pipeline = Task175 ES300 rewrite)
+[MG-Bridge] bootstrap skipped: frontend image or mg_init_gles unavailable -- EGL stays on raw ANGLE (legacy behavior)
+EGLBridge: Binding to OpenGL ES
+[GLGeo] Task60 native-scale alignment (main thread): bounds=1180x820 drawableSize 2360x1640 scale 2.00 -> drawableSize 2360x1640 scale 2.00 (surface==drawable==physical px; Task50 1x retired -- CA linear 2x upscale was the blur)
+[RenderDiag] EGL window surface created: surface=0x1 layer=0x12757e400 bounds=1180x820 contentsScale=2.00 drawableSize=2360x1640 ownerInWindow=1
+[RenderDiag] Task188 layer: pixelFormat=80 opaque=1 framebufferOnly=0 maxDrawables=3 (BGRA8Unorm=80 alpha-bearing; opaque=0 => alpha composited)
+[RenderDiag] Task41 ES probe pinned to @executable_path/Frameworks/libGLESv2.framework/libGLESv2
+[GLGeo] Task48 creation recorded: layer=0x12757e400 expectedSurface=2360x1640
+EGLBridge: Task179 ctx attribs = CLIENT_VERSION 3 (real ES3; identity spoof in tinygl4angle glGetString)
+[gl_bridge] Task146 make-current #1: self=0x13e74f260 surface=0x1 ctx=0x1 thread=0x16bcf7000 main=0
+[gl_bridge] Task140 make-current readback: ctx=0x1 (current context confirmed)
+[TinyGL] Task173 desktop-GL completion layer: 20/20 resolved via eglGetProcAddress (all present)
+[tinygl4angle] Task203 query: glGetString #1 name=0x1F02 -> "OpenGL ES 3.0.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)"
+[TinyGL] Task179 desktop identity: GL_VERSION 'OpenGL ES 3.0.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)' -> '3.3.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)' (ES3 context, facade-form spoof)
+[tinygl4angle] Task203 query: glGetString #2 name=0x1F02 -> "OpenGL ES 3.0.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)"
+[TinyGL] Task179 desktop identity: GL_VERSION 'OpenGL ES 3.0.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)' -> '3.3.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)' (ES3 context, facade-form spoof)
+[gl_bridge] Task146 glGetString tri-probe: default=0x130069304 ver=3.3.0 (ANGLE 2.1.2440 git hash: 6024e9c05548) | renderer=0x130069304 ver=3.3.0 (ANGLE 2.1.2440 git hash: 6024e9c05548) | ¿ãnı
+[gl_bridge] mg_init_gles not found (old MobileGlues?)
+[gl_bridge] eglSwapInterval(0) after eglMakeCurrent (POJAV_DISABLE_VSYNC=1, renderer=libtinygl4angle.dylib) frontend=1 raw=0(rawPtr=0x0)
+[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl_opengl.dylib / install bin/libs/native/macos/arm64/org/lwjgl/opengl/liblwjgl_opengl.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
 [SDLHook] Task132: libjnidispatch image missing symtab/linkedit (layout change?), dlsym rebind skipped
-[20:09:45] [Client thread/INFO]: [org.lwjgl.input.GLFWInputImplementation:grabMouse:62]: Grab: false
-[HotbarDiag] Task63 native guiScale refresh: 1 -> 4 (raw=0 auto=4 win=1572x1092)
-[OptiFine] 
-[OptiFine] OptiFine_1.8.9_HD_U_H5
-[OptiFine] Mon Oct 05 20:09:45 HKT 2026
-[OptiFine] OS: Mac OS X (aarch64) version 27.0.1
-[OptiFine] Java: 1.8.0_472-internal, Oracle Corporation
-[OptiFine] VM: OpenJDK 64-Bit Server VM (mixed mode), Oracle Corporation
-[OptiFine] LWJGL: 3.3.1
-[OptiFine] OpenGL: zink Vulkan 1.4(Apple M4 GPU (MOLTENVK)), version 4.1 (Compatibility Profile) Mesa 25.0.7 (git-742a20f48c), Mesa
-[OptiFine] OpenGL Version: 4.0
-[OptiFine] Maximum texture size: 16384x16384
-[OptiFine] Checking for new version
-[egl_bridge] First swap attempted, removing launch overlay (present confirmation: [RenderDiag] first eglSwapBuffers OK)
-[OSMBridge] Task105 viewport evidence: MC present viewport 0,0 2360x1640 vs launcher window belief 1572x1092 -- DIVERGED: EASU input follows MC (adaptive) -- geometry restored
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104795224) -- re-armed at t+22s
-[InputDiag] pojavPumpEvents: isInputReady set to YES, showingWindow=0x12e1ab180
-[InputDiag] pojavPumpEvents #1: window=0x12e1ab180 GLFW_invoke_Key=0x1093fc010 GLFW_invoke_CursorPos=0x1093fc040 GLFW_invoke_Char=0x1093fc020 isGrabbing=0 isUseStackQueue=0 eventCounter=0
-[20:09:45] [Client thread/INFO]: [org.lwjgl.glfw.GLFW:glfwSetWindowSize:1079]: GLFW: Set size for window 5068468608, width=1572, height=1092
-[20:09:45] [Client thread/INFO]: [org.lwjgl.glfw.GLFW:glfwSetWindowSize:1079]: GLFW: Set size for window 5068468608, width=1572, height=1092
-[Shaders] ShadersMod version: 2.4.12
-[Shaders] OpenGL Version: 4.1 (Compatibility Profile) Mesa 25.0.7 (git-742a20f48c)
-[Shaders] Vendor:  Mesa
-[Shaders] Renderer: zink Vulkan 1.4(Apple M4 GPU (MOLTENVK))
-[Shaders] Capabilities:  2.0  2.1  3.0  3.2  4.0 
-[Shaders] GL_MAX_DRAW_BUFFERS: 8
-[Shaders] GL_MAX_COLOR_ATTACHMENTS_EXT: 8
-[Shaders] GL_MAX_TEXTURE_IMAGE_UNITS: 16
-[Shaders] Load ShadersMod configuration.
-[Shaders] Save ShadersMod configuration.
-[Shaders] Shaders can not be loaded, Fast Render is enabled.
-[Shaders] No shaderpack loaded.
-[20:09:45] [Client thread/INFO]: [net.kdt.patchjna.PatchJNAAgent:transform:15]: PatchJNAAgent: Replacing class
-[input_bridge] Blocked fork/exec of 'sysctl' (iOS sandbox forbids fork/exec)
-[20:09:45] [Client thread/INFO]: Forge Mod Loader has detected optifine OptiFine_1.8.9_HD_U_H5, enabling compatibility features
-[20:09:45] [Client thread/INFO]: MinecraftForge v11.15.1.2318 Initialized
-[20:09:45] [Client thread/INFO]: Replaced 229 ore recipies
-[OptiFine] Version found: M5
-[20:09:45] [Client thread/INFO]: Found 0 mods from the command line. Injecting into mod discoverer
-[20:09:45] [Client thread/INFO]: Searching /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/instances/default/custom_gamedir/modrinth_30D075D2-8050-495E-8CE5-D254AEADB80A/mods for mods
-[20:09:45] [Client thread/ERROR]: Unable to read a class file correctly
-java.lang.IllegalArgumentException
-	at org.objectweb.asm.ClassReader.<init>(Unknown Source) ~[asm-all-5.0.3.jar:5.0.3]
-	at org.objectweb.asm.ClassReader.<init>(Unknown Source) ~[asm-all-5.0.3.jar:5.0.3]
-	at org.objectweb.asm.ClassReader.<init>(Unknown Source) ~[asm-all-5.0.3.jar:5.0.3]
-	at net.minecraftforge.fml.common.discovery.asm.ASMModParser.<init>(ASMModParser.java:52) [ASMModParser.class:?]
-	at net.minecraftforge.fml.common.discovery.JarDiscoverer.discover(JarDiscoverer.java:69) [JarDiscoverer.class:?]
-	at net.minecraftforge.fml.common.discovery.ContainerType.findMods(ContainerType.java:42) [ContainerType.class:?]
-	at net.minecraftforge.fml.common.discovery.ModCandidate.explore(ModCandidate.java:71) [ModCandidate.class:?]
-	at net.minecraftforge.fml.common.discovery.ModDiscoverer.identifyMods(ModDiscoverer.java:134) [ModDiscoverer.class:?]
-	at net.minecraftforge.fml.common.Loader.identifyMods(Loader.java:363) [Loader.class:?]
-	at net.minecraftforge.fml.common.Loader.loadMods(Loader.java:488) [Loader.class:?]
-	at net.minecraftforge.fml.client.FMLClientHandler.beginMinecraftLoading(FMLClientHandler.java:208) [FMLClientHandler.class:?]
-	at net.minecraft.client.Minecraft.func_71384_a(Minecraft.java:417) [ave.class:?]
-	at net.minecraft.client.Minecraft.func_99999_d(Minecraft.java:329) [ave.class:?]
-	at net.minecraft.client.main.Main.main(SourceFile:124) [Main.class:?]
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:1.8.0_472-internal]
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[?:1.8.0_472-internal]
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:1.8.0_472-internal]
-	at java.lang.reflect.Method.invoke(Method.java:498) ~[?:1.8.0_472-internal]
-	at net.minecraft.launchwrapper.Launch.launch(Launch.java:135) [launchwrapper-1.12.jar:?]
-	at net.minecraft.launchwrapper.Launch.main(Launch.java:28) [launchwrapper-1.12.jar:?]
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:1.8.0_472-internal]
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[?:1.8.0_472-internal]
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:1.8.0_472-internal]
-	at java.lang.reflect.Method.invoke(Method.java:498) ~[?:1.8.0_472-internal]
-	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134) [launcher.jar:?]
-	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372) [launcher.jar:?]
-	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53) [launcher.jar:?]
-[20:09:45] [Client thread/ERROR]: There was a problem reading the entry com/metallum/Metallum.class in the jar /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/libs/metallum_agent.jar - probably a corrupt zip
-net.minecraftforge.fml.common.LoaderException: java.lang.IllegalArgumentException
+[tinygl4angle] Task203 query: glGetIntegerv #1 pname=0x821B
+[tinygl4angle] Task203 query: glGetIntegerv #2 pname=0x821C
+[tinygl4angle] Task203 query: glGetIntegerv #3 pname=0x821D
+[tinygl4angle] Task197: DSA advertisement WITHDRAWN (extension cache keeps 120 real entries; MC takes DirectStateAccess.Emulated classic path). Set AME193_DSA_ADVERTISE=1 to re-enable for forensics
+[tinygl4angle] Task203 query: glGetStringi #1 name=0x1F03 index=0
+[tinygl4angle] Task203 query: glGetStringi #2 name=0x1F03 index=1
+[tinygl4angle] Task203 query: glGetStringi #3 name=0x1F03 index=2
+[tinygl4angle] Task203 query: glGetStringi #4 name=0x1F03 index=3
+[tinygl4angle] Task203 query: glGetStringi #5 name=0x1F03 index=4
+[tinygl4angle] Task203 query: glGetStringi #6 name=0x1F03 index=5
+[tinygl4angle] Task203 query: glGetStringi #7 name=0x1F03 index=6
+[tinygl4angle] Task203 query: glGetStringi #8 name=0x1F03 index=7
+[tinygl4angle] Task203 query: glGetStringi #9 name=0x1F03 index=8
+[tinygl4angle] Task203 query: glGetStringi #10 name=0x1F03 index=9
+[tinygl4angle] Task203 query: glGetStringi #11 name=0x1F03 index=10
+[tinygl4angle] Task203 query: glGetStringi #12 name=0x1F03 index=11
+[tinygl4angle] Task203 query: glGetIntegerv #4 pname=0x821E
+[dlsym] Task202: GL symbol resolution NULL (dedup #1): glAccum
+[dlsym] Task202: GL symbol resolution NULL (dedup #2): glAreTexturesResident
+[dlsym] Task202: GL symbol resolution NULL (dedup #3): glArrayElement
+[dlsym] Task202: GL symbol resolution NULL (dedup #4): glCompressedTexSubImage1D
+[RenderDiag] fps=0 swapOK=0 swapFail=0 maxGap=0ms avgGap=0ms pres=0/0ms build=0/0ms mem=793MB layer=0x12757e400 drawable=2360x1640 scale=2.00 bounds=1180x820 inWindow=1
+[20:23:43] [Render thread/ERROR]: Couldn't set icon
+java.nio.file.NoSuchFileException: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft/assets/objects/f0/f00657542252858a721e715a2e888a9226404e35
+	at sun.nio.fs.UnixException.translateToIOException(Unknown Source) ~[?:?]
+	at sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source) ~[?:?]
+	at sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source) ~[?:?]
+	at sun.nio.fs.UnixFileSystemProvider.newByteChannel(Unknown Source) ~[?:?]
+	at java.nio.file.Files.newByteChannel(Unknown Source) ~[?:?]
+	at ajt.newByteChannel(SourceFile:68) ~[1.20.1.jar:?]
+	at java.nio.file.Files.newByteChannel(Unknown Source) ~[?:?]
+	at java.nio.file.Files.newByteChannel(Unknown Source) ~[?:?]
+	at java.nio.file.spi.FileSystemProvider.newInputStream(Unknown Source) ~[?:?]
+	at java.nio.file.Files.newInputStream(Unknown Source) ~[?:?]
+	at akp.a(SourceFile:13) ~[1.20.1.jar:?]
+	at ehg.a(SourceFile:40) ~[1.20.1.jar:?]
+	at ehn.a(SourceFile:154) ~[1.20.1.jar:?]
+	at enn.<init>(SourceFile:492) ~[1.20.1.jar:?]
+	at net.minecraft.client.main.Main.main(SourceFile:211) ~[1.20.1.jar:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source) ~[?:?]
+	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source) ~[?:?]
+	at java.lang.reflect.Method.invoke(Unknown Source) ~[?:?]
+	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134) ~[launcher.jar:?]
+	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372) ~[launcher.jar:?]
+	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53) ~[launcher.jar:?]
+[20:23:43] [Render thread/WARN]: Failed sysctl call: hw.packages, Error code: 1
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.brand_string, Error code: 1
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.vendor, Error code: 2
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.stepping, Error code: 2
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.model, Error code: 2
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.family, Error code: 2
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.signature, Error code: 2
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.feature_bits, Error code: 2
+[20:23:43] [Render thread/WARN]: Failed sysctl call: hw.cpufrequency, Error code: 2
+[tinygl4angle] Task203 query: glGetString #3 name=0x1F01 -> "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 GPU, Version 27"
+[tinygl4angle] Task203 query: glGetString #4 name=0x1F02 -> "OpenGL ES 3.0.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)"
+[TinyGL] Task179 desktop identity: GL_VERSION 'OpenGL ES 3.0.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)' -> '3.3.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)' (ES3 context, facade-form spoof)
+[tinygl4angle] Task203 query: glGetString #5 name=0x1F00 -> "Google Inc. (Apple)"
+[tinygl4angle] Task203 query: glGetIntegerv #5 pname=0x0D33
+[tinygl4angle] Task182 gles pin: glTexImage2D via eglGetProcAddress (context-sourced)
+[tinygl4angle] Task209 tex: glTexImage2D #1 target=0x8064 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 32768x32768 data=NULL
+[tinygl4angle] Task203 query: glGetIntegerv #6 pname=0x0D33
+[tinygl4angle] Task182 gles pin: glGetTexLevelParameteriv via eglGetProcAddress (context-sourced)
+[tinygl4angle] Task209 tex: glTexImage2D #2 target=0x8064 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 16384x16384 data=NULL
+[tinygl4angle] Task209 tex: glTexImage2D #3 target=0x0DE1 level=0 ifmt=0x8058 fmt=0x1908 type=0x1401 2360x1640 data=NULL
+[tinygl4angle] Task209 tex: glTexImage2D #4 target=0x0DE1 level=0 ifmt=0x1902 fmt=0x1902 type=0x1406 2360x1640 data=NULL
+[20:23:43] [Render thread/INFO]: OpenGL debug message: id=1282, source=API, type=ERROR, severity=HIGH, message='Invalid combination of format, type and internalFormat.'
+[20:23:43] [Render thread/WARN]: Failed sysctl call: hw.packages, Error code: 1
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.brand_string, Error code: 1
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.vendor, Error code: 2
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.stepping, Error code: 2
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.model, Error code: 2
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.family, Error code: 2
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.signature, Error code: 2
+[20:23:43] [Render thread/WARN]: Failed sysctl call: machdep.cpu.feature_bits, Error code: 2
+[20:23:43] [Render thread/WARN]: Failed sysctl call: hw.cpufrequency, Error code: 2
+[input_bridge] Blocked fork/exec of 'system_profiler' (iOS sandbox forbids fork/exec)
+[input_bridge] Blocked fork/exec of 'system_profiler' (iOS sandbox forbids fork/exec)
+[20:23:43] [Render thread/WARN]: Failed sysctl call: vm.swapusage, Error code: 1
+---- Minecraft Crash Report ----
+// This doesn't make any sense!
 
-	at net.minecraftforge.fml.common.discovery.asm.ASMModParser.<init>(ASMModParser.java:58) ~[ASMModParser.class:?]
-	at net.minecraftforge.fml.common.discovery.JarDiscoverer.discover(JarDiscoverer.java:69) [JarDiscoverer.class:?]
-	at net.minecraftforge.fml.common.discovery.ContainerType.findMods(ContainerType.java:42) [ContainerType.class:?]
-	at net.minecraftforge.fml.common.discovery.ModCandidate.explore(ModCandidate.java:71) [ModCandidate.class:?]
-	at net.minecraftforge.fml.common.discovery.ModDiscoverer.identifyMods(ModDiscoverer.java:134) [ModDiscoverer.class:?]
-	at net.minecraftforge.fml.common.Loader.identifyMods(Loader.java:363) [Loader.class:?]
-	at net.minecraftforge.fml.common.Loader.loadMods(Loader.java:488) [Loader.class:?]
-	at net.minecraftforge.fml.client.FMLClientHandler.beginMinecraftLoading(FMLClientHandler.java:208) [FMLClientHandler.class:?]
-	at net.minecraft.client.Minecraft.func_71384_a(Minecraft.java:417) [ave.class:?]
-	at net.minecraft.client.Minecraft.func_99999_d(Minecraft.java:329) [ave.class:?]
-	at net.minecraft.client.main.Main.main(SourceFile:124) [Main.class:?]
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:1.8.0_472-internal]
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[?:1.8.0_472-internal]
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:1.8.0_472-internal]
-	at java.lang.reflect.Method.invoke(Method.java:498) ~[?:1.8.0_472-internal]
-	at net.minecraft.launchwrapper.Launch.launch(Launch.java:135) [launchwrapper-1.12.jar:?]
-	at net.minecraft.launchwrapper.Launch.main(Launch.java:28) [launchwrapper-1.12.jar:?]
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:1.8.0_472-internal]
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[?:1.8.0_472-internal]
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:1.8.0_472-internal]
-	at java.lang.reflect.Method.invoke(Method.java:498) ~[?:1.8.0_472-internal]
-	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134) [launcher.jar:?]
-	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372) [launcher.jar:?]
-	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53) [launcher.jar:?]
-Caused by: java.lang.IllegalArgumentException
-	at org.objectweb.asm.ClassReader.<init>(Unknown Source) ~[asm-all-5.0.3.jar:5.0.3]
-	at org.objectweb.asm.ClassReader.<init>(Unknown Source) ~[asm-all-5.0.3.jar:5.0.3]
-	at org.objectweb.asm.ClassReader.<init>(Unknown Source) ~[asm-all-5.0.3.jar:5.0.3]
-	at net.minecraftforge.fml.common.discovery.asm.ASMModParser.<init>(ASMModParser.java:52) ~[ASMModParser.class:?]
-	... 23 more
-[20:09:45] [Client thread/WARN]: Zip file metallum_agent.jar failed to read properly, it will be ignored
-net.minecraftforge.fml.common.LoaderException: java.lang.IllegalArgumentException
+Time: 2026-10-06 20:23:43
+Description: Initializing game
 
-	at net.minecraftforge.fml.common.discovery.asm.ASMModParser.<init>(ASMModParser.java:58) ~[ASMModParser.class:?]
-	at net.minecraftforge.fml.common.discovery.JarDiscoverer.discover(JarDiscoverer.java:69) [JarDiscoverer.class:?]
-	at net.minecraftforge.fml.common.discovery.ContainerType.findMods(ContainerType.java:42) [ContainerType.class:?]
-	at net.minecraftforge.fml.common.discovery.ModCandidate.explore(ModCandidate.java:71) [ModCandidate.class:?]
-	at net.minecraftforge.fml.common.discovery.ModDiscoverer.identifyMods(ModDiscoverer.java:134) [ModDiscoverer.class:?]
-	at net.minecraftforge.fml.common.Loader.identifyMods(Loader.java:363) [Loader.class:?]
-	at net.minecraftforge.fml.common.Loader.loadMods(Loader.java:488) [Loader.class:?]
-	at net.minecraftforge.fml.client.FMLClientHandler.beginMinecraftLoading(FMLClientHandler.java:208) [FMLClientHandler.class:?]
-	at net.minecraft.client.Minecraft.func_71384_a(Minecraft.java:417) [ave.class:?]
-	at net.minecraft.client.Minecraft.func_99999_d(Minecraft.java:329) [ave.class:?]
-	at net.minecraft.client.main.Main.main(SourceFile:124) [Main.class:?]
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:1.8.0_472-internal]
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[?:1.8.0_472-internal]
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:1.8.0_472-internal]
-	at java.lang.reflect.Method.invoke(Method.java:498) ~[?:1.8.0_472-internal]
-	at net.minecraft.launchwrapper.Launch.launch(Launch.java:135) [launchwrapper-1.12.jar:?]
-	at net.minecraft.launchwrapper.Launch.main(Launch.java:28) [launchwrapper-1.12.jar:?]
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:1.8.0_472-internal]
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[?:1.8.0_472-internal]
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:1.8.0_472-internal]
-	at java.lang.reflect.Method.invoke(Method.java:498) ~[?:1.8.0_472-internal]
-	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134) [launcher.jar:?]
-	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372) [launcher.jar:?]
-	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53) [launcher.jar:?]
-Caused by: java.lang.IllegalArgumentException
-	at org.objectweb.asm.ClassReader.<init>(Unknown Source) ~[asm-all-5.0.3.jar:5.0.3]
-	at org.objectweb.asm.ClassReader.<init>(Unknown Source) ~[asm-all-5.0.3.jar:5.0.3]
-	at org.objectweb.asm.ClassReader.<init>(Unknown Source) ~[asm-all-5.0.3.jar:5.0.3]
-	at net.minecraftforge.fml.common.discovery.asm.ASMModParser.<init>(ASMModParser.java:52) ~[ASMModParser.class:?]
-	... 23 more
-[SurfaceViewController] Launch overlay dismissed after 7.0 seconds
-[20:09:46] [Client thread/WARN]: Mod FpsReducer is missing the required element 'version' and a version.properties file could not be found. Falling back to metadata version mc1.8.9-1.10.3
-[20:09:46] [Client thread/INFO]: Attempting to reparse the mod container FpsReducer-mc1.8.9-1.10.3.jar
-[20:09:46] [Client thread/WARN]: Mod FpsReducer is missing the required element 'version' and a version.properties file could not be found. Falling back to metadata version mc1.8.9-1.10.3
-[20:09:46] [Client thread/ERROR]: The mcmod.info file in IdleTweaks-1.0.5.jar cannot be parsed as valid JSON. It will be ignored
-com.google.gson.JsonSyntaxException: java.lang.IllegalStateException: Expected BEGIN_ARRAY but was STRING at path $.authorList
-	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$Adapter.read(ReflectiveTypeAdapterFactory.java:523) ~[ReflectiveTypeAdapterFactory$Adapter.class:?]
-	at com.google.gson.Gson.fromJson(Gson.java:1359) ~[Gson.class:?]
-	at com.google.gson.Gson.fromJson(Gson.java:1472) ~[Gson.class:?]
-	at com.google.gson.Gson.fromJson(Gson.java:1416) ~[Gson.class:?]
-	at net.minecraftforge.fml.common.MetadataCollection.from(MetadataCollection.java:65) [MetadataCollection.class:?]
-	at net.minecraftforge.fml.common.discovery.JarDiscoverer.discover(JarDiscoverer.java:50) [JarDiscoverer.class:?]
-	at net.minecraftforge.fml.common.discovery.ContainerType.findMods(ContainerType.java:42) [ContainerType.class:?]
-	at net.minecraftforge.fml.common.discovery.ModCandidate.explore(ModCandidate.java:71) [ModCandidate.class:?]
-	at net.minecraftforge.fml.common.discovery.ModDiscoverer.identifyMods(ModDiscoverer.java:134) [ModDiscoverer.class:?]
-	at net.minecraftforge.fml.common.Loader.identifyMods(Loader.java:363) [Loader.class:?]
-	at net.minecraftforge.fml.common.Loader.loadMods(Loader.java:488) [Loader.class:?]
-	at net.minecraftforge.fml.client.FMLClientHandler.beginMinecraftLoading(FMLClientHandler.java:208) [FMLClientHandler.class:?]
-	at net.minecraft.client.Minecraft.func_71384_a(Minecraft.java:417) [ave.class:?]
-	at net.minecraft.client.Minecraft.func_99999_d(Minecraft.java:329) [ave.class:?]
-	at net.minecraft.client.main.Main.main(SourceFile:124) [Main.class:?]
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:1.8.0_472-internal]
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[?:1.8.0_472-internal]
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:1.8.0_472-internal]
-	at java.lang.reflect.Method.invoke(Method.java:498) ~[?:1.8.0_472-internal]
-	at net.minecraft.launchwrapper.Launch.launch(Launch.java:135) [launchwrapper-1.12.jar:?]
-	at net.minecraft.launchwrapper.Launch.main(Launch.java:28) [launchwrapper-1.12.jar:?]
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:1.8.0_472-internal]
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[?:1.8.0_472-internal]
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:1.8.0_472-internal]
-	at java.lang.reflect.Method.invoke(Method.java:498) ~[?:1.8.0_472-internal]
-	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134) [launcher.jar:?]
-	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372) [launcher.jar:?]
-	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53) [launcher.jar:?]
-Caused by: java.lang.IllegalStateException: Expected BEGIN_ARRAY but was STRING at path $.authorList
-	at com.google.gson.internal.bind.JsonTreeReader.expect(JsonTreeReader.java:184) ~[JsonTreeReader.class:?]
-	at com.google.gson.internal.bind.JsonTreeReader.beginArray(JsonTreeReader.java:83) ~[JsonTreeReader.class:?]
-	at com.google.gson.internal.bind.CollectionTypeAdapterFactory$Adapter.read(CollectionTypeAdapterFactory.java:82) ~[CollectionTypeAdapterFactory$Adapter.class:?]
-	at com.google.gson.internal.bind.CollectionTypeAdapterFactory$Adapter.read(CollectionTypeAdapterFactory.java:64) ~[CollectionTypeAdapterFactory$Adapter.class:?]
-	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$2.readIntoField(ReflectiveTypeAdapterFactory.java:271) ~[ReflectiveTypeAdapterFactory$2.class:?]
-	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$FieldReflectionAdapter.readField(ReflectiveTypeAdapterFactory.java:561) ~[ReflectiveTypeAdapterFactory$FieldReflectionAdapter.class:?]
-	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$Adapter.read(ReflectiveTypeAdapterFactory.java:519) ~[ReflectiveTypeAdapterFactory$Adapter.class:?]
-	... 27 more
-[20:09:46] [Client thread/WARN]: Mod smoothfont is missing the required element 'version' and a version.properties file could not be found. Falling back to metadata version 1.8.9-1.15.2
-[20:09:46] [Client thread/INFO]: Attempting to reparse the mod container SmoothFont-1.8.9-1.15.2.jar
-[20:09:46] [Client thread/WARN]: Mod smoothfont is missing the required element 'version' and a version.properties file could not be found. Falling back to metadata version 1.8.9-1.15.2
-[20:09:46] [Client thread/INFO]: Forge Mod Loader has identified 16 mods to load
-[20:09:46] [Client thread/INFO]: FML has found a non-mod file Born In A Barn 1.8-1.12-1.2.jar in your mods directory. It will now be injected into your classpath. This could severe stability issues, it should be removed if possible.
-[input_bridge] Blocked fork/exec of '/usr/bin/id' (iOS sandbox forbids fork/exec)
-[input_bridge] Blocked fork/exec of '/bin/id' (iOS sandbox forbids fork/exec)
-[input_bridge] Blocked fork/exec of 'id' (iOS sandbox forbids fork/exec)
-[input_bridge] Blocked fork/exec of '/usr/xpg4/bin/id' (iOS sandbox forbids fork/exec)
-[20:09:46] [Client thread/INFO]: Attempting connection with missing mods [mcp, FML, Forge, smoothfontcore, foamfixcore, randompatches, entityculling, aiimprovements, antighost, controlling, foamfix, FpsReducer, idletweaks, MouseTweaks, phosphor-lighting, smoothfont] at CLIENT
-[20:09:46] [Client thread/INFO]: Attempting connection with missing mods [mcp, FML, Forge, smoothfontcore, foamfixcore, randompatches, entityculling, aiimprovements, antighost, controlling, foamfix, FpsReducer, idletweaks, MouseTweaks, phosphor-lighting, smoothfont] at SERVER
-[20:09:46] [Client thread/INFO]: Reloading ResourceManager: Default, FMLFileResourcePack:Forge Mod Loader, FMLFileResourcePack:Minecraft Forge, FMLFileResourcePack:RandomPatches, FMLFileResourcePack:EntityCulling, FMLFileResourcePack:AI Improvements, FMLFileResourcePack:AntiGhost, FMLFileResourcePack:Controlling, FMLFileResourcePack:FoamFix, FMLFileResourcePack:FPS Reducer, FMLFileResourcePack:IdleTweaks, FMLFileResourcePack:Mouse Tweaks, FMLFileResourcePack:Phosphor Lighting Engine, FMLFileResourcePack:Smooth Font
-[20:09:47] [Client thread/INFO]: Processing ObjectHolder annotations
-[20:09:47] [Client thread/INFO]: Found 384 ObjectHolder annotations
-[20:09:47] [Client thread/INFO]: Identifying ItemStackHolder annotations
-[20:09:47] [Client thread/INFO]: Found 0 ItemStackHolder annotations
-[20:09:47] [Client thread/INFO]: Configured a dormant chunk cache size of 0
-[20:09:47] [Forge Version Check/INFO]: [randompatches] Starting version check at https://raw.githubusercontent.com/TheRandomLabs/RandomPatches/misc/versions.json
-[20:09:47] [Client thread/INFO]: Search font files in "fontfiles" folder.
-[20:09:47] [Client thread/WARN]: Fonts folder "fontfiles" does not exist.
-[20:09:47] [Client thread/INFO]: [pl.asie.foamfix.coremod.FoamFixTransformer:spliceClasses:107]: Spliced in METHOD: net.minecraftforge.common.property.ExtendedBlockState.createState
-[20:09:47] [Client thread/INFO]: Applying holder lookups
-[20:09:47] [Client thread/INFO]: Holder lookups applied
-[20:09:47] [Client thread/INFO]: Injecting itemstacks
-[20:09:47] [Client thread/INFO]: Itemstack injection complete
-[OptiFine] *** Reloading textures ***
-[OptiFine] Resource packs: Default
-MESA: warning: WARNING: Incorrect rendering will happen because the Vulkan device doesn't support the 'VK_EXT_depth_clip_enable' feature
-[mvk-error] VK_ERROR_INITIALIZATION_FAILED: Render pipeline compile failed (Error code 3):
-Fragment input(s) `user(locn1_3)` mismatching vertex shader output type(s) or not written by vertex shader.
-MESA: error: ZINK: vkCreateGraphicsPipelines failed (VK_ERROR_INITIALIZATION_FAILED)
-#
-# A fatal error has been detected by the Java Runtime Environment:
-#
-#  SIGSEGV (0xb) at pc=0x0000000000000000, pid=7012, tid=0x0000000000006113
-#
-# JRE version: OpenJDK Runtime Environment (8.0_472) (build 1.8.0_472-internal-ci_2026_07_12_03_22-b00)
-# Java VM: OpenJDK 64-Bit Server VM (25.472-b00 mixed mode bsd-aarch64 compressed oops)
-# Problematic frame:
-# C  0x0000000000000000
-#
-# Failed to write core dump. Core dumps have been disabled. To enable core dumping, try "ulimit -c unlimited" before starting Java again
-#
-# An error report file with more information is saved as:
-# /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/2F698363-B8A7-430A-9A69-A4233058DC65/Documents/hs_err_pid7012.log
-[thread 29219 also had an error]
-[thread 88395 also had an error]
-#
-# If you would like to submit a bug report, please visit:
-#   http://bugreport.java.com/bugreport/crash.jsp
-#
-abort() called
+java.lang.RuntimeException: GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+	at egv.b(SourceFile:168)
+	at egs.b(SourceFile:60)
+	at egs.<init>(SourceFile:25)
+	at enn.<init>(SourceFile:507)
+	at net.minecraft.client.main.Main.main(SourceFile:211)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134)
+	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372)
+	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53)
 
-===== [Amethyst fatal trace] 2026-10-05 20:09:47.429 =====
-reason: abort() called
-thread: LiveCont:gdrv0
-  #00 0x10d8dd054  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/AngelAuraAmethyst  ame_write_fatal_trace + 69716
-  #01 0x10d8dd4a8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/AngelAuraAmethyst  hooked_abort + 70824
-  #02 0x132d071bc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/java_runtimes/java-8-openjdk/lib/server/libjvm.dylib  _ZN2os5abortEb + 5452220
-  #03 0x132ce9fd4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/java_runtimes/java-8-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEv + 5332948
-  #04 0x132bee818  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/java_runtimes/java-8-openjdk/lib/server/libjvm.dylib  JVM_handle_bsd_signal + 4302872
-  #05 0x132bebebc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/java_runtimes/java-8-openjdk/lib/server/libjvm.dylib  _Z13signalHandleriP9__siginfoPv + 4292284
-  #06 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
-  #07 0x14e1cc4a0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/Frameworks/libOSMesa.8.dylib  _ZL19update_gfx_pipelineIL18zink_dynamic_state2ELb1EEbP12zink_contextP16zink_batch_state9mesa_prim + 9045152
-  #08 0x14e199ff0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/Frameworks/libOSMesa.8.dylib  _ZL13zink_draw_vboIL14zink_multidraw0EL18zink_dynamic_state2ELb1EEvP12pipe_contextPK14pipe_draw_infojPK23pipe_draw_indirect_infoPK26pipe_draw_start_count_biasj + 8839152
-  #09 0x14e0896ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/Frameworks/libOSMesa.8.dylib  tc_batch_execute + 7722732
-  #10 0x14de198e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/Frameworks/libOSMesa.8.dylib  util_queue_thread_func + 5167336
-  #11 0x14de3eda4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air.app/Frameworks/libOSMesa.8.dylib  impl_thrd_routine + 5320100
-  #12 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #13 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-[main_hook] Task208: abort() originated inside libjvm (JVM fatal) -- terminating for real, no crash-view park
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Thread: Render thread
+Stacktrace:
+	at egv.b(SourceFile:168)
+	at egs.b(SourceFile:60)
+	at egs.<init>(SourceFile:25)
+	at enn.<init>(SourceFile:507)
+
+-- Initialization --
+Details:
+	Modules: 
+Stacktrace:
+	at net.minecraft.client.main.Main.main(SourceFile:211)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134)
+	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372)
+	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53)
+
+-- System Details --
+Details:
+	Minecraft Version: 1.20.1
+	Minecraft Version ID: 1.20.1
+	Operating System: Mac OS X (aarch64) version 27.0.1
+	Java Version: 17.0.20-internal, N/A
+	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode), Oracle Corporation
+	Memory: 394375688 bytes (376 MiB) / 597688320 bytes (570 MiB) up to 2147483648 bytes (2048 MiB)
+	CPUs: 8
+	Processor Vendor: 
+	Processor Name: 
+	Identifier:  Family  Model  Stepping 
+	Microarchitecture: unknown
+	Frequency (GHz): -0.00
+	Number of physical packages: 1
+	Number of physical CPUs: 8
+	Number of logical CPUs: 8
+	Graphics card #0 name: unknown
+	Graphics card #0 vendor: unknown
+	Graphics card #0 VRAM (MB): 0.00
+	Graphics card #0 deviceId: unknown
+	Graphics card #0 versionInfo: unknown
+	Memory slot #0 capacity (MB): 0.00
+	Memory slot #0 clockSpeed (GHz): 0.00
+	Memory slot #0 type: unknown
+	Virtual memory max (MB): 11862.16
+	Virtual memory used (MB): 6779.77
+	Swap memory total (MB): 0.00
+	Swap memory used (MB): 0.00
+	JVM Flags: 18 total; -Xms128M -Xmx2048M -Xlog:gc,safepoint:stdout:time,uptime -XX:+UnlockExperimentalVMOptions -XX:+DisablePrimordialThreadGuardPages -XX:ReservedCodeCacheSize=64m -XX:InitialCodeCacheSize=16m -XX:CodeCacheExpansionSize=4m -XX:+MirrorMappedCodeCache -XX:+UseG1GC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -XX:SoftRefLRUPolicyMSPerMB=250 -Xss32M -XX:ErrorFile=/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/hs_err_pid%p.log -Xbootclasspath/a:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/libs_caciocavallo17/cacio-shared-1.18-SNAPSHOT.jar:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/libs_caciocavallo17/cacio-tta-1.18-SNAPSHOT.jar -XX:-UseCompressedClassPointers -Xss1M
+	Launched Version: 1.20.1
+	Backend library: LWJGL version 3.3.1
+	Backend API: ANGLE (Apple, ANGLE Metal Renderer: Apple M4 GPU, Version 27.0.1 (Build 24A446)) GL version 3.3.0 (ANGLE 2.1.2440 git hash: 6024e9c05548), Google Inc. (Apple)
+	Window size: <not initialized>
+	GL Caps: Using framebuffer using OpenGL 3.2
+	GL debug messages: id=1282, source=API, type=ERROR, severity=HIGH, message='Invalid combination of format, type and internalFormat.' x 1
+	Using VBOs: Yes
+	Is Modded: Probably not. Client jar signature and brand is untouched
+	Type: Client (map_client.txt)
+	CPU: 8x 
+#@!@# Game crashed! Crash report saved to: #@!@# /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/crash-reports/crash-2026-10-06_20.23.43-client.txt
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104b39224) -- re-armed at t+16s
+[RenderDiag] exit(-1) snapshot: swapOK=0 swapFail=0
+exit(-1) called
+
+===== [Amethyst fatal trace] 2026-10-06 20:23:43.956 =====
+reason: exit(-1) called
+thread: (unnamed)
+  #00 0x10dd54f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
+  #01 0x10dd5588c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71820
+  #02 0x1367bc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
+  #03 0x136a1ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
+  #04 0x136a1e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
+  #05 0x136a203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
+  #06 0x136a20ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
+  #07 0x136a200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
+  #08 0x1369ad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
+  #09 0x1367b4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
+  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
+  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
+
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104b39224) -- re-armed at t+18s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104b39224) -- re-armed at t+20s
+[RenderDiag] fps=0 swapOK=0 swapFail=0 maxGap=0ms avgGap=0ms pres=0/0ms build=0/0ms mem=777MB layer=0x12757e400 drawable=2360x1640 scale=2.00 bounds=1180x820 inWindow=1
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104b39224) -- re-armed at t+22s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104b39224) -- re-armed at t+24s
+[PLCrashView] User tapped exit launcher, exiting process directly
+[RenderDiag] exit(0) snapshot: swapOK=0 swapFail=0
+exit(0) called
+
+===== [Amethyst fatal trace] 2026-10-06 20:23:52.747 =====
+reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
+thread: (unnamed)
+  #00 0x10dd54f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
+  #01 0x10dd55848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
+  #02 0x10e04103c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  -[PLCrashView dismissAndReturnToLauncher] + 3133500
+  #03 0x1935b20c4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5718212
+  #04 0x1935b1ef4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5717748
+  #05 0x1935b17f8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5715960
+  #06 0x19370fe94  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7151252
+  #07 0x193757374  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7443316
+  #08 0x193123bfc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 941052
+  #09 0x193e43a90  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 14703248
+  #10 0x193128648  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 960072
+  #11 0x19312a298  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 967320
+  #12 0x193623874  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 6183028
+  #13 0x193120bdc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 928732
+  #14 0x1930a8d78  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 437624
+  #15 0x1930a7b88  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 433032
+  #16 0x1930a7928  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 432424
+  #17 0x2c1755bc0  /System/Library/PrivateFrameworks/UpdateCycle.framework/UpdateCycle  <redacted> + 3008
+  #18 0x18ee38c20  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367648
+  #19 0x18ee38b94  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367508
+  #20 0x18ee1a268  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 242280
+  #21 0x18ee19384  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 238468
+  #22 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
+  #23 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
+  #24 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
+  #25 0x10dd54c40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68672
+  #26 0x104b3b0f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
+  #27 0x104b38b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
+  #28 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
+
