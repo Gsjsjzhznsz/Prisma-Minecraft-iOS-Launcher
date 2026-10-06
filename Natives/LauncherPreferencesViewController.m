@@ -215,7 +215,7 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
         [titleLabel.leadingAnchor constraintEqualToAnchor:self.cardView.leadingAnchor constant:20],
         [titleLabel.trailingAnchor constraintEqualToAnchor:self.cardView.trailingAnchor constant:-20],
 
-        [self.valueLabel.topAnchor constraintEqualToAnchor:titleLabel.bottomAnchor constant:10];   // Task224 CI r4：r3 的行尾注释吃掉了分号（Task223 教训第 1 条现场重犯）,
+        [self.valueLabel.topAnchor constraintEqualToAnchor:titleLabel.bottomAnchor constant:10],   // Task224 CI r5：数组元素逗号收尾（r3 注释吃标点 + r4 误补分号两错归一）：r3 的行尾注释吃掉了分号（Task223 教训第 1 条现场重犯）,
         [self.valueLabel.leadingAnchor constraintEqualToAnchor:self.cardView.leadingAnchor constant:20],
         [self.valueLabel.trailingAnchor constraintEqualToAnchor:self.cardView.trailingAnchor constant:-20],
 
