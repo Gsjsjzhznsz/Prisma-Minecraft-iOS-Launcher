@@ -1,6 +1,7 @@
 #import "Ame223CoachMarksView.h"
 #import "utils.h"
 #import "UIKit+hook.h"   // UIWindow.mainWindow 分类声明（同 NMToast/ControlJoystick 先例）
+#import "LauncherPreferences.h"   // Task224 CI 修复 r1：accentColor() 声明（预检工具抓的头闭包缺口）
 
 #pragma mark - item 字典键（集中声明，避免裸字符串散落）
 

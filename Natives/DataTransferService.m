@@ -674,8 +674,10 @@ static void ame224_dosDateTime(NSDate *date, uint16_t *dosTime, uint16_t *dosDat
         NSString *ame224_gdPrefix = [NSString stringWithFormat:@"instances/%@/", ame224_gd];
         NSMutableDictionary *ame224_counts = [NSMutableDictionary dictionary];
         NSMutableDictionary *ame224_sizes = [NSMutableDictionary dictionary];
-        unsigned long long ame224_instanceFullBytes = 0;
-        NSUInteger ame224_instanceFullFiles = 0;
+        // Task224 CI 修复 r1：块内自增的值类型捕获必须 __block
+        // （Task223 CI 教训复用——块内赋值的局部值类型一律 __block）。
+        __block unsigned long long ame224_instanceFullBytes = 0;
+        __block NSUInteger ame224_instanceFullFiles = 0;
         [self ame224_walkHome:home cancelProgress:nil visitor:^(NSString *rel, unsigned long long size, NSDate *mtime) {
             NSString *bucket = [self ame224_bucketForRelPath:rel gameDirPrefix:ame224_gdPrefix];
             ame224_counts[bucket] = @([ame224_counts[bucket] unsignedIntegerValue] + 1);
@@ -845,7 +847,8 @@ static void ame224_dosDateTime(NSDate *date, uint16_t *dosTime, uint16_t *dosDat
         }
 
         NSMutableArray<Ame224ExportEntry *> *entries = [NSMutableArray array];
-        NSString *oversizeFile = nil;
+        // Task224 CI 修复 r1：块内赋值的捕获局部（对象指针同样需要 __block）。
+        __block NSString *oversizeFile = nil;
         for (NSDictionary *f in found) {
             NSString *rel = f[@"rel"];
             NSString *bucket = [self ame224_bucketForRelPath:rel gameDirPrefix:gdPrefix];
@@ -868,7 +871,12 @@ static void ame224_dosDateTime(NSDate *date, uint16_t *dosTime, uint16_t *dosDat
             entry.rel = rel;
             entry.abs = [home stringByAppendingPathComponent:rel];
             entry.usize = size;
-            ame224_dosDateTime(f[@"mtime"], &entry.dosTime, &entry.dosDate);
+            // Task224 CI 修复 r1：属性表达式不可取址（&entry.dosTime 非法）
+            // ——经局部变量中转。
+            uint16_t ame224_dt = 0, ame224_dd = 0;
+            ame224_dosDateTime(f[@"mtime"], &ame224_dt, &ame224_dd);
+            entry.dosTime = ame224_dt;
+            entry.dosDate = ame224_dd;
             entry.serialStream = (!storeMode && size > Ame224ParallelFileCap);
             entry.budgetUnits = (int64_t)((size + 1048575ull) / 1048576ull);
             [entries addObject:entry];
@@ -999,9 +1007,12 @@ static void ame224_dosDateTime(NSDate *date, uint16_t *dosTime, uint16_t *dosDat
         NSMutableData *hdr = [NSMutableData dataWithCapacity:256];
         unsigned char *wbuf = NULL;
         unsigned char *sout = NULL;
+        // Task224 CI 修复 r1：chunkBound 提升到共享作用域（serialStream 分支
+        // 在 per-entry 循环里使用，原声明被埋在 if (!writeFailed) 块内）。
+        unsigned long chunkBound = 0;
         if (!writeFailed) {
             wbuf = (unsigned char *)malloc(Ame224ReadChunkBytes);
-            unsigned long chunkBound = ame224_z_deflateBound ? (unsigned long)ame224_z_deflateBound(NULL, Ame224ReadChunkBytes) + 64u : Ame224ReadChunkBytes + Ame224ReadChunkBytes / 64u + 4096u;
+            chunkBound = ame224_z_deflateBound ? (unsigned long)ame224_z_deflateBound(NULL, Ame224ReadChunkBytes) + 64u : Ame224ReadChunkBytes + Ame224ReadChunkBytes / 64u + 4096u;
             sout = (unsigned char *)malloc(chunkBound);
             if (!wbuf || !sout) {
                 writeFailed = YES;
