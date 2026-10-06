@@ -1873,3 +1873,18 @@ Stage Summary:
 - 装机验证锚点：①VirGL "[VirGL] Task219 post-bootstrap check ok (bound after Nms of Task224 wait)" + 不再 divert Zink；②ANGLE 1.20.1 过 RenderTarget 初始化不再 GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT；③MG 后台回来 "[InputDiag] Task224 SDL input re-established on resume"；④右 Shift "[InputDiag] Task224 shiftKey: key=344 action=1 path=B(SDL)"（若 path=NONE 或无此行 = 断点定位）；⑤隔离 "Task217/224: version isolation ON ... gameDir=versions/<id>/game" + "legacy isolation upgraded"；⑥键盘 "[SurfaceVC] Task171/224: keyboard session heal #N"；⑦导出 "[ExportOps] Task224 export done in N.Ns (N.N MB/s avg"
 - 环境遗留：①验证舰队的 l10n 基线（2606）与部分旧锚点需专门轮次重锚（CI 不跑舰队，不影响构建）；②右 Shift 静态链对称、根因未实锤——取证日志已布防，下轮日志必定位；③JVM flags 里 -Xss1M 来源（profile 级 JVM 参数残留？）待取证，暂未动
 - 教训入库：①子代理并行派发 6 个会超时——报告丢失但工作落盘，接手时必须先 git status 对拍 + 逐域审计（本次 224-B 的 UI 接线缺口就是这么补的）；②"失败"的工具调用不等于没执行——Task216 显示层假象教训的进程级版本
+
+---
+Task ID: 224-ci
+Agent: main (Super Z)
+Task: Task 224 CI 闭环（五轮修复 ladder + 终绿）
+
+Work Log:
+- 推送链：b996e62d（主提交 20 项）→ 46a3a834（r1：DataTransferService 8 错——224-B 子代理被杀遗留：__block×2 + &entry.dosTime 取址 + chunkBound 作用域 + 防御性 __block；Ame223CoachMarksView 补 LauncherPreferences.h——Task223 预检头闭包工具抓的真雷）→ f863a652（r2：UIBar 非真实 UIKit 类型，参数改 UIView*）→ d6c9b104（r3：self.titleLabel 误写，局部变量化）→ b9e56035（r4：r3 的行尾注释吃分号——Task223 教训第 1 条现场重犯）→ 67321407（r5：该行是 activateConstraints 数组元素，逗号收尾而非分号——r3/r4 两错归一）
+- run 658（673214071）：completed success——Task 224 全链闭环，新 IPA 就绪
+- 打地鼠数据：r1 八错（子代理半成品）后每轮单错；r3-r5 三轮连环是同一行的标点修罗场（注释吃标点 → 分号误补 → 数组元素需逗号）——教训：多行表达式数组中段的元素替换，替换串必须以逗号原样收尾
+
+Stage Summary:
+- Task 224 全链闭环：20 项反馈全落地 + i18n 69 键 ×4 + 语法门三门绿 + CI 五轮终绿 + 新 IPA
+- 装机验证锚点（重点）：VirGL "post-bootstrap check ok (bound after Nms of Task224 wait)" 且不再 divert；1.20.1 ANGLE 过 RenderTarget 初始化；"[InputDiag] Task224 SDL input re-established on resume"（MG 后台回来）；"[InputDiag] Task224 shiftKey: key=344 path=B(SDL)"（右 Shift 取证）；"[ProfileSettings] Task224 ... isolation ON ... gameDir=versions/<id>/game"；"[SurfaceVC] Task171/224: keyboard session heal"；"[ExportOps] Task224 export done ... MB/s avg"
+- 环境遗留：验证舰队 l10n 基线（2606→2675）与旧锚点重锚留待专门轮次；右 Shift 根因待下轮日志取证；JVM flags 混入的 -Xss1M 来源待取证
