@@ -176,7 +176,7 @@ void LGCSetTextAutoContrastEnabled(BOOL enabled) {
                                              forKey:kLGCPrefTextAutoContrastKey];
     NSLog(@"[ThemeOps] Task225 text auto contrast -> %d", (int)enabled);
     [[NSNotificationCenter defaultCenter] postNotificationName:LGCTextContrastChangedNotification
-                                                        object:@(enabled ? @YES : @NO)];
+                                                        object:(enabled ? @YES : @NO)];
 }
 
 #pragma mark - iOS 26+ 运行时效果访问（自 FETCH_HEAD 移植）
