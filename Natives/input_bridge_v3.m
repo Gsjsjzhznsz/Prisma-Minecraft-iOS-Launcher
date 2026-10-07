@@ -990,7 +990,21 @@ void registerOpenHandler(JNIEnv *env) {
         {"openFile", "(Ljava/lang/String;)V", (void *)&CTCDesktopPeer_openGlobal},
         {"openUri", "(Ljava/lang/String;)V", (void *)&CTCDesktopPeer_openGlobal}
     };
-    (*env)->RegisterNatives(env, cls, peerOpenMethods, 2);
+    // ★ Task226（反馈 #9 收尾）：1.18 jar 的 CTCDesktopPeer 已替换为带
+    // openFile/openUri native 桥的完整实现（ECJ 重编译入 jar——原版是纯桩，
+    // open(File) 直接 throw "Action not supported"，且 RegisterNatives 对
+    // 不存在的方法会抛挂起的 NoSuchMethodError 把 Render 线程带走，
+    // 00b4d4b6 latestlog.2:517 实锤）。这里加两道防御：检查 RegisterNatives
+    // 返回码 + 失败时 ExceptionClear（绝不让挂起异常泄漏到 Java 侧）。
+    jint ame226_reg = (*env)->RegisterNatives(env, cls, peerOpenMethods, 2);
+    if (ame226_reg != JNI_OK) {
+        if ((*env)->ExceptionOccurred(env)) {
+            (*env)->ExceptionClear(env);
+        }
+        NSLog(@"[input_bridge] Task226 CTCDesktopPeer RegisterNatives failed (rc=%d) -- folder-open bridge unavailable this session", (int)ame226_reg);
+    } else {
+        NSLog(@"[input_bridge] Task226 CTCDesktopPeer openFile/openUri natives registered");
+    }
 }
 
 // JNI_OnLoad

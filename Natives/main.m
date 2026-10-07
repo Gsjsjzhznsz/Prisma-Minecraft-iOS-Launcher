@@ -368,8 +368,82 @@ void init_setupMultiDir() {
     for (NSString *dir in dirsToCreate) {
         [fm createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
     }
-    [fm removeItemAtPath:lasmPath error:nil];
-    [fm createSymbolicLinkAtPath:lasmPath withDestinationPath:multidirPath error:nil];
+    // ★ Task226（反馈 #5：上游软件更新到本软件，数据要能正常识别）：
+    // 旧代码无条件 removeItemAtPath:lasmPath——若这里是【真实目录】
+    //（上游老版本 / 更新前残留的游戏数据：saves/mods/config 等全在里面），
+    // 整目录被永久删除 = 用户数据无声蒸发。改为三态：
+    //   ① 已是符号链接 → 原样保留（幂等重指也不做，目标一致性由下面保证）；
+    //   ② 真实目录且有内容 → 先把内容【迁移】进 instances/<multidir>
+    //     （仅补缺失条目、绝不覆盖；PCL VER-ISOLATE 哲学：只挪不删），
+    //     迁移完成后才把原目录改名归档（.lasm-legacy-backup）再建链接；
+    //   ③ 空目录 → 删除建链接（旧行为）。
+    // 迁移清单与隔离向导（ProfileSettings ame217_items）同口径：游戏读写
+    // 的用户数据，排除共享层（assets/libraries/versions 由安装器管理）。
+    BOOL ame226_isSymlink = NO;
+    NSDictionary *lasmAttrs = [fm attributesOfItemAtPath:lasmPath error:nil];
+    if (lasmAttrs && [lasmAttrs fileType] == NSFileTypeSymbolicLink) {
+        ame226_isSymlink = YES;
+    }
+    if (!ame226_isSymlink && lasmAttrs) {
+        // 真实目录：数内容判空
+        NSArray *lasmEntries = [fm contentsOfDirectoryAtPath:lasmPath error:nil];
+        NSUInteger ame226_legacyCount = lasmEntries.count;
+        if (ame226_legacyCount > 0) {
+            NSLog(@"[Pre-init] Task226 legacy real game dir detected at %@ (%lu entries) -- migrating into instances/%@ (no data loss)", lasmPath, (unsigned long)ame226_legacyCount, multidir);
+            NSArray *ame226_items = @[
+                @"saves", @"mods", @"config", @"resourcepacks", @"shaderpacks",
+                @"options.txt", @"servers.dat", @"servers.dat_old", @"usercache.json",
+                @"screenshots", @"crash-reports", @"logs", @"hotbar.nbt",
+                @"options~", @"realms_persistence.json"
+            ];
+            NSUInteger ame226_moved = 0;
+            for (NSString *ame226_item in ame226_items) {
+                NSString *src = [lasmPath stringByAppendingPathComponent:ame226_item];
+                if (![fm fileExistsAtPath:src]) continue;
+                NSString *dst = [multidirPath stringByAppendingPathComponent:ame226_item];
+                if ([fm fileExistsAtPath:dst]) continue;  // 目标已有 → 绝不覆盖
+                if ([fm moveItemAtPath:src toPath:dst error:nil]) {
+                    ame226_moved++;
+                }
+            }
+            // 剩余未识别条目也一并搬走（上游可能带插件数据等）；versions/
+            // assets/libraries 等共享层保留原位（链接后经 instances 访问）。
+            for (NSString *ame226_left in [fm contentsOfDirectoryAtPath:lasmPath error:nil]) {
+                NSString *src = [lasmPath stringByAppendingPathComponent:ame226_left];
+                NSString *dst = [multidirPath stringByAppendingPathComponent:ame226_left];
+                if ([fm fileExistsAtPath:dst]) continue;
+                [fm moveItemAtPath:src toPath:dst error:nil];
+            }
+            NSLog(@"[Pre-init] Task226 legacy migration done: %lu tracked + leftovers moved (watched-items=%lu)", (unsigned long)ame226_moved, (unsigned long)ame226_items.count);
+            // 归档空壳（保名不保数据；万一还有残留条目则保留为备份目录）
+            NSString *ame226_archive = [lasmPath stringByAppendingString:@"-lasm-legacy-backup"];
+            [fm removeItemAtPath:ame226_archive error:nil];
+            if (![fm moveItemAtPath:lasmPath toPath:ame226_archive error:nil]) {
+                [fm removeItemAtPath:lasmPath error:nil];
+            }
+        } else {
+            [fm removeItemAtPath:lasmPath error:nil];
+        }
+    }
+    // 符号链接：重指到当前 multidir（实例切换后老链接可能指向旧实例）
+    if (ame226_isSymlink) {
+        NSString *curTarget = [fm destinationOfSymbolicLinkAtPath:lasmPath error:nil];
+        BOOL sameTarget = NO;
+        if (curTarget.length > 0) {
+            NSString *resolvedCur = [[lasmPath.stringByDeletingLastPathComponent
+                stringByAppendingPathComponent:curTarget]
+                stringByResolvingSymlinksInPath];
+            sameTarget = [resolvedCur isEqualToString:multidirPath.stringByResolvingSymlinksInPath];
+        }
+        if (!sameTarget) {
+            [fm removeItemAtPath:lasmPath error:nil];
+            [fm createSymbolicLinkAtPath:lasmPath withDestinationPath:multidirPath error:nil];
+            NSLog(@"[Pre-init] Task226 game-dir symlink re-pointed to instances/%@", multidir);
+        }
+    } else {
+        [fm removeItemAtPath:lasmPath error:nil];
+        [fm createSymbolicLinkAtPath:lasmPath withDestinationPath:multidirPath error:nil];
+    }
     [fm changeCurrentDirectoryPath:lasmPath];
     setenv("POJAV_GAME_DIR", lasmPath.UTF8String, 1);
 }

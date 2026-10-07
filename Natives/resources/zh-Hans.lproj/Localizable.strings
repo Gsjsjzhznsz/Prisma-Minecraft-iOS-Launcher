@@ -2899,3 +2899,16 @@
 "welcome.intro.f5.body" = "液态玻璃界面风格、壁纸亮度自适应文字反色、界面与文字双缩放、必应/自定义壁纸。";
 "welcome.intro.f6.title" = "深度诊断";
 "welcome.intro.f6.body" = "内置 FAQ 标签页、崩溃取证链与设备日志锚点——多数问题一轮日志即可定位。";
+
+"coachmarks.next" = "下一步";
+"coachmarks.done" = "开始使用";
+"coachmarks.downloads.title" = "下载与模组";
+"coachmarks.downloads.body" = "在这里搜索模组、光影与资源包。安装后必需依赖会自动提示一键下载。";
+"coachmarks.versions.title" = "版本与隔离";
+"coachmarks.versions.body" = "管理游戏版本。版本隔离让存档与模组互不干扰；外观与缩放设置在启动器设置中。";
+"ame226.deps.title" = "必需依赖";
+"ame226.deps.message" = "这个模组需要以下必需依赖，现在一并下载吗？\n\n%@";
+"ame226.deps.download_all" = "全部下载";
+"ame226.deps.downloading" = "正在下载依赖";
+"ame226.deps.progress" = "依赖 %ld / %ld\u2026";
+"ame226.deps.done" = "全部依赖已安装。";

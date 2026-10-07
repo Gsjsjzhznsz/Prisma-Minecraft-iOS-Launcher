@@ -38,6 +38,21 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)searchServersWithFilters:(NSDictionary *)filters
                       completion:(void (^)(NSArray * _Nullable results, NSError * _Nullable error))completion;
 
+#pragma mark - Task226 (issue #10): Mod Dependencies (PCL2CE-style auto-download)
+
+/// 按文件 SHA1 反查版本完整 JSON（GET /v2/version_file/{hash}）。
+/// 返回的字典含 dependencies 数组（{version_id, project_id, dependency_type}）。
+/// 仅依赖解析用；失败静默（依赖功能降级，不影响主下载）。
+- (void)ame226_fetchVersionByFileSHA1:(NSString *)sha1
+                            completion:(void (^)(NSDictionary * _Nullable versionJSON, NSError * _Nullable error))completion;
+
+/// 取项目的最新兼容版本（GET /v2/project/{id}/version?game_versions&loaders）。
+/// 返回 {filename, url, sha1, versionName, projectTitle}；无兼容版本返回 nil。
+- (void)ame226_fetchLatestVersionForProject:(NSString *)projectID
+                                 gameVersion:(NSString *)gameVersion
+                                      loader:(NSString *)loader
+                                  completion:(void (^)(NSDictionary * _Nullable info, NSError * _Nullable error))completion;
+
 /// 异步获取服务器项目详情（含 server_address、关联整合包等字段）
 /// @param serverID Modrinth 项目 ID
 - (void)getServerDetailsForID:(NSString *)serverID

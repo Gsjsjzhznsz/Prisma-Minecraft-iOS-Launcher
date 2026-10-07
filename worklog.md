@@ -1930,3 +1930,28 @@ Stage Summary:
 - Task 225 全链闭环：14 项反馈全落地 + CI 两轮修复终绿 + 新 IPA 就绪（run 37546109801，91ff52e9）
 - 装机待验证锚点不变（见 Task 225 条目 ①-⑨）：VirGL socket 探测 / AssetsHeal / keybind v3 RESTORE / 键盘循环归零 / 液态玻璃无黑屏 / 隔离选择单+迁移计数 / 26.3 文件夹浏览器 / 导出弹窗守卫 / 设置外观三行
 - 遗留：用户装机日志回传后判读（尤其 VirGL socket dir chosen 与 zink divert 分叉、液态玻璃切换稳定性）
+
+---
+Task ID: 226
+Agent: main (Super Z)
+Task: 18 项反馈轮（00b4d4b6 + 20c8d642 日志集，构建 91ff52e9/run 37546109801）——VirGL 终局 divert + 输入链双重投递根修 + CTC jar 换代 + 数据目录统一 + 设置重组 + 依赖自动下载
+
+Work Log:
+- 日志判读（五日志全根因）：①VirGL = Task225 防崩链生效（divert zink 成功、游戏继续渲染 fps=12）但 doomed 线程返回后 libvtestserver 残余 SIGSEGV→exit(1)（fatal trace #02 OUTLINED_FUNCTION_0）弹崩溃框；②右 Shift = 事件流 down:up = 2:1（latestlog.old 6364-6388 铁证）——executebtn_up 的 isToggleOn 翻转补发块与 Task179 扣住逻辑打架，一次 tap = 2 DOWN + 0/1 UP，⌨️ overlay shift 同路径；③键盘循环 = 同根因（SPECIALBTN_KEYBOARD 被 isToggleOn 补发放大成 dismissing+become 连发，日志 become/dismissing 交替铁证）；④CTC = cacio 1.18 的 CTCDesktopPeer 是纯桩（open(File) throw "Action not supported"，类文件解析实锤无 openFile/openUri）——Task225 RegisterNatives 对不存在方法抛挂起 NoSuchMethodError 炸 Render 线程（latestlog.2:517）；⑤隔离负数 = @(moved) NSNumber 传 %ld（arm64 tagged pointer 最高位置 1 = 巨大负数）三处调用；⑥导出跳过根级 Library/ = legacy 游戏数据（上游布局）不进备份 = 导入无效果；⑦AssetsHeal 说 OK 但 MC 缺 f0065754 = heal 按约定跳过 icons/minecraft.icns（官方 index-5 实证该 hash = icns；"Couldn't set icon" 被捕获不致命但用户读到堆栈 = "报错"）；⑧安装模组端共享目录 = DownloadVC 自读 gameDir 字面值 vs 启动链带嗅探，两端口径分叉；⑨半透明黑壁纸 = VC 主视图铺 systemBackgroundColor×uiOpacity（深色纯黑，多层叠加近不透明）；⑩coach marks 显示键名 = coachmarks.next/done 两键缺失（strings 只有 8 键）
+- VirGL 终局（#1）：bind 探测全失败 → ame225_bind_impossible 置位 → bootstrap 入口秒回 -2（不起 EGL 宿主/不起线程/不等 15s），残余崩溃路径不可达
+- 输入链（#3/#11 同根）：isToggleOn 补发块只对普通键（4 keycode 全 ≥0 且非修饰键）生效；特殊/修饰键只翻 UI 高亮（Task179 全权配对）
+- CTC 换代（#9）：ECJ（3.33.0 Maven）重编译 CTCDesktopPeer（native static openFile/openUri 桥 + DesktopPeer 全方法漏斗 + isSupported OPEN/BROWSE/EDIT/PRINT/MAIL，class v61 Java 17）替换 cacio-tta-1.18-SNAPSHOT.jar 内 class；注册侧加返回码检查 + ExceptionClear 防御；Java 8 包名路径不受影响（java8 jar 方法表解析确认 openFile/openUri native 在位）
+- 数据目录统一（#5/#7/#13）：init_setupMultiDir 三态化（符号链接重指当前实例 / 真实目录迁移清单+剩余条目+绝不覆盖+归档-lasm-legacy-backup / 空目录旧逻辑）；导出只排 Library/Caches；heal 不再跳 icns；DownloadVC.currentInstanceModsPath 委托 ModService.ensureModsFolderForProfile（统一嗅探）；负数三处 (long) 修正
+- 液态玻璃（#6/#10）：保底材质 SystemUltraThinMaterial（深色不再"黑界面"）+ 无壁纸 14% systemBackground 淡染兜底（tag kLGCGlassSheenTag+1 随玻璃拆除）+ 切换重铺延迟一 runloop（pick 收起事务不再与全量重铺竞争 = 闪退根修）；半透明模式 VC 主视图 clearColor（壁纸恒透出）
+- 其它：齿轮拖拽结束横向磁吸（露 2/3 弹簧动画）；JIT 超时静默自动重拉一次（每轮用户启动重置标记）；设置路由延迟一拍（0.38s 弹簧动画不再被首帧构建冻结吃掉——CA 动画按真实时钟推进）；coach marks +2 条（downloads/versions 语义区域锚点）
+- 设置重组（#16/#17）：appearance 分区退役，interface_style/ui_scale/text_scale 三行内联进启动器设置（general）开头；get/set 分支改挂 general；text_auto_contrast 行+读写全退役——动态反色换白底黑边全局字体（NSStrokeColor black + NSStrokeWidth -2.6 + 白填充 + 软阴影，壁纸场景常开；无壁纸回语义色零回归）
+- #10 议题（PCL2CE 式依赖下载）：ModrinthAPI 双新方法（version_file/{sha1} 反查 + project 最新兼容版本解析 game_versions/loaders）；主模组下载成功后 → required 依赖并发解析（dispatch_group 汇聚）→ 确认单（取消/全部下载）→ 串行下载到同一 mods 目录 + 进度弹窗；失败静默降级绝不影响主下载回报
+- i18n：+12 键 ×4 语言（coachmarks.next/done/downloads.*/versions.* + ame226.deps.*），2708 四语对等；task223 审计 used 1948 ⊆ defined 零硬编码
+- 级联维护：l10n 基线扫荡 2696→2708（27 个验证器）；verify_task225 五锚重锚（UltraThin/反色退役/general 分支/jar 路径）；task138/219/223 计数与扫荡锚重锚；task89 E1 允许 JavaApp/（jar 换代）
+- 事故与修复：BackgroundManager 的 applyAdaptiveTextToLabel 重写曾用 src.find('\n@end') 吞掉 670 行（cardTarget 家族全灭）——verify_task225 D4 级联拦截，git 重置后外科手术式三段重放（51+45-96 净变更验证）；LaunchPreferences 分区删除丢一个 ]（task139 门拦截，行级恢复）；自己的新代码 @(idx+1)/@(deps.count) 犯 %ld 装箱类错误（预检捕获即改 (long)）
+- 验证：verify_task226 63/63 ALL PASS（A VirGL 4 + B 输入 3 + C CTC 5 含 jar 内 class 二进制解析 + D 负数 3 + E 迁移 4 + F 备份 3 + G icns 2 + H 目录 2 + I 半透明 2 + J 玻璃 5 + K 吸边 2 + L JIT 2 + M 动画 2 + N coach 3 + O 重组 7 + P 依赖 8 + Q i18n 2 + R 附录/门 4）；task139/task225 括号门 + tinygl 门绿；预检 0 失败；舰队扫描：本轮触碰验证器全绿（225:68/223:77/222:77/219:81/218:44/211:42），存量债（79/83-96 时代）基线一致无新增，version.h 追加后 206/210/214/215 尾窗族复活
+
+Stage Summary:
+- 18 项全数落地；新锚点：①"[VirGL] Task226 bind impossible -- skipping vtest bootstrap entirely, diverting to Zink"（无 15s 等待无崩溃框）；②"[input_bridge] Task226 CTCDesktopPeer openFile/openUri natives registered"（26.3/1.20.1 游戏内打开文件夹弹浏览器）；③右 Shift tap 事件流恢复 1:1（潜行正常）；④"[Pre-init] Task226 legacy real game dir detected ... migrating"（上游数据识别+不删数据）；⑤迁移计数为正常正数；⑥备份含 Library/ 游戏数据；⑦"[DownloadVC] Task226 dep-resolve: N required dependency(ies) found" + 确认单（依赖一键下载）；⑧齿轮拖拽吸边；⑨设置页弹簧过渡可见；⑩半透明模式壁纸透出
+- 装机待验证重点：VirGL 选择后秒转 zink 无任何弹窗；右 Shift（物理+⌨️ overlay）；键盘循环消失；26.3 与 1.20.1 游戏内打开文件夹；上游数据迁移一次性日志；依赖确认单；液态玻璃无黑界面无切换闪退
+- 遗留：JVM SIGSEGV jni_CallStaticVoidMethod（latestlog.2:1099，游戏内 51s 后，疑与 CTC NoSuchMethodError 连锁——本轮 CTC 根修后观察是否复发）；CurseForge 侧依赖下载未做（仅 Modrinth，CF 依赖结构不同留待后续）

@@ -223,9 +223,9 @@ for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     keys = re.findall(r'^"([^"]+)"\s*=',
                       rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M)
     langs[lg] = keys
-check("F1 四主语言 nggl4es 键在位且唯一键 2696（Task210 重锚：neumorph 双键退役 2520-2，nggl4es +1 已并入）",
+check("F1 四主语言 nggl4es 键在位且唯一键 2708（Task210 重锚：neumorph 双键退役 2520-2，nggl4es +1 已并入）",
       all("preference.title.renderer.debug.nggl4es" in set(langs[l]) for l in langs)
-      and all(len(set(langs[l])) == 2696 for l in langs))
+      and all(len(set(langs[l])) == 2708 for l in langs))
 
 # Task211 重锚：本轮 gl4eszl2 键 +1 后全 fleet 计数 = 2520（2419 一代旧值
 # 清零；守卫精神不变——fleet 与 task151 H 门计数一致，无独立旧值残留。
@@ -237,7 +237,7 @@ for fn in sorted(os.listdir(os.path.join(REPO, "scripts"))):
         if re.search(r"(?<![\w.])2419(?![\w.])", t):
             fleet_stale.append(fn)
 check("F2 锚扫荡干净（fleet 无残留 2419 旧值；task151 H 门期望 2520，Task211 重锚）",
-      not fleet_stale and '!= "2696"' in rd("scripts/verify_task151.py"))
+      not fleet_stale and '!= "2708"' in rd("scripts/verify_task151.py"))
 
 faq_files = [("Natives/resources/help-faq.json", 2), ("help-faq.json", 2),
              ("Natives/resources/zh-CN.lproj/help-faq.json", 2),

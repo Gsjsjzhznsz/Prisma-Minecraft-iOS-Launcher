@@ -139,7 +139,7 @@ vals = set(base.values())
 # Task138 重锚：+2 键（renderer_missing_dylib + mirror_policy-speed_first），
 # 唯一键基线 1916 -> 1918
 check("D3 四语言唯一键集一致且为 Task151 基线 2228（Task178 重锚：opacity.title 键恢复）",
-      vals == {2696}, str(base))
+      vals == {2708}, str(base))
 r2 = subprocess.run([sys.executable, os.path.join(REPO, "scripts/patch_sdl3_eventfilter_guard.py"),
                      os.path.join(REPO, "Natives/resources/Frameworks/libSDL3.dylib")],
                     capture_output=True, text=True, timeout=60)

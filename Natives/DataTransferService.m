@@ -626,11 +626,15 @@ static void ame224_dosDateTime(NSDate *date, uint16_t *dosTime, uint16_t *dosDat
     return Ame224SectionIdLauncher;
 }
 
-/// 深度遍历 POJAV_HOME：剔除运行期垃圾与符号链接，跳过根级 Library/
-/// （内含指向实例目录的符号链接，旧实现把它当目录展开 = 实例数据双份
-/// 导出，是"无压缩也 1MB/s"的隐藏成因之一）。visitor 在后台线程触发；
-/// cancelProgress 非 nil 时每 512 个条目检查一次协作取消，返回 NO 表示
-/// 因取消提前中止。
+/// 深度遍历 POJAV_HOME：剔除运行期垃圾与符号链接。
+/// ★ Task226（反馈 #13：备份导入无效果）：旧实现整体跳过根级 Library/
+/// ——而 legacy 布局的游戏数据（saves/mods/options.txt 等）恰好住在
+/// <POJAV_HOME>/Library/Application Support/minecraft（上游老版本/更新
+/// 残留的真实目录）。导出跳过它 = 备份里根本没有游戏数据 → 恢复后
+/// "导入无效果"。修法：只跳过运行期垃圾（Library/Caches 等已知项），
+/// 其余 Library/ 内容全部纳入备份；符号链接本就一律跳过（旧注释担心的
+/// "指向实例目录的符号链接双份导出"由该防御继续兜住，且 Task226 起
+/// main.m 对 legacy 真实目录做迁移归档，链接不再指向实例）。
 - (BOOL)ame224_walkHome:(NSString *)home
           cancelProgress:(nullable NSProgress *)cancelProgress
                 visitor:(void(^)(NSString *rel, unsigned long long size, NSDate *mtime))visitor {
@@ -641,7 +645,8 @@ static void ame224_dosDateTime(NSDate *date, uint16_t *dosTime, uint16_t *dosDat
     while ((rel = [e nextObject])) {
         if ((++ame224_ticks & 0x1FF) == 0 && [cancelProgress isCancelled]) return NO;
         if ([self ame217_shouldSkipExportEntry:rel.lastPathComponent] ||
-            [rel isEqualToString:@"Library"] || [rel hasPrefix:@"Library/"]) {
+            // Task226：仅排除已知运行期垃圾，保留 legacy 游戏数据
+            [rel hasPrefix:@"Library/Caches/"] || [rel isEqualToString:@"Library/Caches"]) {
             [e skipDescendants];
             continue;
         }

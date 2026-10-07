@@ -4020,3 +4020,72 @@
 // Fleet: verify_task225 68/68; l10n baseline swept 2606->2696 across the
 // verifier family; tinygl GL_DEPTH_COMPONENT local define fixes the task193
 // standalone-compile gate (real CI builds resolve it via the gl4es headers).
+// ============================================================================
+// Task 226 addendum (no REVISION bump -- launcher-side + one vendored jar
+// swap, zero MobileGlues ABI/config surface): 18-item feedback round on the
+// 91ff52e9 build (00b4d4b6 + 20c8d642 log sets). (1) VirGL final divert: the
+// socket probe chain worked (/tmp bind EPERM -> NO candidate) but the doomed
+// server thread still started and libvtestserver's residual SIGSEGV->exit(1)
+// path (fatal trace #02 OUTLINED_FUNCTION_0) surfaced a crash dialog; when NO
+// candidate dir allows unix bind the bootstrap now returns -2 instantly (no
+// EGL host context, no server thread, no 15s wait -- Zink divert in-place,
+// residual crash paths unreachable). (2) Right-Shift + keyboard open/close
+// loop, one root cause: executebtn_up's isToggleOn re-fire block double-fired
+// every tap for modifier AND special keys (2 DOWN + 0/1 UP per physical tap
+// -- device log shows key=344 down:up = 2:1, MC key-state cache corrupted;
+// SPECIALBTN_KEYBOARD became dismissing+become flurries). The re-fire block
+// now only applies to plain keys; Task179 owns modifier pairing, special-key
+// semantics fire exactly once. (3) CTCDesktopPeer on Java 17/21/25: the cacio
+// 1.18 class is a pure STUB (open(File) throws "Action not supported") with
+// NO openFile/openUri methods -- the Task225 RegisterNatives raised a pending
+// NoSuchMethodError that killed the Render thread; the jar's class is now
+// replaced by an ECJ-compiled bridge (public static native openFile/openUri
+// + full DesktopPeer funnel: open/edit/print(File)->openFile,
+// mail/browse(URI)->openUri, isSupported OPEN/BROWSE/EDIT/PRINT/MAIL) and
+// the native registration checks its return code + clears pending
+// exceptions. (4) Isolation migration counts printed giant NEGATIVE numbers:
+// @(moved) NSNumber objects passed to %ld formats read as tagged pointers;
+// all three call sites now pass (long) scalars. (5) Upstream-data
+// recognition: init_setupMultiDir no longer deletes a legacy REAL
+// "Library/Application Support/minecraft" directory -- it migrates the
+// contents into instances/<name> (tracked items + leftovers, never
+// overwriting), archives the empty shell, then symlinks; existing symlinks
+// re-point to the current instance. (6) Backup round-trip: the export walker
+// no longer skips root-level Library/ wholesale (only Library/Caches) --
+// legacy-layout game data (saves/mods/options.txt) now lands in backups and
+// imports restore it. (7) The assets heal no longer skips icons/minecraft.icns
+// (f0065754... = the "Couldn't set icon" NoSuchFileException users read as
+// an error; Mac-spoofed MC loads it at window init). (8) Mod installs and
+// the game now share ONE directory resolver: DownloadVC.currentInstanceMods
+// Path delegates to ModService.ensureModsFolderForProfile (Task225 sniffing
+// included) -- no more installing to shared while the game runs isolated.
+// (9) Translucent mode black wallpaper: the per-VC systemBackgroundColor
+// paint layer (pure black in dark mode, stacking to near-opaque) removed --
+// page roots go clearColor in both modes, translucency lives in the card
+// pipeline. (10) Liquid Glass: base material upgraded to
+// SystemUltraThinMaterial (dark-mode cards no longer read as black), a 14%
+// systemBackground tint layer keeps no-wallpaper glass readable, glass layer
+// teardown covers the tint, and the style-switch re-apply defers one runloop
+// tick (pick-dismissal transition no longer races the full re-apply -- the
+// flash-quit on switching styles). (11) The floating gear now edge-snaps
+// horizontally on drag end (video-player style, spring animation). (12) JIT
+// intermittent "not responding": one silent auto-retry of the enabler URL +
+// a fresh wait budget before the timeout dialog (per user-initiated launch).
+// (13) Settings-from-right-panel navigation defers one runloop tick so the
+// 0.38s spring transition renders on a free main thread (the settings-page
+// build previously froze through the whole animation window). (14) Coach
+// marks: coachmarks.next/done keys existed nowhere (buttons showed raw key
+// names) -- added with 2 new marks (downloads/deps + versions/isolation),
+// 12 keys x4 languages. (15) Appearance section retired: interface
+// style/ui_scale/text_scale rows moved INTO Launcher Settings (general);
+// text_auto_contrast row removed -- dynamic inversion replaced by the
+// always-on white-fill black-stroke global font (NSStrokeWidth -2.6) with
+// soft shadow on wallpaper-backed labels. (16) Issue #10 (PCL2CE-style):
+// after a Modrinth mod download completes, its version's REQUIRED
+// dependencies resolve to the latest game/loader-compatible builds and a
+// confirm sheet offers one-tap sequential download into the same mods dir
+// (version_file/{sha1} lookup; failures degrade silently). Fleet: l10n
+// baseline swept 2696->2708; verify_task225 re-anchored to the Task226
+// superseded states (UltraThin material, contrast retirement, general
+// branch); task89's E1 scope pin allows JavaApp/ for the jar swap.
+// ============================================================================

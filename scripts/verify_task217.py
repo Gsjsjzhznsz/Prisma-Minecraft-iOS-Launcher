@@ -211,7 +211,7 @@ print("== I. l10n 基线 ==")
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"I-{lang} 唯一键 2696（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2696, f"got {len(keys)}")
+    check(f"I-{lang} 唯一键 2708（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2708, f"got {len(keys)}")
 zh = rd("Natives/resources/zh-Hans.lproj/Localizable.strings")
 en = rd("Natives/resources/en.lproj/Localizable.strings")
 check("I-核心键在位（isolation/导出导入/about/mods/fabricapi）",
@@ -288,7 +288,7 @@ spot = [
     ("scripts/verify_task125_128.py", "AboutViewController.m"),
     ("scripts/verify_task156.py", 'route:@"about"'),
     ("scripts/verify_task173.py", "legacy MC baseline (Task173/212: ZL2 classic gl4es)"),
-    ("scripts/verify_task206.py", "== 2696"),
+    ("scripts/verify_task206.py", "== 2708"),
     ("scripts/verify_task216.py", "com.air-devs interim"),
 ]
 spot_ok = True

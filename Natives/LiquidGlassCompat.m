@@ -19,6 +19,7 @@
 //
 
 #import "LiquidGlassCompat.h"
+#import "BackgroundManager.h"  // Task226: hasBackground
 #import <objc/runtime.h>
 #import <objc/message.h>
 
@@ -232,12 +233,17 @@ static UIVisualEffect *_LGCCreateGlassContainerEffect(CGFloat spacing) {
 
 /// 创建模糊效果（低版本回退）
 static UIVisualEffect *_LGCCreateBlurEffect(BOOL isDark) {
-    // ★ Task225（#4）：组合玻璃的保底层改用 SystemThinMaterial（明暗随系统），
+    // ★ Task225（#4）：组合玻璃的保底层改用系统材质（明暗随系统），
     // 避免旧版 SystemMaterialDark 恒深色在浅色模式下现得突兀；深色请求
     // （isDark=YES）保留深色变体。
+    // ★ Task226（反馈 #6：液态玻璃时许多界面都黑了）：SystemThinMaterial
+    // 在深色模式下仍偏重，卡片叠深后用户感知为“黑界面”。升级为
+    // SystemUltraThinMaterial（最通透的系统材质，壁纸/背景透出最多）；
+    // 无壁纸场景的可读性由 LGCApplyGlassToView 的淡染色兑底承担，
+    // 不再依赖厚材质压底。
     if (@available(iOS 13.0, *)) {
         return [UIBlurEffect effectWithStyle:isDark ? UIBlurEffectStyleSystemMaterialDark
-                                                   : UIBlurEffectStyleSystemThinMaterial];
+                                                   : UIBlurEffectStyleSystemUltraThinMaterial];
     } else {
         return [UIBlurEffect effectWithStyle:isDark ? UIBlurEffectStyleDark : UIBlurEffectStyleLight];
     }
@@ -330,7 +336,9 @@ UIVisualEffectView *LGCApplyGlassBackgroundToView(UIView *view, BOOL isDark) {
 void LGCRemoveGlassFromView(UIView *view) {
     if (!view) return;
     for (UIView *sub in [view.subviews copy]) {
-        if (sub.tag == kLGCGlassEffectTag || sub.tag == kLGCGlassSheenTag) {
+        // Task226：+1 染色兜底层（kLGCGlassSheenTag+1）随玻璃同生命周期拆除
+        if (sub.tag == kLGCGlassEffectTag || sub.tag == kLGCGlassSheenTag ||
+            sub.tag == kLGCGlassSheenTag + 1) {
             [sub removeFromSuperview];
         }
     }
@@ -376,6 +384,25 @@ BOOL LGCApplyGlassToView(UIView *view, CGFloat cornerRadius) {
     sheenView.layer.cornerRadius = cornerRadius;
     sheenView.layer.maskedCorners = view.layer.maskedCorners;
     [view insertSubview:sheenView aboveSubview:effectView];
+    // ★ Task226（反馈 #6：“许多界面都黑了”/无壁纸可读性）：玻璃层接管后
+    // 宿主底色清空透壁纸；但【无自定义壁纸】时纯色底直接透进来，深色
+    // 模式下显得“黑界面”。补一层极淡的 systemBackground 染色（明暗
+    // 自适应 14%）——玻璃质感保留、卡面在任何底色上都有“体”，不裸透。
+    if (![[BackgroundManager sharedManager] hasBackground]) {
+        UIView *ame226_tint = [[UIView alloc] initWithFrame:view.bounds];
+        ame226_tint.tag = kLGCGlassSheenTag + 1;  // 随玻璃层同生命周期清理
+        ame226_tint.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        ame226_tint.layer.cornerRadius = cornerRadius;
+        ame226_tint.layer.maskedCorners = view.layer.maskedCorners;
+        ame226_tint.layer.masksToBounds = YES;
+        ame226_tint.userInteractionEnabled = NO;
+        if (@available(iOS 13.0, *)) {
+            ame226_tint.backgroundColor = [[UIColor systemBackgroundColor] colorWithAlphaComponent:0.14];
+        } else {
+            ame226_tint.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.14];
+        }
+        [view insertSubview:ame226_tint belowSubview:sheenView];
+    }
 
     // 玻璃接管卡面后宿主底色清空（原生管线的底色/毛玻璃由 LGCRemoveGlass
     // + 调用方重铺还原）

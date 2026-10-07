@@ -211,9 +211,9 @@ for lang in LANGS:
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
     keysets.append(keys)
     # Task225 再锚：Task224 +69（导出分区/界面风格族）→ 2675；Task225 +21
-    #（隔离选择/三态徽标/缩放反色/欢迎页 f5-f6）→ 2696。四语对等由
+    #（隔离选择/三态徽标/缩放反色/欢迎页 f5-f6）→ 2708。四语对等由
     # task225_strings_audit.py 独立复验。
-    check(f"M-{lang} 唯一键 2696（2564 + Task223 42 + Task224 69 + Task225 21）", len(keys) == 2696, f"got {len(keys)}")
+    check(f"M-{lang} 唯一键 2708（2564 + Task223 42 + Task224 69 + Task225 21 + Task226 12）", len(keys) == 2708, f"got {len(keys)}")
 check("M-四语言键集一致", keysets[0] == keysets[1] == keysets[2] == keysets[3])
 # used-vs-defined sweep
 used = set()
@@ -254,11 +254,14 @@ check("N2 尾窗顺延（220@-2 / 219@-3 / 218@-4 / 217@-5 / 216@-6 / 206@-7）"
 vh = rd("Natives/external/MobileGlues/MobileGlues-cpp/version.h")
 check("N3 version.h：REVISION 22 不抬 + Task223 addendum（含拒绝项留档）",
       "#define REVISION 22" in vh and "REVISION 22 addendum (Task 223, no bump)" in vh)
-check("N4 舰队 l10n 基线扫荡（2606 无 2520/2565/2605 残留断言）",
+# Task226 l10n 扫荡（+12 键）：2708 基线，无 2696/2606 残留断言
+check("N4 舰队 l10n 基线扫荡（Task226：2708 无 2696/2606 残留断言）",
       "== 2520" not in rd("scripts/verify_task202.py")
       and "== 2520" not in rd("scripts/verify_task206.py")
-      and "== 2606" in rd("scripts/verify_task211.py")
-      and "唯一键 2606" in rd("scripts/verify_task217.py"))
+      and "== 2708" in rd("scripts/verify_task211.py")
+      and "唯一键 2708" in rd("scripts/verify_task217.py")
+      and "== 2606" not in rd("scripts/verify_task211.py")
+      and "唯一键 2606" not in rd("scripts/verify_task217.py"))
 check("N5 舰队公告窗扫荡（43 + 尾窗新位抽查）",
       "len(ann) == 43" in rd("scripts/verify_task217.py")
       and '"== 43" in rd("scripts/verify_task207.py")' in rd("scripts/verify_task216.py")

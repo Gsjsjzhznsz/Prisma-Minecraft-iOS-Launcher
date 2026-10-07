@@ -130,7 +130,7 @@ print("E. 工作区改动仅限预期文件集（提交后自愈）")
 print("=" * 72)
 changed = {ln[3:].strip() for ln in git("status", "--porcelain").splitlines() if ln.strip()}
 check("E1 改动仅限预期文件集", all(
-    c.startswith(("Natives/", "scripts/verify_task", "worklog.md")) for c in changed),
+    c.startswith(("Natives/", "scripts/verify_task", "worklog.md", "JavaApp/")) for c in changed),  # Task226：+JavaApp/（cacio jar 的 CTCDesktopPeer 替换）
     f"unexpected={changed}")
 
 print()

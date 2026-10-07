@@ -252,8 +252,23 @@ static const CGFloat kDragThreshold = 10.0;
         // 恢复背景
         self.menuButton.backgroundColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:0.6];
         if (self.isDragging) {
-            // 拖拽结束保存位置
-            [self savePositions];
+            // ★ Task226（反馈 #12：齿轮 ⚙️ 不挡视线——拖拽结束自动吸边）：
+            // 横向磁吸到最近的屏幕边（半嵌入：球心贴边留 1/3 露出可再拖），
+            // 纵向保持用户放置的位置。视频播放器悬浮窗同款交互。
+            CGFloat ame226_half = kMenuButtonSize / 2.0;
+            CGFloat ame226_x = self.menuButton.center.x;
+            CGFloat ame226_targetX = (ame226_x < self.bounds.size.width / 2.0)
+                ? (ame226_half * 0.66)                      // 吸左：露 2/3
+                : (self.bounds.size.width - ame226_half * 0.66);  // 吸右
+            [UIView animateWithDuration:0.32 delay:0
+                             usingSpringWithDamping:0.72 initialSpringVelocity:0.5
+                              options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
+                           animations:^{
+                self.menuButton.center = CGPointMake(ame226_targetX, self.menuButton.center.y);
+            } completion:^(BOOL finished) {
+                // 吸边落位后保存（持久化目标位而非起拖位）
+                [self savePositions];
+            }];
         }
         self.isDragging = NO;
     }

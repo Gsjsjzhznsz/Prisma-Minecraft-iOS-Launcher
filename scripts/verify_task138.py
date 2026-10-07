@@ -294,8 +294,8 @@ for l in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     s = rd(f"Natives/resources/{l}.lproj/Localizable.strings")
     ks.append(set(re.findall(r'^"([^"]+)"\s*=', s, re.M)))
 # Task220 计数同步：Task158-219 逐轮新增键（+363），四语言一致链保持。
-check("I-l10n 四语言键集一致（Task220 重锚：当前基线 2606）",
-      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2606,
+check("I-l10n 四语言键集一致（Task220 重锚：当前基线 2708）",
+      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2708,
       f"counts={[len(k) for k in ks]}")
 gram_ok = True
 for l in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:

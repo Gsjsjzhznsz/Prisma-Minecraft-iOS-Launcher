@@ -84,6 +84,16 @@ static EGLSurface ame_vs_pbuffer;
 static EGLContext ame_vs_context;
 static char ame_vs_socket_path[512];
 static int ame_vs_started = 0;
+// Task226（反馈 #1：VirGL 依旧崩溃——00b4d4b6 日志集 latestlog.1 实锤）：
+// 探测链工作正常（/tmp probe EPERM → NO candidate dir allows unix bind），
+// 但仍保留了“起 doomed 服务线程 + 等 15s 超时”的路径——线程返回后
+// libvtestserver 内部仍有残余的 SIGSEGV→exit(1) 路径（fatal trace #02
+// OUTLINED_FUNCTION_0，被 hooked_exit 拦下弹崩溃对话框，用户点退出）。
+// 根修：探测全部失败 = 本环境（LiveContainer 共享 /tmp，沙盒禁
+// bind(AF_UNIX)）下 vtest 协议【物理不可用】——置不可能标志，
+// bootstrap 入口秒回 -2（zink divert），不起线程、不等 socket、
+// 残余崩溃路径从此不可达。
+static int ame225_bind_impossible = 0;
 static BOOL ame223_use_surfaceless = NO;  // Task223：EGL_KHR_surfaceless_context 兑底路径
 
 // Task219：多候选 dlopen（对齐 gl_bridge.m 的 kEglCandidates 三级链）。
@@ -183,7 +193,9 @@ static void ame219_compute_socket_path(void) {
     }
     if (chosen == NULL) {
         chosen = "/tmp";
-        NSLog(@"[VirGL] Task225 NO candidate dir allows unix bind -- keeping /tmp (vtest failure will degrade, not crash)");
+        // Task226：全候选失败 → 物理不可用标志（bootstrap 入口直接 divert）。
+        ame225_bind_impossible = 1;
+        NSLog(@"[VirGL] Task226 NO candidate dir allows unix bind -- vtest physically unavailable in this sandbox; bootstrap will divert to Zink instantly (no doomed server thread, no 15s wait)");
     }
     int n = snprintf(ame_vs_socket_path, sizeof(ame_vs_socket_path),
                      "%s/ame_virgl_%d.sock", chosen, (int)getpid());
@@ -267,7 +279,16 @@ int ame_virgl_start_server(void)
 
     // ---- 1. socket 路径（Task219 短路径 + pid 唯一化）+ guest 环境变量
     //（必须在 osm_bridge dlopen guest 之前）----
+    // Task226：计算先行；探测链全失败（LiveContainer 共享 /tmp 禁
+    // bind(AF_UNIX)）时直接秒回 -2 → egl_bridge 层 divert zink。不起
+    // EGL 宿主上下文、不起服务线程、不等 15s——libvtestserver 的残余
+    // SIGSEGV/exit 路径彻底不可达（00b4d4b6 latestlog.1 病历：doomed
+    // 线程返回后 fatal trace #02 仍从 OUTLINED_FUNCTION_0 打出 exit(1)）。
     ame219_compute_socket_path();
+    if (ame225_bind_impossible) {
+        NSLog(@"[VirGL] Task226 bind impossible -- skipping vtest bootstrap entirely, diverting to Zink");
+        return -2;
+    }
     setenv("VTEST_SOCKET_NAME", ame_vs_socket_path, 1);
     setenv("GALLIUM_DRIVER", "virgl", 1);
     NSLog(@"[VirGL] Task219 socket path = %s (len=%lu, sun_path cap=%lu)",

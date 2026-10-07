@@ -191,13 +191,13 @@ check("D7 Makefile 补丁接线退役 + TAB 基线 644（Task215 重锚：dep_vi
 check("D8 utils.h 宏退役（字面量仅存于迁移判定）",
       '#define RENDERER_NAME_GL4ES "libgl4es_114.dylib"' not in rd("Natives/utils.h"))
 
-print("== E. l10n 净零交换（2696 守恒） ==")
+print("== E. l10n 净零交换（2708 守恒） ==")
 def keys_of(lg):
     return set(re.findall(r'^"([^"]+)" = ', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"),
                           re.M))
 sets = [keys_of(lg) for lg in ("en", "zh-CN", "zh-Hans", "zh-Hant")]
-check("E1 四语唯一键 2696 一致（gl4es 出 / virgl 入 = 净零）",
-      all(len(s) == 2696 for s in sets) and sets[0] == sets[1] == sets[2] == sets[3])
+check("E1 四语唯一键 2708 一致（gl4es 出 / virgl 入 = 净零）",
+      all(len(s) == 2708 for s in sets) and sets[0] == sets[1] == sets[2] == sets[3])
 check("E2 holy gl4es l10n 键全清（54 文件零残留）",
       all("preference.title.renderer.debug.gl4es\"" not in
           rd(os.path.join("Natives/resources", f, "Localizable.strings"))

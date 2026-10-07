@@ -461,7 +461,10 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
         // （NSUserDefaults 键 prisma.interface_style / prisma.ui_scale，
         // 与通用偏好存储解耦——风格解析在 C 层零依赖可用，启动早期/
         // 其它 TU 均可直接调用）。
-        if ([section isEqualToString:@"appearance"]) {
+                // ★ Task226（#17）：外观行已从独立 appearance 分区迁入【启动器设置
+        //（general）】——键判定同步改挂 general；#16 反色开关退役
+        //（text_auto_contrast 读取移除，白底黑边全局字体常开）。
+if ([section isEqualToString:@"general"]) {
             if ([key isEqualToString:@"interface_style"]) {
                 return LGCStringFromInterfaceStyle(LGCStoredInterfaceStyle());
             }
@@ -473,9 +476,6 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
             }
             if ([key isEqualToString:@"text_scale"]) {
                 return @((NSInteger)round(LGCTextScaleMultiplier() * 100.0));
-            }
-            if ([key isEqualToString:@"text_auto_contrast"]) {
-                return @(LGCTextAutoContrastEnabled());
             }
         }
         return getPrefObject(keyFull);
@@ -576,7 +576,7 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
         // Task224（#4）：外观分区的写入走 LiquidGlassCompat（广播 + 日志
         // 铅点在该层）；行的 action 块补 refreshUIEffect +
         // BackgroundUIEffectChanged 的全量重铺（与背景设置页同通路）。
-        if ([section isEqualToString:@"appearance"]) {
+        if ([section isEqualToString:@"general"]) {
             if ([key isEqualToString:@"interface_style"]) {
                 if ([value isKindOfClass:[NSString class]]) {
                     LGCSetStoredInterfaceStyle(LGCInterfaceStyleFromString(value));
@@ -597,10 +597,6 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
                 LGCSetTextScaleMultiplier(ame225_pct / 100.0);
                 return;
             }
-            if ([key isEqualToString:@"text_auto_contrast"]) {
-                LGCSetTextAutoContrastEnabled([value boolValue]);
-                return;
-            }
         }
         setPrefObject(keyFull, value);
     };
@@ -608,7 +604,7 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
     self.hasDetail = YES;
     self.prefDetailVisible = self.navigationController == nil;
     
-    self.prefSections = @[@"general", @"download", @"video", @"mobileglues", @"control", @"java", @"debug", @"ai", @"appearance"];
+    self.prefSections = @[@"general", @"download", @"video", @"mobileglues", @"control", @"java", @"debug", @"ai"];
 
     // Task224（#19）：「界面缩放」行右侧显示当前百分比。typeButton 基类
     // 块不写 detailTextLabel——在 prefContents 构建之前包装基类块并只对
@@ -672,6 +668,60 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
         @[
             // General settings
             @{@"icon": @"cube"},
+            // ★ Task226（反馈 #17：取消 appearance 独立分区——外观三行内联
+            // 进启动器设置；反色开关随 #16 一并退役）：从旧 appearance 分区
+            // 原位投迁（getPreference/setPreference 的键处理同步改挂
+            // general 分区，存储仍走 LiquidGlassCompat 的 NSUserDefaults
+            // 键 prisma.interface_style / prisma.ui_scale / prisma.text_scale）。
+            @{@"key": @"interface_style",
+              @"title": localize(@"preference.title.interface_style", nil),
+              @"hasDetail": @YES,
+              @"icon": @"paintbrush",
+              @"type": self.typePickField,
+              @"enableCondition": whenNotInGame,
+              @"pickKeys": @[
+                  @"auto",
+                  @"native",
+                  @"liquid_glass"
+              ],
+              @"pickList": @[
+                  localize(@"prisma.interface_style.auto", nil),
+                  localize(@"prisma.interface_style.native", nil),
+                  localize(@"prisma.interface_style.liquid_glass", nil)
+              ],
+              @"action": ^(NSString *value){
+                  // Task224（#4）：全量重铺与背景设置页同一既有 live-reload
+                  // 通路（refreshUIEffect + BackgroundUIEffectChanged——
+                  // 卡片/cell/导航栏/模态底层全量重铺）。
+                  // ★ Task226（反馈 #6：切换风格闪退）：pick 弹层收起动画
+                  // 进行中同步全量重铺（数百视图层级拆装）会与 UIKit 的
+                  // 过渡事务竞争（装机表现为闪退一下，重启后正常）。延迟
+                  // 一个 runloop 拍——让弹层收起事务先落地，重铺在干净
+                  // 的事务边界上执行。
+                  dispatch_async(dispatch_get_main_queue(), ^{
+                      [[BackgroundManager sharedManager] refreshUIEffect];
+                      [[NSNotificationCenter defaultCenter] postNotificationName:@"BackgroundUIEffectChanged" object:nil];
+                  });
+              }
+            },
+            @{@"key": @"ui_scale",
+              @"title": localize(@"preference.title.ui_scale", nil),
+              @"hasDetail": @YES,
+              @"icon": @"arrow.up.left.and.arrow.down.right",
+              @"type": self.typeSlider,
+              @"min": @(85),
+              @"max": @(125),
+              @"enableCondition": whenNotInGame
+            },
+            @{@"key": @"text_scale",
+              @"title": localize(@"preference.title.text_scale", nil),
+              @"hasDetail": @YES,
+              @"icon": @"textformat.size",
+              @"type": self.typeSlider,
+              @"min": @(85),
+              @"max": @(130),
+              @"enableCondition": whenNotInGame
+            },
             @{@"key": @"check_sha",
               @"hasDetail": @YES,
               @"icon": @"lock.shield",
@@ -1690,71 +1740,6 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
                   UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
                   nav.modalPresentationStyle = UIModalPresentationFormSheet;
                   [self presentViewController:nav animated:YES completion:nil];
-              }
-            }
-        ], @[
-            // Task224（#4/#19）：外观分区——界面风格（自动/原生/液态玻璃）
-            // 与界面缩放（0.85-1.25 步进 0.05）。存储走 LiquidGlassCompat
-            // 的 NSUserDefaults 键（prisma.interface_style /
-            // prisma.ui_scale），读写经上方 getPreference/setPreference 的
-            // appearance 分支映射（fsr1_setting 同款重映射先例）。
-            @{@"icon": @"paintbrush"},
-            @{@"key": @"interface_style",
-              @"title": localize(@"preference.title.interface_style", nil),
-              @"hasDetail": @YES,
-              @"icon": @"paintbrush",
-              @"type": self.typePickField,
-              @"enableCondition": whenNotInGame,
-              @"pickKeys": @[
-                  @"auto",
-                  @"native",
-                  @"liquid_glass"
-              ],
-              @"pickList": @[
-                  localize(@"prisma.interface_style.auto", nil),
-                  localize(@"prisma.interface_style.native", nil),
-                  localize(@"prisma.interface_style.liquid_glass", nil)
-              ],
-              @"action": ^(NSString *value){
-                  // Task224（#4）：全量重铺与背景设置页同一既有 live-reload
-                  // 通路（refreshUIEffect + BackgroundUIEffectChanged——
-                  // 卡片/cell/导航栏/模态底层全量重铺）。
-                  [[BackgroundManager sharedManager] refreshUIEffect];
-                  [[NSNotificationCenter defaultCenter] postNotificationName:@"BackgroundUIEffectChanged" object:nil];
-              }
-            },
-            // ★ Task225（反馈 #13）：缩放/反色全部内联进启动器设置——旧的
-            // ui_zoom 按钮弹出独立编辑页（用户称"专区"）退役；界面缩放与
-            // 文字缩放分家（各自滑条），文字动态反色补开关。detail 键补全
-            //（旧版 preference.detail.ui_zoom 缺失 = 灰字直接显示键名）。
-            @{@"key": @"ui_scale",
-              @"title": localize(@"preference.title.ui_scale", nil),
-              @"hasDetail": @YES,
-              @"icon": @"arrow.up.left.and.arrow.down.right",
-              @"type": self.typeSlider,
-              @"min": @(85),
-              @"max": @(125),
-              @"enableCondition": whenNotInGame
-            },
-            @{@"key": @"text_scale",
-              @"title": localize(@"preference.title.text_scale", nil),
-              @"hasDetail": @YES,
-              @"icon": @"textformat.size",
-              @"type": self.typeSlider,
-              @"min": @(85),
-              @"max": @(130),
-              @"enableCondition": whenNotInGame
-            },
-            @{@"key": @"text_auto_contrast",
-              @"title": localize(@"preference.title.text_auto_contrast", nil),
-              @"hasDetail": @YES,
-              @"icon": @"circle.lefthalf.filled",
-              @"type": self.typeSwitch,
-              @"enableCondition": whenNotInGame,
-              @"action": ^void(BOOL on){
-                  // 反色开关切换 → 全量重刷取色（集中漏斗在 BackgroundManager；
-                  // 通知已由 setPreference 外观分支发出，这里补发布景重铺）
-                  [[NSNotificationCenter defaultCenter] postNotificationName:@"BackgroundUIEffectChanged" object:nil];
               }
             }
         ]

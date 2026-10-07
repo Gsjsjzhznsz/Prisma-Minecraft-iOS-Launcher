@@ -1839,12 +1839,16 @@ static NSString * localizeProfileTitle(NSString *title) {
             } else if (moved == 0 && skipped == 0 && legacyMoved == 0) {
                 summary = [NSString stringWithFormat:localize(@"profile.isolation.migrated_clean", nil), relative];
             } else {
+                // Task226（反馈 #7：迁移计数“负数”）：本地化串是 %ld（C 长整型），
+                // 旧代码传 @(moved)（NSNumber 对象指针）——arm64 上 NSNumber 是
+                // tagged pointer（最高位置 1），va_arg 按有符号 long 读出 = 巨大
+                // 负数。改传 (long) 标量。
                 summary = [NSString stringWithFormat:localize(@"profile.isolation.migrated", nil),
-                    @(moved), @(skipped),
+                    (long)moved, (long)skipped,
                     skipNames.count > 0 ? [skipNames componentsJoinedByString:@", "] : @"-"];
                 if (legacyMoved > 0) {
                     summary = [summary stringByAppendingString:
-                        [NSString stringWithFormat:localize(@"profile.isolation.legacy_upgraded", nil), @(legacyMoved)]];
+                        [NSString stringWithFormat:localize(@"profile.isolation.legacy_upgraded", nil), (long)legacyMoved]];
                 }
             }
             void (^ame224_showSummary)(void) = ^{
@@ -1927,7 +1931,7 @@ static NSString * localizeProfileTitle(NSString *title) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self showComponentAlert:localize(@"profile.isolation.title", nil)
                         message:[NSString stringWithFormat:localize(@"profile.isolation.moved_back", nil),
-                                  @(movedBack), @(skippedBack)]];
+                                  (long)movedBack, (long)skippedBack]];
                 });
             });
         }]];

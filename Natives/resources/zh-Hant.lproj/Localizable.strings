@@ -2896,3 +2896,16 @@
 "welcome.intro.f5.body" = "液態玻璃介面風格、桌布亮度自適應文字反色、介面與文字雙縮放、Bing/自訂桌布。";
 "welcome.intro.f6.title" = "深度診斷";
 "welcome.intro.f6.body" = "內建 FAQ 分頁、當機鑑識鏈與裝置日誌錨點——多數問題一輪日誌即可定位。";
+
+"coachmarks.next" = "下一步";
+"coachmarks.done" = "開始使用";
+"coachmarks.downloads.title" = "下載與模組";
+"coachmarks.downloads.body" = "在這裡搜尋模組、光影與資源包。安裝後必需依賴會自動提示一鍵下載。";
+"coachmarks.versions.title" = "版本與隔離";
+"coachmarks.versions.body" = "管理遊戲版本。版本隔離讓存檔與模組互不干擾；外觀與縮放設定在啟動器設定中。";
+"ame226.deps.title" = "必需依賴";
+"ame226.deps.message" = "這個模組需要以下必需依賴，現在一併下載嗎？\n\n%@";
+"ame226.deps.download_all" = "全部下載";
+"ame226.deps.downloading" = "正在下載依賴";
+"ame226.deps.progress" = "依賴 %ld / %ld\u2026";
+"ame226.deps.done" = "全部依賴已安裝。";

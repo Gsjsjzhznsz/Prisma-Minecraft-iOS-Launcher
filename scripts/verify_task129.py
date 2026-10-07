@@ -263,9 +263,9 @@ for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     ks = set(re.findall(r'^"([^"]+)"\s*=',
                         rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
     sets.append(ks)
-# Task222 重锚：2696 = Task212 基线 2520 + Task222 45 + Task223 41
+# Task222 重锚：2708 = Task212 基线 2520 + Task222 45 + Task223 41
 check("I3 四语言键集一致（Task138 基线 2228 = Task134 的 1916 + 2）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2696,  # Task222 重锚：+21 陶瓦联机键
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2708,  # Task222 重锚：+21 陶瓦联机键
       f"counts={[len(s) for s in sets]}")
 
 # Makefile TAB 完整性（9e6fc27/129 双教训）

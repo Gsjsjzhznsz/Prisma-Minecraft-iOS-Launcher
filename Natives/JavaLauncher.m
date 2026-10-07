@@ -652,8 +652,14 @@ static int ame225_healMissingAssets(NSString *versionId) {
         NSString *hash = [obj isKindOfClass:[NSDictionary class]] ? obj[@"hash"] : nil;
         if (![hash isKindOfClass:[NSString class]] || hash.length < 4) continue;
         checked++;
-        // 1.19+ 的 icns 图标按既有约定跳过（安装器同款）
-        if ([name hasSuffix:@"/minecraft.icns"]) continue;
+        // ★ Task226（反馈 #2：非 SDL 版本报错——"Couldn't set icon" +
+        // NoSuchFileException 堆栈）：旧实现按"安装器同款约定"跳过
+        // icons/minecraft.icns（省流量的历史习惯），但 Mac 伪装平台下
+        // MC 1.20.1 的 Minecraft 构造器会读它（java.nio
+        // NoSuchFileException f0065754... = icons/minecraft.icns，
+        // 官方 index-5 实证）。异常虽被 MC 捕获不致命，但用户在日志里
+        // 看到整段红色堆栈 = "报错"。修法：icns 纳入预检补齐（~100KB
+        // 一次性下载，换日志干净）。
         NSString *rel = [NSString stringWithFormat:@"assets/objects/%@/%@",
             [hash substringToIndex:2], hash];
         NSString *abs = [gameRoot stringByAppendingPathComponent:rel];

@@ -3083,8 +3083,33 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 
     if (isOutside || sender.savedBackgroundColor == nil) { return; }
 
+    // Task226（反馈 #3/#11：右 Shift 失效 + ⌨️ 键盘开关循环——同一根因）：
+    // 旧 isToggleOn 翻转补发块对【任何】按钮都在 UP 之后再补一发 DOWN/UP。
+    // 对修饰键：Task179 的 tap 判定已决定扣住（toggle ON = 不发 UP），补发
+    // DOWN 又入 modDownTime → 一次物理 tap 产生 2 DOWN + 0/1 UP（00b4d4b6
+    // latestlog.old 日志铁证：shiftKey key=344 事件流 down:up = 2:1，
+    // MC 键状态缓存混乱 = "右 Shift 无法使用"）。
+    // 对特殊键（SPECIALBTN_KEYBOARD 等）：held==0 的分支语义是"切键盘显隐"，
+    // 补发把一次点击放大成 dismissing+become 连发 = 键盘开关循环
+    // （"输入会关闭键盘，恢复程序会打开键盘，一直循环"）。
+    // 修法：补发块只对【普通键】（4 个 keycode 全部 >=0 且非修饰键）生效；
+    // 修饰键的配对由 Task179 全权管理，特殊键的点击语义只走一次。
+    BOOL ame226_reFireAllowed = YES;
+    for (int ame226_i = 0; ame226_i < 4; ame226_i++) {
+        int ame226_kc = ((NSNumber *)sender.properties[@"keycodes"][ame226_i]).intValue;
+        if (ame226_kc < 0 || AME176_IS_MOD_KEY(ame226_kc)) {
+            ame226_reFireAllowed = NO;
+            break;
+        }
+    }
+
     sender.isToggleOn = !sender.isToggleOn;
-    if (sender.isToggleOn) {
+    if (!ame226_reFireAllowed) {
+        // 特殊/修饰键：保持 UI 高亮翻转但不再补发事件（Task179 已完成配对）
+        sender.backgroundColor = sender.isToggleOn
+            ? [self.view.tintColor colorWithAlphaComponent:CGColorGetAlpha(sender.savedBackgroundColor.CGColor)]
+            : sender.savedBackgroundColor;
+    } else if (sender.isToggleOn) {
         sender.backgroundColor = [self.view.tintColor colorWithAlphaComponent:CGColorGetAlpha(sender.savedBackgroundColor.CGColor)];
         [self executebtn:sender withAction:ACTION_DOWN];
     } else {

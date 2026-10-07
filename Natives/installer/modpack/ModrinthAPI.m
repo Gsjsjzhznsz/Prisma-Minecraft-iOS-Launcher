@@ -669,4 +669,90 @@ static NSString *MRAMirrorResolvedURL(NSString *urlString) {
 // ModpackImportService 统一导入（解析/解压/依赖下载/加载器/游戏文件/profile），
 // 此处不再维护 API 侧的整合包解包双轨逻辑。
 
+#pragma mark - Task226 (issue #10): Mod Dependencies (PCL2CE-style auto-download)
+
+// 病历（用户议题 #10）：启动器下载模组不显示依赖项，缺依赖的模组导致
+// 启动游戏崩溃。参考 PCL2CE：主模组下载完成后，解析 Modrinth 版本的
+// dependencies 列表，把【必需】依赖以确认单形式列出，一键全部下载到
+// 同一 mods 目录。
+
+- (void)ame226_fetchVersionByFileSHA1:(NSString *)sha1
+                            completion:(void (^)(NSDictionary * _Nullable, NSError * _Nullable))completion {
+    if (sha1.length == 0) {
+        if (completion) completion(nil, [NSError errorWithDomain:@"ModrinthAPIError" code:20 userInfo:@{NSLocalizedDescriptionKey: @"no sha1"}]);
+        return;
+    }
+    NSString *urlString = [NSString stringWithFormat:@"https://api.modrinth.com/v2/version_file/%@?algorithm=sha1", sha1];
+    // 镜像同源：baseURL 是 /v2 前缀（api.modrinth.com 或 MCIM 镜像），直接拼 version_file
+    NSString *mirrored = [NSString stringWithFormat:@"%@/version_file/%@?algorithm=sha1", self.baseURL, sha1];
+    NSURL *url = [NSURL URLWithString:mirrored.length > 0 ? mirrored : urlString];
+    if (!url) {
+        if (completion) completion(nil, [NSError errorWithDomain:@"ModrinthAPIError" code:21 userInfo:@{NSLocalizedDescriptionKey: @"invalid URL"}]);
+        return;
+    }
+    [self ame217_fetchJSONWithURL:url completion:^(id json, NSError *error) {
+        if (error || ![json isKindOfClass:[NSDictionary class]]) {
+            if (completion) completion(nil, error ?: [NSError errorWithDomain:@"ModrinthAPIError" code:22 userInfo:@{NSLocalizedDescriptionKey: @"bad JSON"}]);
+            return;
+        }
+        if (completion) completion((NSDictionary *)json, nil);
+    }];
+}
+
+- (void)ame226_fetchLatestVersionForProject:(NSString *)projectID
+                                 gameVersion:(NSString *)gameVersion
+                                      loader:(NSString *)loader
+                                  completion:(void (^)(NSDictionary * _Nullable, NSError * _Nullable))completion {
+    if (projectID.length == 0) {
+        if (completion) completion(nil, [NSError errorWithDomain:@"ModrinthAPIError" code:23 userInfo:@{NSLocalizedDescriptionKey: @"no project id"}]);
+        return;
+    }
+    // game_versions=["x"]&loaders=["y"]（URL 编码的 JSON 数组，官方查询格式）
+    NSMutableString *qs = [NSMutableString stringWithFormat:@"%@/project/%@/version", self.baseURL, projectID];
+    BOOL hasQ = NO;
+    if (gameVersion.length > 0) {
+        NSString *enc = [NSString stringWithFormat:@"[\"%@\"]", gameVersion];
+        [qs appendFormat:@"%@game_versions=%@", hasQ ? @"&" : @"?", [enc stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+        hasQ = YES;
+    }
+    if (loader.length > 0) {
+        NSString *enc = [NSString stringWithFormat:@"[\"%@\"]", loader];
+        [qs appendFormat:@"%@loaders=%@", hasQ ? @"&" : @"?", [enc stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+    }
+    NSURL *url = [NSURL URLWithString:qs];
+    if (!url) {
+        if (completion) completion(nil, [NSError errorWithDomain:@"ModrinthAPIError" code:24 userInfo:@{NSLocalizedDescriptionKey: @"invalid URL"}]);
+        return;
+    }
+    [self ame217_fetchJSONWithURL:url completion:^(id json, NSError *error) {
+        if (error || ![json isKindOfClass:[NSArray class]] || ((NSArray *)json).count == 0) {
+            // 无兼容版本不算错误：静默跳过该依赖（调用方过滤 nil）
+            if (completion) completion(nil, nil);
+            return;
+        }
+        NSDictionary *ver = ((NSArray *)json).firstObject;
+        if (![ver isKindOfClass:[NSDictionary class]]) {
+            if (completion) completion(nil, nil);
+            return;
+        }
+        NSArray *files = ver[@"files"];
+        NSDictionary *file = [files isKindOfClass:[NSArray class]] ? files.firstObject : nil;
+        if (![file isKindOfClass:[NSDictionary class]]) {
+            if (completion) completion(nil, nil);
+            return;
+        }
+        NSDictionary *hashes = file[@"hashes"];
+        NSString *sha1 = [hashes isKindOfClass:[NSDictionary class]] ? hashes[@"sha1"] : nil;
+        NSDictionary *info = @{
+            @"filename": file[@"filename"] ?: @"",
+            @"url": file[@"url"] ?: @"",
+            @"sha1": sha1 ?: @"",
+            @"versionName": ver[@"version_number"] ?: (ver[@"name"] ?: @""),
+            @"projectID": projectID,
+        };
+        if (completion) completion(info, nil);
+    }];
+}
+
+
 @end

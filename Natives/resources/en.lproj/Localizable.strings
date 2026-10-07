@@ -2901,3 +2901,16 @@
 "welcome.intro.f5.body" = "Liquid Glass interface style, wallpaper-adaptive text contrast, separate interface & text scaling, Bing/user wallpaper.";
 "welcome.intro.f6.title" = "Deep diagnostics";
 "welcome.intro.f6.body" = "Built-in FAQ tab, crash forensics pipeline and device-log anchors — most issues are diagnosed from your latestlog in one round.";
+
+"coachmarks.next" = "Next";
+"coachmarks.done" = "Get Started";
+"coachmarks.downloads.title" = "Downloads & Mods";
+"coachmarks.downloads.body" = "Search mods, shaders and resource packs here. Required mod dependencies are offered for download automatically after install.";
+"coachmarks.versions.title" = "Versions & Isolation";
+"coachmarks.versions.body" = "Manage game versions. Per-version isolation keeps saves and mods separate; appearance and scaling live in Launcher Settings.";
+"ame226.deps.title" = "Required Dependencies";
+"ame226.deps.message" = "This mod needs the following required dependencies. Download them all now?\n\n%@";
+"ame226.deps.download_all" = "Download All";
+"ame226.deps.downloading" = "Downloading Dependencies";
+"ame226.deps.progress" = "Dependency %ld of %ld\u2026";
+"ame226.deps.done" = "All dependencies installed.";

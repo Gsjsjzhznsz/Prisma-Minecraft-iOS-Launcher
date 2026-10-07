@@ -93,6 +93,8 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
 // FCL 风格：无账号时点击启动游戏跳转添加账号界面，登录完成后自动继续启动。
 // pendingLaunchAfterLogin=YES 表示用户从启动按钮进入账号登录，登录成功后应自动触发 launchGame。
 @property(nonatomic, assign) BOOL pendingLaunchAfterLogin;
+// Task226：JIT 等待超时的静默自动重拉已用标记（每轮 launch 重置）
+@property(nonatomic, assign) BOOL ame226_jitAutoRetried;
 
 @end
 
@@ -994,6 +996,13 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     }
 
     // settings[:deepLinkKey]
+    // ★ Task226（反馈 #15：右侧栏打开设置没有动画）：设置页首次构建
+    // （视图加载 + 全量行数据 + 首次布局）在 setContentViewController 的
+    // 动画开启前同步执行，主线程被卡 ~0.5s——CA 动画按真实时钟推进，
+    // 冻结期间 0.38s 的弹簧过渡已悄然走完，用户看到"瞬时出现"。
+    // 修法：路由延迟一个 runloop 拍——信息卡按压回弹动画先完整呈现，
+    // 设置页构建与过渡动画在空闲主线程上执行（动画不再被吃掉）。
+    dispatch_async(dispatch_get_main_queue(), ^{
     LauncherPreferencesViewController *prefsVC = [[LauncherPreferencesViewController alloc] init];
     prefsVC.ameDeepLinkKey = deepLinkKey;
     UINavigationController *navVC = [[UINavigationController alloc] initWithRootViewController:prefsVC];
@@ -1010,6 +1019,7 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         [self presentViewController:navVC animated:YES completion:nil];
     }
     NSLog(@"[RightPanel] Task156: info card -> %@ (deepLink=%@)", target, deepLinkKey ?: @"<none>");
+    }); // Task226 deferred-route close
 }
 
 - (void)ame156_infoCardTapped:(UITapGestureRecognizer *)tap {
@@ -1443,6 +1453,9 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
 
     // 正常启动，清除待启动标记
     self.pendingLaunchAfterLogin = NO;
+    // Task226：新一轮用户发起的启动——重置 JIT 自动重拉标记（本轮内
+    // 超时可静默重拉一次，下一轮重新计数）
+    self.ame226_jitAutoRetried = NO;
 
     NSString *selectedProfile = PLProfiles.current.selectedProfileName;
     if (!selectedProfile) {
@@ -1722,12 +1735,6 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
 }
 
 - (void)invokeAfterJITEnabled:(void(^)(void))handler {
-    // Task185：收起任何活跃键盘。两轮“版本设置页启动 = 卡死”会话的共同
-    // 环境 = 二级菜单文本框 + 拼音键盘（latestlog.2 开场即有 keyplane
-    // 日志），而三个成功会话（版本列表页启动）无键盘活动——后台化时
-    // 键盘/输入服务会话是主线程楔死的头号嫌疑（GCD 不丢块，condition
-    // satisfied 后主队列续接块却永不执行）。启动前强制 resign，从源头
-    // 移除该变量；后续防线见 ame185_dispatchToMainSelfHealing。
     [[UIApplication sharedApplication] sendAction:@selector(resignFirstResponder) to:nil from:nil forEvent:nil];
 
     // Task91：entitlement AND 磁盘标记双确认（同 LauncherNavigationController，
@@ -1943,6 +1950,19 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
                 // Task182：同上——超时路径的 retry 弹窗也不再包进 dismiss
                 // completion（后台态同样悬空），直接呈现。
                 [alert dismissViewControllerAnimated:YES completion:nil];
+                // ★ Task226（反馈 #4：版本设置启动偶发"JIT 未响应"）：
+                // 间歇性失败的形态 = stikjit:// 拉起竞争（StikJIT 自身冷启动
+                // 时 URL 无人接住，openURL 回执 ok 但附加没发生）。旧逻辑
+                // 直接弹超时对话框，用户手动点重试才恢复。改为静默自动
+                // 重拉一次 enabler URL + 续一轮等待预算——只有第二轮也
+                // 超时才真正打扰用户。
+                if (!self.ame226_jitAutoRetried) {
+                    self.ame226_jitAutoRetried = YES;
+                    NSLog(@"[JIT] [RightPanel] Task226 wait timed out -- AUTO-RETRY: re-firing enabler URL once before alerting");
+                    [self invokeAfterJITEnabled:handler];
+                    return;
+                }
+                self.ame226_jitAutoRetried = NO;
                 [self ame169_showJITTimeoutAlertWithRetry:handler];
             }
         }, @"RightPanel main wait");

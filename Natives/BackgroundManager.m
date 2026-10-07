@@ -617,22 +617,17 @@ static const NSInteger kAme160GlassBackdropTag = 99994;
         // 毛玻璃效果 - clear background, let blur show through
         viewController.view.backgroundColor = [UIColor clearColor];
     } else {
-        // 半透明效果 - semi-transparent background
-        // 修复：使用 systemBackgroundColor 替代硬编码黑色，自适应浅色/深色模式
-        // Task216（用户排查指令"100~50 越来越透明、50~10 反而越来越不透明"）：
-        // 旧写法 1.0 - uiOpacity 是反向语义——卡面管线（ame190_applyCardPipeline
-        // /applyEffectToView）用 uiOpacity 正向做 alpha，本层却用 1.0 - uiOpacity，
-        // 两层叠加后壁纸透出率 = (1-o)×o，在 o=0.5 处取最大值：拉条恰好
-        // "100→50 越来越透、50→10 越来越不透明"（驼峰拐点 50%，用户实测吻合）。
-        // 两管线语义互相矛盾，属历史遗留 bug 而非有意设计（毛玻璃模式本层恒为
-        // clearColor，从无此现象）。改回正向语义后透出率 = (1-o)²，全程单调：
-        // 100% 全不透明、越拉越透、10% 最透。与卡面/导航栏/工具栏管线同语义。
-        if (@available(iOS 13.0, *)) {
-            UIColor *base = [UIColor systemBackgroundColor];
-            viewController.view.backgroundColor = [base colorWithAlphaComponent:self.uiOpacity];
-        } else {
-            viewController.view.backgroundColor = [UIColor colorWithWhite:0 alpha:self.uiOpacity];
-        }
+        // 半透明效果 - 主视图保持透明，壁纸直接透出。
+        // ★ Task226（反馈 #10：恢复半透明效果直接黑色壁纸）：旧实现给每个
+        // VC 主视图铺 systemBackgroundColor×uiOpacity 半透明层——深色模式下
+        // systemBackgroundColor = 纯黑，多层 VC 叠加（nav + 内容 + 卡片）的
+        // 复合透明度接近不透明 → 用户看到“黑色壁纸”（毛玻璃模式本层恒
+        // clearColor 从无此现象，Task216 的 (1-o)×o 语义修复也没有解决
+        // “多层叠加压黑”这一层）。修法：本层与毛玻璃同款 clearColor，
+        // 可读性由卡面管线（applyEffectToView/applyEffectToCell 的
+        // secondarySystemBackground×uiOpacity）承担——卡片半透明、页底
+        // 透壁纸，两种模式的页面底行为从此一致。
+        viewController.view.backgroundColor = [UIColor clearColor];
     }
 
     // For UITableViewController
@@ -1108,30 +1103,26 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
 }
 
 - (UIColor *)ame223_adaptiveTextColor {
-    // Task225（#12/#13）：文字动态反色开关关闭时退回语义色（浅/深色模式
-    // 自适应），不再随壁纸亮度反色。集中漏斗：欢迎页 directTextColor、
-    // ame224_adaptive* 全族、attributed title 都经本组方法取色。
-    if (!LGCTextAutoContrastEnabled()) {
-        if (@available(iOS 13.0, *)) {
-            return [UIColor labelColor];
-        }
-        return [UIColor darkTextColor];
+    // ★ Task226（反馈 #16：取消动态反色——用户实测“没效果”）：反色判定
+    // 退役，壁纸在场时恒定白色（可读性由 ame224_applyAdaptiveTextToLabel
+    // 的白底黑边全局字体承担），无壁纸回语义色。
+    if ([[BackgroundManager sharedManager] hasBackground]) {
+        return [UIColor whiteColor];
     }
-    return [self ame223_wallpaperLuminanceIsDark]
-        ? [UIColor whiteColor]
-        : [UIColor colorWithRed:0.10 green:0.10 blue:0.12 alpha:1.0];
+    if (@available(iOS 13.0, *)) {
+        return [UIColor labelColor];
+    }
+    return [UIColor darkTextColor];
 }
 
 - (UIColor *)ame223_adaptiveSecondaryTextColor {
-    if (!LGCTextAutoContrastEnabled()) {
-        if (@available(iOS 13.0, *)) {
-            return [UIColor secondaryLabelColor];
-        }
-        return [UIColor lightGrayColor];
+    if ([[BackgroundManager sharedManager] hasBackground]) {
+        return [UIColor colorWithWhite:1.0 alpha:0.82];
     }
-    return [self ame223_wallpaperLuminanceIsDark]
-        ? [UIColor colorWithWhite:1.0 alpha:0.72]
-        : [UIColor colorWithWhite:0.0 alpha:0.62];
+    if (@available(iOS 13.0, *)) {
+        return [UIColor secondaryLabelColor];
+    }
+    return [UIColor lightGrayColor];
 }
 
 #pragma mark - Task224（#18）：通用动态反色文字（壁纸透出的界面文字）
@@ -1159,21 +1150,36 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
 
 + (void)ame224_applyAdaptiveTextToLabel:(UILabel *)label secondary:(BOOL)secondary {
     if (!label) return;
-    label.textColor = secondary ? [BackgroundManager ame224_adaptiveSecondaryTextColor]
-                                : [BackgroundManager ame224_adaptiveTextColor];
-    // Task225（#12）：开关关闭时不铺反色阴影（语义色外观零回归）
-    if ([[BackgroundManager sharedManager] hasBackground] && LGCTextAutoContrastEnabled()) {
-        // 软阴影兜底：亮度居中/局部反差的壁纸上给文字一圈对比衬底
-        UIColor *ame224_shadow = [[BackgroundManager sharedManager] ame223_wallpaperLuminanceIsDark]
-            ? [UIColor colorWithWhite:0.0 alpha:0.45]
-            : [UIColor colorWithWhite:1.0 alpha:0.55];
-        label.layer.shadowColor = ame224_shadow.CGColor;
+    // ★ Task226（反馈 #12/#16：壁纸可读性终案——白底黑边全局字体）：
+    // 动态反色（按壁纸亮度翻转文字颜色）实测无效果且用户明确弃用；
+    // 改为常开的白底黑边描边字体：白色填充 + 黑色描边（负 strokeWidth
+    // = 描边 + 填充）+ 软阴影。任何壁纸上文字都可读，无需判定亮度。
+    if ([[BackgroundManager sharedManager] hasBackground]) {
+        label.textColor = [UIColor whiteColor];
+        // 只对纯文本标签做描边（富文本标签保留既有属性，仅染色 + 阴影）
+        if (label.text.length > 0 && label.attributedText == nil) {
+            NSMutableAttributedString *ame226_attr =
+                [[NSMutableAttributedString alloc] initWithString:label.text
+                                                       attributes:@{
+                NSFontAttributeName: label.font ?: [UIFont systemFontOfSize:15],
+                NSForegroundColorAttributeName: [UIColor whiteColor],
+                NSStrokeColorAttributeName: [UIColor blackColor],
+                // 负值 = CoreText 语义“描边 + 填充”；2.6 与字号无关的
+                // 固定描边宽（大字号偏细、小字号偏粗，整体均衡）
+                NSStrokeWidthAttributeName: @(-2.6),
+            }];
+            label.attributedText = ame226_attr;
+        }
+        // 软阴影兜底：描边之外的第三层对比衬底
+        label.layer.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.55].CGColor;
         label.layer.shadowOpacity = 1.0;
         label.layer.shadowRadius = 1.5;
         label.layer.shadowOffset = CGSizeMake(0, 1);
         label.layer.masksToBounds = NO;
     } else {
-        // 无壁纸：不引入任何新视觉（原生外观零回归）
+        // 无壁纸：语义色 + 清阴影（原生外观零回归）
+        label.textColor = secondary ? [BackgroundManager ame224_adaptiveSecondaryTextColor]
+                                    : [BackgroundManager ame224_adaptiveTextColor];
         label.layer.shadowColor = nil;
         label.layer.shadowOpacity = 0.0;
         label.layer.shadowRadius = 0.0;

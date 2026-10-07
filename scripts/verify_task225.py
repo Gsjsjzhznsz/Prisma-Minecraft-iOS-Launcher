@@ -14,7 +14,7 @@ I. Settings appearance rows (sliders/switch inline + zoom editor retired + detai
 J. Assets pre-launch heal
 K. First-open fade animations (both layouts)
 L. Text scale/contrast prefs (LiquidGlassCompat split)
-M. i18n 2696 parity + new keys used
+M. i18n 2708 parity + new keys used
 N. Syntax gates + fleet cascade
 """
 import os, re, subprocess, sys
@@ -116,13 +116,16 @@ check("D2 组合玻璃（UIGlassEffect 直用退役，blur 保底）",
       and "_LGCCreateBlurEffect(isDark);" in lgc
       and "effect = _LGCCreateGlassEffect(isDark);" not in lgc)
 check("D3 保底材质 SystemThinMaterial（明暗自适应）",
-      "UIBlurEffectStyleSystemThinMaterial" in lgc)
+      "UIBlurEffectStyleSystemUltraThinMaterial" in lgc)
 check("D4 cardTarget 选择跳过一切 UIVisualEffectView",
       "一切 UIVisualEffectView 都不当" in bm
       and '[subview isKindOfClass:[UIVisualEffectView class]]) {\n                continue;' in bm)
-check("D5 反色开关集中漏斗（adaptive 色族尊重开关）",
-      "LGCTextAutoContrastEnabled()" in bm
-      and bm.count("LGCTextAutoContrastEnabled()") >= 3)
+# Task226（#16）：反色开关退役——白底黑边全局字体常开（stroke 描边在
+# ame224_applyAdaptiveTextToLabel，BackgroundManager 不再调用 LGC 开关）
+check("D5 反色漏斗退役（Task226：白底黑边全局字体接管）",
+      "LGCTextAutoContrastEnabled" not in bm
+      and "NSStrokeWidthAttributeName: @(-2.6)" in bm
+      and "NSStrokeColorAttributeName: [UIColor blackColor]" in bm)
 
 # ---------------------------------------------------------------- E. 隔离
 print("== E. 版本隔离（上游式重构）==")
@@ -193,16 +196,19 @@ check("I1 界面缩放滑条行（85-125）",
       '@"key": @"ui_scale"' in lpv and '@"min": @(85)' in lpv and '@"max": @(125)' in lpv)
 check("I2 文字缩放滑条行（85-130）",
       '@"key": @"text_scale"' in lpv and '@"max": @(130)' in lpv)
-check("I3 文字反色开关行",
-      '@"key": @"text_auto_contrast"' in lpv
-      and "BackgroundUIEffectChanged" in lpv.split('@"key": @"text_auto_contrast"')[1][:900])
+# Task226（#16）：反色开关行退役
+check("I3 反色开关行退役（Task226）",
+      '@"key": @"text_auto_contrast"' not in lpv
+      and "LGCSetTextAutoContrastEnabled" not in lpv)
 check("I4 zoom editor 退役（类与入口删除）",
       "@interface Ame224ZoomEditorViewController" not in lpv
       and "[self ame224_openZoomEditor];" not in lpv)
-check("I5 get/set 外观分支新键（百分比 ↔ 倍率换算）",
+# Task226（#17）：外观行迁入 general 分区（appearance 分区退役）
+check("I5 get/set 外观键（Task226 改挂 general 分区）",
       "LGCUIScaleMultiplier() * 100.0" in lpv
       and "LGCSetTextScaleMultiplier(ame225_pct / 100.0)" in lpv
-      and "LGCSetTextAutoContrastEnabled([value boolValue])" in lpv)
+      and 'isEqualToString:@"general"' in lpv
+      and 'isEqualToString:@"appearance"' not in lpv)
 check("I6 键名裸显示根修（preference.detail.* 四键在位）",
       all(f'"preference.detail.{k}"' in rd(f"Natives/resources/{l}.lproj/Localizable.strings")
           for k in ["interface_style", "ui_scale", "text_scale", "text_auto_contrast"]
@@ -243,19 +249,19 @@ check("L4 头文件导出声明",
       "LGCTextScaleMultiplier(void);" in lgh and "LGCTextAutoContrastEnabled(void);" in lgh)
 
 # ---------------------------------------------------------------- M. i18n
-print("== M. i18n（2696 四语对等 + 新键在位）==")
+print("== M. i18n（2708 四语对等 + 新键在位）==")
 NEWKEYS = ["profile.isolation.choice_prompt", "profile.isolation.choice_migrate",
            "profile.isolation.choice_keep", "profile.isolation.applying",
            "profile.isolation.enabled_nomove", "ame225.mods.sniffed_chip",
            "ame225.mods.isolated_note", "ame225.mods.sniffed_note",
            "ame225.mods.shared_note", "ame225.mods.open_settings",
            "preference.title.ui_scale", "preference.title.text_scale",
-           "preference.title.text_auto_contrast", "welcome.intro.f5.title",
+           "preference.title.text_scale", "welcome.intro.f5.title",
            "welcome.intro.f6.title"]
 for lang in ["en", "zh-CN", "zh-Hans", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)" = ', rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"M-{lang} 唯一键 2696（Task223 42 + Task224 69 + Task225 21）",
-          len(keys) == 2696, f"got {len(keys)}")
+    check(f"M-{lang} 唯一键 2708（Task223 42 + Task224 69 + Task225 21 + Task226 12）",
+          len(keys) == 2708, f"got {len(keys)}")
     miss = [k for k in NEWKEYS if k not in keys]
     check(f"M-{lang} 本轮新键全部在位", not miss, str(miss[:4]))
 

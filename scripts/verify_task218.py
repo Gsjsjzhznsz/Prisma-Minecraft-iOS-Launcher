@@ -205,7 +205,7 @@ print("== G. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"G-{lang} 唯一键 2696（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2696, f"got {len(keys)}")
+    check(f"G-{lang} 唯一键 2708（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2708, f"got {len(keys)}")
 zh = rd("Natives/resources/zh-Hans.lproj/Localizable.strings")
 en = rd("Natives/resources/en.lproj/Localizable.strings")
 check("G-新键在位（welcome 全家 + ame218.crash 全家）",
@@ -269,16 +269,16 @@ check("H4 公告 JSON 可解析且 id 唯一",
 print("== I. 级联抽查（本轮重锚族） ==")
 spot = {
     "scripts/verify_task217.py": ['<string>com.air-devs.air</string>',
-                                  "len(ann) == 43", "#define REVISION 22", "2696"],
+                                  "len(ann) == 43", "#define REVISION 22", "2708"],
     "scripts/verify_task216.py": ["<string>com.air-devs.air</string>", "len(ann) == 43",
                                   "#define REVISION 22"],
     "scripts/verify_task213.py": ["len(ids) == 43"],
-    "scripts/verify_task214.py": ["len(ann) == 43", "2696"],
-    "scripts/verify_task212.py": ["len(ann) == 43", "2696"],
-    "scripts/verify_task211.py": ["len(ann) == 43", "2696"],
-    "scripts/verify_task210.py": ["len(ann) == 43", "2696"],
+    "scripts/verify_task214.py": ["len(ann) == 43", "2708"],
+    "scripts/verify_task212.py": ["len(ann) == 43", "2708"],
+    "scripts/verify_task211.py": ["len(ann) == 43", "2708"],
+    "scripts/verify_task210.py": ["len(ann) == 43", "2708"],
     "scripts/verify_task207.py": ["len(ann) == 43"],
-    "scripts/verify_task206.py": ["len(ann) == 43", "ann[-5]", "2696"],
+    "scripts/verify_task206.py": ["len(ann) == 43", "ann[-5]", "2708"],
 }
 g_ok = True
 g_detail = []

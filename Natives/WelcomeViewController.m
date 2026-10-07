@@ -731,6 +731,25 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         }];
     }
 
+    // ★ Task226（反馈 #14：圆圈焦点介绍太少）：补两条语义区域锚点的介绍——
+    // ①左侧导航下半区（下载/模组入口）：模组搜索 + 依赖自动下载（issue #10）
+    // ②中央内容区（版本/外观）：版本隔离与启动器设置（风格/缩放内联于此）。
+    CGRect sb = UIScreen.mainScreen.bounds;
+    [items addObject:@{
+        @"rect": [NSValue valueWithCGRect:CGRectMake(0, sb.size.height * 0.55,
+                                                      sb.size.width * 0.28, sb.size.height * 0.42)],
+        @"title": localize(@"coachmarks.downloads.title", nil),
+        @"body": localize(@"coachmarks.downloads.body", nil),
+        @"round": @NO,
+    }];
+    [items addObject:@{
+        @"rect": [NSValue valueWithCGRect:CGRectMake(sb.size.width * 0.30, sb.size.height * 0.16,
+                                                      sb.size.width * 0.40, sb.size.height * 0.30)],
+        @"title": localize(@"coachmarks.versions.title", nil),
+        @"body": localize(@"coachmarks.versions.body", nil),
+        @"round": @NO,
+    }];
+
     if (items.count == 0) {
         presentAbout();
         return;
