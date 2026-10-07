@@ -1955,3 +1955,20 @@ Stage Summary:
 - 18 项全数落地；新锚点：①"[VirGL] Task226 bind impossible -- skipping vtest bootstrap entirely, diverting to Zink"（无 15s 等待无崩溃框）；②"[input_bridge] Task226 CTCDesktopPeer openFile/openUri natives registered"（26.3/1.20.1 游戏内打开文件夹弹浏览器）；③右 Shift tap 事件流恢复 1:1（潜行正常）；④"[Pre-init] Task226 legacy real game dir detected ... migrating"（上游数据识别+不删数据）；⑤迁移计数为正常正数；⑥备份含 Library/ 游戏数据；⑦"[DownloadVC] Task226 dep-resolve: N required dependency(ies) found" + 确认单（依赖一键下载）；⑧齿轮拖拽吸边；⑨设置页弹簧过渡可见；⑩半透明模式壁纸透出
 - 装机待验证重点：VirGL 选择后秒转 zink 无任何弹窗；右 Shift（物理+⌨️ overlay）；键盘循环消失；26.3 与 1.20.1 游戏内打开文件夹；上游数据迁移一次性日志；依赖确认单；液态玻璃无黑界面无切换闪退
 - 遗留：JVM SIGSEGV jni_CallStaticVoidMethod（latestlog.2:1099，游戏内 51s 后，疑与 CTC NoSuchMethodError 连锁——本轮 CTC 根修后观察是否复发）；CurseForge 侧依赖下载未做（仅 Modrinth，CF 依赖结构不同留待后续）
+
+---
+Task ID: 226-CI
+Agent: main (Super Z)
+Task: Task 226 CI 闭环（run 37635393191，commit 8d85b277c）
+
+Work Log:
+- 上轮会话结束时后台轮询被沙箱收割（nohup 亦不免疫），本轮前台分块轮询恢复
+- run 37635393191 于 14:17Z 注册，14:34Z 完成 —— **首轮即绿**（Task 225 曾需 2 轮 CI 修复）
+- 产物三件：com.air-devs.air-ios.ipa 220.2MB (artifact id 11490701986) / com.air-devs.air-ios-trollstore.tipa 220.2MB (11490417204) / AngelAuraAmethyst.dSYM 6.1MB (11491246800)
+- 关键步骤核验：ipa/tipa/dSYM 上传 success；Surface annotations / MobileGL dylib 族 / nightly release 均按预期 skipped（本轮未触碰 MobileGL 渲染后端，无 dylib 变更需回提交，origin/main 停留 8d85b277c 无追加固化提交）
+- 佐证首轮即绿的三道前置防线生效：task139 语法门+括号审计、verify_task226 63/63（含 CTC jar 内 class 二进制解析）、打地鼠预检（本轮零新增 @(scalar)-to-%ld 类错误）
+
+Stage Summary:
+- Task 226 全链闭环：18 项反馈 → 5 日志根因 → 17 组修复 → 63/63 验证 → CI 首轮绿 → 新 IPA 就绪
+- 装机验证锚点（按优先级）：①VirGL 选中后应秒转 zink 渲染，全程无崩溃框无 15s 等待（日志锚 "[VirGL] Task226 bind impossible -- skipping vtest bootstrap entirely"）；②右 Shift 物理+⌨️ overlay 均恢复（事件流 1:1）；③键盘循环消失；④26.3 与 1.20.1 游戏内打开文件夹出浏览器（日志锚 "[input_bridge] Task226 CTCDesktopPeer openFile/openUri natives registered"）；⑤上游数据迁移一次性日志+计数为正常正数；⑥备份导入含游戏数据；⑦模组下载后出依赖确认单；⑧半透明模式壁纸透出+液态玻璃切换无闪退
+- 遗留观察项：latestlog.2 的 JVM SIGSEGV jni_CallStaticVoidMethod（游戏内 51s）是否随 CTC 根修消失；CurseForge 依赖下载未做（仅 Modrinth）
