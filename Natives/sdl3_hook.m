@@ -183,6 +183,8 @@ static ame_fn_SDL_StartTextInputWithProperties ame_real_StartTextInputWithProper
 static ame_fn_SDL_StopTextInput ame_real_StopTextInput = NULL;
 static ame_fn_SDL_SetTextInputArea ame_real_SetTextInputArea = NULL;
 static ame_fn_SDL_OpenURL ame_real_OpenURL = NULL;   // Task227
+// Task227 CI r1 修复：hook 分发表（前部）先于函数定义（后部）引用——补前置声明。
+static bool ame_SDL_OpenURL(const char *url);
 static ame_fn_SDL_InitSubSystem ame_real_InitSubSystem = NULL;
 static ame_fn_SDL_SetHint ame_real_SetHint = NULL;
 
