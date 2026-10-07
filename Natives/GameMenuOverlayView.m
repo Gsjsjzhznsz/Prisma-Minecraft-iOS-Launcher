@@ -40,13 +40,14 @@ static const CGFloat kDragThreshold = 10.0;
 @property (nonatomic, assign) BOOL isDragging;
 @property (nonatomic, assign) CGPoint dragStartPoint;
 @property (nonatomic, assign) CGPoint dragStartCenter;
-// ★ Task227：dock 状态（readonly 公开，内部直接写 _ame227_* ivar）
-{
-    BOOL _ame227_docked;
-    BOOL _ame227_dockedLeft;
-}
 
 @end
+
+// ★ Task227（CI r2 修复）：dock 状态改文件级静态——类扩展内的 ivar 块被
+// 编译配置拒绝（44:1 expected identifier or '('）。覆盖层每会话仅一个
+// 实例，静态即实例语义；readonly 属性 getter 读静态。
+static BOOL ame227_g_docked = NO;
+static BOOL ame227_g_dockedLeft = NO;
 
 @implementation GameMenuOverlayView
 
@@ -162,9 +163,9 @@ static const CGFloat kDragThreshold = 10.0;
 
 #pragma mark - 位置持久化
 
-// ★ Task227：readonly 公开属性的 getter（ backed by 自定义 ivar）
-- (BOOL)isDocked { return _ame227_docked; }
-- (BOOL)dockedLeft { return _ame227_dockedLeft; }
+// ★ Task227：readonly 公开属性的 getter（backed by 文件级静态，见类扩展后 CI r2 注释）
+- (BOOL)isDocked { return ame227_g_docked; }
+- (BOOL)dockedLeft { return ame227_g_dockedLeft; }
 
 - (void)restorePositions {
     CGFloat bw = self.bounds.size.width;
@@ -187,8 +188,8 @@ static const CGFloat kDragThreshold = 10.0;
 
     // ★ Task227：dock 状态恢复（上次吸边的把手形态跨会话保持）
     if (getPrefBool(kAme227DockedPref)) {
-        _ame227_docked = YES;
-        _ame227_dockedLeft = getPrefBool(kAme227DockedSidePref);
+        ame227_g_docked = YES;
+        ame227_g_dockedLeft = getPrefBool(kAme227DockedSidePref);
         [self ame227_applyDockedAppearanceAnimated:NO];
     }
 
@@ -290,15 +291,15 @@ static const CGFloat kDragThreshold = 10.0;
                                     ame227_distRight < kAme227DockThreshold);
             if (ame227_nearEdge) {
                 BOOL ame227_dockLeft = (ame227_x < ame227_bw / 2.0);
-                _ame227_docked = YES;
-                _ame227_dockedLeft = ame227_dockLeft;
+                ame227_g_docked = YES;
+                ame227_g_dockedLeft = ame227_dockLeft;
                 [self ame227_applyDockedAppearanceAnimated:YES];
                 setPrefBool(kAme227DockedPref, YES);
                 setPrefBool(kAme227DockedSidePref, ame227_dockLeft);
             } else {
                 // 不近边：解除 dock（若原先 docked），留在用户放置的位置
-                if (_ame227_docked) {
-                    _ame227_docked = NO;
+                if (ame227_g_docked) {
+                    ame227_g_docked = NO;
                     [self ame227_applyDockedAppearanceAnimated:NO];
                     setPrefBool(kAme227DockedPref, NO);
                 }
@@ -313,13 +314,13 @@ static const CGFloat kDragThreshold = 10.0;
 /// 半嵌入边内 1/3，中心线贴边）。点击语义不变（onMenuButtonTapped），
 /// 由上层根据 isDocked 决定拉侧滑面板还是底部弹层。
 - (void)ame227_applyDockedAppearanceAnimated:(BOOL)animated {
-    CGFloat ame227_w = _ame227_docked ? kAme227HandleWidth : kMenuButtonSize;
-    CGFloat ame227_h = _ame227_docked ? kAme227HandleHeight : kMenuButtonSize;
-    CGFloat ame227_radius = _ame227_docked ? kAme227HandleWidth / 2.0 : kMenuButtonSize / 2.0;
+    CGFloat ame227_w = ame227_g_docked ? kAme227HandleWidth : kMenuButtonSize;
+    CGFloat ame227_h = ame227_g_docked ? kAme227HandleHeight : kMenuButtonSize;
+    CGFloat ame227_radius = ame227_g_docked ? kAme227HandleWidth / 2.0 : kMenuButtonSize / 2.0;
     CGFloat ame227_cx;
-    if (_ame227_docked) {
+    if (ame227_g_docked) {
         // 半嵌入：中心距边 1/3 把手宽（2/3 露出）
-        ame227_cx = _ame227_dockedLeft
+        ame227_cx = ame227_g_dockedLeft
             ? (kAme227HandleWidth * 0.66)
             : (self.bounds.size.width - kAme227HandleWidth * 0.66);
     } else {
@@ -334,9 +335,9 @@ static const CGFloat kDragThreshold = 10.0;
         self.menuButton.center = CGPointMake(ame227_cx, ame227_cy);
         self.menuButton.layer.cornerRadius = ame227_radius;
         self.menuButton.layer.cornerCurve = kCACornerCurveContinuous;
-        if (_ame227_docked) {
+        if (ame227_g_docked) {
             // 把手态：仅朝屏内一侧圆角（半嵌入侧直角）
-            self.menuButton.layer.maskedCorners = _ame227_dockedLeft
+            self.menuButton.layer.maskedCorners = ame227_g_dockedLeft
                 ? kCALayerMaxXMinYCorner | kCALayerMaxXMaxYCorner
                 : kCALayerMinXMinYCorner | kCALayerMinXMaxYCorner;
         } else {
@@ -354,8 +355,8 @@ static const CGFloat kDragThreshold = 10.0;
         ame227_apply();
     }
     NSLog(@"[GameMenu] Task227 gear dock state: %@ (%@)",
-          _ame227_docked ? @"DOCKED handle" : @"floating button",
-          _ame227_dockedLeft ? @"left edge" : @"right edge");
+          ame227_g_docked ? @"DOCKED handle" : @"floating button",
+          ame227_g_dockedLeft ? @"left edge" : @"right edge");
 }
 
 - (void)menuButtonTouchedDown:(UIButton *)sender {
