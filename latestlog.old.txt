@@ -1,0 +1,636 @@
+[shaderc-sandbox] fork() failed errno=1 -- sandbox disabled (iOS sandbox denies fork on this install?)
+[Pre-Init] Prisma Launcher (fork of Amethyst iOS Remastered) INIT!
+[Pre-Init] Fork: https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher
+[Pre-Init] Upstream: https://github.com/herbrine8403/Amethyst-iOS-MyRemastered
+[Pre-Init] Please try not to post this log of the remastered launcher to the original GitHub Issues for help.
+[Pre-Init] Version: 6.5.0
+[Pre-Init] Commit: 91ff52e (main)
+[Pre-Init] Device: iPad Air 11-inch (M4)
+[Pre-Init] iPadOS 27.0.1 (24A446) (Unjailbroken)
+[Pre-init] Entitlements availability:
+* com.apple.developer.kernel.extended-virtual-addressing: NO
+* com.apple.developer.kernel.increased-memory-limit: YES
+* com.apple.private.security.no-sandbox: NO
+* jb.pmap_cs.custom_trust: NO
+* dynamic-codesigning: NO
+[PLPreferences] Getter could not find preference download.speed_probe.bmclapi
+[PLPreferences] Getter could not find preference download.speed_probe.mcim
+[main_hook] Task202: CAMetalLayer nextDrawable hook installed (Metal first-frame signal; fires only in AMETHYST_METAL sessions while running)
+[Debugging] Debug log enabled: YES
+[Pre-init] Restored game directory preference (default)
+[SceneDelegate] Task191: uncaught-exception handler re-armed at willConnect
+[SceneDelegate] Task188: geometry request declined (expected in window mode; Info.plist UIRequiresFullScreen is the primary fix): 当前窗口模式不允许以编程方式更改界面方向。
+[PLPreferences] Getter could not find preference download.speed_probe.bmclapi
+2026-10-07 19:05:02.241 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:02.241 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task172 branch: network fetch started (URL present, length=211)
+[HomeAvatar] Task172 sync skipped: currentAvatar is nil (check branch log above)
+[PLPreferences] Getter could not find preference general.download_source
+[PLPreferences] Getter could not find preference internal.autolaunch_profile
+[HomeAvatar] Task172 branch: network fetch started (URL present, length=211)
+2026-10-07 19:05:02.339 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:02.342 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:02.343 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:02.344 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:02.345 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:02.346 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:02.346 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:02.347 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:02.347 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task172 sync skipped: currentAvatar is nil (check branch log above)
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[SceneDelegate] Task189: landscape window transform evaluated (bounds={{0, 0}, {1180, 820}} rotated=0)
+[SceneDelegate] libterracotta linked, multiplayer available (lazy init)
+[FG-Lifecycle] willEnterForeground: swapOK=0 swapFail=0
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+2026-10-07 19:05:02.390 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:02.391 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task172 sync skipped: currentAvatar is nil (check branch log above)
+[HomeAvatar] Task172 fetch completion: img=yes (128x128)
+2026-10-07 19:05:02.394 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
+[HomeAvatar] Task172 fetch completion: img=yes (128x128)
+2026-10-07 19:05:02.395 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
+[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+[BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261006)
+2026-10-07 19:05:02.552 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[PLPreferences] Getter could not find preference download.speed_probe.mcim
+[IconLoader] Initialization complete, disk cache directory: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Library/Caches/IconLoader, mirror enabled: YES
+[PLPreferences] Getter could not find preference download.speed_probe.mcim
+2026-10-07 19:05:02.564 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[PLPreferences] Setter could not find preference download.speed_probe.mcim
+2026-10-07 19:05:02.611 AngelAuraAmethyst[11488:3113226] [PLMirrorCenter] Task138 speed probe (family=1): official won (official=257ms mirror=395ms)
+2026-10-07 19:05:02.747 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
+2026-10-07 19:05:02.751 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[LauncherRootVC] Task218 loaded 920 remote versions from bmclapi2.bangbang93.com
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+2s
+[PLPreferences] Setter could not find preference download.speed_probe.bmclapi
+2026-10-07 19:05:04.695 AngelAuraAmethyst[11488:3113229] [PLMirrorCenter] Task138 speed probe (family=0): official won (official=911ms mirror=2479ms)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+4s
+2026-10-07 19:05:06.519 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task173 home VC reused (avatar survives tab switch)
+[HomeAvatar] Task172 branch: session cache hit (128x128)
+[HomeAvatar] Task172 direct-sync: 0 visible profile cell(s), image 128x128
+[HomeAvatar] Task172 direct-sync: 0 visible profile cell(s), image 128x128
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+6s
+[HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+8s
+2026-10-07 19:05:11.117 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.118 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.118 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.119 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.119 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.119 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.120 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.120 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.120 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.120 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.121 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.121 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.121 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.122 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.122 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.122 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.122 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.123 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[ThemeOps] Task224 home menu refreshed (adaptive text + zoom + style)
+[ThemeOps] Task224 right panel adaptive text refreshed after wallpaper change
+2026-10-07 19:05:11.125 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.126 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.126 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.126 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.126 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.127 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.127 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.127 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.127 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.128 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.128 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.128 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.128 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.129 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.129 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.129 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.129 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:11.129 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+10s
+2026-10-07 19:05:13.156 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.156 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.156 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.157 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.157 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.157 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.157 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.158 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.158 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.158 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.158 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.159 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.159 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.159 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.160 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.160 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.160 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.160 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[ThemeOps] Task224 home menu refreshed (adaptive text + zoom + style)
+[ThemeOps] Task224 right panel adaptive text refreshed after wallpaper change
+2026-10-07 19:05:13.163 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.163 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.163 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.163 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.163 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.164 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.164 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.164 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.164 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.164 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.164 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.165 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.165 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.165 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.165 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.165 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.166 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:13.166 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+12s
+[FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
+[InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[BG-Park] Task223 render thread parking armed (willResignActive)
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
+[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+[BG-Park] Task223 render thread released (foreground lifecycle)
+2026-10-07 19:05:15.832 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:15.836 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:15.840 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:15.842 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:15.845 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:15.848 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+14s
+2026-10-07 19:05:16.837 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:16.854 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:16.862 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:16.869 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:16.919 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:16.935 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:16.985 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.002 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.068 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.085 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.302 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.319 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.655 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.671 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.721 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.738 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.803 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.819 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.935 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:17.952 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+16s
+2026-10-07 19:05:18.581 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:18.582 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:18.622 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:18.637 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:18.769 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:18.785 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:19.204 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+2026-10-07 19:05:19.221 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 12.0)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+18s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+20s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+22s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+24s
+[FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
+[InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[BG-Park] Task223 render thread parking armed (willResignActive)
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
+[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+[BG-Park] Task223 render thread released (foreground lifecycle)
+[FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
+[InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[BG-Park] Task223 render thread parking armed (willResignActive)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+26s
+[FG-Lifecycle] didEnterBackground: swapOK=0 swapFail=0
+[InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[IconLoader] App entered background: cancelled all ongoing downloads
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+28s
+[FG-Lifecycle] willEnterForeground: swapOK=0 swapFail=0
+[BG-Park] Task223 render thread released (foreground lifecycle)
+[BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261006)
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
+[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+2026-10-07 19:05:35.820 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.821 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.822 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.822 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.823 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.823 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.825 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.825 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.825 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.826 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.826 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.826 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.826 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.826 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.827 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.827 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.827 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:35.827 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+30s
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+32s
+2026-10-07 19:05:39.679 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:39.680 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:39.682 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:39.684 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:39.686 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:39.687 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:39.688 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:39.690 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:05:39.691 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[Task173] safe heap ceiling: os_proc_available_memory=12216MB -> Xmx ceiling 11016MB (native reserve 1200MB, no floor on authoritative path)
+2026-10-07 19:05:40.104 AngelAuraAmethyst[11488:3113196] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+34s
+[ProfileSettings] Task150: renderer picker opened (11 options incl. single 'mg'; follow-global retired)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+36s
+[MCDL] SHA1 failed for 1.20.1.json (expected: 760a390e336b2b6202ec5906757cee3a929a7c85, got: c0a00f47b3dae01d83e21be9a646c9232379d9ab)
+[MCDL] Downloading 1.20.1.json
+[MCDL] Task187: verify stage entered (elapsed 0.1s since downloadVersion:)
+[MCDL] SHA1 passed for 1.20.1.json
+[MCDL] Replacing JNA 5.12.1 with 5.13.0 for iOS compatibility (required by 1.20.1)
+[MCDL] SHA1 failed for assets/indexes/5.json (expected: c8035a2d33a185b89644c37f1fb98e5d0120273d, got: 3d1e8e9cad62f188270564f4bdfd3a79df9be65a)
+[MCDL] Downloading assets/indexes/5.json
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-windows-x86
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+38s
+[JIT] [RightPanel] Task224 closing presented stack ('PLTaskProgressViewController') + 0.8s settle before JIT wait
+[JIT] [RightPanel] Task224 closing presented stack ('PLTaskProgressViewController') + 0.8s settle before JIT wait
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+40s
+[JIT] [RightPanel] invokeAfterJITEnabled: dynamicCS=0 trollStore=0 CS_DEBUGGED=0 ppid=1 traced=0 exn=0 JIT_FLAGS=0x7
+[JIT] [RightPanel] Task134 enabler=auto noScript=0
+sandbox_extension_issue_file failed for : 2 (No such file or directory)
+[JIT] [RightPanel] Task179 background task assertion: id=9 valid=1 (remaining bg time fg(n/a))
+[JIT] Task181 isJITEnabled wait begin: startForeground=1 traced=0 exn=0 csdbg=0
+[JIT] Task169 isJITEnabled: still waiting after 0s (traced=0 exn=0)
+[FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
+[InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[BG-Park] Task223 render thread parking armed (willResignActive)
+[JIT] [RightPanel] Task176 openURL stikjit:// -> 1
+[JIT] Task181 isJITEnabled app went to BACKGROUND while waiting (traced=0 exn=0)
+[JIT] [RightPanel] invokeAfterJITEnabled: dynamicCS=0 trollStore=0 CS_DEBUGGED=0 ppid=1 traced=0 exn=0 JIT_FLAGS=0x7
+[JIT] [RightPanel] Task134 enabler=auto noScript=0
+sandbox_extension_issue_file failed for : 2 (No such file or directory)
+[JIT] [RightPanel] Task179 background task assertion: id=10 valid=1 (remaining bg time fg(n/a))
+[JIT] Task181 isJITEnabled wait begin: startForeground=0 traced=0 exn=0 csdbg=0
+[JIT] Task169 isJITEnabled: still waiting after 0s (traced=0 exn=0)
+[FG-Lifecycle] didEnterBackground: swapOK=0 swapFail=0
+[InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[IconLoader] App entered background: cancelled all ongoing downloads
+[JIT] [RightPanel] Task176 openURL stikjit:// -> 0
+[UI] Dialog shown: 错误: stikjit:// 无响应（未安装 StikDebug？）。请在设置的 JIT 开启工具改用 SideStore/StosDebug/JITStreamer，或安装 StikDebug 后重试。
+[FG-Lifecycle] willEnterForeground: swapOK=0 swapFail=0
+[BG-Park] Task223 render thread released (foreground lifecycle)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100a15224) -- re-armed at t+42s
+[JIT] Task181 isJITEnabled condition satisfied after 2.9s (traced=1 exn=1)
+[JIT] Task181 isJITEnabled condition satisfied after 2.4s (traced=1 exn=1)
+[JIT] [RightPanel] Task183 wait-completed block entered on main (ok=1)
+[JIT] [RightPanel] Task183 invoking launch handler
+[TouchController] Task172 profile '1.20.1' TouchController off -- global settings untouched
+[SurfaceSwap] Task183 launching SurfaceViewController (synchronous root swap; version=(null))
+[JIT] [RightPanel] Task183 wait-completed block entered on main (ok=1)
+[JIT] [RightPanel] Task183 invoking launch handler
+[TouchController] Task172 profile '1.20.1' TouchController off -- global settings untouched
+[SurfaceSwap] Task183 launching SurfaceViewController (synchronous root swap; version=(null))
+[BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261006)
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
+[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+[SurfaceViewController] FPS counter setup: profileRenderer=libtinygl4angle.dylib, envRenderer=(null), graphicsApi=(null), isVulkan=0, configuredVulkanExpected=0 (actual path decided at runtime via pojavIsActualVulkanPath)
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[SurfaceVC] CAMetalLayer configured: drawableSize=2360x1640, maximumDrawableCount=3, presentsWithTransaction=0, drawsAsynchronously=1, contentsScale=2.00
+[CustomControls] Task83b decorative sub-button pass-through enabled #1 (name=, touch no longer swallowed)
+[CustomControls] Task83b decorative sub-button pass-through enabled #2 (name=, touch no longer swallowed)
+[TouchController] Sender ready on port 12450
+[SurfaceViewController] Launching Minecraft with accountId: 47e84d5d-0c12-4d51-b768-236bd1779682, version: 17, size: 2360x1640
+[JavaLauncher] Beginning JVM launch
+[JavaLauncher] Task205: AMETHYST_LOG_LEVEL=debug (renderer diagnostics verbose)
+[JavaLauncher] MoltenVK performance tracking + IMMEDIATE present mode requested for VSync diagnosis
+[JavaLauncher] Framerate unlock configuration:
+[JavaLauncher]   video.disable_game_vsync=1
+[JavaLauncher]   POJAV_DISABLE_VSYNC=1
+[JavaLauncher]   UIScreen.maximumFramesPerSecond=60
+[JavaLauncher] Reading custom environment variables
+[JavaLauncher] Warning: skipped empty value custom env variable: 
+[DyldLVBypass] TXM debug JIT mapping active — keeping debugger attached for dyld bypass
+[DyldLVBypass] init
+[DyldLVBypass] Using redirectFunctionMirrored
+[DyldLVBypass] found dyld_mmap at 0x18ec7a7d4
+[DyldLVBypass] hook dyld_mmap succeed!
+[DyldLVBypass] found dyld_fcntl at 0x18ec716cc
+[DyldLVBypass] hook dyld_fcntl succeed!
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[JavaLauncher] init_loadMobileGluesConfig: renderer=libtinygl4angle.dylib
+[JavaLauncher] MobileGlues config not written (renderer is not mobileglues/auto/vulkan/mgfamily)
+[JavaLauncher] Task130: AMETHYST_FSR_RCAS_SHARPNESS=0.2000 exported (RCAS sharpness, mpv scale, default 0.2, negative = off)
+[JavaLauncher] Task138: POJAV_NATIVEDIR=/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents (controlify JNA direct-mapping guard: libsdl4j ffi closure thunks are non-executable on iOS, steer Pojav-aware mods to graceful GLFW fallback)
+[JavaLauncher] Task158: library gate clean (36 present, 53 skipped)
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[JavaLauncher] RENDERER is set to libtinygl4angle.dylib
+[JavaLauncher] GRAPHICS_API is set to default
+[SurfaceViewController] FPS counter setup: profileRenderer=libtinygl4angle.dylib, envRenderer=libtinygl4angle.dylib, graphicsApi=default, isVulkan=0, configuredVulkanExpected=0 (actual path decided at runtime via pojavIsActualVulkanPath)
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[CustomControls] Task83b decorative sub-button pass-through enabled #3 (name=, touch no longer swallowed)
+[CustomControls] Task83b decorative sub-button pass-through enabled #4 (name=, touch no longer swallowed)
+[TouchController] Sender ready on port 12450
+[SurfaceViewController] Launching Minecraft with accountId: 47e84d5d-0c12-4d51-b768-236bd1779682, version: 17, size: 2360x1640
+[JavaLauncher] Beginning JVM launch
+[JavaLauncher] Task205: AMETHYST_LOG_LEVEL=debug (renderer diagnostics verbose)
+[JavaLauncher] MoltenVK performance tracking + IMMEDIATE present mode requested for VSync diagnosis
+[JavaLauncher] Framerate unlock configuration:
+[JavaLauncher]   video.disable_game_vsync=1
+[JavaLauncher]   POJAV_DISABLE_VSYNC=1
+[JavaLauncher]   UIScreen.maximumFramesPerSecond=60
+[JavaLauncher] Reading custom environment variables
+[JavaLauncher] Warning: skipped empty value custom env variable: 
+[DyldLVBypass] TXM debug JIT mapping active — keeping debugger attached for dyld bypass
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[JavaLauncher] init_loadMobileGluesConfig: renderer=libtinygl4angle.dylib
+[JavaLauncher] MobileGlues config not written (renderer is not mobileglues/auto/vulkan/mgfamily)
+[JavaLauncher] Task130: AMETHYST_FSR_RCAS_SHARPNESS=0.2000 exported (RCAS sharpness, mpv scale, default 0.2, negative = off)
+[JavaLauncher] Task138: POJAV_NATIVEDIR=/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents (controlify JNA direct-mapping guard: libsdl4j ffi closure thunks are non-executable on iOS, steer Pojav-aware mods to graceful GLFW fallback)
+[JavaLauncher] Task158: library gate clean (36 present, 53 skipped)
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[JavaLauncher] RENDERER is set to libtinygl4angle.dylib
+[JavaLauncher] GRAPHICS_API is set to default
+[PLDisplayLinkTarget] displayLinkTick #1 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #1 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #2 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #2 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #3 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #3 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #4 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #4 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #5 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #5 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[AssetsHeal] Task225 assets integrity OK (3598 objects checked, index=5)
+[Task225] keybind wash RETIRED (dump-only; markers v1=1 v2=1, v3 restore PENDING)
+[Task67] ===== options.txt keybind dump (pre-sanitize) =====
+[Task67]   toggleCrouch:false (sneak/sprint toggle mode)
+[Task67]   toggleSprint:false (sneak/sprint toggle mode)
+[Task67]   key_key.attack:key.mouse.left
+[Task67]   key_key.use:key.mouse.right
+[Task67]   key_key.forward:key.keyboard.w
+[Task67]   key_key.left:key.keyboard.a
+[Task67]   key_key.back:key.keyboard.s
+[Task67]   key_key.right:key.keyboard.d
+[Task67]   key_key.jump:key.keyboard.space
+[Task67]   key_key.sneak:key.keyboard.left.shift
+[Task225] keybind v3 RESTORE sneak: key.keyboard.left.shift -> key.keyboard.right.shift (isolation relayout re-wash repair; one-shot)
+[Task67]   key_key.sprint:key.keyboard.left.control
+[Task67]   key_key.drop:key.keyboard.q
+[Task67]   key_key.inventory:key.keyboard.e
+[Task67]   key_key.chat:key.keyboard.t
+[Task67]   key_key.playerlist:key.keyboard.tab
+[Task67]   key_key.pickItem:key.mouse.middle
+[Task67]   key_key.command:key.keyboard.slash
+[Task67]   key_key.friends:key.keyboard.o
+[Task67]   key_key.socialInteractions:key.keyboard.p
+[Task67]   key_key.toggleGui:key.keyboard.f1
+[Task67]   key_key.toggleSpectatorShaderEffects:key.keyboard.f4
+[Task67]   key_key.screenshot:key.keyboard.f2
+[Task67]   key_key.togglePerspective:key.keyboard.f5
+[Task67]   key_key.smoothCamera:key.keyboard.unknown
+[Task67] SUSPICIOUS (unknown-scancode binding, left as-is): key_key.smoothCamera:key.keyboard.unknown
+[Task67]   key_key.fullscreen:key.keyboard.f11
+[Task67]   key_key.spectatorOutlines:key.keyboard.unknown
+[Task67] SUSPICIOUS (unknown-scancode binding, left as-is): key_key.spectatorOutlines:key.keyboard.unknown
+[Task67]   key_key.spectatorHotbar:key.mouse.middle
+[Task67]   key_key.swapOffhand:key.keyboard.f
+[Task67]   key_key.saveToolbarActivator:key.keyboard.c
+[Task67]   key_key.loadToolbarActivator:key.keyboard.x
+[Task67]   key_key.advancements:key.keyboard.l
+[Task67]   key_key.quickActions:key.keyboard.g
+[Task67]   key_key.debug.overlay:key.keyboard.f3
+[Task67]   key_key.debug.modifier:key.keyboard.f3
+[Task67]   key_key.hotbar.1:key.keyboard.1
+[Task67]   key_key.hotbar.2:key.keyboard.2
+[Task67]   key_key.hotbar.3:key.keyboard.3
+[Task67]   key_key.hotbar.4:key.keyboard.4
+[Task67]   key_key.hotbar.5:key.keyboard.5
+[Task67]   key_key.hotbar.6:key.keyboard.6
+[Task67]   key_key.hotbar.7:key.keyboard.7
+[Task67]   key_key.hotbar.8:key.keyboard.8
+[Task67]   key_key.hotbar.9:key.keyboard.9
+[Task67]   key_key.debug.reloadChunk:key.keyboard.a
+[Task67]   key_key.debug.showHitboxes:key.keyboard.b
+[Task67]   key_key.debug.clearChat:key.keyboard.d
+[Task67]   key_key.debug.crash:key.keyboard.c
+[Task67]   key_key.debug.showChunkBorders:key.keyboard.g
+[Task67]   key_key.debug.showAdvancedTooltips:key.keyboard.h
+[Task67]   key_key.debug.copyRecreateCommand:key.keyboard.i
+[Task67]   key_key.debug.spectate:key.keyboard.n
+[Task67]   key_key.debug.switchGameMode:key.keyboard.f4
+[Task67]   key_key.debug.debugOptions:key.keyboard.f6
+[Task67]   key_key.debug.focusPause:key.keyboard.p
+[Task67]   key_key.debug.dumpDynamicTextures:key.keyboard.s
+[Task67]   key_key.debug.reloadResourcePacks:key.keyboard.t
+[Task67]   key_key.debug.profiling:key.keyboard.l
+[Task67]   key_key.debug.copyLocation:key.keyboard.c
+[Task67]   key_key.debug.dumpVersion:key.keyboard.v
+[Task67]   key_key.debug.profilingChart:key.keyboard.1
+[Task67]   key_key.debug.fpsCharts:key.keyboard.2
+[Task67]   key_key.debug.networkCharts:key.keyboard.3
+[Task67]   key_key.debug.lightmapTexture:key.keyboard.4
+[Task67]   key_key.debug.improvedTransparency:key.keyboard.x
+[Task67] ===== keybind sanitize: 1 repaired, 2 suspicious, backup=/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/1.20.1/game/options.txt.amethyst-bak, write=OK =====
+[Task225] keybind v3 marker written (/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/1.20.1/game/options.txt.amethyst-keybinds-v3)
+[JavaLauncher] Looking for Java 17 or later
+[JavaLauncher] JAVA_HOME has been set to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk
+[Task141] launch memory from instance profile: 2048 MB
+[JavaLauncher] Max RAM allocation is set to 2048 MB
+[JavaLauncher] Task68 GC/safepoint pause logging enabled (-Xlog:gc,safepoint -> stdout)
+[JavaLauncher] library.path = /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks
+[Amethyst] Task112: OpenAL pinned to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/libopenal.dylib
+[JavaLauncher] Published Metallum surface view: 0x1139fcc40 (scale=2)
+[JavaLauncher] Added JVM property -Dmax.fps=260 (frame rate unlock layer 4)
+[JavaLauncher] Adding authlib-injector arguments for third party account
+[ThirdPartyAuthenticator] Added prefetched metadata parameter (length=1780)
+[JavaLauncher] Added authlib-injector arg: -javaagent:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/authlib-injector/authlib-injector.jar=https://littleskin.cn/api/yggdrasil/
+[JavaLauncher] Added authlib-injector arg: -Dauthlibinjector.side=client
+[JavaLauncher] Added authlib-injector arg: -Dauthlibinjector.yggdrasil.prefetched=eyJtZXRhIjp7ImZlYXR1cmUuZW5hYmxlX21vamFuZ19hbnRpX2ZlYXR1cmVzIjp0cnVlLCJmZWF0dXJlLmVuYWJsZV9wcm9maWxlX2tleSI6dHJ1ZSwiZmVhdHVyZS5ub25fZW1haWxfbG9naW4iOnRydWUsImZlYXR1cmUub3BlbmlkX2NvbmZpZ3VyYXRpb25fdXJsIjoiaHR0cHM6Ly9vcGVuLmxpdHRsZXNraW4uY24vLndlbGwta25vd24vb3BlbmlkLWNvbmZpZ3VyYXRpb24iLCJpbXBsZW1lbnRhdGlvbk5hbWUiOiJZZ2dkcmFzaWwgQ29ubmVjdCIsImltcGxlbWVudGF0aW9uVmVyc2lvbiI6IjAuMC44IiwibGlua3MiOnsiYW5ub3VuY2VtZW50IjoiaHR0cHM6Ly9saXR0bGVza2luLmNuL2FwaS9hbm5vdW5jZW1lbnRzIiwiaG9tZXBhZ2UiOiJodHRwczovL2xpdHRsZXNraW4uY24iLCJyZWdpc3RlciI6Imh0dHBzOi8vbGl0dGxlc2tpbi5jbi9hdXRoL3JlZ2lzdGVyIn0sInNlcnZlck5hbWUiOiJMaXR0bGVTa2luIn0sInNpZ25hdHVyZVB1YmxpY2tleSI6Ii0tLS0tQkVHSU4gUFVCTElDIEtFWS0tLS0tXG5NSUlDSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQWc4QU1JSUNDZ0tDQWdFQXJHY05PT0ZJcUxKU3FvRTN1MGhqXG50T0VuT2NFVDN3ajlEcnNzMUJFNnNCcWdQbzBiTXVsT1VMaHFqa2MvdUgvd3lvc1luenczeGFhekp0ODdqVEhoXG5KOEJQTXhDZVFNb3lFZFJvUzNKbmoxRzBLZXpqNEEyYjYxUEpKTTFEcHZEQWNxUUJZc3JTZHBCSis1Mk1qb0dTXG52Sm9lUU81WFVsSlZRbTIxL0htSm5xc1BoemNBNkhnWTcxUkhZRTV4bmhwV0ppUHhMS1VQdG10NkNOWVVRUW9TXG5vMnYzNlhXZ01tTEJaaEFiTk9QeFlYKzFpb3hLYW1qaExPMjlVaHd0Z1k5VTZQV0VPNy9TQmZYenlSUFR6aFBWXG4ybkhxN0tKcWQ4SUlybHRzbHY2aS80RkVNODFpdlMvbW0rUE4zaFlsSVlLNno2WW1paTFuclFBcGxzSjY3T0dxXG5ZSHRXS092cGZUek9vbGx1Z3NSaWhrQUc0T0I2aE0wUHI0NWpqQzNUSWM3ZU83a09nSWNHVUdVUUd1dXVnREV6XG5KMU45RkZXbk4vSDZQOXVrRmVnNVNtR0M1K3dtVVBaWkN0TkJMcjhvOHNJNUg3UWhLN05nd0NhR0ZvWXVpQUdMXG5nejNrLzNZd0o0MEJid1FheVEyZ0lxZW56K1hPRklBbGFqdisvbnlmY0R2Wkg5dkdOS1A5bFZjSFhVVDVZUm5TXG5aU0hvNWx3dlZyWVVycUVBYmgvekR6OFFNRXlpdWpXdlVrUGhaczlmaDZmaW1VR3h0bThtRklQQ3RQSlZYamVZXG53RDNMdnQzYUlCMUpIZFVUSlIzZUVjNGVJYVRLTXdNUHlKUnpWbjV6S3NpdGFaejNubi9jT0Evd1pDOW9xeUVVXG5tYzloNlpNUlRSVUVFNFR0YUp5ZzlsTUNBd0VBQVE9PVxuLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tXG4iLCJza2luRG9tYWlucyI6WyJsaXR0bGVza2luLmNuIl19
+[JavaLauncher] Task201: Metallum agent skipped: MC major 1 < 26 (agent needs Java 21+ class files, this session runs Java 8)
+[JavaLauncher] JVM GC optimization: G1GC + MaxGCPauseMillis=50 + StringDeduplication (Java 17+)
+[SDLHook] Task133: libjli image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/libjli.dylib) -- rebinding its _dlopen slots
+[SDLHook] Task133: _dlopen slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlopen chain now routes through the hook
+[SDLHook] Task133: _dlsym slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlsym chain now routes through the hook
+[SDLHook] Task134: JVM image watchdog started (200ms dyld scan, chain-independent JNA rebind backstop)
+[JavaLauncher] Caciocavallo: isJava8=0 libs=libs_caciocavallo17 mode=/a
+[JavaLauncher] Reading custom JVM flags
+[Init] Found JLI lib
+[JavaLauncher] Using LWJGL 333 (mcVersion=1.20.1)
+[JavaLauncher] Using LWJGL jar at /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/libs/lwjgl-333/lwjgl.jar
+[CwdAlign] Task97: process CWD aligned to game dir: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/1.20.1/game
+[AppKitStub] Task99: NSApplication/NSMenu/NSMenuItem stubs installed (iOS has no AppKit; MC 26.3 MacosUtil menu walk no-ops, numberOfItems=0)
+[Init] Calling JLI_Launch
+[SDLHook] Task133: libjvm image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib) -- rebinding its _dlopen slots
+[SDLHook] Task133: _dlopen slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlopen chain now routes through the hook
+[SDLHook] Task133: _dlsym slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlsym chain now routes through the hook
+[AssetsHeal] Task225 assets integrity OK (3598 objects checked, index=5)
+[Task225] keybind wash RETIRED (dump-only; markers v1=1 v2=1, v3 restore off)
+[Task67] ===== options.txt keybind dump (pre-sanitize) =====
+[Task67]   toggleCrouch:false (sneak/sprint toggle mode)
+[Task67]   toggleSprint:false (sneak/sprint toggle mode)
+[Task67]   key_key.attack:key.mouse.left
+[Task67]   key_key.use:key.mouse.right
+[Task67]   key_key.forward:key.keyboard.w
+[Task67]   key_key.left:key.keyboard.a
+[Task67]   key_key.back:key.keyboard.s
+[Task67]   key_key.right:key.keyboard.d
+[Task67]   key_key.jump:key.keyboard.space
+[Task67]   key_key.sneak:key.keyboard.right.shift
+[Task67]   key_key.sprint:key.keyboard.left.control
+[Task67]   key_key.drop:key.keyboard.q
+[Task67]   key_key.inventory:key.keyboard.e
+[Task67]   key_key.chat:key.keyboard.t
+[Task67]   key_key.playerlist:key.keyboard.tab
+[Task67]   key_key.pickItem:key.mouse.middle
+[Task67]   key_key.command:key.keyboard.slash
+[Task67]   key_key.friends:key.keyboard.o
+[Task67]   key_key.socialInteractions:key.keyboard.p
+[Task67]   key_key.toggleGui:key.keyboard.f1
+[Task67]   key_key.toggleSpectatorShaderEffects:key.keyboard.f4
+[Task67]   key_key.screenshot:key.keyboard.f2
+[Task67]   key_key.togglePerspective:key.keyboard.f5
+[Task67]   key_key.smoothCamera:key.keyboard.unknown
+[Task67] SUSPICIOUS (unknown-scancode binding, left as-is): key_key.smoothCamera:key.keyboard.unknown
+[Task67]   key_key.fullscreen:key.keyboard.f11
+[Task67]   key_key.spectatorOutlines:key.keyboard.unknown
+[Task67] SUSPICIOUS (unknown-scancode binding, left as-is): key_key.spectatorOutlines:key.keyboard.unknown
+[Task67]   key_key.spectatorHotbar:key.mouse.middle
+[Task67]   key_key.swapOffhand:key.keyboard.f
+[Task67]   key_key.saveToolbarActivator:key.keyboard.c
+[Task67]   key_key.loadToolbarActivator:key.keyboard.x
+[Task67]   key_key.advancements:key.keyboard.l
+[Task67]   key_key.quickActions:key.keyboard.g
+[Task67]   key_key.debug.overlay:key.keyboard.f3
+[Task67]   key_key.debug.modifier:key.keyboard.f3
+[Task67]   key_key.hotbar.1:key.keyboard.1
+[Task67]   key_key.hotbar.2:key.keyboard.2
+[Task67]   key_key.hotbar.3:key.keyboard.3
+[Task67]   key_key.hotbar.4:key.keyboard.4
+[Task67]   key_key.hotbar.5:key.keyboard.5
+[Task67]   key_key.hotbar.6:key.keyboard.6
+[Task67]   key_key.hotbar.7:key.keyboard.7
+[Task67]   key_key.hotbar.8:key.keyboard.8
+[Task67]   key_key.hotbar.9:key.keyboard.9
+[Task67]   key_key.debug.reloadChunk:key.keyboard.a
+[Task67]   key_key.debug.showHitboxes:key.keyboard.b
+[Task67]   key_key.debug.clearChat:key.keyboard.d
+[Task67]   key_key.debug.crash:key.keyboard.c
+[Task67]   key_key.debug.showChunkBorders:key.keyboard.g
+[Task67]   key_key.debug.showAdvancedTooltips:key.keyboard.h
+[Task67]   key_key.debug.copyRecreateCommand:key.keyboard.i
+[Task67]   key_key.debug.spectate:key.keyboard.n
+[Task67]   key_key.debug.switchGameMode:key.keyboard.f4
+[Task67]   key_key.debug.debugOptions:key.keyboard.f6
+[Task67]   key_key.debug.focusPause:key.keyboard.p
+[Task67]   key_key.debug.dumpDynamicTextures:key.keyboard.s
+[Task67]   key_key.debug.reloadResourcePacks:key.keyboard.t
+[Task67]   key_key.debug.profiling:key.keyboard.l
+[Task67]   key_key.debug.copyLocation:key.keyboard.c
+[Task67]   key_key.debug.dumpVersion:key.keyboard.v
+[Task67]   key_key.debug.profilingChart:key.keyboard.1
+[Task67]   key_key.debug.fpsCharts:key.keyboard.2
+[Task67]   key_key.debug.networkCharts:key.keyboard.3
+[Task67]   key_key.debug.lightmapTexture:key.keyboard.4
+[Task67]   key_key.debug.improvedTransparency:key.keyboard.x
+[Task67] ===== keybind sanitize: 0 repairs needed (all canonical / defaults) =====
+[JavaLauncher] Looking for Java 17 or later
+[JavaLauncher] JAVA_HOME has been set to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk
+[Task141] launch memory from instance profile: 2048 MB
+[JavaLauncher] Max RAM allocation is set to 2048 MB
+[JavaLauncher] Task68 GC/safepoint pause logging enabled (-Xlog:gc,safepoint -> stdout)
+[JavaLauncher] library.path = /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks
+[Amethyst] Task112: OpenAL pinned to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/libopenal.dylib
+[JavaLauncher] Published Metallum surface view: 0x1139fcc40 (scale=2)
+[JavaLauncher] Added JVM property -Dmax.fps=260 (frame rate unlock layer 4)
+[JavaLauncher] Adding authlib-injector arguments for third party account
+[ThirdPartyAuthenticator] Added prefetched metadata parameter (length=1780)
+[JavaLauncher] Added authlib-injector arg: -javaagent:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/authlib-injector/authlib-injector.jar=https://littleskin.cn/api/yggdrasil/
+[JavaLauncher] Added authlib-injector arg: -Dauthlibinjector.side=client
+[JavaLauncher] Added authlib-injector arg: -Dauthlibinjector.yggdrasil.prefetched=eyJtZXRhIjp7ImZlYXR1cmUuZW5hYmxlX21vamFuZ19hbnRpX2ZlYXR1cmVzIjp0cnVlLCJmZWF0dXJlLmVuYWJsZV9wcm9maWxlX2tleSI6dHJ1ZSwiZmVhdHVyZS5ub25fZW1haWxfbG9naW4iOnRydWUsImZlYXR1cmUub3BlbmlkX2NvbmZpZ3VyYXRpb25fdXJsIjoiaHR0cHM6Ly9vcGVuLmxpdHRsZXNraW4uY24vLndlbGwta25vd24vb3BlbmlkLWNvbmZpZ3VyYXRpb24iLCJpbXBsZW1lbnRhdGlvbk5hbWUiOiJZZ2dkcmFzaWwgQ29ubmVjdCIsImltcGxlbWVudGF0aW9uVmVyc2lvbiI6IjAuMC44IiwibGlua3MiOnsiYW5ub3VuY2VtZW50IjoiaHR0cHM6Ly9saXR0bGVza2luLmNuL2FwaS9hbm5vdW5jZW1lbnRzIiwiaG9tZXBhZ2UiOiJodHRwczovL2xpdHRsZXNraW4uY24iLCJyZWdpc3RlciI6Imh0dHBzOi8vbGl0dGxlc2tpbi5jbi9hdXRoL3JlZ2lzdGVyIn0sInNlcnZlck5hbWUiOiJMaXR0bGVTa2luIn0sInNpZ25hdHVyZVB1YmxpY2tleSI6Ii0tLS0tQkVHSU4gUFVCTElDIEtFWS0tLS0tXG5NSUlDSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQWc4QU1JSUNDZ0tDQWdFQXJHY05PT0ZJcUxKU3FvRTN1MGhqXG50T0VuT2NFVDN3ajlEcnNzMUJFNnNCcWdQbzBiTXVsT1VMaHFqa2MvdUgvd3lvc1luenczeGFhekp0ODdqVEhoXG5KOEJQTXhDZVFNb3lFZFJvUzNKbmoxRzBLZXpqNEEyYjYxUEpKTTFEcHZEQWNxUUJZc3JTZHBCSis1Mk1qb0dTXG52Sm9lUU81WFVsSlZRbTIxL0htSm5xc1BoemNBNkhnWTcxUkhZRTV4bmhwV0ppUHhMS1VQdG10NkNOWVVRUW9TXG5vMnYzNlhXZ01tTEJaaEFiTk9QeFlYKzFpb3hLYW1qaExPMjlVaHd0Z1k5VTZQV0VPNy9TQmZYenlSUFR6aFBWXG4ybkhxN0tKcWQ4SUlybHRzbHY2aS80RkVNODFpdlMvbW0rUE4zaFlsSVlLNno2WW1paTFuclFBcGxzSjY3T0dxXG5ZSHRXS092cGZUek9vbGx1Z3NSaWhrQUc0T0I2aE0wUHI0NWpqQzNUSWM3ZU83a09nSWNHVUdVUUd1dXVnREV6XG5KMU45RkZXbk4vSDZQOXVrRmVnNVNtR0M1K3dtVVBaWkN0TkJMcjhvOHNJNUg3UWhLN05nd0NhR0ZvWXVpQUdMXG5nejNrLzNZd0o0MEJid1FheVEyZ0lxZW56K1hPRklBbGFqdisvbnlmY0R2Wkg5dkdOS1A5bFZjSFhVVDVZUm5TXG5aU0hvNWx3dlZyWVVycUVBYmgvekR6OFFNRXlpdWpXdlVrUGhaczlmaDZmaW1VR3h0bThtRklQQ3RQSlZYamVZXG53RDNMdnQzYUlCMUpIZFVUSlIzZUVjNGVJYVRLTXdNUHlKUnpWbjV6S3NpdGFaejNubi9jT0Evd1pDOW9xeUVVXG5tYzloNlpNUlRSVUVFNFR0YUp5ZzlsTUNBd0VBQVE9PVxuLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tXG4iLCJza2luRG9tYWlucyI6WyJsaXR0bGVza2luLmNuIl19
+[JavaLauncher] Task201: Metallum agent skipped: MC major 1 < 26 (agent needs Java 21+ class files, this session runs Java 8)
+[JavaLauncher] JVM GC optimization: G1GC + MaxGCPauseMillis=50 + StringDeduplication (Java 17+)
+[JavaLauncher] Caciocavallo: isJava8=0 libs=libs_caciocavallo17 mode=/a
+[JavaLauncher] Reading custom JVM flags
+[Init] Found JLI lib
+[JavaLauncher] Using LWJGL 333 (mcVersion=1.20.1)
+[JavaLauncher] Using LWJGL jar at /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/libs/lwjgl-333/lwjgl.jar
+[CwdAlign] Task97: process CWD aligned to game dir: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/1.20.1/game
+[Init] Calling JLI_Launch
+Error: Could not create the Java Virtual Machine.
+Error: A fatal exception has occurred. Program will exit.
+[RenderDiag] exit(1) snapshot: swapOK=0 swapFail=0
+exit(1) called
+
+===== [Amethyst fatal trace] 2026-10-07 19:05:49.773 =====
+reason: exit(1) called
+thread: (unnamed)
+  #00 0x109d90f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
+  #01 0x109d9188c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71820
+  #02 0x114c8cfec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/libjli.dylib  CheckJvmType.cold.1 + 69612
+  #03 0x114c86fd0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/libjli.dylib  PrintUsage + 45008
+  #04 0x114c899b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/libjli.dylib  ThreadJavaMain + 55736
+  #05 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
+  #06 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
+

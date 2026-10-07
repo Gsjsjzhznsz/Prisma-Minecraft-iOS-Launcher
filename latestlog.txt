@@ -1,0 +1,1223 @@
+[shaderc-sandbox] fork() failed errno=1 -- sandbox disabled (iOS sandbox denies fork on this install?)
+[Pre-Init] Prisma Launcher (fork of Amethyst iOS Remastered) INIT!
+[Pre-Init] Fork: https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher
+[Pre-Init] Upstream: https://github.com/herbrine8403/Amethyst-iOS-MyRemastered
+[Pre-Init] Please try not to post this log of the remastered launcher to the original GitHub Issues for help.
+[Pre-Init] Version: 6.5.0
+[Pre-Init] Commit: 91ff52e (main)
+[Pre-Init] Device: iPad Air 11-inch (M4)
+[Pre-Init] iPadOS 27.0.1 (24A446) (Unjailbroken)
+[Pre-init] Entitlements availability:
+* com.apple.developer.kernel.extended-virtual-addressing: NO
+* com.apple.developer.kernel.increased-memory-limit: YES
+* com.apple.private.security.no-sandbox: NO
+* jb.pmap_cs.custom_trust: NO
+* dynamic-codesigning: NO
+[PLPreferences] Getter could not find preference download.speed_probe.bmclapi
+[PLPreferences] Getter could not find preference download.speed_probe.mcim
+[main_hook] Task202: CAMetalLayer nextDrawable hook installed (Metal first-frame signal; fires only in AMETHYST_METAL sessions while running)
+[Debugging] Debug log enabled: YES
+[Pre-init] Restored game directory preference (default)
+[SceneDelegate] Task191: uncaught-exception handler re-armed at willConnect
+[SceneDelegate] Task188: geometry request declined (expected in window mode; Info.plist UIRequiresFullScreen is the primary fix): 当前窗口模式不允许以编程方式更改界面方向。
+[PLPreferences] Getter could not find preference download.speed_probe.bmclapi
+2026-10-07 19:08:44.007 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:08:44.008 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task172 branch: network fetch started (URL present, length=211)
+[HomeAvatar] Task172 sync skipped: currentAvatar is nil (check branch log above)
+[PLPreferences] Getter could not find preference general.download_source
+[PLPreferences] Getter could not find preference internal.autolaunch_profile
+[HomeAvatar] Task172 branch: network fetch started (URL present, length=211)
+2026-10-07 19:08:44.103 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:08:44.104 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:08:44.105 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:08:44.106 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:08:44.106 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:08:44.107 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:08:44.108 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:08:44.108 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:08:44.109 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task172 sync skipped: currentAvatar is nil (check branch log above)
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[SceneDelegate] Task189: landscape window transform evaluated (bounds={{0, 0}, {1180, 820}} rotated=0)
+[SceneDelegate] libterracotta linked, multiplayer available (lazy init)
+[FG-Lifecycle] willEnterForeground: swapOK=0 swapFail=0
+2026-10-07 19:08:44.151 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+2026-10-07 19:08:44.154 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+2026-10-07 19:08:44.155 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task172 sync skipped: currentAvatar is nil (check branch log above)
+[HomeAvatar] Task172 fetch completion: img=yes (128x128)
+2026-10-07 19:08:44.159 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
+[HomeAvatar] Task172 fetch completion: img=yes (128x128)
+2026-10-07 19:08:44.160 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
+[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+2026-10-07 19:08:44.528 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
+2026-10-07 19:08:44.631 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[PLPreferences] Getter could not find preference download.speed_probe.mcim
+[IconLoader] Initialization complete, disk cache directory: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Library/Caches/IconLoader, mirror enabled: YES
+[PLPreferences] Getter could not find preference download.speed_probe.mcim
+2026-10-07 19:08:44.805 AngelAuraAmethyst[11533:3116563] [ThemeOps] Task224 layered glass applied (radius 16.0)
+[BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261006)
+[PLPreferences] Setter could not find preference download.speed_probe.mcim
+2026-10-07 19:08:45.099 AngelAuraAmethyst[11533:3116579] [PLMirrorCenter] Task138 speed probe (family=1): official won (official=229ms mirror=1112ms)
+[LauncherRootVC] Task218 loaded 920 remote versions from bmclapi2.bangbang93.com
+[PLPreferences] Getter could not find preference download.speed_probe.bmclapi
+[MCDL] SHA1 passed for 1.20.1.json
+[MCDL] Replacing JNA 5.12.1 with 5.13.0 for iOS compatibility (required by 1.20.1)
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.3.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl:3.3.1:natives-windows-x86
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104165224) -- re-armed at t+2s
+[PLPreferences] Setter could not find preference download.speed_probe.bmclapi
+2026-10-07 19:08:47.057 AngelAuraAmethyst[11533:3116564] [PLMirrorCenter] Task138 speed probe (family=0): official won (official=895ms mirror=3071ms)
+[MCDL] Task187: verify stage entered (elapsed 1.5s since downloadVersion:)
+[JIT] [RightPanel] Task224 closing presented stack ('PLTaskProgressViewController') + 0.8s settle before JIT wait
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104165224) -- re-armed at t+4s
+[JIT] [RightPanel] invokeAfterJITEnabled: dynamicCS=0 trollStore=0 CS_DEBUGGED=0 ppid=1 traced=0 exn=0 JIT_FLAGS=0x7
+[JIT] [RightPanel] Task134 enabler=auto noScript=0
+sandbox_extension_issue_file failed for : 2 (No such file or directory)
+[JIT] [RightPanel] Task179 background task assertion: id=2 valid=1 (remaining bg time fg(n/a))
+[JIT] Task181 isJITEnabled wait begin: startForeground=1 traced=0 exn=0 csdbg=0
+[JIT] Task169 isJITEnabled: still waiting after 0s (traced=0 exn=0)
+[FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
+[InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[BG-Park] Task223 render thread parking armed (willResignActive)
+[JIT] [RightPanel] Task176 openURL stikjit:// -> 1
+[JIT] Task181 isJITEnabled app went to BACKGROUND while waiting (traced=0 exn=0)
+[FG-Lifecycle] didEnterBackground: swapOK=0 swapFail=0
+[InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
+[IconLoader] App entered background: cancelled all ongoing downloads
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104165224) -- re-armed at t+6s
+[FG-Lifecycle] willEnterForeground: swapOK=0 swapFail=0
+[BG-Park] Task223 render thread released (foreground lifecycle)
+[JIT] Task181 isJITEnabled condition satisfied after 3.3s (traced=1 exn=1)
+[JIT] [RightPanel] Task183 wait-completed block entered on main (ok=1)
+[JIT] [RightPanel] Task183 invoking launch handler
+[TouchController] Task172 profile '1.20.1' TouchController off -- global settings untouched
+[SurfaceSwap] Task183 launching SurfaceViewController (synchronous root swap; version=(null))
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
+[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+[BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261006)
+[SurfaceViewController] FPS counter setup: profileRenderer=libtinygl4angle.dylib, envRenderer=(null), graphicsApi=(null), isVulkan=0, configuredVulkanExpected=0 (actual path decided at runtime via pojavIsActualVulkanPath)
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[SurfaceVC] CAMetalLayer configured: drawableSize=2360x1640, maximumDrawableCount=3, presentsWithTransaction=0, drawsAsynchronously=1, contentsScale=2.00
+[CustomControls] Task83b decorative sub-button pass-through enabled #1 (name=, touch no longer swallowed)
+[CustomControls] Task83b decorative sub-button pass-through enabled #2 (name=, touch no longer swallowed)
+[TouchController] Sender ready on port 12450
+[SurfaceViewController] Launching Minecraft with accountId: 47e84d5d-0c12-4d51-b768-236bd1779682, version: 17, size: 2360x1640
+[JavaLauncher] Beginning JVM launch
+[JavaLauncher] Task205: AMETHYST_LOG_LEVEL=debug (renderer diagnostics verbose)
+[JavaLauncher] MoltenVK performance tracking + IMMEDIATE present mode requested for VSync diagnosis
+[JavaLauncher] Framerate unlock configuration:
+[JavaLauncher]   video.disable_game_vsync=1
+[JavaLauncher]   POJAV_DISABLE_VSYNC=1
+[JavaLauncher]   UIScreen.maximumFramesPerSecond=60
+[JavaLauncher] Reading custom environment variables
+[JavaLauncher] Warning: skipped empty value custom env variable: 
+[DyldLVBypass] TXM debug JIT mapping active — keeping debugger attached for dyld bypass
+[DyldLVBypass] init
+[DyldLVBypass] Using redirectFunctionMirrored
+[DyldLVBypass] found dyld_mmap at 0x18ec7a7d4
+[DyldLVBypass] hook dyld_mmap succeed!
+[DyldLVBypass] found dyld_fcntl at 0x18ec716cc
+[DyldLVBypass] hook dyld_fcntl succeed!
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[JavaLauncher] init_loadMobileGluesConfig: renderer=libtinygl4angle.dylib
+[JavaLauncher] MobileGlues config not written (renderer is not mobileglues/auto/vulkan/mgfamily)
+[JavaLauncher] Task130: AMETHYST_FSR_RCAS_SHARPNESS=0.2000 exported (RCAS sharpness, mpv scale, default 0.2, negative = off)
+[JavaLauncher] Task138: POJAV_NATIVEDIR=/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents (controlify JNA direct-mapping guard: libsdl4j ffi closure thunks are non-executable on iOS, steer Pojav-aware mods to graceful GLFW fallback)
+[JavaLauncher] Task158: library gate clean (36 present, 53 skipped)
+[PLPreferences] Getter could not find preference ame217.autoRendererBlacklist
+[JavaLauncher] RENDERER is set to libtinygl4angle.dylib
+[JavaLauncher] GRAPHICS_API is set to default
+[PLDisplayLinkTarget] displayLinkTick #1 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #2 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #3 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #4 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #5 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104165224) -- re-armed at t+8s
+[AssetsHeal] Task225 assets integrity OK (3598 objects checked, index=5)
+[Task225] keybind wash RETIRED (dump-only; markers v1=1 v2=1, v3 restore off)
+[Task67] ===== options.txt keybind dump (pre-sanitize) =====
+[Task67]   toggleCrouch:false (sneak/sprint toggle mode)
+[Task67]   toggleSprint:false (sneak/sprint toggle mode)
+[Task67]   key_key.attack:key.mouse.left
+[Task67]   key_key.use:key.mouse.right
+[Task67]   key_key.forward:key.keyboard.w
+[Task67]   key_key.left:key.keyboard.a
+[Task67]   key_key.back:key.keyboard.s
+[Task67]   key_key.right:key.keyboard.d
+[Task67]   key_key.jump:key.keyboard.space
+[Task67]   key_key.sneak:key.keyboard.right.shift
+[Task67]   key_key.sprint:key.keyboard.left.control
+[Task67]   key_key.drop:key.keyboard.q
+[Task67]   key_key.inventory:key.keyboard.e
+[Task67]   key_key.chat:key.keyboard.t
+[Task67]   key_key.playerlist:key.keyboard.tab
+[Task67]   key_key.pickItem:key.mouse.middle
+[Task67]   key_key.command:key.keyboard.slash
+[Task67]   key_key.friends:key.keyboard.o
+[Task67]   key_key.socialInteractions:key.keyboard.p
+[Task67]   key_key.toggleGui:key.keyboard.f1
+[Task67]   key_key.toggleSpectatorShaderEffects:key.keyboard.f4
+[Task67]   key_key.screenshot:key.keyboard.f2
+[Task67]   key_key.togglePerspective:key.keyboard.f5
+[Task67]   key_key.smoothCamera:key.keyboard.unknown
+[Task67] SUSPICIOUS (unknown-scancode binding, left as-is): key_key.smoothCamera:key.keyboard.unknown
+[Task67]   key_key.fullscreen:key.keyboard.f11
+[Task67]   key_key.spectatorOutlines:key.keyboard.unknown
+[Task67] SUSPICIOUS (unknown-scancode binding, left as-is): key_key.spectatorOutlines:key.keyboard.unknown
+[Task67]   key_key.spectatorHotbar:key.mouse.middle
+[Task67]   key_key.swapOffhand:key.keyboard.f
+[Task67]   key_key.saveToolbarActivator:key.keyboard.c
+[Task67]   key_key.loadToolbarActivator:key.keyboard.x
+[Task67]   key_key.advancements:key.keyboard.l
+[Task67]   key_key.quickActions:key.keyboard.g
+[Task67]   key_key.debug.overlay:key.keyboard.f3
+[Task67]   key_key.debug.modifier:key.keyboard.f3
+[Task67]   key_key.hotbar.1:key.keyboard.1
+[Task67]   key_key.hotbar.2:key.keyboard.2
+[Task67]   key_key.hotbar.3:key.keyboard.3
+[Task67]   key_key.hotbar.4:key.keyboard.4
+[Task67]   key_key.hotbar.5:key.keyboard.5
+[Task67]   key_key.hotbar.6:key.keyboard.6
+[Task67]   key_key.hotbar.7:key.keyboard.7
+[Task67]   key_key.hotbar.8:key.keyboard.8
+[Task67]   key_key.hotbar.9:key.keyboard.9
+[Task67]   key_key.debug.reloadChunk:key.keyboard.a
+[Task67]   key_key.debug.showHitboxes:key.keyboard.b
+[Task67]   key_key.debug.clearChat:key.keyboard.d
+[Task67]   key_key.debug.crash:key.keyboard.c
+[Task67]   key_key.debug.showChunkBorders:key.keyboard.g
+[Task67]   key_key.debug.showAdvancedTooltips:key.keyboard.h
+[Task67]   key_key.debug.copyRecreateCommand:key.keyboard.i
+[Task67]   key_key.debug.spectate:key.keyboard.n
+[Task67]   key_key.debug.switchGameMode:key.keyboard.f4
+[Task67]   key_key.debug.debugOptions:key.keyboard.f6
+[Task67]   key_key.debug.focusPause:key.keyboard.p
+[Task67]   key_key.debug.dumpDynamicTextures:key.keyboard.s
+[Task67]   key_key.debug.reloadResourcePacks:key.keyboard.t
+[Task67]   key_key.debug.profiling:key.keyboard.l
+[Task67]   key_key.debug.copyLocation:key.keyboard.c
+[Task67]   key_key.debug.dumpVersion:key.keyboard.v
+[Task67]   key_key.debug.profilingChart:key.keyboard.1
+[Task67]   key_key.debug.fpsCharts:key.keyboard.2
+[Task67]   key_key.debug.networkCharts:key.keyboard.3
+[Task67]   key_key.debug.lightmapTexture:key.keyboard.4
+[Task67]   key_key.debug.improvedTransparency:key.keyboard.x
+[Task67] ===== keybind sanitize: 0 repairs needed (all canonical / defaults) =====
+[JavaLauncher] Looking for Java 17 or later
+[JavaLauncher] JAVA_HOME has been set to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk
+[Task141] launch memory from instance profile: 2048 MB
+[Task173] safe heap ceiling: os_proc_available_memory=12187MB -> Xmx ceiling 10987MB (native reserve 1200MB, no floor on authoritative path)
+[JavaLauncher] Max RAM allocation is set to 2048 MB
+[JavaLauncher] Task68 GC/safepoint pause logging enabled (-Xlog:gc,safepoint -> stdout)
+[JavaLauncher] library.path = /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks
+[Amethyst] Task112: OpenAL pinned to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/libopenal.dylib
+[JavaLauncher] Published Metallum surface view: 0x10d0cf100 (scale=2)
+[JavaLauncher] Added JVM property -Dmax.fps=260 (frame rate unlock layer 4)
+[JavaLauncher] Adding authlib-injector arguments for third party account
+[ThirdPartyAuthenticator] Added prefetched metadata parameter (length=1780)
+[JavaLauncher] Added authlib-injector arg: -javaagent:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/authlib-injector/authlib-injector.jar=https://littleskin.cn/api/yggdrasil/
+[JavaLauncher] Added authlib-injector arg: -Dauthlibinjector.side=client
+[JavaLauncher] Added authlib-injector arg: -Dauthlibinjector.yggdrasil.prefetched=eyJtZXRhIjp7ImZlYXR1cmUuZW5hYmxlX21vamFuZ19hbnRpX2ZlYXR1cmVzIjp0cnVlLCJmZWF0dXJlLmVuYWJsZV9wcm9maWxlX2tleSI6dHJ1ZSwiZmVhdHVyZS5ub25fZW1haWxfbG9naW4iOnRydWUsImZlYXR1cmUub3BlbmlkX2NvbmZpZ3VyYXRpb25fdXJsIjoiaHR0cHM6Ly9vcGVuLmxpdHRsZXNraW4uY24vLndlbGwta25vd24vb3BlbmlkLWNvbmZpZ3VyYXRpb24iLCJpbXBsZW1lbnRhdGlvbk5hbWUiOiJZZ2dkcmFzaWwgQ29ubmVjdCIsImltcGxlbWVudGF0aW9uVmVyc2lvbiI6IjAuMC44IiwibGlua3MiOnsiYW5ub3VuY2VtZW50IjoiaHR0cHM6Ly9saXR0bGVza2luLmNuL2FwaS9hbm5vdW5jZW1lbnRzIiwiaG9tZXBhZ2UiOiJodHRwczovL2xpdHRsZXNraW4uY24iLCJyZWdpc3RlciI6Imh0dHBzOi8vbGl0dGxlc2tpbi5jbi9hdXRoL3JlZ2lzdGVyIn0sInNlcnZlck5hbWUiOiJMaXR0bGVTa2luIn0sInNpZ25hdHVyZVB1YmxpY2tleSI6Ii0tLS0tQkVHSU4gUFVCTElDIEtFWS0tLS0tXG5NSUlDSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQWc4QU1JSUNDZ0tDQWdFQXJHY05PT0ZJcUxKU3FvRTN1MGhqXG50T0VuT2NFVDN3ajlEcnNzMUJFNnNCcWdQbzBiTXVsT1VMaHFqa2MvdUgvd3lvc1luenczeGFhekp0ODdqVEhoXG5KOEJQTXhDZVFNb3lFZFJvUzNKbmoxRzBLZXpqNEEyYjYxUEpKTTFEcHZEQWNxUUJZc3JTZHBCSis1Mk1qb0dTXG52Sm9lUU81WFVsSlZRbTIxL0htSm5xc1BoemNBNkhnWTcxUkhZRTV4bmhwV0ppUHhMS1VQdG10NkNOWVVRUW9TXG5vMnYzNlhXZ01tTEJaaEFiTk9QeFlYKzFpb3hLYW1qaExPMjlVaHd0Z1k5VTZQV0VPNy9TQmZYenlSUFR6aFBWXG4ybkhxN0tKcWQ4SUlybHRzbHY2aS80RkVNODFpdlMvbW0rUE4zaFlsSVlLNno2WW1paTFuclFBcGxzSjY3T0dxXG5ZSHRXS092cGZUek9vbGx1Z3NSaWhrQUc0T0I2aE0wUHI0NWpqQzNUSWM3ZU83a09nSWNHVUdVUUd1dXVnREV6XG5KMU45RkZXbk4vSDZQOXVrRmVnNVNtR0M1K3dtVVBaWkN0TkJMcjhvOHNJNUg3UWhLN05nd0NhR0ZvWXVpQUdMXG5nejNrLzNZd0o0MEJid1FheVEyZ0lxZW56K1hPRklBbGFqdisvbnlmY0R2Wkg5dkdOS1A5bFZjSFhVVDVZUm5TXG5aU0hvNWx3dlZyWVVycUVBYmgvekR6OFFNRXlpdWpXdlVrUGhaczlmaDZmaW1VR3h0bThtRklQQ3RQSlZYamVZXG53RDNMdnQzYUlCMUpIZFVUSlIzZUVjNGVJYVRLTXdNUHlKUnpWbjV6S3NpdGFaejNubi9jT0Evd1pDOW9xeUVVXG5tYzloNlpNUlRSVUVFNFR0YUp5ZzlsTUNBd0VBQVE9PVxuLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tXG4iLCJza2luRG9tYWlucyI6WyJsaXR0bGVza2luLmNuIl19
+[JavaLauncher] Task201: Metallum agent skipped: MC major 1 < 26 (agent needs Java 21+ class files, this session runs Java 8)
+[JavaLauncher] JVM GC optimization: G1GC + MaxGCPauseMillis=50 + StringDeduplication (Java 17+)
+[SDLHook] Task133: libjli image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/libjli.dylib) -- rebinding its _dlopen slots
+[SDLHook] Task133: _dlopen slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlopen chain now routes through the hook
+[SDLHook] Task133: _dlsym slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlsym chain now routes through the hook
+[SDLHook] Task134: JVM image watchdog started (200ms dyld scan, chain-independent JNA rebind backstop)
+[JavaLauncher] Caciocavallo: isJava8=0 libs=libs_caciocavallo17 mode=/a
+[JavaLauncher] Reading custom JVM flags
+[Init] Found JLI lib
+[JavaLauncher] Using LWJGL 333 (mcVersion=1.20.1)
+[JavaLauncher] Using LWJGL jar at /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/libs/lwjgl-333/lwjgl.jar
+[CwdAlign] Task97: process CWD aligned to game dir: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/1.20.1/game
+[AppKitStub] Task99: NSApplication/NSMenu/NSMenuItem stubs installed (iOS has no AppKit; MC 26.3 MacosUtil menu walk no-ops, numberOfItems=0)
+[Init] Calling JLI_Launch
+[SDLHook] Task133: libjvm image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib) -- rebinding its _dlopen slots
+[SDLHook] Task133: _dlopen slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlopen chain now routes through the hook
+[SDLHook] Task133: _dlsym slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlsym chain now routes through the hook
+[JIT26] Requesting 64 MB for JIT mapping
+[JIT26] Got JIT mapping 0x163a28000 from debugger
+[JIT26] mapping at RW=0x167a28000, RX=0x163a28000
+[2026-10-07T19:08:52.452+0800][0.261s] Using G1
+WARNING: Unknown module: cpw.mods.bootstraplauncher specified to --add-exports
+[authlib-injector] [INFO] Logging file: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/1.20.1/game/authlib-injector.log
+[authlib-injector] [INFO] Version: 1.2.8
+[authlib-injector] [INFO] Authentication server: https://littleskin.cn/api/yggdrasil/
+PatchJNAAgent: premain called
+Arc Capes DNS Injector
+Parts of Alibaba's DCM library were used, please read https://github.com/alibaba/java-dns-cache-manipulator/blob/main/README.md for more info
+[2026-10-07T19:08:52.624+0800][0.434s] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 6M->2M(128M) 1.349ms
+[2026-10-07T19:08:52.624+0800][0.434s] Safepoint "G1CollectForAllocation", Time since last: 148682542 ns, Reaching safepoint: 1208 ns, Cleanup: 23875 ns, At safepoint: 1370250 ns, Total: 1395333 ns
+Added DNS cache entry: s.optifine.net/23.95.137.176
+[2026-10-07T19:08:52.707+0800][0.517s] GC(1) Pause Young (Normal) (G1 Evacuation Pause) 22M->17M(128M) 0.795ms
+[2026-10-07T19:08:52.707+0800][0.517s] Safepoint "G1CollectForAllocation", Time since last: 82428167 ns, Reaching safepoint: 1333 ns, Cleanup: 18542 ns, At safepoint: 811166 ns, Total: 831041 ns
+[PojavLauncher] VSync disabled, maxFps/maxFramerate/framerateLimit set to 260
+[PojavLauncher]   enableVsync=false
+[PojavLauncher]   maxFps=260
+[PojavLauncher]   maxFramerate=260
+[PojavLauncher]   framerateLimit=260
+[PojavLauncher]   inactivityFpsLimit=minimized
+[PojavLauncher] Task104 on-disk verification: inactivityFpsLimit=minimized maxFps=260 enableVsync=false
+[PojavLauncher] MC 26.2+ graphicsApi cleared (default)
+[2026-10-07T19:08:52.740+0800][0.550s] GC(2) Pause Young (Normal) (G1 Evacuation Pause) 26M->17M(128M) 0.588ms
+[2026-10-07T19:08:52.740+0800][0.550s] Safepoint "G1CollectForAllocation", Time since last: 32121459 ns, Reaching safepoint: 1541 ns, Cleanup: 17250 ns, At safepoint: 604792 ns, Total: 623583 ns
+Launching Minecraft 1.20.1
+[PojavLauncher] LWJGL selected by launcher: 333, reported version: 3.3.1 (metadata: not captured)
+[Tools] Replacing JNA 5.12.1 with 5.13.0 for iOS compatibility
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.3.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+Args init finished. Now starting game
+[2026-10-07T19:08:52.907+0800][0.716s] Safepoint "ICBufferFull", Time since last: 166565375 ns, Reaching safepoint: 3042 ns, Cleanup: 53750 ns, At safepoint: 2458 ns, Total: 59250 ns
+[authlib-injector] [INFO] Transformed [net.minecraft.client.main.Main] with [Main Arguments Transformer]
+[2026-10-07T19:08:53.056+0800][0.866s] GC(3) Pause Young (Normal) (G1 Evacuation Pause) 111M->37M(129M) 4.508ms
+[2026-10-07T19:08:53.056+0800][0.866s] Safepoint "G1CollectForAllocation", Time since last: 144761750 ns, Reaching safepoint: 1333 ns, Cleanup: 43000 ns, At safepoint: 4533625 ns, Total: 4577958 ns
+[2026-10-07T19:08:53.111+0800][0.921s] GC(4) Pause Young (Concurrent Start) (Metadata GC Threshold) 46M->39M(129M) 2.959ms
+[2026-10-07T19:08:53.112+0800][0.921s] Safepoint "CollectForMetadataAllocation", Time since last: 52483417 ns, Reaching safepoint: 1458 ns, Cleanup: 30167 ns, At safepoint: 2990500 ns, Total: 3022125 ns
+[2026-10-07T19:08:53.112+0800][0.921s] GC(5) Concurrent Mark Cycle
+[2026-10-07T19:08:53.116+0800][0.926s] GC(5) Pause Remark 40M->40M(129M) 0.716ms
+[2026-10-07T19:08:53.116+0800][0.926s] Safepoint "G1PauseRemark", Time since last: 3982083 ns, Reaching safepoint: 23584 ns, Cleanup: 2791 ns, At safepoint: 732625 ns, Total: 759000 ns
+[2026-10-07T19:08:53.119+0800][0.929s] GC(5) Pause Cleanup 40M->40M(129M) 0.034ms
+[2026-10-07T19:08:53.119+0800][0.929s] Safepoint "G1PauseCleanup", Time since last: 2783792 ns, Reaching safepoint: 21792 ns, Cleanup: 21125 ns, At safepoint: 58208 ns, Total: 101125 ns
+[2026-10-07T19:08:53.119+0800][0.929s] GC(5) Concurrent Mark Cycle 7.771ms
+[authlib-injector] [INFO] Setting accountType to msa
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.properties.Property] with [Yggdrasil Public Key Transformer]
+[2026-10-07T19:08:53.245+0800][1.054s] GC(6) Pause Young (Normal) (G1 Evacuation Pause) 107M->64M(129M) 5.050ms
+[2026-10-07T19:08:53.245+0800][1.054s] Safepoint "G1CollectForAllocation", Time since last: 120477792 ns, Reaching safepoint: 1250 ns, Cleanup: 33458 ns, At safepoint: 5072500 ns, Total: 5107208 ns
+[2026-10-07T19:08:53.290+0800][1.100s] GC(7) Pause Young (Concurrent Start) (G1 Humongous Allocation) 79M->60M(155M) 2.810ms
+[2026-10-07T19:08:53.290+0800][1.100s] Safepoint "G1TryInitiateConcMark", Time since last: 42458083 ns, Reaching safepoint: 1459 ns, Cleanup: 9750 ns, At safepoint: 2833833 ns, Total: 2845042 ns
+[2026-10-07T19:08:53.290+0800][1.100s] GC(8) Concurrent Undo Cycle
+[2026-10-07T19:08:53.290+0800][1.100s] GC(8) Concurrent Undo Cycle 0.293ms
+PatchJNAAgent: Replacing class
+Platform.isMac called from com.sun.jna.Native
+[SDLHook] Task133: libjnidispatch image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/1.20.1/game/${natives_directory}/jna6335591736959597378.tmp / install libjnidispatch.jnilib) -- invoking Task132 dlsym rebind (direct hdr+slide)
+[SDLHook] Task135: _dlsym slot 0x11b740040 already == hooked_dlsym (idempotent hit, __DATA,__la_symbol_ptr) -- fishhook add-image callback or earlier pass won the race
+Platform.isMac called from com.sun.jna.Native
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+[19:08:53] [main/WARN]: Failed sysctl call: hw.packages, Error code: 1
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+[19:08:53] [main/WARN]: Failed sysctl call: machdep.cpu.brand_string, Error code: 1
+[19:08:53] [main/WARN]: Failed sysctl call: machdep.cpu.vendor, Error code: 2
+[19:08:53] [main/WARN]: Failed sysctl call: machdep.cpu.stepping, Error code: 2
+[19:08:53] [main/WARN]: Failed sysctl call: machdep.cpu.model, Error code: 2
+[19:08:53] [main/WARN]: Failed sysctl call: machdep.cpu.family, Error code: 2
+[19:08:53] [main/WARN]: Failed sysctl call: machdep.cpu.signature, Error code: 2
+[19:08:53] [main/WARN]: Failed sysctl call: machdep.cpu.feature_bits, Error code: 2
+[19:08:53] [main/WARN]: Failed sysctl call: hw.cpufrequency, Error code: 2
+[19:08:53] [main/WARN]: Failed sysctl call: vm.swapusage, Error code: 1
+[2026-10-07T19:08:53.408+0800][1.218s] Safepoint "ICBufferFull", Time since last: 118237583 ns, Reaching safepoint: 21042 ns, Cleanup: 46833 ns, At safepoint: 5292 ns, Total: 73167 ns
+[2026-10-07T19:08:53.499+0800][1.309s] Safepoint "ICBufferFull", Time since last: 90538708 ns, Reaching safepoint: 1459 ns, Cleanup: 37833 ns, At safepoint: 1542 ns, Total: 40834 ns
+[2026-10-07T19:08:53.507+0800][1.317s] Safepoint "ICBufferFull", Time since last: 7980666 ns, Reaching safepoint: 26667 ns, Cleanup: 31875 ns, At safepoint: 1583 ns, Total: 60125 ns
+[2026-10-07T19:08:53.523+0800][1.333s] GC(9) Pause Young (Normal) (G1 Evacuation Pause) 122M->74M(155M) 3.874ms
+[2026-10-07T19:08:53.523+0800][1.333s] Safepoint "G1CollectForAllocation", Time since last: 12097459 ns, Reaching safepoint: 1291 ns, Cleanup: 32834 ns, At safepoint: 3911875 ns, Total: 3946000 ns
+[2026-10-07T19:08:53.561+0800][1.371s] Safepoint "ICBufferFull", Time since last: 38050750 ns, Reaching safepoint: 2916 ns, Cleanup: 55125 ns, At safepoint: 834 ns, Total: 58875 ns
+[2026-10-07T19:08:53.580+0800][1.390s] GC(10) Pause Young (Normal) (G1 Evacuation Pause) 116M->80M(155M) 5.040ms
+[2026-10-07T19:08:53.580+0800][1.390s] Safepoint "G1CollectForAllocation", Time since last: 14046500 ns, Reaching safepoint: 1416 ns, Cleanup: 23834 ns, At safepoint: 5059500 ns, Total: 5084750 ns
+[2026-10-07T19:08:53.613+0800][1.423s] Safepoint "ICBufferFull", Time since last: 33096625 ns, Reaching safepoint: 3083 ns, Cleanup: 54458 ns, At safepoint: 2375 ns, Total: 59916 ns
+[2026-10-07T19:08:53.626+0800][1.435s] GC(11) Pause Young (Concurrent Start) (G1 Evacuation Pause) 119M->85M(155M) 4.044ms
+[2026-10-07T19:08:53.626+0800][1.435s] GC(12) Concurrent Mark Cycle
+[2026-10-07T19:08:53.626+0800][1.435s] Safepoint "G1CollectForAllocation", Time since last: 8110417 ns, Reaching safepoint: 21167 ns, Cleanup: 22375 ns, At safepoint: 4073625 ns, Total: 4117167 ns
+[2026-10-07T19:08:53.640+0800][1.449s] GC(12) Pause Remark 96M->93M(159M) 1.069ms
+[2026-10-07T19:08:53.640+0800][1.449s] Safepoint "G1PauseRemark", Time since last: 12857083 ns, Reaching safepoint: 18000 ns, Cleanup: 38375 ns, At safepoint: 1097708 ns, Total: 1154083 ns
+[2026-10-07T19:08:53.648+0800][1.457s] GC(12) Pause Cleanup 96M->96M(159M) 0.049ms
+[2026-10-07T19:08:53.648+0800][1.457s] Safepoint "G1PauseCleanup", Time since last: 7908792 ns, Reaching safepoint: 19917 ns, Cleanup: 19083 ns, At safepoint: 73042 ns, Total: 112042 ns
+[2026-10-07T19:08:53.648+0800][1.458s] GC(12) Concurrent Mark Cycle 22.267ms
+[2026-10-07T19:08:53.667+0800][1.477s] Safepoint "ICBufferFull", Time since last: 19601666 ns, Reaching safepoint: 20334 ns, Cleanup: 49750 ns, At safepoint: 1708 ns, Total: 71792 ns
+[2026-10-07T19:08:53.678+0800][1.488s] GC(13) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 117M->87M(159M) 3.929ms
+[2026-10-07T19:08:53.678+0800][1.488s] Safepoint "G1CollectForAllocation", Time since last: 6794208 ns, Reaching safepoint: 1167 ns, Cleanup: 8792 ns, At safepoint: 3946375 ns, Total: 3956334 ns
+[2026-10-07T19:08:53.681+0800][1.491s] GC(14) Pause Young (Mixed) (G1 Evacuation Pause) 88M->85M(287M) 2.043ms
+[2026-10-07T19:08:53.681+0800][1.491s] Safepoint "G1CollectForAllocation", Time since last: 1220291 ns, Reaching safepoint: 2750 ns, Cleanup: 1875 ns, At safepoint: 2058709 ns, Total: 2063334 ns
+[2026-10-07T19:08:53.732+0800][1.542s] Safepoint "ICBufferFull", Time since last: 50644208 ns, Reaching safepoint: 25458 ns, Cleanup: 56334 ns, At safepoint: 2000 ns, Total: 83792 ns
+[2026-10-07T19:08:53.775+0800][1.584s] GC(15) Pause Young (Normal) (G1 Evacuation Pause) 211M->100M(287M) 5.269ms
+[2026-10-07T19:08:53.775+0800][1.584s] Safepoint "G1CollectForAllocation", Time since last: 37461000 ns, Reaching safepoint: 2000 ns, Cleanup: 10625 ns, At safepoint: 5288708 ns, Total: 5301333 ns
+[2026-10-07T19:08:53.816+0800][1.626s] Safepoint "ICBufferFull", Time since last: 41530458 ns, Reaching safepoint: 2917 ns, Cleanup: 45458 ns, At safepoint: 2250 ns, Total: 50625 ns
+[2026-10-07T19:08:53.842+0800][1.651s] GC(16) Pause Young (Normal) (G1 Evacuation Pause) 206M->112M(287M) 5.830ms
+[2026-10-07T19:08:53.842+0800][1.651s] Safepoint "G1CollectForAllocation", Time since last: 19401125 ns, Reaching safepoint: 1834 ns, Cleanup: 26833 ns, At safepoint: 5850917 ns, Total: 5879584 ns
+[2026-10-07T19:08:53.861+0800][1.671s] Safepoint "ICBufferFull", Time since last: 19286333 ns, Reaching safepoint: 3625 ns, Cleanup: 64333 ns, At safepoint: 2459 ns, Total: 70417 ns
+[2026-10-07T19:08:53.891+0800][1.700s] Safepoint "ICBufferFull", Time since last: 29535000 ns, Reaching safepoint: 3583 ns, Cleanup: 70000 ns, At safepoint: 1667 ns, Total: 75250 ns
+[2026-10-07T19:08:53.896+0800][1.706s] Safepoint "ICBufferFull", Time since last: 5321916 ns, Reaching safepoint: 4500 ns, Cleanup: 67167 ns, At safepoint: 3042 ns, Total: 74709 ns
+[2026-10-07T19:08:53.904+0800][1.714s] Safepoint "ICBufferFull", Time since last: 7813500 ns, Reaching safepoint: 1333 ns, Cleanup: 38125 ns, At safepoint: 375 ns, Total: 39833 ns
+[2026-10-07T19:08:53.947+0800][1.757s] Safepoint "ICBufferFull", Time since last: 43531417 ns, Reaching safepoint: 1416 ns, Cleanup: 39834 ns, At safepoint: 416 ns, Total: 41666 ns
+[2026-10-07T19:08:53.971+0800][1.780s] Safepoint "ICBufferFull", Time since last: 23011334 ns, Reaching safepoint: 2958 ns, Cleanup: 50750 ns, At safepoint: 4625 ns, Total: 58333 ns
+[2026-10-07T19:08:53.990+0800][1.799s] Safepoint "ICBufferFull", Time since last: 19058292 ns, Reaching safepoint: 1666 ns, Cleanup: 46334 ns, At safepoint: 208 ns, Total: 48208 ns
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104165224) -- re-armed at t+10s
+[2026-10-07T19:08:54.008+0800][1.818s] Safepoint "ICBufferFull", Time since last: 18229375 ns, Reaching safepoint: 20542 ns, Cleanup: 43541 ns, At safepoint: 2375 ns, Total: 66458 ns
+[2026-10-07T19:08:54.015+0800][1.825s] Safepoint "ICBufferFull", Time since last: 7166084 ns, Reaching safepoint: 1125 ns, Cleanup: 44541 ns, At safepoint: 2125 ns, Total: 47791 ns
+[2026-10-07T19:08:54.068+0800][1.877s] GC(17) Pause Young (Normal) (G1 Evacuation Pause) 214M->117M(287M) 5.244ms
+[2026-10-07T19:08:54.068+0800][1.877s] Safepoint "G1CollectForAllocation", Time since last: 47191375 ns, Reaching safepoint: 1084 ns, Cleanup: 25500 ns, At safepoint: 5264666 ns, Total: 5291250 ns
+[2026-10-07T19:08:54.101+0800][1.911s] Safepoint "ICBufferFull", Time since last: 33701584 ns, Reaching safepoint: 20083 ns, Cleanup: 45333 ns, At safepoint: 3750 ns, Total: 69166 ns
+[2026-10-07T19:08:54.135+0800][1.944s] Safepoint "ICBufferFull", Time since last: 33276959 ns, Reaching safepoint: 21916 ns, Cleanup: 52084 ns, At safepoint: 3000 ns, Total: 77000 ns
+[2026-10-07T19:08:54.205+0800][2.015s] Safepoint "ICBufferFull", Time since last: 70436166 ns, Reaching safepoint: 23167 ns, Cleanup: 48708 ns, At safepoint: 1417 ns, Total: 73292 ns
+[2026-10-07T19:08:54.247+0800][2.056s] Safepoint "ICBufferFull", Time since last: 41239333 ns, Reaching safepoint: 1334 ns, Cleanup: 40958 ns, At safepoint: 375 ns, Total: 42667 ns
+[2026-10-07T19:08:54.277+0800][2.087s] Safepoint "ICBufferFull", Time since last: 30228542 ns, Reaching safepoint: 22208 ns, Cleanup: 41250 ns, At safepoint: 4458 ns, Total: 67916 ns
+[19:08:54] [Datafixer Bootstrap/INFO]: 188 Datafixer optimizations took 60 milliseconds
+[2026-10-07T19:08:54.342+0800][2.151s] Safepoint "ICBufferFull", Time since last: 64911959 ns, Reaching safepoint: 1666 ns, Cleanup: 43334 ns, At safepoint: 2250 ns, Total: 47250 ns
+[2026-10-07T19:08:54.355+0800][2.165s] GC(18) Pause Young (Normal) (G1 Evacuation Pause) 226M->139M(683M) 8.247ms
+[2026-10-07T19:08:54.355+0800][2.165s] Safepoint "G1CollectForAllocation", Time since last: 4868375 ns, Reaching safepoint: 3208 ns, Cleanup: 38250 ns, At safepoint: 8269292 ns, Total: 8310750 ns
+[2026-10-07T19:08:54.386+0800][2.196s] Safepoint "ICBufferFull", Time since last: 30988583 ns, Reaching safepoint: 24917 ns, Cleanup: 51041 ns, At safepoint: 1709 ns, Total: 77667 ns
+[2026-10-07T19:08:54.483+0800][2.292s] Safepoint "ICBufferFull", Time since last: 96448166 ns, Reaching safepoint: 1792 ns, Cleanup: 39958 ns, At safepoint: 292 ns, Total: 42042 ns
+[2026-10-07T19:08:54.565+0800][2.375s] Safepoint "ICBufferFull", Time since last: 82560208 ns, Reaching safepoint: 20959 ns, Cleanup: 48291 ns, At safepoint: 2334 ns, Total: 71584 ns
+[2026-10-07T19:08:54.663+0800][2.473s] Safepoint "ICBufferFull", Time since last: 98122875 ns, Reaching safepoint: 1333 ns, Cleanup: 38417 ns, At safepoint: 1083 ns, Total: 40833 ns
+[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl.dylib / install bin/libs/native/macos/arm64/org/lwjgl/liblwjgl.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
+[SDLHook] Task135: _dlsym slot 0x11b7d00e0 already == hooked_dlsym (idempotent hit, __DATA_CONST,__got) -- fishhook add-image callback or earlier pass won the race
+[authlib-injector] [INFO] Httpd is running on port 54282
+[authlib-injector] [INFO] Transformed [fiv] with [Constant URL Transformer]
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.HttpAuthenticationService] with [ConcatenateURL Workaround]
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.YggdrasilEnvironment] with [Constant URL Transformer]
+[19:08:54] [Render thread/INFO]: Environment: authHost='https://littleskin.cn/api/yggdrasil/authserver', accountsHost='http://127.0.0.1:54282/https/api.mojang.com', sessionHost='http://127.0.0.1:54282/https/sessionserver.mojang.com', servicesHost='http://127.0.0.1:54282/https/api.minecraftservices.com', name='PROD'
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.YggdrasilServicesKeyInfo] with [Yggdrasil Public Key Transformer]
+[2026-10-07T19:08:54.803+0800][2.613s] GC(19) Pause Young (Concurrent Start) (Metadata GC Threshold) 361M->161M(683M) 12.398ms
+[2026-10-07T19:08:54.803+0800][2.613s] GC(20) Concurrent Mark Cycle
+[2026-10-07T19:08:54.803+0800][2.613s] Safepoint "CollectForMetadataAllocation", Time since last: 126945958 ns, Reaching safepoint: 3834 ns, Cleanup: 166541 ns, At safepoint: 12444209 ns, Total: 12614584 ns
+[2026-10-07T19:08:54.809+0800][2.619s] Safepoint "CollectForMetadataAllocation", Time since last: 5896416 ns, Reaching safepoint: 35042 ns, Cleanup: 10250 ns, At safepoint: 12583 ns, Total: 57875 ns
+[2026-10-07T19:08:54.820+0800][2.629s] Safepoint "CollectForMetadataAllocation", Time since last: 10747334 ns, Reaching safepoint: 34208 ns, Cleanup: 24583 ns, At safepoint: 17292 ns, Total: 76083 ns
+[2026-10-07T19:08:54.823+0800][2.633s] Safepoint "CollectForMetadataAllocation", Time since last: 3185167 ns, Reaching safepoint: 67583 ns, Cleanup: 19292 ns, At safepoint: 7625 ns, Total: 94500 ns
+[2026-10-07T19:08:54.842+0800][2.651s] Safepoint "CollectForMetadataAllocation", Time since last: 18716875 ns, Reaching safepoint: 11333 ns, Cleanup: 6292 ns, At safepoint: 7000 ns, Total: 24625 ns
+[2026-10-07T19:08:54.848+0800][2.658s] Safepoint "CollectForMetadataAllocation", Time since last: 6610250 ns, Reaching safepoint: 51458 ns, Cleanup: 12708 ns, At safepoint: 9334 ns, Total: 73500 ns
+[2026-10-07T19:08:54.853+0800][2.663s] GC(20) Pause Remark 167M->167M(560M) 1.504ms
+[2026-10-07T19:08:54.853+0800][2.663s] Safepoint "G1PauseRemark", Time since last: 3122958 ns, Reaching safepoint: 18333 ns, Cleanup: 2750 ns, At safepoint: 1523125 ns, Total: 1544208 ns
+[2026-10-07T19:08:54.873+0800][2.682s] GC(20) Pause Cleanup 171M->171M(560M) 0.077ms
+[2026-10-07T19:08:54.873+0800][2.682s] Safepoint "G1PauseCleanup", Time since last: 19659500 ns, Reaching safepoint: 17375 ns, Cleanup: 4125 ns, At safepoint: 90542 ns, Total: 112042 ns
+[2026-10-07T19:08:54.873+0800][2.683s] GC(20) Concurrent Mark Cycle 70.485ms
+[2026-10-07T19:08:54.966+0800][2.775s] Safepoint "ICBufferFull", Time since last: 92867083 ns, Reaching safepoint: 17667 ns, Cleanup: 43250 ns, At safepoint: 2417 ns, Total: 63334 ns
+[19:08:55] [Render thread/ERROR]: Failed to verify authentication
+com.mojang.authlib.exceptions.InsufficientPrivilegesException: 访问令牌无效，请重新登录。Invalid access token, please re-login.
+	at com.mojang.authlib.exceptions.MinecraftClientHttpException.toAuthenticationException(MinecraftClientHttpException.java:52) ~[authlib-4.0.43.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilUserApiService.fetchProperties(YggdrasilUserApiService.java:156) ~[authlib-4.0.43.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilUserApiService.<init>(YggdrasilUserApiService.java:55) ~[authlib-4.0.43.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService.createUserApiService(YggdrasilAuthenticationService.java:124) ~[authlib-4.0.43.jar:?]
+	at enn.a(SourceFile:733) ~[1.20.1.jar:?]
+	at enn.<init>(SourceFile:442) ~[1.20.1.jar:?]
+	at net.minecraft.client.main.Main.main(SourceFile:211) ~[1.20.1.jar:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source) ~[?:?]
+	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source) ~[?:?]
+	at java.lang.reflect.Method.invoke(Unknown Source) ~[?:?]
+	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134) ~[launcher.jar:?]
+	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372) ~[launcher.jar:?]
+	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53) ~[launcher.jar:?]
+Caused by: com.mojang.authlib.exceptions.MinecraftClientHttpException: 访问令牌无效，请重新登录。Invalid access token, please re-login.
+	at com.mojang.authlib.minecraft.client.MinecraftClient.readInputStream(MinecraftClient.java:85) ~[authlib-4.0.43.jar:?]
+	at com.mojang.authlib.minecraft.client.MinecraftClient.get(MinecraftClient.java:48) ~[authlib-4.0.43.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilUserApiService.fetchProperties(YggdrasilUserApiService.java:129) ~[authlib-4.0.43.jar:?]
+	... 12 more
+[19:08:55] [Render thread/INFO]: Setting user: yiqiu4178
+[SDLHook] hooked SDL_GetKeyboardState (real=0x0, Task67 kb-state poll observability)
+[InputDiag] initSDLEventFuncs: PushEvent=0x0 GetWindowID=0x0 g_sdlWindow=0x0 Task66GetKBState=0x10d59ec48 SetModState=0x0
+[input_bridge] Task225 CTCDesktopPeer resolved via com/github package (Java 17/21/25 caciocavallo)
+Exception in thread "Render thread" [19:08:55] [Render thread/INFO]: [STDERR]: java.lang.NoSuchMethodError: Method com.github.caciocavallosilano.cacio.ctc.CTCDesktopPeer.openFile(Ljava/lang/String;)V not found
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/jdk.internal.loader.NativeLibraries.load(Native Method)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/jdk.internal.loader.NativeLibraries$NativeLibraryImpl.open(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/jdk.internal.loader.NativeLibraries.loadLibrary(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/jdk.internal.loader.NativeLibraries.loadLibrary(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/java.lang.ClassLoader.loadLibrary(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/java.lang.Runtime.load0(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/java.lang.System.load(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at org.lwjgl.glfw.GLFW.<clinit>(GLFW.java:528)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/jdk.internal.misc.Unsafe.ensureClassInitialized0(Native Method)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/jdk.internal.misc.Unsafe.ensureClassInitialized(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/java.lang.invoke.DirectMethodHandle$EnsureInitialized.computeValue(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/java.lang.invoke.DirectMethodHandle$EnsureInitialized.computeValue(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/java.lang.ClassValue.getFromHashMap(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/java.lang.ClassValue.getFromBackup(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/java.lang.ClassValue.get(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/java.lang.invoke.DirectMethodHandle.checkInitialized(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/java.lang.invoke.DirectMethodHandle.ensureInitialized(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/java.lang.invoke.DirectMethodHandle.ensureInitialized(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at ehe.<clinit>(SourceFile:42)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at enr.<init>(SourceFile:873)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at enn.<init>(SourceFile:460)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at net.minecraft.client.main.Main.main(SourceFile:211)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372)
+[19:08:55] [Render thread/INFO]: [STDERR]: 	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53)
+[JNI] JNI_OnLoadGLFW registered, class=0x11b07e8d0, method=0x0, keyDownBuffer=0x136bcfc00
+[19:08:55] [Render thread/INFO]: Backend library: LWJGL version 3.3.1
+[egl_bridge] pojavCreateContext: clientAPI=196609 (GLFW_NO_API=0), renderer=libtinygl4angle.dylib, graphicsApi=default
+[egl_bridge] OpenGL path: creating EGL/GL context via br_init_context
+EGLBridge: Task179 ANGLE on real ES3 context (config ES3_BIT + eglBindAPI(ES) + CLIENT_VERSION=3; desktop identity spoofed in tinygl4angle glGetString; shader pipeline = Task175 ES300 rewrite)
+[MG-Bridge] bootstrap skipped: frontend image or mg_init_gles unavailable -- EGL stays on raw ANGLE (legacy behavior)
+EGLBridge: Binding to OpenGL ES
+[GLGeo] Task60 native-scale alignment (main thread): bounds=1180x820 drawableSize 2360x1640 scale 2.00 -> drawableSize 2360x1640 scale 2.00 (surface==drawable==physical px; Task50 1x retired -- CA linear 2x upscale was the blur)
+[RenderDiag] EGL window surface created: surface=0x1 layer=0x12f80bf40 bounds=1180x820 contentsScale=2.00 drawableSize=2360x1640 ownerInWindow=1
+[RenderDiag] Task188 layer: pixelFormat=80 opaque=1 framebufferOnly=0 maxDrawables=3 (BGRA8Unorm=80 alpha-bearing; opaque=0 => alpha composited)
+[RenderDiag] Task41 ES probe pinned to @executable_path/Frameworks/libGLESv2.framework/libGLESv2
+[GLGeo] Task48 creation recorded: layer=0x12f80bf40 expectedSurface=2360x1640
+EGLBridge: Task179 ctx attribs = CLIENT_VERSION 3 (real ES3; identity spoof in tinygl4angle glGetString)
+[gl_bridge] Task146 make-current #1: self=0x109727360 surface=0x1 ctx=0x1 thread=0x16c6cb000 main=0
+[gl_bridge] Task140 make-current readback: ctx=0x1 (current context confirmed)
+[TinyGL] Task173 desktop-GL completion layer: 20/20 resolved via eglGetProcAddress (all present)
+[tinygl4angle] Task203 query: glGetString #1 name=0x1F02 -> "OpenGL ES 3.0.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)"
+[TinyGL] Task179 desktop identity: GL_VERSION 'OpenGL ES 3.0.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)' -> '3.3.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)' (ES3 context, facade-form spoof)
+[tinygl4angle] Task203 query: glGetString #2 name=0x1F02 -> "OpenGL ES 3.0.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)"
+[TinyGL] Task179 desktop identity: GL_VERSION 'OpenGL ES 3.0.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)' -> '3.3.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)' (ES3 context, facade-form spoof)
+[gl_bridge] Task146 glGetString tri-probe: default=0x11b74d304 ver=3.3.0 (ANGLE 2.1.2440 git hash: 6024e9c05548) | renderer=0x11b74d304 ver=3.3.0 (ANGLE 2.1.2440 git hash: 6024e9c05548) | ¿ãnı
+[gl_bridge] mg_init_gles not found (old MobileGlues?)
+[gl_bridge] eglSwapInterval(0) after eglMakeCurrent (POJAV_DISABLE_VSYNC=1, renderer=libtinygl4angle.dylib) frontend=1 raw=0(rawPtr=0x0)
+[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl_opengl.dylib / install bin/libs/native/macos/arm64/org/lwjgl/opengl/liblwjgl_opengl.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
+[SDLHook] Task132: libjnidispatch image missing symtab/linkedit (layout change?), dlsym rebind skipped
+[tinygl4angle] Task203 query: glGetIntegerv #1 pname=0x821B
+[tinygl4angle] Task203 query: glGetIntegerv #2 pname=0x821C
+[tinygl4angle] Task203 query: glGetIntegerv #3 pname=0x821D
+[tinygl4angle] Task197: DSA advertisement WITHDRAWN (extension cache keeps 120 real entries; MC takes DirectStateAccess.Emulated classic path). Set AME193_DSA_ADVERTISE=1 to re-enable for forensics
+[tinygl4angle] Task203 query: glGetStringi #1 name=0x1F03 index=0
+[tinygl4angle] Task203 query: glGetStringi #2 name=0x1F03 index=1
+[tinygl4angle] Task203 query: glGetStringi #3 name=0x1F03 index=2
+[tinygl4angle] Task203 query: glGetStringi #4 name=0x1F03 index=3
+[tinygl4angle] Task203 query: glGetStringi #5 name=0x1F03 index=4
+[tinygl4angle] Task203 query: glGetStringi #6 name=0x1F03 index=5
+[tinygl4angle] Task203 query: glGetStringi #7 name=0x1F03 index=6
+[tinygl4angle] Task203 query: glGetStringi #8 name=0x1F03 index=7
+[tinygl4angle] Task203 query: glGetStringi #9 name=0x1F03 index=8
+[tinygl4angle] Task203 query: glGetStringi #10 name=0x1F03 index=9
+[tinygl4angle] Task203 query: glGetStringi #11 name=0x1F03 index=10
+[tinygl4angle] Task203 query: glGetStringi #12 name=0x1F03 index=11
+[tinygl4angle] Task203 query: glGetIntegerv #4 pname=0x821E
+[dlsym] Task202: GL symbol resolution NULL (dedup #1): glAccum
+[dlsym] Task202: GL symbol resolution NULL (dedup #2): glAreTexturesResident
+[dlsym] Task202: GL symbol resolution NULL (dedup #3): glArrayElement
+[dlsym] Task202: GL symbol resolution NULL (dedup #4): glCompressedTexSubImage1D
+[19:08:55] [Render thread/ERROR]: Couldn't set icon
+java.nio.file.NoSuchFileException: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft/assets/objects/f0/f00657542252858a721e715a2e888a9226404e35
+	at sun.nio.fs.UnixException.translateToIOException(Unknown Source) ~[?:?]
+	at sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source) ~[?:?]
+	at sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source) ~[?:?]
+	at sun.nio.fs.UnixFileSystemProvider.newByteChannel(Unknown Source) ~[?:?]
+	at java.nio.file.Files.newByteChannel(Unknown Source) ~[?:?]
+	at ajt.newByteChannel(SourceFile:68) ~[1.20.1.jar:?]
+	at java.nio.file.Files.newByteChannel(Unknown Source) ~[?:?]
+	at java.nio.file.Files.newByteChannel(Unknown Source) ~[?:?]
+	at java.nio.file.spi.FileSystemProvider.newInputStream(Unknown Source) ~[?:?]
+	at java.nio.file.Files.newInputStream(Unknown Source) ~[?:?]
+	at akp.a(SourceFile:13) ~[1.20.1.jar:?]
+	at ehg.a(SourceFile:40) ~[1.20.1.jar:?]
+	at ehn.a(SourceFile:154) ~[1.20.1.jar:?]
+	at enn.<init>(SourceFile:492) ~[1.20.1.jar:?]
+	at net.minecraft.client.main.Main.main(SourceFile:211) ~[1.20.1.jar:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source) ~[?:?]
+	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source) ~[?:?]
+	at java.lang.reflect.Method.invoke(Unknown Source) ~[?:?]
+	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134) ~[launcher.jar:?]
+	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372) ~[launcher.jar:?]
+	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53) ~[launcher.jar:?]
+[19:08:55] [Render thread/WARN]: Failed sysctl call: hw.packages, Error code: 1
+[19:08:55] [Render thread/WARN]: Failed sysctl call: machdep.cpu.brand_string, Error code: 1
+[19:08:55] [Render thread/WARN]: Failed sysctl call: machdep.cpu.vendor, Error code: 2
+[19:08:55] [Render thread/WARN]: Failed sysctl call: machdep.cpu.stepping, Error code: 2
+[19:08:55] [Render thread/WARN]: Failed sysctl call: machdep.cpu.model, Error code: 2
+[19:08:55] [Render thread/WARN]: Failed sysctl call: machdep.cpu.family, Error code: 2
+[19:08:55] [Render thread/WARN]: Failed sysctl call: machdep.cpu.signature, Error code: 2
+[19:08:55] [Render thread/WARN]: Failed sysctl call: machdep.cpu.feature_bits, Error code: 2
+[19:08:55] [Render thread/WARN]: Failed sysctl call: hw.cpufrequency, Error code: 2
+[tinygl4angle] Task203 query: glGetString #3 name=0x1F01 -> "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 GPU, Version 27"
+[tinygl4angle] Task203 query: glGetString #4 name=0x1F02 -> "OpenGL ES 3.0.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)"
+[TinyGL] Task179 desktop identity: GL_VERSION 'OpenGL ES 3.0.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)' -> '3.3.0 (ANGLE 2.1.2440 git hash: 6024e9c05548)' (ES3 context, facade-form spoof)
+[tinygl4angle] Task203 query: glGetString #5 name=0x1F00 -> "Google Inc. (Apple)"
+[tinygl4angle] Task203 query: glGetIntegerv #5 pname=0x0D33
+[tinygl4angle] Task182 gles pin: glTexImage2D via eglGetProcAddress (context-sourced)
+[tinygl4angle] Task209 tex: glTexImage2D #1 target=0x8064 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 32768x32768 data=NULL
+[tinygl4angle] Task203 query: glGetIntegerv #6 pname=0x0D33
+[tinygl4angle] Task182 gles pin: glGetTexLevelParameteriv via eglGetProcAddress (context-sourced)
+[tinygl4angle] Task209 tex: glTexImage2D #2 target=0x8064 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 16384x16384 data=NULL
+[tinygl4angle] Task209 tex: glTexImage2D #3 target=0x0DE1 level=0 ifmt=0x8058 fmt=0x1908 type=0x1401 2360x1640 data=NULL
+[tinygl4angle] Task209 tex: glTexImage2D #4 target=0x0DE1 level=0 ifmt=0x1902 fmt=0x1902 type=0x1406 2360x1640 data=NULL
+[tinygl4angle] Task215 ANGLE-Metal depth-clear workaround armed (stale-depth x-ray fix; AME_TINYGL4_DEPTH_CLEAR_FIX=0 to disable)
+[19:08:55] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[Amethyst] Task129: OpenAL shim active (ALC_SOFT_system_events stubs advertised over openal-soft 1.20.1 impl; isSupported->ALC_FALSE => MC polling fallback)
+[tinygl4angle] Task209 tex: glTexImage2D #5 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 256x256 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #1 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 5x8 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexSubImage2D #2 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 5x8 at(0,9) data=ptr
+[2026-10-07T19:08:55.866+0800][3.676s] Safepoint "ICBufferFull", Time since last: 900434833 ns, Reaching safepoint: 1708 ns, Cleanup: 50792 ns, At safepoint: 583 ns, Total: 53083 ns
+[tinygl4angle] Task209 tex: glTexImage2D #6 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 16x16 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #3 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 16x16 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexImage2D #7 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 16x16 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #4 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 16x16 at(0,0) data=ptr
+[tinygl4angle] Task204 ubo: glBufferData #1 target=0x8892 size=37440 usage=0x88E4
+[tinygl4angle] Task204 ubo: glBufferData #2 target=0x8893 size=18720 usage=0x88E8
+[tinygl4angle] Task204 ubo: glBufferData #3 target=0x8892 size=120 usage=0x88E4
+[tinygl4angle] Task204 ubo: glBufferData #4 target=0x8893 size=40 usage=0x88E8
+[tinygl4angle] Task204 ubo: glBufferData #5 target=0x8892 size=120 usage=0x88E4
+[tinygl4angle] Task209 tex: glTexImage2D #8 target=0x0DE1 level=0 ifmt=0x1902 fmt=0x1902 type=0x1406 2360x1640 data=NULL
+[tinygl4angle] Task209 tex: glTexImage2D #9 target=0x0DE1 level=0 ifmt=0x8058 fmt=0x1908 type=0x1401 2360x1640 data=NULL
+[19:08:55] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[tinygl4angle] Task182 glCreateShader(type=35633) -> 1 (namespace joined: create/source/compile/query now share one ANGLE)
+[tinygl4angle] Task181 glShaderSource #1: shader=1 count=1 len0=277 length=NULL head48='#version 150
+
+in vec3 Position;
+in vec2 UV;
+in v'
+[tinygl4angle] Task183 DESKTOP source reached GLES upload (spvc rewrite missed) #1 head48='#version 150
+
+in vec3 Position;
+in vec2 UV;
+in v'
+[tinygl4angle] Task219 desktop->ES300 head rewrite #1 (was #version 150, len=619)
+[tinygl4angle] Task181 glCompileShader #1: shader=1 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task182 glCreateShader(type=35632) -> 2 (namespace joined: create/source/compile/query now share one ANGLE)
+[tinygl4angle] Task181 glShaderSource #2: shader=2 count=1 len0=329 length=NULL head48='#version 150
+
+uniform sampler2D DiffuseSampler;
+'
+[tinygl4angle] Task183 DESKTOP source reached GLES upload (spvc rewrite missed) #2 head48='#version 150
+
+uniform sampler2D DiffuseSampler;
+'
+[tinygl4angle] Task219 desktop->ES300 head rewrite #2 (was #version 150, len=671)
+[tinygl4angle] Task181 glCompileShader #2: shader=2 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task182 glCreateShader(type=35633) -> 4 (namespace joined: create/source/compile/query now share one ANGLE)
+[tinygl4angle] Task181 glShaderSource #3: shader=4 count=1 len0=227 length=NULL head48='#version 150
+
+in vec3 Position;
+in vec4 Color;
+
+'
+[tinygl4angle] Task183 DESKTOP source reached GLES upload (spvc rewrite missed) #3 head48='#version 150
+
+in vec3 Position;
+in vec4 Color;
+
+'
+[tinygl4angle] Task219 desktop->ES300 head rewrite #3 (was #version 150, len=569)
+[tinygl4angle] Task181 glCompileShader #3: shader=4 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task182 glCreateShader(type=35632) -> 5 (namespace joined: create/source/compile/query now share one ANGLE)
+[tinygl4angle] Task181 glShaderSource #4: shader=5 count=1 len0=222 length=NULL head48='#version 150
+
+in vec4 vertexColor;
+
+uniform vec4'
+[tinygl4angle] Task183 DESKTOP source reached GLES upload (spvc rewrite missed) #4 head48='#version 150
+
+in vec4 vertexColor;
+
+uniform vec4'
+[tinygl4angle] Task219 desktop->ES300 head rewrite #4 (was #version 150, len=564)
+[tinygl4angle] Task181 glCompileShader #4: shader=5 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glShaderSource #5: shader=7 count=1 len0=227 length=NULL head48='#version 150
+
+in vec3 Position;
+in vec4 Color;
+
+'
+[tinygl4angle] Task181 glCompileShader #5: shader=7 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glShaderSource #6: shader=8 count=1 len0=222 length=NULL head48='#version 150
+
+in vec4 vertexColor;
+
+uniform vec4'
+[tinygl4angle] Task181 glCompileShader #6: shader=8 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glShaderSource #7: shader=10 count=1 len0=1298 length=NULL head48='#version 150
+
+#line 0 1
+/*#version 150*/
+
+vec4 l'
+[tinygl4angle] Task181 glCompileShader #7: shader=10 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glShaderSource #8: shader=11 count=1 len0=1280 length=NULL head48='#version 150
+
+#line 0 1
+/*#version 150*/
+
+vec4 l'
+[tinygl4angle] Task181 glCompileShader #8: shader=11 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #9: shader=13 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #10: shader=14 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #11: shader=16 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #12: shader=17 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #13: shader=19 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #14: shader=20 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #15: shader=22 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #16: shader=23 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #17: shader=25 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #18: shader=26 COMPILE_STATUS=1 (ok)
+[19:08:55] [Worker-Main-1/ERROR]: Failed to retrieve profile key pair
+java.io.IOException: Could not retrieve profile key pair
+	at fes.a(SourceFile:139) ~[1.20.1.jar:?]
+	at fes.b(SourceFile:79) ~[1.20.1.jar:?]
+	at java.util.concurrent.CompletableFuture$AsyncSupply.run(Unknown Source) ~[?:?]
+	at java.util.concurrent.CompletableFuture$AsyncSupply.exec(Unknown Source) ~[?:?]
+	at java.util.concurrent.ForkJoinTask.doExec(Unknown Source) ~[?:?]
+	at java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(Unknown Source) ~[?:?]
+	at java.util.concurrent.ForkJoinPool.scan(Unknown Source) ~[?:?]
+	at java.util.concurrent.ForkJoinPool.runWorker(Unknown Source) ~[?:?]
+	at java.util.concurrent.ForkJoinWorkerThread.run(Unknown Source) ~[?:?]
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104165224) -- re-armed at t+12s
+[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl_stb.dylib / install /tmp/liblwjgl_stb.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
+[SDLHook] Task132: libjnidispatch loaded but no verified _dlsym pointer slot (unexpected layout or write race -- retry scheduled)
+[tinygl4angle] Task209 tex: glTexImage2D #10 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 512x512 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #5 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 512x512 at(0,0) data=ptr
+[19:08:56] [Render thread/INFO]: Reloading ResourceManager: vanilla
+[2026-10-07T19:08:56.035+0800][3.845s] Safepoint "ICBufferFull", Time since last: 168800000 ns, Reaching safepoint: 12125 ns, Cleanup: 45084 ns, At safepoint: 2208 ns, Total: 59417 ns
+[2026-10-07T19:08:56.036+0800][3.846s] Safepoint "ICBufferFull", Time since last: 1094792 ns, Reaching safepoint: 231458 ns, Cleanup: 3167 ns, At safepoint: 7166 ns, Total: 241791 ns
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Worker-Main-5/INFO]: Found unifont_all_no_pua-15.0.06.hex, loading
+[tinygl4angle] Task204 ubo: glBufferData #6 target=0x8892 size=80 usage=0x88E8
+[tinygl4angle] Task203 draw: glUseProgram #1 prog=21
+[tinygl4angle] Task204 uniform: glUniform1i #1 loc=3 v=0
+[2026-10-07T19:08:56.062+0800][3.872s] Safepoint "ICBufferFull", Time since last: 25494000 ns, Reaching safepoint: 39417 ns, Cleanup: 45292 ns, At safepoint: 2458 ns, Total: 87167 ns
+[2026-10-07T19:08:56.062+0800][3.872s] Safepoint "ICBufferFull", Time since last: 50917 ns, Reaching safepoint: 21291 ns, Cleanup: 1542 ns, At safepoint: 3917 ns, Total: 26750 ns
+[2026-10-07T19:08:56.062+0800][3.872s] Safepoint "ICBufferFull", Time since last: 133458 ns, Reaching safepoint: 19458 ns, Cleanup: 334 ns, At safepoint: 6541 ns, Total: 26333 ns
+[2026-10-07T19:08:56.062+0800][3.872s] Safepoint "ICBufferFull", Time since last: 102417 ns, Reaching safepoint: 20292 ns, Cleanup: 416 ns, At safepoint: 9209 ns, Total: 29917 ns
+[tinygl4angle] Task203 uniform: glUniformMatrix4fv #1 loc=0 count=1 transpose=0
+[tinygl4angle] Task203 uniform: glUniformMatrix4fv #2 loc=1 count=1 transpose=0
+[2026-10-07T19:08:56.065+0800][3.875s] Safepoint "ICBufferFull", Time since last: 3053416 ns, Reaching safepoint: 21334 ns, Cleanup: 4041 ns, At safepoint: 10250 ns, Total: 35625 ns
+[2026-10-07T19:08:56.068+0800][3.878s] Safepoint "ICBufferFull", Time since last: 2723584 ns, Reaching safepoint: 16958 ns, Cleanup: 1667 ns, At safepoint: 10916 ns, Total: 29541 ns
+[tinygl4angle] Task203 uniform: glUniform4fv #1 loc=2 count=1
+[tinygl4angle] Task203 draw: glDrawElements #1 mode=4 count=6
+[tinygl4angle] Task203 draw: glUseProgram #2 prog=0
+[tinygl4angle] Task204 ubo: glBufferData #7 target=0x8892 size=80 usage=0x88E8
+[tinygl4angle] Task203 draw: glUseProgram #3 prog=21
+[tinygl4angle] Task204 uniform: glUniform1i #2 loc=3 v=0
+[tinygl4angle] Task203 uniform: glUniformMatrix4fv #3 loc=0 count=1 transpose=0
+[tinygl4angle] Task203 uniform: glUniformMatrix4fv #4 loc=1 count=1 transpose=0
+[tinygl4angle] Task203 uniform: glUniform4fv #2 loc=2 count=1
+[tinygl4angle] Task203 draw: glDrawElements #2 mode=4 count=6
+[tinygl4angle] Task203 draw: glUseProgram #4 prog=0
+[tinygl4angle] Task204 ubo: glBufferData #8 target=0x8892 size=64 usage=0x88E8
+[tinygl4angle] Task203 draw: glUseProgram #5 prog=6
+[tinygl4angle] Task203 uniform: glUniformMatrix4fv #5 loc=0 count=1 transpose=0
+[tinygl4angle] Task203 uniform: glUniformMatrix4fv #6 loc=1 count=1 transpose=0
+[tinygl4angle] Task203 uniform: glUniform4fv #3 loc=2 count=1
+[tinygl4angle] Task203 draw: glDrawElements #3 mode=4 count=6
+[tinygl4angle] Task203 draw: glUseProgram #6 prog=0
+[tinygl4angle] Task203 draw: glUseProgram #7 prog=6
+[tinygl4angle] Task203 uniform: glUniformMatrix4fv #7 loc=0 count=1 transpose=0
+[tinygl4angle] Task203 uniform: glUniformMatrix4fv #8 loc=1 count=1 transpose=0
+[tinygl4angle] Task203 uniform: glUniform4fv #4 loc=2 count=1
+[tinygl4angle] Task203 draw: glDrawElements #4 mode=4 count=6
+[tinygl4angle] Task203 draw: glUseProgram #8 prog=0
+[tinygl4angle] Task203 uniform: glUniformMatrix4fv #9 loc=0 count=1 transpose=0
+[tinygl4angle] Task203 uniform: glUniform4fv #5 loc=2 count=1
+[tinygl4angle] Task203 draw: glDrawElements #5 mode=4 count=6
+[tinygl4angle] Task203 uniform: glUniform4fv #6 loc=2 count=1
+[tinygl4angle] Task203 draw: glDrawElements #6 mode=4 count=6
+[tinygl4angle] Task203 uniform: glUniform4fv #7 loc=2 count=1
+[tinygl4angle] Task203 draw: glDrawElements #7 mode=4 count=6
+[tinygl4angle] Task204 uniform: glUniform1i #3 loc=3 v=0
+[tinygl4angle] Task203 uniform: glUniform4fv #8 loc=2 count=1
+[tinygl4angle] Task203 draw: glDrawElements #8 mode=4 count=6
+[InputDiag] pojavPumpEvents: isInputReady set to YES, showingWindow=0x0
+[InputDiag] pojavPumpEvents #1: window=0x109727360 GLFW_invoke_Key=0x10bbec0d0 GLFW_invoke_CursorPos=0x10bbec090 GLFW_invoke_Char=0x0 isGrabbing=0 isUseStackQueue=1 eventCounter=0
+[tinygl4angle] Task209 tex: glTexImage2D #11 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 1x1 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #6 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 1x1 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexImage2D #12 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 512x64 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #7 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 512x64 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexImage2D #13 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 1024x256 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #8 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 1024x256 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexImage2D #14 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 256x256 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #9 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 256x256 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexImage2D #15 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 1024x1024 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #10 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 1024x1024 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexImage2D #16 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 1024x1024 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #11 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 1024x1024 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexImage2D #17 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 1024x1024 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #12 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 1024x1024 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexImage2D #18 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 1024x1024 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #13 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 1024x1024 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexImage2D #19 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 1024x1024 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #14 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 1024x1024 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexImage2D #20 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 1024x1024 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #15 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 1024x1024 at(0,0) data=ptr
+[tinygl4angle] Task203 query: glGetIntegerv #7 pname=0x8CA6
+[tinygl4angle] Task203 query: glGetIntegerv #8 pname=0x0BA2
+[egl_bridge] First swap attempted, removing launch overlay (present confirmation: [RenderDiag] first eglSwapBuffers OK)
+[tinygl4angle] Task203 query: glGetIntegerv #9 pname=0x0C10
+[RenderDiag] Task187 state: clearColor=(0.94,0.20,0.24,1.00) colorMask=(1111) scissor=[0,0 2360x1640 on=0] depth=0 blend=0 stencil=0 drawFb=0 readFb=0 viewport=[0,0 2360x1640]
+[tinygl4angle] Task203 query: glGetIntegerv #10 pname=0x0D55
+[tinygl4angle] Task203 query: glGetIntegerv #11 pname=0x0D56
+[tinygl4angle] Task203 query: glGetIntegerv #12 pname=0x8A34
+[2026-10-07T19:08:56.153+0800][3.962s] GC(21) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 311M->181M(560M) 20.564ms
+[2026-10-07T19:08:56.153+0800][3.962s] Safepoint "G1CollectForAllocation", Time since last: 63681542 ns, Reaching safepoint: 36458 ns, Cleanup: 37417 ns, At safepoint: 20626667 ns, Total: 20700542 ns
+[RenderDiag] Task188 readback #1 center=(1180,820) rgba=(239,50,61,0) glErr=0x0 -- nonzero rgb => content present, presentation drops it; black => genuinely-black content
+[RenderDiag] Task188 fb: alphaBits=8 depthBits=24 readbackDone=1 uboAlign=16 uboBind=0 (alphaBits=8 => premultiplied-black composite hypothesis live; uboBind=0 at swap => MC never binds UBO, matrix-upload path broken)
+[GLGeo] Task58 query constants corrected: surface=2360x1640 viewport=2360x1640 (EGL_WIDTH=0x3057/EGL_HEIGHT=0x3056 per egl.h; legacy probe read them swapped since Task41)
+[RenderDiag] swap#1 (Task75 geo-probe): drawFb=0 readFb=0 viewport=0,0 2360x1640 surface=2360x1640 mode=0 (readback retired -- CopyBGRA8ToRGBA8 SIGBUS @4770b53)
+[RenderDiag] Task41 latch: NORMAL present (geometry aligned, readback retired by Task75)
+[GLGeo] Task51 hierarchy #1: layer=0x12f80bf40 drawable=2360x1640 scale=2.00 surface=2360x1640 inTree=1 chain= -> [CAMetalLayer 1180x820 pos=(590,410) hid=0 op=1.00] -> [CALayer 1180x820 pos=(590,410) hid=0 op=1.00] -> [CALayer 1210x820 pos=(605,410) hid=0 op=1.00] -> [CALayer 1180x820 pos=(590,410) hid=0 op=1.00] -> [CALayer 1180x820 pos=(590,410) hid=0 op=1.00] -> [CALayer 1180x820 pos=(590,410) hid=0 op=1.00] -> [UIWindowLayer 1180x820 pos=(590,410) hid=0 op=1.00] -> [_UIWindowTransformLayer 1180x820 pos=(590,410) hid=0 op=1.00] -> [_UIWindowTransformLayer 1180x820 pos=(590,410) hid=0 op=1.00] -> [UIWindowLayer 1180x820 pos=(590,410) hid=0 op=1.00]
+[RenderDiag] first eglSwapBuffers OK surface=0x1 (presentation path confirmed)
+[InputDiag] pojavPumpEvents #2: window=0x109727360 GLFW_invoke_Key=0x10bbec0d0 GLFW_invoke_CursorPos=0x10bbec090 GLFW_invoke_Char=0x0 isGrabbing=0 isUseStackQueue=1 eventCounter=0
+[2026-10-07T19:08:56.162+0800][3.972s] GC(22) Pause Young (Mixed) (G1 Evacuation Pause) 187M->183M(560M) 6.526ms
+[2026-10-07T19:08:56.162+0800][3.972s] Safepoint "G1CollectForAllocation", Time since last: 3108166 ns, Reaching safepoint: 48250 ns, Cleanup: 1375 ns, At safepoint: 6549834 ns, Total: 6599459 ns
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[tinygl4angle] Task204 uniform: glUniform1i #4 loc=3 v=0
+[tinygl4angle] Task204 uniform: glUniform1i #5 loc=3 v=0
+[tinygl4angle] Task204 uniform: glUniform1i #6 loc=3 v=0
+[InputDiag] pojavPumpEvents #3: window=0x109727360 GLFW_invoke_Key=0x10bbec0d0 GLFW_invoke_CursorPos=0x10bbec090 GLFW_invoke_Char=0x0 isGrabbing=0 isUseStackQueue=1 eventCounter=0
+[RenderDiag] Task187 state: clearColor=(0.94,0.20,0.24,1.00) colorMask=(1111) scissor=[0,0 2360x1640 on=0] depth=0 blend=0 stencil=0 drawFb=0 readFb=0 viewport=[0,0 2360x1640]
+[RenderDiag] Task188 readback #2 center=(1180,820) rgba=(239,50,61,255) glErr=0x0 -- nonzero rgb => content present, presentation drops it; black => genuinely-black content
+[RenderDiag] Task188 fb: alphaBits=8 depthBits=24 readbackDone=1 uboAlign=16 uboBind=0 (alphaBits=8 => premultiplied-black composite hypothesis live; uboBind=0 at swap => MC never binds UBO, matrix-upload path broken)
+[RenderDiag] swap#2 (Task75 geo-probe): drawFb=0 readFb=0 viewport=0,0 2360x1640 surface=2360x1640 mode=1 (readback retired -- CopyBGRA8ToRGBA8 SIGBUS @4770b53)
+[InputDiag] pojavPumpEvents #4: window=0x109727360 GLFW_invoke_Key=0x10bbec0d0 GLFW_invoke_CursorPos=0x10bbec090 GLFW_invoke_Char=0x0 isGrabbing=0 isUseStackQueue=1 eventCounter=0
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[tinygl4angle] Task204 uniform: glUniform1i #7 loc=3 v=0
+[tinygl4angle] Task204 uniform: glUniform1i #8 loc=3 v=0
+[InputDiag] pojavPumpEvents #5: window=0x109727360 GLFW_invoke_Key=0x10bbec0d0 GLFW_invoke_CursorPos=0x10bbec090 GLFW_invoke_Char=0x0 isGrabbing=0 isUseStackQueue=1 eventCounter=0
+[RenderDiag] Task187 state: clearColor=(0.94,0.20,0.24,1.00) colorMask=(1111) scissor=[0,0 2360x1640 on=0] depth=0 blend=0 stencil=0 drawFb=0 readFb=0 viewport=[0,0 2360x1640]
+[RenderDiag] Task188 readback #3 center=(1180,820) rgba=(239,50,61,255) glErr=0x0 -- nonzero rgb => content present, presentation drops it; black => genuinely-black content
+[RenderDiag] Task188 fb: alphaBits=8 depthBits=24 readbackDone=1 uboAlign=16 uboBind=0 (alphaBits=8 => premultiplied-black composite hypothesis live; uboBind=0 at swap => MC never binds UBO, matrix-upload path broken)
+[RenderDiag] swap#3 (Task75 geo-probe): drawFb=0 readFb=0 viewport=0,0 2360x1640 surface=2360x1640 mode=1 (readback retired -- CopyBGRA8ToRGBA8 SIGBUS @4770b53)
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[RenderDiag] Task187 state: clearColor=(0.94,0.20,0.24,1.00) colorMask=(1111) scissor=[0,0 2360x1640 on=0] depth=0 blend=0 stencil=0 drawFb=0 readFb=0 viewport=[0,0 2360x1640]
+[RenderDiag] Task188 fb: alphaBits=8 depthBits=24 readbackDone=0 uboAlign=16 uboBind=0 (alphaBits=8 => premultiplied-black composite hypothesis live; uboBind=0 at swap => MC never binds UBO, matrix-upload path broken)
+[RenderDiag] swap#4 (Task75 geo-probe): drawFb=0 readFb=0 viewport=0,0 2360x1640 surface=2360x1640 mode=1 (readback retired -- CopyBGRA8ToRGBA8 SIGBUS @4770b53)
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[RenderDiag] Task187 state: clearColor=(0.94,0.20,0.24,1.00) colorMask=(1111) scissor=[0,0 2360x1640 on=0] depth=0 blend=0 stencil=0 drawFb=0 readFb=0 viewport=[0,0 2360x1640]
+[RenderDiag] Task188 fb: alphaBits=8 depthBits=24 readbackDone=0 uboAlign=16 uboBind=0 (alphaBits=8 => premultiplied-black composite hypothesis live; uboBind=0 at swap => MC never binds UBO, matrix-upload path broken)
+[RenderDiag] swap#5 (Task75 geo-probe): drawFb=0 readFb=0 viewport=0,0 2360x1640 surface=2360x1640 mode=1 (readback retired -- CopyBGRA8ToRGBA8 SIGBUS @4770b53)
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[2026-10-07T19:08:56.238+0800][4.047s] Safepoint "ICBufferFull", Time since last: 75423625 ns, Reaching safepoint: 38291 ns, Cleanup: 43834 ns, At safepoint: 5500 ns, Total: 87625 ns
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[2026-10-07T19:08:56.264+0800][4.073s] Safepoint "ICBufferFull", Time since last: 25718625 ns, Reaching safepoint: 29416 ns, Cleanup: 32917 ns, At safepoint: 5250 ns, Total: 67583 ns
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Realms Notification Availability checker #1/INFO]: Could not authorize you against Realms server: javax.ws.rs.NotAuthorizedException: HTTP 401 Unauthorized
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[2026-10-07T19:08:56.294+0800][4.103s] Safepoint "ICBufferFull", Time since last: 29933083 ns, Reaching safepoint: 60917 ns, Cleanup: 38958 ns, At safepoint: 7375 ns, Total: 107250 ns
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[2026-10-07T19:08:56.324+0800][4.134s] GC(23) Pause Young (Concurrent Start) (G1 Evacuation Pause) 436M->204M(560M) 4.336ms
+[2026-10-07T19:08:56.324+0800][4.134s] GC(24) Concurrent Mark Cycle
+[2026-10-07T19:08:56.324+0800][4.134s] Safepoint "G1CollectForAllocation", Time since last: 25893000 ns, Reaching safepoint: 42084 ns, Cleanup: 32083 ns, At safepoint: 4378167 ns, Total: 4452334 ns
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[2026-10-07T19:08:56.412+0800][4.221s] GC(24) Pause Remark 271M->271M(560M) 3.309ms
+[2026-10-07T19:08:56.412+0800][4.221s] Safepoint "G1PauseRemark", Time since last: 84368541 ns, Reaching safepoint: 31792 ns, Cleanup: 25375 ns, At safepoint: 3342125 ns, Total: 3399292 ns
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[2026-10-07T19:08:56.445+0800][4.255s] GC(24) Pause Cleanup 313M->313M(560M) 0.083ms
+[2026-10-07T19:08:56.445+0800][4.255s] Safepoint "G1PauseCleanup", Time since last: 33237958 ns, Reaching safepoint: 48542 ns, Cleanup: 22542 ns, At safepoint: 115500 ns, Total: 186584 ns
+[2026-10-07T19:08:56.446+0800][4.256s] GC(24) Concurrent Mark Cycle 121.865ms
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[2026-10-07T19:08:56.532+0800][4.342s] GC(25) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 432M->208M(560M) 5.548ms
+[2026-10-07T19:08:56.532+0800][4.342s] Safepoint "G1CollectForAllocation", Time since last: 81645416 ns, Reaching safepoint: 41084 ns, Cleanup: 44250 ns, At safepoint: 5575791 ns, Total: 5661125 ns
+[2026-10-07T19:08:56.544+0800][4.354s] GC(26) Pause Young (Mixed) (G1 Evacuation Pause) 224M->205M(560M) 3.338ms
+[2026-10-07T19:08:56.544+0800][4.354s] Safepoint "G1CollectForAllocation", Time since last: 8131209 ns, Reaching safepoint: 48416 ns, Cleanup: 1167 ns, At safepoint: 3361875 ns, Total: 3411458 ns
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[2026-10-07T19:08:56.631+0800][4.440s] Safepoint "ICBufferFull", Time since last: 86627875 ns, Reaching safepoint: 24708 ns, Cleanup: 52292 ns, At safepoint: 3042 ns, Total: 80042 ns
+[SurfaceViewController] Launch overlay dismissed after 4.2 seconds
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[2026-10-07T19:08:56.723+0800][4.533s] Safepoint "ICBufferFull", Time since last: 92443208 ns, Reaching safepoint: 45000 ns, Cleanup: 51458 ns, At safepoint: 2917 ns, Total: 99375 ns
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[2026-10-07T19:08:56.737+0800][4.547s] GC(27) Pause Young (Normal) (G1 Evacuation Pause) 443M->234M(560M) 6.655ms
+[2026-10-07T19:08:56.737+0800][4.547s] Safepoint "G1CollectForAllocation", Time since last: 7536458 ns, Reaching safepoint: 18042 ns, Cleanup: 3167 ns, At safepoint: 6678083 ns, Total: 6699292 ns
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[tinygl4angle] Task209 tex: glTexImage2D #21 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 16x16 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #16 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 16x16 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexImage2D #22 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 512x512 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #17 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 512x512 at(0,0) data=ptr
+[19:08:56] [Render thread/WARN]: Missing sound for event: minecraft:item.goat_horn.play
+[19:08:56] [Render thread/WARN]: Missing sound for event: minecraft:entity.goat.screaming.horn_break
+[19:08:56] [Render thread/INFO]: OpenAL initialized on device CoreAudio Default
+[19:08:56] [Render thread/INFO]: Sound engine started
+[tinygl4angle] Task209 tex: glTexImage2D #23 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 256x256 data=NULL
+[tinygl4angle] Task209 tex: glTexSubImage2D #18 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 5x8 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexSubImage2D #19 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 5x8 at(0,9) data=ptr
+[2026-10-07T19:08:56.867+0800][4.677s] Safepoint "ICBufferFull", Time since last: 129821958 ns, Reaching safepoint: 4584 ns, Cleanup: 51708 ns, At safepoint: 1125 ns, Total: 57417 ns
+[tinygl4angle] Task209 tex: glTexImage2D #24 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 256x256 data=NULL
+[RenderDiag] fps=40 swapOK=40 swapFail=0 maxGap=35ms avgGap=16ms pres=0/0ms build=16/34ms mem=1139MB layer=0x12f80bf40 drawable=2360x1640 scale=2.00 bounds=1180x820 inWindow=1
+[tinygl4angle] Task209 tex: glTexSubImage2D #20 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 5x8 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexSubImage2D #21 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 5x8 at(0,9) data=ptr
+[tinygl4angle] Task209 tex: glTexSubImage2D #22 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 5x8 at(0,0) data=ptr
+[tinygl4angle] Task209 tex: glTexSubImage2D #23 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 5x8 at(0,9) data=ptr
+[tinygl4angle] Task209 tex: glTexSubImage2D #24 target=0x0DE1 level=0 fmt=0x1908 type=0x1401 5x8 at(0,0) data=ptr
+[19:08:56] [Render thread/INFO]: Created: 1024x512x0 minecraft:textures/atlas/blocks.png-atlas
+[19:08:56] [Render thread/INFO]: Created: 256x256x0 minecraft:textures/atlas/signs.png-atlas
+[19:08:56] [Render thread/INFO]: Created: 512x512x0 minecraft:textures/atlas/shield_patterns.png-atlas
+[19:08:56] [Render thread/INFO]: Created: 512x512x0 minecraft:textures/atlas/banner_patterns.png-atlas
+[19:08:56] [Render thread/INFO]: Created: 1024x1024x0 minecraft:textures/atlas/armor_trims.png-atlas
+[tinygl4angle] Task209 tex: glTexImage2D #34 target=0x0DE1 level=0 ifmt=0x1908 fmt=0x1908 type=0x1401 1024x1024 data=NULL
+[19:08:56] [Render thread/INFO]: Created: 128x64x0 minecraft:textures/atlas/decorated_pot.png-atlas
+[19:08:56] [Render thread/INFO]: Created: 256x256x0 minecraft:textures/atlas/chest.png-atlas
+[19:08:56] [Render thread/INFO]: Created: 512x256x0 minecraft:textures/atlas/shulker_boxes.png-atlas
+[19:08:56] [Render thread/INFO]: Created: 512x256x0 minecraft:textures/atlas/beds.png-atlas
+[tinygl4angle] Task181 glCompileShader #19: shader=28 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #20: shader=29 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #21: shader=31 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #22: shader=32 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #23: shader=34 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #24: shader=35 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #25: shader=37 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #26: shader=38 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #27: shader=40 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #28: shader=41 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #29: shader=43 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #30: shader=44 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #31: shader=46 COMPILE_STATUS=1 (ok)
+[tinygl4angle] Task181 glCompileShader #32: shader=47 COMPILE_STATUS=1 (ok)
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:56] [Render thread/WARN]: Failed sysctl call: hw.packages, Error code: 1
+[19:08:56] [Render thread/WARN]: Failed sysctl call: machdep.cpu.brand_string, Error code: 1
+[19:08:56] [Render thread/WARN]: Failed sysctl call: machdep.cpu.vendor, Error code: 2
+[19:08:56] [Render thread/WARN]: Failed sysctl call: machdep.cpu.stepping, Error code: 2
+[19:08:56] [Render thread/WARN]: Failed sysctl call: machdep.cpu.model, Error code: 2
+[19:08:56] [Render thread/WARN]: Failed sysctl call: machdep.cpu.family, Error code: 2
+[19:08:56] [Render thread/WARN]: Failed sysctl call: machdep.cpu.signature, Error code: 2
+[19:08:56] [Render thread/WARN]: Failed sysctl call: machdep.cpu.feature_bits, Error code: 2
+[19:08:56] [Render thread/WARN]: Failed sysctl call: hw.cpufrequency, Error code: 2
+[input_bridge] Blocked fork/exec of 'system_profiler' (iOS sandbox forbids fork/exec)
+[input_bridge] Blocked fork/exec of 'system_profiler' (iOS sandbox forbids fork/exec)
+[19:08:56] [Render thread/WARN]: Failed sysctl call: vm.swapusage, Error code: 1
+[2026-10-07T19:08:57.039+0800][4.849s] GC(28) Pause Full (System.gc()) 382M->209M(560M) 47.576ms
+[2026-10-07T19:08:57.039+0800][4.849s] Safepoint "G1CollectFull", Time since last: 124132292 ns, Reaching safepoint: 1875 ns, Cleanup: 42833 ns, At safepoint: 47593625 ns, Total: 47638333 ns
+[19:08:57] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:57] [Render thread/INFO]: OpenGL debug message: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.'
+[19:08:57] [Render thread/WARN]: Failed sysctl call: hw.packages, Error code: 1
+[19:08:57] [Render thread/WARN]: Failed sysctl call: machdep.cpu.brand_string, Error code: 1
+[19:08:57] [Render thread/WARN]: Failed sysctl call: machdep.cpu.vendor, Error code: 2
+[19:08:57] [Render thread/WARN]: Failed sysctl call: machdep.cpu.stepping, Error code: 2
+[19:08:57] [Render thread/WARN]: Failed sysctl call: machdep.cpu.model, Error code: 2
+[19:08:57] [Render thread/WARN]: Failed sysctl call: machdep.cpu.family, Error code: 2
+[19:08:57] [Render thread/WARN]: Failed sysctl call: machdep.cpu.signature, Error code: 2
+[19:08:57] [Render thread/WARN]: Failed sysctl call: machdep.cpu.feature_bits, Error code: 2
+[19:08:57] [Render thread/WARN]: Failed sysctl call: hw.cpufrequency, Error code: 2
+[input_bridge] Blocked fork/exec of 'system_profiler' (iOS sandbox forbids fork/exec)
+[input_bridge] Blocked fork/exec of 'system_profiler' (iOS sandbox forbids fork/exec)
+[19:08:57] [Render thread/WARN]: Failed sysctl call: vm.swapusage, Error code: 1
+[2026-10-07T19:08:57.077+0800][4.887s] GC(29) Pause Full (System.gc()) 210M->209M(560M) 33.496ms
+[2026-10-07T19:08:57.077+0800][4.887s] Safepoint "G1CollectFull", Time since last: 4479292 ns, Reaching safepoint: 3750 ns, Cleanup: 8041 ns, At safepoint: 33518334 ns, Total: 33530125 ns
+[19:08:57] [Render thread/ERROR]: Reported exception thrown!
+y: Rendering overlay
+	at fjq.a(SourceFile:941) ~[1.20.1.jar:?]
+	at enn.f(SourceFile:1219) ~[1.20.1.jar:?]
+	at enn.e(SourceFile:802) ~[1.20.1.jar:?]
+	at net.minecraft.client.main.Main.main(SourceFile:250) ~[1.20.1.jar:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source) ~[?:?]
+	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source) ~[?:?]
+	at java.lang.reflect.Method.invoke(Unknown Source) ~[?:?]
+	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134) ~[launcher.jar:?]
+	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372) ~[launcher.jar:?]
+	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53) ~[launcher.jar:?]
+Caused by: java.lang.RuntimeException: could not reload shaders
+	at fjq.b(SourceFile:567) ~[1.20.1.jar:?]
+	at fjq$1.a(SourceFile:441) ~[1.20.1.jar:?]
+	at fjq$1.a(SourceFile:418) ~[1.20.1.jar:?]
+	at alc.a(SourceFile:13) ~[1.20.1.jar:?]
+	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(Unknown Source) ~[?:?]
+	at java.util.concurrent.CompletableFuture$Completion.run(Unknown Source) ~[?:?]
+	at ald.a(SourceFile:69) ~[1.20.1.jar:?]
+	at bcn.d(SourceFile:156) ~[1.20.1.jar:?]
+	at bcr.d(SourceFile:23) ~[1.20.1.jar:?]
+	at bcn.x(SourceFile:130) ~[1.20.1.jar:?]
+	at bcn.bp(SourceFile:115) ~[1.20.1.jar:?]
+	at enn.f(SourceFile:1175) ~[1.20.1.jar:?]
+	... 9 more
+Caused by: act: Invalid shaders/core/rendertype_solid.json: Couldn't compile vertex program (vanilla, rendertype_solid) : ERROR: 1:15: '/' : wrong operand types - no operation '/' exists that takes a left-hand operand of type 'in highp 2-component vector of int' and a right operand of type 'const float' (or there is no acceptable conversion)
+ERROR: 1:15: 'clamp' : no matching overloaded function found
+ERROR: 1:15: 'texture' : no matching overloaded function found
+ERROR: 1:15: 'return' : function return is not matching type:
+	at act.a(SourceFile:48) ~[1.20.1.jar:?]
+	at fki.<init>(SourceFile:203) ~[1.20.1.jar:?]
+	at fjq.b(SourceFile:516) ~[1.20.1.jar:?]
+	at fjq$1.a(SourceFile:441) ~[1.20.1.jar:?]
+	at fjq$1.a(SourceFile:418) ~[1.20.1.jar:?]
+	at alc.a(SourceFile:13) ~[1.20.1.jar:?]
+	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(Unknown Source) ~[?:?]
+	at java.util.concurrent.CompletableFuture$Completion.run(Unknown Source) ~[?:?]
+	at ald.a(SourceFile:69) ~[1.20.1.jar:?]
+	at bcn.d(SourceFile:156) ~[1.20.1.jar:?]
+	at bcr.d(SourceFile:23) ~[1.20.1.jar:?]
+	at bcn.x(SourceFile:130) ~[1.20.1.jar:?]
+	at bcn.bp(SourceFile:115) ~[1.20.1.jar:?]
+	at enn.f(SourceFile:1175) ~[1.20.1.jar:?]
+	... 9 more
+Caused by: java.io.IOException: Couldn't compile vertex program (vanilla, rendertype_solid) : ERROR: 1:15: '/' : wrong operand types - no operation '/' exists that takes a left-hand operand of type 'in highp 2-component vector of int' and a right operand of type 'const float' (or there is no acceptable conversion)
+ERROR: 1:15: 'clamp' : no matching overloaded function found
+ERROR: 1:15: 'texture' : no matching overloaded function found
+ERROR: 1:15: 'return' : function return is not matching type:
+	at ehx.b(SourceFile:69) ~[1.20.1.jar:?]
+	at ehx.a(SourceFile:51) ~[1.20.1.jar:?]
+	at fki.a(SourceFile:242) ~[1.20.1.jar:?]
+	at fki.<init>(SourceFile:185) ~[1.20.1.jar:?]
+	at fjq.b(SourceFile:516) ~[1.20.1.jar:?]
+	at fjq$1.a(SourceFile:441) ~[1.20.1.jar:?]
+	at fjq$1.a(SourceFile:418) ~[1.20.1.jar:?]
+	at alc.a(SourceFile:13) ~[1.20.1.jar:?]
+	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(Unknown Source) ~[?:?]
+	at java.util.concurrent.CompletableFuture$Completion.run(Unknown Source) ~[?:?]
+	at ald.a(SourceFile:69) ~[1.20.1.jar:?]
+	at bcn.d(SourceFile:156) ~[1.20.1.jar:?]
+	at bcr.d(SourceFile:23) ~[1.20.1.jar:?]
+	at bcn.x(SourceFile:130) ~[1.20.1.jar:?]
+	at bcn.bp(SourceFile:115) ~[1.20.1.jar:?]
+	at enn.f(SourceFile:1175) ~[1.20.1.jar:?]
+	... 9 more
+---- Minecraft Crash Report ----
+// But it works on my machine.
+
+Time: 2026-10-07 19:08:57
+Description: Rendering overlay
+
+java.lang.RuntimeException: could not reload shaders
+	at fjq.b(SourceFile:567)
+	at fjq$1.a(SourceFile:441)
+	at fjq$1.a(SourceFile:418)
+	at alc.a(SourceFile:13)
+	at java.base/java.util.concurrent.CompletableFuture$UniAccept.tryFire(Unknown Source)
+	at java.base/java.util.concurrent.CompletableFuture$Completion.run(Unknown Source)
+	at ald.a(SourceFile:69)
+	at bcn.d(SourceFile:156)
+	at bcr.d(SourceFile:23)
+	at bcn.x(SourceFile:130)
+	at bcn.bp(SourceFile:115)
+	at enn.f(SourceFile:1175)
+	at enn.e(SourceFile:802)
+	at net.minecraft.client.main.Main.main(SourceFile:250)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134)
+	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372)
+	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53)
+Caused by: act: Invalid shaders/core/rendertype_solid.json: Couldn't compile vertex program (vanilla, rendertype_solid) : ERROR: 1:15: '/' : wrong operand types - no operation '/' exists that takes a left-hand operand of type 'in highp 2-component vector of int' and a right operand of type 'const float' (or there is no acceptable conversion)
+ERROR: 1:15: 'clamp' : no matching overloaded function found
+ERROR: 1:15: 'texture' : no matching overloaded function found
+ERROR: 1:15: 'return' : function return is not matching type:
+	at act.a(SourceFile:48)
+	at fki.<init>(SourceFile:203)
+	at fjq.b(SourceFile:516)
+	... 20 more
+Caused by: java.io.IOException: Couldn't compile vertex program (vanilla, rendertype_solid) : ERROR: 1:15: '/' : wrong operand types - no operation '/' exists that takes a left-hand operand of type 'in highp 2-component vector of int' and a right operand of type 'const float' (or there is no acceptable conversion)
+ERROR: 1:15: 'clamp' : no matching overloaded function found
+ERROR: 1:15: 'texture' : no matching overloaded function found
+ERROR: 1:15: 'return' : function return is not matching type:
+	at ehx.b(SourceFile:69)
+	at ehx.a(SourceFile:51)
+	at fki.a(SourceFile:242)
+	at fki.<init>(SourceFile:185)
+	... 21 more
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Thread: Render thread
+Stacktrace:
+	at fjq.b(SourceFile:567)
+	at fjq$1.a(SourceFile:441)
+	at fjq$1.a(SourceFile:418)
+	at alc.a(SourceFile:13)
+	at java.base/java.util.concurrent.CompletableFuture$UniAccept.tryFire(Unknown Source)
+	at java.base/java.util.concurrent.CompletableFuture$Completion.run(Unknown Source)
+	at ald.a(SourceFile:69)
+	at bcn.d(SourceFile:156)
+	at bcr.d(SourceFile:23)
+	at bcn.x(SourceFile:130)
+
+-- Overlay render details --
+Details:
+	Overlay name: eud
+Stacktrace:
+	at fjq.a(SourceFile:937)
+	at enn.f(SourceFile:1219)
+	at enn.e(SourceFile:802)
+	at net.minecraft.client.main.Main.main(SourceFile:250)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at net.kdt.pojavlaunch.Tools.launchMinecraft(Tools.java:134)
+	at net.kdt.pojavlaunch.PojavLauncher.launchMinecraft(PojavLauncher.java:372)
+	at net.kdt.pojavlaunch.PojavLauncher.main(PojavLauncher.java:53)
+
+-- Last reload --
+Details:
+	Reload number: 1
+	Reload reason: initial
+	Finished: No
+	Packs: vanilla
+
+-- System Details --
+Details:
+	Minecraft Version: 1.20.1
+	Minecraft Version ID: 1.20.1
+	Operating System: Mac OS X (aarch64) version 27.0.1
+	Java Version: 17.0.20-internal, N/A
+	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode), Oracle Corporation
+	Memory: 186369856 bytes (177 MiB) / 587202560 bytes (560 MiB) up to 2147483648 bytes (2048 MiB)
+	CPUs: 8
+	Processor Vendor: 
+	Processor Name: 
+	Identifier:  Family  Model  Stepping 
+	Microarchitecture: unknown
+	Frequency (GHz): -0.00
+	Number of physical packages: 1
+	Number of physical CPUs: 8
+	Number of logical CPUs: 8
+	Graphics card #0 name: unknown
+	Graphics card #0 vendor: unknown
+	Graphics card #0 VRAM (MB): 0.00
+	Graphics card #0 deviceId: unknown
+	Graphics card #0 versionInfo: unknown
+	Memory slot #0 capacity (MB): 0.00
+	Memory slot #0 clockSpeed (GHz): 0.00
+	Memory slot #0 type: unknown
+	Virtual memory max (MB): 11862.16
+	Virtual memory used (MB): 7549.84
+	Swap memory total (MB): 0.00
+	Swap memory used (MB): 0.00
+	JVM Flags: 18 total; -Xms128M -Xmx2048M -Xlog:gc,safepoint:stdout:time,uptime -XX:+UnlockExperimentalVMOptions -XX:+DisablePrimordialThreadGuardPages -XX:ReservedCodeCacheSize=64m -XX:InitialCodeCacheSize=16m -XX:CodeCacheExpansionSize=4m -XX:+MirrorMappedCodeCache -XX:+UseG1GC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -XX:SoftRefLRUPolicyMSPerMB=250 -Xss32M -XX:ErrorFile=/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/hs_err_pid%p.log -Xbootclasspath/a:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/libs_caciocavallo17/cacio-shared-1.18-SNAPSHOT.jar:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/libs_caciocavallo17/cacio-tta-1.18-SNAPSHOT.jar -XX:-UseCompressedClassPointers -Xss1M
+	Launched Version: 1.20.1
+	Backend library: LWJGL version 3.3.1
+	Backend API: ANGLE (Apple, ANGLE Metal Renderer: Apple M4 GPU, Version 27.0.1 (Build 24A446)) GL version 3.3.0 (ANGLE 2.1.2440 git hash: 6024e9c05548), Google Inc. (Apple)
+	Window size: 2360x1640
+	GL Caps: Using framebuffer using OpenGL 3.2
+	GL debug messages: id=1280, source=API, type=ERROR, severity=HIGH, message='Enum 0x0180 is currently not supported.' x 84
+	Using VBOs: Yes
+	Is Modded: Probably not. Client jar signature and brand is untouched
+	Type: Client (map_client.txt)
+	Graphics mode: fast
+	Resource Packs: 
+	Current Language: zh_cn
+	CPU: 8x 
+#@!@# Game crashed! Crash report saved to: #@!@# /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/1.20.1/game/crash-reports/crash-2026-10-07_19.08.57-client.txt
+[RenderDiag] exit(-1) snapshot: swapOK=40 swapFail=0
+exit(-1) called
+
+===== [Amethyst fatal trace] 2026-10-07 19:08:57.462 =====
+reason: exit(-1) called
+thread: (unnamed)
+  #00 0x10d590f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
+  #01 0x10d59188c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71820
+  #02 0x135bbc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
+  #03 0x135e1ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
+  #04 0x135e1e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
+  #05 0x135e203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
+  #06 0x135e20ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
+  #07 0x135e200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
+  #08 0x135dad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
+  #09 0x135bb4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
+  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
+  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
+
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x104165224) -- re-armed at t+14s
+[PLCrashView] User tapped exit launcher, exiting process directly
+[RenderDiag] exit(0) snapshot: swapOK=40 swapFail=0
+exit(0) called
