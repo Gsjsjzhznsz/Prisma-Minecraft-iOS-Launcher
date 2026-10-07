@@ -1999,3 +1999,18 @@ Work Log:
 Stage Summary:
 - 13 项全数落地；装机验证锚点：①"[tinygl4angle] Task227 ivec conversion pass: N wrap(s)"（ANGLE 1.20.1 不再崩溃着色器）+ 26.3/1.20.1 启动无 "Couldn't compile vertex program"；②"[AssetsHeal] Task227" healed>0（icns 落位，"Couldn't set icon"消失）；③"[InputDiag] Task227 controlKey" 全量留痕（下轮实锤断点层）；④"[SurfaceVC] Task227 stray StartTextInput SUPPRESSED"（键盘不再自动弹起）；⑤"[DownloadVC] Task227 dep-resolve: N required" + 确认单（双源）+ 版本页 footer；⑥"[SDLHook] Task227 SDL_OpenURL intercepted"（26.3 开文件夹弹浏览器）；⑦"[GameMenu] Task227 gear dock state"（近边才吸+把手形态+侧滑面板）；⑧"[DataTransfer] Task227: post-import instance merge executed"；⑨齿轮拖到中间不再被吸走；⑩欢迎页介绍有文字有卡片
 - 遗留观察：系统 UIGlassEffect 若再现黑界面（Task225 病史），设 AME227_SYSTEM_GLASS=0 或下轮反转优先级；上游其余大件（陶瓦界面重构/CF 筛选/Krypton 渲染器/版本隔离向导）体量大未合流，留待用户点名再移植；ja 为部分翻译语言（非四语对等集）
+
+---
+Task ID: 227-CI
+Agent: main (Super Z)
+Task: Task 227 CI 闭环（run 37658656714，commit c373ddb28）
+
+Work Log:
+- 三轮 CI 修复：r1 = ame_SDL_OpenURL 前置声明（hook 分发表先于定义）；r2 = GameMenuOverlayView 类扩展 ivar 块被编译配置拒绝（44:1）→ dock 状态改文件级静态；r3 = ModDependencyResolver.m 未注册进 Natives/CMakeLists.txt 源列表（上游 5f58492 同款坑——本仓非纯 folder 引用，CMake 显式列源）
+- 期间 GitHub 写路径全面 500（git push 与 blobs API 均拒）约 5 分钟自愈
+- run 37658656714 success：ipa/tipa 220.2MB + dSYM 6.1MB 三产物齐备
+
+Stage Summary:
+- Task 227 全链闭环：13 项反馈 → 根因（含 vanilla jar 着色器实证、26.3 jar 常量池实证）→ 修复合流（含上游 ModDependencyResolver/br_init 移植）→ verify_task227 50/50 → CI 三轮绿 → 新 IPA 就绪
+- 装机验证锚点（优先级）：①ANGLE(1.20.1) 启动不再崩（日志 "[tinygl4angle] Task227 ivec conversion pass: N wrap(s)"）；②26.3 游戏内打开文件夹弹浏览器（"[SDLHook] Task227 SDL_OpenURL intercepted"）；③模组下载前弹前置确认单（"[DownloadVC] Task227 dep-resolve: N required"）+ 版本页页脚前置清单；④键盘不再自动弹起（"[SurfaceVC] Task227 stray StartTextInput SUPPRESSED"）；⑤齿轮拖到边变把手、点开侧滑面板、拖到中间不吸；⑥导入备份后"[DataTransfer] Task227: post-import instance merge executed"；⑦欢迎页介绍有文字；⑧控制键事件全量留痕（"[InputDiag] Task227 controlKey"——若 sprint 仍无效，下轮日志直接定位断点层）
+- 遗留：系统 UIGlassEffect 黑屏复发则 AME227_SYSTEM_GLASS=0 回退；上游大件（陶瓦重构/CF 筛选/Krypton）未合流待点名
