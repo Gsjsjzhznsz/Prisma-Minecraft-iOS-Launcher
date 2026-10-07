@@ -585,6 +585,7 @@ add_executable(AngelAuraAmethyst
   ModVersion.m
   ModVersionViewController.m
   ModVersionTableViewCell.m
+  ModDependencyResolver.m   # Task227（issue #10）：依赖（前置）自动解析与安装
 
   # 通用资源详情页头部视图（Mod/Shader/Asset 版本页共用，展示项目封面图/信息/标签/描述）
   AssetDetailHeaderView.m
