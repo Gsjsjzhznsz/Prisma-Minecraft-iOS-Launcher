@@ -1972,3 +1972,30 @@ Stage Summary:
 - Task 226 全链闭环：18 项反馈 → 5 日志根因 → 17 组修复 → 63/63 验证 → CI 首轮绿 → 新 IPA 就绪
 - 装机验证锚点（按优先级）：①VirGL 选中后应秒转 zink 渲染，全程无崩溃框无 15s 等待（日志锚 "[VirGL] Task226 bind impossible -- skipping vtest bootstrap entirely"）；②右 Shift 物理+⌨️ overlay 均恢复（事件流 1:1）；③键盘循环消失；④26.3 与 1.20.1 游戏内打开文件夹出浏览器（日志锚 "[input_bridge] Task226 CTCDesktopPeer openFile/openUri natives registered"）；⑤上游数据迁移一次性日志+计数为正常正数；⑥备份导入含游戏数据；⑦模组下载后出依赖确认单；⑧半透明模式壁纸透出+液态玻璃切换无闪退
 - 遗留观察项：latestlog.2 的 JVM SIGSEGV jni_CallStaticVoidMethod（游戏内 51s）是否随 CTC 根修消失；CurseForge 依赖下载未做（仅 Modrinth）
+
+---
+Task ID: 227
+Agent: main (Super Z)
+Task: 13 项反馈轮（ef1e3e2a 日志集，构建 8d85b277c）——ANGLE 着色器根修 + 输入/键盘闩锁 + 玻璃收敛 + 依赖重做（上游移植）+ SDL 开文件夹 + 齿轮侧边栏 + 导入闭环 + 教练标记重建 + 全局描边字体
+
+Work Log:
+- 日志判读：①ANGLE = 1.20.1 的 light.glsl:16 `uv / 256.0`（ivec2/float 桌面合法 ES 非法）经 Task219 头重写直达 ES 编译器 → 四连编译错 → 崩溃对话框（附 vanilla jar 下载实证 + 60 vsh 全量核对：唯一违规点 = uv/256.0 + 5 处 texCoord2=UV2）；②sprint = tap-tap 修饰键 2:1 事件流（toggle 态再按压重发 DOWN）+ control 键无专汛取证（sendKey 只采样前 10 条）；③键盘 = SDL 游离 StartTextInput 反复自动弹起（4852/5516/5558 三处铁证，5558 用户立刻点输入法按钮关闭）；④依赖 = Task226 后置钩子零触发（CF 无 sha1 静默跳过 + 挂在下载后）；⑤SDL 开文件夹 = MC 26.3 走 SDLMisc.SDL_OpenURL（26.3 jar 常量池实证）而非 AWT/CTC；⑥heal = URL 用完整 rel 路径 → 404（"未能打开文件 hash"）+ 无中间目录；⑦教练标记 = UIVisualEffectView stage/card 在组合管线下的渲染脆弱性 + 巨型语义锚点顶出屏；⑧ja 整组缺 14 个 coachmarks 键
+- A：tinygl4angle 新增 ame227_fixIvecConversions（正文级 ivec→vec 包裹：除法形态（除数含 '.' 才包）+ 赋值形态（语句回看无 ivec 左值才包）+ 全字匹配 + 已包裹防御；本地 harness 对 vanilla 60 vsh + include 展开验证：uv/256.0→vec2(uv)/256.0 ✓、texCoord2=UV2→vec2(UV2) ✓、vec2 声明文件不动 ✓、ivec 左值跳过 ✓）；heal URL 改官方两段式 + bmclapi 镜像回退 + 落盘前建层
+- B：Task179 toggle 态再按压 DOWN 静默（1:1 事件流）；control 键全量取证（Task224 shift 形制）；pushSDLKeyboardEvent 先同步 state 再取 merged modstate 填 ev.mod
+- C：键盘用户收起闩锁（输入法按钮/双指手势置位；Start 到达须聊天开启键 3s 窗或 0.8s 内触摸才清闩放行；游离 Start 静默抑制 + 限频日志）
+- D：玻璃收敛——chrome 回退（sidebar/rightPanel 无条件清玻璃层）+ 列表卡面玻璃回退（LGCRemoveGlassFromView 后走既有管线）+ LGCCreateGlassEffectView 优先系统 UIGlassEffect（AME227_SYSTEM_GLASS=0 逃生阀）+ 头像长按菜单玻璃化（LGCIsGlassStyleActive 门控的 ame227_presentGlassMenu 浮层，native 时保持 UIAlertController）
+- E：依赖重做——ModDependencyResolver.h/.m 上游移植（双源归一/visited 防环/64 项目/深度 8/并发 4/loader+gameVersion 过滤/首版兜底）+ ModVersion.rawDictionary 双源留存 + didSelectVersion 前置解析 + PCL2CE 确认单（仅本体/全部安装）+ 双源项目名 enrichment（1.8s 预算）+ ModVersionViewController 前置 footer + ModService 串行安装（失败清单汇总）；后置 ame226 钩子退役
+- F：sdl3_hook 钩 SDL_OpenURL（file://→openURLGlobal→FolderBrowser；http(s)→系统浏览器；对 MC 报成功）
+- G：齿轮 dock——kAme227DockThreshold=96pt 阈值门控（不再无条件吸）+ 吸边变形 26×96 竖把手（半嵌入 2/3，单侧圆角）+ 持久化（game.gear.docked/side）+ docked 点击开全高侧滑面板（dismissMenu 横向滑出适配）
+- H：导入闭环——完成后立即调 init_setupMultiDir（legacy 目录即时合并进当前实例）+ 当前实例核对日志 + 完成提示带文件计数
+- I：教练标记 stage/card 换实底（systemBackgroundColor 0.94/0.96 + 发丝描边，contentView 引用全清）+ 卡位双端钳制
+- J：全局白底黑边字体——UILabel setText: swizzle（壁纸在场时白填充+黑描边 2.6+软阴影；无壁纸零干预；富文本路径不经 setText: 天然免疫；+load 单次交换）
+- K：i18n +7 ame227 键 ×5 语言文件（en/zh-Hans/zh-Hant/zh-CN/ja）+ ja 补 14 个 coachmarks 键（zh-CN 是独立副本文件非符号链接——首轮漏补后补齐）
+- L：上游合流——br_init 空指针兜底（c9b568da72 P0：未匹配渲染器回落 ANGLE 表 + 二道防线拒调 NULL）；auth expiresAt 修复核查 = 上游源头就是我们自己的 0877ca680（Task 128，已在）
+- 级联：verify_task225 M/N 重锚（2708→2715 + sdl3_hook 固有误报豁免——基线 diff=6 同态实证）；verify_task226 D3/K1/K2/P3-P8/Q1/R3 九锚换代（后置钩子退役/阈值 dock/resolver 接管）；verify_task227 新增 50 检查全绿
+- 事故与修复：zh-CN 漏补（verify Q1 的第四语言是 zh-CN 非 ja——首轮只补了四文件）；sdl3_hook 审计 FAIL 判定为固有误报（git stash 基线对比 delta 一致）；B1/C2 断言字面量错（CRLF + ame161 函数名笔误）；DataTransferService 一处畸形三元表达式（写入后即修）；GameMenuOverlay transform+frame 混用风险（改 bounds+center）
+- 验证：verify_task227 50/50 ALL PASS；verify_task225 68/68；verify_task226 ALL PASS；task139/task175/tinygl 门绿；预检零装箱传参/零宏冲突
+
+Stage Summary:
+- 13 项全数落地；装机验证锚点：①"[tinygl4angle] Task227 ivec conversion pass: N wrap(s)"（ANGLE 1.20.1 不再崩溃着色器）+ 26.3/1.20.1 启动无 "Couldn't compile vertex program"；②"[AssetsHeal] Task227" healed>0（icns 落位，"Couldn't set icon"消失）；③"[InputDiag] Task227 controlKey" 全量留痕（下轮实锤断点层）；④"[SurfaceVC] Task227 stray StartTextInput SUPPRESSED"（键盘不再自动弹起）；⑤"[DownloadVC] Task227 dep-resolve: N required" + 确认单（双源）+ 版本页 footer；⑥"[SDLHook] Task227 SDL_OpenURL intercepted"（26.3 开文件夹弹浏览器）；⑦"[GameMenu] Task227 gear dock state"（近边才吸+把手形态+侧滑面板）；⑧"[DataTransfer] Task227: post-import instance merge executed"；⑨齿轮拖到中间不再被吸走；⑩欢迎页介绍有文字有卡片
+- 遗留观察：系统 UIGlassEffect 若再现黑界面（Task225 病史），设 AME227_SYSTEM_GLASS=0 或下轮反转优先级；上游其余大件（陶瓦界面重构/CF 筛选/Krypton 渲染器/版本隔离向导）体量大未合流，留待用户点名再移植；ja 为部分翻译语言（非四语对等集）

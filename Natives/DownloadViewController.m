@@ -14,6 +14,7 @@
 #import "PLPreferences.h"
 #import "PLMirrorCenter.h"
 #import "ModService.h"
+#import "ModDependencyResolver.h"   // Task227：依赖（前置）自动解析与安装
 #import "ShaderService.h"
 #import "UIKit+NativeSurface.h"
 #import "ResourcePackService.h"
@@ -5516,7 +5517,98 @@ static NSString *PLSha1FromPrimaryFile(NSDictionary *primaryFile) {
 
     // 子页面已 push 到导航栈，选完版本后 pop 回下载列表
     [self.navigationController popViewControllerAnimated:YES];
-    [self startDownloadForModItem:itemToDownload];
+
+    // ★ Task227（反馈 #4 / issue #10 重做）：依赖解析移到【下载前】+ 双源 +
+    // PCL2CE 确认单。Task226 的实现挂在下载完成后且仅 Modrinth（CF 无
+    // sha1 直接静默跳过）——ef1e3e2a 装机实测零触发（日志无任何
+    // dep-resolve 锚点，用户"打开模组没有显示前置，安装也不弹确认"）。
+    // 本轮照上游 bc5ce914bc 的接入点（didSelectVersion）重构：
+    //   ① ModDependencyResolver 递归解析必需/可选前置（双源归一）；
+    //   ② 有必需前置 → 确认单【一起安装前置 / 仅安装本体】；
+    //   ③ 选"一起安装" → 串行下载前置到同一 mods 目录，全部结束后再下
+    //     主模组；单个前置失败不中断整条链，最后汇总失败清单。
+    __weak typeof(self) weakSelf = self;
+    NSString *ame227_profileName = self.targetProfileName ?: @"default";
+    [[ModDependencyResolver sharedResolver] resolveDependenciesFromVersionDetail:version.rawDictionary
+                                                                       apiSource:version.apiSource
+                                                            installedProjectIds:nil
+                                                                          loader:[self currentProfileLoader]
+                                                                     gameVersion:[self currentProfileMinecraftVersion]
+                                                                      completion:^(ModDependencyPlan *plan, NSError *ame227_err) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        NSArray<ModDependencyItem *> *ame227_deps = plan.required ?: @[];
+        NSLog(@"[DownloadVC] Task227 dep-resolve: %@ -> %lu required / %lu optional / %lu truncated (err=%@)",
+              itemToDownload.displayName,
+              (unsigned long)ame227_deps.count, (unsigned long)plan.optional.count,
+              (unsigned long)plan.truncated.count, ame227_err.localizedDescription ?: @"none");
+        if (ame227_deps.count == 0) {
+            [strongSelf startDownloadForModItem:itemToDownload];
+            return;
+        }
+        // ③.5 依赖名 enrichment（双源各自的项目名接口；失败回退 projectId，
+        // 1.8s 预算内齐不齐都弹——绝不因取名卡住下载流程）
+        dispatch_group_t ame227_titleGroup = dispatch_group_create();
+        for (ModDependencyItem *ame227_dep in ame227_deps) {
+            dispatch_group_enter(ame227_titleGroup);
+            void (^ame227_storeTitle)(NSString *) = ^(NSString *ame227_title) {
+                ame227_dep.displayName = ame227_title ?: ame227_dep.projectId;
+                dispatch_group_leave(ame227_titleGroup);
+            };
+            if (ame227_dep.apiSource == 1) {
+                [[ModrinthAPI sharedInstance] ame227_fetchProjectTitle:ame227_dep.projectId
+                                                             completion:^(NSString * _Nullable title, NSError * _Nullable err) {
+                    ame227_storeTitle(title);
+                }];
+            } else {
+                [[CurseForgeAPI sharedInstance] ame227_fetchModTitle:ame227_dep.projectId
+                                                          completion:^(NSString * _Nullable title, NSError * _Nullable err) {
+                    ame227_storeTitle(title);
+                }];
+            }
+        }
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.8 * NSEC_PER_SEC)),
+                       dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+            // 预算兜底：超时的 fetch 完成后 leave 也无害（group 已 notify）
+        });
+        dispatch_group_notify(ame227_titleGroup, dispatch_get_main_queue(), ^{
+            __strong typeof(weakSelf) strongSelf2 = weakSelf;
+            if (!strongSelf2) return;
+            NSMutableString *ame227_list = [NSMutableString string];
+            for (ModDependencyItem *ame227_dep in ame227_deps) {
+                [ame227_list appendFormat:@"\u2022 %@\n", ame227_dep.displayName ?: ame227_dep.projectId];
+            }
+            if (plan.optional.count > 0) {
+                [ame227_list appendString:localize(@"ame227.deps.optional_note", nil)];
+            }
+            UIAlertController *ame227_sheet = [UIAlertController
+            alertControllerWithTitle:localize(@"ame227.deps.title", nil)
+                             message:[NSString stringWithFormat:localize(@"ame227.deps.message", nil),
+                                       itemToDownload.displayName, ame227_list]
+                      preferredStyle:UIAlertControllerStyleAlert];
+            [ame227_sheet addAction:[UIAlertAction
+                actionWithTitle:localize(@"ame227.deps.only_mod", nil)
+                          style:UIAlertActionStyleCancel
+                        handler:^(UIAlertAction * _Nonnull action) {
+                [weakSelf startDownloadForModItem:itemToDownload];
+            }]];
+            [ame227_sheet addAction:[UIAlertAction
+                actionWithTitle:localize(@"ame227.deps.install_all", nil)
+                          style:UIAlertActionStyleDefault
+                        handler:^(UIAlertAction * _Nonnull action) {
+                [strongSelf2 ame227_installDependencies:ame227_deps
+                                            toProfile:ame227_profileName
+                                           completion:^{
+                    [strongSelf2 startDownloadForModItem:itemToDownload];
+                }];
+            }]];
+            if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+                ame227_sheet.popoverPresentationController.sourceView = strongSelf2.view;
+                ame227_sheet.popoverPresentationController.sourceRect = CGRectMake(strongSelf2.view.bounds.size.width / 2.0, strongSelf2.view.bounds.size.height / 2.0, 1.0, 1.0);
+            }
+            [strongSelf2 presentViewController:ame227_sheet animated:YES completion:nil];
+        });
+    }];
 }
 
 #pragma mark - AssetVersionViewControllerDelegate
@@ -5571,8 +5663,6 @@ static NSString *PLSha1FromPrimaryFile(NSDictionary *primaryFile) {
     // Modrinth 依赖并弹确认单（必需依赖一键全下）。apiSource 来自本次
     // 版本选择页（非 CurseForge = Modrinth）；版本/加载器取当前 profile。
     __weak typeof(self) weakSelf = self;
-    NSString *ame226_gameVersion = [self currentProfileMinecraftVersion];
-    NSString *ame226_loader = [self currentProfileLoader];
     [[ModService sharedService] downloadMod:item
                                   toProfile:profileName
                                expectedSHA1:item.fileSHA1
@@ -5586,136 +5676,84 @@ static NSString *PLSha1FromPrimaryFile(NSDictionary *primaryFile) {
                 return;
             }
             [strongSelf showSuccessMessage:[NSString stringWithFormat:localize(@"i18n_str_266", nil), item.displayName]];
-            [strongSelf ame226_offerModDependenciesIfModrinth:item.fileSHA1
-                                                   gameVersion:ame226_gameVersion
-                                                        loader:ame226_loader];
+            // ★ Task227：依赖处理移到下载【前】（didSelectVersion 的确认单），
+            // 后置钩子退役。
         });
     }];
 }
 
-/// ★ Task226（issue #10）：主模组下载完成后的依赖处理链。
-/// ① 按 SHA1 反查 Modrinth 版本 JSON（dependencies 数组）；
-/// ② 过滤 dependency_type == required（embedded 视为已内嵌、optional 不强制）；
-/// ③ 逐依赖解析最新兼容版本（游戏版本 + 加载器），无可兼容版本的静默跳过；
-/// ④ PCL2CE 式确认单：列出依赖名 + 版本，【全部下载】= 串行下载到同一
-///    mods 目录（带进度弹窗），【取消】= 不装（用户自知）。
-/// 任何一步失败都静默降级——依赖功能绝不影响主下载的成功回报。
-- (void)ame226_offerModDependenciesIfModrinth:(NSString *)sha1
-                                   gameVersion:(NSString *)gameVersion
-                                        loader:(NSString *)loader {
-    if (sha1.length == 0) return;  // 无哈希（CurseForge 源/异常路径）——功能静默跳过
+/// ★ Task227（反馈 #4 / issue #10 重做，上游 bc5ce914bc 移植）：前置串行
+/// 安装。逐个把必需前置下载到目标实例，全部结束后再回调（串行，避免同一
+/// mods 目录并发写）。单个前置失败不中断整条链：记录后继续，最后汇总
+/// 失败清单——用户至少能拿到部分可用的环境，而不是一事无成。
+- (void)ame227_installDependencies:(NSArray<ModDependencyItem *> *)deps
+                         toProfile:(NSString *)profileName
+                        completion:(void (^)(void))completion {
+    if (deps.count == 0) {
+        if (completion) completion();
+        return;
+    }
+    NSMutableArray<ModDependencyItem *> *remaining = [deps mutableCopy];
+    NSMutableArray<NSString *> *failures = [NSMutableArray new];
+
+    __block void (^nextStep)(void) = nil;
     __weak typeof(self) weakSelf = self;
-    [[ModrinthAPI sharedInstance] ame226_fetchVersionByFileSHA1:sha1 completion:^(NSDictionary * _Nullable versionJSON, NSError * _Nullable error) {
-        if (!versionJSON) {
-            NSLog(@"[DownloadVC] Task226 dep-resolve: version lookup failed (%@) -- skipping deps", error.localizedDescription ?: @"no data");
-            return;
-        }
-        NSArray *deps = versionJSON[@"dependencies"];
-        if (![deps isKindOfClass:[NSArray class]] || deps.count == 0) return;
-        NSMutableArray *requiredIDs = [NSMutableArray array];
-        for (NSDictionary *d in deps) {
-            if (![d isKindOfClass:[NSDictionary class]]) continue;
-            NSString *dtype = d[@"dependency_type"];
-            if (![dtype isKindOfClass:[NSString class]] || ![dtype isEqualToString:@"required"]) continue;
-            NSString *pid = d[@"project_id"];
-            if ([pid isKindOfClass:[NSString class]] && pid.length > 0) {
-                [requiredIDs addObject:pid];
-            }
-        }
-        if (requiredIDs.count == 0) return;
-        NSLog(@"[DownloadVC] Task226 dep-resolve: %lu required dependency(ies) found", (unsigned long)requiredIDs.count);
-
-        // 并发解析每个依赖的最新兼容版本
-        dispatch_group_t ame226_group = dispatch_group_create();
-        NSMutableArray *resolved = [NSMutableArray array];
-        dispatch_queue_t ame226_collectQ = dispatch_queue_create("ame226.dep.collect", DISPATCH_QUEUE_SERIAL);
-        for (NSString *pid in requiredIDs) {
-            dispatch_group_enter(ame226_group);
-            [[ModrinthAPI sharedInstance] ame226_fetchLatestVersionForProject:pid
-                                                                  gameVersion:gameVersion
-                                                                       loader:loader
-                                                                   completion:^(NSDictionary * _Nullable info, NSError * _Nullable depErr) {
-                if (info && [info[@"url"] length] > 0) {
-                    dispatch_sync(ame226_collectQ, ^{ [resolved addObject:info]; });
-                } else {
-                    NSLog(@"[DownloadVC] Task226 dep-resolve: no compatible version for %@ (%@)", pid, depErr.localizedDescription ?: @"none");
-                }
-                dispatch_group_leave(ame226_group);
-            }];
-        }
-        dispatch_group_notify(ame226_group, dispatch_get_main_queue(), ^{
-            __strong typeof(weakSelf) strongSelf = weakSelf;
-            if (!strongSelf) return;
-            if (resolved.count == 0) return;
-            // PCL2CE 式确认单
-            NSMutableString *list = [NSMutableString string];
-            for (NSDictionary *info in resolved) {
-                [list appendFormat:@"\u2022 %@ (%@)\n", info[@"filename"], info[@"versionName"]];
-            }
-            UIAlertController *sheet = [UIAlertController
-                alertControllerWithTitle:localize(@"ame226.deps.title", nil)
-                                 message:[NSString stringWithFormat:localize(@"ame226.deps.message", nil), list]
-                          preferredStyle:UIAlertControllerStyleAlert];
-            [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                                      style:UIAlertActionStyleCancel handler:nil]];
-            [sheet addAction:[UIAlertAction actionWithTitle:localize(@"ame226.deps.download_all", nil)
-                                                      style:UIAlertActionStyleDefault
-                                                    handler:^(UIAlertAction * _Nonnull action) {
-                [strongSelf ame226_downloadDependencies:resolved];
-            }]];
-            if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-                sheet.popoverPresentationController.sourceView = strongSelf.view;
-                sheet.popoverPresentationController.sourceRect = CGRectMake(strongSelf.view.bounds.size.width / 2.0, strongSelf.view.bounds.size.height / 2.0, 1.0, 1.0);
-            }
-            [strongSelf presentViewController:sheet animated:YES completion:nil];
-        });
-    }];
-}
-
-/// Task226：依赖串行下载（复用 downloadModVersion 的文件下载管线语义，
-/// 目标目录与主模组一致 = currentInstanceModsPath）。
-- (void)ame226_downloadDependencies:(NSArray<NSDictionary *> *)deps {
-    NSString *modsDir = [self currentInstanceModsPath];
-    UIAlertController *progress = [UIAlertController
-        alertControllerWithTitle:localize(@"ame226.deps.downloading", nil)
-                         message:[NSString stringWithFormat:localize(@"ame226.deps.progress", nil), (long)1, (long)deps.count]
-                  preferredStyle:UIAlertControllerStyleAlert];
-    [self presentViewController:progress animated:YES completion:nil];
-
-    __weak typeof(self) weakSelf = self;
-    void (^ame226_next)(NSUInteger) = nil;
-    ame226_next = ^(NSUInteger idx) {
+    nextStep = ^{
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
-        if (idx >= deps.count) {
-            [progress dismissViewControllerAnimated:YES completion:^{
-                [strongSelf showSuccessMessage:localize(@"ame226.deps.done", nil)];
-            }];
+        if (remaining.count == 0) {
+            if (failures.count > 0) {
+                NSLog(@"[DownloadVC] Task227 %lu dependency(ies) failed: %@",
+                      (unsigned long)failures.count, [failures componentsJoinedByString:@", "]);
+            } else {
+                NSLog(@"[DownloadVC] Task227 all %lu required dependencies installed", (unsigned long)deps.count);
+            }
+            if (completion) completion();
             return;
         }
-        NSDictionary *info = deps[idx];
-        progress.message = [NSString stringWithFormat:localize(@"ame226.deps.progress", nil), (long)(idx + 1), (long)deps.count];
-        NSString *savePath = [modsDir stringByAppendingPathComponent:info[@"filename"]];
-        NSURL *url = [NSURL URLWithString:info[@"url"]];
-        if (!url) { ame226_next(idx + 1); return; }
-        NSURLSessionDownloadTask *task = [[NSURLSession sharedSession] downloadTaskWithURL:url
-            completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
-                if (location && !error) {
-                    [[NSFileManager defaultManager] removeItemAtPath:savePath error:nil];
-                    [[NSFileManager defaultManager] moveItemAtPath:location.path toPath:savePath error:nil];
-                } else {
-                    NSLog(@"[DownloadVC] Task226 dep download failed for %@: %@", info[@"filename"], error.localizedDescription ?: @"?");
-                }
-                dispatch_async(dispatch_get_main_queue(), ^{ ame226_next(idx + 1); });
+        ModDependencyItem *dep = remaining.firstObject;
+        [remaining removeObjectAtIndex:0];
+
+        // 拉该前置的版本列表，挑一个匹配当前实例 loader / MC 版本的，再下载。
+        void (^pickAndDownload)(NSArray<ModVersion *> *, NSError *) = ^(NSArray<ModVersion *> *versions, NSError *error) {
+            ModVersion *picked = nil;
+            NSString *ame227_gv = [strongSelf currentProfileMinecraftVersion];
+            for (ModVersion *v in versions) {
+                if (ame227_gv.length > 0 && ![v.gameVersions containsObject:ame227_gv]) continue;
+                picked = v;
+                break;
+            }
+            if (picked == nil) picked = versions.firstObject;
+            NSDictionary *pf = picked.primaryFile;
+            if (error || ![pf[@"url"] isKindOfClass:[NSString class]]) {
+                [failures addObject:dep.projectId ?: @"?"];
+                nextStep();
+                return;
+            }
+            ModItem *depItem = [[ModItem alloc] init];
+            depItem.displayName = picked.name ?: dep.projectId;
+            depItem.fileName = pf[@"filename"] ?: [NSString stringWithFormat:@"%@.jar", dep.projectId];
+            depItem.selectedVersionDownloadURL = pf[@"url"];
+            depItem.fileSHA1 = PLSha1FromPrimaryFile(pf);
+            [[ModService sharedService] downloadMod:depItem
+                                          toProfile:profileName
+                                       expectedSHA1:depItem.fileSHA1
+                                           progress:nil
+                                         completion:^(NSError * _Nullable dlError) {
+                if (dlError) [failures addObject:dep.projectId ?: @"?"];
+                nextStep();
             }];
-        [task resume];
+        };
+
+        if (dep.apiSource == 1) {
+            [[ModrinthAPI sharedInstance] getVersionsForModWithID:dep.projectId completion:pickAndDownload];
+        } else {
+            [[CurseForgeAPI sharedInstance] getVersionsForModWithID:dep.projectId completion:pickAndDownload];
+        }
     };
-    ame226_next(0);
+    nextStep();
 }
 
-// 下载资源包（使用 ResourcePackService，NSString profileName）
-// redesign-download-ui Phase 3：进度由 Service 内部注册的下载任务 +
-// PLTaskStagesSingleFile 单阶段上报驱动统一进度页，调用方无需管理进度 UI。
 - (void)startDownloadForResourcePackItem:(ResourcePackItem *)item {
     // 关键修复（目标实例不一致）：统一使用打开下载页时锁定的 targetProfileName，
     // 而非实时读取 selectedProfileName，避免与资源管理页绑定的实例不一致导致写入另一游戏目录

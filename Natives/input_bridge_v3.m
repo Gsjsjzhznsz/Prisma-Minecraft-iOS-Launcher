@@ -393,11 +393,15 @@ static void pushSDLKeyboardEvent(SDL3_Scancode scancode, bool down) {
     ev.which = 0;
     ev.scancode = scancode;
     ev.key = ame53_keycode_from_scancode(scancode);   // Task53: 补 key sym
-    ev.mod = 0;
+    // ★ Task227（反馈 #2）：先同步 kb-state/modstate，再取 merged mod 填
+    // ev.mod（旧值恒 0——MC 26.3 的 SDL 事件处理对带修饰键上下文的事件
+    // 消费更稳；疾跑=ctrl 组合场景直接受益）。Task66 的 modstate 合并
+    // （保留非托管位）正好是这里要的读数。
+    ame66_syncKeyboardState((int)scancode, down);   // Task66：同步 SDL 内部键盘态
+    ev.mod = pSDL_GetModState ? pSDL_GetModState() : 0;
     ev.down = down;
     ev.repeat = false;
     pSDL_PushEvent((void*)&ev);
-    ame66_syncKeyboardState((int)scancode, down);   // Task66：同步 SDL 内部键盘态
 }
 
 // ============================================================================
@@ -2156,6 +2160,18 @@ void CallbackBridge_nativeSendKey(int key, int scancode, int action, int mods) {
             : ((!GLFW_invoke_Key && g_sdlWindow) ? "B(SDL)" : "NONE(event lost)");
         NSLog(@"[InputDiag] Task224 shiftKey: key=%d action=%d mods=%d path=%s GLFW_invoke_Key=%p isInputReady=%d g_sdlWindow=%p",
               key, action, mods, ame224_path, (void*)GLFW_invoke_Key, isInputReady, g_sdlWindow);
+    }
+    // ★ Task227（反馈 #2：持续奔跑无效——sprint 绑 left.control）：control
+    // 键全量取证（同 Task224 shift 形制）。上一轮日志对 341 零记录——
+    // sendKey 主日志只采样前 10 条 + 每 50 条，control 无专汛，无法区分
+    // "物理键盘事件未达 pressesBegan"与"事件已发但 MC 不消费"。本轮起
+    // 每个 control 事件必留痕，下轮日志直接实锤断点层。
+    if (key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL) {
+        const char *ame227_cpath =
+            (GLFW_invoke_Key && isInputReady) ? "A(GLFW)"
+            : ((!GLFW_invoke_Key && g_sdlWindow) ? "B(SDL)" : "NONE(event lost)");
+        NSLog(@"[InputDiag] Task227 controlKey: key=%d action=%d mods=%d path=%s GLFW_invoke_Key=%p isInputReady=%d g_sdlWindow=%p",
+              key, action, mods, ame227_cpath, (void*)GLFW_invoke_Key, isInputReady, g_sdlWindow);
     }
 
     // Task161：记录最近一次按下（action==1）的键——聊天自动弹键盘判定用。

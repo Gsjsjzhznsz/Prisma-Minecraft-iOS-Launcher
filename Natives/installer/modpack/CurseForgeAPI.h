@@ -40,6 +40,10 @@ extern NSString *const CurseForgeResponseSnippetKey;
                   completion:(void (^)(NSArray * _Nullable results, NSError * _Nullable error))completion;
 
 /// 异步获取某个项目的所有版本
+/// ★ Task227（issue #10）：按 modId 取展示名（依赖确认单用）
+- (void)ame227_fetchModTitle:(NSString *)modID
+                  completion:(void (^)(NSString * _Nullable title, NSError * _Nullable error))completion;
+
 - (void)getVersionsForModWithID:(NSString *)modID
                      completion:(void (^)(NSArray<ModVersion *> * _Nullable versions, NSError * _Nullable error))completion;
 

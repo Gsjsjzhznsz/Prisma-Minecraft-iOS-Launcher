@@ -22,6 +22,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) NSString *fileId;
 // CurseForge project ID
 @property (nonatomic, copy, nullable) NSString *projectId;
+// ★ Task227（issue #10 重做）：原始版本字典（依赖列表在 dependencies[] 里，
+// 现有字段都是拍平后的，取不到——上游 bc5ce914bc 同款）。
+@property (nonatomic, copy, nullable) NSDictionary *rawDictionary;
 
 - (nullable instancetype)initWithDictionary:(NSDictionary *)dictionary;
 

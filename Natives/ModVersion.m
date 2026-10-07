@@ -29,6 +29,8 @@
 
         NSArray *files = [dictionary[@"files"] isKindOfClass:[NSArray class]] ? dictionary[@"files"] : @[];
         _primaryFile = [files firstObject];
+        // ★ Task227：原始字典留存（dependencies[] 只在原文里——两个源都是）
+        _rawDictionary = [dictionary copy];
     }
     return self;
 }
@@ -120,7 +122,9 @@
         pf[@"hashes"] = @{ @"sha1": sha1 };
     }
     _primaryFile = [pf copy];
-    return self;
+        // ★ Task227：原始字典留存（CF 的 dependencies[] 在原文里）
+    _rawDictionary = [dictionary copy];
+return self;
 }
 
 @end

@@ -699,6 +699,29 @@ static NSString *MRAMirrorResolvedURL(NSString *urlString) {
     }];
 }
 
+/// ★ Task227（issue #10）：按项目 id 取展示名（依赖确认单用）。
+/// GET /project/{id} → title。失败回 nil（调用方回退显示 projectId）。
+- (void)ame227_fetchProjectTitle:(NSString *)projectID
+                       completion:(void (^)(NSString * _Nullable title, NSError * _Nullable error))completion {
+    if (projectID.length == 0) {
+        if (completion) completion(nil, [NSError errorWithDomain:@"ModrinthAPIError" code:30 userInfo:@{NSLocalizedDescriptionKey: @"no project id"}]);
+        return;
+    }
+    NSString *urlString = [NSString stringWithFormat:@"%@/project/%@", self.baseURL, projectID];
+    NSURL *url = [NSURL URLWithString:urlString];
+    if (!url) {
+        if (completion) completion(nil, [NSError errorWithDomain:@"ModrinthAPIError" code:31 userInfo:@{NSLocalizedDescriptionKey: @"invalid URL"}]);
+        return;
+    }
+    [self ame217_fetchJSONWithURL:url completion:^(id json, NSError *error) {
+        if ([json isKindOfClass:[NSDictionary class]] && [json[@"title"] isKindOfClass:[NSString class]]) {
+            if (completion) completion(json[@"title"], nil);
+        } else {
+            if (completion) completion(nil, error ?: [NSError errorWithDomain:@"ModrinthAPIError" code:32 userInfo:@{NSLocalizedDescriptionKey: @"no title"}]);
+        }
+    }];
+}
+
 - (void)ame226_fetchLatestVersionForProject:(NSString *)projectID
                                  gameVersion:(NSString *)gameVersion
                                       loader:(NSString *)loader

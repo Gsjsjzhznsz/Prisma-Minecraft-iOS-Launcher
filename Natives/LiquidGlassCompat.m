@@ -250,12 +250,34 @@ static UIVisualEffect *_LGCCreateBlurEffect(BOOL isDark) {
 }
 
 UIVisualEffectView *LGCCreateGlassEffectView(BOOL isDark) {
-    // ★ Task225（#4 黑屏根修）：组合玻璃——不再直接使用 UIGlassEffect。
-    // 旧 SDK（17.5）构建的进程在 iPadOS 27 上该私有效果的 backdrop 渲染
-    // 不完整（装机崩溃转储显示 effect=none → 全屏 backdrop/卡面纯黑）。
-    // 保底可读的系统材质模糊（明暗自适应）+ 调用方叠加的高光渐变层
-    // + 发丝描边 = 玻璃观感保留、黑色界面根治。标准控件的真液态玻璃
-    // 由 LGCAdaptNavigationBar/LGCAdaptBar 交还系统绘制（不受影响）。
+    // ★ Task227（反馈 #3："液态玻璃怎么不是使用系统的"）：优先真系统
+    // UIGlassEffect（iOS 26+；CI 以 Xcode 26+ SDK 构建，SDK 内类已可见，
+    // 运行时再以 NSClassFromString 防御）。Task225 曾观察到的"UIGlassEffect
+    // 纯黑"来自旧 17.5 SDK 构建的进程；本仓 CI 自 development.yml 起
+    // prefer Xcode 26+，二进制与系统同代。逃生阀 AME227_SYSTEM_GLASS=0
+    // 强制回退组合玻璃（分诊用）；取不到 regularEffect 也自动回退。
+    // 组合玻璃保底链保持不变（系统材质 + 调用方高光层 + 发丝描边）。
+    static NSInteger ame227_sysGlassDecision = 0;   // 0=未决 1=用系统 -1=用组合
+    if (ame227_sysGlassDecision == 0) {
+        const char *ame227_env = getenv("AME227_SYSTEM_GLASS");
+        ame227_sysGlassDecision = (ame227_env && strcmp(ame227_env, "0") == 0) ? -1 : 1;
+    }
+    if (ame227_sysGlassDecision == 1) {
+        UIVisualEffect *ame227_sys = _LGCCreateGlassEffect(isDark);
+        if (ame227_sys != nil) {
+            static int ame227_sysUsed = 0;
+            if (ame227_sysUsed < 3) {
+                ame227_sysUsed++;
+                NSLog(@"[ThemeOps] Task227 system UIGlassEffect engaged (use #%d, isDark=%d)",
+                      ame227_sysUsed, isDark);
+            }
+            UIVisualEffectView *ame227_ev = [[UIVisualEffectView alloc] initWithEffect:ame227_sys];
+            ame227_ev.frame = CGRectZero;
+            ame227_ev.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            ame227_ev.userInteractionEnabled = NO;
+            return ame227_ev;
+        }
+    }
     UIVisualEffect *effect = _LGCCreateBlurEffect(isDark);
     UIVisualEffectView *effectView = [[UIVisualEffectView alloc] initWithEffect:effect];
     effectView.frame = CGRectZero;

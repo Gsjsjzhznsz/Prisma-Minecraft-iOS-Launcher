@@ -767,18 +767,13 @@ static CGFloat LauncherRootLayoutRightPanelWidth(UITraitCollection *trait) {
     // 中央卡片上，用户实测"不该改的你改了"；现为规格表面色+圆角平贴）。
     // cornerRadius/maskedCorners/masksToBounds 由调用点维护，此处只换表面。
     //
-    // Task224（#4）：液态玻璃风格时面板表面升级为分层玻璃（效果层+高光层+
-    // 发丝描边，maskedCorners 跟随宿主——VS 布局仅外侧圆角）；native 解析
-    // 时先清残留玻璃层再走既有分支（从玻璃切回原生完全还原）。
-    if (LGCIsGlassStyleActive()) {
-        if (LGCApplyGlassToView(self.sidebarContainer, 16) &&
-            LGCApplyGlassToView(self.rightPanelContainer, 16)) {
-            return;
-        }
-    } else {
-        LGCRemoveGlassFromView(self.sidebarContainer);
-        LGCRemoveGlassFromView(self.rightPanelContainer);
-    }
+    // ★ Task227（反馈 #3：软件 UI 不要修改，就改悬浮弹窗——chrome 回退）：
+    //   Task224（#4）曾把两侧面板表面升级为分层玻璃。用户明确指示：
+    //   标签页切换器/侧栏等软件 UI 保持原生，液态玻璃只用于悬浮弹窗。
+    //   此处回退：无条件清玻璃层（从玻璃切回原生完全还原），面板永远
+    //   走既有表面管线（有壁纸 → 毛玻璃；无壁纸 → 规格表面色）。
+    LGCRemoveGlassFromView(self.sidebarContainer);
+    LGCRemoveGlassFromView(self.rightPanelContainer);
     if ([[BackgroundManager sharedManager] hasBackground]) {
         [[BackgroundManager sharedManager] applyEffectToView:self.sidebarContainer];
         [[BackgroundManager sharedManager] applyEffectToView:self.rightPanelContainer];

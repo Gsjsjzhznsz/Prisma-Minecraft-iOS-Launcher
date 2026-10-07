@@ -1368,4 +1368,28 @@ static NSString *CFA169NormalizeGameVersion(NSString *v) {
     [task resume];
 }
 
+
+/// ★ Task227（issue #10）：按 modId 取展示名（依赖确认单用）。
+/// GET /mods/{id} → data.name。getEndpoint 是同步方法——包一层全局队列。
+- (void)ame227_fetchModTitle:(NSString *)modID
+                  completion:(void (^)(NSString * _Nullable title, NSError * _Nullable error))completion {
+    if (modID.length == 0) {
+        if (completion) completion(nil, [NSError errorWithDomain:@"CurseForgeAPI" code:60 userInfo:@{NSLocalizedDescriptionKey: @"no mod id"}]);
+        return;
+    }
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSDictionary *resp = [self getEndpoint:[NSString stringWithFormat:@"mods/%@", modID] params:nil];
+        NSString *title = nil;
+        if ([resp isKindOfClass:[NSDictionary class]]) {
+            id data = resp[@"data"];
+            if ([data isKindOfClass:[NSDictionary class]] && [data[@"name"] isKindOfClass:[NSString class]]) {
+                title = data[@"name"];
+            }
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) completion(title, title ? nil : (self.lastError ?: [NSError errorWithDomain:@"CurseForgeAPI" code:61 userInfo:@{NSLocalizedDescriptionKey: @"no title"}]));
+        });
+    });
+}
+
 @end

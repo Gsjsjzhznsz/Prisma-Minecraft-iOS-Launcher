@@ -2909,3 +2909,12 @@
 "ame226.deps.downloading" = "正在下載依賴";
 "ame226.deps.progress" = "依賴 %ld / %ld\u2026";
 "ame226.deps.done" = "全部依賴已安裝。";
+
+/* Task227：依赖确认单（issue #10 重做）+ 导入完成计数 */
+"ame227.deps.title" = "必要前置模組";
+"ame227.deps.message" = ""%@" 依賴以下前置模組：\n\n%@是否一併自動安裝？";
+"ame227.deps.only_mod" = "僅安裝本體";
+"ame227.deps.install_all" = "全部一併安裝（推薦）";
+"ame227.deps.optional_note" = "\n（另有部分可選前置——不會自動安裝。）";
+"ame227.deps.footer" = "本模組有 %lu 個必要前置：%@\n下載時會詢問是否一併安裝。";
+"ame227.import.done" = "已匯入 %ld 個檔案。重新啟動啟動器後完全生效。";

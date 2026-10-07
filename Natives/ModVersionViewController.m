@@ -4,6 +4,9 @@
 #import "installer/modpack/CurseForgeAPI.h"
 #import "ModVersion.h"
 #import "ModVersionTableViewCell.h"
+#import "ModDependencyResolver.h"
+#import "installer/modpack/ModrinthAPI.h"
+#import "installer/modpack/CurseForgeAPI.h"
 #import "AssetDetailHeaderView.h"
 #import "BackgroundManager.h"
 
@@ -656,6 +659,78 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     self.allVersions = versions;
     [self processFilters];
     [self applyFiltersAndSort];
+    [self ame227_refreshDependenciesFooter];
+}
+
+/// ★ Task227（反馈 #4：打开模组没有显示前置）：版本列表加载完成后，解析
+/// 最新版本的必需依赖并展示在表尾（"本模组需要以下前置，下载时会询问
+/// 是否一起安装"）。解析失败静默（footer 不出现，不影响列表）。
+- (void)ame227_refreshDependenciesFooter {
+    ModVersion *ame227_latest = self.allVersions.firstObject;
+    if (ame227_latest.rawDictionary == nil) {
+        self.tableView.tableFooterView = nil;
+        return;
+    }
+    NSInteger ame227_source = ame227_latest.apiSource;
+    __weak typeof(self) weakSelf = self;
+    [[ModDependencyResolver sharedResolver] resolveDependenciesFromVersionDetail:ame227_latest.rawDictionary
+                                                                       apiSource:ame227_source
+                                                            installedProjectIds:nil
+                                                                          loader:nil
+                                                                     gameVersion:nil
+                                                                      completion:^(ModDependencyPlan *plan, NSError * _Nullable error) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        NSArray<ModDependencyItem *> *ame227_req = plan.required ?: @[];
+        if (ame227_req.count == 0) {
+            strongSelf.tableView.tableFooterView = nil;
+            return;
+        }
+        dispatch_group_t ame227_fg = dispatch_group_create();
+        for (ModDependencyItem *ame227_dep in ame227_req) {
+            dispatch_group_enter(ame227_fg);
+            void (^ame227_storeTitle)(NSString *) = ^(NSString *ame227_title) {
+                ame227_dep.displayName = ame227_title ?: ame227_dep.projectId;
+                dispatch_group_leave(ame227_fg);
+            };
+            if (ame227_dep.apiSource == 1) {
+                [[ModrinthAPI sharedInstance] ame227_fetchProjectTitle:ame227_dep.projectId
+                                                             completion:^(NSString * _Nullable t, NSError * _Nullable e) {
+                    ame227_storeTitle(t);
+                }];
+            } else {
+                [[CurseForgeAPI sharedInstance] ame227_fetchModTitle:ame227_dep.projectId
+                                                          completion:^(NSString * _Nullable t, NSError * _Nullable e) {
+                    ame227_storeTitle(t);
+                }];
+            }
+        }
+        dispatch_group_notify(ame227_fg, dispatch_get_main_queue(), ^{
+            __strong typeof(weakSelf) strongSelf2 = weakSelf;
+            if (!strongSelf2) return;
+            NSMutableString *ame227_names = [NSMutableString string];
+            for (ModDependencyItem *ame227_dep in ame227_req) {
+                if (ame227_names.length > 0) [ame227_names appendString:@", "];
+                [ame227_names appendString:ame227_dep.displayName ?: ame227_dep.projectId];
+            }
+            UIView *ame227_footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, strongSelf2.tableView.bounds.size.width, 72)];
+            UILabel *ame227_label = [[UILabel alloc] init];
+            ame227_label.numberOfLines = 0;
+            ame227_label.font = [UIFont systemFontOfSize:12 weight:UIFontWeightMedium];
+            ame227_label.textColor = [UIColor secondaryLabelColor];
+            ame227_label.text = [NSString stringWithFormat:localize(@"ame227.deps.footer", nil),
+                                 (unsigned long)ame227_req.count, ame227_names];
+            ame227_label.translatesAutoresizingMaskIntoConstraints = NO;
+            [ame227_footer addSubview:ame227_label];
+            [NSLayoutConstraint activateConstraints:@[
+                [ame227_label.topAnchor constraintEqualToAnchor:ame227_footer.topAnchor constant:10],
+                [ame227_label.leadingAnchor constraintEqualToAnchor:ame227_footer.leadingAnchor constant:16],
+                [ame227_label.trailingAnchor constraintEqualToAnchor:ame227_footer.trailingAnchor constant:-16],
+                [ame227_label.bottomAnchor constraintLessThanOrEqualToAnchor:ame227_footer.bottomAnchor constant:-8],
+            ]];
+            strongSelf2.tableView.tableFooterView = ame227_footer;
+        });
+    }];
 }
 
 - (void)processFilters {

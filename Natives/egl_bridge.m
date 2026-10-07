@@ -624,6 +624,19 @@ static int pojavInitOpenGLInternal(BOOL setLwjglProperty) {
             : renderer.UTF8String;
         JNI_LWJGL_changeRenderer(ame131_libname);
     }
+    // ★ Task227（上游 c9b568da72 P0 移植）：渲染器分发兜底。分发链是
+    // 一串 else-if，AMETHYST_RENDERER 为任何未匹配值（手改 video.renderer
+    // / 旧 profile 遗留 / 自定义 dylib 名）时所有 set_*_bridge_tbl() 都不
+    // 执行，br_init 保持 NULL —— 末尾 !br_init() 即空指针解引用崩溃。
+    // 兜底：未命中回落 ANGLE 表并重设环境变量（结构上不可能"无渲染器"）。
+    extern void set_gl_bridge_tbl(void);
+    if (br_init == NULL) {
+        NSLog(@"[egl_bridge] Task227 renderer '%s' matched NO bridge table -- falling back to ANGLE (br_init was NULL)", renderer.UTF8String);
+        setenv("AMETHYST_RENDERER", "libtinygl4angle.dylib", 1);
+        set_gl_bridge_tbl();
+        renderer = @"libtinygl4angle.dylib";
+    }
+
     // Preload renderer library
     // Task 131：同上，-gles 逻辑键映射回共享的 libMobileGL.dylib 后再 dlopen。
     {
@@ -633,6 +646,11 @@ static int pojavInitOpenGLInternal(BOOL setLwjglProperty) {
         dlopen([NSString stringWithFormat:@"@rpath/%s", ame131_load].UTF8String, RTLD_GLOBAL);
     }
 
+    // Task227 第二道防线：即便出现新的未覆盖分支，也只报错返回不崩溃。
+    if (br_init == NULL) {
+        NSLog(@"[egl_bridge] Task227 FATAL guard: br_init still NULL after fallback -- refusing to call");
+        return pojavFinishOpenGLInit(1);
+    }
     return pojavFinishOpenGLInit(!br_init());
     //return 0;
 }

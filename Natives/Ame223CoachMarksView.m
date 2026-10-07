@@ -26,10 +26,10 @@ static NSString * const ame224_kRound = @"round";
 /// 洞外圈呼吸光晕。
 @property (nonatomic, strong) CAShapeLayer *ame224_ringLayer;
 /// 特性页图标圆盘（锚点页隐藏；圆洞打在它身上）。
-@property (nonatomic, strong) UIVisualEffectView *ame224_stage;
+@property (nonatomic, strong) UIView *ame224_stage;
 @property (nonatomic, strong) UIImageView *ame224_stageIcon;
 /// 说明卡（毛玻璃 + 标题 + 正文）。
-@property (nonatomic, strong) UIVisualEffectView *ame224_card;
+@property (nonatomic, strong) UIView *ame224_card;
 @property (nonatomic, strong) UILabel *ame224_titleLabel;
 @property (nonatomic, strong) UILabel *ame224_bodyLabel;
 /// 页点 / 按钮。
@@ -147,8 +147,13 @@ static NSString * const ame224_kRound = @"round";
         [self.layer addSublayer:_ame224_ringLayer];
 
         // 特性页图标圆盘（圆角连续的圆形毛玻璃 + 大号 SF Symbol）
-        _ame224_stage = [[UIVisualEffectView alloc]
-            initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial]];
+        // ★ Task227（反馈 #10：圆圈焦点介绍显示空白）：stage/card 原为
+        // UIVisualEffectView（SystemMaterial）——玻璃/背景管线的嵌套效
+        // 果视图清理（LGCApplyGlassBackgroundToView 形制）与 iOS 27 组合
+        // 下偶发整层不渲染（用户只见圆环不见内容）。改为实底自适应卡片：
+        // systemBackground 0.94 + 发丝描边，任何管线下都稳定可读。
+        _ame224_stage = [[UIView alloc] init];
+        _ame224_stage.backgroundColor = [[UIColor systemBackgroundColor] colorWithAlphaComponent:0.94];
         _ame224_stage.frame = CGRectMake(0, 0, 172, 172);
         _ame224_stage.layer.cornerRadius = 86;
         _ame224_stage.layer.cornerCurve = kCACornerCurveContinuous;
@@ -160,18 +165,20 @@ static NSString * const ame224_kRound = @"round";
         _ame224_stageIcon.tintColor = accentColor();
         _ame224_stageIcon.contentMode = UIViewContentModeScaleAspectFit;
         _ame224_stageIcon.translatesAutoresizingMaskIntoConstraints = NO;
-        [_ame224_stage.contentView addSubview:_ame224_stageIcon];
+        [_ame224_stage addSubview:_ame224_stageIcon];
         [NSLayoutConstraint activateConstraints:@[
-            [_ame224_stageIcon.centerXAnchor constraintEqualToAnchor:_ame224_stage.contentView.centerXAnchor],
-            [_ame224_stageIcon.centerYAnchor constraintEqualToAnchor:_ame224_stage.contentView.centerYAnchor],
+            [_ame224_stageIcon.centerXAnchor constraintEqualToAnchor:_ame224_stage.centerXAnchor],
+            [_ame224_stageIcon.centerYAnchor constraintEqualToAnchor:_ame224_stage.centerYAnchor],
             [_ame224_stageIcon.widthAnchor constraintEqualToConstant:64],
             [_ame224_stageIcon.heightAnchor constraintEqualToConstant:64],
         ]];
         [self addSubview:_ame224_stage];
 
         // 说明卡（毛玻璃材质 + 24pt 连续圆角，iPadOS 26/27 卡语言）
-        _ame224_card = [[UIVisualEffectView alloc]
-            initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial]];
+        _ame224_card = [[UIView alloc] init];
+        _ame224_card.backgroundColor = [[UIColor systemBackgroundColor] colorWithAlphaComponent:0.96];
+        _ame224_card.layer.borderColor = [[UIColor separatorColor] colorWithAlphaComponent:0.6].CGColor;
+        _ame224_card.layer.borderWidth = 0.5;
         _ame224_card.translatesAutoresizingMaskIntoConstraints = NO;
         _ame224_card.layer.cornerRadius = 24.0;
         _ame224_card.layer.cornerCurve = kCACornerCurveContinuous;
@@ -184,13 +191,13 @@ static NSString * const ame224_kRound = @"round";
         _ame224_titleLabel.textColor = [UIColor labelColor];
         _ame224_titleLabel.numberOfLines = 0;
         _ame224_titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
-        [_ame224_card.contentView addSubview:_ame224_titleLabel];
+        [_ame224_card addSubview:_ame224_titleLabel];
 
         _ame224_bodyLabel = [[UILabel alloc] init];
         _ame224_bodyLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightRegular];
         _ame224_bodyLabel.textColor = [UIColor secondaryLabelColor];
         _ame224_bodyLabel.numberOfLines = 0;
-        [_ame224_card.contentView addSubview:_ame224_bodyLabel];
+        [_ame224_card addSubview:_ame224_bodyLabel];
 
         // 页点行
         _ame224_dotRow = [[UIStackView alloc] init];
@@ -228,13 +235,13 @@ static NSString * const ame224_kRound = @"round";
 
         // 常驻骨架约束（卡片内文字 + 圆盘内图标 + 按钮位置）
         [NSLayoutConstraint activateConstraints:@[
-            [_ame224_titleLabel.topAnchor constraintEqualToAnchor:_ame224_card.contentView.topAnchor constant:18],
-            [_ame224_titleLabel.leadingAnchor constraintEqualToAnchor:_ame224_card.contentView.leadingAnchor constant:20],
-            [_ame224_titleLabel.trailingAnchor constraintEqualToAnchor:_ame224_card.contentView.trailingAnchor constant:-20],
+            [_ame224_titleLabel.topAnchor constraintEqualToAnchor:_ame224_card.topAnchor constant:18],
+            [_ame224_titleLabel.leadingAnchor constraintEqualToAnchor:_ame224_card.leadingAnchor constant:20],
+            [_ame224_titleLabel.trailingAnchor constraintEqualToAnchor:_ame224_card.trailingAnchor constant:-20],
             [_ame224_bodyLabel.topAnchor constraintEqualToAnchor:_ame224_titleLabel.bottomAnchor constant:6],
-            [_ame224_bodyLabel.leadingAnchor constraintEqualToAnchor:_ame224_card.contentView.leadingAnchor constant:20],
-            [_ame224_bodyLabel.trailingAnchor constraintEqualToAnchor:_ame224_card.contentView.trailingAnchor constant:-20],
-            [_ame224_bodyLabel.bottomAnchor constraintEqualToAnchor:_ame224_card.contentView.bottomAnchor constant:-18],
+            [_ame224_bodyLabel.leadingAnchor constraintEqualToAnchor:_ame224_card.leadingAnchor constant:20],
+            [_ame224_bodyLabel.trailingAnchor constraintEqualToAnchor:_ame224_card.trailingAnchor constant:-20],
+            [_ame224_bodyLabel.bottomAnchor constraintEqualToAnchor:_ame224_card.bottomAnchor constant:-18],
             [_ame224_bodyLabel.heightAnchor constraintGreaterThanOrEqualToConstant:34],
 
             [_ame224_nextButton.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
@@ -358,6 +365,11 @@ static NSString * const ame224_kRound = @"round";
     if (ame224_cardY + ame224_cardH > self.bounds.size.height - 110) {
         ame224_cardY = MAX(24, CGRectGetMinY(ame224_spot) - ame224_cardH - 32);
     }
+    // ★ Task227：巨型语义区域锚点（Task226 加入的整区 rect）会把上方回退
+    // 位也顶出屏（spot 高达 42% 屏高）。双端钳制：卡永远完整落在屏内、
+    // 且不与 Next 按钮带（底部 110pt）重叠。
+    ame224_cardY = MIN(ame224_cardY, self.bounds.size.height - 110 - ame224_cardH);
+    ame224_cardY = MAX(24, ame224_cardY);
 
     // 仅作废自己持有的页约束（UIKit 无全局 deactivateActive API）
     if (self.ame224_pageConstraints.count > 0) {

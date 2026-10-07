@@ -238,6 +238,19 @@ static CFAbsoluteTime ame224_kbWatchDeadline = 0;
 // markedTextRange 双重守卫 + 手动 ✎ 开关不受影响——那两处直接走
 // ame171_keyboardDismissGeneration++ + resign，不经本块）。
 static dispatch_block_t ame223_pendingStopResign = NULL;
+// ★ Task227（反馈 #7：无法关闭键盘，需手动点输入法按钮）：用户手动收起
+// 闩锁。ef1e3e2a 装机铁证：MC 26.3 会话里 SDL StartTextInput 在无文本
+// 上下文时反复到达（标题画面加载后/后台恢复后/画面切换时），
+// ame172_sdlStartTextInput 无条件 becomeFirstResponder → 键盘自动弹起
+// → 用户点输入法按钮收起 → 又一个游离 Start → 再弹起。闩锁语义：
+// 用户显式收起后，后续 Start 只有携带“真输入意图”信号才放行——
+// ①聊天开启键（T/斜杠，ame161 判定，3s 窗）；②近 0.8s 内有屏幕触摸
+// （点击 MC 文本框聚焦）。其余游离 Start 一律静默。用户显式打开
+// （输入法按钮/✎）时清闩。
+static BOOL ame227_kbUserDismissed = NO;
+static CFAbsoluteTime ame227_kbDismissedAt = 0.0;
+static CFAbsoluteTime ame227_lastTouchAt = 0.0;
+static int ame227_suppressedStarts = 0;
 
 // Task 78：FSR 预设 → 渲染缩放系数（与 MobileGlues-cpp FSR1.cpp
 // CalculateTargetResolution 的 scale 表同步：UQ=1.3 / Q=1.5 / B=1.7 / P=2.0）。
@@ -2547,6 +2560,26 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         ame223_pendingStopResign = NULL;   // Task223 CI 修复：ARC 下赋 NULL 即释放
         NSLog(@"[SurfaceVC] Task223 IME debounce: pending stop-resign cancelled by StartTextInput (rapid Stop->Start cycle)");
     }
+    // ★ Task227：用户手动收起闩锁——游离 Start 抑制（详见声明区注释）。
+    // 真输入意图 = 聊天开启键（3s 窗）或近 0.8s 屏幕触摸；二者任一命中
+    // 才清闩放行。抑制时只记账不弹起，SDL 侧状态不受影响。
+    if (ame227_kbUserDismissed) {
+        BOOL ame227_chatOpener = ame161_lastSentKeyWasChatOpener(3.0);
+        BOOL ame227_recentTouch = (CFAbsoluteTimeGetCurrent() - ame227_lastTouchAt) < 0.8;
+        if (ame227_chatOpener || ame227_recentTouch) {
+            ame227_kbUserDismissed = NO;
+            NSLog(@"[SurfaceVC] Task227 keyboard latch CLEARED (%@) -- showing keyboard",
+                  ame227_chatOpener ? @"chat-opener key" : @"recent touch");
+        } else {
+            ame227_suppressedStarts++;
+            if (ame227_suppressedStarts <= 5 || (ame227_suppressedStarts % 25) == 0) {
+                NSLog(@"[SurfaceVC] Task227 stray StartTextInput SUPPRESSED #%d (user dismissed keyboard %.1fs ago -- tap input-method button or press T to reopen)",
+                      ame227_suppressedStarts,
+                      CFAbsoluteTimeGetCurrent() - ame227_kbDismissedAt);
+            }
+            return;
+        }
+    }
     if (self.inputTextField.isFirstResponder) return;
     // Task171 哨兵空格先于 becomeFirstResponder 写入（防 UIAsyncTextInput
     // 首会话竞争，与 ✎ 按钮同序）
@@ -2618,6 +2651,9 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         if (self.inputTextField.isFirstResponder) {
             ame171_keyboardDismissGeneration++;
             [self ame225_resignInputTextField];
+            // ★ Task227：双指手势收起同为用户显式收起——置闩。
+            ame227_kbUserDismissed = YES;
+            ame227_kbDismissedAt = CFAbsoluteTimeGetCurrent();
             self.inputTextField.alpha = 1.0f;
         } else {
             // Task171：哨兵空格先于 becomeFirstResponder 写入（旧序反着来，
@@ -2948,8 +2984,15 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
                             ame171_keyboardDismissGeneration++;
                             [self ame225_resignInputTextField];
                             self.inputTextField.alpha = 1.0f;
-                            NSLog(@"[Task82] Keyboard widget: dismissing (was first responder)");
+                            // ★ Task227：用户显式收起——置闩锁，抑制后续游离
+                            // StartTextInput 自动弹起（详见声明区注释）。
+                            ame227_kbUserDismissed = YES;
+                            ame227_kbDismissedAt = CFAbsoluteTimeGetCurrent();
+                            NSLog(@"[Task82] Keyboard widget: dismissing (was first responder; Task227 latch armed)");
                         } else {
+                            // ★ Task227：用户显式打开——清闩（此路径本身就是
+                            // 真输入意图，后续游离 Start 恢复常规路由）。
+                            ame227_kbUserDismissed = NO;
                             // Task171：哨兵空格先于 becomeFirstResponder 写入。
                             // 病历（f26337d 装机日志 latestlog.old.txt，多人服务器
                             // 聊天登录）：每次按 ✎输入法 按钮日志都是
@@ -3007,6 +3050,16 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
                 if (held) {
                     // DOWN：记录按压起点（供 UP 时区分轻点/长按）。
                     s_ame176_modDownTime[@(keycode)] = @(CFAbsoluteTimeGetCurrent());
+                    // ★ Task227（反馈 #2：tap-tap 修饰键事件流 2:1）：
+                    // toggle 态上的再按压 = 用户意图是"关"（UP 时处理），
+                    // 此时键在逻辑上已被扣住——再发一次 DOWN 会造成
+                    // DOWN,DOWN,UP 的 2:1 事件流（ef1e3e2a 装机 latestlog
+                    // 5651/5660/5668 实锤），MC 键状态缓存与 InputConstants
+                    // isKeyDown 读数被搅乱（疾跑/潜行的"持续按住"判定
+                    // 正是消费方）。扣住期间 DOWN 一律静默。
+                    if ([s_ame179_toggledMods containsObject:@(keycode)]) {
+                        continue;
+                    }
                 } else {
                     NSNumber *ame176_downT = s_ame176_modDownTime[@(keycode)];
                     [s_ame176_modDownTime removeObjectForKey:@(keycode)];
@@ -3437,6 +3490,8 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
+
+    ame227_lastTouchAt = CFAbsoluteTimeGetCurrent();   // Task227：键盘闩锁的"真输入意图"触摸信号
 
     [super touchesBegan:touches withEvent:event];
 

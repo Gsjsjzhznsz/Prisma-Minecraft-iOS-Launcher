@@ -2912,3 +2912,12 @@
 "ame226.deps.downloading" = "正在下载依赖";
 "ame226.deps.progress" = "依赖 %ld / %ld\u2026";
 "ame226.deps.done" = "全部依赖已安装。";
+
+/* Task227：依赖确认单（issue #10 重做）+ 导入完成计数 */
+"ame227.deps.title" = "必需前置模组";
+"ame227.deps.message" = ""%@" 依赖以下前置模组：\n\n%@是否一并自动安装？";
+"ame227.deps.only_mod" = "仅安装本体";
+"ame227.deps.install_all" = "全部一起安装（推荐）";
+"ame227.deps.optional_note" = "\n（另有部分可选前置——不会自动安装。）";
+"ame227.deps.footer" = "本模组有 %lu 个必需前置：%@\n下载时会询问是否一并安装。";
+"ame227.import.done" = "已导入 %ld 个文件。重启启动器后完全生效。";

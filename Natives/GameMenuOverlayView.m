@@ -19,6 +19,14 @@ static NSString *const kPrefStatsLabelVisible = @"game.stats_label_visible";
 
 // 按钮尺寸
 static const CGFloat kMenuButtonSize = 44.0;
+// ★ Task227（反馈 #8）：吸边阈值与 docked 把手几何。用户指令：
+// ①只有拖拽结束时【近边】才吸住（不是一直吸）；②吸住后不再是按钮
+// 形态，而是侧边栏把手（半嵌入竖胶囊，点击拉出侧滑面板）。
+static const CGFloat kAme227DockThreshold = 96.0;   // 距边小于此值才吸附
+static const CGFloat kAme227HandleWidth = 26.0;    // 把手宽
+static const CGFloat kAme227HandleHeight = 96.0;   // 把手高
+static NSString * const kAme227DockedPref = @"game.gear.docked";
+static NSString * const kAme227DockedSidePref = @"game.gear.docked.left";
 // 拖拽阈值：超过此距离算拖动，否则算点击（参照 FCL MenuView 的 10px 阈值）
 static const CGFloat kDragThreshold = 10.0;
 
@@ -32,6 +40,11 @@ static const CGFloat kDragThreshold = 10.0;
 @property (nonatomic, assign) BOOL isDragging;
 @property (nonatomic, assign) CGPoint dragStartPoint;
 @property (nonatomic, assign) CGPoint dragStartCenter;
+// ★ Task227：dock 状态（readonly 公开，内部直接写 _ame227_* ivar）
+{
+    BOOL _ame227_docked;
+    BOOL _ame227_dockedLeft;
+}
 
 @end
 
@@ -149,6 +162,10 @@ static const CGFloat kDragThreshold = 10.0;
 
 #pragma mark - 位置持久化
 
+// ★ Task227：readonly 公开属性的 getter（ backed by 自定义 ivar）
+- (BOOL)isDocked { return _ame227_docked; }
+- (BOOL)dockedLeft { return _ame227_dockedLeft; }
+
 - (void)restorePositions {
     CGFloat bw = self.bounds.size.width;
     CGFloat bh = self.bounds.size.height;
@@ -166,6 +183,13 @@ static const CGFloat kDragThreshold = 10.0;
         self.menuButton.center = CGPointMake(x, y);
     } else {
         self.menuButton.center = CGPointMake(defaultBtnX, defaultBtnY);
+    }
+
+    // ★ Task227：dock 状态恢复（上次吸边的把手形态跨会话保持）
+    if (getPrefBool(kAme227DockedPref)) {
+        _ame227_docked = YES;
+        _ame227_dockedLeft = getPrefBool(kAme227DockedSidePref);
+        [self ame227_applyDockedAppearanceAnimated:NO];
     }
 
     // 统计标签默认位置：左上角
@@ -252,26 +276,86 @@ static const CGFloat kDragThreshold = 10.0;
         // 恢复背景
         self.menuButton.backgroundColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:0.6];
         if (self.isDragging) {
-            // ★ Task226（反馈 #12：齿轮 ⚙️ 不挡视线——拖拽结束自动吸边）：
-            // 横向磁吸到最近的屏幕边（半嵌入：球心贴边留 1/3 露出可再拖），
-            // 纵向保持用户放置的位置。视频播放器悬浮窗同款交互。
-            CGFloat ame226_half = kMenuButtonSize / 2.0;
-            CGFloat ame226_x = self.menuButton.center.x;
-            CGFloat ame226_targetX = (ame226_x < self.bounds.size.width / 2.0)
-                ? (ame226_half * 0.66)                      // 吸左：露 2/3
-                : (self.bounds.size.width - ame226_half * 0.66);  // 吸右
-            [UIView animateWithDuration:0.32 delay:0
-                             usingSpringWithDamping:0.72 initialSpringVelocity:0.5
-                              options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
-                           animations:^{
-                self.menuButton.center = CGPointMake(ame226_targetX, self.menuButton.center.y);
-            } completion:^(BOOL finished) {
-                // 吸边落位后保存（持久化目标位而非起拖位）
-                [self savePositions];
-            }];
+            // ★ Task227（反馈 #8：只在靠边时吸住 + 吸成侧边把手）：
+            // Task226 的实现【无条件】吸到最近边——用户拖到哪都立刻被
+            // 拽走（"而不是一直吸"）。新语义：拖拽结束时距边 <
+            // kAme227DockThreshold 才吸附，吸附时变形为竖胶囊把手
+            //（半嵌入，视觉上是侧边栏而非悬浮球）；否则留在原地悬浮。
+            CGFloat ame227_half = kMenuButtonSize / 2.0;
+            CGFloat ame227_x = self.menuButton.center.x;
+            CGFloat ame227_bw = self.bounds.size.width;
+            CGFloat ame227_distLeft = ame227_x - ame227_half;
+            CGFloat ame227_distRight = ame227_bw - ame227_x - ame227_half;
+            BOOL ame227_nearEdge = (ame227_distLeft < kAme227DockThreshold ||
+                                    ame227_distRight < kAme227DockThreshold);
+            if (ame227_nearEdge) {
+                BOOL ame227_dockLeft = (ame227_x < ame227_bw / 2.0);
+                _ame227_docked = YES;
+                _ame227_dockedLeft = ame227_dockLeft;
+                [self ame227_applyDockedAppearanceAnimated:YES];
+                setPrefBool(kAme227DockedPref, YES);
+                setPrefBool(kAme227DockedSidePref, ame227_dockLeft);
+            } else {
+                // 不近边：解除 dock（若原先 docked），留在用户放置的位置
+                if (_ame227_docked) {
+                    _ame227_docked = NO;
+                    [self ame227_applyDockedAppearanceAnimated:NO];
+                    setPrefBool(kAme227DockedPref, NO);
+                }
+            }
+            [self savePositions];
         }
         self.isDragging = NO;
     }
+}
+
+/// ★ Task227：dock 形态切换——按钮（44×44 圆）⇄ 侧边把手（26×96 竖胶囊，
+/// 半嵌入边内 1/3，中心线贴边）。点击语义不变（onMenuButtonTapped），
+/// 由上层根据 isDocked 决定拉侧滑面板还是底部弹层。
+- (void)ame227_applyDockedAppearanceAnimated:(BOOL)animated {
+    CGFloat ame227_w = _ame227_docked ? kAme227HandleWidth : kMenuButtonSize;
+    CGFloat ame227_h = _ame227_docked ? kAme227HandleHeight : kMenuButtonSize;
+    CGFloat ame227_radius = _ame227_docked ? kAme227HandleWidth / 2.0 : kMenuButtonSize / 2.0;
+    CGFloat ame227_cx;
+    if (_ame227_docked) {
+        // 半嵌入：中心距边 1/3 把手宽（2/3 露出）
+        ame227_cx = _ame227_dockedLeft
+            ? (kAme227HandleWidth * 0.66)
+            : (self.bounds.size.width - kAme227HandleWidth * 0.66);
+    } else {
+        ame227_cx = self.menuButton.center.x;
+    }
+    CGFloat ame227_cy = self.menuButton.center.y;
+    CGRect ame227_target = CGRectMake(ame227_cx - ame227_w / 2.0,
+                                      ame227_cy - ame227_h / 2.0,
+                                      ame227_w, ame227_h);
+    void (^ame227_apply)(void) = ^{
+        self.menuButton.bounds = CGRectMake(0, 0, ame227_w, ame227_h);
+        self.menuButton.center = CGPointMake(ame227_cx, ame227_cy);
+        self.menuButton.layer.cornerRadius = ame227_radius;
+        self.menuButton.layer.cornerCurve = kCACornerCurveContinuous;
+        if (_ame227_docked) {
+            // 把手态：仅朝屏内一侧圆角（半嵌入侧直角）
+            self.menuButton.layer.maskedCorners = _ame227_dockedLeft
+                ? kCALayerMaxXMinYCorner | kCALayerMaxXMaxYCorner
+                : kCALayerMinXMinYCorner | kCALayerMinXMaxYCorner;
+        } else {
+            self.menuButton.layer.maskedCorners = kCALayerMinXMinYCorner | kCALayerMaxXMinYCorner
+                | kCALayerMinXMaxYCorner | kCALayerMaxXMaxYCorner;
+        }
+    };
+    if (animated) {
+        [UIView animateWithDuration:0.32 delay:0
+                         usingSpringWithDamping:0.78 initialSpringVelocity:0.5
+                          options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
+                       animations:ame227_apply
+                       completion:nil];
+    } else {
+        ame227_apply();
+    }
+    NSLog(@"[GameMenu] Task227 gear dock state: %@ (%@)",
+          _ame227_docked ? @"DOCKED handle" : @"floating button",
+          _ame227_dockedLeft ? @"left edge" : @"right edge");
 }
 
 - (void)menuButtonTouchedDown:(UIButton *)sender {

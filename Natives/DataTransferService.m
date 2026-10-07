@@ -449,6 +449,32 @@
         NSLog(@"[DataTransfer] Task217: import restored %ld files%@",
               (long)restored, failMsg ? [NSString stringWithFormat:@" (FAILED: %@)", failMsg] : @" (ok)");
 
+        // ★ Task227（反馈 #9：导入无效果 + 数据像被重置）：两个收尾动作。
+        // ① 备份里可能带 legacy 布局的 Library/Application Support/minecraft
+        //   真实目录（上游老版本数据）——导入落位后立即触发与启动期同源的
+        //   init_setupMultiDir 合并迁移（内容进当前实例、绝不覆盖、外壳归档
+        //   -lasm-legacy-backup、符号链接重指）。此前要等下次重启才迁移，
+        //   且用户看不出发生了什么 = "导入无效果"的观感来源之一。
+        // ② 恢复进 instances/<name>/ 的数据若与当前实例名不一致（备份来自
+        //   别的实例名），现在如实记日志——下轮反馈可据此定位。
+        if (!failMsg) {
+            @try {
+                extern void init_setupMultiDir(void);
+                init_setupMultiDir();
+                NSLog(@"[DataTransfer] Task227: post-import instance merge executed");
+            } @catch (NSException *ame227_e) {
+                NSLog(@"[DataTransfer] Task227: post-import merge exception (%@) -- will run on next launch", ame227_e);
+            }
+            NSString *ame227_gd = [getPrefObject(@"general.game_directory") isKindOfClass:NSString.class]
+                ? (NSString *)getPrefObject(@"general.game_directory") : @"default";
+            if (ame227_gd.length == 0) ame227_gd = @"default";
+            NSString *ame227_instPath = [NSString stringWithFormat:@"%s/instances/%@",
+                getenv("POJAV_HOME"), ame227_gd];
+            BOOL ame227_hasInstance = [fm fileExistsAtPath:ame227_instPath];
+            NSLog(@"[DataTransfer] Task227: current instance = %@ (%@), restored-instance-present = %@",
+                  ame227_gd, ame227_instPath.lastPathComponent, ame227_hasInstance ? @"YES" : @"NO");
+        }
+
         dispatch_async(dispatch_get_main_queue(), ^{
             [progress dismissViewControllerAnimated:YES completion:^{
                 if (failMsg) {
@@ -458,7 +484,7 @@
                     return;
                 }
                 [self ame217_showToastOrAlert:
-                    localize(@"ame217.import.done", @"Data restored. Please restart the launcher for it to take effect.")];
+                    [NSString stringWithFormat:localize(@"ame227.import.done", nil), (long)restored]];
             }];
         });
     });

@@ -136,6 +136,7 @@ typedef bool (*ame_fn_SDL_StartTextInputWithProperties)(void *window,
                                                         unsigned long long props);
 typedef bool (*ame_fn_SDL_StopTextInput)(void *window);
 typedef bool (*ame_fn_SDL_SetTextInputArea)(void *window, const void *rect, int cursor);
+typedef bool (*ame_fn_SDL_OpenURL)(const char *url);   // Task227：SDL 原生开 URL（MC 26.3 Blaze3D.openUri 走这里）
 // Task 114：子系统初始化——SDL hint 必须在 SDL_Init 之前设置才生效，
 // 挂在 InitSubSystem 上、调用原函数之前设置（对齐上游 caf6822 实测有效的做法）。
 typedef bool (*ame_fn_SDL_InitSubSystem)(uint32_t flags);
@@ -181,6 +182,7 @@ static ame_fn_SDL_StartTextInput ame_real_StartTextInput = NULL;
 static ame_fn_SDL_StartTextInputWithProperties ame_real_StartTextInputWithProperties = NULL;
 static ame_fn_SDL_StopTextInput ame_real_StopTextInput = NULL;
 static ame_fn_SDL_SetTextInputArea ame_real_SetTextInputArea = NULL;
+static ame_fn_SDL_OpenURL ame_real_OpenURL = NULL;   // Task227
 static ame_fn_SDL_InitSubSystem ame_real_InitSubSystem = NULL;
 static ame_fn_SDL_SetHint ame_real_SetHint = NULL;
 
@@ -550,6 +552,11 @@ static void ame_maybeWrapWindowHook(const char *name, void **out) {
         if (ame_real_SetTextInputArea == NULL)
             ame_real_SetTextInputArea = (ame_fn_SDL_SetTextInputArea)*out;
         *out = (void *)ame_SDL_SetTextInputArea;
+    } else if (strcmp(name, "SDL_OpenURL") == 0) {
+        // ★ Task227：MC 26.3 打开文件夹/链接的真正入口（非 AWT/CTC 链）。
+        if (ame_real_OpenURL == NULL)
+            ame_real_OpenURL = (ame_fn_SDL_OpenURL)*out;
+        *out = (void *)ame_SDL_OpenURL;
     } else if (strcmp(name, "SDL_InitSubSystem") == 0) {
         // Task 114：SDL hint 注入点（必须在真实初始化前设置）
         if (ame_real_InitSubSystem == NULL)
@@ -1734,6 +1741,37 @@ static bool ame_SDL_StopTextInput(void *window) {
         // 键盘跟随 MC 的输入状态而非永久滞留。
         [[NSNotificationCenter defaultCenter] postNotificationName:@"AME172_SDLStopTextInput" object:nil];
     });
+}
+
+static bool ame_SDL_OpenURL(const char *url) {
+    // ★ Task227（反馈 #5：SDL 版本打开文件夹无反应）：MC 26.3 的
+    // Blaze3D.openUri 走 org.lwjgl.sdl.SDLMisc.SDL_OpenURL（26.3 jar
+    // 常量池实证），不走 java.awt.Desktop/CTC 桥——SDL 自带的 iOS
+    // openURL 对沙盒内 file:// 目录返回失败（ef1e3e2a 装机铁证：
+    // [Download-3/WARN] "Failed to open uri file:///...resourcepacks/:
+    // No handler registered for this type of URL" ×6，用户点击零反应）。
+    // 修法：钩住 SDL_OpenURL——file:// 目录路由到应用内 FolderBrowser
+    // （同 CTC openFile 链），http(s) 路由到系统浏览器，其余交回真实现。
+    if (url == NULL) return ame_real_OpenURL ? ame_real_OpenURL(NULL) : false;
+    NSString *ame227_url = [NSString stringWithUTF8String:url];
+    NSLog(@"[SDLHook] Task227 SDL_OpenURL intercepted: %@", ame227_url);
+    if ([ame227_url hasPrefix:@"file:"]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            // 复用 CTC 链同源路由（input_bridge 的 openURLGlobal：
+            // 目录 → FolderBrowser，文件 → Files/Filza；主线程派发）。
+            extern void openURLGlobal(NSString *path);
+            openURLGlobal(ame227_url);
+        });
+        return true;   // 对 MC 报成功——浏览器已异步拉起，不再走 SDL 失败路径
+    }
+    if ([ame227_url hasPrefix:@"http:"] || [ame227_url hasPrefix:@"https:"]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            extern void openURLGlobal(NSString *path);
+            openURLGlobal(ame227_url);
+        });
+        return true;
+    }
+    return ame_real_OpenURL ? ame_real_OpenURL(url) : false;
 }
 
 static bool ame_SDL_SetTextInputArea(void *window, const void *rect, int cursor) {

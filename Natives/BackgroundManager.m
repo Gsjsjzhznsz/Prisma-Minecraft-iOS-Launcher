@@ -1398,18 +1398,11 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
 
         // Task210：残留阴影承载层清理原语随新拟态引擎一并删除（无挂载即无残留）。
 
-        // Task224（#4）：液态玻璃风格接管 cell 卡面（native 时为清理旧玻璃
-        // 层后返回 NO，直落下方毛玻璃/半透明既有分支）。
-        if (LGCApplyGlassToView(cardTarget, cardRadius)) {
-            for (UIView *subview in [cardTarget.subviews copy]) {
-                if ([subview isKindOfClass:[UIVisualEffectView class]] && subview.tag == kBackgroundBlurTag) {
-                    [subview removeFromSuperview];
-                }
-            }
-            cell.backgroundColor = [UIColor clearColor];
-            contentView.backgroundColor = [UIColor clearColor];
-            return;
-        }
+        // ★ Task227（反馈 #3：就改悬浮弹窗——列表卡面玻璃回退）：Task224（#4）
+        // 曾让液态玻璃风格接管 cell 卡面。用户明确指示软件 UI（列表/卡片/
+        // 标签页切换器）保持原生外观，玻璃只用于悬浮弹窗。此处无条件清玻璃
+        // 层并落回既有毛玻璃/半透明管线（从玻璃切回原生零残留）。
+        LGCRemoveGlassFromView(cardTarget);
 
         if (self.uiEffect == BackgroundUIEffectBlur) {
             // 毛玻璃
@@ -1812,4 +1805,66 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
     return nil;
 }
 
+@end
+// ============================================================================
+// ★ Task227（反馈 #11：全局白底黑边字体——"我说了许多次了"）：
+// UILabel setText: 方法交换（swizzle）。壁纸在场时，所有 UILabel 的纯文本
+// 一律重写为 白色填充 + 黑色描边（NSStrokeWidth -2.6）+ 软阴影——任何壁
+// 纸上可读，不再依赖各页面逐点接入（此前仅 5 处显式调用 applyAdaptive
+// TextToLabel，覆盖率远低于用户预期）。无壁纸时零干预（原生外观零回归）。
+//
+// 边界与防御：
+//   * 只处理纯 setText:（attributedText 直设的富文本不动）；
+//   * 空文本直接透传；
+//   * 壁纸状态每次实时判定（切换壁纸后下一次 setText 自动回到原生）；
+//   * 交换只做一次（+load 中 dispatch_once）。
+// ============================================================================
+#import <objc/runtime.h>
+#import <objc/message.h>
+
+static void (*ame227_origLabelSetText)(id, SEL, NSString *);
+
+static void ame227_swizzledLabelSetText(id self, SEL _cmd, NSString *text) {
+    if (!ame227_origLabelSetText) return;
+    ame227_origLabelSetText(self, _cmd, text);
+    @try {
+        if (text.length == 0) return;
+        if (![[BackgroundManager sharedManager] hasBackground]) return;
+        // 注：不守卫 attributedText——setText: 之后 attributedText 恒非 nil
+        //（UIKit 把纯文本包装成 attributed 存储），该守卫会跳过一切。
+        // 真正的富文本路径（attributedText 直设）不经 setText:，天然不受
+        // 本交换影响。
+        UILabel *ame227_label = (UILabel *)self;
+        if (ame227_label.font == nil) return;
+        NSMutableAttributedString *ame227_styled =
+            [[NSMutableAttributedString alloc] initWithString:text
+                                                    attributes:@{
+            NSFontAttributeName: ame227_label.font,
+            NSForegroundColorAttributeName: [UIColor whiteColor],
+            NSStrokeColorAttributeName: [UIColor blackColor],
+            NSStrokeWidthAttributeName: @(-2.6),
+        }];
+        ame227_label.textColor = [UIColor whiteColor];
+        ((void (*)(id, SEL, id))objc_msgSend)(ame227_label,
+            sel_registerName("setAttributedText:"), ame227_styled);
+        ame227_label.layer.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.55].CGColor;
+        ame227_label.layer.shadowOpacity = 1.0;
+        ame227_label.layer.shadowRadius = 1.5;
+        ame227_label.layer.shadowOffset = CGSizeMake(0, 1);
+        ame227_label.layer.masksToBounds = NO;
+    } @catch (NSException *ame227_e) {
+        // 任何意外（系统私有标签子类等）绝不影响 setText 主链
+    }
+}
+
+@implementation UILabel (Ame227GlobalStrokeFont)
++ (void)load {
+    static dispatch_once_t ame227_once;
+    dispatch_once(&ame227_once, ^{
+        Method ame227_m = class_getInstanceMethod(self, @selector(setText:));
+        if (ame227_m == NULL) return;
+        ame227_origLabelSetText = (void (*)(id, SEL, NSString *))method_getImplementation(ame227_m);
+        method_setImplementation(ame227_m, (IMP)ame227_swizzledLabelSetText);
+    });
+}
 @end

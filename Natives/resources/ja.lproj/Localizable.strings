@@ -1983,3 +1983,28 @@
 "bing.download.hint" = "壁紙をダウンロード中…";
 "bing.refresh.done" = "同期が完了しました";
 "bing.refresh.failed" = "同期に失敗しました。ネットワークを確認してください";
+
+/* Task227：教练标记（欢迎页圆圈焦点介绍）——ja 此前整组缺失（用户看到键名/空白） */
+"coachmarks.hint" = "タップして続行（%lu/%lu）";
+"coachmarks.nav.title" = "サイドナビゲーション";
+"coachmarks.nav.body" = "左側でホーム・ダウンロード・バージョン管理などのページを切り替えられます。";
+"coachmarks.content.title" = "メインコンテンツ";
+"coachmarks.content.body" = "バージョン・Modパック・設定がここに表示されます。";
+"coachmarks.launch.title" = "起動";
+"coachmarks.launch.body" = "右パネル：ゲームの起動、JIT とメモリ状態の確認。";
+"coachmarks.skip" = "スキップ";
+"coachmarks.next" = "次へ";
+"coachmarks.done" = "始める";
+"coachmarks.downloads.title" = "ダウンロードと Mod";
+"coachmarks.downloads.body" = "ここで Mod・シェーダー・リソースパックを検索できます。インストール時、必須の前提 Mod をまとめて導入するか確認されます。";
+"coachmarks.versions.title" = "バージョンと分離";
+"coachmarks.versions.body" = "バージョンの分離管理とランチャー設定（スタイル・スケール）はここに統合されています。";
+
+/* Task227：依赖确认单（issue #10 重做）+ 导入完成计数 */
+"ame227.deps.title" = "必須の前提 Mod";
+"ame227.deps.message" = ""%@" は以下の前提 Mod に依存しています：\n\n%@一緒に自動インストールしますか？";
+"ame227.deps.only_mod" = "この Mod のみインストール";
+"ame227.deps.install_all" = "すべて一緒にインストール（推奨）";
+"ame227.deps.optional_note" = "\n（オプションの前提もあります——自動インストールされません。）";
+"ame227.deps.footer" = "この Mod には %lu 個の必須前提があります：%@\nダウンロード時に一緒に導入するか確認されます。";
+"ame227.import.done" = "%ld 個のファイルを取り込みました。ランチャーを再起動すると完全に反映されます。";

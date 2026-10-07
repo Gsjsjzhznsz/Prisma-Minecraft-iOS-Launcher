@@ -16,6 +16,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)searchModWithFilters:(NSDictionary *)filters
                   completion:(void (^)(NSArray * _Nullable results, NSError * _Nullable error))completion;
 
+/// ★ Task227（issue #10）：按项目 id 取展示名（依赖确认单用）
+- (void)ame227_fetchProjectTitle:(NSString *)projectID
+                       completion:(void (^)(NSString * _Nullable title, NSError * _Nullable error))completion;
+
 - (void)getVersionsForModWithID:(NSString *)modID
                      completion:(void (^)(NSArray<ModVersion *> * _Nullable versions, NSError * _Nullable error))completion;
 

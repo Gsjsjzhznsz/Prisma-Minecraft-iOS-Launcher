@@ -128,18 +128,54 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
 }
 
 /// FCL 风格：从底部弹出菜单（游戏画面不缩小）
+/// ★ Task227（反馈 #8）：齿轮吸边成把手时，菜单改从吸边侧滑出（侧边栏
+/// 形态）；悬浮球形态保持原底部弹层。
 - (void)showMenu {
+    BOOL ame227_sideDrawer = NO;
+    BOOL ame227_fromLeft = NO;
+    if ([self.gameMenuOverlay isKindOfClass:[GameMenuOverlayView class]]) {
+        GameMenuOverlayView *ame227_ov = (GameMenuOverlayView *)self.gameMenuOverlay;
+        ame227_sideDrawer = ame227_ov.isDocked;
+        ame227_fromLeft = ame227_ov.dockedLeft;
+    }
+
     self.menuView.hidden = NO;
     self.menuDimView.hidden = NO;
 
-    // 准备动画初始状态：菜单在屏幕底部外
+    CGFloat screenWidth = [ScreenUtils screenSize].width;
     CGFloat screenHeight = [ScreenUtils screenSize].height;
+    CGFloat menuWidth = self.menuView.frame.size.width;
     CGFloat menuHeight = self.menuView.frame.size.height;
     self.menuView.transform = CGAffineTransformIdentity;
+
+    if (ame227_sideDrawer) {
+        // 侧滑形态：全高面板从吸边侧滑入（宽度取原菜单宽，最小 280）
+        CGFloat ame227_drawerW = MAX(menuWidth, 280);
+        CGFloat ame227_drawerH = screenHeight;
+        CGFloat ame227_offX = ame227_fromLeft ? -ame227_drawerW : screenWidth;
+        self.menuView.frame = CGRectMake(ame227_offX, 0, ame227_drawerW, ame227_drawerH);
+        CGFloat ame227_targetX = ame227_fromLeft ? 0 : (screenWidth - ame227_drawerW);
+        [UIView animateWithDuration:0.32
+                              delay:0
+             usingSpringWithDamping:0.85
+              initialSpringVelocity:0.5
+                            options:UIViewAnimationOptionCurveEaseOut
+                         animations:^{
+            self.menuView.frame = CGRectMake(ame227_targetX, 0, ame227_drawerW, ame227_drawerH);
+            self.menuDimView.alpha = 1.0;
+        } completion:^(BOOL finished) {
+            [self setNeedsUpdateOfHomeIndicatorAutoHidden];
+            [self setNeedsUpdateOfScreenEdgesDeferringSystemGestures];
+            [self setNeedsStatusBarAppearanceUpdate];
+        }];
+        return;
+    }
+
+    // 准备动画初始状态：菜单在屏幕底部外
     self.menuView.frame = CGRectMake(
         self.menuView.frame.origin.x,
         screenHeight,  // 屏幕底部外
-        self.menuView.frame.size.width,
+        menuWidth,
         menuHeight
     );
 
@@ -171,19 +207,37 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
 
 /// FCL 风格：菜单下滑消失（游戏画面不缩小）
 - (void)dismissMenu {
+    CGFloat screenWidth = [ScreenUtils screenSize].width;
     CGFloat screenHeight = [ScreenUtils screenSize].height;
+
+    // ★ Task227：侧滑形态判定（showMenu 的侧边栏以 y=0 全高呈现）——
+    // 收起时横向滑出吸边侧，而非下滑。
+    BOOL ame227_sideDrawer = (CGRectGetMinY(self.menuView.frame) == 0.0 &&
+                              CGRectGetHeight(self.menuView.frame) >= screenHeight * 0.9);
 
     [UIView animateWithDuration:0.25
                           delay:0
                         options:UIViewAnimationOptionCurveEaseIn
                      animations:^{
-        // 菜单下滑到屏幕底部外
-        self.menuView.frame = CGRectMake(
-            self.menuView.frame.origin.x,
-            screenHeight,
-            self.menuView.frame.size.width,
-            self.menuView.frame.size.height
-        );
+        if (ame227_sideDrawer) {
+            BOOL ame227_fromLeft = (CGRectGetMinX(self.menuView.frame) <= 0.0);
+            CGFloat ame227_offX = ame227_fromLeft
+                ? -CGRectGetWidth(self.menuView.frame)
+                : screenWidth;
+            self.menuView.frame = CGRectMake(
+                ame227_offX, 0,
+                CGRectGetWidth(self.menuView.frame),
+                CGRectGetHeight(self.menuView.frame)
+            );
+        } else {
+            // 菜单下滑到屏幕底部外
+            self.menuView.frame = CGRectMake(
+                self.menuView.frame.origin.x,
+                screenHeight,
+                self.menuView.frame.size.width,
+                self.menuView.frame.size.height
+            );
+        }
         // 背景遮罩淡出
         self.menuDimView.alpha = 0.0;
     } completion:^(BOOL finished) {

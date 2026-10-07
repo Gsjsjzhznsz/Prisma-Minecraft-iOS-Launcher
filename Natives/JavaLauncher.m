@@ -685,16 +685,41 @@ static int ame225_healMissingAssets(NSString *versionId) {
             break;
         }
         NSDictionary *m = missing[i];
-        NSString *url = [NSString stringWithFormat:@"https://resources.download.minecraft.net/%@",
-            m[@"rel"]];
-        NSURL *assetURL = [NSURL URLWithString:url];
+        // ★ Task227（反馈 #1 第二半）：heal 下载 URL 用了完整 rel 路径
+        // （resources.download.minecraft.net/assets/objects/f0/<hash>）——
+        // 官方资源端点只认 <hash 前 2 字符>/<hash>（ef1e3e2a 装机实锤：
+        // "download failed for icons/minecraft.icns (未能打开文件"f0065…"）"
+        // = 404 映射成 NSCocoaError 256）。修法：URL 改官方两段式 + 落盘前
+        // 建中间目录（缺失资产的 objects/f0/ 层目录可能从未创建）+
+        // 国内镜像 bmclapi 回退（主站不可达时第二跳）。
+        NSString *ame227_hash = [m[@"hash"] isKindOfClass:[NSString class]] ? m[@"hash"] : nil;
+        if (ame227_hash.length < 4) continue;
+        NSString *ame227_two = [ame227_hash substringToIndex:2];
+        NSURL *assetURL = [NSURL URLWithString:[NSString stringWithFormat:
+            @"https://resources.download.minecraft.net/%@/%@", ame227_two, ame227_hash]];
+        NSURL *ame227_mirrorURL = [NSURL URLWithString:[NSString stringWithFormat:
+            @"https://bmclapi2.bangbang93.com/assets/%@/%@", ame227_two, ame227_hash]];
         if (assetURL == nil) continue;
         NSError *err = nil;
         NSData *data = [NSData dataWithContentsOfURL:assetURL
                                          options:NSDataReadingMappedIfSafe
                                            error:&err];
+        if (data.length == 0 && ame227_mirrorURL != nil) {
+            NSLog(@"[AssetsHeal] Task227 primary fetch failed (%@) -- retrying via bmclapi mirror", err.localizedDescription ?: @"?");
+            err = nil;
+            data = [NSData dataWithContentsOfURL:ame227_mirrorURL
+                                     options:NSDataReadingMappedIfSafe
+                                       error:&err];
+        }
         if (data.length > 0) {
             NSString *dst = [gameRoot stringByAppendingPathComponent:m[@"rel"]];
+            // Task227：缺失资产的目标层目录（如 objects/f0/）可能不存在，
+            // writeToFile 对缺失父目录直接失败——先递归建层再原子落位。
+            NSString *dstDir = [dst stringByDeletingLastPathComponent];
+            if (dstDir.length > 0 && ![ame225_fm fileExistsAtPath:dstDir]) {
+                [ame225_fm createDirectoryAtPath:dstDir
+                          withIntermediateDirectories:YES attributes:nil error:nil];
+            }
             // .tmp 原子落位（半写文件比缺失更难排查）
             NSString *tmp = [dst stringByAppendingString:@".ametmp"];
             if ([data writeToFile:tmp atomically:YES] &&
@@ -702,7 +727,7 @@ static int ame225_healMissingAssets(NSString *versionId) {
                 healed++;
             }
         } else {
-            NSLog(@"[AssetsHeal] Task225 download failed for %@ (%@)", m[@"name"],
+            NSLog(@"[AssetsHeal] Task227 download failed for %@ via both primary+mirror (%@)", m[@"name"],
                   err.localizedDescription ?: @"unknown");
         }
     }

@@ -1942,6 +1942,180 @@ void glIndexMask(GLuint mask) {
     ame173_log_once("glIndexMask");
 }
 
+/* ============================================================================
+ * Task227：桌面 GLSL → GLSL ES 300 的 ivec 隐式转换修补。
+ *
+ * 病历（ef1e3e2a latestlog.old，ANGLE/tinygl4angle + 1.20.1）：
+ *   ERROR: 1:15: '/' : wrong operand types ... 'in highp 2-component
+ *   vector of int' ... 'const float' → clamp/texture/return 三连级联 →
+ *   "Invalid shaders/core/rendertype_solid.json" → 启动崩溃。
+ *   根源：vanilla light.glsl 的 `uv / 256.0`（ivec2/float）与 5 处
+ *   `texCoord2 = UV2;`（ivec2→vec2 赋值）在桌面 GLSL 150 合法（隐式
+ *   int→float），GLSL ES 300 一律禁止。Task219 只重写版本头，正文原样。
+ *
+ * 修法（正文级文本扫描，两形态 + 三重防御）：
+ *   形态 A：`<ivec名> / <数字…>` 且除数字面量含 '.'（float）→ 包
+ *          vec<D>(名)。除数为整数字面量（ivec/ivec 合法除法）不动。
+ *   形态 B：`= <ivec名>;` 且语句回看窗口（上一个 ';'/'{'/'}' 起）不
+ *          含 "ivec"（排除 ivec 左值）→ 包 vec<D>(名)。
+ *   防御 1：只认全字匹配（前后都是非标识符字符）；
+ *   防御 2：名字已处于 "vecD(" 之内（往前 6 字符内）不重复包；
+ *   防御 3：任何失败路径返回 NULL，调用方退回原文（不扩大风险面）。
+ * ==========================================================================*/
+#define AME227_IVEC_MAX 64
+#define AME227_IVEC_NAME_MAX 64
+
+typedef struct {
+    char name[AME227_IVEC_NAME_MAX];
+    int dim;   /* 2/3/4 */
+} ame227_ivec_decl;
+
+static int ame227_isIdentChar(char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+           (c >= '0' && c <= '9') || c == '_';
+}
+
+/* 收集 ivec2/3/4 声明的标识符：`in ivec2 UV2;`、`(sampler2D s, ivec2 uv)`、
+ * `ivec2 local = ...` —— 统一模式 = "ivecD" 后跟空白 + 标识符。 */
+static int ame227_collectIvecNames(const char *body, ame227_ivec_decl *out, int cap) {
+    int n = 0;
+    const char *p = body;
+    while (*p != '\0' && n < cap) {
+        if (p[0] == 'i' && p[1] == 'v' && p[2] == 'e' && p[3] == 'c' &&
+            (p[4] == '2' || p[4] == '3' || p[4] == '4') &&
+            !ame227_isIdentChar(p[5]) && (p == body || !ame227_isIdentChar(p[-1]))) {
+            const char *q = p + 5;
+            while (*q == ' ' || *q == '\t' || *q == '\n' || *q == '\r') q++;
+            if (ame227_isIdentChar(*q) && !(*q >= '0' && *q <= '9')) {
+                const char *s = q;
+                while (ame227_isIdentChar(*q)) q++;
+                size_t len = (size_t)(q - s);
+                if (len > 0 && len < AME227_IVEC_NAME_MAX) {
+                    /* 声明位（"ivecD 名"）后面必须是标点/空白——排除函数调用
+                     * 形如 ivec2(...)（构造器）。 */
+                    if (*q == '\0' || !ame227_isIdentChar(*q)) {
+                        int dup = 0;
+                        for (int i = 0; i < n; i++) {
+                            if (strncmp(out[i].name, s, len) == 0 && out[i].name[len] == '\0') {
+                                dup = 1; break;
+                            }
+                        }
+                        if (!dup) {
+                            memcpy(out[n].name, s, len);
+                            out[n].name[len] = '\0';
+                            out[n].dim = (p[4] - '0');
+                            n++;
+                        }
+                    }
+                }
+            }
+            p = q;
+            continue;
+        }
+        p++;
+    }
+    return n;
+}
+
+/* 找 name 在 body 里的全字匹配出现（从 from 起），返回匹配起始指针或 NULL。 */
+char *ame227_fixIvecConversions(const char *body) {
+    if (body == NULL || body[0] == '\0') return NULL;
+
+    ame227_ivec_decl decls[AME227_IVEC_MAX];
+    int ndecl = ame227_collectIvecNames(body, decls, AME227_IVEC_MAX);
+    if (ndecl == 0) return NULL;
+
+    /* 输出缓冲：最坏情况 = 每个匹配点包一层 "vecD()" = +8 字节。粗估上界
+     * 用 strlen*4 + 64 已远超实际（匹配点数量 << 长度）。 */
+    size_t cap = strlen(body) * 4 + 64;
+    char *out = (char *)malloc(cap);
+    if (out == NULL) return NULL;
+    size_t o = 0;
+    const char *p = body;
+    int wraps = 0;
+
+    while (*p != '\0') {
+        /* 逐位置尝试匹配任一 ivec 名（全字） */
+        const char *hit = NULL;
+        int hitIdx = -1;
+        for (int i = 0; i < ndecl; i++) {
+            size_t len = strlen(decls[i].name);
+            if (strncmp(p, decls[i].name, len) == 0 &&
+                (p == body || !ame227_isIdentChar(p[-1])) &&
+                !ame227_isIdentChar(p[len])) {
+                hit = p;
+                hitIdx = i;
+                break;
+            }
+        }
+        if (hit == NULL) {
+            out[o++] = *p++;
+            continue;
+        }
+
+        size_t len = strlen(decls[hitIdx].name);
+        const char *after = p + len;
+        while (*after == ' ' || *after == '\t') after++;
+
+        BOOL wrapped = NO;
+        if (*after == '/') {
+            /* 形态 A：`名 / <字面量>` —— 字面量须含 '.'（float） */
+            const char *num = after + 1;
+            while (*num == ' ' || *num == '\t') num++;
+            const char *numEnd = num;
+            while ((*numEnd >= '0' && *numEnd <= '9') || *numEnd == '.') numEnd++;
+            if (numEnd > num && memchr(num, '.', (size_t)(numEnd - num)) != NULL) {
+                wrapped = YES;
+            }
+        } else if (*after == ';') {
+            /* 形态 B：`= 名;` —— 回看跳过空白后是 '='，且语句窗口无 ivec */
+            const char *back = p;
+            while (back > body && (back[-1] == ' ' || back[-1] == '\t')) back--;
+            if (back > body && back[-1] == '=') {
+                /* 语句窗口 = 上一个 ';'/'}'/'{' 到当前 */
+                const char *stmtStart = back - 1;
+                while (stmtStart > body && stmtStart[-1] != ';' && stmtStart[-1] != '}' &&
+                       stmtStart[-1] != '{' && stmtStart[-1] != '\n') {
+                    stmtStart--;
+                }
+                /* 排除已包裹：窗口尾若是 "vecD(" */
+                const char *winEnd = back;
+                size_t winLen = (size_t)(winEnd - stmtStart);
+                const char *parenTail = (winLen >= 6) ? (winEnd - 6) : NULL;
+                BOOL alreadyWrapped = (parenTail != NULL &&
+                                       (strncmp(parenTail, "vec2(", 5) == 0 ||
+                                        strncmp(parenTail, "vec3(", 5) == 0 ||
+                                        strncmp(parenTail, "vec4(", 5) == 0));
+                BOOL hasIvecLhs = (memchr(stmtStart, 'i', (size_t)(winEnd - stmtStart)) != NULL &&
+                                   strstr(stmtStart, "ivec") != NULL &&
+                                   strstr(stmtStart, "ivec") < winEnd);
+                if (!alreadyWrapped && !hasIvecLhs) {
+                    wrapped = YES;
+                }
+            }
+        }
+
+        if (wrapped) {
+            o += (size_t)snprintf(out + o, cap - o, "vec%d(%.*s)", decls[hitIdx].dim,
+                                  (int)len, p);
+            wraps++;
+        } else {
+            memcpy(out + o, p, len);
+            o += len;
+        }
+        p += len;
+    }
+    out[o] = '\0';
+
+    if (wraps == 0) {
+        free(out);
+        return NULL;   /* 无需改动：调用方退回原文，零开销 */
+    }
+    printf("[tinygl4angle] Task227 ivec conversion pass: %d wrap(s), %d ivec name(s) tracked\n",
+           wraps, ndecl);
+    return out;
+}
+
 
 void glShaderSource(GLuint shader, GLsizei count, const GLchar * const *string, const GLint *length) {
     LOOKUP_FUNC(glShaderSource)
@@ -2106,17 +2280,35 @@ void glShaderSource(GLuint shader, GLsizei count, const GLchar * const *string, 
                 if (ame219_eol != NULL) {
                     size_t ame219_headLen = strlen(kAme219EsHead);
                     size_t ame219_restLen = strlen(ame219_eol + 1);
-                    char *ame219_es = (char *)malloc(ame219_headLen + ame219_restLen + 1);
+                    /* ★ Task227（反馈 #1：ANGLE 非 SDL 版本 1.20.1 启动即崩）：
+                     * 病历（ef1e3e2a latestlog.old:1050-1070）：vanilla 1.20.1 的
+                     * light.glsl:16 `clamp(uv / 256.0, ...)` —— ivec2 / float 在
+                     * 桌面 GLSL 150 合法（隐式 int→float），GLSL ES 300 禁止。
+                     * Task219 头重写只换版本行，正文原样上传 → ANGLE ES 编译器
+                     * 在 '1:15' 报 '/' 错误 → clamp/texture/return 三连级联 →
+                     * "Invalid shaders/core/rendertype_solid.json" → 崩溃对话框。
+                     * 修法：正文级扫描——收集 ivec2/3/4 声明的标识符，对
+                     * ① `<ivec> / <float 字面量>`（除数含 '.'）包 vec<D>(…)
+                     * ② `= <ivec>;`（语句回看无 ivec 左值）包 vec<D>(…)
+                     * 两形态补显式转换。vanilla 全量核对：唯一违规点就是
+                     * light.glsl 的 uv/256.0 与 5 处 `texCoord2 = UV2;`。 */
+                    char *ame227_body = ame227_fixIvecConversions(ame219_eol + 1);
+                    const char *ame227_bodySrc = (ame227_body != NULL) ? ame227_body : (ame219_eol + 1);
+                    size_t ame227_bodyLen = strlen(ame227_bodySrc);
+                    char *ame219_es = (char *)malloc(ame219_headLen + ame227_bodyLen + 1);
                     if (ame219_es != NULL) {
                         memcpy(ame219_es, kAme219EsHead, ame219_headLen);
-                        memcpy(ame219_es + ame219_headLen, ame219_eol + 1, ame219_restLen);
-                        ame219_es[ame219_headLen + ame219_restLen] = '\0';
+                        memcpy(ame219_es + ame219_headLen, ame227_bodySrc, ame227_bodyLen);
+                        ame219_es[ame219_headLen + ame227_bodyLen] = '\0';
+                    }
+                    free(ame227_body);
+                    if (ame219_es != NULL) {
                         {
                             static int s_ame219_rewriteN = 0;
                             ++s_ame219_rewriteN;
                             if (s_ame219_rewriteN <= 4 || (s_ame219_rewriteN % 64) == 0) {
                                 printf("[tinygl4angle] Task219 desktop->ES300 head rewrite #%d (was #version %ld, len=%zu)\n",
-                                       s_ame219_rewriteN, ame219_ver, ame219_headLen + ame219_restLen);
+                                       s_ame219_rewriteN, ame219_ver, ame219_headLen + ame227_bodyLen);
                             }
                         }
                         gles_glShaderSource(shader, 1, (const GLchar * const *)(&ame219_es), NULL);
