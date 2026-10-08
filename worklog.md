@@ -2050,3 +2050,31 @@ Work Log:
 Stage Summary:
 - Task 228 全链闭环：双报（全语言裸键名 + 切玻璃黑面）→ 字节级根因 → 双根修（4 语言表修复 + localize 兜底链加长 + CI 语法门 / 玻璃默认反转组合玻璃 + 主界面玻璃全退 + 栏位交还系统退役）→ 验证链大扫荡（28+7 验证器计数扫荡、5 存量锚点重锚、2 处 CRLF 字节修复）→ 全链绿 → 首轮 CI 绿 → 新 IPA 就绪
 - 装机验证锚点（优先级）：①任意语言界面恢复正常文案（无 i18n 键名）；②切液态玻璃风格：Card 布局三卡/侧栏/右面板/导航栏全部保持原样不再变黑；③"[ThemeOps] Task228 composite glass default"（一次性日志）；④头像长按玻璃菜单正常渲染（非黑面板）；⑤未来想再试系统玻璃设 AME227_SYSTEM_GLASS=1（opt-in 实验开关）
+
+---
+Task ID: 229
+Agent: main (Super Z)
+Task: 11 项反馈轮（e24a60a9 日志集，Task228 构建）——1.20.1 ObjC 桥启动崩溃根修 + 输入/疾跑/键盘/齿轮/玻璃/依赖/文件夹/导入/字体/i18n 全家桶
+
+Work Log:
+- 环境同步：沙箱快照落后 450 提交（Task110 时代），fetch 后 fast-forward 到 e24a60a9；用户 token 存 .tok2（40B）；确认设备在 Task228 构建（"Task228 composite glass default" 锚点在场）
+- ①根因（ProGuard 官方映射 + CFR 反编译三重实证）：enn=Minecraft/ehn=Window.setIcon:154/ehg=MacosUtil.loadIcon:45——1.20.1 vanilla 的 loadIcon 经 ca.weblite.objc（java-objc-bridge 1.1，版本 json osx 规则库）调 sendProxy("NSData","alloc").send("initWithBase64Encoding:") + sendProxy("NSImage","alloc")；iOS 无 NSImage 类且 NSData 无 initWithBase64Encoding:（macOS legacy selector）→ jna-objc 的 methodSignatureForSelector 探测失败 → NoSuchMethodException:8668353440 硬崩。因果链：Task226 修好 JNA 重签名（桥可用）+ Task227 修好 AssetsHeal（icns 落位）→ loadIcon 首次读到字节走进 ObjC 墙（此前 icns 缺失走 NoSuchFileException 降级、崩在更晚的着色器阶段）。渲染器无关。修复：Task99 AppKitStub 扩展（NSImage 桩类 + NSData class_addMethod 补 legacy selector，真 macOS 守卫 + 幂等，JLI_Launch 前安装）
+- ①b+②后台：ACTION_MOVE grab 分支从不刷新 cLastX/cLastY（切后台后首个 MOVE 对陈旧基准算增量 = 视角猛甩）；新增 ame229_inputResumeReassert（SceneDelegate didBecomeActive）：重置光标基准 + 重放全部 toggle-held 修饰键（SDL 在 focus 迁移时清键盘状态，隐藏 SDL 窗永不持有焦点）
+- ②sprint/右Shift 三层根因：(a) 全会话零 LCtrl 事件（sprint 绑 left.control，用户没有按钮发它）；(b) "常用操作键"按钮 keycodes=[0,0,0,0]（空按钮）；(c) 26.3 实例 options.txt 是隔离新档（sneak=left.shift 默认）而 1.20.1 是用户绑定 right.shift → 右 SHIFT 按钮在 26.3 上打空。修复：设置页新增"切换疾跑"按钮（写 toggleSprint 到所有实例 options.txt，vanilla 辅助功能=按一次持续跑）+"同步键位到所有实例"（跨实例 key_key.* 单向同步，只补缺失不覆盖）+ 空键码按钮一次性诊断日志
+- ③：游戏内悬浮菜单（FCL 底部弹层/侧滑）T228 主界面退役时被顺带失去玻璃 → ame229_reapplyMenuGlass（LGCApplyGlassToView 组合玻璃，风格门控 + BackgroundUIEffectChanged 广播重铺）
+- ④（双源失效根因）：ModVersion 的 Modrinth 分支从不设 _apiSource（默认 0）→ resolver 把 Modrinth 数据塞进 CurseForge 解析分支（读 modId/relationType 全 miss）→ 0/0/0 err=none（设备日志 XaeroPlus->0 required vs API 实测 3 required+1 optional，dependencies 完整在场——API/镜像双实测排除数据形状）。修复：_apiSource=1（根）+ resolver 形状嗅探兜底（apiSource≠1 时按首条依赖键形判定）
+- ⑤双半：非 SDL（1.20.1）FolderBrowser 空白 = UITableViewController × makeViewControllerTransparent（backgroundView=nil 清空态 + 洗白 cell 叠毛玻璃 chrome）× 全局白描边字体（白字浅底隐形）三连 → 实底 sheet（systemBackground，系统 Files 同款）+ 空态迁 tableHeaderView + 3 label 描边豁免；SDL（26.3）无反应 = LWJGL 341 不加载 org.lwjgl.glfw.GLFW（其 static 块 System.load 主程序是 JNI_OnLoad 唯一触发点）→ CTCDesktopPeer natives 永不注册（新日志零锚点实锤）→ Amethyst_SetSDLWindow（SDL3 必经）里 ame229_registerCTCOnce：JNI_GetCreatedJavaVMs 恢复 JVM → GetEnv → registerOpenHandler
+- ⑥（无法关键盘）：Task227 的 chat-opener 3s 窗优先级高于显式收起——T 开聊天（清闩）→ 点✎收起（置闩）→ 3s 内游离 Start 又命中 chatOpener → 清闩弹回 → 循环（日志 10286-10294 三连实锤）。修复：显式收起后 2.5s 硬抑制窗（期内一切 Start 静默）+ recent-touch 清闩退役（屏幕触摸≠键盘意图）
+- ⑦（齿轮）：pan-vs-tap 竞争——UIKit 在 pan 识别（~10pt）即取消 TouchUpInside，游戏内用力轻点漂移 10-20pt，44×44 浮球必死而 26×96 把手能活（"拖到边上才有反应"形状吻合）→ pan 的 gestureRecognizerShouldBegin 24pt 起手阈值 + 点击链路限频日志。FCL 式"自动打开输入法（SDL）"开关：会话首个 Start 放行（后续仍走完整闩锁，不复活⑥）
+- ⑧：Ame229PickerMode 显式分流替代 awaitingExportDestination 旗标（陈旧旗标把导入选择误吞进导出收尾分支=静默跳过导入）+ 全链路日志锚点（presented/didPick/cancelled/restored）
+- ⑨⑩：描边 -2.6→-1.6 + 半透明描边色（0.82）+ 强化阴影（两处代码点：swizzle + applyAdaptiveTextToLabel——-2.6 描边画在填充之上吃掉密集 CJK 字腔"的"和线形字符"／"）；ame229_labelSetStrokeExempt 豁免 API（associated object）；coach marks 标题+正文豁免（白字白卡隐形=⑨空白根因）
+- ⑪：12 新键 × 5 语言（自动输入法开关/切换疾跑弹窗/键位同步反馈）；task191 校验器 54 语言 0 错；used⊆defined 审计绿（触碰文件）
+- 事故与修复：Task229-A 插入吞掉 ame99 闭合括号（新函数嵌进安装函数体内）——task225 括号审计抓住，补回 } 后 task139 36/36 绿；显示层吞字第 9/10 次实证（"ashes"/"ome" 幻影被纯字节计数证伪：mcNames/hashes 子串偏移 +1）
+- 验证链扫荡：l10n 计数 2715→2727（唯一键口径；34 条历史重复行保留；task135 集合字面量 {2715} + task151 自身的 stale-anchor 扫描器期望同步）；task225 D5/task226 O5/task227 J2 重锚到新描边值；全链绿 129/130/131/132/133/134/135/138/150/151/156/157/159/167/225/226/227 + task139 门 + 括号审计 + 54 语言校验
+- 环境性非回归记录：task140 G2（装机日志证据断言，基线同红）；task170/202/206 超沙箱 CPU 上限（基线同超时，Task228 已有同款记录）
+- verify_task229 71/71；提交 c81f0a95 推送成功
+
+Stage Summary:
+- 11 项反馈全部落地（1.20.1 启动崩溃/切后台输入/疾跑/右Shift/玻璃悬浮栏/依赖确认单/文件夹浏览器/键盘关闭/齿轮/FCL输入法开关/导入分流/欢迎页空白/字体黑线/i18n）
+- 装机验证锚点（优先级）：①"[AppKitStub] Task229: NSImage stub + NSData legacy-b64 selector installed" + 1.20.1 启动越过 Window.setIcon（下一关=Task227 ivec 着色器）；②"[input_bridge] Task229 CTCDesktopPeer natives registered via Amethyst_SetSDLWindow" + 26.3 游戏内开文件夹弹浏览器（有内容）；③切后台后输入不偏移 + toggle 的右Shift 跨后台存活（"[InputDiag] Task229 resume reassert: ... N toggle-held mod(s) re-driven"）；④XaeroPlus 下载前弹确认单（"[DownloadVC] Task227 dep-resolve: XaeroPlus -> 3 required"）+ 版本页 footer；⑤键盘点✎收起后不再弹回（"[SurfaceVC] Task229 hard suppression"）；⑥悬浮齿轮轻点即开（无需拖到边）；⑦切液态玻璃后游戏内菜单面板有玻璃质感（"[GameMenu] Task229 floating menu glass applied"）；⑧欢迎页圆圈介绍有文字；⑨字体无内部黑线；⑩设置页三个新项（自动输入法(SDL)/切换疾跑/同步键位）
+- 遗留：1.20.1 fabric-intermediary 类名的 MacosUtil 若报崩溃需补桩（本轮修 vanilla 混淆名 ehg）；CurseForge 依赖实测样本待装机确认（apiSource=2 路径代码正确但无设备证据）
