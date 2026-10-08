@@ -319,20 +319,27 @@ static const NSInteger kMaxDepth = 8;
         ModVersion *picked = nil;
         // 优先精确匹配 gameVersions + loaders；都不匹配时退回第一个版本
         // （宁可多装一个可能不兼容的前置，也好过整条依赖链断掉不提示）。
+        // ★ Task230（反馈 #7）：firstObject 兜底是"下载成不一样的加载器
+        //   mod"的另一半来源（安装侧 ame227_installDependencies 是主源，
+        //   已另修）。这里改为同款从严到宽链：双匹配 → 仅 loader 匹配 →
+        //   仅版本匹配（不再无条件 firstObject——那会把 NeoForge 最新版
+        //   当 fabric 前置的版本详情继续向下展开）。
+        ModVersion *ame230_loaderOnly = nil;
         for (ModVersion *v in versions) {
-            if (gameVersion.length > 0 && ![v.gameVersions containsObject:gameVersion]) continue;
+            BOOL ame230_gvOK = (gameVersion.length == 0) || [v.gameVersions containsObject:gameVersion];
+            BOOL ame230_ldOK = YES;
             if (loader.length > 0 && v.loaders.count > 0) {
                 NSString *lowered = loader.lowercaseString;
-                BOOL loaderOK = NO;
+                ame230_ldOK = NO;
                 for (NSString *l in v.loaders) {
                     if ([[l lowercaseString] containsString:lowered] ||
-                        [lowered containsString:[l lowercaseString]]) { loaderOK = YES; break; }
+                        [lowered containsString:[l lowercaseString]]) { ame230_ldOK = YES; break; }
                 }
-                if (!loaderOK) continue;
             }
-            picked = v;
-            break;
+            if (ame230_gvOK && ame230_ldOK) { picked = v; break; }
+            if (ame230_ldOK && ame230_loaderOnly == nil) ame230_loaderOnly = v;
         }
+        if (picked == nil) picked = ame230_loaderOnly;
         if (picked == nil) picked = versions.firstObject;
         completion(picked.rawDictionary, nil);
     };

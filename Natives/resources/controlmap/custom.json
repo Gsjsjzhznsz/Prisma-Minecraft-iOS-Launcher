@@ -727,7 +727,7 @@
         "dynamicX": "0.99601203 * ${screen_width} - (px(50.0) / 100.0 * ${preferred_scale}) - (px(44.0) / 100.0 * ${preferred_scale}) - ${margin} + (px(44.0) / 100.0 * ${preferred_scale}) + ${margin} - (px(50.0) / 100.0 * ${preferred_scale}) - ${margin} - ${width} - ${margin}",
         "displayInGame": true,
         "keycodes": [
-          0,
+          341,
           0,
           0,
           0

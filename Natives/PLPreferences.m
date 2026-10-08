@@ -128,6 +128,14 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
             @"mouse_scale": @(100),
             @"mouse_speed": @(100),
             @"virtmouse_enable": @NO,
+            // ★ Task230（反馈 #10：自动打开输入法（SDL）开关无效）：Task229
+            // 加开关时漏注册默认值——PLPreferences 只能读写已注册的键
+            //（Task142/143 mobileglues.renderer_backend 同款病历）：装机日志
+            // .1:62-74 实锤 Setter 写入被静默丢弃（"Setter could not find
+            // preference control.auto_keyboard_sdl"）→ Getter 恒回落默认
+            // false → SurfaceVC 的 auto-keyboard 分支永不触发。注册后写读
+            // 双向生效。
+            @"auto_keyboard_sdl": @NO,
             @"gyroscope_enable": @NO,
             @"gyroscope_invert_x_axis": @NO,
             @"gyroscope_sensitivity": @(100),

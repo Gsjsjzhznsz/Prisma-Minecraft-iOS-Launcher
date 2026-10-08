@@ -18,6 +18,7 @@
 #import "SurfaceViewController.h"
 #import "utils.h"
 #import "GameMenuOverlayView.h"
+#import "NMToast.h"      // Task230：未绑定按钮的游戏内悬浮提示
 #import "TrackedTextField.h"
 #import "TouchControllerBridge.h"
 #import "UIKit+hook.h"
@@ -238,6 +239,14 @@ static CFAbsoluteTime ame224_kbWatchDeadline = 0;
 // markedTextRange 双重守卫 + 手动 ✎ 开关不受影响——那两处直接走
 // ame171_keyboardDismissGeneration++ + resign，不经本块）。
 static dispatch_block_t ame223_pendingStopResign = NULL;
+// ★ Task230（反馈 #6：联机菜单输入一次键盘就关闭一次）：最近一次字符
+// 转发到 MC 的时刻。39633e4 装机日志（latestlog.1:4862-4882）实锤：联机
+// 菜单的地址输入框每个字符触发 StopTextInput，且下一个 StartTextInput
+// 迟到超过 250ms —— 防抖到期真收起（4878）后 Start 才到（4882 重开）
+// = 用户看到的"输一个字闪关一次"。打字活跃窗口（最近 2s 内有字符转发）
+// 内把收起去抖扩到 1.2s，MC 的上下文重建循环不再穿透；真会话结束
+// （ESC/发送，无近期打字）仍用 250ms 快收。
+static CFAbsoluteTime ame230_lastCharForwardedAt = 0.0;
 // ★ Task227（反馈 #7：无法关闭键盘，需手动点输入法按钮）：用户手动收起
 // 闩锁。ef1e3e2a 装机铁证：MC 26.3 会话里 SDL StartTextInput 在无文本
 // 上下文时反复到达（标题画面加载后/后台恢复后/画面切换时），
@@ -1396,8 +1405,8 @@ void ame139_fsr_heal_reset_input_scale(void) {
     // @" " 兜底，不清空不改变任何键盘行为。
     self.inputTextField.clearsOnBeginEditing = NO;
     self.inputTextField.textAlignment = NSTextAlignmentCenter;
-    self.inputTextField.sendChar = ^(jchar keychar){ CallbackBridge_nativeSendChar(keychar); };
-    self.inputTextField.sendCharMods = ^(jchar keychar, int mods){ CallbackBridge_nativeSendCharMods(keychar, mods); };
+    self.inputTextField.sendChar = ^(jchar keychar){ ame230_lastCharForwardedAt = CFAbsoluteTimeGetCurrent(); CallbackBridge_nativeSendChar(keychar); };
+    self.inputTextField.sendCharMods = ^(jchar keychar, int mods){ ame230_lastCharForwardedAt = CFAbsoluteTimeGetCurrent(); CallbackBridge_nativeSendCharMods(keychar, mods); };
     self.inputTextField.sendKey = ^(int key, int scancode, int action, int mods) { CallbackBridge_nativeSendKey(key, scancode, action, mods); };
     // Task224：打字活动刷新守望截止时间（长输入会话不断续期，
     // 见 ame171_armKeyboardRecheck 新语义）。
@@ -2651,12 +2660,22 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             dispatch_block_cancel(ame223_pendingStopResign);
             ame223_pendingStopResign = NULL;   // Task223 CI 修复：ARC 下静态强引用赋 NULL 即释放（Block_release 需桥接且与 ARC 双重释放）
         }
+        // ★ Task230（反馈 #6：联机菜单输入一次键盘就关闭一次）：打字活跃
+        //   自适应去抖窗——最近 2s 内有字符转发 = MC 的 Stop 大概率是每
+        //   字符上下文重建（39633e4 latestlog.1:4862-4882 实锤：联机地址框
+        //   的下一个 Start 迟到超过 250ms，防抖到期真收起后 Start 才到
+        //   重开 = 用户看到的"输一个字闪关一次"），收起窗扩到 1.2s 让
+        //   迟到的 Start 有机会取消；无近期打字 = 真会话结束（ESC/发送），
+        //   保持 250ms 快收不拖杏。
+        CFAbsoluteTime ame230_sinceChar = CFAbsoluteTimeGetCurrent() - ame230_lastCharForwardedAt;
+        NSTimeInterval ame230_resignDelay = (ame230_sinceChar < 2.0) ? 1.2 : 0.25;
         __weak typeof(self) weakSelf = self;
         // Task223 CI 修复：Block_copy → dispatch_block_create（ARC 安全 + 唯一支持
         // dispatch_block_cancel 的创建方式；被取消的块提交到 dispatch_after 后不再执行）。
         ame223_pendingStopResign = dispatch_block_create(0, ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
+            ame223_pendingStopResign = NULL;   // ★ Task230：触发即清指针——旧实现残留已执行块的悬挂指针，下一轮 Start 的"取消"分支变成假阳性（4880 行实锤）
             if (!strongSelf.inputTextField.isFirstResponder) return;
             if (strongSelf.inputTextField.markedTextRange != nil) {
                 NSLog(@"[SurfaceVC] Task223 IME debounce: resign skipped at fire time (composition active)");
@@ -2665,9 +2684,10 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             ame171_keyboardDismissGeneration++;
             [strongSelf ame225_resignInputTextField];
             strongSelf.inputTextField.alpha = 1.0f;
-            NSLog(@"[SurfaceVC] Task172 SDL stop-text-input: keyboard resigned with MC text context (debounced 250ms)");
+            NSLog(@"[SurfaceVC] Task172 SDL stop-text-input: keyboard resigned with MC text context (Task230 adaptive debounce %.0fms, since-char %.1fs)",
+                  ame230_resignDelay * 1000.0, ame230_sinceChar);
         });
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)),
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(ame230_resignDelay * NSEC_PER_SEC)),
                        dispatch_get_main_queue(), ame223_pendingStopResign);
     }
 }
@@ -3002,6 +3022,15 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             if (![s_ame229_zeroLogged containsObject:ame229_dedup]) {
                 [s_ame229_zeroLogged addObject:ame229_dedup];
                 NSLog(@"[InputDiag] Task229 UNBOUND button pressed: name=%@ keycodes all zero -- bind a key in the layout editor (e.g. Left Control 341 for sprint)", ame229_btnName);
+                // ★ Task230（反馈 #3：持续奔跑没有效果）：日志取证升级为
+                //   游戏内可见提示——用户按了未绑定按钮只会觉得"没反应"，
+                //   从不知道要去控件编辑器绑定。一次一按钮（会话去重），
+                //   NMToast 悬浮于游戏画面之上。
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [NMToast showMessage:[NSString stringWithFormat:
+                        localize(@"ame230.controls.unbound_toast", nil),
+                        [ame229_btnName stringByReplacingOccurrencesOfString:@"\n" withString:@""]]];
+                });
             }
         }
     }

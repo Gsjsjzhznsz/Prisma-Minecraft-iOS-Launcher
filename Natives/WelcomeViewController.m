@@ -162,6 +162,15 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    // ★ Task230（反馈 #12：欢迎界面圆圈焦点介绍空白）：向导整树豁免全局
+    //   白底描边字体。向导各步的标签都铺在 systemBackground /
+    //   secondarySystemGroupedBackgroundColor 的实底卡上（labelColor 语义），
+    //   壁纸在场时 swizzle 染白 = 浅底白字隐形（介绍页/焦点介绍全部
+    //   "空白"的根因）。树级豁免一处打标，全部动态创建的步骤标签覆盖。
+    {
+        extern void ame230_setViewTreeStrokeExempt(UIView *, BOOL);
+        ame230_setViewTreeStrokeExempt(self.view, YES);
+    }
     // ★ Task223（清单第 14/21 项）：欢迎页接入壁纸 + 动态反色。
     //   旧实现：不透明 systemBackground——全局背景容器被全屏呈现的向导盖住
     //   = “欢迎画面依旧没有显示自定义壁纸”。新实现：自带壁纸图层（与视图

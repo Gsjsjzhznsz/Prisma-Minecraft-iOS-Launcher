@@ -248,7 +248,11 @@
         UIMenuItem *actionAddJoystick = [[UIMenuItem alloc] initWithTitle:localize(@"custom_controls.control_menu.add_joystick", nil) action:@selector(actionMenuAddJoystick)];
         // Task188：FCL 式控件仓库入口（下载社区布局到 controlmap 后用“加载”应用）
         UIMenuItem *actionRepo = [[UIMenuItem alloc] initWithTitle:localize(@"custom_controls.control_menu.repo", nil) action:@selector(actionMenuRepo)];
-        [menuController setMenuItems:@[actionExit, actionSave, actionLoad, actionRestoreDefault, actionSafeArea, actionAddButton, actionAddDrawer, actionAddJoystick, actionRepo]];
+        // ★ Task230（反馈 #13）：编辑器上传入口——把当前正在编辑的布局
+        //   直接送进上传流程（仓库页入口选已安装布局，这里免选、带着
+        //   currentFileName 预填）。
+        UIMenuItem *actionUpload = [[UIMenuItem alloc] initWithTitle:localize(@"ame230.repo.upload_editor", nil) action:@selector(actionMenuUpload)];
+        [menuController setMenuItems:@[actionExit, actionSave, actionLoad, actionRestoreDefault, actionSafeArea, actionAddButton, actionAddDrawer, actionAddJoystick, actionRepo, actionUpload]];
 
         CGPoint point = [sender locationInView:sender.view];
         self.selectedPoint = CGRectMake(point.x, point.y, 1.0, 1.0);
@@ -384,6 +388,15 @@
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:repo];
     nav.modalPresentationStyle = UIModalPresentationPageSheet;
     [self presentViewController:nav animated:YES completion:nil];
+}
+
+/// ★ Task230（反馈 #13）：编辑器上传入口——当前布局直接进上传流程。
+///   不在此处强制弹保存框（保存菜单近在咫尺，双弹冲突）；上传读取的是
+///   controlmap/<file>.json 的最后一次保存内容。
+- (void)actionMenuUpload {
+    NSString *ame230_pre = self.currentFileName.length > 0
+        ? [NSString stringWithFormat:@"%@.json", self.currentFileName] : nil;
+    [ControlRepoViewController ame230_presentUploadFlowFrom:self preselect:ame230_pre];
 }
 
 - (void)actionMenuSafeArea {

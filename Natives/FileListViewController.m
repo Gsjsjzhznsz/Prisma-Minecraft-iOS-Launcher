@@ -12,8 +12,19 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // 适配自定义启动器背景：将当前视图控制器透明化，使全局背景壁纸能够透出
-    [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
+    // ★ Task230（反馈 #8：文件夹只显示毛玻璃覆盖层和名称，不显示内容）：
+    //   旧透明管线（makeViewControllerTransparent：clear 视图 + clear 表格
+    //   + 洗白单元格）让列表内容隐形——与 Task229 修的 FolderBrowser 同款
+    //   病，但这个遗留的 .json 选择器（自定义控件/偏好配置页在用）漏了。
+    //   改为实底（与系统文件 App 同观感）：背景重申不交还透明管线。
+    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    self.tableView.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+    self.tableView.backgroundView = nil;
+    {
+        // 整树豁免全局白底描边字体（实底浅色列表上白字隐形）
+        extern void ame230_setViewTreeStrokeExempt(UIView *, BOOL);
+        ame230_setViewTreeStrokeExempt(self.view, YES);
+    }
 
     if (self.fileList == nil) {
         self.fileList = [NSMutableArray array];
@@ -42,9 +53,11 @@
                                                object:nil];
 }
 
-/// 背景效果改变时重新应用透明化（由 BackgroundUIEffectChanged 通知触发）
+/// 背景效果改变时重申实底（不再交还透明管线——旧重铺会把列表洗回隐形）
 - (void)reapplyBackgroundEffect {
-    [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
+    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    self.tableView.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+    self.tableView.backgroundView = nil;
 }
 
 - (void)dealloc {
@@ -65,6 +78,9 @@
     }
 
     cell.textLabel.text = [self.fileList objectAtIndex:indexPath.row];
+    // Task230：实底列表 + 语义色（白底描边字体豁免后的原生观感）
+    cell.textLabel.textColor = [UIColor labelColor];
+    cell.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
     return cell;
 }
 

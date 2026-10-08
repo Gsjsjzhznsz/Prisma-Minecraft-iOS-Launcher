@@ -15,6 +15,12 @@ if not FILES:
     sys.exit(0)
 
 def strip(src):
+    # Task230 fix: #pragma lines are preprocessor directives, not code --
+    # "#pragma mark - 1) xxx" section titles carry literal ')' that poisoned
+    # the count (sdl3_hook.m showed a stable -6 phantom imbalance at HEAD
+    # that could never surface before because the file was never modified).
+    src = "\n".join("" if ln.lstrip().startswith("#pragma") else ln
+                     for ln in src.split("\n"))
     out = []
     i, n = 0, len(src)
     STATE_CODE, STATE_LINE, STATE_BLOCK, STATE_STR, STATE_CHAR = range(5)

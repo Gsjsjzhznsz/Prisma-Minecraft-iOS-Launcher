@@ -420,6 +420,7 @@ typedef NS_ENUM(NSInteger, Ame229PickerMode) {
         NSString *home = @(getenv("POJAV_HOME"));
         NSError *err = nil;
         __block NSString *failMsg = nil;
+        NSString *ame230_summaryExtras = @"";   // Task230：导入摘要（实例数/当前实例/存档数）
 
         // staging：解压中转目录（先解压再合并，避免半写状态直接进 POJAV_HOME）
         NSString *staging = [NSTemporaryDirectory() stringByAppendingPathComponent:
@@ -497,6 +498,29 @@ typedef NS_ENUM(NSInteger, Ame229PickerMode) {
             } @catch (NSException *ame227_e) {
                 NSLog(@"[DataTransfer] Task227: post-import merge exception (%@) -- will run on next launch", ame227_e);
             }
+            // ★ Task230（反馈 #11：备份导入无效，复发轮）：三件收尾，把"日志
+            //   里成功、用户眼里无效"的落差补上。39633e4 装机日志（.2 会话，
+            //   全新安装 onboarding 中导入）：10186 个文件恢复 (ok) + 合并
+            //   执行 + restored-instance-present=YES——但 PLPreferences 的
+            //   内存缓存仍是全新安装的默认值（合并落盘的新 plist 无人重读）、
+            //   实例列表/主界面无人刷新、toast 只报文件数。修法：
+            //   ① loadPreferences(NO) 从磁盘重载偏好（导入可能带回了
+            //      launcher_preferences_v2.plist）；
+            //   ② 发 AppLanguageChanged 通知触发根视图重建（实例列表、
+            //      面板状态全量刷新——与语言切换同链路，久经验证）；
+            //   ③ toast 换成结构化摘要（实例数/存档数 + 当前实例名提示）。
+            @try {
+                extern void loadPreferences(BOOL reset);
+                loadPreferences(NO);
+                NSLog(@"[DataTransfer] Task230: preferences reloaded from disk after import");
+            } @catch (NSException *ame230_e) {
+                NSLog(@"[DataTransfer] Task230: preference reload exception (%@)", ame230_e);
+            }
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"AppLanguageChanged"
+                                                                    object:[getPrefObject(@"general.app_language") isKindOfClass:NSString.class]
+                                                                        ? (NSString *)getPrefObject(@"general.app_language") : @"system"];
+            });
             NSString *ame227_gd = [getPrefObject(@"general.game_directory") isKindOfClass:NSString.class]
                 ? (NSString *)getPrefObject(@"general.game_directory") : @"default";
             if (ame227_gd.length == 0) ame227_gd = @"default";
@@ -505,6 +529,21 @@ typedef NS_ENUM(NSInteger, Ame229PickerMode) {
             BOOL ame227_hasInstance = [fm fileExistsAtPath:ame227_instPath];
             NSLog(@"[DataTransfer] Task227: current instance = %@ (%@), restored-instance-present = %@",
                   ame227_gd, ame227_instPath.lastPathComponent, ame227_hasInstance ? @"YES" : @"NO");
+            // Task230：实例/存档清单（摘要 toast 的数据源 + 取证锚点）
+            NSUInteger ame230_instanceCount = 0;
+            NSString *ame230_instancesDir = [NSString stringWithFormat:@"%s/instances", getenv("POJAV_HOME")];
+            NSArray<NSString *> *ame230_instances = [fm contentsOfDirectoryAtPath:ame230_instancesDir error:nil] ?: @[];
+            for (NSString *ame230_name in ame230_instances) {
+                BOOL ame230_isDir = NO;
+                NSString *ame230_p = [ame230_instancesDir stringByAppendingPathComponent:ame230_name];
+                if ([fm fileExistsAtPath:ame230_p isDirectory:&ame230_isDir] && ame230_isDir) ame230_instanceCount++;
+            }
+            NSUInteger ame230_savesCount = [fm contentsOfDirectoryAtPath:
+                [ame227_instPath stringByAppendingPathComponent:@"saves"] error:nil].count;
+            NSLog(@"[DataTransfer] Task230: import summary -- %lu instance(s) under POJAV_HOME, current=%@ saves=%lu",
+                  (unsigned long)ame230_instanceCount, ame227_gd, (unsigned long)ame230_savesCount);
+            ame230_summaryExtras = [NSString stringWithFormat:localize(@"ame230.import.summary", nil),
+                                    (unsigned long)ame230_instanceCount, ame227_gd, (unsigned long)ame230_savesCount];
         }
 
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -516,7 +555,9 @@ typedef NS_ENUM(NSInteger, Ame229PickerMode) {
                     return;
                 }
                 [self ame217_showToastOrAlert:
-                    [NSString stringWithFormat:localize(@"ame227.import.done", nil), (long)restored]];
+                    [NSString stringWithFormat:@"%@\n%@",
+                        [NSString stringWithFormat:localize(@"ame227.import.done", nil), (long)restored],
+                        ame230_summaryExtras]];
             }];
         });
     });

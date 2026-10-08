@@ -406,6 +406,34 @@ void* hooked_dlopen(const char* path, int mode) {
         }
         return NULL;
     }
+    // ------------------------------------------------------------------
+    // Task230（反馈 #5：局域网联机首开闪退、第二次正常）：拦截 netty 的
+    // 原生传输库（kqueue/epoll）。
+    //
+    // 39633e4 装机日志（latestlog.old，26.3 会话 PID 14335）铁证：用户在
+    // 暂停菜单点"对局域网开放"的瞬间（00:13:37），netty 从 jar 解包
+    // libnetty_transport_native_kqueue_aarch_64<rand>.dylib 并 System.load
+    // —— hooked_dlopen 走 PLPatchMachOPlatformForFile 重标签 + in-place
+    // ad-hoc 重签，日志最后一行正是
+    //   "[Amethyst] Task107: re-signed ad-hoc after platform retag (in place)
+    //    (...netty/libnetty_transport_native_kqueue...)"
+    // 随后进程无任何 exit 标记、无崩溃报告、连每秒的 RenderDiag 都戛然而
+    // 止 = SIGKILL 形状（重签产物首载被 AMFI/dyld 击杀）。第二次会话
+    // （latestlog.1，PID 14354）LAN 发布成功且全程走 LocalIoHandler/NIO
+    // 纯 Java 路径、零 Task107 行 = kqueue 原生从未被真正需要。
+    // 与 Task106 的 spark 同款处理：netty 对 UnsatisfiedLinkError 有完整
+    // 降级（KQueue.isAvailable()=false -> NioEventLoopGroup），纯 Java NIO
+    // 在本设备已被第二次会话实证可用。拦截 = 零风险根治。
+    // 保险丝：JVM 参数侧另加 -Dio.netty.transport.noNative=true（见
+    // JavaLauncher 的参数拼装），双保险。
+    if (path != NULL && strstr(path, "netty_transport_native") != NULL) {
+        static int s_ame230_blocked = 0;
+        if (s_ame230_blocked < 3) {
+            ++s_ame230_blocked;
+            NSLog(@"[Amethyst] Task230: blocked dlopen of netty native transport (%s) -- first LAN open crashed the process at the re-sign/dlopen window (39633e4 latestlog.old tail); netty falls back to pure-Java NIO (proven by the second session publishing LAN fine)", path);
+        }
+        return NULL;
+    }
     // 同步自上游：非 TXM 的 iOS 26+ 设备需要硬件断点重定向（hooked_dlopen_26_ppl）
     BOOL shouldUseDyldBypass26PPL = NO;
     if (DeviceHasJITFlags(JIT_FLAG_FORCE_MIRRORED)) {

@@ -53,6 +53,76 @@ static NSString *task189_mirrorURL(NSInteger idx, NSString *relPath) {
 @property (nonatomic, assign) BOOL loadFailed;
 @end
 
+// ============================================================================
+// ★ Task230（反馈 #13：控件仓库——允许任何人上传控件 + 下载时静默检查
+//   恶意代码）：布局是纯数据 JSON（无代码执行面），"恶意"向量是结构性
+//   的——超大文件（解析 DoS）、海量按钮（渲染/内存压垮）、超长字符串
+//   （UI 溢出/注入显示层）、键码离谱值（触发越界查表）、内嵌 URL（钓鱼
+//   跳转）。ame230_layoutSafetyCheck 全量覆盖，下载/导入静默执行，未过
+//   检即拒装并留痕。
+// ============================================================================
+static BOOL ame230_stringSafe(NSString *s) {
+    if (s.length > 256) return NO;
+    NSRange ame230_r = [s rangeOfString:@"http://" options:NSCaseInsensitiveSearch];
+    if (ame230_r.location != NSNotFound) return NO;
+    ame230_r = [s rangeOfString:@"https://" options:NSCaseInsensitiveSearch];
+    if (ame230_r.location != NSNotFound) return NO;
+    return YES;
+}
+
+static BOOL ame230_nodeSafe(id node, int depth, NSUInteger *btnCount, NSString **reason) {
+    if (depth > 8) { *reason = @"nesting too deep"; return NO; }
+    if ([node isKindOfClass:[NSString class]]) {
+        if (!ame230_stringSafe(node)) { *reason = @"unsafe string"; return NO; }
+        return YES;
+    }
+    if ([node isKindOfClass:[NSNumber class]]) return YES;
+    if ([node isKindOfClass:[NSDictionary class]]) {
+        // 按钮节点：keycodes 数组必须 4 个 [-20, 400] 整数
+        NSArray *kc = [(NSDictionary *)node objectForKey:@"keycodes"];
+        if ([kc isKindOfClass:[NSArray class]]) {
+            (*btnCount)++;
+            if (kc.count > 4) { *reason = @"keycodes > 4"; return NO; }
+            for (id k in kc) {
+                if (![k isKindOfClass:[NSNumber class]]) { *reason = @"keycode not number"; return NO; }
+                NSInteger v = [k integerValue];
+                if (v < -20 || v > 400) { *reason = @"keycode out of range"; return NO; }
+            }
+        }
+        for (NSString *k in [(NSDictionary *)node allKeys]) {
+            if (!ame230_stringSafe(k)) { *reason = @"unsafe key"; return NO; }
+            if (!ame230_nodeSafe([(NSDictionary *)node objectForKey:k], depth + 1, btnCount, reason)) return NO;
+        }
+        return YES;
+    }
+    if ([node isKindOfClass:[NSArray class]]) {
+        for (id v in (NSArray *)node) {
+            if (!ame230_nodeSafe(v, depth + 1, btnCount, reason)) return NO;
+        }
+        return YES;
+    }
+    return YES;  // NSNull 等
+}
+
+/// 布局安全检查（静默版恶意代码检查）。返回 YES = 安全。
+static BOOL ame230_layoutSafetyCheck(NSData *raw, id jsonObj, NSString **reasonOut) {
+    NSString *ame230_reason = nil;
+    do {
+        if (raw.length > 2 * 1024 * 1024) { ame230_reason = @"file > 2MB"; break; }
+        if (![jsonObj isKindOfClass:[NSDictionary class]] ||
+            ![[jsonObj objectForKey:@"mControlDataList"] isKindOfClass:[NSArray class]]) {
+            ame230_reason = @"not a control layout"; break;
+        }
+        NSUInteger ame230_btns = 0;
+        if (!ame230_nodeSafe(jsonObj, 0, &ame230_btns, &ame230_reason)) break;
+        if (ame230_btns > 400) { ame230_reason = @"too many buttons"; break; }
+        if (reasonOut) *reasonOut = nil;
+        return YES;
+    } while (0);
+    if (reasonOut) *reasonOut = ame230_reason;
+    return NO;
+}
+
 @implementation ControlRepoViewController
 
 - (NSInteger)task189_stickyMirror {
@@ -119,6 +189,13 @@ static NSString *task189_mirrorURL(NSInteger idx, NSString *relPath) {
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc]
         initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh
                              target:self action:@selector(refreshRepo:)];
+    // ★ Task230（反馈 #13）：上传入口——任何人都可把已安装布局上传到
+    //   仓库（元信息表单 + 安全检查 + 分享/GitHub 提交双通道）。
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc]
+        initWithTitle:localize(@"ame230.repo.upload", nil)
+                style:UIBarButtonItemStyleDone
+               target:self
+               action:@selector(ame230_uploadTapped:)];
     self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(refreshRepo:)
                   forControlEvents:UIControlEventValueChanged];
@@ -126,6 +203,11 @@ static NSString *task189_mirrorURL(NSInteger idx, NSString *relPath) {
     self.tableView.estimatedRowHeight = 76.0;
     [self scanLocalVersions];
     [self fetchIndex];
+}
+
+/// Task230：上传入口点击 → 选已安装布局 → 填元信息 → 安全检查 → 提交。
+- (void)ame230_uploadTapped:(id)sender {
+    [ControlRepoViewController ame230_presentUploadFlowFrom:self preselect:nil];
 }
 
 /// 扫描本地 controlmap/ 的同名文件，计算"已下载/可更新"角标数据。
@@ -283,6 +365,17 @@ static NSString *task189_mirrorURL(NSInteger idx, NSString *relPath) {
                 [NMToast showMessage:localize(@"custom_controls.repo.download.invalid", nil)];
                 return;
             }
+            // ★ Task230（反馈 #13：下载时静默检查恶意代码）：结构性安全检查
+            //   （体积/按钮数/键码范围/字符串长度/内嵌 URL/嵌套深度）。
+            //   静默执行；未过检拒装并留取证日志。
+            NSString *ame230_why = nil;
+            if (!ame230_layoutSafetyCheck(data, obj, &ame230_why)) {
+                NSLog(@"[ControlRepo] Task230: layout %@ BLOCKED by safety check (%@)",
+                      layoutId, ame230_why ?: @"unknown");
+                [NMToast showMessage:localize(@"ame230.repo.safety_blocked", nil)];
+                return;
+            }
+            NSLog(@"[ControlRepo] Task230: layout %@ passed safety check (silent)", layoutId);
             NSString *dir = [NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")];
             ame188_ensureDirectoryHealed(dir);
             NSString *dest = [dir stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.json", layoutId]];
@@ -296,6 +389,155 @@ static NSString *task189_mirrorURL(NSInteger idx, NSString *relPath) {
             if (self.whenLayoutDownloaded) self.whenLayoutDownloaded(layoutId);
         });
     }];
+}
+
+#pragma mark - Task230：上传流程（反馈 #13）
+
+/// Task230：已安装布局清单（controlmap/ 下全部 .json，排除 gamepads 子目录）。
++ (NSArray<NSString *> *)ame230_installedLayoutFileNames {
+    NSString *dir = [NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")];
+    NSMutableArray<NSString *> *out = [NSMutableArray array];
+    for (NSString *f in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:dir error:nil] ?: @[]) {
+        if ([f hasSuffix:@".json"]) [out addObject:f];
+    }
+    return out;
+}
+
+/// Task230：上传主流程（仓库页与控件编辑器共用）。
+///   ① 选已安装布局（preselect 非空则跳过）；
+///   ② 填写元信息（名称/作者/描述——详细信息即仓库条目字段）；
+///   ③ 同款安全检查（上传侧也拦截——不把危险件送进仓库）；
+///   ④ 双通道提交：系统分享（导出提交文件，任意渠道发给维护者）或
+///      GitHub 网页建文件深链（预填路径+内容，登录用户一键提 PR）。
++ (void)ame230_presentUploadFlowFrom:(UIViewController *)presenter preselect:(NSString *)preselect {
+    void (^fillForm)(NSString *) = ^(NSString *fileName) {
+        UIAlertController *form = [UIAlertController
+            alertControllerWithTitle:localize(@"ame230.repo.upload.form.title", nil)
+                             message:[NSString stringWithFormat:localize(@"ame230.repo.upload.form.message", nil), fileName]
+                      preferredStyle:UIAlertControllerStyleAlert];
+        [form addTextFieldWithConfigurationHandler:^(UITextField *t) {
+            t.placeholder = localize(@"ame230.repo.upload.name", nil);
+            t.text = fileName.stringByDeletingPathExtension;
+        }];
+        [form addTextFieldWithConfigurationHandler:^(UITextField *t) {
+            t.placeholder = localize(@"ame230.repo.upload.author", nil);
+        }];
+        [form addTextFieldWithConfigurationHandler:^(UITextField *t) {
+            t.placeholder = localize(@"ame230.repo.upload.desc", nil);
+        }];
+        [form addAction:[UIAlertAction actionWithTitle:localize(@"global.share", nil)
+                                                 style:UIAlertActionStyleDefault
+                                               handler:^(UIAlertAction *a) {
+            [ControlRepoViewController ame230_finishUploadFrom:presenter
+                                                      fileName:fileName
+                                                          name:form.textFields[0].text
+                                                        author:form.textFields[1].text
+                                                     depiction:form.textFields[2].text
+                                                    viaGitHub:NO];
+        }]];
+        [form addAction:[UIAlertAction actionWithTitle:localize(@"ame230.repo.upload.github", nil)
+                                                 style:UIAlertActionStyleDefault
+                                               handler:^(UIAlertAction *a) {
+            [ControlRepoViewController ame230_finishUploadFrom:presenter
+                                                      fileName:fileName
+                                                          name:form.textFields[0].text
+                                                        author:form.textFields[1].text
+                                                     depiction:form.textFields[2].text
+                                                    viaGitHub:YES];
+        }]];
+        [form addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+                                                 style:UIAlertActionStyleCancel handler:nil]];
+        if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+            form.popoverPresentationController.sourceView = presenter.view;
+            form.popoverPresentationController.sourceRect = CGRectMake(presenter.view.bounds.size.width / 2.0,
+                                                                       presenter.view.bounds.size.height / 2.0, 1, 1);
+        }
+        [presenter presentViewController:form animated:YES completion:nil];
+    };
+
+    if (preselect.length > 0) { fillForm(preselect); return; }
+    NSArray<NSString *> *installed = [self ame230_installedLayoutFileNames];
+    if (installed.count == 0) {
+        [NMToast showMessage:localize(@"ame230.repo.upload.no_layouts", nil)];
+        return;
+    }
+    UIAlertController *picker = [UIAlertController
+        alertControllerWithTitle:localize(@"ame230.repo.upload.pick", nil)
+                         message:nil
+                  preferredStyle:UIAlertActionStyleActionSheet];
+    for (NSString *f in installed) {
+        [picker addAction:[UIAlertAction actionWithTitle:f.stringByDeletingPathExtension
+                                                   style:UIAlertActionStyleDefault
+                                                 handler:^(UIAlertAction *a) { fillForm(f); }]];
+    }
+    [picker addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+                                               style:UIAlertActionStyleCancel handler:nil]];
+    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+        picker.popoverPresentationController.sourceView = presenter.view;
+        picker.popoverPresentationController.sourceRect = CGRectMake(presenter.view.bounds.size.width / 2.0,
+                                                                     presenter.view.bounds.size.height / 2.0, 1, 1);
+    }
+    [presenter presentViewController:picker animated:YES completion:nil];
+}
+
+/// Task230：上传收尾——安全检查 → 提交文件生成 → 分享 / GitHub 深链。
++ (void)ame230_finishUploadFrom:(UIViewController *)presenter
+                       fileName:(NSString *)fileName
+                           name:(NSString *)name
+                         author:(NSString *)author
+                      depiction:(NSString *)depiction
+                     viaGitHub:(BOOL)viaGitHub {
+    NSString *dir = [NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")];
+    NSString *src = [dir stringByAppendingPathComponent:fileName];
+    NSData *raw = [NSData dataWithContentsOfFile:src];
+    id obj = [NSJSONSerialization JSONObjectWithData:raw options:0 error:nil];
+    NSString *why = nil;
+    if (raw == nil || !ame230_layoutSafetyCheck(raw, obj, &why)) {
+        NSLog(@"[ControlRepo] Task230: upload REJECTED by safety check (%@): %@", why, fileName);
+        [NMToast showMessage:[NSString stringWithFormat:@"%@ (%@)",
+            localize(@"ame230.repo.safety_blocked", nil), why ?: @"?"]];
+        return;
+    }
+    // 提交文件：元信息包裹布局（维护者合入 controls/index.json + layouts/）
+    NSString *ame230_id = fileName.stringByDeletingPathExtension;
+    NSDictionary *submission = @{
+        @"id": ame230_id,
+        @"name": name.length > 0 ? name : ame230_id,
+        @"author": author.length > 0 ? author : @"anonymous",
+        @"description": depiction.length > 0 ? depiction : @"",
+        @"version": @"1",
+        @"file": [NSString stringWithFormat:@"layouts/%@.json", ame230_id],
+        @"layout": obj,
+    };
+    NSData *out = [NSJSONSerialization dataWithJSONObject:submission options:NSJSONWritingPrettyPrinted error:nil];
+    if (out == nil) {
+        [NMToast showMessage:localize(@"ame230.repo.upload.invalid", nil)];
+        return;
+    }
+    NSString *tmp = [NSTemporaryDirectory() stringByAppendingPathComponent:
+        [NSString stringWithFormat:@"prisma-control-upload-%@.json", ame230_id]];
+    [out writeToFile:tmp options:NSDataWritingAtomic error:nil];
+    NSLog(@"[ControlRepo] Task230: upload submission ready (%lu bytes, safety-passed) via %@",
+          (unsigned long)out.length, viaGitHub ? @"GitHub link" : @"share sheet");
+    if (viaGitHub) {
+        // GitHub 网页建文件深链：预填路径 + 内容（需网页端登录；一键提 PR）
+        NSString *json = [[NSString alloc] initWithData:out encoding:NSUTF8StringEncoding];
+        NSString *link = [NSString stringWithFormat:
+            @"https://github.com/%@/%@/new/%@?filename=controls%%2Flayouts%%2Fcommunity%%2F%@.json&value=%@",
+            kTask189RepoOwner, kTask189RepoName, kTask189RepoRef, ame230_id,
+            [json stringByAddingPercentEncodingWithAllowedCharacters:
+                [NSCharacterSet alphanumericCharacterSet]]];
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:link]
+                                           options:@{} completionHandler:nil];
+        [NMToast showMessage:localize(@"ame230.repo.upload.github_hint", nil)];
+    } else {
+        UIActivityViewController *avc = [[UIActivityViewController alloc]
+            initWithActivityItems:@[[NSURL fileURLWithPath:tmp]]
+             applicationActivities:nil];
+        avc.popoverPresentationController.sourceView = presenter.view;
+        avc.popoverPresentationController.sourceRect = presenter.view.bounds;
+        [presenter presentViewController:avc animated:YES completion:nil];
+    }
 }
 
 @end

@@ -5715,15 +5715,52 @@ static NSString *PLSha1FromPrimaryFile(NSDictionary *primaryFile) {
         [remaining removeObjectAtIndex:0];
 
         // 拉该前置的版本列表，挑一个匹配当前实例 loader / MC 版本的，再下载。
+        // ★ Task230（反馈 #7：会下载成不一样的加载器 mod）：旧实现【只匹配
+        //   MC 版本、从不匹配 loader】（注释写着"挑匹配 loader / MC 版本的"
+        //   但代码没有 loader 判定），失配即 firstObject = 最新版可能是
+        //   NeoForge/Quilt 构建——XaeroPlus 在 fabric-0.19.5-26.3 实例上装出
+        //   别家加载器的前置 = 用户反馈原话。新挑选链（从严到宽）：
+        //   ① 游戏版本 + 加载器双匹配；
+        //   ② 仅加载器匹配（版本号字符串对不上时兜底——Modrinth 新版本
+        //      号体系的 game_versions 标注滞后是常态，装 fabric 系仍能跑）；
+        //   ③ 仅游戏版本匹配（标记 loaderMismatch，仍装但日志+汇总留痕）；
+        //   ④ 全失配 → 跳过该前置（failures 记名），绝不静默装错加载器。
         void (^pickAndDownload)(NSArray<ModVersion *> *, NSError *) = ^(NSArray<ModVersion *> *versions, NSError *error) {
             ModVersion *picked = nil;
             NSString *ame227_gv = [strongSelf currentProfileMinecraftVersion];
+            NSString *ame230_loader = [strongSelf currentProfileLoader];
+            BOOL (^ame230_loaderOK)(ModVersion *) = ^BOOL(ModVersion *v) {
+                if (ame230_loader.length == 0 || v.loaders.count == 0) return YES;
+                NSString *ame230_lower = ame230_loader.lowercaseString;
+                for (NSString *l in v.loaders) {
+                    if ([[l lowercaseString] containsString:ame230_lower] ||
+                        [ame230_lower containsString:[l lowercaseString]]) return YES;
+                }
+                return NO;
+            };
+            ModVersion *ame230_loaderOnly = nil;
+            ModVersion *ame230_gvOnly = nil;
             for (ModVersion *v in versions) {
-                if (ame227_gv.length > 0 && ![v.gameVersions containsObject:ame227_gv]) continue;
-                picked = v;
-                break;
+                BOOL ame230_gvOK = (ame227_gv.length == 0) || [v.gameVersions containsObject:ame227_gv];
+                BOOL ame230_ldOK = ame230_loaderOK(v);
+                if (ame230_gvOK && ame230_ldOK) { picked = v; break; }
+                if (ame230_ldOK && ame230_loaderOnly == nil) ame230_loaderOnly = v;
+                if (ame230_gvOK && ame230_gvOnly == nil) ame230_gvOnly = v;
             }
-            if (picked == nil) picked = versions.firstObject;
+            BOOL ame230_loaderMismatch = NO;
+            if (picked == nil) picked = ame230_loaderOnly;          // ② 仅加载器匹配
+            if (picked == nil) { picked = ame230_gvOnly; ame230_loaderMismatch = (picked != nil); }  // ③ 仅版本匹配
+            if (picked == nil && versions.count > 0) {              // ④ 全失配：跳过，不装错加载器
+                NSLog(@"[DownloadVC] Task230 dep skipped (no version matches loader=%@ gv=%@): %@",
+                      ame230_loader, ame227_gv, dep.projectId);
+                [failures addObject:[NSString stringWithFormat:@"%@ (loader mismatch)", dep.projectId ?: @"?"]];
+                nextStep();
+                return;
+            }
+            if (ame230_loaderMismatch) {
+                NSLog(@"[DownloadVC] Task230 dep loader-mismatch fallback (loader=%@ has no matching build; installing gv-matched %@)",
+                      ame230_loader, picked.name);
+            }
             NSDictionary *pf = picked.primaryFile;
             if (error || ![pf[@"url"] isKindOfClass:[NSString class]]) {
                 [failures addObject:dep.projectId ?: @"?"];

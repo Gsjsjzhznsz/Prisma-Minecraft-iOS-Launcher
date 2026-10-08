@@ -9,6 +9,7 @@
 #import "installer/modpack/CurseForgeAPI.h"
 #import "AssetDetailHeaderView.h"
 #import "BackgroundManager.h"
+#import <objc/runtime.h>   // Task230：前置快速入口按钮的关联对象传参
 
 // ============================================================================
 // 下载源常量（与 ModVersion.apiSource 字段保持一致：1=Modrinth, 2=CurseForge）
@@ -708,12 +709,47 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
         dispatch_group_notify(ame227_fg, dispatch_get_main_queue(), ^{
             __strong typeof(weakSelf) strongSelf2 = weakSelf;
             if (!strongSelf2) return;
+            // ★ Task230（反馈 #7：不显示前置快速入口）：footer 从纯文本升级为
+            //   PCL2CE 风格的可点条目——标题行 + 每个前置一行按钮（名称 +
+            //   必需/可选标记），点按直达该项目的 Modrinth/CurseForge 页面
+            //   （快速查看/手动安装入口）。下载时的"一起安装前置"确认单
+            //   保持不变。
             NSMutableString *ame227_names = [NSMutableString string];
             for (ModDependencyItem *ame227_dep in ame227_req) {
                 if (ame227_names.length > 0) [ame227_names appendString:@", "];
                 [ame227_names appendString:ame227_dep.displayName ?: ame227_dep.projectId];
             }
-            UIView *ame227_footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, strongSelf2.tableView.bounds.size.width, 72)];
+            CGFloat ame230_w = strongSelf2.tableView.bounds.size.width;
+            NSMutableArray<UIButton *> *ame230_rows = [NSMutableArray array];
+            for (ModDependencyItem *ame227_dep in ame227_req) {
+                NSString *ame230_title = [NSString stringWithFormat:@"▸  %@ (%@)",
+                                          ame227_dep.displayName ?: ame227_dep.projectId,
+                                          ame227_dep.kind == ModDependencyKindRequired
+                                              ? localize(@"ame230.deps.required", nil)
+                                              : localize(@"ame230.deps.optional", nil)];
+                UIButton *ame230_btn = [UIButton buttonWithType:UIButtonTypeSystem];
+                [ame230_btn setTitle:ame230_title forState:UIControlStateNormal];
+                ame230_btn.titleLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
+                ame230_btn.titleLabel.numberOfLines = 1;
+                ame230_btn.titleLabel.adjustsFontSizeToFitWidth = YES;
+                ame230_btn.titleLabel.minimumScaleFactor = 0.7;
+                ame230_btn.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+                ame230_btn.contentEdgeInsets = UIEdgeInsetsMake(0, 16, 0, 16);
+                [ame230_btn setTitleColor:strongSelf2.view.tintColor ?: [UIColor systemBlueColor]
+                                forState:UIControlStateNormal];
+                NSString *ame230_pid = ame227_dep.projectId;
+                NSString *ame230_name = ame227_dep.displayName ?: ame227_dep.projectId;
+                NSInteger ame230_src = ame227_dep.apiSource;
+                [ame230_btn addTarget:strongSelf2
+                               action:@selector(ame230_openDependencyPage:)
+                     forControlEvents:UIControlEventTouchUpInside];
+                // 参数经关联对象传递（多个按钮各自独立）
+                objc_setAssociatedObject(ame230_btn, "ame230.dep.pid", ame230_pid, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+                objc_setAssociatedObject(ame230_btn, "ame230.dep.name", ame230_name, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+                objc_setAssociatedObject(ame230_btn, "ame230.dep.src", @(ame230_src), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+                [ame230_rows addObject:ame230_btn];
+            }
+            UIView *ame227_footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, ame230_w, 0)];
             UILabel *ame227_label = [[UILabel alloc] init];
             ame227_label.numberOfLines = 0;
             ame227_label.font = [UIFont systemFontOfSize:12 weight:UIFontWeightMedium];
@@ -722,15 +758,60 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
                                  (unsigned long)ame227_req.count, ame227_names];
             ame227_label.translatesAutoresizingMaskIntoConstraints = NO;
             [ame227_footer addSubview:ame227_label];
-            [NSLayoutConstraint activateConstraints:@[
-                [ame227_label.topAnchor constraintEqualToAnchor:ame227_footer.topAnchor constant:10],
-                [ame227_label.leadingAnchor constraintEqualToAnchor:ame227_footer.leadingAnchor constant:16],
-                [ame227_label.trailingAnchor constraintEqualToAnchor:ame227_footer.trailingAnchor constant:-16],
-                [ame227_label.bottomAnchor constraintLessThanOrEqualToAnchor:ame227_footer.bottomAnchor constant:-8],
+            [ame227_footer addConstraints:@[
+                [NSLayoutConstraint constraintWithItem:ame227_label attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual
+                    toItem:ame227_footer attribute:NSLayoutAttributeTop multiplier:1 constant:10],
+                [NSLayoutConstraint constraintWithItem:ame227_label attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual
+                    toItem:ame227_footer attribute:NSLayoutAttributeLeading multiplier:1 constant:16],
+                [NSLayoutConstraint constraintWithItem:ame227_label attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual
+                    toItem:ame227_footer attribute:NSLayoutAttributeTrailing multiplier:1 constant:-16],
             ]];
+            UIView *ame230_prev = ame227_label;
+            for (UIButton *ame230_btn in ame230_rows) {
+                ame230_btn.translatesAutoresizingMaskIntoConstraints = NO;
+                [ame227_footer addSubview:ame230_btn];
+                [ame227_footer addConstraints:@[
+                    [NSLayoutConstraint constraintWithItem:ame230_btn attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual
+                        toItem:ame230_prev attribute:NSLayoutAttributeBottom multiplier:1 constant:8],
+                    [NSLayoutConstraint constraintWithItem:ame230_btn attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual
+                        toItem:ame227_footer attribute:NSLayoutAttributeLeading multiplier:1 constant:0],
+                    [NSLayoutConstraint constraintWithItem:ame230_btn attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual
+                        toItem:ame227_footer attribute:NSLayoutAttributeTrailing multiplier:1 constant:0],
+                    [NSLayoutConstraint constraintWithItem:ame230_btn attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual
+                        toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:34],
+                ]];
+                ame230_prev = ame230_btn;
+            }
+            [ame227_footer addConstraint:
+                [NSLayoutConstraint constraintWithItem:ame230_prev attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual
+                    toItem:ame227_footer attribute:NSLayoutAttributeBottom multiplier:1 constant:-12]];
+            // footer 高度自适应：layoutIfNeeded 后按内容定高（tableFooterView
+            // 不吃 autolayout 高度，需手动定 frame）。
+            [ame227_footer setNeedsLayout];
+            [ame227_footer layoutIfNeeded];
+            CGSize ame230_fit = [ame227_footer systemLayoutSizeFittingSize:CGSizeMake(ame230_w, UILayoutFittingCompressedSize.height)];
+            ame227_footer.frame = CGRectMake(0, 0, ame230_w, ceil(ame230_fit.height));
             strongSelf2.tableView.tableFooterView = ame227_footer;
+            NSLog(@"[ModVersionVC] Task230 dependency quick-entry footer: %lu row(s)",
+                  (unsigned long)ame230_rows.count);
         });
     }];
+}
+
+/// Task230：前置快速入口——点按打开该项目的 Modrinth/CurseForge 页面。
+- (void)ame230_openDependencyPage:(UIButton *)sender {
+    NSString *ame230_pid = objc_getAssociatedObject(sender, "ame230.dep.pid");
+    NSString *ame230_name = objc_getAssociatedObject(sender, "ame230.dep.name");
+    NSInteger ame230_src = [objc_getAssociatedObject(sender, "ame230.dep.src") integerValue];
+    NSURL *ame230_url = nil;
+    if (ame230_src == 1 && ame230_pid.length > 0) {
+        ame230_url = [NSURL URLWithString:[NSString stringWithFormat:@"https://modrinth.com/mod/%@", ame230_pid]];
+    } else if (ame230_pid.length > 0) {
+        ame230_url = [NSURL URLWithString:[NSString stringWithFormat:@"https://www.curseforge.com/minecraft/search?search=%@", ame230_name ?: ame230_pid]];
+    }
+    if (ame230_url == nil) return;
+    NSLog(@"[ModVersionVC] Task230 dependency quick-entry: %@ -> %@", ame230_name, ame230_url.absoluteString);
+    [[UIApplication sharedApplication] openURL:ame230_url options:@{} completionHandler:nil];
 }
 
 - (void)processFilters {

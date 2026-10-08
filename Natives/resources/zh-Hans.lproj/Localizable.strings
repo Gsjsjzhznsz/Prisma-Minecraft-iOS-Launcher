@@ -2933,3 +2933,23 @@
 "ame229.keybind.sync.one_instance" = "只找到一个实例，无需同步。";
 "ame229.keybind.sync.no_bindings" = "所有实例中都没有自定义键位。";
 "ame229.keybind.sync.done" = "键位同步完成：更新了 %ld 个文件，补充了 %ld 条绑定。";
+
+// Task230：控件仓库上传 + 奔跑未绑定提示 + 齿轮标签 + 前置快速入口 + 导入摘要
+"ame230.controls.unbound_toast" = "按钮「%@」未绑定按键——请在控件编辑器中绑定（奔跑 = 左Ctrl 341）";
+"ame230.gamemenu.caption" = "菜单";
+"ame230.deps.required" = "必需";
+"ame230.deps.optional" = "可选";
+"ame230.import.summary" = "已恢复 %lu 个实例 · 当前实例：%@ · 存档 %lu 个";
+"ame230.repo.upload" = "上传布局";
+"ame230.repo.upload_editor" = "上传到控件仓库";
+"ame230.repo.upload.pick" = "选择要上传的布局";
+"ame230.repo.upload.form.title" = "上传布局";
+"ame230.repo.upload.form.message" = "源文件：%@（通过安全检查后提交）";
+"ame230.repo.upload.name" = "布局名称";
+"ame230.repo.upload.author" = "作者";
+"ame230.repo.upload.desc" = "描述（适合的玩法 / 版本）";
+"ame230.repo.upload.github" = "通过 GitHub 提交";
+"ame230.repo.upload.github_hint" = "已在浏览器打开 GitHub 建文件页（需登录），提交后等待合并";
+"ame230.repo.upload.no_layouts" = "没有可上传的布局（请先在编辑器保存一个）";
+"ame230.repo.upload.invalid" = "布局文件无法序列化，上传已取消";
+"ame230.repo.safety_blocked" = "布局未通过安全检查，已拦截";

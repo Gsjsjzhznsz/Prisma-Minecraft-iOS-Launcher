@@ -2642,6 +2642,24 @@ void *amethyst_sdl3_hook_resolve(void *handle, const char *name) {
         NSLog(@"[SDLHook] hooked SDL_InitSubSystem -> Task114 launcher hints");
         return (void *)ame_SDL_InitSubSystem;
     }
+    // ★ Task230（反馈 #8：SDL 版打开文件夹无反应，复发轮）：把 SDL_OpenURL
+    //   补进【dlsym 解析路径】。Task227 的钩子只加在 ame_maybeWrap-
+    //   WindowHook（SDL_LoadFunction 解析路径），而 26.3 真机实证 LWJGL
+    //   走 dlsym 取 SDL 函数指针（同文件其它钩子全部经此路径生效）——
+    //   OpenURL 从未被接管，真实现跑了 SDL 的 iOS 后端：canOpenURL(file://)
+    //   被沙箱拒绝（"not allowed to query for scheme file"）→ SDL_GetError
+    //   返回 "No handler registered for this type of URL" → MC 侧
+    //   [Download-3/WARN] "Failed to open uri file:///...resourcepacks/"
+    //   （39633e4 latestlog.old:5881-5893 五连实锤，零 Task223 浏览器锚点）。
+    //   26.3 client.jar 反编译实证：Blaze3D.openUri 在 nonCriticalIoPool
+    //   （"Download-N" 线程）里直调 SDLMisc.SDL_OpenURL(uri.toString())。
+    //   钩住后 file:// 目录路由应用内 FolderBrowser（ame_SDL_OpenURL）。
+    if (strcmp(name, "SDL_OpenURL") == 0) {
+        if (ame_real_OpenURL == NULL)
+            ame_real_OpenURL = (ame_fn_SDL_OpenURL)amethyst_orig_dlsym(handle, name);
+        NSLog(@"[SDLHook] hooked SDL_OpenURL -> Task230 in-app folder browser (dlsym path)");
+        return (void *)ame_SDL_OpenURL;
+    }
     // Task 131：事件回调入口拦截（controlify/JNA closure 崩溃根治，见上方
     // ame_SDL_SetEventFilter 节的完整事故链）。按名字分发 -> JNA 的 dlsym
     // 解析（libjnidispatch 同样被 fishhook 重绑定）与 LWJGL 路径都会命中。

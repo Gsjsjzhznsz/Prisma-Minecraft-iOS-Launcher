@@ -137,9 +137,9 @@ for l in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     base[l] = len(keys)
 vals = set(base.values())
 # Task138 重锚：+2 键（renderer_missing_dylib + mirror_policy-speed_first），
-# 唯一键基线 2727 -> 1918
-check("D3 四语言唯一键集一致且为 Task151 基线 2727（Task178 重锚：opacity.title 键恢复）",
-      vals == {2727}, str(base))
+# 唯一键基线 2745（Task230 重锚：+18 ame230.*）
+check("D3 四语言唯一键集一致且为 Task230 基线 2745（Task230 重锚：+18 ame230.*）",
+      vals == {2745}, str(base))
 r2 = subprocess.run([sys.executable, os.path.join(REPO, "scripts/patch_sdl3_eventfilter_guard.py"),
                      os.path.join(REPO, "Natives/resources/Frameworks/libSDL3.dylib")],
                     capture_output=True, text=True, timeout=60)

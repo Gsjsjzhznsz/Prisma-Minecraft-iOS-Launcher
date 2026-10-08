@@ -984,11 +984,45 @@ static void ame99_noop_v_id(id self, SEL _cmd, id o) {}
 // 兜底 IMP：任何未预期选择子 → 返回 nil（配合 resolveInstanceMethod:）
 static id ame99_generic_nil(id self, SEL _cmd) { return nil; }
 
+// Task230 (feedback #1: ANGLE/non-SDL 1.20.1 crash, second layer): the generic
+// no-op used to be registered with a FIXED 0-argument type encoding "@@:".
+// jna-objc's RuntimeUtils.msg (java-objc-bridge 1.1) validates the Java-side
+// argument count against the ObjC method signature BEFORE dispatching --
+// vanilla 1.20.1 MacosUtil calls
+//   sharedApplication.send("setApplicationIconImage:", nsimage)
+// with ONE argument, the stub advertised ZERO
+// ("requires 0 arguments, but received 1" -> RuntimeException ->
+// "Initializing game" crash, 39633e4 latestlog.old.txt:498 with our own
+// Task99 log line "unexpected selector <setApplicationIconImage:>" right
+// above it). Fix: derive the argument count from the selector's colons and
+// advertise one '@' (id) argument per colon, returning id (nil). Every
+// java-objc-bridge Client.send argument is an id, so this signature is
+// exactly what the Java-side validator expects. Capped at 8 for safety
+// against pathological selector names.
+static BOOL ame230_addGenericNoop(Class cls, SEL name) {
+    if (!cls || name == NULL) return NO;
+    const char *ame230_sel = sel_getName(name);
+    NSUInteger ame230_colons = 0;
+    for (const char *p = ame230_sel; *p != '\0'; ++p) {
+        if (*p == ':') ++ame230_colons;
+    }
+    if (ame230_colons > 8) ame230_colons = 8;
+    char ame230_types[16];
+    // "@ @ :" = return id, self id, _cmd SEL, then N x id (one per colon)
+    NSUInteger ame230_i = 0;
+    ame230_types[ame230_i++] = '@';   // return: id (nil -> Java null)
+    ame230_types[ame230_i++] = '@';   // self
+    ame230_types[ame230_i++] = ':';   // _cmd
+    for (NSUInteger c = 0; c < ame230_colons; ++c) ame230_types[ame230_i++] = '@';
+    ame230_types[ame230_i] = '\0';
+    return class_addMethod(cls, name, (IMP)ame99_generic_nil, ame230_types);
+}
+
 // 安全网：未实现选择子 → 动态补无操作 IMP（返回 nil）+ 留痕
 static BOOL ame99_resolveInstanceMethod(Class self, SEL _cmd, SEL name) {
     NSLog(@"[AppKitStub] Task99: unexpected selector <%s> on %s -- generic nil no-op installed "
-          "(extend the stub if MC misbehaves)", sel_getName(name), class_getName(self));
-    if (!class_addMethod(self, name, (IMP)ame99_generic_nil, "@@:")) return NO;
+          "(Task230 colon-aware signature)", sel_getName(name), class_getName(self));
+    if (!ame230_addGenericNoop(self, name)) return NO;
     return YES;
 }
 
@@ -1129,9 +1163,10 @@ static void ame99_installAppKitMenuStubs(void) {
 static id ame229_image_initWithData(id self, SEL _cmd, id data) { return self; }
 
 static BOOL ame229_resolveInstanceMethod(Class self, SEL _cmd, SEL name) {
-    NSLog(@"[AppKitStub] Task229: unexpected selector <%s> on %s -- generic nil no-op installed",
+    NSLog(@"[AppKitStub] Task229: unexpected selector <%s> on %s -- generic nil no-op installed "
+          "(Task230 colon-aware signature)",
           sel_getName(name), class_getName(self));
-    if (!class_addMethod(self, name, (IMP)ame99_generic_nil, "@@:")) return NO;
+    if (!ame230_addGenericNoop(self, name)) return NO;
     return YES;
 }
 
@@ -2941,6 +2976,14 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         // Setup Caciocavallo
         PUSH_MARGV_LITERAL("-Dawt.toolkit=com.github.caciocavallosilano.cacio.ctc.CTCToolkit");
         PUSH_MARGV_LITERAL("-Djava.awt.graphicsenv=com.github.caciocavallosilano.cacio.ctc.CTCGraphicsEnvironment");
+
+        // ★ Task230（反馈 #5：局域网联机首开闪退）：netty 官方开关，跳过原生
+        // 传输（kqueue/epoll）的解包与加载。装机日志（39633e4 latestlog.old
+        // 尾行）实锤首开 LAN 时 netty kqueue 原生库在重标签/重签窗口被
+        // AMFI 击杀（SIGKILL、无崩溃报告）；第二次会话全程纯 Java
+        // LocalIoHandler/NIO 联机正常 = 原生传输零收益。与 main_hook 侧
+        // hooked_dlopen 的 netty_transport_native 拦截互为双保险。
+        PUSH_MARGV_LITERAL("-Dio.netty.transport.noNative=true");
 
         // Required by Caciocavallo17 to access internal API
         PUSH_MARGV_LITERAL("--add-exports=java.desktop/java.awt=ALL-UNNAMED");

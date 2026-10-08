@@ -8,6 +8,8 @@
 
 #import "GameMenuOverlayView.h"
 #import "LauncherPreferences.h"
+#import "utils.h"        // Task230：localize（齿轮标签文案）
+#import "NMToast.h"     // Task230：预留（未绑定提示等悬浮提示）
 
 // 位置持久化的 pref key
 static NSString *const kPrefMenuButtonX = @"game.menu_button_x";
@@ -34,6 +36,9 @@ static const CGFloat kDragThreshold = 10.0;
 
 // 设置按钮（圆形）
 @property (nonatomic, strong) UIButton *menuButton;
+/// ★ Task230（反馈 #9：齿轮未贴边时无文字显示）：悬浮齿轮下方的小标题
+/// （“菜单”，本地化）。拖到边缘吸附成把手后隐藏；拖拽中额外提示可贴边。
+@property (nonatomic, strong) UILabel *ame230_captionLabel;
 // FPS/内存显示标签
 @property (nonatomic, strong) UILabel *statsLabel;
 // 拖拽相关状态
@@ -112,6 +117,38 @@ static BOOL ame227_g_dockedLeft = NO;
     [self.menuButton addTarget:self action:@selector(menuButtonTouchedUp:) forControlEvents:UIControlEventTouchUpInside];
 
     [self addSubview:self.menuButton];
+
+    // ★ Task230（反馈 #9）：悬浮齿轮的文字标签——未贴边（悬浮态）时齿轮
+    //   只有图标、用户看不出它是菜单入口（“未贴边时无文字显示”）；贴边
+    //   把手自带形态语义无需文字。标签不接触摸（纯展示），跟随按钮位置。
+    self.ame230_captionLabel = [[UILabel alloc] init];
+    self.ame230_captionLabel.text = localize(@"ame230.gamemenu.caption", nil);
+    self.ame230_captionLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightSemibold];
+    self.ame230_captionLabel.textColor = [UIColor whiteColor];
+    self.ame230_captionLabel.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.45];
+    self.ame230_captionLabel.layer.cornerRadius = 5;
+    self.ame230_captionLabel.layer.masksToBounds = YES;
+    self.ame230_captionLabel.textAlignment = NSTextAlignmentCenter;
+    self.ame230_captionLabel.userInteractionEnabled = NO;
+    [self.ame230_captionLabel sizeToFit];
+    self.ame230_captionLabel.frame = CGRectInset(self.ame230_captionLabel.frame, -6, -3);
+    [self addSubview:self.ame230_captionLabel];
+}
+
+/// Task230：跟随齿轮位置排布文字标签（悬浮态显示、把手态隐藏）。
+- (void)ame230_layoutCaption {
+    if (self.ame230_captionLabel == nil) return;
+    BOOL ame230_show = !ame227_g_docked && !self.overlayHidden;
+    self.ame230_captionLabel.hidden = !ame230_show;
+    if (!ame230_show) return;
+    CGSize ame230_sz = self.ame230_captionLabel.bounds.size;
+    self.ame230_captionLabel.center = CGPointMake(self.menuButton.center.x,
+                                                   CGRectGetMaxY(self.menuButton.frame) + 6 + ame230_sz.height / 2.0);
+    // 钳在屏内（贴左/右边缘时标签不溢出）
+    CGFloat ame230_halfW = ame230_sz.width / 2.0;
+    self.ame230_captionLabel.center = CGPointMake(
+        MAX(ame230_halfW, MIN(self.bounds.size.width - ame230_halfW, self.ame230_captionLabel.center.x)),
+        MIN(self.bounds.size.height - ame230_sz.height / 2.0, self.ame230_captionLabel.center.y));
 }
 
 - (void)setupStatsLabel {
@@ -197,6 +234,7 @@ static BOOL ame227_g_dockedLeft = NO;
         ame227_g_dockedLeft = getPrefBool(kAme227DockedSidePref);
         [self ame227_applyDockedAppearanceAnimated:NO];
     }
+    [self ame230_layoutCaption];
 
     // 统计标签默认位置：左上角
     CGFloat defaultLabelX = 70;
@@ -277,10 +315,14 @@ static BOOL ame227_g_dockedLeft = NO;
             newCenter.x = MAX(half, MIN(self.bounds.size.width - half, newCenter.x));
             newCenter.y = MAX(half, MIN(self.bounds.size.height - half, newCenter.y));
             self.menuButton.center = newCenter;
+            [self ame230_layoutCaption];
         }
     } else if (sender.state == UIGestureRecognizerStateEnded || sender.state == UIGestureRecognizerStateCancelled) {
         // 恢复背景
         self.menuButton.backgroundColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:0.6];
+        // ★ Task230：恢复按压缩放（pan 抢占触摸后 TouchUp 不会来，
+        //   menuButtonTouchedDown 的 0.9 缩放无人复位会卡在小态）。
+        self.menuButton.transform = CGAffineTransformIdentity;
         if (self.isDragging) {
             // ★ Task227（反馈 #8：只在靠边时吸住 + 吸成侧边把手）：
             // Task226 的实现【无条件】吸到最近边——用户拖到哪都立刻被
@@ -310,6 +352,20 @@ static BOOL ame227_g_dockedLeft = NO;
                 }
             }
             [self savePositions];
+            [self ame230_layoutCaption];
+        } else {
+            // ★ Task230：pan 恒开始后 UIKit 取消按钮的 TouchUpInside——
+            //   未达拖拽阈值的手势在这里人工补发点击（"点开菜单"）。
+            //   轻点带自然漂移（游戏内 10-20pt 常态）也能打开，不再吞点。
+            static int ame230_manualTap = 0;
+            ame230_manualTap++;
+            if (ame230_manualTap <= 10 || ame230_manualTap % 50 == 0) {
+                NSLog(@"[GameMenu] Task230 gear manual tap-fire #%d (pan armed always; UIKit cancelled TouchUpInside)",
+                      ame230_manualTap);
+            }
+            if (self.onMenuButtonTapped) {
+                self.onMenuButtonTapped();
+            }
         }
         self.isDragging = NO;
     }
@@ -371,19 +427,22 @@ static BOOL ame227_g_dockedLeft = NO;
     }];
 }
 
-/// ★ Task229：pan 起手阈值——点击漂移吸收。位移不足 24pt 时 pan 不开始，
-/// 按钮的 TouchUpInside 正常派发；超过则进入拖拽（阈值手感与
-/// UIScrollView 的 pan 抢占线同量级）。
+/// ★ Task229 → Task230 重写（反馈 #9：齿轮未贴边时无法拖动）：旧实现的
+/// shouldBegin 阈值用 translationInView: 判位移——该值在手势起手时恒 ≈ 0
+/// （pan 在手指移动极小量时就触发 shouldBegin），24pt 门槛永不达标 →
+/// pan 永远不开始 → 齿轮完全无法拖动（更无法贴边）。这正是"修点不开矫枉
+/// 过正"。新仲裁：pan 恒可开始（shouldBegin 恒 YES），点击/拖拽的竞争
+/// 移到 handleMenuButtonPan 的 Ended 分支内处理——未超过 kDragThreshold
+/// 的手势视为点击，手动补发 onMenuButtonTapped（pan 识别后 UIKit 已取消
+/// 按钮的 TouchUpInside，必须人工补发），超过则进入拖拽（阈值逻辑沿用
+/// 既有 kDragThreshold 常量）。
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
     if ([gestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
         UIPanGestureRecognizer *ame229_pan = (UIPanGestureRecognizer *)gestureRecognizer;
-        // 仅对菜单按钮上的 pan 施加阈值；统计标签的 pan 沿用系统默认。
+        // 仅对菜单按钮上的 pan 放行（统计标签的 pan 沿用系统默认——
+        // 标签是拖拽专用件，无点击语义需要保护）。
         if (ame229_pan.view == self.menuButton) {
-            CGPoint ame229_t = [ame229_pan translationInView:self];
-            CGFloat ame229_d = sqrtf(ame229_t.x * ame229_t.x + ame229_t.y * ame229_t.y);
-            if (ame229_d < 24.0) {
-                return NO;
-            }
+            return YES;
         }
     }
     return YES;
@@ -441,6 +500,7 @@ static BOOL ame227_g_dockedLeft = NO;
     _overlayHidden = overlayHidden;
     self.menuButton.hidden = overlayHidden;
     self.statsLabel.hidden = overlayHidden || !_statsLabelVisible;
+    [self ame230_layoutCaption];
 }
 
 - (void)setStatsLabelVisible:(BOOL)statsLabelVisible {

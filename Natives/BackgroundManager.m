@@ -1162,18 +1162,23 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
                                                        attributes:@{
                 NSFontAttributeName: label.font ?: [UIFont systemFontOfSize:15],
                 NSForegroundColorAttributeName: [UIColor whiteColor],
-                NSStrokeColorAttributeName: [UIColor colorWithWhite:0.0 alpha:0.82],   // Task229: semi-transparent halo, not hard ink
-                // 负值 = CoreText 语义“描边 + 填充”；2.6 与字号无关的
-                // 固定描边宽（大字号偏细、小字号偏粗，整体均衡）
-                NSStrokeWidthAttributeName: @(-1.6),   // Task229: see ame227_swizzledLabelSetText -- -2.6 painted black lines inside dense glyphs
+                NSStrokeColorAttributeName: [UIColor colorWithWhite:0.0 alpha:0.75],   // Task230: 半透明深色
+                // 负值 = CoreText 语义“描边 + 填充”；-1.6 = 字号的 1.6%，
+                // 小字号下近乎不可见的轻描边（仅补笔画边缘对比）
+                NSStrokeWidthAttributeName: @(-1.6),
             }];
             label.attributedText = ame226_attr;
         }
-        // 软阴影兜底：描边之外的第三层对比衬底
-        label.layer.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.55].CGColor;
+        // ★ Task230（反馈 #14：白底黑边全局字体内部黑线/双层重影）：IMG_0368
+        //   截图（设置页灰色描述小字）VLM 实锤“白字 + 错位 1pt 的黑字叠加”
+        //   = 旧阴影 offset(0,1) + radius 1.5 在白字下方压了一份黑色拷贝。
+        //   修法：阴影归零偏移成【光晕】（offset 0,0 + radius 2.5）——只在
+        //   字形周围采软黑晕，不产生位移的第二层字形；描边同时减淡
+        //   （0.82→0.75 alpha）双保险防笔画内黑线。
+        label.layer.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.6].CGColor;
         label.layer.shadowOpacity = 1.0;
-        label.layer.shadowRadius = 1.5;
-        label.layer.shadowOffset = CGSizeMake(0, 1);
+        label.layer.shadowRadius = 2.5;
+        label.layer.shadowOffset = CGSizeMake(0, 0);
         label.layer.masksToBounds = NO;
     } else {
         // 无壁纸：语义色 + 清阴影（原生外观零回归）
@@ -1835,6 +1840,28 @@ BOOL ame229_labelIsStrokeExempt(UILabel *label) {
     return v.boolValue;
 }
 
+// ★ Task230（反馈 #12：欢迎界面圆圈焦点介绍空白，复发轮）：视图树级豁免。
+//   Task229 只做了【单标签】豁免（教练标记卡、文件浏览器）；但欢迎向导
+//   的介绍页（step 5，ame222_buildIntroStep）标签用 labelColor 铺在
+//   secondarySystemGroupedBackgroundColor 0.92 的浅色卡上——壁纸在场时
+//   全局 swizzle 把它们染成白字 = 浅底白字隐形 = "圆圈焦点介绍空白"。
+//   向导页面结构动态创建、逐个豁免易漏，提供整树豁免：在容器根视图上
+//   打标，swizzle 沿 superview 链上溯（上限 16 层）命中即豁免。
+static char ame230_TreeExemptKey;
+void ame230_setViewTreeStrokeExempt(UIView *view, BOOL exempt) {
+    objc_setAssociatedObject(view, &ame230_TreeExemptKey,
+                             @(exempt), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+static BOOL ame230_viewTreeIsStrokeExempt(UILabel *label) {
+    UIView *v = (UIView *)label;
+    for (int i = 0; i < 16 && v != nil; ++i) {
+        NSNumber *n = objc_getAssociatedObject(v, &ame230_TreeExemptKey);
+        if (n && n.boolValue) return YES;
+        v = v.superview;
+    }
+    return NO;
+}
+
 static void ame227_swizzledLabelSetText(id self, SEL _cmd, NSString *text) {
     if (!ame227_origLabelSetText) return;
     ame227_origLabelSetText(self, _cmd, text);
@@ -1843,6 +1870,8 @@ static void ame227_swizzledLabelSetText(id self, SEL _cmd, NSString *text) {
         if (![[BackgroundManager sharedManager] hasBackground]) return;
         // Task229 (feedback #9): opted-out labels keep their native look.
         if (ame229_labelIsStrokeExempt((UILabel *)self)) return;
+        // Task230 (feedback #12): view-tree opt-out (welcome wizard & friends).
+        if (ame230_viewTreeIsStrokeExempt((UILabel *)self)) return;
         // 注：不守卫 attributedText——setText: 之后 attributedText 恒非 nil
         //（UIKit 把纯文本包装成 attributed 存储），该守卫会跳过一切。
         // 真正的富文本路径（attributedText 直设）不经 setText:，天然不受
@@ -1864,16 +1893,19 @@ static void ame227_swizzledLabelSetText(id self, SEL _cmd, NSString *text) {
                                                     attributes:@{
             NSFontAttributeName: ame227_label.font,
             NSForegroundColorAttributeName: [UIColor whiteColor],
-            NSStrokeColorAttributeName: [UIColor colorWithWhite:0.0 alpha:0.82],
+            NSStrokeColorAttributeName: [UIColor colorWithWhite:0.0 alpha:0.75],
             NSStrokeWidthAttributeName: @(-1.6),
         }];
         ame227_label.textColor = [UIColor whiteColor];
         ((void (*)(id, SEL, id))objc_msgSend)(ame227_label,
             sel_registerName("setAttributedText:"), ame227_styled);
-        ame227_label.layer.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.7].CGColor;
+        // ★ Task230（反馈 #14）：同 ame224_applyAdaptiveTextToLabel 的修正——
+        //   offset(0,1) 的黑色阴影在白字下方错位叠加 = 截图里的“双层重影”。
+        //   归零偏移成软光晕，不再产生第二层字形。
+        ame227_label.layer.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.6].CGColor;
         ame227_label.layer.shadowOpacity = 1.0;
-        ame227_label.layer.shadowRadius = 2.0;
-        ame227_label.layer.shadowOffset = CGSizeMake(0, 1);
+        ame227_label.layer.shadowRadius = 2.5;
+        ame227_label.layer.shadowOffset = CGSizeMake(0, 0);
         ame227_label.layer.masksToBounds = NO;
     } @catch (NSException *ame227_e) {
         // 任何意外（系统私有标签子类等）绝不影响 setText 主链

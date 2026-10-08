@@ -2930,3 +2930,23 @@
 "ame229.keybind.sync.one_instance" = "只找到一個實例，無需同步。";
 "ame229.keybind.sync.no_bindings" = "所有實例中都沒有自訂鍵位。";
 "ame229.keybind.sync.done" = "鍵位同步完成：更新了 %ld 個文件，補充了 %ld 條綁定。";
+
+// Task230：控件倉庫上傳 + 奔跑未綁定提示 + 齒輪標籤 + 前置快速入口 + 匯入摘要
+"ame230.controls.unbound_toast" = "按鈕「%@」未綁定按鍵——請在控件編輯器中綁定（奔跑 = 左Ctrl 341）";
+"ame230.gamemenu.caption" = "選單";
+"ame230.deps.required" = "必要";
+"ame230.deps.optional" = "可選";
+"ame230.import.summary" = "已還原 %lu 個實例 · 目前實例：%@ · 存檔 %lu 個";
+"ame230.repo.upload" = "上傳佈局";
+"ame230.repo.upload_editor" = "上傳到控件倉庫";
+"ame230.repo.upload.pick" = "選擇要上傳的佈局";
+"ame230.repo.upload.form.title" = "上傳佈局";
+"ame230.repo.upload.form.message" = "來源檔案：%@（通過安全檢查後提交）";
+"ame230.repo.upload.name" = "佈局名稱";
+"ame230.repo.upload.author" = "作者";
+"ame230.repo.upload.desc" = "描述（適合的玩法 / 版本）";
+"ame230.repo.upload.github" = "透過 GitHub 提交";
+"ame230.repo.upload.github_hint" = "已在瀏覽器開啟 GitHub 建檔案頁（需登入），提交後等待合併";
+"ame230.repo.upload.no_layouts" = "沒有可上傳的佈局（請先在編輯器儲存一個）";
+"ame230.repo.upload.invalid" = "佈局檔案無法序列化，上傳已取消";
+"ame230.repo.safety_blocked" = "佈局未通過安全檢查，已攔截";

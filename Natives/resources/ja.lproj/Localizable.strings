@@ -2020,3 +2020,23 @@
 "ame229.keybind.sync.one_instance" = "インスタンスが 1 つしか見つかりません -- 同期する必要はありません。";
 "ame229.keybind.sync.no_bindings" = "どのインスタンスにもカスタムキー設定が見つかりません。";
 "ame229.keybind.sync.done" = "キー設定を同期しました：%ld 個のファイルを更新、%ld 件のバインドを追加。";
+
+// Task230: コントロールリポジトリアップロード + スプリント未バインド通知 + ギアラベル + 依存関係クイック入口 + インポート概要
+"ame230.controls.unbound_toast" = "ボタン「%@」にキーが割り当てられていません——コントロールエディタで割り当ててください（ダッシュ = 左Ctrl 341）";
+"ame230.gamemenu.caption" = "メニュー";
+"ame230.deps.required" = "必須";
+"ame230.deps.optional" = "任意";
+"ame230.import.summary" = "%lu 個のインスタンスを復元 · 現在: %@ · ワールド %lu 個";
+"ame230.repo.upload" = "アップロード";
+"ame230.repo.upload_editor" = "コントロールリポジトリへアップロード";
+"ame230.repo.upload.pick" = "アップロードするレイアウトを選択";
+"ame230.repo.upload.form.title" = "レイアウトをアップロード";
+"ame230.repo.upload.form.message" = "ソース: %@（安全チェック通過後に提出）";
+"ame230.repo.upload.name" = "レイアウト名";
+"ame230.repo.upload.author" = "作者";
+"ame230.repo.upload.desc" = "説明（プレイスタイル / バージョン）";
+"ame230.repo.upload.github" = "GitHub で提出";
+"ame230.repo.upload.github_hint" = "GitHub の新規ファイルページをブラウザで開きました（要ログイン）。提出後にマージをお待ちください";
+"ame230.repo.upload.no_layouts" = "アップロードできるレイアウトがありません（先にエディタで保存してください）";
+"ame230.repo.upload.invalid" = "レイアウトをシリアライズできません——アップロードを中止しました";
+"ame230.repo.safety_blocked" = "レイアウトは安全チェックを通過しませんでした";

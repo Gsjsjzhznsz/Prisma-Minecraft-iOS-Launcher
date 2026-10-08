@@ -142,7 +142,18 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
     LGCRemoveGlassFromView(self.menuView);
     if (LGCIsGlassStyleActive()) {
         BOOL ok = LGCApplyGlassToView(self.menuView, 16.0);
-        NSLog(@"[GameMenu] Task229 floating menu glass applied (composite, ok=%d)", ok);
+        // ★ Task230（反馈 #4：液态玻璃悬浮栏没有任何效果）：组合玻璃的
+        //   SystemUltraThinMaterial 在深色游戏画面上几乎不可见（通透 =
+        //   换了跟没换一样）。悬浮菜单是游戏内的独立浮层——直接把玻璃
+        //   层换成 SystemMaterialDark（重磨砂深色）：任何游戏帧上都读得
+        //   清楚、玻璃质感明确可见。效果层 tag 与 LiquidGlassCompat 的
+        //   kLGCGlassEffectTag(888901) 对齐（Remove 走同一常量清理）。
+        for (UIView *ame230_sub in self.menuView.subviews) {
+            if (ame230_sub.tag == 888901 && [ame230_sub isKindOfClass:UIVisualEffectView.class]) {
+                [(UIVisualEffectView *)ame230_sub setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
+            }
+        }
+        NSLog(@"[GameMenu] Task229 floating menu glass applied (composite, ok=%d; Task230 heavy dark material)", ok);
     }
 }
 

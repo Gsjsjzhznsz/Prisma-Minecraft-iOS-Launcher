@@ -342,6 +342,59 @@ void init_setupCustomControls() {
     NSString *gamepadControlPath = [controlPath stringByAppendingPathComponent:@"gamepads"];
     [fm createDirectoryAtPath:gamepadControlPath withIntermediateDirectories:NO attributes:nil error:nil];
     generateAndSaveDefaultControlForGamepad();
+
+    // ★ Task230（反馈 #3：持续奔跑没有效果）：存量布局死按钮迁移。装机日志
+    //   （39633e4 latestlog.old:5667-5671）实锤用户布局里的"常用\n操作键"
+    //   keycodes 全零（Task229 UNBOUND 诊断触发，用户按它期待奔跑却毫无
+    //   反应）。出货布局已改为绑定 Left Control 341（sprint 键；配合已开启
+    //   的 toggleSprint 即"持续奔跑"），但 generateAndSaveCustomControl 只在
+    //   文件缺失时拷贝——存量安装拿不到新 bundle。此处对已安装的
+    //   custom.json / classic.json / large-buttons.json 做同款修补：仅当
+    //   按钮名含"常用"、四个键码全零时改为 341（用户自绑过的永不动）。
+    @try {
+        NSArray<NSString *> *ame230_files = @[@"custom.json", @"classic.json", @"large-buttons.json"];
+        for (NSString *ame230_fn in ame230_files) {
+            NSString *ame230_p = [controlPath stringByAppendingPathComponent:ame230_fn];
+            NSData *ame230_data = [NSData dataWithContentsOfFile:ame230_p];
+            if (ame230_data == nil) continue;
+            id ame230_obj = [NSJSONSerialization JSONObjectWithData:ame230_data options:0 error:nil];
+            if (![ame230_obj isKindOfClass:[NSDictionary class]]) continue;
+            __block BOOL ame230_changed = NO;
+            void (^ame230_walk)(id) = ^(id node) {
+                if ([node isKindOfClass:[NSDictionary class]]) {
+                    NSString *ame230_nm = [node objectForKey:@"name"];
+                    NSArray *ame230_kc = [node objectForKey:@"keycodes"];
+                    if ([ame230_nm isKindOfClass:[NSString class]] &&
+                        [ame230_nm containsString:@"常用"] &&
+                        [ame230_kc isKindOfClass:[NSArray class]] && ame230_kc.count >= 1) {
+                        BOOL ame230_allZero = YES;
+                        for (id k in ame230_kc) {
+                            if ([k isKindOfClass:[NSNumber class]] && [k intValue] != 0) { ame230_allZero = NO; break; }
+                        }
+                        if (ame230_allZero) {
+                            NSMutableArray *ame230_new = [ame230_kc mutableCopy];
+                            ame230_new[0] = @341;
+                            [node setValue:ame230_new forKey:@"keycodes"];
+                            ame230_changed = YES;
+                        }
+                    }
+                    for (NSString *ame230_k in [node allKeys]) ame230_walk([node objectForKey:ame230_k]);
+                } else if ([node isKindOfClass:[NSArray class]]) {
+                    for (id v in (NSArray *)node) ame230_walk(v);
+                }
+            };
+            ame230_walk(ame230_obj);
+            if (ame230_changed) {
+                NSData *ame230_out = [NSJSONSerialization dataWithJSONObject:ame230_obj
+                                                                    options:NSJSONWritingPrettyPrinted error:nil];
+                if (ame230_out != nil && [ame230_out writeToFile:ame230_p options:NSDataWritingAtomic error:nil]) {
+                    NSLog(@"[Pre-init] Task230: sprint dead-button migrated to Left Control 341 in %@", ame230_fn);
+                }
+            }
+        }
+    } @catch (NSException *ame230_e) {
+        NSLog(@"[Pre-init] Task230: layout migration exception (%@)", ame230_e);
+    }
 }
 
 void init_setupMultiDir() {

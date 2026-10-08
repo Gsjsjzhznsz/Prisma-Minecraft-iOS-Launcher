@@ -2121,6 +2121,18 @@ void CallbackBridge_nativeSendCursorPos(char event, CGFloat x, CGFloat y) {
             if (!isGrabbing) {
                 cursorX = x;
                 cursorY = y;
+            } else if (event == ACTION_DOWN) {
+                // ★ Task230（反馈 #2：切后台后输入错位，复发轮）：抓取（游戏内
+                //   视角）态下每次新触点 DOWN 必须把相对增量基线重锚到手指
+                //   落点。Task229 只修了 MOVE 分支的基线推进 + 恢复时的
+                //   reassert（把 cLast 设成旧 MC 光标位置）——而首次 MOVE 的
+                //   delta = 手指位置 - cLast：切后台回来后 cLast 离手指落点
+                //   最远（reassert 钉在旧光标处），幻影跳变最大 = "切后台后
+                //   输入错位"的存活根因。正常游玩中每次抬手再按同样受益
+                //   （新触点从零增量起算，不再吃到上一手势终点的反向 delta）。
+                //   UP 不重锚（下一手势的 DOWN 会重锚，保持不变量即可）。
+                cLastX = x;
+                cLastY = y;
             }
             break;
 

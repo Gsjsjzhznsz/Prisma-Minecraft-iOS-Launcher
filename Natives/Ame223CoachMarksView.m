@@ -121,6 +121,12 @@ static NSString * const ame224_kRound = @"round";
     self = [super initWithFrame:frame];
     if (self) {
         self.backgroundColor = [UIColor clearColor];
+        // ★ Task230（反馈 #12）：整树豁免兜底——Task229 的单标签豁免保留，
+        //   树级豁免覆盖本视图内未来新增的一切标签（卡片均实底自适应色）。
+        {
+            extern void ame230_setViewTreeStrokeExempt(UIView *, BOOL);
+            ame230_setViewTreeStrokeExempt(self, YES);
+        }
 
         // 灰幕：黑色 45%（透出下层——反馈 #15 “完全不透明”根治）
         _ame224_dimView = [[UIView alloc] initWithFrame:self.bounds];
