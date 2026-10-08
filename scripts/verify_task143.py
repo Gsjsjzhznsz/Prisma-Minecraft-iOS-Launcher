@@ -141,7 +141,7 @@ for lp in ['en', 'zh-CN', 'zh-Hans', 'zh-Hant']:
     if total is None: total = len(keys)
     if len(keys) != total: drift.append(f"{lp}:{len(keys)}")
 check(f"F1 four-language key sets identical at {total} keys (Task159 baseline 2228)",
-      total == 2606 and not drift, f"drift={drift}")
+      total == 2715 and not drift, f"drift={drift}")
 check("F2 debug.mg key still present x4 (reused for the legacy mapping)",
       all('"preference.title.renderer.debug.mg" =' in
           read(f'Natives/resources/{lp}.lproj/Localizable.strings')

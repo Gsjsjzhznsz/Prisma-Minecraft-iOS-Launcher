@@ -82,7 +82,8 @@ check("D", "version.h 含 Task 193 附录", "Amethyst Task 193" in vh)
 
 # ============ E. provenance: source artwork + scripts present ============
 print("== E. 素材与脚本溯源 ==")
-check("E", "根目录 IMG_9288.jpeg 在场（用户上传源）", os.path.exists("IMG_9288.jpeg"))
+check("E", "根目录 IMG_9288.jpeg 已退场（用户 web 端删除，3ae087cd；Task228 重锚）",
+      not os.path.exists("IMG_9288.jpeg"))
 if os.path.exists("IMG_9288.jpeg"):
     from PIL import Image
     try:
@@ -204,7 +205,7 @@ import re as _re
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     n = len(set(_re.findall(r'^"([^"]+)"\s*=',
                             rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), _re.M)))
-    check("M", f"{lang} 唯一键 2708", n == 2708, f"got {n}")
+    check("M", f"{lang} 唯一键 2715", n == 2715, f"got {n}")
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     t = rd(f"Natives/resources/{lang}.lproj/Localizable.strings")
     check("M", f"{lang} ame193 键 179 个", len(_re.findall(r'^"ame193\.', t, _re.M)) == 179)

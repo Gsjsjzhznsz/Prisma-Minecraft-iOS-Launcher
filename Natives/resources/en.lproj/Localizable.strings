@@ -2917,7 +2917,7 @@
 
 /* Task227：依赖确认单（issue #10 重做）+ 导入完成计数 */
 "ame227.deps.title" = "Required Dependencies";
-"ame227.deps.message" = ""%@" depends on the following required mods:\n\n%@Download them together automatically?";
+"ame227.deps.message" = "\"%@\" depends on the following required mods:\n\n%@Download them together automatically?";
 "ame227.deps.only_mod" = "Only install this mod";
 "ame227.deps.install_all" = "Install all (recommended)";
 "ame227.deps.optional_note" = "\n(Plus some optional dependencies — not auto-installed.)";

@@ -2014,3 +2014,24 @@ Stage Summary:
 - Task 227 全链闭环：13 项反馈 → 根因（含 vanilla jar 着色器实证、26.3 jar 常量池实证）→ 修复合流（含上游 ModDependencyResolver/br_init 移植）→ verify_task227 50/50 → CI 三轮绿 → 新 IPA 就绪
 - 装机验证锚点（优先级）：①ANGLE(1.20.1) 启动不再崩（日志 "[tinygl4angle] Task227 ivec conversion pass: N wrap(s)"）；②26.3 游戏内打开文件夹弹浏览器（"[SDLHook] Task227 SDL_OpenURL intercepted"）；③模组下载前弹前置确认单（"[DownloadVC] Task227 dep-resolve: N required"）+ 版本页页脚前置清单；④键盘不再自动弹起（"[SurfaceVC] Task227 stray StartTextInput SUPPRESSED"）；⑤齿轮拖到边变把手、点开侧滑面板、拖到中间不吸；⑥导入备份后"[DataTransfer] Task227: post-import instance merge executed"；⑦欢迎页介绍有文字；⑧控制键事件全量留痕（"[InputDiag] Task227 controlKey"——若 sprint 仍无效，下轮日志直接定位断点层）
 - 遗留：系统 UIGlassEffect 黑屏复发则 AME227_SYSTEM_GLASS=0 回退；上游大件（陶瓦重构/CF 筛选/Krypton）未合流待点名
+
+---
+Task ID: 228
+Agent: main (Super Z)
+Task: 用户双报（227 构建 run 37658656714 IPA）：①所有语言显示 i18n 键名（"语言文件不见了"）；②切回液态玻璃出现黑色（"不是只涉及悬浮弹窗吗"）→ 双根修 + 验证链大扫荡
+
+Work Log:
+- 环境重建：沙箱被重置回 Task110 时代快照（本地 fa3c154 / 本地 worklog 断在 110 / .tok2 消失），fetch 远端 447 commits 对齐 8ba92eb2（reset --hard；ff merge 超时被杀后兜底）；git remote URL 内嵌 token 存活，git 操作无障碍（gh CLI 不可用，API 走 curl）
+- ①根因（python repr 字节级实证）：Task227 五表对齐写入 ame227.deps.message 时，en/ja/zh-Hans/zh-Hant 四文件值内引号未转义（""%@" 而非 "\"%@\""，仅 zh-CN 写对）——旧式 plist 一行坏 = 整表解析失败；localize() 兜底链 selected→en→zh-Hans 三跳全部阵亡（UIKit 层无业务键）→ 全语言裸键名。与 Task191 病史完全同款（en.lproj 单行未转义引号整表炸），同类事故第二次
+- ①修复：scripts/task228_fix_strings.py 字节级修四文件（repr 复核 + task191_validate_strings.py 54 语言 0 错）；localize() 双分支在 zh-Hans 之后追加 zh-CN 一跳（ame228_* 局部变量；nil 安全判定 value == nil || isEqualToString）；development.yml checkout 后新增 CI 门 "Validate Localizable.strings syntax (Task228 gate)"（.strings 不参与编译，无此门只有装机才能发现坏表；本地验证链随沙箱重置丢失是本次事故的放大器，CI 门是持久防线）
+- ②根因：Task227(6) 把 LGCCreateGlassEffectView 默认切到系统 UIGlassEffect（推理"CI 已用 Xcode 26+ SDK 构建，T225 的旧 SDK 黑屏前提应已消失"），装机实测推翻——该进程环境（LiveContainer/侧载容器）系统玻璃依然渲染为黑（T225+T228 两次实锤）；且 227 只回退了 cell 卡面路径，applyEffectToView（非 cell 主界面表面：Card 布局三卡/侧栏/右面板/筛选侧栏/登录卡/AI 卡等几十个调用点）在玻璃风格下仍被 LGCApplyGlassToView 接管 → 切风格瞬间主界面大面积黑（LauncherCardLayoutViewController 的注释还停留在 T224 接管语义）
+- ②修复：LGCCreateGlassEffectView 默认反转回 T225 组合玻璃（SystemUltraThinMaterial + 调用方高光层 + 发丝描边），系统 UIGlassEffect 降级为 AME227_SYSTEM_GLASS=1 显式 opt-in（227 遗留观察"下轮反转优先级"预案落地；一次性别锚点日志）；applyEffectToView 与 cell 路径对齐（无条件 LGCRemoveGlassFromView + 恒走既有毛玻璃/半透明管线；LGCApplyGlassToView 保留为悬浮弹窗分层玻璃安装原语，无生产调用方）；applyEffectToNavigationBar 与 FolderBrowser 两处"栏位交还系统"退役（用户指令：软件 UI 原样、玻璃只用于悬浮弹窗；栏位系统玻璃与 UIGlassEffect 同一渲染路径，黑面风险不可排除）——悬浮弹窗玻璃（头像长按菜单 + 模态页底层）不经上述路径，不受影响
+- 验证链大扫荡（环境重置后首次全链）：task228_l10n_sweep.py 28 验证器 2708→2715（Task227 闭环只重锚自己的 K1/Q1，其余 2708 断言族全红——含交叉读链如 210 读 206 的 "== 2708"）；task228_byte_fixes.py 再扫 2606→2715 七验证器（134/143/168/170/174/175/180——从 Task224 时代就红，历次扫荡只替换相邻数字（2696→2708、2708→2715）永远漏网不在相邻基线上的文件）+ 修复两处 CRLF 字节纪律（development.yml 本轮自己插入的 7 行 LF→CRLF；CurseForgeAPI.m Task227 留下的 24 行 LF→CRLF，1394 行纯 CRLF 复原，211 B6 复绿）
+- 存量锚点重锚五处（全部经 stash 基线对照定性为非本轮回归后才动手）：133 C1 profile URL 3→4 处（Task224 b996e62d8 增第 4 处、同款 undashed helper，意图 4/4 达成）；139 H2 用户名字体锚到 LGCScaledFontSize(16) 形态（Task224/225 文字缩放改写，基值仍 16）；180 B 页底双模式恒 clearColor（Task226 #9 退役 uiOpacity 页底涂色，消费移居卡面/cell 管线）；193 E IMG_9288.jpeg 在场→已退场（用户 web 端删除，3ae087cd）；217 A6 ame217 取数器调用点 2→5（Task227 依赖解析新增 3 处全部复用同一取数器）；另 227 D3 措辞重锚（组合玻璃默认 + ame228 锚点）
+- 验证：verify_task227 50/50；verify_task225 68/68；verify_task226 ALL PASS；task139 36/36（语法门全配平）；task191 校验器 54 语言 0 错；task225_r2_preflight 15 FAIL 与 HEAD 基线逐条一致（存量扫描器误报：@(enabled?@YES:@NO) 对 r2 修复形态的误报 + 多类同文件方法计数 + 调用点误判为声明，零新增）；task225_bracket_audit 五触碰 .m 文件全配平；全链绿 129/130/131/132/133/134/135/138/142/143/150/151/156/157/159/167/168/170/174/175/180/190/193/196_197_198_201/202/206/210/211/212/214/217/218/219/222/223（135 家族的外层助手缺失环境债被 133/134 实体修复连带自愈）；重验证器并行跑会 CPU 争抢超时——202/206/170/168 必须单跑（家法补录）
+
+Stage Summary:
+- 双报根修：i18n 四表复活（全语言恢复正常文案）+ 液态玻璃黑面根治（主界面恒原生管线，玻璃只存在于悬浮弹窗且用装机验证过的组合玻璃）
+- 装机验证锚点：①任意语言界面恢复正常文案（无 i18n 键名/裸键）；②切液态玻璃风格：Card 布局三卡/侧栏/右面板/导航栏全部保持原样不再变黑；③"[ThemeOps] Task228 composite glass default"（组合玻璃默认路径一次性日志，装机可检索）；④头像长按玻璃菜单正常渲染（非黑面板）；⑤CI 日志新增 "Validate Localizable.strings syntax (Task228 gate)" 步骤且绿
+- 系统性防御：.strings 语法门进 CI（同类事故已两次，第三次会在 CI 拦截而非装机发现）；localize() 兜底线加长（单表损坏不再把键名漏给用户）
+- 遗留：AME227_SYSTEM_GLASS=1 供未来系统玻璃重试（若上游/容器环境改善）；上游大件（陶瓦重构/CF 筛选/Krypton 渲染器/版本隔离向导）仍未合流待用户点名

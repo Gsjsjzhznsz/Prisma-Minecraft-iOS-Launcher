@@ -837,13 +837,12 @@ static const NSInteger kAme160GlassBackdropTag = 99994;
 }
 
 - (void)applyEffectToNavigationBar:(UINavigationBar *)navigationBar {
-    // Task224（#4）：液态玻璃风格下导航栏交还系统——iOS 26+ 移除自定义
-    // 背景后系统自动绘制液态玻璃。native 解析时下方既有毛玻璃/半透明
-    // 管线原样执行（零回归）。
-    if (LGCIsGlassStyleActive()) {
-        LGCAdaptNavigationBar(navigationBar);
-        return;
-    }
+    // ★ Task228：液态玻璃风格的"导航栏交还系统"退役。用户指令是软件 UI
+    // （含导航栏/标签页切换器）保持原样、玻璃只用于悬浮弹窗；且栏位交还
+    // 系统后由 iOS 26+ 自行绘制的液态玻璃与 UIGlassEffect 同一渲染路径，
+    // 在本进程的可靠性已被 Task225/Task228 两次装机实锤否定（黑面）。
+    // 两种风格一律走本仓既有毛玻璃/半透明栏管线；LGCAdaptNavigationBar
+    // 保留为工具函数（无生产调用方）。
 
     // 关键修复（UI 累积异常 + 小白条根治）：
     // 1. 之前每次调用都重建 UINavigationBarAppearance，iOS 内部会重新生成 hairline
@@ -1217,18 +1216,17 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
 - (void)applyEffectToView:(UIView *)view {
     if (!view) return;
 
-    // Task224（#4）：界面风格 = 液态玻璃时，带圆角的卡片表面由分层玻璃
-    // （效果层 + 高光层 + 发丝描边）接管。native 解析时 LGCApplyGlassToView
-    // 只做旧玻璃层清理即返回 NO，本方法继续既有管线——native 零视觉回归。
-    if (LGCApplyGlassToView(view, view.layer.cornerRadius)) {
-        // 玻璃接管后清掉原生管线此前铺过的 blur 层，避免双层叠加
-        for (UIView *sub in [view.subviews copy]) {
-            if ([sub isKindOfClass:[UIVisualEffectView class]] && sub.tag == kBackgroundBlurTag) {
-                [sub removeFromSuperview];
-            }
-        }
-        return;
-    }
+    // ★ Task228（用户反馈：切回液态玻璃主界面大面积变黑）：Task227 只回退了
+    // cell 卡面路径（applyEffectToCell 无条件清玻璃），本方法——非 cell 的
+    // 主界面表面（侧栏/右面板/内容三卡/筛选侧栏/登录卡/AI 卡等几十个调用
+    // 点）——在玻璃风格下仍被 LGCApplyGlassToView 接管，而系统
+    // UIGlassEffect 在本进程渲染为黑（Task225/Task228 两次装机实锤）→
+    // Card 布局切风格瞬间三卡全黑。按用户既定指令（软件 UI 保持原生、
+    // 玻璃只用于悬浮弹窗），与 cell 路径对齐：无条件清玻璃层，恒走既有
+    // 毛玻璃/半透明管线。悬浮弹窗玻璃不经本方法（头像长按菜单与模态页
+    // 底层直接走 LGCCreateGlassEffectView），不受影响。
+    // LGCApplyGlassToView 保留为悬浮弹窗分层玻璃安装原语（无生产调用方）。
+    LGCRemoveGlassFromView(view);
 
     // Task111：检测并切换——有自定义背景时毛玻璃/半透明卡片效果
     // （背景图从卡片下方透出）；无背景时平贴灰面/原生平铺（Task210 单路径）。

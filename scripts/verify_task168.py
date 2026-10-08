@@ -80,7 +80,7 @@ check("A9 边界维持：侧栏/右面板仍走 applyEffectToView（Task163 平�
       and "applyEffectToView:self.rightPanelContainer]" in rd("Natives/LauncherRootViewController.m"))
 
 # ============================================================
-# B. l10n 键集（Task210 重锚：双键退役，计数 2606 -> 2520）
+# B. l10n 键集（Task210 重锚：双键退役，计数 2715 -> 2520）
 # ============================================================
 bsvc = rd("Natives/BackgroundSettingsViewController.m")
 
@@ -94,7 +94,7 @@ check("B2 Task210：settings sections[0] = 纯壁纸效果三行（无 neumorph 
 check("B3 Task210：无壁纸时 section 0 整段隐藏（numberOfRows 0 行 + 页脚同步隐藏）",
       "if (section == 0 && ![[BackgroundManager sharedManager] hasBackground]) {\n        return 0;" in bsvc.replace('\n', '\n'))
 check("B4 四主语言键集一致且计数 = 2520（Task210 重锚：neumorph 双键退役，2520-2）",
-      all(len(set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))) == 2606
+      all(len(set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))) == 2715
           for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]))
 keysets = [set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))
            for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]]

@@ -162,8 +162,8 @@ print("== H. iPhone 右侧边栏精简 ==")
 # 现行状态（原锚点自 Task146 起过时，非本轮回归）。
 check("H1 宽度 168 全内容列（Task146 恢复态；原 96pt 图标轨已撤销）",
       "kRightPanelWidthPhone = 168.0" in rvc and "全内容列" in rvc)
-check("H2 内容完整（用户名可见 16pt bold + 信息滚动区在位；原隐藏流已撤销）",
-      "self.usernameLabel.font = [UIFont boldSystemFontOfSize:16];" in rpvc and
+check("H2 内容完整（用户名可见 16pt bold + 信息滚动区在位；原隐藏流已撤销；Task228 重锚：字号经 LGCScaledFontSize(16)，Task224/225 文字缩放）",
+      "self.usernameLabel.font = [UIFont boldSystemFontOfSize:LGCScaledFontSize(16)];" in rpvc and
       "self.infoScrollView" in rpvc and
       "self.usernameLabel.hidden = YES;" not in rpvc and
       "self.infoScrollView.hidden = YES;" not in rpvc)

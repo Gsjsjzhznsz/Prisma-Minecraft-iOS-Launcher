@@ -92,9 +92,11 @@ check("D1 chrome 玻璃回退（sidebar/rightPanel）",
 check("D2 列表卡面玻璃回退",
       "LGCRemoveGlassFromView(cardTarget);" in bm
       and "LGCApplyGlassToView(cardTarget, cardRadius)) {" not in bm)
-check("D3 系统 UIGlassEffect 优先 + 逃生阀",
+check("D3 组合玻璃默认 + 系统 UIGlassEffect opt-in 逃生阀【Task228 重锚：装机实锤系统玻璃黑面，默认反转】",
       "_LGCCreateGlassEffect(isDark)" in lgc
-      and "AME227_SYSTEM_GLASS" in lgc)
+      and "AME227_SYSTEM_GLASS" in lgc
+      and 'strcmp(ame228_env, "1") == 0' in lgc
+      and "ame228_compositeLogged" in lgc)
 check("D4 头像长按玻璃菜单（风格门控）",
       "ame227_presentGlassMenu:" in rpv
       and "LGCIsGlassStyleActive()" in rpv)

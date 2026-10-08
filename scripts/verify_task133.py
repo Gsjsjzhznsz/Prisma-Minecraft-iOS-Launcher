@@ -109,8 +109,8 @@ check("B8 Task131 守卫本体保留（SetEventFilter/AddEventWatch no-op）",
       "ame_SDL_SetEventFilter" in sdl and "ame_SDL_AddEventWatch" in sdl)
 
 print("== C. 第三方皮肤头像根治（LittleSkin 实测：带连字符 404 / 无连字符 200）==")
-check("C1 三处 profile URL 均用无连字符 profileId",
-      tpa.count('ame133_undashedProfileId(self.authData[@"profileId"])') == 3)
+check("C1 四处 profile URL 均用无连字符 profileId【Task228 重锚：Task224 b996e62d8 增至四处，同款 helper】",
+      tpa.count('ame133_undashedProfileId(self.authData[@"profileId"])') == 4)
 check("C2 本地渲染（脸 8x8 @(8,8) + 帽层 @(40,8)，最近邻 128x128，64x64/64x32/HD 兼容）",
       "ame133_renderAvatarFromSkin" in tpa and "CGImageCreateWithImageInRect" in tpa and
       "kCGInterpolationNone" in tpa and "h * 2 != w" in tpa)
@@ -175,8 +175,8 @@ def lkeys(lang):
 ks = [lkeys(l) for l in LANGS]
 # Task138 重锚：+2 键（preference.warning.renderer_missing_dylib +
 # preference.title.mirror_policy-speed_first），1916 -> 1918
-check("F1 四语言键集一致（Task222 重锚：2708 = Task212 基线 2520 + Task222 45 + Task223 41）",
-      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2708, f"counts={[len(k) for k in ks]}")
+check("F1 四语言键集一致（Task222 重锚：2715 = Task212 基线 2520 + Task222 45 + Task223 41）",
+      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2715, f"counts={[len(k) for k in ks]}")
 check("F2 pickextra 三键已随机制退役；Task134 新 12 键在位（jit_enabler 7 + title/detail 4 + hide_controls）",
       all("preference.pickextra.edit_layout" not in k and
           "preference.pickextra.edit_gamepad" not in k and

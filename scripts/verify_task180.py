@@ -54,8 +54,9 @@ check('B', 'Task210：.h 属性 cardsNeumorphOpacity 随退役删除（注释留
 check('B', '新属性 backgroundOpacity/buttonOpacity 退役', 'CGFloat backgroundOpacity;' not in bh and 'CGFloat buttonOpacity;' not in bh)
 check('B', 'Task210：挂点①（泛型管线 ON 分支）随退役删除', '[target ame_applyNeumorphCardOpacity' not in bm)
 check('B', 'Task210：挂点②（applyCardEffectToView ON 分支）随退役删除', '[view ame_applyNeumorphCardOpacity' not in bm)
-check('B', 'makeViewControllerTransparent 读 uiOpacity（Task216 重锚：正向语义，驼峰根除）',
-      'viewController.view.backgroundColor = [base colorWithAlphaComponent:self.uiOpacity];' in bm)
+check('B', 'makeViewControllerTransparent 页底双模式恒 clearColor（Task228 重锚 Task226 #9：uiOpacity 消费移居卡面/cell 管线）',
+      bm.count('viewController.view.backgroundColor = [UIColor clearColor];') >= 2 and
+      'viewController.view.backgroundColor = [base colorWithAlphaComponent:self.uiOpacity];' not in bm)
 check('B', 'applyEffectToCell 半透明档读 uiOpacity', bm.count('colorWithWhite:0.1 alpha:self.uiOpacity]') >= 2)
 check('B', 'Task210：applyEffectToView 无壁纸 = 平贴灰面（AmeCardSurfaceColor）', 'view.backgroundColor = AmeCardSurfaceColor();' in bm)
 check('B', 'Task210：applyCardEffectToCell 直转 applyEffectToCell（Flat 特调行退役）', '[cell.contentView ame_applyNeumorphSurfaceFlatWithRadius:12];' not in bm and '[self applyEffectToCell:cell];' in bm)
@@ -101,7 +102,7 @@ for lang in ['en', 'zh-Hans', 'zh-CN', 'zh-Hant']:
     s = io.open(os.path.join(RES, f'{lang}.lproj/Localizable.strings'), encoding='utf-8').read()
     keys = set(re.findall(r'^"([^"]+)" =', s, re.M))
     tot = len(keys) if tot is None else tot
-    check('D', f'{lang} 唯一键总数 == 2606', len(keys) == 2606, f'got {len(keys)}')
+    check('D', f'{lang} 唯一键总数 == 2715', len(keys) == 2715, f'got {len(keys)}')
 
 # ============ E. 按钮接线——183 撤销（回归恒定底色）+ 头像防御保留 ============
 rp = rd('LauncherRightPanelViewController.m')

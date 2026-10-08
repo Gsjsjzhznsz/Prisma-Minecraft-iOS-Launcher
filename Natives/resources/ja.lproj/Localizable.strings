@@ -2002,7 +2002,7 @@
 
 /* Task227：依赖确认单（issue #10 重做）+ 导入完成计数 */
 "ame227.deps.title" = "必須の前提 Mod";
-"ame227.deps.message" = ""%@" は以下の前提 Mod に依存しています：\n\n%@一緒に自動インストールしますか？";
+"ame227.deps.message" = "\"%@\" は以下の前提 Mod に依存しています：\n\n%@一緒に自動インストールしますか？";
 "ame227.deps.only_mod" = "この Mod のみインストール";
 "ame227.deps.install_all" = "すべて一緒にインストール（推奨）";
 "ame227.deps.optional_note" = "\n（オプションの前提もあります——自動インストールされません。）";

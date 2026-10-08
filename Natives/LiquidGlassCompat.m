@@ -250,33 +250,40 @@ static UIVisualEffect *_LGCCreateBlurEffect(BOOL isDark) {
 }
 
 UIVisualEffectView *LGCCreateGlassEffectView(BOOL isDark) {
-    // ★ Task227（反馈 #3："液态玻璃怎么不是使用系统的"）：优先真系统
-    // UIGlassEffect（iOS 26+；CI 以 Xcode 26+ SDK 构建，SDK 内类已可见，
-    // 运行时再以 NSClassFromString 防御）。Task225 曾观察到的"UIGlassEffect
-    // 纯黑"来自旧 17.5 SDK 构建的进程；本仓 CI 自 development.yml 起
-    // prefer Xcode 26+，二进制与系统同代。逃生阀 AME227_SYSTEM_GLASS=0
-    // 强制回退组合玻璃（分诊用）；取不到 regularEffect 也自动回退。
-    // 组合玻璃保底链保持不变（系统材质 + 调用方高光层 + 发丝描边）。
-    static NSInteger ame227_sysGlassDecision = 0;   // 0=未决 1=用系统 -1=用组合
-    if (ame227_sysGlassDecision == 0) {
-        const char *ame227_env = getenv("AME227_SYSTEM_GLASS");
-        ame227_sysGlassDecision = (ame227_env && strcmp(ame227_env, "0") == 0) ? -1 : 1;
+    // ★ Task228（用户反馈：切回液态玻璃出现黑色）：Task227 曾把默认切到
+    // 真系统 UIGlassEffect（推理：CI 已用 Xcode 26+ SDK 构建，Task225 的
+    // "旧 17.5 SDK 构建进程渲染为黑"前提应已消失）。装机实测推翻该推理——
+    // 该进程环境（LiveContainer/侧载容器）下系统 UIGlassEffect 依然渲染
+    // 为黑，Task225 与 Task228 两次装机实锤。默认改回 Task225 组合玻璃
+    // （系统超薄材质 + 调用方高光层 + 发丝描边，装机验证过的渲染路径）；
+    // 系统 UIGlassEffect 降级为实验开关：AME227_SYSTEM_GLASS=1 显式开启
+    // （分诊用/未来系统侧修复后重试），取不到 regularEffect 也自动回退。
+    static NSInteger ame228_glassDecision = 0;   // 0=未决 1=用系统 -1=用组合
+    if (ame228_glassDecision == 0) {
+        const char *ame228_env = getenv("AME227_SYSTEM_GLASS");
+        ame228_glassDecision = (ame228_env && strcmp(ame228_env, "1") == 0) ? 1 : -1;
     }
-    if (ame227_sysGlassDecision == 1) {
-        UIVisualEffect *ame227_sys = _LGCCreateGlassEffect(isDark);
-        if (ame227_sys != nil) {
-            static int ame227_sysUsed = 0;
-            if (ame227_sysUsed < 3) {
-                ame227_sysUsed++;
-                NSLog(@"[ThemeOps] Task227 system UIGlassEffect engaged (use #%d, isDark=%d)",
-                      ame227_sysUsed, isDark);
+    if (ame228_glassDecision == 1) {
+        UIVisualEffect *ame228_sys = _LGCCreateGlassEffect(isDark);
+        if (ame228_sys != nil) {
+            static int ame228_sysUsed = 0;
+            if (ame228_sysUsed < 3) {
+                ame228_sysUsed++;
+                NSLog(@"[ThemeOps] Task228 system UIGlassEffect engaged (OPT-IN via AME227_SYSTEM_GLASS=1, use #%d, isDark=%d)",
+                      ame228_sysUsed, isDark);
             }
-            UIVisualEffectView *ame227_ev = [[UIVisualEffectView alloc] initWithEffect:ame227_sys];
-            ame227_ev.frame = CGRectZero;
-            ame227_ev.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            ame227_ev.userInteractionEnabled = NO;
-            return ame227_ev;
+            UIVisualEffectView *ame228_ev = [[UIVisualEffectView alloc] initWithEffect:ame228_sys];
+            ame228_ev.frame = CGRectZero;
+            ame228_ev.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            ame228_ev.userInteractionEnabled = NO;
+            return ame228_ev;
         }
+    }
+    // Task228 默认路径：组合玻璃（一次性锚点日志，装机可检索）
+    static BOOL ame228_compositeLogged = NO;
+    if (!ame228_compositeLogged) {
+        ame228_compositeLogged = YES;
+        NSLog(@"[ThemeOps] Task228 composite glass default (system UIGlassEffect renders black in this process; opt-in trial via AME227_SYSTEM_GLASS=1)");
     }
     UIVisualEffect *effect = _LGCCreateBlurEffect(isDark);
     UIVisualEffectView *effectView = [[UIVisualEffectView alloc] initWithEffect:effect];

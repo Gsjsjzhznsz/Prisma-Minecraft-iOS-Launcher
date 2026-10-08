@@ -33,13 +33,9 @@
     [super viewDidLoad];
     // 适配自定义启动器背景（毛玻璃/半透明规则与其它页一致）。
     [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
-    // Task224（#4）：界面风格 = 液态玻璃时，浏览器头部（导航栏）交还系统——
-    // iOS 26+ 移除自定义背景后自动获得液态玻璃；native 解析时
-    // LGCAdaptNavigationBar 内部自检不过即 no-op，保持既有外观。
-    if (LGCIsGlassStyleActive()) {
-        LGCAdaptNavigationBar(self.navigationController.navigationBar);
-        NSLog(@"[ThemeOps] Task224 folder browser header handed to system glass");
-    }
+    // ★ Task228：浏览器头部"交还系统玻璃"退役（与全局栏管线一致——用户
+    // 指令软件 UI 保持原样、玻璃只用于悬浮弹窗；系统玻璃渲染在本进程
+    // 不可靠，Task225/228 两次实锤黑面）。头部恒走既有栏管线。
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(reapplyBackgroundEffect)
                                                  name:@"BackgroundUIEffectChanged"
@@ -63,12 +59,10 @@
 
 - (void)reapplyBackgroundEffect {
     [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
-    if (LGCIsGlassStyleActive()) {
-        LGCAdaptNavigationBar(self.navigationController.navigationBar);
-    }
+    // Task228：头部不再随风格切换交还系统（见 viewDidLoad 注释）。
 }
 
-// Task224（#4）：风格切换 → 头部重铺（液态玻璃时交还系统，native 保持）。
+// Task228：风格切换 → 头部重铺（恒走既有栏管线，不再交还系统）。
 - (void)ame224_handleInterfaceStyleChanged {
     [self reapplyBackgroundEffect];
 }

@@ -60,7 +60,7 @@ def keyset(lg):
     return set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))
 k4 = [keyset(l) for l in ("en", "zh-Hans", "zh-CN", "zh-Hant")]
 check("A3 four-main-language key sets identical (each 2520 after +1)",
-      k4[0] == k4[1] == k4[2] == k4[3] and len(k4[0]) == 2708,
+      k4[0] == k4[1] == k4[2] == k4[3] and len(k4[0]) == 2715,
       f"counts={[len(k) for k in k4]}")
 check("A3b ja/km also carry mem_help.button",
       "mem_help.button" in keyset("ja") and "mem_help.button" in keyset("km"))
@@ -182,8 +182,8 @@ check("H7 v172 G2 retry-count 3 -> 4 (Task212 CF hardening backfill)",
 check("H8 v170 F1 re-anchored to true positions (179@14..168@24)",
       'anns[15]["id"] == "task179-eight-fixes-2026-09-26"' in rd("scripts/verify_task170.py")
       and 'anns[25]["id"] == "task168-neumorph-faq-json-2026-09-25"' in rd("scripts/verify_task170.py"))
-check("H9 l10n 2708 family swept (spot: 129/133/151/206)",
-      all("2708" in rd(f) for f in
+check("H9 l10n 2715 family swept (spot: 129/133/151/206)",
+      all("2715" in rd(f) for f in
           ("scripts/verify_task129.py", "scripts/verify_task133.py",
            "scripts/verify_task151.py", "scripts/verify_task206.py")))
 check("H10 no stale == 35 announcement counters",

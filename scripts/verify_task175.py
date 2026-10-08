@@ -274,7 +274,7 @@ check("G3 version.h Task 175 addendum（六主题 + 三个装机锚点 + 六条�
 KEYSETS = [set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))
            for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]]
 check("G4 l10n 计数（Task210 重锚：neumorph 双键退役后 2520）",
-      all(len(k) == 2606 for k in KEYSETS)
+      all(len(k) == 2715 for k in KEYSETS)
       and KEYSETS[0] == KEYSETS[1] == KEYSETS[2] == KEYSETS[3])
 fb = json.loads(rd("Natives/resources/announcements-fallback.json"))
 fbi = fb["announcements"]

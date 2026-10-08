@@ -791,8 +791,9 @@ static CGFloat LauncherCardLayoutRightPanelWidth(UITraitCollection *trait) {
 
 - (void)uiEffectChanged:(NSNotification *)notification {
     // 重新应用毛玻璃/半透明效果到卡片容器视图
-    // Task224（#4）：applyEffectToView 内部已接液态玻璃接管——玻璃风格时
-    // 三卡自动换分层玻璃，native 自动回落既有材质（双向还原）。
+    // ★ Task228：applyEffectToView 的玻璃接管已退役——主界面一律原生
+    // 管线（用户指令：玻璃只用于悬浮弹窗；系统 UIGlassEffect 在本进程
+    // 渲染为黑，Task228 装机实锤）。玻璃风格下三卡同样走毛玻璃/半透明。
     [[BackgroundManager sharedManager] applyEffectToView:self.sidebarCard];
     [[BackgroundManager sharedManager] applyEffectToView:self.contentCard];
     [[BackgroundManager sharedManager] applyEffectToView:self.rightPanelCard];

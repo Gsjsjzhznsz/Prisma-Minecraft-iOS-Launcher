@@ -68,9 +68,9 @@ check("A5 Fabric API 无匹配明确报错（不再 firstObject 静默猜版）"
       "component.fabricapi.no_match" in psv
       and re.search(r'FabricAPI" code:6[^}]*component\.fabricapi\.no_match', psv, re.S) is not None
       and 'matchingVersion = versions.firstObject' not in psv)
-check("A6 ModrinthAPI 抖动单次重试（搜索 + 版本列表共享 ame217 取数器）",
+check("A6 ModrinthAPI 抖动单次重试（搜索 + 版本列表共享 ame217 取数器；Task228 重锚：Task227 依赖解析增至 5 个调用点，全部复用同一取数器）",
       "ame217_fetchJSONWithURL" in mma
-      and mma.count("ame217_fetchJSONWithURL:url completion:") == 2
+      and mma.count("ame217_fetchJSONWithURL:url completion:") == 5
       and "one retry in 1.5s" in mma)
 check("A7 Mod 管理页检查更新同源 parseVersionId（fabric 前缀式修复）",
       "[ModpackExportService parseVersionId:lastVersionId]" in mmg)
@@ -211,7 +211,7 @@ print("== I. l10n 基线 ==")
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"I-{lang} 唯一键 2708（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2708, f"got {len(keys)}")
+    check(f"I-{lang} 唯一键 2715（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2715, f"got {len(keys)}")
 zh = rd("Natives/resources/zh-Hans.lproj/Localizable.strings")
 en = rd("Natives/resources/en.lproj/Localizable.strings")
 check("I-核心键在位（isolation/导出导入/about/mods/fabricapi）",
@@ -288,7 +288,7 @@ spot = [
     ("scripts/verify_task125_128.py", "AboutViewController.m"),
     ("scripts/verify_task156.py", 'route:@"about"'),
     ("scripts/verify_task173.py", "legacy MC baseline (Task173/212: ZL2 classic gl4es)"),
-    ("scripts/verify_task206.py", "== 2708"),
+    ("scripts/verify_task206.py", "== 2715"),
     ("scripts/verify_task216.py", "com.air-devs interim"),
 ]
 spot_ok = True

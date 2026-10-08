@@ -198,6 +198,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Validate Localizable.strings syntax (Task228 gate)
+        # 病历：Task191 与 Task228（Task227 引入）两次因值内引号未转义把
+        # 整个语言表写坏——旧式 plist 一行坏 = 整表解析失败 = 全界面裸键名，
+        # 且 .strings 不参与编译，CI 无此门时只有装机才能发现。本地链
+        # 会随环境重置丢失（本次事故的放大器），CI 门是持久防线。
+        run: python3 scripts/task191_validate_strings.py
+
       - name: Drop stale submodule gitlinks
         # 历史遗留：MobileGL 曾以 submodule 方式接入，上游 force push 导致 pinned
         # commit 消失、孤立 gitlink 被反复引入，当时靠这个步骤清理。

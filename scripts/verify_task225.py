@@ -14,7 +14,7 @@ I. Settings appearance rows (sliders/switch inline + zoom editor retired + detai
 J. Assets pre-launch heal
 K. First-open fade animations (both layouts)
 L. Text scale/contrast prefs (LiquidGlassCompat split)
-M. i18n 2708 parity + new keys used
+M. i18n 2715 parity + new keys used
 N. Syntax gates + fleet cascade
 """
 import os, re, subprocess, sys
@@ -249,7 +249,7 @@ check("L4 头文件导出声明",
       "LGCTextScaleMultiplier(void);" in lgh and "LGCTextAutoContrastEnabled(void);" in lgh)
 
 # ---------------------------------------------------------------- M. i18n
-print("== M. i18n（2708 四语对等 + 新键在位）==")
+print("== M. i18n（2715 四语对等 + 新键在位）==")
 NEWKEYS = ["profile.isolation.choice_prompt", "profile.isolation.choice_migrate",
            "profile.isolation.choice_keep", "profile.isolation.applying",
            "profile.isolation.enabled_nomove", "ame225.mods.sniffed_chip",

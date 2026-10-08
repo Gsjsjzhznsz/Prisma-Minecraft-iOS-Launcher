@@ -730,8 +730,18 @@ NSString* localize(NSString* key, NSString* comment) {
                 NSBundle *zhBundle = [NSBundle bundleWithPath:zhPath];
                 value = [zhBundle localizedStringForKey:key value:nil table:nil];
                 if ([value isEqualToString:key]) {
-                    // 英文也没有，尝试 UIKit 系统翻译
-                    value = [[NSBundle bundleWithIdentifier:@"com.apple.UIKit"] localizedStringForKey:key value:nil table:nil];
+                    // ★ Task228：zh-Hans 之后追加 zh-CN 一跳。Task227 的 i18n
+                    // 写入曾把 en/zh-Hans/zh-Hant/ja 四个表同时写坏（值内引号
+                    // 未转义 → 整表解析失败），en→zh-Hans 两跳全部失守时，
+                    // 唯一幸存的 zh-CN 表反而无处可退——用户全界面裸键名。
+                    // 兜底线越长，单一坏表把键名漏给用户的概率越低。
+                    NSString *ame228_zhCNPath = [NSBundle.mainBundle pathForResource:@"zh-CN" ofType:@"lproj"];
+                    NSBundle *ame228_zhCNBundle = [NSBundle bundleWithPath:ame228_zhCNPath];
+                    value = [ame228_zhCNBundle localizedStringForKey:key value:nil table:nil];
+                    if (value == nil || [value isEqualToString:key]) {
+                        // 英文也没有，尝试 UIKit 系统翻译
+                        value = [[NSBundle bundleWithIdentifier:@"com.apple.UIKit"] localizedStringForKey:key value:nil table:nil];
+                    }
                 }
             }
         }
@@ -748,7 +758,14 @@ NSString* localize(NSString* key, NSString* comment) {
                 NSBundle *zhBundle = [NSBundle bundleWithPath:zhPath];
                 value = [zhBundle localizedStringForKey:key value:nil table:nil];
                 if ([value isEqualToString:key]) {
-                    value = [[NSBundle bundleWithIdentifier:@"com.apple.UIKit"] localizedStringForKey:key value:nil table:nil];
+                    // ★ Task228：同上——zh-Hans 之后追加 zh-CN 一跳（Task227
+                    // 四表同坏事故的兜底加固；zh-CN 是五表对齐后另一张完整简中表）。
+                    NSString *ame228_zhCNPath = [NSBundle.mainBundle pathForResource:@"zh-CN" ofType:@"lproj"];
+                    NSBundle *ame228_zhCNBundle = [NSBundle bundleWithPath:ame228_zhCNPath];
+                    value = [ame228_zhCNBundle localizedStringForKey:key value:nil table:nil];
+                    if (value == nil || [value isEqualToString:key]) {
+                        value = [[NSBundle bundleWithIdentifier:@"com.apple.UIKit"] localizedStringForKey:key value:nil table:nil];
+                    }
                 }
             }
         }

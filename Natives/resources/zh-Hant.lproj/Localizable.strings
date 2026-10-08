@@ -2912,7 +2912,7 @@
 
 /* Task227：依赖确认单（issue #10 重做）+ 导入完成计数 */
 "ame227.deps.title" = "必要前置模組";
-"ame227.deps.message" = ""%@" 依賴以下前置模組：\n\n%@是否一併自動安裝？";
+"ame227.deps.message" = "\"%@\" 依賴以下前置模組：\n\n%@是否一併自動安裝？";
 "ame227.deps.only_mod" = "僅安裝本體";
 "ame227.deps.install_all" = "全部一併安裝（推薦）";
 "ame227.deps.optional_note" = "\n（另有部分可選前置——不會自動安裝。）";
