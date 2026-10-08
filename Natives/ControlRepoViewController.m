@@ -464,7 +464,7 @@ static BOOL ame230_layoutSafetyCheck(NSData *raw, id jsonObj, NSString **reasonO
     UIAlertController *picker = [UIAlertController
         alertControllerWithTitle:localize(@"ame230.repo.upload.pick", nil)
                          message:nil
-                  preferredStyle:UIAlertActionStyleActionSheet];
+                  preferredStyle:UIAlertControllerStyleActionSheet];
     for (NSString *f in installed) {
         [picker addAction:[UIAlertAction actionWithTitle:f.stringByDeletingPathExtension
                                                    style:UIAlertActionStyleDefault
