@@ -2182,3 +2182,17 @@ Stage Summary:
 - Task 231 shipped: launch crash root-caused to the recursive-block-without-__block in Task230's own sprint migration + immutable-dict KVC write; both fixed, plus the same-class mine in the modpack retry path.
 - Device anchors for the next build: app reaches the home screen; if the user's layout still has the all-zero dead button, expect "[Pre-init] Task230: sprint dead-button migrated to Left Control 341 in custom.json" (or classic/large-buttons) in the first boot's log; the in-game sprint button should now hold sprint (item 3 finally functional end-to-end).
 - All other Task230 items ride the same rebuild; if any regression appears, latestlog diff against the 39633e4 session (old.txt) is the baseline.
+
+---
+Task ID: 231-2
+Agent: main (Super Z)
+Task: Task 231 CI closure
+
+Work Log:
+- Commit 092d8448 pushed to main (token re-set on origin URL after the stored URL degraded to a placeholder; .tok2 file no longer exists in the sandbox -- token recovered from session record)
+- CI run 37859674668 on 092d8448: COMPLETED SUCCESS on the FIRST attempt (~17 min, two foreground polling chunks)
+- Artifacts verified: com.air-devs.air-ios.ipa 220.2MB + com.air-devs.air-ios-trollstore.tipa 220.2MB + AngelAuraAmethyst.dSYM 6.1MB, none expired
+
+Stage Summary:
+- Task 231 closed: launch-crash root cause (recursive block without __block + immutable-dict KVC write) fixed, same-class mine in modpack retry path defused, standing fleet audit added; CI green, artifacts ready for install.
+- Install this build over the crashing 684915a install; first boot should reach the home screen and, if the layout still carries the all-zero dead button, log "[Pre-init] Task230: sprint dead-button migrated to Left Control 341 in custom.json".
