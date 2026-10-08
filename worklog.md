@@ -2035,3 +2035,18 @@ Stage Summary:
 - 装机验证锚点：①任意语言界面恢复正常文案（无 i18n 键名/裸键）；②切液态玻璃风格：Card 布局三卡/侧栏/右面板/导航栏全部保持原样不再变黑；③"[ThemeOps] Task228 composite glass default"（组合玻璃默认路径一次性日志，装机可检索）；④头像长按玻璃菜单正常渲染（非黑面板）；⑤CI 日志新增 "Validate Localizable.strings syntax (Task228 gate)" 步骤且绿
 - 系统性防御：.strings 语法门进 CI（同类事故已两次，第三次会在 CI 拦截而非装机发现）；localize() 兜底线加长（单表损坏不再把键名漏给用户）
 - 遗留：AME227_SYSTEM_GLASS=1 供未来系统玻璃重试（若上游/容器环境改善）；上游大件（陶瓦重构/CF 筛选/Krypton 渲染器/版本隔离向导）仍未合流待用户点名
+
+---
+Task ID: 228-CI
+Agent: main (Super Z)
+Task: Task 228 CI 闭环（run 37713835746，commit 752a5626f）
+
+Work Log:
+- 凭据抢救：remote URL 内嵌的克隆时代 token 已死（API 401；fetch 能过只因仓库公开），从重置前环境 /tmp/my-project/.gh_token 救回用户上轮提供的有效 token（ghp_YvT...TTCS，/user 200）→ set-url + 存回 .tok2；仓库已改名 Air→Prisma-Minecraft-iOS-Launcher（重定向推送成功后 remote 同步更新）
+- run 37713835746 首轮即绿（01:37:15Z 触发，约 17 分钟完成，零修复轮次）：新 CI 门 "Validate Localizable.strings syntax (Task228 gate)" 随构建通过
+- 产物齐备：ipa/tipa 各 230.9MB + dSYM 6.4MB
+- 轮询脚本入库：scripts/poll_ci_task228.sh（前台分块口径，一调用一块 ≤9 分钟，17×30s tick）
+
+Stage Summary:
+- Task 228 全链闭环：双报（全语言裸键名 + 切玻璃黑面）→ 字节级根因 → 双根修（4 语言表修复 + localize 兜底链加长 + CI 语法门 / 玻璃默认反转组合玻璃 + 主界面玻璃全退 + 栏位交还系统退役）→ 验证链大扫荡（28+7 验证器计数扫荡、5 存量锚点重锚、2 处 CRLF 字节修复）→ 全链绿 → 首轮 CI 绿 → 新 IPA 就绪
+- 装机验证锚点（优先级）：①任意语言界面恢复正常文案（无 i18n 键名）；②切液态玻璃风格：Card 布局三卡/侧栏/右面板/导航栏全部保持原样不再变黑；③"[ThemeOps] Task228 composite glass default"（一次性日志）；④头像长按玻璃菜单正常渲染（非黑面板）；⑤未来想再试系统玻璃设 AME227_SYSTEM_GLASS=1（opt-in 实验开关）
