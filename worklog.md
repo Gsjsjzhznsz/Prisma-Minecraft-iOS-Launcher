@@ -2078,3 +2078,19 @@ Stage Summary:
 - 11 项反馈全部落地（1.20.1 启动崩溃/切后台输入/疾跑/右Shift/玻璃悬浮栏/依赖确认单/文件夹浏览器/键盘关闭/齿轮/FCL输入法开关/导入分流/欢迎页空白/字体黑线/i18n）
 - 装机验证锚点（优先级）：①"[AppKitStub] Task229: NSImage stub + NSData legacy-b64 selector installed" + 1.20.1 启动越过 Window.setIcon（下一关=Task227 ivec 着色器）；②"[input_bridge] Task229 CTCDesktopPeer natives registered via Amethyst_SetSDLWindow" + 26.3 游戏内开文件夹弹浏览器（有内容）；③切后台后输入不偏移 + toggle 的右Shift 跨后台存活（"[InputDiag] Task229 resume reassert: ... N toggle-held mod(s) re-driven"）；④XaeroPlus 下载前弹确认单（"[DownloadVC] Task227 dep-resolve: XaeroPlus -> 3 required"）+ 版本页 footer；⑤键盘点✎收起后不再弹回（"[SurfaceVC] Task229 hard suppression"）；⑥悬浮齿轮轻点即开（无需拖到边）；⑦切液态玻璃后游戏内菜单面板有玻璃质感（"[GameMenu] Task229 floating menu glass applied"）；⑧欢迎页圆圈介绍有文字；⑨字体无内部黑线；⑩设置页三个新项（自动输入法(SDL)/切换疾跑/同步键位）
 - 遗留：1.20.1 fabric-intermediary 类名的 MacosUtil 若报崩溃需补桩（本轮修 vanilla 混淆名 ehg）；CurseForge 依赖实测样本待装机确认（apiSource=2 路径代码正确但无设备证据）
+
+---
+Task ID: 229-CI
+Agent: main (Super Z)
+Task: Task 229 CI 闭环（run 37803277122，commit 39633e49 / 代码提交 c81f0a95）
+
+Work Log:
+- 首个 run 37803120057（c81f0a95）被 workflow concurrency 组自动取消（worklog 提交 39633e49 的新 run 取代——代码内容完全相同，仅追加文档）
+- run 37803277122 前台分块轮询两块（18×30s/块）：15:45 开始 in_progress，16:02 completed **success——零修复轮次，首轮即绿**
+- 产物三件齐备：com.air-devs.air-ios.ipa 220.2MB（id 11561924140）/ trollstore.tipa 220.2MB（11563236426）/ AngelAuraAmethyst.dSYM 6.1MB（11561978936）
+- 新 CI 门 "Validate Localizable.strings syntax (Task228 gate)" 随本轮 12 新键构建通过
+- 轮询脚本入库：scripts/poll_ci_task229.sh（前台分块口径）
+
+Stage Summary:
+- Task 229 全链闭环：11 项反馈 → 日志/反编译/API 三重取证 → 11 组修复（AppKitStub 扩展/恢复钩子/疾跑+键位同步/菜单玻璃/apiSource/实底浏览器+CTC-SDL3/硬抑制窗/pan 阈值+FCL 开关/pickerMode/描边重做+豁免/12键×5语言）→ verify_task229 71/71 + 全链绿 → CI 首轮绿 → 新 IPA 就绪
+- 装机验证锚点优先级：①1.20.1 启动越过 loadIcon（"[AppKitStub] Task229: NSImage stub + NSData legacy-b64 selector installed"）；②26.3 游戏内开文件夹弹浏览器（"[input_bridge] Task229 CTCDesktopPeer natives registered via Amethyst_SetSDLWindow"）；③切后台输入不偏 + 右Shift toggle 存活；④XaeroPlus 确认单（3 required）；⑤键盘收起不回弹；⑥悬浮齿轮轻点即开；⑦游戏菜单玻璃；⑧欢迎页有字；⑨字体无黑线；⑩设置三新项
