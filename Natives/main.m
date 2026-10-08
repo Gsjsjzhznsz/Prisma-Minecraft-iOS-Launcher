@@ -351,16 +351,27 @@ void init_setupCustomControls() {
     //   文件缺失时拷贝——存量安装拿不到新 bundle。此处对已安装的
     //   custom.json / classic.json / large-buttons.json 做同款修补：仅当
     //   按钮名含"常用"、四个键码全零时改为 341（用户自绑过的永不动）。
+    //   Task231 修复（装机“打开闪退”根因，684915a 实测 latestlog 停在
+    //   Task226 symlink 行）：(a) 递归 block 必须 __block——非 __block 自动
+    //   变量在字面量求值时按值快照，此刻 ame230_walk 尚未赋值（ARC 零初始
+    //   化为 nil），block 捕获 nil 后首次递归调用读 nil->invoke =
+    //   EXC_BAD_ACCESS（硬件异常，@try 接不住）→ 无痕 SIGKILL 形态闪退；
+    //   顶层 dict 必有 keys，首次递归必触发，每次启动必崩。
+    //   (b) 解析必须 MutableContainers——options:0 返回不可变
+    //   __NSDictionaryI，setValue:forKey: 抛 NSInvalidArgumentException
+    //   被 @catch 吞掉，迁移永远失效（③白修）。
     @try {
         NSArray<NSString *> *ame230_files = @[@"custom.json", @"classic.json", @"large-buttons.json"];
         for (NSString *ame230_fn in ame230_files) {
             NSString *ame230_p = [controlPath stringByAppendingPathComponent:ame230_fn];
             NSData *ame230_data = [NSData dataWithContentsOfFile:ame230_p];
             if (ame230_data == nil) continue;
-            id ame230_obj = [NSJSONSerialization JSONObjectWithData:ame230_data options:0 error:nil];
+            id ame230_obj = [NSJSONSerialization JSONObjectWithData:ame230_data
+                                                            options:NSJSONReadingMutableContainers
+                                                              error:nil];
             if (![ame230_obj isKindOfClass:[NSDictionary class]]) continue;
             __block BOOL ame230_changed = NO;
-            void (^ame230_walk)(id) = ^(id node) {
+            __block void (^ame230_walk)(id) = ^(id node) {
                 if ([node isKindOfClass:[NSDictionary class]]) {
                     NSString *ame230_nm = [node objectForKey:@"name"];
                     NSArray *ame230_kc = [node objectForKey:@"keycodes"];

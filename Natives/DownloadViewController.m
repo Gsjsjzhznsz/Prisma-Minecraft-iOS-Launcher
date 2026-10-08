@@ -4813,7 +4813,10 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
     __block NSError *downloadError = nil;
     __weak typeof(self) weakSelf = self;
 
-    void (^attemptDownload)(void) = ^{
+    // Task231：递归（失败重试）block 必须 __block——非 __block 自引用捕获
+    // 赋值前的 nil（ARC 零初始化），重试分支一旦走到 attemptDownload() 就是
+    // nil->invoke EXC_BAD_ACCESS。与 main.m ame230_walk 同款雷，顺手排掉。
+    __block void (^attemptDownload)(void) = ^{
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
         downloadAttempt++;
