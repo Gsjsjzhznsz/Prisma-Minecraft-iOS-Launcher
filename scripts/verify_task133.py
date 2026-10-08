@@ -6,7 +6,7 @@ B 26.1.2 controlify/JNA SIGBUS 崩溃链根治（Task133 镜像扫描重绑定�
 C 第三方皮肤头像（无连字符 profileId + 本地渲染 + file:// URL + 存量自愈）；
 D 三个二级页面行浮窗化（键位调整/手柄配置/运行时管理 + pickExtraAction）；
 E ANGLE ES 驱动开关退役（与 GLES 后端重复，死配置）；
-F/G 语法与 l10n 门（键基线 1916，Task134 重锚）；
+F/G 语法与 l10n 门（键基线 2727，Task134 重锚）；
 H 级联全链。
 """
 import re
@@ -176,7 +176,7 @@ ks = [lkeys(l) for l in LANGS]
 # Task138 重锚：+2 键（preference.warning.renderer_missing_dylib +
 # preference.title.mirror_policy-speed_first），1916 -> 1918
 check("F1 四语言键集一致（Task222 重锚：2715 = Task212 基线 2520 + Task222 45 + Task223 41）",
-      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2715, f"counts={[len(k) for k in ks]}")
+      ks[0] == ks[1] == ks[2] == ks[3] and len(ks[0]) == 2727, f"counts={[len(k) for k in ks]}")
 check("F2 pickextra 三键已随机制退役；Task134 新 12 键在位（jit_enabler 7 + title/detail 4 + hide_controls）",
       all("preference.pickextra.edit_layout" not in k and
           "preference.pickextra.edit_gamepad" not in k and

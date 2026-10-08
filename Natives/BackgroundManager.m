@@ -1162,10 +1162,10 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
                                                        attributes:@{
                 NSFontAttributeName: label.font ?: [UIFont systemFontOfSize:15],
                 NSForegroundColorAttributeName: [UIColor whiteColor],
-                NSStrokeColorAttributeName: [UIColor blackColor],
+                NSStrokeColorAttributeName: [UIColor colorWithWhite:0.0 alpha:0.82],   // Task229: semi-transparent halo, not hard ink
                 // 负值 = CoreText 语义“描边 + 填充”；2.6 与字号无关的
                 // 固定描边宽（大字号偏细、小字号偏粗，整体均衡）
-                NSStrokeWidthAttributeName: @(-2.6),
+                NSStrokeWidthAttributeName: @(-1.6),   // Task229: see ame227_swizzledLabelSetText -- -2.6 painted black lines inside dense glyphs
             }];
             label.attributedText = ame226_attr;
         }
@@ -1822,32 +1822,57 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
 
 static void (*ame227_origLabelSetText)(id, SEL, NSString *);
 
+// Task229: per-label opt-out (associated object). Labels placed on solid
+// light surfaces (coach-mark cards, the file browser sheet) must NOT get the
+// white-fill/stroke treatment -- white on a white card reads as blank text.
+static char ame229_StrokeExemptKey;
+void ame229_labelSetStrokeExempt(UILabel *label, BOOL exempt) {
+    objc_setAssociatedObject(label, &ame229_StrokeExemptKey,
+                             @(exempt), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+BOOL ame229_labelIsStrokeExempt(UILabel *label) {
+    NSNumber *v = objc_getAssociatedObject(label, &ame229_StrokeExemptKey);
+    return v.boolValue;
+}
+
 static void ame227_swizzledLabelSetText(id self, SEL _cmd, NSString *text) {
     if (!ame227_origLabelSetText) return;
     ame227_origLabelSetText(self, _cmd, text);
     @try {
         if (text.length == 0) return;
         if (![[BackgroundManager sharedManager] hasBackground]) return;
+        // Task229 (feedback #9): opted-out labels keep their native look.
+        if (ame229_labelIsStrokeExempt((UILabel *)self)) return;
         // 注：不守卫 attributedText——setText: 之后 attributedText 恒非 nil
         //（UIKit 把纯文本包装成 attributed 存储），该守卫会跳过一切。
         // 真正的富文本路径（attributedText 直设）不经 setText:，天然不受
         // 本交换影响。
         UILabel *ame227_label = (UILabel *)self;
         if (ame227_label.font == nil) return;
+        // Task229 (feedback #10: "black lines inside the font"): a negative
+        // NSStrokeWidth paints the stroke ON TOP of the fill with the outline
+        // centered on the glyph edge -- at -2.6 the counters of dense CJK
+        // glyphs (the character 'de' has four enclosed counters) and entire
+        // line-shaped glyphs (the full-width slash) were swallowed into solid
+        // black. Rework: a thinner stroke (-1.6) in a SEMI-TRANSPARENT dark
+        // color reads as a soft dark halo instead of hard black ink, and the
+        // strengthened drop shadow carries most of the contrast duty, so
+        // legibility on busy wallpapers is preserved while interiors stay
+        // clean.
         NSMutableAttributedString *ame227_styled =
             [[NSMutableAttributedString alloc] initWithString:text
                                                     attributes:@{
             NSFontAttributeName: ame227_label.font,
             NSForegroundColorAttributeName: [UIColor whiteColor],
-            NSStrokeColorAttributeName: [UIColor blackColor],
-            NSStrokeWidthAttributeName: @(-2.6),
+            NSStrokeColorAttributeName: [UIColor colorWithWhite:0.0 alpha:0.82],
+            NSStrokeWidthAttributeName: @(-1.6),
         }];
         ame227_label.textColor = [UIColor whiteColor];
         ((void (*)(id, SEL, id))objc_msgSend)(ame227_label,
             sel_registerName("setAttributedText:"), ame227_styled);
-        ame227_label.layer.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.55].CGColor;
+        ame227_label.layer.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.7].CGColor;
         ame227_label.layer.shadowOpacity = 1.0;
-        ame227_label.layer.shadowRadius = 1.5;
+        ame227_label.layer.shadowRadius = 2.0;
         ame227_label.layer.shadowOffset = CGSizeMake(0, 1);
         ame227_label.layer.masksToBounds = NO;
     } @catch (NSException *ame227_e) {

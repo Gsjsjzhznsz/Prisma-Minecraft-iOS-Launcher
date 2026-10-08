@@ -31,8 +31,18 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // 适配自定义启动器背景（毛玻璃/半透明规则与其它页一致）。
-    [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
+    // Task229 (feedback #5: "folder opens with only a frosted overlay and the
+    // folder name, nothing else"): this browser is a page-sheet modal ON TOP
+    // of the game -- the launcher-wide transparency pipeline (clear view +
+    // clear tableView + washed cells) over the sheet's own frosted chrome
+    // left rows and even the empty-state label invisible, and the global
+    // white-fill/stroke font swizzle finished the job. Opt out entirely: a
+    // SOLID sheet exactly like the system Files app is the readable answer
+    // for a file listing, and the sheet chrome itself already carries the
+    // launcher look.
+    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    self.tableView.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+    self.tableView.backgroundView = nil;
     // ★ Task228：浏览器头部"交还系统玻璃"退役（与全局栏管线一致——用户
     // 指令软件 UI 保持原样、玻璃只用于悬浮弹窗；系统玻璃渲染在本进程
     // 不可靠，Task225/228 两次实锤黑面）。头部恒走既有栏管线。
@@ -58,7 +68,11 @@
 }
 
 - (void)reapplyBackgroundEffect {
-    [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
+    // Task229: the browser is a SOLID sheet now (see viewDidLoad) -- the old
+    // transparency reapply would wash it back to the invisible frosted state
+    // on every background-effect broadcast. Reassert the solid colors.
+    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    self.tableView.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
     // Task228：头部不再随风格切换交还系统（见 viewDidLoad 注释）。
 }
 
@@ -147,7 +161,11 @@
         });
     }
 
-    // Task224：空态显示（重试期间提示等待，耗尽后提示空目录）
+    // Task224：空态显示。Task229：空态标签从 backgroundView 迁至
+    // tableHeaderView——makeViewControllerTransparent（其他页面仍在用）对
+    // UITableViewController 会把 backgroundView 清成 nil，这正是装机上
+    // 空态文字消失在毛玻璃后面的机制。header 只归本类管，且同样豁免
+    // 全局描边字体（白字浅底会隐形）。
     if (rows.count == 0) {
         UILabel *ame224_empty = [[UILabel alloc] init];
         ame224_empty.numberOfLines = 0;
@@ -158,9 +176,19 @@
             ? localize(@"folderbrowser.empty.retrying", nil)
             : localize(@"folderbrowser.empty.title", nil);
         [ame224_empty sizeToFit];
-        self.tableView.backgroundView = ame224_empty;
+        CGRect ame229_hf = CGRectMake(0, 0, self.tableView.bounds.size.width,
+                                      MAX(64.0, ame224_empty.bounds.size.height + 40.0));
+        UIView *ame229_hv = [[UIView alloc] initWithFrame:ame229_hf];
+        ame224_empty.frame = CGRectMake(16.0,
+                                        (ame229_hf.size.height - ame224_empty.bounds.size.height) / 2.0,
+                                        ame229_hf.size.width - 32.0,
+                                        ame224_empty.bounds.size.height);
+        [ame229_hv addSubview:ame224_empty];
+        extern void ame229_labelSetStrokeExempt(UILabel *, BOOL);
+        ame229_labelSetStrokeExempt(ame224_empty, YES);
+        self.tableView.tableHeaderView = ame229_hv;
     } else {
-        self.tableView.backgroundView = nil;
+        self.tableView.tableHeaderView = nil;
     }
 }
 
@@ -189,6 +217,11 @@
     NSDictionary *row = _rows[indexPath.row];
     BOOL isDir = [row[@"isDir"] boolValue];
     cell.textLabel.text = row[@"name"];
+    // Task229: exempt from the global white-fill/stroke font (solid cells,
+    // light background -- stroke paint would white them out).
+    extern void ame229_labelSetStrokeExempt(UILabel *, BOOL);
+    ame229_labelSetStrokeExempt(cell.textLabel, YES);
+    ame229_labelSetStrokeExempt(cell.detailTextLabel, YES);
     cell.textLabel.textColor = [UIColor labelColor];
     cell.detailTextLabel.textColor = [UIColor secondaryLabelColor];
     if (isDir) {

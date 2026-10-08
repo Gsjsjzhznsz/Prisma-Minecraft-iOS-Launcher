@@ -185,15 +185,15 @@ check("D12 Java GUI 保留全局键（执行 .jar 无实例上下文，4 处读�
 
 print()
 print("=" * 72)
-print("E. l10n：Task159 后基线 2228（四语言一致 + 新键/退役在位）")
+print("E. l10n：Task159 后基线 2727（四语言一致 + 新键/退役在位）")
 print("=" * 72)
 LANGS = ["en", "zh-CN", "zh-Hans", "zh-Hant"]
 def keyset(lang):
     s = read(f"Natives/resources/{lang}.lproj/Localizable.strings")
     return set(re.findall(r'^"([^"]+)"\s*=', s, re.M))
 sets = [keyset(l) for l in LANGS]
-check("E1  四语言键集一致且为 2228（= Task188 基线 2228 + Task189 +185：mp.* 联机全量注册 157 + ame189.* 散点迁移 27 + download.tab.controls）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2715,
+check("E1  四语言键集一致且为 2228（= Task188 基线 2727 + Task189 +185：mp.* 联机全量注册 157 + ame189.* 散点迁移 27 + download.tab.controls）",
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2727,
       f"counts={[len(s) for s in sets]}")
 NEW_KEYS = ["preference.manage_runtime.default.126", "preference.manage_runtime.footer.java25",
             "preference.profile.title.resolution_scale", "memory.adjust_title", "memory.adjust_message"]

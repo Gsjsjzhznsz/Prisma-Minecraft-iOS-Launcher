@@ -2008,3 +2008,15 @@
 "ame227.deps.optional_note" = "\n（オプションの前提もあります——自動インストールされません。）";
 "ame227.deps.footer" = "この Mod には %lu 個の必須前提があります：%@\nダウンロード時に一緒に導入するか確認されます。";
 "ame227.import.done" = "%ld 個のファイルを取り込みました。ランチャーを再起動すると完全に反映されます。";
+"preference.title.auto_keyboard_sdl" = "キーボード自動表示（SDL）";
+"preference.title.mc_toggle_sprint" = "トグルスプリント（走り続ける）";
+"preference.title.keybind_sync" = "キー設定を全インスタンスに同期";
+"ame229.sprint.title" = "トグルスプリント";
+"ame229.sprint.on.desc" = "トグルスプリントは現在有効です：スプリントキーを一度押すと走り続けます。全インスタンスでオフにできます。";
+"ame229.sprint.off.desc" = "トグルスプリントは現在オフです：走り続けるにはスプリントキーを押し続ける必要があります。オンにすると一度押すだけで走り続けます（全インスタンスに書き込まれます）。";
+"ame229.sprint.turn_on" = "オンにする";
+"ame229.sprint.turn_off" = "オフにする";
+"ame229.sprint.result" = "%ld 個のインスタンスでトグルスプリントを更新しました";
+"ame229.keybind.sync.one_instance" = "インスタンスが 1 つしか見つかりません -- 同期する必要はありません。";
+"ame229.keybind.sync.no_bindings" = "どのインスタンスにもカスタムキー設定が見つかりません。";
+"ame229.keybind.sync.done" = "キー設定を同期しました：%ld 個のファイルを更新、%ld 件のバインドを追加。";

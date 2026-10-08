@@ -60,7 +60,7 @@ def keyset(lg):
     return set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))
 k4 = [keyset(l) for l in ("en", "zh-Hans", "zh-CN", "zh-Hant")]
 check("A3 four-main-language key sets identical (each 2520 after +1)",
-      k4[0] == k4[1] == k4[2] == k4[3] and len(k4[0]) == 2715,
+      k4[0] == k4[1] == k4[2] == k4[3] and len(k4[0]) == 2727,
       f"counts={[len(k) for k in k4]}")
 check("A3b ja/km also carry mem_help.button",
       "mem_help.button" in keyset("ja") and "mem_help.button" in keyset("km"))

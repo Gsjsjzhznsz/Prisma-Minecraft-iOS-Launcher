@@ -181,7 +181,7 @@ r = subprocess.run([sys.executable, os.path.join(REPO, "scripts", "task139_synta
                    capture_output=True, text=True, timeout=120)
 check("I1 十文件括号平衡（含宏续行跳过）",
       "all balanced" in r.stdout, r.stdout[-200:] if r.stdout else r.stderr[-200:])
-check("I2 Task150 l10n（基线 2228；renderer_missing_dylib/mgfamily/mg_backend 仍在，Task142 开关键退役，Sodium 六键已入）",
+check("I2 Task150 l10n（基线 2727；renderer_missing_dylib/mgfamily/mg_backend 仍在，Task142 开关键退役，Sodium 六键已入）",
       all('"preference.warning.renderer_missing_dylib"' in rd(f"Natives/resources/{l}.lproj/Localizable.strings")
           for l in ["en", "zh-Hans", "zh-CN", "zh-Hant"]) and
       all('"preference.profile.renderer_follow_global_toggle"' not in rd(f"Natives/resources/{l}.lproj/Localizable.strings")

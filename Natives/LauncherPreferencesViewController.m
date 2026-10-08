@@ -144,6 +144,165 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
 
 @implementation LauncherPreferencesViewController
 
+#pragma mark - Task229: options.txt toolkit (sprint toggle + keybind sync)
+
+/// 返回 POJAV_HOME 下所有实例的 options.txt 绝对路径（instances/<inst>/
+/// versions/<ver>/game/options.txt 三层扫描；mtime 降序排列）。
+- (NSArray<NSString *> *)ame229_allInstanceOptionsPaths {
+    const char *home = getenv("POJAV_HOME");
+    if (home == NULL || home[0] == '\0') return @[];
+    NSString *instancesRoot = [NSString stringWithFormat:@"%s/instances", home];
+    NSFileManager *fm = NSFileManager.defaultManager;
+    NSMutableArray<NSString *> *out = [NSMutableArray array];
+    for (NSString *inst in [fm contentsOfDirectoryAtPath:instancesRoot error:nil]) {
+        NSString *instDir = [instancesRoot stringByAppendingPathComponent:inst];
+        BOOL isDir = NO;
+        if (![fm fileExistsAtPath:instDir isDirectory:&isDir] || !isDir) continue;
+        // 新隔离布局：instances/<inst>/versions/<ver>/game/options.txt
+        NSString *versionsDir = [instDir stringByAppendingPathComponent:@"versions"];
+        for (NSString *ver in [fm contentsOfDirectoryAtPath:versionsDir error:nil]) {
+            NSString *opt = [[versionsDir stringByAppendingPathComponent:ver]
+                stringByAppendingPathComponent:@"game/options.txt"];
+            if ([fm fileExistsAtPath:opt]) [out addObject:opt];
+        }
+        // 兼容旧布局：实例根直接挂 options.txt
+        NSString *optRoot = [instDir stringByAppendingPathComponent:@"options.txt"];
+        if ([fm fileExistsAtPath:optRoot] && ![out containsObject:optRoot]) {
+            [out addObject:optRoot];
+        }
+    }
+    // mtime 降序（最近玩的在前）
+    __block NSFileManager *fmB = fm;
+    [out sortUsingComparator:^NSComparisonResult(NSString *a, NSString *b) {
+        NSDate *da = [fmB attributesOfItemAtPath:a error:nil].fileModificationDate ?: [NSDate distantPast];
+        NSDate *db = [fmB attributesOfItemAtPath:b error:nil].fileModificationDate ?: [NSDate distantPast];
+        return [db compare:da];
+    }];
+    return out;
+}
+
+/// 读 options.txt 成行数组（空文件/缺失返回 nil）。
+- (NSArray<NSString *> *)ame229_linesOfOptions:(NSString *)path {
+    NSString *content = [NSString stringWithContentsOfFile:path
+                                                  encoding:NSUTF8StringEncoding error:nil];
+    if (content.length == 0) return nil;
+    return [content componentsSeparatedByString:@"\n"];
+}
+
+/// Task229（反馈 #2 持续奔跑）：把 toggleSprint 写进指定 options.txt。
+/// present=写 true（切换疾跑：按一次疾跑键=持续奔跑，vanilla 辅助功能）。
+- (BOOL)ame229_writeToggleSprint:(BOOL)present toOptions:(NSString *)path {
+    NSArray<NSString *> *lines = [self ame229_linesOfOptions:path];
+    if (lines == nil) return NO;
+    NSMutableArray<NSString *> *out = [NSMutableArray array];
+    BOOL wrote = NO;
+    for (NSString *ln in lines) {
+        if ([ln hasPrefix:@"toggleSprint:"]) {
+            [out addObject:present ? @"toggleSprint:true" : @"toggleSprint:false"];
+            wrote = YES;
+        } else {
+            [out addObject:ln];
+        }
+    }
+    if (!wrote) {
+        // 追加到末尾（找最后一个非空行之后；MC 对行序不敏感）
+        [out addObject:present ? @"toggleSprint:true" : @"toggleSprint:false"];
+    }
+    NSString *newContent = [out componentsJoinedByString:@"\n"];
+    BOOL ok = [newContent writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    if (ok) {
+        NSLog(@"[Settings] Task229 toggleSprint %@ -> %@ (%@)", present ? @"true" : @"false",
+              path.lastPathComponent, path);
+    }
+    return ok;
+}
+
+/// Task229（反馈 #2 右 Shift 复发）：跨实例键位同步。源 = mtime 最新且
+/// key_key.* 行数最多的 options.txt；把这些键位行合并进其他实例（只补
+/// 缺失键，不覆盖已有绑定——各实例显式改过的键位不动）。
+- (void)ame229_syncKeybindsAcrossInstances {
+    NSArray<NSString *> *paths = [self ame229_allInstanceOptionsPaths];
+    if (paths.count < 2) {
+        [self showSuccessMessage:localize(@"ame229.keybind.sync.one_instance", nil)];
+        return;
+    }
+    // 源选择：优先“非默认键位行最多”的（用户改绑痕迹最重的档），
+    // 并列时取 mtime 最新（paths 已按 mtime 降序）。
+    NSString *source = nil;
+    NSInteger bestCount = 0;
+    for (NSString *p in paths) {
+        NSArray<NSString *> *lines = [self ame229_linesOfOptions:p];
+        if (lines == nil) continue;
+        NSInteger cnt = 0;
+        for (NSString *ln in lines) {
+            if ([ln hasPrefix:@"key_key."]) cnt++;
+        }
+        if (cnt > bestCount) { bestCount = cnt; source = p; }
+    }
+    if (source == nil || bestCount == 0) {
+        [self showSuccessMessage:localize(@"ame229.keybind.sync.no_bindings", nil)];
+        return;
+    }
+    NSDictionary *sourceBindings = [self ame229_keybindsOfOptions:source];
+    if (sourceBindings.count == 0) {
+        [self showSuccessMessage:localize(@"ame229.keybind.sync.no_bindings", nil)];
+        return;
+    }
+    NSInteger syncedFiles = 0, addedRows = 0;
+    for (NSString *p in paths) {
+        if ([p isEqualToString:source]) continue;
+        NSArray<NSString *> *lines = [self ame229_linesOfOptions:p];
+        if (lines == nil) continue;
+        NSMutableSet *existing = [NSMutableSet set];
+        NSMutableArray<NSString *> *out = [NSMutableArray arrayWithArray:lines];
+        for (NSString *ln in lines) {
+            NSRange c = [ln rangeOfString:@":"];
+            if (c.location != NSNotFound) {
+                [existing addObject:[ln substringToIndex:c.location]];
+            }
+        }
+        NSInteger before = out.count;
+        for (NSString *key in sourceBindings) {
+            if (![existing containsObject:key]) {
+                NSString *row = [NSString stringWithFormat:@"%@:%@", key, sourceBindings[key]];
+                // 插在最后一行（通常为空行）之前
+                if (out.count > 0 && [out.lastObject isEqualToString:@""]) {
+                    [out insertObject:row atIndex:out.count - 1];
+                } else {
+                    [out addObject:row];
+                }
+            }
+        }
+        if (out.count > before) {
+            NSString *newContent = [out componentsJoinedByString:@"\n"];
+            if ([newContent writeToFile:p atomically:YES encoding:NSUTF8StringEncoding error:nil]) {
+                syncedFiles++;
+                addedRows += (out.count - before);
+            }
+        }
+    }
+    NSLog(@"[Settings] Task229 keybind sync: source=%@ (%ld binding rows) -> %ld file(s), %ld row(s) added",
+          source, (long)bestCount, (long)syncedFiles, (long)addedRows);
+    NSString *msg = [NSString stringWithFormat:localize(@"ame229.keybind.sync.done", nil),
+                     (long)syncedFiles, (long)addedRows];
+    [self showSuccessMessage:msg];
+}
+
+/// 抽取 options.txt 的全部 key_key.* 绑定（key -> value）。
+- (NSDictionary<NSString *, NSString *> *)ame229_keybindsOfOptions:(NSString *)path {
+    NSArray<NSString *> *lines = [self ame229_linesOfOptions:path];
+    if (lines == nil) return @{};
+    NSMutableDictionary<NSString *, NSString *> *out = [NSMutableDictionary dictionary];
+    for (NSString *ln in lines) {
+        if (![ln hasPrefix:@"key_key."]) continue;
+        NSRange c = [ln rangeOfString:@":"];
+        if (c.location == NSNotFound || c.location + 1 >= ln.length) continue;
+        out[[ln substringToIndex:c.location]] = [ln substringFromIndex:c.location + 1];
+    }
+    return out;
+}
+
+
 - (id)init {
     self = [super init];
     // 不设置 self.title，避免顶部导航栏出现"设置"标题黑条（参照 FCL 无 title 风格）
@@ -1477,7 +1636,82 @@ if ([section isEqualToString:@"general"]) {
                   [weakSelf presentViewController:alert animated:YES completion:nil];
               }
             },
-            // -----------------------------
+                        // Task229 (feedback #7, FCL-style auto-open input method switch,
+            // SDL builds): when on, the FIRST StartTextInput of a game
+            // session (the game-side text request: title-screen search box,
+            // chat focus) auto-opens the launcher keyboard. Later
+            // open/close cycles still run the full latch rules including
+            // the #6 hard-suppression window after an explicit dismissal,
+            // so this switch cannot resurrect the unclosable-keyboard bug.
+            @{@"key": @"auto_keyboard_sdl",
+              @"hasDetail": @YES,
+              @"icon": @"keyboard.badge.ellipsis",
+              @"type": self.typeSwitch,
+              @"enableCondition": whenNotInGame
+            },
+            // Task229 (feedback #2: sprint has no effect): vanilla's own
+            // accessibility switch -- toggleSprint:true in options.txt makes
+            // the sprint key latch (press once = keep running). The button
+            // reads the current state from every instance options.txt and
+            // writes the toggle to all of them (idempotent, instant).
+            @{@"key": @"mc_toggle_sprint",
+              @"hasDetail": @YES,
+              @"icon": @"figure.run",
+              @"type": self.typeButton,
+              @"enableCondition": whenNotInGame,
+              @"action": ^void(){
+                  // Current state = true if ANY instance has toggleSprint:true.
+                  BOOL anyOn = NO;
+                  for (NSString *p in [self ame229_allInstanceOptionsPaths]) {
+                      for (NSString *ln in [self ame229_linesOfOptions:p] ?: @[]) {
+                          if ([ln hasPrefix:@"toggleSprint:true"]) { anyOn = YES; break; }
+                      }
+                      if (anyOn) break;
+                  }
+                  UIAlertController *alert = [UIAlertController
+                      alertControllerWithTitle:localize(@"ame229.sprint.title", nil)
+                                       message:anyOn ? localize(@"ame229.sprint.on.desc", nil)
+                                                     : localize(@"ame229.sprint.off.desc", nil)
+                                preferredStyle:UIAlertControllerStyleAlert];
+                  NSString *onTitle = localize(@"ame229.sprint.turn_on", nil);
+                  NSString *offTitle = localize(@"ame229.sprint.turn_off", nil);
+                  [alert addAction:[UIAlertAction actionWithTitle:anyOn ? offTitle : onTitle
+                                                             style:UIAlertActionStyleDefault
+                                                           handler:^(UIAlertAction *a) {
+                      BOOL enable = !anyOn;
+                      NSInteger wrote = 0, total = 0;
+                      for (NSString *p in [self ame229_allInstanceOptionsPaths]) {
+                          total++;
+                          if ([self ame229_writeToggleSprint:enable toOptions:p]) wrote++;
+                      }
+                      NSLog(@"[Settings] Task229 toggleSprint written %ld/%ld instance options.txt (enable=%d)",
+                            (long)wrote, (long)total, (int)enable);
+                      [self showSuccessMessage:[NSString stringWithFormat:
+                          localize(@"ame229.sprint.result", nil), (long)wrote]];
+                      [self.tableView reloadData];
+                  }]];
+                  [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+                                                             style:UIAlertActionStyleCancel handler:nil]];
+                  [self presentViewController:alert animated:YES completion:nil];
+              }
+            },
+            // Task229 (feedback #2: right shift relapsed): instance isolation
+            // split options.txt per instance -- the 1.20.1 instance carries the
+            // user's key_key.sneak:right.shift binding while the 26.3 instance
+            // was born with vanilla defaults (left.shift), so the right-SHIFT
+            // button stopped working there. One-way sync: the binding-richest
+            // options.txt donates its key_key.* rows to every other instance
+            // (only fills MISSING keys, never overwrites an explicit rebind).
+            @{@"key": @"keybind_sync",
+              @"hasDetail": @YES,
+              @"icon": @"arrow.triangle.2.circlepath",
+              @"type": self.typeButton,
+              @"enableCondition": whenNotInGame,
+              @"action": ^void(){
+                  [self ame229_syncKeybindsAcrossInstances];
+              }
+            },
+// -----------------------------
             
             @{@"key": @"gesture_mouse",
                 @"icon": @"cursorarrow.click",

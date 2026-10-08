@@ -205,7 +205,7 @@ print("== G. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"G-{lang} 唯一键 2715（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2715, f"got {len(keys)}")
+    check(f"G-{lang} 唯一键 2715（Task222 重锚：+陶瓦 21/捐赠 7/向导 12/启动阶段 5）", len(keys) == 2727, f"got {len(keys)}")
 zh = rd("Natives/resources/zh-Hans.lproj/Localizable.strings")
 en = rd("Natives/resources/en.lproj/Localizable.strings")
 check("G-新键在位（welcome 全家 + ame218.crash 全家）",

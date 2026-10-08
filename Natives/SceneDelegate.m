@@ -348,6 +348,14 @@ static void AmeFGLogSwapStats(NSString *phase) {
     // Task223：释放后台驻车的渲染线程（先于一切呈现执法——被驻车的帧
     // 循环必须立即恢复，否则执法/尺寸重申全部白做）。
     ame223_bg_park_end();
+    // Task229 (feedback #1b/2): post-resume input reassertion -- reset the
+    // relative-move cursor baseline (stale baseline = phantom jump on the
+    // first post-background MOVE = the "input offset after backgrounding"
+    // complaint) and re-drive toggle-held modifier keys (SDL clears its
+    // keyboard state across focus transitions = "right shift relapsed").
+    // Game sessions only; the function itself is idempotent and cheap.
+    extern void ame229_inputResumeReassert(void);
+    ame229_inputResumeReassert();   // no-op outside game sessions
 }
 
 - (void)sceneWillResignActive:(UIScene *)scene {

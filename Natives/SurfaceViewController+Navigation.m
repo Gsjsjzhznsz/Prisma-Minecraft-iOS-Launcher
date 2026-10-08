@@ -4,6 +4,7 @@
 #import "PLProfiles.h"
 #import "SurfaceViewController.h"
 #import "GameMenuOverlayView.h"
+#import "LiquidGlassCompat.h"   // Task229: floating menu composite glass
 #import "TrackedTextField.h"
 #import "customcontrols/CustomControlsUtils.h"
 #import "ios_uikit_bridge.h"
@@ -109,6 +110,16 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
     // 确保菜单在遮罩之上
     [self.view bringSubviewToFront:self.menuView];
 
+    // ★ Task229（反馈 #3：液态玻璃悬浮栏没有任何效果）：游戏内悬浮菜单
+    // （底部弹层/侧滑面板）属于用户分类里的"悬浮弹窗"（软件 UI 原样、
+    // 玻璃只给悬浮件）。Task228 把主界面玻璃全数退役时，这个菜单也被
+    // 顺手留在原生深色半透明——切了液态玻璃风格的用户看到"悬浮栏完全
+    // 没有效果"。修法：风格激活时用 T225 装机验证过的组合玻璃原语
+    // （LGCApplyGlassToView = SystemUltraThinMaterial + 高光 + 发丝描边）
+    // 给菜单面板上玻璃；非玻璃风格保持原生外观（恒定先清层保证幂等，
+    // 风格切换广播由 BackgroundUIEffectChanged -> reapplyMenuGlass 接力）。
+    [self ame229_reapplyMenuGlass];
+
     // FCL/ZL2 风格悬浮按钮 + FPS/内存显示
     GameMenuOverlayView *overlay = [[GameMenuOverlayView alloc] initWithParentView:self.view];
     __weak typeof(self) weakSelf = self;
@@ -116,6 +127,27 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
         [weakSelf toggleMenu];
     };
     self.gameMenuOverlay = overlay;
+
+    // Task229: style-switch broadcast re-applies (or removes) the floating
+    // menu glass so toggling the launcher style reflects immediately.
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame229_handleBackgroundUIEffectChanged)
+                                                 name:@"BackgroundUIEffectChanged"
+                                               object:nil];
+}
+
+/// Task229：游戏内悬浮菜单的玻璃重铺（风格切换广播后也走这里）。
+- (void)ame229_reapplyMenuGlass {
+    if (![self.menuView isKindOfClass:UIView.class]) return;
+    LGCRemoveGlassFromView(self.menuView);
+    if (LGCIsGlassStyleActive()) {
+        BOOL ok = LGCApplyGlassToView(self.menuView, 16.0);
+        NSLog(@"[GameMenu] Task229 floating menu glass applied (composite, ok=%d)", ok);
+    }
+}
+
+- (void)ame229_handleBackgroundUIEffectChanged {
+    [self ame229_reapplyMenuGlass];
 }
 
 /// 切换菜单显示状态（悬浮按钮点击触发）

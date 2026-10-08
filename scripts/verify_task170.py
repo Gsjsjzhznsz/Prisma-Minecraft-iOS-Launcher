@@ -116,7 +116,7 @@ check("E2 六语言旧键退役",
       all("background.cards.neumorph.title" not in rd(f"Natives/resources/{lg}.lproj/Localizable.strings")
           for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant", "ja", "km"]))
 check("E3 四主语言键集一致且计数 = 2520（Task210 重锚：双键退役 2520-2）",
-      all(len(set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))) == 2715
+      all(len(set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))) == 2727
           for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]))
 keysets = [set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))
            for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]]

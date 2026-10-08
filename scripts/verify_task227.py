@@ -164,8 +164,8 @@ print("== J. 全局白底黑边字体 ==")
 check("J1 UILabel setText: swizzle 在位",
       "ame227_swizzledLabelSetText" in bm
       and "class_getInstanceMethod(self, @selector(setText:))" in bm)
-check("J2 描边字体（白填充+黑描边 2.6）",
-      "NSStrokeWidthAttributeName: @(-2.6)" in bm)
+check("J2 描边字体（白填充+半透明描边 1.6；Task229 重锚）",
+      "NSStrokeWidthAttributeName: @(-1.6)" in bm)
 check("J3 无壁纸零干预（hasBackground 门控）",
       "if (![[BackgroundManager sharedManager] hasBackground]) return;" in bm)
 
@@ -180,7 +180,7 @@ for l in langs:
     keys[l] = ks
 check("K1 四语言键集一致且 2715",
       keys["en"] == keys["zh-Hans"] == keys["zh-Hant"] == keys["zh-CN"]
-      and len(keys["en"]) == 2715, f"counts={[len(keys[l]) for l in langs]}")
+      and len(keys["en"]) == 2727, f"counts={[len(keys[l]) for l in langs]}")
 ja_ks = set()
 for line in io.open("Natives/resources/ja.lproj/Localizable.strings", encoding='utf-8'):
     if line.startswith('"') and '" = "' in line:

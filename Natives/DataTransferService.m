@@ -36,6 +36,16 @@
 /// 导出流程的文件选择器正在等待落点（区分导出/导入两条 delegate 回调——
 /// 导出落点文件名同样以 .zip 结尾，不能靠扩展名判流）。
 @property (nonatomic, assign) BOOL awaitingExportDestination;
+// Task229: explicit picker mode. awaitingExportDestination is retained
+// as the export-side state, but the didPick dispatch now keys on which
+// picker was actually presented -- a stale flag can no longer swallow an
+// import selection (the "import has no effect" failure mode).
+typedef NS_ENUM(NSInteger, Ame229PickerMode) {
+    Ame229PickerModeNone = 0,
+    Ame229PickerModeImportZip,
+    Ame229PickerModeExportDestination,
+};
+@property (nonatomic, assign) Ame229PickerMode ame229_pickerMode;
 @end
 
 /// Task224 导出条目：worker 与写线程之间的交接单元（字段先填好，
@@ -324,6 +334,7 @@
                 picker.delegate = self;
                 picker.modalPresentationStyle = UIModalPresentationFormSheet;
                 self.awaitingExportDestination = YES;
+                self.ame229_pickerMode = Ame229PickerModeExportDestination;
                 [self.presenter presentViewController:picker animated:YES completion:nil];
             }];
         });
@@ -343,6 +354,8 @@
     UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[zipType] asCopy:YES];
     picker.delegate = self;
     picker.modalPresentationStyle = UIModalPresentationFormSheet;
+    self.ame229_pickerMode = Ame229PickerModeImportZip;
+    NSLog(@"[DataTransfer] Task229: import picker presented (mode=import-zip)");
     [presenter presentViewController:picker animated:YES completion:nil];
 }
 
@@ -351,8 +364,25 @@
 - (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls {
     if (urls.count == 0) return;
     NSURL *picked = urls.firstObject;
+    NSLog(@"[DataTransfer] Task229: didPickDocumentsAtURLs mode=%ld url=%@",
+          (long)self.ame229_pickerMode, picked.path);
 
-    if (self.awaitingExportDestination) {
+    // Task229: dispatch on the EXPLICIT picker mode (which picker was
+    // presented), not on the awaitingExportDestination flag -- a stale flag
+    // from a cancelled export round used to route an import selection into
+    // the export-completion branch, which just toasts and returns: the
+    // import never ran and nothing was logged (the e24a60a9 log set shows
+    // zero import anchors). Mode is consumed on every dispatch.
+    Ame229PickerMode ame229_mode = self.ame229_pickerMode;
+    self.ame229_pickerMode = Ame229PickerModeNone;
+
+    if (ame229_mode == Ame229PickerModeImportZip) {
+        // Import path: asCopy=YES already materialized the file into tmp.
+        [self ame217_performImportFromZipAtURL:picked];
+        return;
+    }
+
+    if (ame229_mode == Ame229PickerModeExportDestination || self.awaitingExportDestination) {
         // 导出流程收尾：tmp zip 已被移动到用户选择的位置。展示成功提示并
         // 清理等待态（tmp 文件已不在原位，无需删除）。
         self.awaitingExportDestination = NO;
@@ -367,6 +397,8 @@
 
 - (void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller {
     // 用户取消：若导出流程的 tmp zip 仍在（move 未发生）则清理。
+    NSLog(@"[DataTransfer] Task229: picker cancelled (mode=%ld)", (long)self.ame229_pickerMode);
+    self.ame229_pickerMode = Ame229PickerModeNone;
     self.awaitingExportDestination = NO;
     for (NSString *entry in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:NSTemporaryDirectory() error:nil]) {
         if ([entry hasPrefix:@"prisma-backup-"] && [entry hasSuffix:@".zip"]) {
@@ -1370,6 +1402,7 @@ static void ame224_dosDateTime(NSDate *date, uint16_t *dosTime, uint16_t *dosDat
             picker.delegate = self;
             picker.modalPresentationStyle = UIModalPresentationFormSheet;
             self.awaitingExportDestination = YES;
+            self.ame229_pickerMode = Ame229PickerModeExportDestination;
             [presenter presentViewController:picker animated:YES completion:nil];
         }]];
         [doneAlert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_44", @"OK")

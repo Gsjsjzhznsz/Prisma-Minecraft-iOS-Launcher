@@ -29,6 +29,18 @@
 
         NSArray *files = [dictionary[@"files"] isKindOfClass:[NSArray class]] ? dictionary[@"files"] : @[];
         _primaryFile = [files firstObject];
+        // Task229 (feedback #4: dependency sheet + version-page footer both dead):
+        // the Modrinth branch never set _apiSource (property default 0; only
+        // parseCurseForgeDictionary set it to 2). ModDependencyResolver's
+        // parseDependenciesFromDetail switches on apiSource==1 -- every Modrinth
+        // rawDictionary was parsed by the CURSEFORGE branch (reads modId /
+        // relationType, all miss -> continue) -> 0 required / 0 optional /
+        // 0 truncated with err=none (e24a60a9 device log: "XaeroPlus -> 0
+        // required" while the live API returns 3 required + 1 optional with
+        // dependencies fully present). Both symptoms share this root: the
+        // version-page footer and the pre-download confirm sheet consume the
+        // same empty plan.
+        _apiSource = 1;   // Modrinth
         // ★ Task227：原始字典留存（dependencies[] 只在原文里——两个源都是）
         _rawDictionary = [dictionary copy];
     }

@@ -191,11 +191,70 @@ static void initSDLEventFuncs(void) {
         (void*)pSDL_GetKeyboardState, (void*)pSDL_SetModState);
 }
 
+// Task229: forward decl (registerOpenHandler is defined further down)
+void registerOpenHandler(JNIEnv *env);
+
+// Task229: one-shot CTC native registration for the SDL3 path. See the call
+// site in Amethyst_SetSDLWindow for the full rationale. Uses
+// JNI_GetCreatedJavaVMs to recover the JVM (JNI_OnLoad never ran, so
+// runtimeJavaVMPtr is NULL on 26.3); threads that already carry a JNIEnv
+// (they do -- UIKit_CreateWindow runs on a Java-attached SDL thread) get it
+// via GetEnv. Mirrors JNI_OnLoad's own call order (initSDLEventFuncs ran
+// above; registerOpenHandler needs nothing else).
+static void ame229_registerCTCOnce(void) {
+    static bool done = false;
+    if (done) return;
+    if (runtimeJNIEnvPtr != NULL) {
+        // 1.20.1 path: JNI_OnLoad ran and registered everything already.
+        done = true;
+        return;
+    }
+    JavaVM *vm = NULL;
+    typedef jint (*GetCreatedJavaVMs_t)(JavaVM **, jsize, jsize *);
+    GetCreatedJavaVMs_t getVMs = (GetCreatedJavaVMs_t)dlsym(RTLD_DEFAULT, "JNI_GetCreatedJavaVMs");
+    if (!getVMs) {
+        NSLog(@"[input_bridge] Task229 CTC once: JNI_GetCreatedJavaVMs unavailable -- folder-open bridge stays off this session");
+        done = true;
+        return;
+    }
+    jsize n = 0;
+    if (getVMs(&vm, 1, &n) != JNI_OK || n < 1 || vm == NULL) {
+        NSLog(@"[input_bridge] Task229 CTC once: no created JVM yet (n=%d) -- will not retry", (int)n);
+        done = true;
+        return;
+    }
+    runtimeJavaVMPtr = vm;   // JNI_OnLoad never set it on this path
+    JNIEnv *env = NULL;
+    jint gv = (*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_4);
+    if (gv != JNI_OK || env == NULL) {
+        if ((*vm)->AttachCurrentThread(vm, (void **)&env, NULL) != JNI_OK) {
+            NSLog(@"[input_bridge] Task229 CTC once: AttachCurrentThread failed");
+            done = true;
+            return;
+        }
+    }
+    registerOpenHandler(env);
+    NSLog(@"[input_bridge] Task229 CTCDesktopPeer natives registered via Amethyst_SetSDLWindow (SDL3 path; GLFW/JNI_OnLoad never ran)");
+    done = true;
+}
+
 // Called from UIKit_CreateWindow to register the real SDL window
 void Amethyst_SetSDLWindow(void *window) {
     g_sdlWindow = window;
     // Re-init in case libSDL3.dylib wasn't loaded at JNI_OnLoad time
     initSDLEventFuncs();
+    // Task229 (feedback #5: SDL build folder-open dead): MC 26.3 (LWJGL 341)
+    // never loads org.lwjgl.glfw.GLFW, whose static block does
+    // System.load(BUNDLE_PATH + "/AngelAuraAmethyst") -- the ONLY trigger of
+    // this executable's JNI_OnLoad -> registerOpenHandler. On 1.20.1 (LWJGL
+    // 333, GLFW path) the natives register fine (old-log anchor "Task226
+    // CTCDesktopPeer ... registered"); on 26.3 the CTCDesktopPeer natives
+    // never register and java.awt.Desktop.open falls into the cacio stub =
+    // zero reaction (e24a60a9 log set: not a single input_bridge anchor).
+    // Fix: this entry is guaranteed on the SDL3 path (UIKit_CreateWindow
+    // calls it as soon as the real SDL window exists). Recover the running
+    // JVM via JNI_GetCreatedJavaVMs and run the same registration once.
+    ame229_registerCTCOnce();
     // Task 104：窗口就绪即布防 AFK 心跳（26.3 的 30fps 短 AFK 限帧根治）
     ame104_armAfkHeartbeat();
     NSLog(@"[InputDiag] Amethyst_SetSDLWindow: %p PushEvent=%p", window, (void*)pSDL_PushEvent);
@@ -1986,6 +2045,47 @@ void CallbackBridge_syncGrabStateFromSDL(BOOL relMode, const char *source) {
     });
 }
 
+// Task229 (feedback #1b/2): foreground-resume input reassertion. Called from
+// SceneDelegate didBecomeActive AFTER presentation enforcement. Two jobs:
+//   (1) reset the relative-move baseline so the first post-resume MOVE (and
+//       any future gesture) starts from the current cursor position instead
+//       of a stale pre-background baseline (the "input offset after
+//       backgrounding" complaint);
+//   (2) re-drive every Task179 toggle-held modifier key: SDL clears its
+//       internal keyboard state on focus transitions (the hidden SDL window
+//       never holds focus on iOS), so a toggled right-shift / ctrl that WAS
+//       held before backgrounding reads as released after resume ("right
+//       shift relapsed"). The replayer re-sends nativeSendKey(...,1,0) for
+//       each toggled modifier -- the same path a fresh button tap uses
+//       (keystate array + modstate + SDL event, all in one).
+void ame229_inputResumeReassert(void) {
+    cLastX = cursorX;
+    cLastY = cursorY;
+    // Re-drive every toggle-held virtual modifier: SDL clears its keyboard
+    // state across focus transitions (the hidden SDL window never holds
+    // focus on iOS), so toggled right-shift / ctrl read as released after a
+    // background round-trip. ame66_virtualMods mirrors exactly the set the
+    // Task179 toggle keeps held -- replay each managed bit through the same
+    // pushSDLKeyboardEvent path a fresh tap uses (keystate + modstate + SDL
+    // event in one shot). Plain keys are not replayed: the Task67 joystick
+    // heartbeat already re-asserts WASD continuously.
+    static const struct { unsigned short bit; int sc; } ame229_modMap[] = {
+        {AME66_KMOD_LSHIFT, 225}, {AME66_KMOD_RSHIFT, 229},
+        {AME66_KMOD_LCTRL,  224}, {AME66_KMOD_RCTRL,  228},
+        {AME66_KMOD_LALT,   226}, {AME66_KMOD_RALT,   230},
+        {AME66_KMOD_LGUI,   227}, {AME66_KMOD_RGUI,   231},
+    };
+    int ame229_replayed = 0;
+    for (size_t ame229_i = 0; ame229_i < sizeof(ame229_modMap) / sizeof(ame229_modMap[0]); ame229_i++) {
+        if (ame66_virtualMods & ame229_modMap[ame229_i].bit) {
+            pushSDLKeyboardEvent((SDL3_Scancode)ame229_modMap[ame229_i].sc, true);
+            ame229_replayed++;
+        }
+    }
+    NSLog(@"[InputDiag] Task229 resume reassert: cursor baseline reset to (%.1f, %.1f), %d toggle-held mod(s) re-driven",
+          cursorX, cursorY, ame229_replayed);
+}
+
 void CallbackBridge_nativeSendCursorPos(char event, CGFloat x, CGFloat y) {
     static int cursorSendCount = 0;
     cursorSendCount++;
@@ -2026,8 +2126,18 @@ void CallbackBridge_nativeSendCursorPos(char event, CGFloat x, CGFloat y) {
 
         case ACTION_MOVE:
             if (isGrabbing) {
+                // Task229 (feedback #1b: input offset after backgrounding):
+                // x/y arrive in ABSOLUTE view coordinates, so the delta must
+                // be taken against the PREVIOUS event's absolute value --
+                // cLastX was never refreshed inside this branch (only the
+                // GLFW pump and glfwSetCursorPos updated it), so after an
+                // app background/foreground round-trip (or any long event
+                // gap) the first MOVE computed a huge phantom jump against
+                // a stale baseline. Update the baseline on every MOVE.
                 cursorX += x - cLastX;
                 cursorY += y - cLastY;
+                cLastX = x;
+                cLastY = y;
             } else {
                 cursorX = x;
                 cursorY = y;

@@ -238,9 +238,9 @@ check("O4 反色开关行/读写退役",
       '@"key": @"text_auto_contrast"' not in lpv
       and "LGCSetTextAutoContrastEnabled" not in lpv
       and "LGCTextAutoContrastEnabled" not in bm)
-check("O5 白底黑边全局字体（NSStrokeWidth 负值）",
-      "NSStrokeWidthAttributeName: @(-2.6)" in bm
-      and "NSStrokeColorAttributeName: [UIColor blackColor]" in bm
+check("O5 白底黑边全局字体（NSStrokeWidth 负值；Task229 重锚：-2.6→-1.6 半透明，反馈 #10 字内黑线根修）",
+      "NSStrokeWidthAttributeName: @(-1.6)" in bm
+      and "NSStrokeColorAttributeName: [UIColor colorWithWhite:0.0 alpha:0.82]" in bm
       and "NSForegroundColorAttributeName: [UIColor whiteColor]" in bm)
 check("O6 白底黑边仅壁纸场景（无壁纸回语义色）",
       "hasBackground]) {" in bm and "语义色 + 清阴影" in bm)
@@ -283,7 +283,7 @@ for l in langs:
     keys[l] = ks
 check("Q1 四语言键集一致且 2715【Task227：+7 ame227 键】",
       keys["en"] == keys["zh-Hans"] == keys["zh-Hant"] == keys["zh-CN"]
-      and len(keys["en"]) == 2715, f"counts={[len(keys[l]) for l in langs]}")
+      and len(keys["en"]) == 2727, f"counts={[len(keys[l]) for l in langs]}")
 # used keys subset check on the files we touched
 import re
 used = set()

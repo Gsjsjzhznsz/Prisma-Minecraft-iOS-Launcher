@@ -225,7 +225,7 @@ for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]:
     langs[lg] = keys
 check("F1 四主语言 nggl4es 键在位且唯一键 2715（Task210 重锚：neumorph 双键退役 2520-2，nggl4es +1 已并入）",
       all("preference.title.renderer.debug.nggl4es" in set(langs[l]) for l in langs)
-      and all(len(set(langs[l])) == 2715 for l in langs))
+      and all(len(set(langs[l])) == 2727 for l in langs))
 
 # Task211 重锚：本轮 gl4eszl2 键 +1 后全 fleet 计数 = 2520（2419 一代旧值
 # 清零；守卫精神不变——fleet 与 task151 H 门计数一致，无独立旧值残留。

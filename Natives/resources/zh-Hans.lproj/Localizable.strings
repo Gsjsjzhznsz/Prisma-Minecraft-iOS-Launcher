@@ -2921,3 +2921,15 @@
 "ame227.deps.optional_note" = "\n（另有部分可选前置——不会自动安装。）";
 "ame227.deps.footer" = "本模组有 %lu 个必需前置：%@\n下载时会询问是否一并安装。";
 "ame227.import.done" = "已导入 %ld 个文件。重启启动器后完全生效。";
+"preference.title.auto_keyboard_sdl" = "自动打开输入法（SDL）";
+"preference.title.mc_toggle_sprint" = "切换疾跑（持续奔跑）";
+"preference.title.keybind_sync" = "同步键位到所有实例";
+"ame229.sprint.title" = "切换疾跑";
+"ame229.sprint.on.desc" = "切换疾跑当前已开启：按一次疾跑键即可持续奔跑。可以为所有实例关闭。";
+"ame229.sprint.off.desc" = "切换疾跑当前未开启：需要一直按住疾跑键才能持续奔跑。开启后按一次即可持续奔跑（将写入所有实例）。";
+"ame229.sprint.turn_on" = "开启";
+"ame229.sprint.turn_off" = "关闭";
+"ame229.sprint.result" = "已更新 %ld 个实例的切换疾跑设置";
+"ame229.keybind.sync.one_instance" = "只找到一个实例，无需同步。";
+"ame229.keybind.sync.no_bindings" = "所有实例中都没有自定义键位。";
+"ame229.keybind.sync.done" = "键位同步完成：更新了 %ld 个文件，补充了 %ld 条绑定。";

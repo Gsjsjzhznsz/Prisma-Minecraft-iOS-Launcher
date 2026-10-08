@@ -100,6 +100,11 @@ static BOOL ame227_g_dockedLeft = NO;
     // 添加拖拽手势
     UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleMenuButtonPan:)];
     pan.minimumNumberOfTouches = 1;
+    // ★ Task229：拖拽起手阈值委托——位移 < 24pt 时拒绝 pan 开始，触摸归还
+    // 按钮（游戏内用力轻点的自然漂移 10-20pt 常态超 UIKit 默认 ~10pt 的
+    // pan 识别线 → TouchUpInside 被取消 = "悬浮球点不开"；把手区域大反而
+    // 能点开 = "拖到边上才有反应"的形状完全吻合）。
+    pan.delegate = self;
     [self.menuButton addGestureRecognizer:pan];
 
     // 点击事件
@@ -366,10 +371,37 @@ static BOOL ame227_g_dockedLeft = NO;
     }];
 }
 
+/// ★ Task229：pan 起手阈值——点击漂移吸收。位移不足 24pt 时 pan 不开始，
+/// 按钮的 TouchUpInside 正常派发；超过则进入拖拽（阈值手感与
+/// UIScrollView 的 pan 抢占线同量级）。
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
+    if ([gestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
+        UIPanGestureRecognizer *ame229_pan = (UIPanGestureRecognizer *)gestureRecognizer;
+        // 仅对菜单按钮上的 pan 施加阈值；统计标签的 pan 沿用系统默认。
+        if (ame229_pan.view == self.menuButton) {
+            CGPoint ame229_t = [ame229_pan translationInView:self];
+            CGFloat ame229_d = sqrtf(ame229_t.x * ame229_t.x + ame229_t.y * ame229_t.y);
+            if (ame229_d < 24.0) {
+                return NO;
+            }
+        }
+    }
+    return YES;
+}
+
 - (void)menuButtonTouchedUp:(UIButton *)sender {
     [UIView animateWithDuration:0.1 animations:^{
         sender.transform = CGAffineTransformIdentity;
     }];
+    // Task229: tap-chain forensics (limited rate) -- the next device log must
+    // show whether the up event arrives and whether isDragging ate it.
+    static int ame229_tapLog = 0;
+    ame229_tapLog++;
+    if (ame229_tapLog <= 10 || ame229_tapLog % 50 == 0) {
+        NSLog(@"[GameMenu] Task229 gear tap #%d (isDragging=%d, callback=%@)",
+              ame229_tapLog, (int)self.isDragging,
+              self.onMenuButtonTapped ? @"set" : @"nil");
+    }
     // 如果是拖拽则不触发点击
     if (!self.isDragging) {
         if (self.onMenuButtonTapped) {

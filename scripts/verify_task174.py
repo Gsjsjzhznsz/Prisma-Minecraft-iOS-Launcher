@@ -136,7 +136,7 @@ check("C4 Task210：卡片本体透明度原语随退役删除（管线 + 引擎
 KEYSETS = [set(re.findall(r'^"([^"]+)"\s*=', rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), re.M))
            for lg in ["en", "zh-Hans", "zh-CN", "zh-Hant"]]
 check("D1 四主语言键集一致且计数 = 2520（Task210 重锚：neumorph 双键退役 2520-2）",
-      all(len(k) == 2715 for k in KEYSETS) and KEYSETS[0] == KEYSETS[1] == KEYSETS[2] == KEYSETS[3])
+      all(len(k) == 2727 for k in KEYSETS) and KEYSETS[0] == KEYSETS[1] == KEYSETS[2] == KEYSETS[3])
 check("D2 Task210：neumorph 双键六语言退役（button.opacity 亦无）",
       "background.cards.neumorph.interface.title" not in KEYSETS[0]
       and "background.cards.neumorph.opacity.title" not in KEYSETS[0]

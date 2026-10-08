@@ -190,7 +190,7 @@ def lang_keys(lang):
 k4 = [lang_keys(l) for l in ["en", "zh-Hans", "zh-Hant", "zh-CN"]]
 check("E", "四语言 metal 键齐备", all("preference.title.renderer.debug.metal" in k for k in k4))
 check("E", "四语言键集全同", k4[0] == k4[1] == k4[2] == k4[3])
-check("E", "唯一键计数 2715", len(k4[0]) == 2715, f"got {len(k4[0])}")
+check("E", "唯一键计数 2715", len(k4[0]) == 2727, f"got {len(k4[0])}")
 vh = rd("Natives/external/MobileGlues/MobileGlues-cpp/version.h")
 check("E", "REVISION 保持 18（不 bump）", "#define REVISION 22" in vh)
 check("E", "version.h 四任务附录在场",

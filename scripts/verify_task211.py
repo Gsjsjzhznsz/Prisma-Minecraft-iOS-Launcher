@@ -307,9 +307,9 @@ if not fails:
     _zh = rd("Natives/resources/zh-CN.lproj/Localizable.strings")
     _keys = _re.findall(r'^"([^"]+)"\s*=', _zh, _re.M)
     check("G7b 唯一键计数 2715（四语一致）",
-          len(set(_keys)) == 2715
+          len(set(_keys)) == 2727
           and all(len(set(_re.findall(r'^"([^"]+)"\s*=',
-              rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), _re.M))) == 2715
+              rd(f"Natives/resources/{lg}.lproj/Localizable.strings"), _re.M))) == 2727
               for lg in ("en", "zh-Hant", "zh-Hans")))
     import json as _json
     _faq_zh = _json.loads(rd("Natives/resources/zh-CN.lproj/help-faq.json"))

@@ -251,6 +251,13 @@ static BOOL ame227_kbUserDismissed = NO;
 static CFAbsoluteTime ame227_kbDismissedAt = 0.0;
 static CFAbsoluteTime ame227_lastTouchAt = 0.0;
 static int ame227_suppressedStarts = 0;
+// Task229 (feedback #7, FCL-style): "auto open input method (SDL)" switch.
+// When enabled, the FIRST StartTextInput of a game session auto-shows the
+// keyboard (FCL behavior: the game asks for text, the IME appears). Later
+// Starts still pass through the full latch machinery -- the feedback #6 fix
+// (hard suppression after explicit dismissal) is never bypassed, so auto-open
+// cannot resurrect the unclosable-keyboard bug.
+static BOOL ame229_autoKbShownThisSession = NO;
 
 // Task 78：FSR 预设 → 渲染缩放系数（与 MobileGlues-cpp FSR1.cpp
 // CalculateTargetResolution 的 scale 表同步：UQ=1.3 / Q=1.5 / B=1.7 / P=2.0）。
@@ -1152,6 +1159,8 @@ void ame139_fsr_heal_reset_input_scale(void) {
 {
     [super viewDidLoad];
     isControlModifiable = NO;
+    // Task229: per-game-session auto-keyboard state.
+    ame229_autoKbShownThisSession = NO;
     self.isMacCatalystApp = NSProcessInfo.processInfo.isMacCatalystApp;
     // Load MetalHUD library
     dlopen("/usr/lib/libMTLHud.dylib", 0);
@@ -2563,19 +2572,45 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     // ★ Task227：用户手动收起闩锁——游离 Start 抑制（详见声明区注释）。
     // 真输入意图 = 聊天开启键（3s 窗）或近 0.8s 屏幕触摸；二者任一命中
     // 才清闩放行。抑制时只记账不弹起，SDL 侧状态不受影响。
-    if (ame227_kbUserDismissed) {
+    // Task229 (feedback #7, FCL-style auto-keyboard): the first Start of a
+    // game session auto-opens when the switch is on; afterwards the normal
+    // latch rules apply (the #6 hard-suppression window still protects the
+    // explicit user dismissal).
+    if (!ame229_autoKbShownThisSession && getPrefBool(@"control.auto_keyboard_sdl")) {
+        ame229_autoKbShownThisSession = YES;
+        ame227_kbUserDismissed = NO;
+        NSLog(@"[SurfaceVC] Task229 auto-keyboard (SDL) fired -- first StartTextInput of session honored (FCL-style switch)");
+    } else if (ame227_kbUserDismissed) {
+        // ★ Task229（反馈 #6：无法关闭键盘）：Task227 的放行条件里聊天开
+        // 启键 3s 窗【优先级高于用户显式收起】——按 T 开聊天（清闩放行）
+        // 后立刻点 ✎ 收起（置闩），3 秒内 MC 26.x 的游离 StartTextInput
+        // 再次命中 chatOpener → 又清闩弹回 → 用户再收 → 再弹（装机日志
+        // 10286-10294 三连：CLEARED→dismissing→becoming 循环实锤）。
+        // 修法（两层收敛）：
+        //   ① 显式收起后 2.5s 硬抑制窗——窗内一切 Start 静默（聊天开启
+        //      键也不豁免；用户真要重开就再按一次 T，那时已出窗）；
+        //   ② recent-touch 清闩退役——游戏内任意屏幕触摸不构成"键盘
+        //      重开意图"，旧逻辑把它当意图等于每摸一下屏幕就给游离
+        //      Start 开门。
+        CFAbsoluteTime ame229_sinceDismiss = CFAbsoluteTimeGetCurrent() - ame227_kbDismissedAt;
+        if (ame229_sinceDismiss < 2.5) {
+            ame227_suppressedStarts++;
+            if (ame227_suppressedStarts <= 5 || (ame227_suppressedStarts % 25) == 0) {
+                NSLog(@"[SurfaceVC] Task229 hard suppression #%d (dismissed %.1fs ago < 2.5s window -- all Starts muted)",
+                      ame227_suppressedStarts, ame229_sinceDismiss);
+            }
+            return;
+        }
         BOOL ame227_chatOpener = ame161_lastSentKeyWasChatOpener(3.0);
-        BOOL ame227_recentTouch = (CFAbsoluteTimeGetCurrent() - ame227_lastTouchAt) < 0.8;
-        if (ame227_chatOpener || ame227_recentTouch) {
+        if (ame227_chatOpener) {
             ame227_kbUserDismissed = NO;
-            NSLog(@"[SurfaceVC] Task227 keyboard latch CLEARED (%@) -- showing keyboard",
-                  ame227_chatOpener ? @"chat-opener key" : @"recent touch");
+            NSLog(@"[SurfaceVC] Task229 keyboard latch CLEARED (chat-opener key, %.1fs after dismissal) -- showing keyboard",
+                  ame229_sinceDismiss);
         } else {
             ame227_suppressedStarts++;
             if (ame227_suppressedStarts <= 5 || (ame227_suppressedStarts % 25) == 0) {
                 NSLog(@"[SurfaceVC] Task227 stray StartTextInput SUPPRESSED #%d (user dismissed keyboard %.1fs ago -- tap input-method button or press T to reopen)",
-                      ame227_suppressedStarts,
-                      CFAbsoluteTimeGetCurrent() - ame227_kbDismissedAt);
+                      ame227_suppressedStarts, ame229_sinceDismiss);
             }
             return;
         }
@@ -2948,6 +2983,27 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
               [sender.properties[@"keycodes"][1] intValue],
               [sender.properties[@"keycodes"][2] intValue],
               [sender.properties[@"keycodes"][3] intValue]);
+    }
+    // Task229 (feedback #2 forensics): a button whose FOUR keycodes are all
+    // zero fires nothing in executebtn -- the on-device log showed the
+    // user pressing a "common action key" button with keycodes=[0,0,0,0]
+    // expecting sprint. Surface it once per session so the next log says
+    // which named button is unbound instead of silently doing nothing.
+    {
+        static NSMutableSet<NSString *> *s_ame229_zeroLogged = nil;
+        if (s_ame229_zeroLogged == nil) s_ame229_zeroLogged = [NSMutableSet set];
+        NSString *ame229_btnName = sender.properties[@"name"];
+        int kc0 = [sender.properties[@"keycodes"][0] intValue];
+        int kc1 = [sender.properties[@"keycodes"][1] intValue];
+        int kc2 = [sender.properties[@"keycodes"][2] intValue];
+        int kc3 = [sender.properties[@"keycodes"][3] intValue];
+        if (kc0 == 0 && kc1 == 0 && kc2 == 0 && kc3 == 0 && ame229_btnName.length > 0) {
+            NSString *ame229_dedup = [NSString stringWithFormat:@"%@", ame229_btnName];
+            if (![s_ame229_zeroLogged containsObject:ame229_dedup]) {
+                [s_ame229_zeroLogged addObject:ame229_dedup];
+                NSLog(@"[InputDiag] Task229 UNBOUND button pressed: name=%@ keycodes all zero -- bind a key in the layout editor (e.g. Left Control 341 for sprint)", ame229_btnName);
+            }
+        }
     }
     int held = action == ACTION_DOWN;
     // ===== Task179：修饰键 TOGGLE 语义（右shift 无效第二轮根修）=====

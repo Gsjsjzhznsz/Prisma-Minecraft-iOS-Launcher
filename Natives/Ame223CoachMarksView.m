@@ -187,6 +187,12 @@ static NSString * const ame224_kRound = @"round";
         [self addSubview:_ame224_card];
 
         _ame224_titleLabel = [[UILabel alloc] init];
+        // Task229 (feedback #9: welcome tour showed blank cards): coach-mark
+        // labels sit on SOLID adaptive cards -- the global white-fill/stroke
+        // swizzle would paint them white-on-white (invisible). Opt out; the
+        // exempted labels keep labelColor on the card background.
+        extern void ame229_labelSetStrokeExempt(UILabel *, BOOL);
+        ame229_labelSetStrokeExempt(_ame224_titleLabel, YES);
         _ame224_titleLabel.font = [UIFont systemFontOfSize:19 weight:UIFontWeightBold];
         _ame224_titleLabel.textColor = [UIColor labelColor];
         _ame224_titleLabel.numberOfLines = 0;
@@ -194,6 +200,7 @@ static NSString * const ame224_kRound = @"round";
         [_ame224_card addSubview:_ame224_titleLabel];
 
         _ame224_bodyLabel = [[UILabel alloc] init];
+        ame229_labelSetStrokeExempt(_ame224_bodyLabel, YES);   // Task229: see title label
         _ame224_bodyLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightRegular];
         _ame224_bodyLabel.textColor = [UIColor secondaryLabelColor];
         _ame224_bodyLabel.numberOfLines = 0;

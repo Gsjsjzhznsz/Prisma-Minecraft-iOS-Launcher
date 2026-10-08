@@ -1081,6 +1081,106 @@ static void ame99_installAppKitMenuStubs(void) {
           "(iOS has no AppKit; MC 26.3 MacosUtil menu walk no-ops, numberOfItems=0)");
 }
 
+// ============================================================================
+// Task 229 (feedback #1: "ANGLE errors on non-SDL build" -- actually an
+// MC 1.20.1 all-renderer startup crash): vanilla 1.20.1's
+// MacosUtil.loadIcon(IoSupplier) drives the ca.weblite.objc bridge
+// (java-objc-bridge 1.1, loaded via the version json osx rule) with:
+//   Client.sendProxy("NSData","alloc").send("initWithBase64Encoding:", b64)
+//   Client.sendProxy("NSImage","alloc").send("initWithData:", data)
+//   Client.sendProxy("NSApplication","sharedApplication").send(
+//       "setApplicationIconImage:", img)
+// jna-objc's msg() probes the target via methodSignatureForSelector: -- iOS
+// NSData has NO initWithBase64Encoding: (macOS 10.9 legacy selector, iOS
+// never had it; iOS uses initWithBase64EncodedString:options:) and NSImage
+// does not exist as a class at all -- either miss throws
+// NoSuchMethodException: Method cannot be found for signature 8668353440
+// -> "Initializing game" hard crash (e24a60a9 latestlog.old crash report:
+// ehg.a:45 = MacosUtil.loadIcon, ehn.a:154 = Window.setIcon; ProGuard
+// official mapping proof: enn=Minecraft, ehn=Window, ehg=MacosUtil).
+//
+// Why the 226/227 builds did NOT crash but 228 does (causal chain):
+//   * Task226 fixed the JNA re-signing -> the ca.weblite bridge went from
+//     NoClassDefFoundError (swallowed upstream, degraded) to actually usable;
+//   * Task227 fixed AssetsHeal (official <2char>/<hash> URL + bmclapi
+//     fallback) -> icons/minecraft.icns now really lands on disk (device log
+//     "Task225 healed 2/2" proof);
+//   * with both in place, loadIcon's IoSupplier reads real icns bytes for
+//     the first time and walks into the ObjC bridge -- previously the
+//     missing icns degraded via NoSuchFileException (which is why the
+//     1.20.1+ANGLE crash in the Task227 forensics happened later, at the
+//     shader stage). Renderer-independent (dies before any GL present);
+//     ANGLE was simply the renderer the user picked.
+//
+// Fix (Task99 stub system extension, zero Java-side changes):
+//   (1) register an NSImage stub class (iOS has none): NSObject subclass,
+//       -initWithData: returns self, +resolveInstanceMethod: safety net
+//       (same shape as the Task99 stubs);
+//   (2) class_addMethod the macOS legacy selector initWithBase64Encoding:
+//       onto the real Foundation NSData (returns self; the payload is never
+//       consumed -- the chain ends in the NSApplication stub's no-op). The
+//       runtime allows adding methods to existing classes and no iOS system
+//       code ever calls this macOS-only selector;
+//   (3) setApplicationIconImage: is already covered by the Task99
+//       NSApplication stub's resolveInstanceMethod: generic nil no-op.
+// Guards identical to Task99: real macOS (AppKit present) never touches
+// this; idempotent.
+// ============================================================================
+static id ame229_image_initWithData(id self, SEL _cmd, id data) { return self; }
+
+static BOOL ame229_resolveInstanceMethod(Class self, SEL _cmd, SEL name) {
+    NSLog(@"[AppKitStub] Task229: unexpected selector <%s> on %s -- generic nil no-op installed",
+          sel_getName(name), class_getName(self));
+    if (!class_addMethod(self, name, (IMP)ame99_generic_nil, "@@:")) return NO;
+    return YES;
+}
+
+static id ame229_nsdata_initWithBase64Encoding(id self, SEL _cmd, id b64String) {
+    // Payload is not decoded: the NSImage stub's initWithData: does not
+    // consume it either and the chain ends in the NSApplication stub no-op.
+    // This IMP only needs methodSignatureForSelector: to succeed.
+    static bool s_logged = false;
+    if (!s_logged) {
+        s_logged = true;
+        NSLog(@"[AppKitStub] Task229: NSData initWithBase64Encoding: (macOS legacy) served by stub -- MC 1.20.1 loadIcon proceeds");
+    }
+    return self;
+}
+
+static void ame229_installIconPathStubs(void) {
+    static bool installed = false;
+    if (installed) return;
+    installed = true;
+
+    if (objc_getClass("NSObject") == NULL) return;
+    // Real macOS has a real NSImage and real selectors -- never stub.
+    if (objc_getClass("NSImage") != NULL) {
+        NSLog(@"[AppKitStub] Task229: real NSImage present, icon stubs not needed");
+        return;
+    }
+
+    // (1) NSImage stub (+alloc inherited from NSObject; -initWithData: -> self)
+    Class imgCls = objc_allocateClassPair(objc_getClass("NSObject"), "NSImage", 0);
+    if (imgCls) {
+        class_addMethod(imgCls, @selector(initWithData:), (IMP)ame229_image_initWithData, "@@:@");
+        class_addMethod(imgCls, @selector(init), (IMP)ame229_image_initWithData, "@@:");
+        class_addMethod(object_getClass(imgCls), @selector(resolveInstanceMethod:),
+                        (IMP)ame229_resolveInstanceMethod, "B@::");
+        objc_registerClassPair(imgCls);
+    }
+
+    // (2) NSData gains the macOS legacy selector (iOS never had it)
+    Class nsDataCls = objc_getClass("NSData");
+    if (nsDataCls && class_getInstanceMethod(nsDataCls, @selector(initWithBase64Encoding:)) == NULL) {
+        class_addMethod(nsDataCls, @selector(initWithBase64Encoding:),
+                        (IMP)ame229_nsdata_initWithBase64Encoding, "@@:@");
+    }
+
+    NSLog(@"[AppKitStub] Task229: NSImage stub + NSData legacy-b64 selector installed "
+          "(MC 1.20.1 MacosUtil.loadIcon no-ops instead of crashing; AppKit-free iOS)");
+}
+
+
 // ---------------------------------------------------------------------------
 // Task 134 → Task 140：TouchController mod 侧配置处理的历史与现状。
 //
@@ -3083,6 +3183,8 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     // JVM 启动早期装好即可；幂等。iOS 无 AppKit，不装则 26.3 正式版
     // "Initializing game" 必崩（b919e0f 实锤）。
     ame99_installAppKitMenuStubs();
+    // Task229: 1.20.1 loadIcon 路径的 NSImage/NSData 桩同批安装（详见 Task229 注释块）。
+    ame229_installIconPathStubs();
 
     NSLog(@"[Init] Calling JLI_Launch");
 

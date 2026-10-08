@@ -2923,3 +2923,15 @@
 "ame227.deps.optional_note" = "\n(Plus some optional dependencies — not auto-installed.)";
 "ame227.deps.footer" = "This mod has %lu required dependenc(y/ies): %@\nYou will be asked whether to install them together when downloading.";
 "ame227.import.done" = "Imported %ld files. Restart the launcher for everything to take effect.";
+"preference.title.auto_keyboard_sdl" = "Auto-Open Keyboard (SDL)";
+"preference.title.mc_toggle_sprint" = "Toggle Sprint (Keep Running)";
+"preference.title.keybind_sync" = "Sync Key Bindings Across Instances";
+"ame229.sprint.title" = "Toggle Sprint";
+"ame229.sprint.on.desc" = "Toggle Sprint is currently ON: press the sprint key once to run continuously. You can turn it off for all instances.";
+"ame229.sprint.off.desc" = "Toggle Sprint is currently OFF: you must hold the sprint key to keep running. Turn it on and one press will run continuously (written to every instance).";
+"ame229.sprint.turn_on" = "Turn On";
+"ame229.sprint.turn_off" = "Turn Off";
+"ame229.sprint.result" = "Toggle Sprint updated on %ld instance(s)";
+"ame229.keybind.sync.one_instance" = "Only one instance found -- nothing to sync.";
+"ame229.keybind.sync.no_bindings" = "No custom key bindings found in any instance.";
+"ame229.keybind.sync.done" = "Key bindings synced: %ld file(s) updated, %ld binding(s) added.";

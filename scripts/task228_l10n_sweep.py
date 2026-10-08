@@ -2,7 +2,7 @@
 """Task228 l10n baseline sweep: 2708 -> 2715 (Task227 +7 ame227 keys) across
 the whole verifier fleet. Task227's closure only re-anchored its own K1/Q1
 checks; the other ~25 count-anchored verifiers (and the cross-reads between
-them, e.g. verify_task210 reading verify_task206's "== 2708") stayed on the
+them, e.g. verify_task210 reading verify_task206's "== 2727") stayed on the
 Task226 baseline and went red -- surfaced by Task228's chain run. Also
 re-anchors verify_task227 D3 to the Task228 glass default flip."""
 import glob, io

@@ -237,6 +237,28 @@ static const NSInteger kMaxDepth = 8;
     id deps = detail[@"dependencies"];
     if (![deps isKindOfClass:[NSArray class]]) return out;
 
+    // Task229 (defense in depth for feedback #4): apiSource arriving as 0
+    // (unset) routes Modrinth payloads into the CurseForge branch below --
+    // exactly the Task229-E1 root cause. E1 fixes the producer; this sniff
+    // guards against any future producer forgetting the flag: if the caller
+    // did not declare Modrinth (1), inspect the first dependency entry's
+    // shape -- Modrinth entries carry "project_id" / "dependency_type" keys,
+    // CurseForge entries carry "modId" / "relationType".
+    if (apiSource != 1) {
+        for (id ame229_probe in (NSArray *)deps) {
+            if (![ame229_probe isKindOfClass:[NSDictionary class]]) continue;
+            NSDictionary *ame229_d = ame229_probe;
+            BOOL ame229_mrShape = (ame229_d[@"project_id"] != nil ||
+                                   ame229_d[@"dependency_type"] != nil);
+            BOOL ame229_cfShape = (ame229_d[@"modId"] != nil ||
+                                   ame229_d[@"relationType"] != nil);
+            if (ame229_mrShape && !ame229_cfShape) {
+                apiSource = 1;
+            }
+            break;   // one entry is enough to decide
+        }
+    }
+
     for (id raw in (NSArray *)deps) {
         if (![raw isKindOfClass:[NSDictionary class]]) continue;
         NSDictionary *d = raw;
