@@ -1,3 +1,4 @@
+#import <objc/runtime.h>   // Task232：外扩描边标记（ame224_applyAdaptiveTextToLabel 在 1160 行区域使用，导入必须前置于此）
 #import "utils.h"
 //
 //  BackgroundManager.m
@@ -45,6 +46,12 @@ static const NSInteger kAme160GlassBackdropTag = 99994;
 @property (nonatomic, weak) UISplitViewController *currentSplitVC;
 @property (nonatomic, strong, readwrite, nullable) UIView *globalBackgroundContainer;
 @end
+
+
+// ★ Task232（反馈 #16）：外扩描边标记键——前置定义（ame224_applyAdaptiveTextToLabel
+// 在文件前部使用 objc_setAssociatedObject 打标；实现注释见
+// ame232_swizzledLabelDrawTextInRect 块）。
+static char ame232_OutlineMarkKey;
 
 @implementation BackgroundManager
 
@@ -1855,7 +1862,6 @@ static BOOL ame230_viewTreeIsStrokeExempt(UILabel *label) {
 //   CoreText 居中描边与模糊光晕都会向内渗黑，这是“中文字体内部黑线”
 //   连续三轮修不掉的构造性根因。绘制时复核壁纸/豁免状态（壁纸切换后
 //   旧标记的标签立即回到原生外观）。
-static char ame232_OutlineMarkKey;
 static void (*ame232_origLabelDrawTextInRect)(id, SEL, CGRect);
 
 static BOOL ame232_shouldPaintOutline(UILabel *label) {
