@@ -221,6 +221,15 @@ static NSString * const ame224_kRound = @"round";
 
         _ame224_bodyLabel = [[UILabel alloc] init];
         ame229_labelSetStrokeExempt(_ame224_bodyLabel, YES);   // Task229: see title label
+        // ★ Task234（“文字依旧不显示”第五轮——静默了四轮的真根因）：body
+        //   标签自 Task223 建类起就漏了 translatesAutoresizingMask=NO
+        //   （title 标签一直有，故标题能显示）。骨架约束（top/leading/
+        //   trailing/bottom/height≥34）与 autoresizing 掩码从【零初始帧】
+        //   生成的四条必需约束同优先级冲突，求解器打破显式约束后正文恒为
+        //   0x0 钉在卡片原点 = 标题在、介绍文字永不见（“无文字介绍”五连
+        //   报的残留真凶）。前四轮修的锚点/透明度/z序都是真问题但都不是
+        //   这一个。
+        _ame224_bodyLabel.translatesAutoresizingMaskIntoConstraints = NO;
         _ame224_bodyLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightRegular];
         _ame224_bodyLabel.textColor = [UIColor secondaryLabelColor];
         _ame224_bodyLabel.numberOfLines = 0;
@@ -459,6 +468,12 @@ static NSString * const ame224_kRound = @"round";
             [self layoutIfNeeded];
         }
     }
+    // ★ Task234：布局后帧取证——卡/标题/正文最终 frame 落日志，下一轮装机
+    //   日志直接验证“正文 0x0”根因修复（body 恒为 0x0 即约束仍冲突）。
+    NSLog(@"[CoachMarks] Task234 post-layout: card=%@ title=%@ body=%@",
+          NSStringFromCGRect(_ame224_card.frame),
+          NSStringFromCGRect(_ame224_titleLabel.frame),
+          NSStringFromCGRect(_ame224_bodyLabel.frame));
 
     // 入场（卡上浮弹入；文字恒可见——Task233 去除 alpha 依赖）。
     // Task233：transform 每页先归零——旧版以【当前 transform】为基数累加

@@ -76,8 +76,8 @@ check("233-3f saw-live guard against slow second launch", svc, '@"sawLive": @NO'
 
 print("== (4) share-to-GitHub webpage ==")
 check("233-4a clipboard-first", crv, "submission JSON (%lu bytes) copied to clipboard")
-check("233-4b id encoded with safe whitelist", crv, "ame233_idSet")
-check("233-4c value length cap", crv, "<= 6000")
+check("233-4b id encoded with safe whitelist (Task234 重锚：id 不再进 URL——零查询参数终案)", crv, "stringWithFormat:localize(@\"ame230.repo.upload.github_hint\", nil), ame230_id")
+check_absent("233-4c value length cap retired (Task234：value= 大载荷预填是 GitHub 500 错误页的触发面，整体退役)", crv, "<= 6000")
 check("233-4d openURL completion handler", crv, "Task233 GitHub openURL success=%d (urlLen=%lu)")
 check("233-4e failure toast", crv, 'localize(@"ame233.repo.open_fail", nil)')
 check_absent("233-4f raw id interpolation gone", crv, "community%%2F%@.json&value=%@\",\n            kTask189RepoOwner, kTask189RepoName, kTask189RepoRef, ame230_id,")
@@ -87,7 +87,7 @@ check("233-5a paragraph style replication", bm, "ame233_ps.alignment = ame232_la
 check("233-5b single-line truncation parity", bm, "ame233_ps.lineBreakMode = NSLineBreakByTruncatingTail")
 check("233-5c opaque backing copy", bm, "ame233_opaqueColor(ame232_label.textColor)")
 check("233-5d opaque helper", bm, "static UIColor *ame233_opaqueColor(UIColor *ame233_c)")
-check("233-5e four offsets preserved (232 anchor compat)", bm, "CGRectOffset(rect,  0.6f,  0.0f)")
+check("233-5e four offsets preserved (Task234 重锚：拷贝画进 textRectForBounds 文本矩形)", bm, "CGRectOffset(ame234_textRect,  0.6f,  0.0f)")
 
 print("== (6) welcome circle focus intro (4th round) ==")
 check("233-6a class-based anchor discovery", wvc, "Task233 anchor discovery: menu=%d content=%d right=%d")

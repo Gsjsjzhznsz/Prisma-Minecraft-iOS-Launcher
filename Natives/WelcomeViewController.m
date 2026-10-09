@@ -744,39 +744,83 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         }
     }
 
-    // ---- 锚点 3：启动按钮（深搜右面板视图树——旧代码只看 window 下一层，
-    //      按钮埋在右面板卡片三层以下，从未被探到过）----
+    // ---- 锚点 3：启动按钮（Task234 第五轮：不再按位置猜）----
+    // Task233 的深搜取“最靠下大按钮”——右面板布局里执行Jar/选择版本
+    // （38pt，贴底并排）恰在启动按钮（46pt）之下，搜索稳定命中执行Jar
+    // （用户实测“本来要圈启动按钮变成了执行jar”）。本轮三级确定性锚定：
+    // ① 右面板 VC 直接给出 launchButton 真身（ame234_launchAnchorView）；
+    // ② 标题匹配兜底（启动按钮三态标题 i18n_str_412/434/435 任一命中即
+    //    真身；执行Jar i18n_str_414 / 选择版本 i18n_str_38 明确排除）；
+    // ③ 整个右面板真实 frame（Task233 形态）。
     CGRect btnRect = CGRectNull;
+    NSString *ame234_tier = @"none";
     if (ame233_rightVC != nil && ame233_rightVC.isViewLoaded) {
-        UIView *ame233_best = nil;
-        NSMutableArray<UIView *> *ame233_stack = [NSMutableArray arrayWithObject:ame233_rightVC.view];
-        int ame233_visited = 0;
-        while (ame233_stack.count > 0 && ame233_visited < 600) {
-            UIView *ame233_v = ame233_stack.lastObject;
-            [ame233_stack removeLastObject];
-            ame233_visited++;
-            if (ame233_v.hidden || ame233_v.alpha <= 0.01) continue;
-            if ([ame233_v isKindOfClass:[UIButton class]] &&
-                ame233_v.frame.size.height > 36 && ame233_v.frame.size.width > 80) {
-                if (ame233_best == nil ||
-                    CGRectGetMaxY(ame233_v.frame) > CGRectGetMaxY(ame233_best.frame)) {
-                    ame233_best = ame233_v;   // 取最靠下的大按钮 = 启动
+        // ① 真身直取
+        UIView *ame234_launch = [ame233_rightVC ame234_launchAnchorView];
+        if (ame234_launch != nil && !ame234_launch.hidden && ame234_launch.window != nil) {
+            CGRect sr = [Ame223CoachMarksView screenRectForView:ame234_launch];
+            if (!CGRectIsNull(sr)) {
+                btnRect = CGRectInset(sr, -14, -14);
+                ame234_tier = @"direct";
+            }
+        }
+        // ② 标题匹配兜底（防御未来按钮重构/换类时仍不锚错）
+        if (CGRectIsNull(btnRect)) {
+            NSArray<NSString *> *ame234_launchTitles = @[
+                localize(@"i18n_str_412", nil),   // 启动游戏
+                localize(@"i18n_str_434", nil),   // 启动游戏（下载中）
+                localize(@"i18n_str_435", nil),   // 登录并启动
+            ];
+            NSString *ame234_jarTitle = localize(@"i18n_str_414", nil);   // 执行Jar
+            NSString *ame234_verTitle = localize(@"i18n_str_38", nil);    // 选择版本
+            UIView *ame233_best = nil;
+            NSMutableArray<UIView *> *ame233_stack = [NSMutableArray arrayWithObject:ame233_rightVC.view];
+            int ame233_visited = 0;
+            while (ame233_stack.count > 0 && ame233_visited < 600) {
+                UIView *ame233_v = ame233_stack.lastObject;
+                [ame233_stack removeLastObject];
+                ame233_visited++;
+                if (ame233_v.hidden || ame233_v.alpha <= 0.01) continue;
+                if ([ame233_v isKindOfClass:[UIButton class]] &&
+                    ame233_v.frame.size.height > 36 && ame233_v.frame.size.width > 80) {
+                    NSString *ame234_t = [(UIButton *)ame233_v currentTitle];
+                    if ([ame234_launchTitles containsObject:ame234_t]) {
+                        ame233_best = ame233_v;   // 三态标题命中即启动按钮真身
+                        break;
+                    }
+                    if (ame234_t != nil &&
+                        ([ame234_t isEqualToString:ame234_jarTitle] ||
+                         [ame234_t isEqualToString:ame234_verTitle])) {
+                        continue;   // 明确排除：执行Jar / 选择版本
+                    }
+                    if (ame233_best == nil ||
+                        CGRectGetMaxY(ame233_v.frame) > CGRectGetMaxY(ame233_best.frame)) {
+                        ame233_best = ame233_v;   // 未识别大按钮：退化为最靠下
+                    }
+                }
+                for (UIView *ame233_sub in ame233_v.subviews) {
+                    [ame233_stack addObject:ame233_sub];
                 }
             }
-            for (UIView *ame233_sub in ame233_v.subviews) {
-                [ame233_stack addObject:ame233_sub];
+            if (ame233_best != nil) {
+                CGRect sr = [Ame223CoachMarksView screenRectForView:ame233_best];
+                if (!CGRectIsNull(sr)) {
+                    btnRect = CGRectInset(sr, -14, -14);
+                    ame234_tier = @"title-match";
+                }
             }
         }
-        if (ame233_best != nil) {
-            CGRect sr = [Ame223CoachMarksView screenRectForView:ame233_best];
-            if (!CGRectIsNull(sr)) btnRect = CGRectInset(sr, -14, -14);
-        }
+        // ③ 整面板兜底（真实视图 frame，不再是屏幕比例猜位）
         if (CGRectIsNull(btnRect)) {
-            // 回退：整个右面板区域（真实视图 frame，不再是屏幕比例猜位）
             CGRect r = [Ame223CoachMarksView screenRectForView:ame233_rightVC.view];
-            if (!CGRectIsNull(r)) btnRect = r;
+            if (!CGRectIsNull(r)) {
+                btnRect = r;
+                ame234_tier = @"whole-panel";
+            }
         }
     }
+    NSLog(@"[Welcome] Task234 launch anchor tier=%@ rect=%@",
+          ame234_tier, CGRectIsNull(btnRect) ? @"null" : NSStringFromCGRect(btnRect));
     if (!CGRectIsNull(btnRect)) {
         [items addObject:@{
             @"rect": [NSValue valueWithCGRect:btnRect],

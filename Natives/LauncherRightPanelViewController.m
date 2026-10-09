@@ -1711,6 +1711,13 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     [self.launchButton setTitle:title forState:UIControlStateNormal];
 }
 
+// Task234：欢迎引导“启动按钮”圈的正确锚点（见 .h 注释）。按钮可能处于任意
+// 标题态（启动游戏 / 启动游戏（下载中） / 登录并启动——updateLaunchButtonState
+// 三态），但视图身份不变；访问器只认视图不认标题。
+- (UIView *)ame234_launchAnchorView {
+    return self.launchButton;
+}
+
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
     // Task102：滚动区 contentSize 变化（下载中心/进度 UI 展开折叠）→ 重算
     // 卡片组居中 inset；与下载进度 KVO 互不干扰（context 区分）

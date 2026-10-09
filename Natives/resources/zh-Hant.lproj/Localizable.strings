@@ -2945,7 +2945,7 @@
 "ame230.repo.upload.author" = "作者";
 "ame230.repo.upload.desc" = "描述（適合的玩法 / 版本）";
 "ame230.repo.upload.github" = "透過 GitHub 提交";
-"ame230.repo.upload.github_hint" = "正在開啟 GitHub 建檔案頁（需登入）。布局內容已複製到剪貼簿——網頁預填缺失時直接貼上";
+"ame230.repo.upload.github_hint" = "正在開啟 GitHub 建檔案頁（需登入）。在檔名框的目錄後補上 %1$@.json；布局內容已複製到剪貼簿，在編輯區貼上後提交即可";
 "ame230.repo.upload.no_layouts" = "沒有可上傳的佈局（請先在編輯器儲存一個）";
 "ame230.repo.upload.invalid" = "佈局檔案無法序列化，上傳已取消";
 

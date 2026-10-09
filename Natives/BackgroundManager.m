@@ -1911,6 +1911,18 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                     ame233_ps.lineBreakMode = NSLineBreakByTruncatingTail;
                 }
 
+                // ★ Task234（反馈“文字重叠依旧有问题”）：Task233 修了水平
+                //   对齐，垂直锚定仍是错的——NSAttributedString drawInRect:
+                //   按【顶部锚定】排版，而 UILabel.drawTextInRect: 先经
+                //   textRectForBounds:limitedToNumberOfLines: 求出【垂直
+                //   居中】的紧致文本矩形再落笔。按钮 titleLabel（38/46pt
+                //   高 vs ~20pt 行高）两者相差 9~13pt：深色拷贝整体浮在
+                //   白字上方 = “双层、重叠不上”的残留根因。本轮：拷贝画
+                //   进 textRectForBounds 的同一矩形（与原实现同几何源，
+                //   逐像素对齐；单行居中/多行换行语义全部同源）。
+                CGRect ame234_textRect = [ame232_label textRectForBounds:rect
+                                                 limitedToNumberOfLines:ame232_label.numberOfLines];
+
                 NSMutableAttributedString *ame233_dark =
                     [[NSMutableAttributedString alloc] initWithAttributedString:ame232_as];
                 NSRange ame233_darkRange = NSMakeRange(0, ame233_dark.length);
@@ -1918,10 +1930,10 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                 [ame233_dark addAttribute:NSForegroundColorAttributeName
                                      value:[UIColor colorWithWhite:0.0 alpha:0.82]
                                      range:ame233_darkRange];
-                [ame233_dark drawInRect:CGRectOffset(rect,  0.6f,  0.0f)];
-                [ame233_dark drawInRect:CGRectOffset(rect, -0.6f,  0.0f)];
-                [ame233_dark drawInRect:CGRectOffset(rect,  0.0f,  0.6f)];
-                [ame233_dark drawInRect:CGRectOffset(rect,  0.0f, -0.6f)];
+                [ame233_dark drawInRect:CGRectOffset(ame234_textRect,  0.6f,  0.0f)];
+                [ame233_dark drawInRect:CGRectOffset(ame234_textRect, -0.6f,  0.0f)];
+                [ame233_dark drawInRect:CGRectOffset(ame234_textRect,  0.0f,  0.6f)];
+                [ame233_dark drawInRect:CGRectOffset(ame234_textRect,  0.0f, -0.6f)];
 
                 NSMutableAttributedString *ame233_backing =
                     [[NSMutableAttributedString alloc] initWithAttributedString:ame232_as];
@@ -1930,7 +1942,7 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                 [ame233_backing addAttribute:NSForegroundColorAttributeName
                                         value:ame233_opaqueColor(ame232_label.textColor)
                                         range:ame233_backRange];
-                [ame233_backing drawInRect:rect];
+                [ame233_backing drawInRect:ame234_textRect];
             }
         }
     } @catch (NSException *ame232_e) {

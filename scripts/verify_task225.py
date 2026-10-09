@@ -126,7 +126,7 @@ check("D5 反色漏斗退役（Task226：白底黑边全局字体接管；Task23
       "LGCTextAutoContrastEnabled" not in bm
       and "NSStrokeWidthAttributeName" not in bm
       and "ame232_swizzledLabelDrawTextInRect" in bm
-      and "CGRectOffset(rect,  0.6f,  0.0f)" in bm
+      and "CGRectOffset(ame234_textRect,  0.6f,  0.0f)" in bm
       and "shadowRadius = 2.5" not in bm)
 
 # ---------------------------------------------------------------- E. 隔离

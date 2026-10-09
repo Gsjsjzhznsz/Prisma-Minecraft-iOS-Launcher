@@ -2948,7 +2948,7 @@
 "ame230.repo.upload.author" = "作者";
 "ame230.repo.upload.desc" = "描述（适合的玩法 / 版本）";
 "ame230.repo.upload.github" = "通过 GitHub 提交";
-"ame230.repo.upload.github_hint" = "正在打开 GitHub 建文件页（需登录）。布局内容已复制到剪贴板——网页预填缺失时直接粘贴";
+"ame230.repo.upload.github_hint" = "正在打开 GitHub 建文件页（需登录）。在文件名框的目录后补上 %1$@.json；布局内容已复制到剪贴板，在编辑区粘贴后提交即可";
 "ame230.repo.upload.no_layouts" = "没有可上传的布局（请先在编辑器保存一个）";
 "ame230.repo.upload.invalid" = "布局文件无法序列化，上传已取消";
 

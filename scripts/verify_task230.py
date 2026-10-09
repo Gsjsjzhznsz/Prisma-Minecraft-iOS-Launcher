@@ -96,7 +96,7 @@ check("230-13b download check (Task232 重锚：⑮ 检查移到下载侧询问�
 check("230-13c upload flow", "Natives/ControlRepoViewController.m", "+ (void)ame230_presentUploadFlowFrom:(UIViewController *)presenter preselect:(NSString *)preselect")
 check("230-13d header decl", "Natives/ControlRepoViewController.h", "+ (void)ame230_presentUploadFlowFrom:(UIViewController *)presenter preselect:(NSString *)preselect;")
 check("230-13e editor entry", "Natives/CustomControlsViewController.m", "- (void)actionMenuUpload {")
-check("230-13f github deeplink (Task233 重锚：URL 编码修复后 value 拆分追加)", "Natives/ControlRepoViewController.m", "?filename=controls%%2Flayouts%%2Fcommunity%%2F%@.json")
+check("230-13f github deeplink (Task233 重锚：URL 编码修复；Task234 重锚：filename=/value= 查询参数触发 GitHub 500 错误页——isaacs/github#1527 filename 斜杠已知 bug + value 大载荷渲染 500，改 /new/main/controls/layouts/community 纯路径目录预导航)", "Natives/ControlRepoViewController.m", "/new/%@/controls/layouts/community")
 # (15) i18n: 18 keys x 5 langs
 KEYS = ["ame230.gamemenu.caption", "ame230.deps.required",
         "ame230.deps.optional", "ame230.import.summary", "ame230.repo.upload",

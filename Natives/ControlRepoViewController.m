@@ -616,60 +616,41 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
     NSLog(@"[ControlRepo] Task230: upload submission ready (%lu bytes, safety-passed) via %@",
           (unsigned long)out.length, viaGitHub ? @"GitHub link" : @"share sheet");
     if (viaGitHub) {
-        // ★ Task233（反馈：分享控件到 GitHub 无法打开网页）双根因修复：
-        //   ① 布局 id（用户自命名，常为中文/空格）原样拼进 URL ——
-        //     [NSURL URLWithString:] 对含空格/非 ASCII 的字符串返回 nil，
-        //     openURL:nil 静默无效 = "点了没反应、打不开网页"。
-        //   ② value= 携带全量 JSON 且用【仅字母数字】白名单编码（每个
-        //     引号/冒号/换行都膨胀成 3 字符）——几十 KB 的布局编码后轻松
-        //     破 100KB，超长 URL 会被 Safari/GitHub 拒绝（414/白屏）。
-        //   新方案：提交内容【永远先复制到剪贴板】（网页编辑器直接粘贴，
-        //     任何网络/长度条件下都不丢内容）；id 用安全白名单编码；
-        //     value 只在 URL 总长 ≤ 6000 字符时随链预填，超长自动丢弃；
-        //     openURL 带完成回调，失败给可见提示（不再静默）。
+        // ★ Task233（反馈：分享控件到 GitHub 无法打开网页）：内容永远先复制
+        //   剪贴板（网页预填缺失直接粘贴，任何网络/长度条件下都不丢内容）。
+        //   ★ Task234（反馈：网页能打开了，但显示 "Looks like something
+        //   went wrong!"——GitHub 通用 500 错误页）：Task233 版仍带两枚查询
+        //   参数——filename=（%2F 编码完整路径）与 value=（≤6000 字符全量
+        //   JSON 预填）。取证定案：① filename 带斜杠是 isaacs/github#1527
+        //   实锤的已知 bug（“指定 filename 时目录上跳一级”）；② /new 编辑
+        //   器对大载荷 value 的服务端渲染会 500。本轮【零查询参数】终案：
+        //   目录前缀进 URL 路径（/new/main/controls/layouts/community——
+        //   建文件页原生的目录预导航，文件名框自动带出目录前缀，纯 ASCII
+        //   常量、URLString 永不失败），内容只走剪贴板，提示语带出应补的
+        //   文件名（用户只补 id.json 一段）。
         NSString *json = [[NSString alloc] initWithData:out encoding:NSUTF8StringEncoding];
         UIPasteboard.generalPasteboard.string = json ?: @"";
         NSLog(@"[ControlRepo] Task233: submission JSON (%lu bytes) copied to clipboard", (unsigned long)out.length);
-        // 文件名 id：保守白名单（CJK/空格/符号全部百分号编码，合法且不破查询串）
-        NSCharacterSet *ame233_idSet = [NSCharacterSet characterSetWithCharactersInString:
-            @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"];
-        NSString *ame233_idEnc = [ame230_id stringByAddingPercentEncodingWithAllowedCharacters:ame233_idSet];
-        if (ame233_idEnc.length == 0) ame233_idEnc = @"layout";
-        // value：查询值安全编码（&/=+ 保留字会破键值对，一并转义）
-        NSMutableCharacterSet *ame233_valueSet = [[NSCharacterSet URLQueryAllowedCharacterSet] mutableCopy];
-        [ame233_valueSet removeCharactersInString:@"&=+?"];
-        NSString *ame233_valueEnc = [json stringByAddingPercentEncodingWithAllowedCharacters:ame233_valueSet];
-        NSString *ame233_base = [NSString stringWithFormat:
-            @"https://github.com/%@/%@/new/%@?filename=controls%%2Flayouts%%2Fcommunity%%2F%@.json",
-            kTask189RepoOwner, kTask189RepoName, kTask189RepoRef, ame233_idEnc];
-        NSString *link = ame233_base;
-        if (ame233_base.length + ame233_valueEnc.length + 7 <= 6000) {
-            link = [ame233_base stringByAppendingFormat:@"&value=%@", ame233_valueEnc];
-        } else {
-            NSLog(@"[ControlRepo] Task233: value prefill dropped (base=%lu + value=%lu > 6000 chars; clipboard carries the content)",
-                  (unsigned long)ame233_base.length, (unsigned long)ame233_valueEnc.length);
-        }
-        NSURL *ame233_url = [NSURL URLWithString:link];
-        if (ame233_url == nil) {
-            // 兜底：整串再做一次完整编码（理论上不可达，防手滑构造）
-            NSString *ame233_fallback = [link stringByAddingPercentEncodingWithAllowedCharacters:
-                [NSCharacterSet URLQueryAllowedCharacterSet]];
-            ame233_url = [NSURL URLWithString:ame233_fallback];
-        }
+        NSString *ame234_base = [NSString stringWithFormat:
+            @"https://github.com/%@/%@/new/%@/controls/layouts/community",
+            kTask189RepoOwner, kTask189RepoName, kTask189RepoRef];
+        NSURL *ame233_url = [NSURL URLWithString:ame234_base];
         if (ame233_url != nil) {
             [[UIApplication sharedApplication] openURL:ame233_url options:@{}
                                      completionHandler:^(BOOL ame233_success) {
                 NSLog(@"[ControlRepo] Task233 GitHub openURL success=%d (urlLen=%lu)",
-                      (int)ame233_success, (unsigned long)link.length);
+                      (int)ame233_success, (unsigned long)ame234_base.length);
                 if (!ame233_success) {
                     [NMToast showMessage:localize(@"ame233.repo.open_fail", nil)];
                 }
             }];
         } else {
-            NSLog(@"[ControlRepo] Task233 GitHub URL still nil after encoding (len=%lu) -- clipboard fallback only", (unsigned long)link.length);
+            // 理论不可达（纯 ASCII 常量 URL），防御性兜底：剪贴板仍持有全部内容
+            NSLog(@"[ControlRepo] Task234 GitHub URL nil (len=%lu) -- clipboard fallback only",
+                  (unsigned long)ame234_base.length);
             [NMToast showMessage:localize(@"ame233.repo.open_fail", nil)];
         }
-        [NMToast showMessage:localize(@"ame230.repo.upload.github_hint", nil)];
+        [NMToast showMessage:[NSString stringWithFormat:localize(@"ame230.repo.upload.github_hint", nil), ame230_id]];
     } else {
         UIActivityViewController *avc = [[UIActivityViewController alloc]
             initWithActivityItems:@[[NSURL fileURLWithPath:tmp]]

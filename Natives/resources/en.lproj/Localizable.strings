@@ -2950,7 +2950,7 @@
 "ame230.repo.upload.author" = "Author";
 "ame230.repo.upload.desc" = "Description (gameplay / versions)";
 "ame230.repo.upload.github" = "Submit via GitHub";
-"ame230.repo.upload.github_hint" = "GitHub new-file page opening (sign-in required). The layout JSON is already on your clipboard - paste it into the editor if the prefill is missing";
+"ame230.repo.upload.github_hint" = "Opening the GitHub new-file page (sign-in required). Append %1$@.json after the folder path in the file-name box; the layout JSON is on your clipboard - paste it into the editor and commit";
 "ame230.repo.upload.no_layouts" = "No layouts to upload (save one in the editor first)";
 "ame230.repo.upload.invalid" = "Layout could not be serialized -- upload cancelled";
 

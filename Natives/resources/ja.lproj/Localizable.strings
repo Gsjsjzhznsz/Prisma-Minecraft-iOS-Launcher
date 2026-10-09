@@ -2035,7 +2035,7 @@
 "ame230.repo.upload.author" = "作者";
 "ame230.repo.upload.desc" = "説明（プレイスタイル / バージョン）";
 "ame230.repo.upload.github" = "GitHub で提出";
-"ame230.repo.upload.github_hint" = "GitHub の新規ファイルページを開いています（要ログイン）。レイアウト内容はクリップボードにコピー済み——入力欄が空ならそのまま貼り付けてください";
+"ame230.repo.upload.github_hint" = "GitHub の新規ファイルページを開いています（要ログイン）。ファイル名欄のフォルダパスの後ろに %1$@.json を追記してください。レイアウト内容はクリップボードにコピー済み——エディタに貼り付けてコミットしてください";
 "ame230.repo.upload.no_layouts" = "アップロードできるレイアウトがありません（先にエディタで保存してください）";
 "ame230.repo.upload.invalid" = "レイアウトをシリアライズできません——アップロードを中止しました";
 

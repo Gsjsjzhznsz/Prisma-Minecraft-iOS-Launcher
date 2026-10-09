@@ -114,7 +114,7 @@ check("232-15e keycode -12 floor", "Natives/ControlRepoViewController.m", "iv < 
 
 # (16) 白底黑边字体：四方向外扩描边（CoreText stroke + 光晕退役）
 check("232-16a drawTextInRect swizzle", bm, "ame232_swizzledLabelDrawTextInRect")
-check("232-16b four offsets", bm, "CGRectOffset(rect,  0.6f,  0.0f)")
+check("232-16b four offsets (Task234 重锚：拷贝改画进 textRectForBounds 紧致文本矩形——drawInRect 顶锚 vs drawTextInRect 垂直居中的 9~13pt 错位即「重叠不上」残留根因)", bm, "CGRectOffset(ame234_textRect,  0.6f,  0.0f)")
 check("232-16c setText marks only", bm, "ame232_OutlineMarkKey")
 check_absent("232-16d CoreText stroke retired", bm, "NSStrokeWidthAttributeName")
 check_absent("232-16e halo retired", bm, "shadowRadius = 2.5")
