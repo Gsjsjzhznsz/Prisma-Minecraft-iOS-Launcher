@@ -2227,3 +2227,19 @@ Work Log:
 Stage Summary:
 - Task 232 implementation complete; CI pending. Device anchors for next round: "[InputDiag] Task232 swipe release: clean UP"; "[InputDiag] Task232 resume geometry probe: physical=... window=... guiScale=..."; "[JavaLauncher] Task232: MC >= 26 + MobileGL ... steering to tinygl4angle"; "[Pre-init] Task230: sprint dead-button migrated ..." now expected in the USER's own layout file too; "[GameMenu] Task232 floating bar glass applied"; "[GameMenu] Task232 menu shown: rows=... firstTitleLen=..."; "[CoachMarks] Task232 page N/M: spot=... titleLen=..."; "[FolderBrowser] Task232 viewWillAppear: rows=... first=..."; "[ControlRepo] Task232: layout X flagged with N issue(s)" + the ask dialog; "[DataTransfer] Task232: auto-switched game directory to 'X'"; "[MultiplayerVC] Task232: auto-detected LAN port N -- generating share code" / "auto detection window elapsed ... falling back"; "[SurfaceVC] Task232 auto-keyboard (SDL) first-of-session honored".
 - Known non-regressions: task138-A1 (log-evidence rotated away); 26.3 MetallumAgent flowSnapshot noise; 1.20.1 expired auth token (user-side re-login); ANGLE GL 1280 enum spam on 26.3 (cosmetic).
+
+---
+Task ID: 232-2
+Agent: main (Super Z)
+Task: Task 232 CI closure
+
+Work Log:
+- Implementation commit 1102d37a pushed; CI r1 (37935735061) failed with 3 compile errors in the new dep-detail page (missing forward declaration / UIColor secondarySystemFillColor name / __block on the CF-completion assignment) -- fixed in 6f4cfd62
+- CI r2 (37937099624) failed: @class forward declaration insufficient for alloc/init ("receiver for class message is a forward declaration") -- full @interface hoisted above the use site, @implementation stays at file tail -- 56065438
+- CI r3 (37938562748) failed: ame232_OutlineMarkKey + objc/runtime.h import defined BELOW their use at line 1162 (ame224_applyAdaptiveTextToLabel) -- key definition hoisted above the first @implementation, runtime import added to the top import block -- 9137a8f5
+- CI r4 (37939600893) on 9137a8f5: COMPLETED SUCCESS (~13 min); verify_task232 re-green after each round (fleet bracket check made state-independent: n_ok>=1)
+- Artifacts verified: ipa + tipa 220MB-class + dSYM
+
+Stage Summary:
+- Task 232 closed: all 17 items landed (14 root-fixed + ⑦ closed-as-upstream per user instruction + ⑮ feature rework + ⑰ i18n sweep), CI green on r4, artifacts ready.
+- Lesson reinforced: new .m code now needs BOTH a local declaration-order pass (interface-before-use, key-before-use, import-before-use) AND the bracket/syntax gates before push -- the local Linux box cannot compile ObjC, so CI is the only compiler; consider adding a grep-based declaration-order preflight to the verify chain next round.
