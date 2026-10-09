@@ -13,8 +13,8 @@ AngelAuraAmethyst（Amethyst-iOS 重制版，fork **Gsjsjzhznsz/Air-Minecraft-iO
 ### 当前状态（收尾时更新）
 | 项 | 值 |
 |---|---|
-| 远端 HEAD | Task 182 提交 59d4b48（bc1941b 三根因：ANGLE 命名空间钉死 / vgpu ES3.2 请求 / JIT dismiss 同步化），CI 绿；本轮 Task 183 四根因待推（spvc 注册表 1024 + ESSL 清洗 / vgpu 版本随探测 / 换根同步化 / 键位 v2 恢复）；此前 488f25b（Task181 六症状）|
-| 最新 Task 号 | **183**（多会话并行开发，开新任务前先 fetch 避让编号） |
+| 远端 HEAD | Task 234 提交 8eddb7fd + worklog（CI run 37959645228 一次绿）：圈错按钮三级锚定 / coach body 标签约束冲突根修（文字第五轮）/ 描边拷贝 textRectForBounds 对齐 / MobileGL 上游无更新 / 分享 GitHub 零查询参数 |
+| 最新 Task 号 | **234**（多会话并行开发，开新任务前先 fetch 避让编号） |
 | 待用户装机验证 | Task 183（四线锚点见文末）+ Task 182（三锚点）+ Task 181（六锚点）+ Task 180（双滑条透明度）+ Task 179（八连修）+ Task 178/177（新拟态定稿）+ 更早轮次 |
 | 已知历史遗留 | v6.0.0-release-notes.md 是工作区工件不在 git（发布时从 announcements.json 重导出）；部分 verify 级联失败为沙箱环境性（会话本地脚本被清 + task132/135/149/158 路径依赖 + task140 G2/G3 日志轮换），与基线对拍判读 |
 
@@ -2291,3 +2291,32 @@ Work Log:
 Stage Summary:
 - Task 233 五项纠错/修复全部交付，新 IPA 待装机实测
 - 装机判读锚点（下轮日志直接搜）：Task233 drawer-key overlaps / sub-buttons moved / RENDER STALL / anchor discovery menu=1 content=1 right=1 / openURL success= / coach marks 各页 spot+titleLen
+
+---
+Task ID: 234
+Agent: main (Super Z)
+Task: Task233 构建（c07243ed）装机实测反馈——5 项轮（圈错按钮/文字第五轮/字体重叠残留/MobileGL 更新复查/分享 GitHub 500）
+
+Work Log:
+- 侦察：git fetch 无新设备日志（origin/main 停在 8d61253d）→ 全轮代码取证 + 上游 API 带认证复查；本地 worklog.md 为环境重置前旧副本，真实 worklog 在仓库内（本文件）
+- (1) 圈错按钮（用户："本来要圈启动按钮变成了执行jar"）：
+  * 布局实锤：右面板约束链 launchButton(h46) 在上、executeJarBtn/manageVersionBtn(h38, safeArea 贴底) 在下并排——Task233 深搜"取最靠下大按钮"确定性命中执行Jar
+  * 修复：三级确定性锚定。tier-1 = LauncherRightPanelViewController 新增 ame234_launchAnchorView 访问器直接返回 launchButton 真身（视图身份，不认标题态）；tier-2 = 标题匹配兜底（三态标题 i18n_str_412/434/435 命中即真身 + 执行Jar(414)/选择版本(38) 明确排除）；tier-3 = 整右面板真实 frame；tier 落日志
+- (2) 文字依旧不显示（第五轮）：
+  * 真根因（静默四轮）：coach 卡 body 标签自 Task223 建类起漏 translatesAutoresizingMaskIntoConstraints=NO（title 标签有）——骨架约束与 autoresizing 从零初始帧生成的四条必需约束同优先级冲突，求解器打破显式约束 → 正文恒 0x0 钉在卡原点 = 标题在、介绍文字永不见（"无文字介绍"五连报的残留真凶；前四轮修的锚点/透明度/z 序都是真问题但都不是这一个）
+  * 修复：补上该行 + 布局后帧取证日志（[CoachMarks] Task234 post-layout: card/title/body——下轮装机日志 body 恒 0x0 即约束仍冲突）
+- (3) 文字重叠依旧（反馈 #16 残留）：
+  * 根因：Task233 修了水平对齐但垂直锚定仍错——drawInRect: 顶锚排版 vs drawTextInRect: 经 textRectForBounds:limitedToNumberOfLines: 垂直居中落笔；按钮 titleLabel（38/46pt 高 vs ~20pt 行高）相差 9~13pt = 深色拷贝浮在白字上方
+  * 修复：四份深色拷贝 + 不透明垫底全部改画进 textRectForBounds 同一紧致文本矩形（与原实现同几何源，逐像素对齐）
+- (4) MobileGlues 上游复查（用户追问，带认证 API）：上游 MobileGL-Dev/MobileGlues 最新提交 97558a6（2026-09-22，即 0f1e10b multidraw grow-only 修复的 merge），其后无新提交、releases 列表空、tags 空；vendored 源码树（Natives/external/MobileGlues）已移植 0f1e10b（version.h REVISION 18 注记 + gl/multidraw.cpp:728 sync note）→ 无可用更新，已在交付总结中明确答复用户
+- (5) 分享到 GitHub 显示 "Looks like something went wrong!"（取证定案 = GitHub 通用 500 错误页）：
+  * 双参数问题：filename= 带 %2F 斜杠是 isaacs/github#1527 实锤的已知 bug（指定 filename 时目录上跳一级）；value= 全量 JSON 预填（≤6000 字符）使 /new 编辑器服务端渲染 500
+  * 零查询参数终案：URL = /new/main/controls/layouts/community（建文件页原生目录预导航，纯 ASCII 常量）；内容只走剪贴板；hint 文案带出应补文件名（%1$@.json 占位 ×5 语言，键数不变 2765 基线零级联）
+- i18n：github_hint 值改写 ×5（含文件名占位与剪贴板指引）；无键增减
+- 事故：本轮零自造语法事故（task225 权威审计 + task139 语法门 + selfref 扫描提交前全绿，CI 一次过）
+- 验证：verify_task234 40/40；fleet 129-135/137/142/150/151/156/157/159/167/189/190/191/222/225/226/227/229/230/231/232/233 全绿；task138 49/50 + task139 35/36（A1 日志轮换类既有基线，stash 对照 HEAD 确认零新增；task142-F6→task140-G2 同类）；锚点诚实重锚 230-13f/232-16b/233-4b/233-4c/233-5e/225-D5
+
+Stage Summary:
+- 5 项全部闭环：圈错按钮（真身直取）、文字第五轮（body 标签约束冲突根修）、字体重叠（textRectForBounds 对齐）、MobileGL（无更新，已答复）、分享 GitHub（零查询参数）
+- CI run 37959645228（8eddb7fd）一次绿，产物 ipa/tipa 220.3MB + dSYM 6.1MB
+- 装机判读锚点：[Welcome] Task234 launch anchor tier=direct rect=...（圈应落在启动游戏按钮上）；[CoachMarks] Task234 post-layout: card=... title=... body=...（body 非零 = 介绍文字回归）；分享控件到 GitHub 应直接打开建文件页（无错误页），文件名框带 controls/layouts/community/ 前缀，提示语含应补的 <id>.json；字体重叠（按钮白字上方的深色浮影）应消失
