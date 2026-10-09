@@ -14,8 +14,11 @@
 // ============================================================================
 // 下载源常量（与 ModVersion.apiSource 字段保持一致：1=Modrinth, 2=CurseForge）
 // ============================================================================
-// Task232：前置详情页（文件尾实现，使用点在前——前向声明）
-@class Ame232DepDetailViewController;
+// Task232：前置详情页（@implementation 在文件尾；使用点在 817 行附近，
+// alloc/init 需要完整接口可见——接口前置，实现后置）
+@interface Ame232DepDetailViewController : UIViewController
+- (instancetype)initWithPid:(NSString *)pid name:(NSString *)name source:(NSInteger)source;
+@end
 
 static const NSInteger kSourceModrinth    = 1;
 static const NSInteger kSourceCurseForge  = 2;
@@ -996,10 +999,6 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
 //   CurseForge：无公开免鉴权详情端点，标题沿用既有 ame227_fetchModTitle:，
 //   其余字段留空 + 浏览器兜底。标签全部豁免全局描边字体（实底页）。
 // ============================================================================
-@interface Ame232DepDetailViewController : UIViewController
-- (instancetype)initWithPid:(NSString *)pid name:(NSString *)name source:(NSInteger)source;
-@end
-
 @implementation Ame232DepDetailViewController {
     NSString *_pid;
     NSString *_name;
