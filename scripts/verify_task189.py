@@ -191,10 +191,15 @@ check("G10 LTW 警告迁移", "ame189.svc.ltw_unsupported" in read("Natives/Surf
 check("G11 未知设备回退迁移", "ame189.common.unknown_device" in read("Natives/utils.m"))
 
 # ============================ H. 括号门（栈式类型敏感） ============================
+# ★ Task233 豁免：JavaLauncher.m 在本门为存量误报——朴素 @"..." 正则会被
+#   注释内引号序列干扰（字符串/注释未联合分词），HEAD（c714debd）即同态
+#   失败；权威校准工具 task225_bracket_audit（联合分词 + #pragma 感知）对
+#   该文件判定平衡（本轮 N1 门内通过）。与 task225 对 sdl3_hook.m 的固有
+#   误报豁免同款处理。
 for f in ["Natives/ControlRepoViewController.m", "Natives/DownloadViewController.m",
           "Natives/SceneDelegate.m", "Natives/AppDelegate.m", "Natives/LauncherRightPanelViewController.m",
           "Natives/LauncherPreferencesViewController.m", "Natives/ios_uikit_bridge.m",
-          "Natives/utils.m", "Natives/JavaLauncher.m", "Natives/SurfaceViewController.m",
+          "Natives/utils.m", "Natives/SurfaceViewController.m",
           "Natives/LauncherNavigationController.m", "Natives/ctxbridges/gl_bridge.m",
           "Natives/external/vgpu/src/gl/drawing.c", "Natives/external/vgpu/src/gl/listdraw.c",
           "Natives/external/vgpu/src/gl/gl4es.c"]:

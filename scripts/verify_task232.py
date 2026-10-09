@@ -37,8 +37,11 @@ check_absent("232-1c old toggle fallthrough gone", svc, "executebtn_up:self.swip
 # (2) 切后台输入错位：恢复时刻几何链取证
 check("232-2 resume geometry probe", "Natives/input_bridge_v3.m", "Task232 resume geometry probe: physical=%dx%d window=%dx%d guiScale=%d")
 
-# (3) 26.3 进存档卡死：MC>=26 + MobileGL 家族覆盖 → tinygl4angle 转向
-check("232-3 renderer steer", "Natives/JavaLauncher.m", "steering to tinygl4angle (on-device 4bdd916: MobileGL froze the JVM at ENTER_WORLD")
+# (3) 26.3 进存档卡死：Task233 纠偏退役——用户实测 MobileGL 二开正常（概率
+#     性问题），steer 抢走渲染器选择；锚点改验"退役标记在场 + steer 代码不在场"，
+#     概率性冻结由 SurfaceViewController Task233 停滞看门狗承接。
+check("232-3 steer retired (Task233, user correction: probabilistic, MGL works on 2nd entry)", "Natives/JavaLauncher.m", "Task232 steer 退役")
+check_absent("232-3b steer code gone", "Natives/JavaLauncher.m", "steering to tinygl4angle")
 
 # (4) 持续奔跑：迁移扫全部 .json + 名字含 常用/奔跑
 check("232-4a all-json scan", "Natives/main.m", "contentsOfDirectoryAtPath:controlPath error:nil] ?: @[]")
@@ -95,7 +98,9 @@ check("232-13b auto switch", "Natives/DataTransferService.m", "auto-switched gam
 check("232-13c pick instance hint", "Natives/DataTransferService.m", "ame232.import.pick_instance")
 
 # (14) 欢迎页：窗口基准锚点 + 卡片实底投影 + 每页取证 + 空标题过滤
-check("232-14a window-based anchors", "Natives/WelcomeViewController.m", "UIWindow.mainWindow.bounds")
+# ★ Task233 重锚：14a 的窗口锚点已被第四轮取代——按类识别锚点 VC +
+#   语义锚点从真实视图 frame 派生（窗口比例硬编码矩形退役）。
+check("232-14a anchors superseded by Task233 class-based discovery", "Natives/WelcomeViewController.m", "Task233 anchor discovery: menu=%d content=%d right=%d")
 check("232-14b solid card + shadow", "Natives/Ame223CoachMarksView.m", "_ame224_card.layer.shadowRadius = 18.0")
 check("232-14c per-page forensics", "Natives/Ame223CoachMarksView.m", "Task232 page %lu/%lu: spot=%@ titleLen=%lu")
 check("232-14d empty-title filter", "Natives/Ame223CoachMarksView.m", "锚点页也要求非空标题")

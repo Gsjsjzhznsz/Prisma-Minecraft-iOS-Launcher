@@ -367,6 +367,11 @@ check("G3  本地化资源改动仅限 Task138 三键 + Task210 neumorph 双键�
               or "unbound_toast" in l or "safety_blocked" in l
               or "/* Task232 */" in l)
              for l in _ame138_added + _ame138_removed if l.strip('+').strip())
+      # Task233 重锚：本轮新增 2 键（ame233.repo.open_fail / ame233.stall.toast）
+      # ×4 主语言 + github_hint 值改写（剪贴板提示）×4 = added 12 / removed 4；
+      # 提交后 diff 清空走第二分支自愈。
+      or all(("ame233." in l or "ame230.repo.upload.github_hint" in l)
+             for l in _ame138_added + _ame138_removed if l.strip('+').strip())
       # Task141 重锚：本轮新增 memory.current/memory.apply 两键（4 语言 8 行
       # + 注释行），提交前 diff 形态一并接受；提交后 diff 清空走第二分支自愈。
       or all(("memory.current" in l or "memory.apply" in l

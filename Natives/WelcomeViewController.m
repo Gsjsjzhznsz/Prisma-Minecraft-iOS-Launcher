@@ -54,6 +54,8 @@
 #import "UIKit+NativeSurface.h"
 #import "utils.h"
 #import "UIKit+hook.h"   // Task223：UIWindow.mainWindow 分类声明（zl2 焦点遮罩取主窗口）
+#import "LauncherMenuViewController.h"        // Task233：锚点按类识别（侧边导航）
+#import "LauncherRightPanelViewController.h"  // Task233：锚点按类识别（右面板/启动按钮深搜）
 #include <mach-o/dyld.h>
 #include <unistd.h>
 
@@ -669,6 +671,16 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
 /// 完成后、关于页打开前，在主界面上灰屏挖洞锚定真实 UI 元素（侧边导航 /
 /// 主内容区 / 右栏启动按钮）。探测不到的锚点自动剔除，全空则直接进
 /// 关于页（引导是增强，绝不阻塞）。
+/// ★ Task233（反馈 #14 第四轮，用户已连报三次）：前两轮把"圈里没内容/
+///   没文字介绍"当成对齐/透明度问题修，但锚点探测本身有两个结构性错误：
+///   ① 默认 Card 布局（Task180 起）的 root children = [菜单, 内容, 右面板]，
+///     旧代码拿 children.lastObject 当"主内容区" = 实际锚到了右面板（文案
+///     张冠李戴）；启动按钮探测只看 window.subviews 下一层——按钮在右
+///     面板卡片三层以下，永远探不到（启动页凭空消失）。
+///   ② "下载与模组/版本与隔离"两个语义锚点用【屏幕比例硬编码】矩形，
+///     与真实 UI 布局毫无关系——圈挖在空白区 = "圈左下角和中间无内容"。
+///   本轮：按类识别三区 VC（菜单/内容/右面板，与布局方案无关）；启动
+///   按钮深搜右面板视图树；语义锚点全部从【真实视图 frame】派生。
 + (void)ame223_showCoachMarksThenAboutFrom:(UIViewController *)presenter {
     NSMutableArray<NSDictionary *> *items = [NSMutableArray array];
     UIWindow *window = UIWindow.mainWindow;
@@ -686,11 +698,28 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         return;
     }
 
-    // 锚点 1：左/侧导航（根分栏的第一个子 VC 的视图）
+    // ---- Task233：按类识别三区 VC（Card 布局与 vs 三栏布局通吃）----
     UIViewController *root = window.rootViewController;
     NSArray<UIViewController *> *children = root.childViewControllers;
-    if (children.count > 0 && children[0].isViewLoaded && children[0].view.window) {
-        CGRect r = [Ame223CoachMarksView screenRectForView:children[0].view];
+    LauncherMenuViewController *ame233_menuVC = nil;
+    LauncherRightPanelViewController *ame233_rightVC = nil;
+    UIViewController *ame233_contentVC = nil;
+    for (UIViewController *ame233_c in children) {
+        if ([ame233_c isKindOfClass:[LauncherMenuViewController class]]) {
+            ame233_menuVC = (LauncherMenuViewController *)ame233_c;
+        } else if ([ame233_c isKindOfClass:[LauncherRightPanelViewController class]]) {
+            ame233_rightVC = (LauncherRightPanelViewController *)ame233_c;
+        } else if (ame233_contentVC == nil) {
+            ame233_contentVC = ame233_c;
+        }
+    }
+    NSLog(@"[Welcome] Task233 anchor discovery: menu=%d content=%d right=%d (children=%lu)",
+          ame233_menuVC != nil, ame233_contentVC != nil, ame233_rightVC != nil,
+          (unsigned long)children.count);
+
+    // ---- 锚点 1：侧边导航（菜单 VC 的真实视图）----
+    if (ame233_menuVC != nil && ame233_menuVC.isViewLoaded && ame233_menuVC.view.window != nil) {
+        CGRect r = [Ame223CoachMarksView screenRectForView:ame233_menuVC.view];
         if (!CGRectIsNull(r)) {
             [items addObject:@{
                 @"rect": [NSValue valueWithCGRect:r],
@@ -701,34 +730,51 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         }
     }
 
-    // 锚点 2：主内容区（最后一个子 VC = 内容/版本卡片区）
-    if (children.count > 1) {
-        UIViewController *content = children.lastObject;
-        if (content.isViewLoaded && content.view.window) {
-            CGRect r = [Ame223CoachMarksView screenRectForView:content.view];
-            if (!CGRectIsNull(r)) {
-                [items addObject:@{
-                    @"rect": [NSValue valueWithCGRect:r],
-                    @"title": localize(@"coachmarks.content.title", nil),
-                    @"body": localize(@"coachmarks.content.body", nil),
-                    @"round": @NO,
-                }];
-            }
+    // ---- 锚点 2：主内容区（= 内容子 VC，不再是 lastObject——Card 布局的
+    //      lastObject 是右面板，旧代码文案张冠李戴）----
+    if (ame233_contentVC != nil && ame233_contentVC.isViewLoaded && ame233_contentVC.view.window != nil) {
+        CGRect r = [Ame223CoachMarksView screenRectForView:ame233_contentVC.view];
+        if (!CGRectIsNull(r)) {
+            [items addObject:@{
+                @"rect": [NSValue valueWithCGRect:r],
+                @"title": localize(@"coachmarks.content.title", nil),
+                @"body": localize(@"coachmarks.content.body", nil),
+                @"round": @NO,
+            }];
         }
     }
 
-    // 锚点 3：右侧面板（启动/JIT 所在——取主窗口层级中最后一个可见大按钮）
+    // ---- 锚点 3：启动按钮（深搜右面板视图树——旧代码只看 window 下一层，
+    //      按钮埋在右面板卡片三层以下，从未被探到过）----
     CGRect btnRect = CGRectNull;
-    for (UIView *v in window.subviews) {
-        CGRect r = [Ame223CoachMarksView screenRectForView:v];
-        if (CGRectIsNull(r)) continue;
-        for (UIView *sub in v.subviews) {
-            if ([sub isKindOfClass:UIButton.class] && sub.frame.size.height > 40 && sub.alpha > 0.5) {
-                CGRect sr = [Ame223CoachMarksView screenRectForView:sub];
-                if (!CGRectIsNull(sr) && (CGRectIsNull(btnRect) || CGRectGetMidX(sr) > CGRectGetMidX(btnRect))) {
-                    btnRect = CGRectInset(sr, -18, -18);
+    if (ame233_rightVC != nil && ame233_rightVC.isViewLoaded) {
+        UIView *ame233_best = nil;
+        NSMutableArray<UIView *> *ame233_stack = [NSMutableArray arrayWithObject:ame233_rightVC.view];
+        int ame233_visited = 0;
+        while (ame233_stack.count > 0 && ame233_visited < 600) {
+            UIView *ame233_v = ame233_stack.lastObject;
+            [ame233_stack removeLastObject];
+            ame233_visited++;
+            if (ame233_v.hidden || ame233_v.alpha <= 0.01) continue;
+            if ([ame233_v isKindOfClass:[UIButton class]] &&
+                ame233_v.frame.size.height > 36 && ame233_v.frame.size.width > 80) {
+                if (ame233_best == nil ||
+                    CGRectGetMaxY(ame233_v.frame) > CGRectGetMaxY(ame233_best.frame)) {
+                    ame233_best = ame233_v;   // 取最靠下的大按钮 = 启动
                 }
             }
+            for (UIView *ame233_sub in ame233_v.subviews) {
+                [ame233_stack addObject:ame233_sub];
+            }
+        }
+        if (ame233_best != nil) {
+            CGRect sr = [Ame223CoachMarksView screenRectForView:ame233_best];
+            if (!CGRectIsNull(sr)) btnRect = CGRectInset(sr, -14, -14);
+        }
+        if (CGRectIsNull(btnRect)) {
+            // 回退：整个右面板区域（真实视图 frame，不再是屏幕比例猜位）
+            CGRect r = [Ame223CoachMarksView screenRectForView:ame233_rightVC.view];
+            if (!CGRectIsNull(r)) btnRect = r;
         }
     }
     if (!CGRectIsNull(btnRect)) {
@@ -740,35 +786,52 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         }];
     }
 
-    // ★ Task226（反馈 #14：圆圈焦点介绍太少）：补两条语义区域锚点的介绍——
-    // ①左侧导航下半区（下载/模组入口）：模组搜索 + 依赖自动下载（issue #10）
-    // ②中央内容区（版本/外观）：版本隔离与启动器设置（风格/缩放内联于此）。
-    // ★ Task232（反馈 #14：圈左下角和中间无内容，第三轮）：语义区域锚点
-    //   原用 UIScreen.mainScreen.bounds——窗口模式/分屏下 window ≠ screen，
-    //   洞与卡会落在窗口外（用户看到"空圈"）。改用主窗口 bounds（教练
-    //   标记视图就挂在它上面），并整体钳制在窗口内。
-    CGRect sb = UIWindow.mainWindow.bounds;
+    // ---- 锚点 4/5（Task226 加入，Task233 根治）：语义区域锚点从【真实
+    //      视图 frame】派生（旧版屏幕比例硬编码 = 圈挖在空白区的直接原因）。
+    //      下载与模组 = 菜单栏下半区（下载/模组入口所在）；版本与隔离 =
+    //      内容区上半区（版本卡/新闻头部）。窗口坐标 + 钳制在窗口内。
+    CGRect sb = window.bounds;
     if (CGRectIsEmpty(sb)) sb = UIScreen.mainScreen.bounds;
-    [items addObject:@{
-        @"rect": [NSValue valueWithCGRect:CGRectMake(0, sb.size.height * 0.55,
-                                                      sb.size.width * 0.28, sb.size.height * 0.42)],
-        @"title": localize(@"coachmarks.downloads.title", nil),
-        @"body": localize(@"coachmarks.downloads.body", nil),
-        @"round": @NO,
-    }];
-    [items addObject:@{
-        @"rect": [NSValue valueWithCGRect:CGRectMake(sb.size.width * 0.30, sb.size.height * 0.16,
-                                                      sb.size.width * 0.40, sb.size.height * 0.30)],
-        @"title": localize(@"coachmarks.versions.title", nil),
-        @"body": localize(@"coachmarks.versions.body", nil),
-        @"round": @NO,
-    }];
+    if (ame233_menuVC != nil && ame233_menuVC.isViewLoaded && ame233_menuVC.view.window != nil) {
+        CGRect mr = [Ame223CoachMarksView screenRectForView:ame233_menuVC.view];
+        if (!CGRectIsNull(mr)) {
+            CGRect dr = mr;
+            dr.origin.y = CGRectGetMinY(mr) + CGRectGetHeight(mr) * 0.52;
+            dr.size.height = CGRectGetHeight(mr) * 0.48;
+            dr = CGRectIntersection(dr, sb);
+            if (!CGRectIsNull(dr) && !CGRectIsEmpty(dr)) {
+                [items addObject:@{
+                    @"rect": [NSValue valueWithCGRect:dr],
+                    @"title": localize(@"coachmarks.downloads.title", nil),
+                    @"body": localize(@"coachmarks.downloads.body", nil),
+                    @"round": @NO,
+                }];
+            }
+        }
+    }
+    if (ame233_contentVC != nil && ame233_contentVC.isViewLoaded && ame233_contentVC.view.window != nil) {
+        CGRect cr = [Ame223CoachMarksView screenRectForView:ame233_contentVC.view];
+        if (!CGRectIsNull(cr)) {
+            CGRect vr = cr;
+            vr.size.height = CGRectGetHeight(cr) * 0.42;
+            vr = CGRectIntersection(vr, sb);
+            if (!CGRectIsNull(vr) && !CGRectIsEmpty(vr)) {
+                [items addObject:@{
+                    @"rect": [NSValue valueWithCGRect:vr],
+                    @"title": localize(@"coachmarks.versions.title", nil),
+                    @"body": localize(@"coachmarks.versions.body", nil),
+                    @"round": @NO,
+                }];
+            }
+        }
+    }
 
     if (items.count == 0) {
         presentAbout();
         return;
     }
-    NSLog(@"[Welcome] Task225 anchored coach marks begin (%lu anchors) -> About", (unsigned long)items.count);
+    NSLog(@"[Welcome] Task233 anchored coach marks begin (%lu anchors, all real-view derived) -> About",
+          (unsigned long)items.count);
     [Ame223CoachMarksView showSequence:items completion:presentAbout];
 }
 

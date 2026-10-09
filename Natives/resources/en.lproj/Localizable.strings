@@ -2950,7 +2950,7 @@
 "ame230.repo.upload.author" = "Author";
 "ame230.repo.upload.desc" = "Description (gameplay / versions)";
 "ame230.repo.upload.github" = "Submit via GitHub";
-"ame230.repo.upload.github_hint" = "GitHub new-file page opened in your browser (sign-in required); submit and wait for merge";
+"ame230.repo.upload.github_hint" = "GitHub new-file page opening (sign-in required). The layout JSON is already on your clipboard - paste it into the editor if the prefill is missing";
 "ame230.repo.upload.no_layouts" = "No layouts to upload (save one in the editor first)";
 "ame230.repo.upload.invalid" = "Layout could not be serialized -- upload cancelled";
 
@@ -2975,3 +2975,5 @@
 "ame232.repo.issue.strlen" = "Overly long strings (>256 chars)";
 "ame232.repo.issue.url" = "Embedded web links";
 "game.menu.settings" = "Settings";
+"ame233.repo.open_fail" = "Could not open the webpage. The layout JSON is still on your clipboard - open github.com in Safari and paste it manually";
+"ame233.stall.toast" = "Rendering stalled for 25s. This is a known occasional issue - exiting and re-entering the world usually fixes it";

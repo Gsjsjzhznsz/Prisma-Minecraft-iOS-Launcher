@@ -2243,3 +2243,38 @@ Work Log:
 Stage Summary:
 - Task 232 closed: all 17 items landed (14 root-fixed + ⑦ closed-as-upstream per user instruction + ⑮ feature rework + ⑰ i18n sweep), CI green on r4, artifacts ready.
 - Lesson reinforced: new .m code now needs BOTH a local declaration-order pass (interface-before-use, key-before-use, import-before-use) AND the bracket/syntax gates before push -- the local Linux box cannot compile ObjC, so CI is the only compiler; consider adding a grep-based declaration-order preflight to the verify chain next round.
+
+---
+Task ID: 233
+Agent: main (Super Z)
+Task: Task232 构建（9137a8f5）装机实测反馈——5 项纠错/新报轮（含"欢迎圆圈焦点介绍"第四次上报）
+
+Work Log:
+- 侦察：git fetch 无新设备日志（最新 latestlog* 仍是 4bdd916 及更早构建）；全轮代码取证
+- (1) 常用操作键（用户纠错：Task232 把"扩展按键"解成滑动键簇是错的方向）：
+  * 出厂布局 mDrawerDataList[2] 即"常用\n操作键"抽屉（F5/T/F/F1/F3/右SHIFT/Z 七枚 FREE 散点键）；Task230 取证里 keycodes=[0,0,0,0] 的"常用操作键"按钮 = 抽屉本体
+  * 双结构性根因：(a) 装载序 主按钮→抽屉→子按钮→摇杆，子按钮 z 序压主按钮——重叠区（出厂 F5×CTRL 仅差 2.3pt、右SHIFT×右键 仅差 5pt；用户自编布局更甚）触摸被子按钮抢走 = "开着抽屉无法左右键"；(b) updateControlHiddenState 对"未隐藏"分支的子按钮不做任何事 + hide-all 与 areButtonsVisible 脱钩 = "有时必须开着才灵"
+  * 修复：z 序修正（子按钮整体下移到第一个可交互主按钮之下，接龙插入保序，仅游戏模式；编辑器不变）+ 子按钮显隐单一事实源（全局/自身 display/抽屉 hidden/areButtonsVisible 四合一判定）+ ControlDrawer.restoreButtonVisibility 叠加自身 hidden + 布局装载重叠取证日志（12 对上限）
+- (3) MGL 概率卡死（用户纠错：同存档第二次进入正常，概率性问题）：
+  * Task232 的 MC>=26 MobileGL→tinygl4angle steer 退役（静默换渲染器 = 夺走用户选择；显式 MGL 用户本来就不受其保护）
+  * 新增渲染停滞看门狗：本局渲染活过之后连续 5 个 5s 心跳窗（≈25s）零换帧 → 一次性日志 + 提示"退出重进通常可恢复"；关联对象挂在 SurfaceViewController 实例上（同进程多开局不误报，慢启动第二局不误触发）
+  * MobileGlues 更新核查（用户指令）：上游 MobileGL-Dev/MobileGlues 最新 release = V2.0.0（2026-08-09），main 分支最新提交 0f1e10b（multidraw grow-only resize，2026-09-22）——本地 vendored 2.0.22 已含该修复（gl/multidraw.cpp "Upstream 0f1e10b (2.0.18 sync)" 注释实锤）→ 无可用更新，本地即最新
+- 分享控件到 GitHub 打不开网页：
+  * 双根因：① 布局 id（中文/空格）原样拼 URL → URLWithString 返回 nil → openURL 静默无效；② value= 全量 JSON 用仅字母数字白名单编码（3 倍膨胀，轻松 100KB+）→ 超长 URL 被 Safari/GitHub 拒绝
+  * 修复：内容永远先复制剪贴板（网页预填缺失直接粘贴，任何条件不丢内容）+ id 安全白名单编码 + value 查询值安全编码（&/=+/? 转义）且仅总长 ≤6000 字符时随链 + openURL 完成回调失败提示（不再静默）
+- 字体双层/重叠不上/偏黑：
+  * 根因：Task232 四份深色拷贝用裸 drawInRect:——NSAttributedString 不带 UILabel 的 textAlignment/lineBreakMode，居中/截断标签拷贝按左对齐自由换行落笔 = 与本体错位（"双层、重叠不上"）；半透明白字（secondary 0.82）下透出深色拷贝 = "偏黑"
+  * 修复：拷贝补与 label 一致的段落样式（numberOfLines==1 强制尾截断）+ 零偏移不透明原色垫底层（叠序：深边→不透明原色→原色正文）
+- 欢迎圆圈焦点介绍（第四次上报，230⑫/232⑭/233）：
+  * 真根因不在透明度/对齐（前两轮修错了方向）：① 默认 Card 布局 children=[菜单,内容,右面板]，旧代码 children.lastObject 当"主内容区"= 锚到右面板（文案张冠李戴）；启动按钮探测只看 window.subviews 下一层（按钮在右面板卡三层以下，从未探到）；② "下载与模组/版本与隔离"两个语义锚点是屏幕比例硬编码矩形，与真实 UI 无关 = 圈挖在空白区（"圈左下角和中间无内容"）
+  * 修复：按类识别三区 VC（LauncherMenu/LauncherRightPanel/其余=内容，Card 与 vs 布局通吃）+ 启动按钮深搜右面板树（600 节点上限，取最靠下大按钮，回退整面板真实 frame）+ 语义锚点全部从真实视图 frame 派生（菜单下半区/内容上半区，窗口坐标钳制）
+  * 卡片加固：底色 secondarySystemGroupedBackgroundColor（深色模式下不再与黑幕同色）+ 文字零动画依赖（恒可见）+ 每页 bringSubviewToFront 消除 z 序不确定性 + 布局后 frame 越界自检回钉 + transform 每页归零（修既有 -6pt/页累漂）
+- i18n：+2 键 ×5 表（ame233.repo.open_fail / ame233.stall.toast）+ ame230.repo.upload.github_hint 值改写 ×5（剪贴板提示）；存量重复键 34 前后无变化
+- 验证链：verify_task233 53/53；fleet 129-135/137/142/150/151/156/157/159/167/189/190/191/222/225/226/227/229/230/231/232 全绿；task138 49/50（A1 环境绑定存量：OSMesa 会话证据已随日志轮换消失，Task232 闭轮同款先例）；task139 35/36（仅 J-138 级联 = 同一 A1）；selfref block scan 0
+- 验证器诚实重锚：键数基线 2763→2765 ×16 文件（含 task151 H 一致性门）+ task190 2727→2765（存量漏网）+ task137 G3 加 Task233 分支 + task230 13f/232 14a/232-3 按新形态重锚 + task231-E 状态无关化（同 Task232 fleet 处理）+ task189 H 豁免 JavaLauncher.m（朴素检查器存量误报：注释引号干扰 @" 正则，HEAD 即失败；task225 权威审计通过该文件，同 sdl3_hook.m 豁免先例）
+- 事故与修复：本轮自写包装函数漏消息括号开头的 `]`（[]=354/355 被 task225 权威审计当场抓获）——已修；SurfaceViewController 看门狗插入时吃掉方法尾三闭合括号——已补回并全文件复核
+
+Stage Summary:
+- 5 项全部根修/落地：抽屉 z 序+显隐（常用操作键）、steer 退役+停滞看门狗（MGL 概率卡死）、URL 编码+剪贴板（分享 GitHub）、段落样式+不透明垫底（字体双层）、按类锚点+真实 frame（欢迎圆圈第四轮）
+- MobileGlues 无更新可用（本地 2.0.22 ≥ 上游 main@0f1e10b）
+- 待装机验证锚点：[InputDiag] Task233 drawer-key overlaps（用户真实布局重叠清单）、[RenderDiag] Task233 RENDER STALL（概率卡死现场）、[Welcome] Task233 anchor discovery menu/content/right、[CustomControls] Task233 sub-buttons moved、[ControlRepo] Task233 openURL success=

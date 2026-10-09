@@ -294,7 +294,7 @@ for lg in langs:
     sets.append(set(re.findall(r'^"([^"]+)"\s*=', s, re.M)))
 check("K2 四语言键集一致（2606 = 2565 + Task223 的 41）",
       # Task225 再锚：Task224 +69 → 2675；Task225 +21 → 2715。
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2763,
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2765,
       f"counts={[len(x) for x in sets]}")
 need_keys = ["i18n_str_2072", "i18n_str_2090", "i18n_str_2091", "i18n_str_2093",
              "about.donate.title", "about.donate.afdian", "welcome.intro.title",

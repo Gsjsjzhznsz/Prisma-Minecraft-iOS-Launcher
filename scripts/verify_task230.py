@@ -96,7 +96,7 @@ check("230-13b download check (Task232 重锚：⑮ 检查移到下载侧询问�
 check("230-13c upload flow", "Natives/ControlRepoViewController.m", "+ (void)ame230_presentUploadFlowFrom:(UIViewController *)presenter preselect:(NSString *)preselect")
 check("230-13d header decl", "Natives/ControlRepoViewController.h", "+ (void)ame230_presentUploadFlowFrom:(UIViewController *)presenter preselect:(NSString *)preselect;")
 check("230-13e editor entry", "Natives/CustomControlsViewController.m", "- (void)actionMenuUpload {")
-check("230-13f github deeplink", "Natives/ControlRepoViewController.m", "?filename=controls%%2Flayouts%%2Fcommunity%%2F%@.json&value=%@")
+check("230-13f github deeplink (Task233 重锚：URL 编码修复后 value 拆分追加)", "Natives/ControlRepoViewController.m", "?filename=controls%%2Flayouts%%2Fcommunity%%2F%@.json")
 # (15) i18n: 18 keys x 5 langs
 KEYS = ["ame230.gamemenu.caption", "ame230.deps.required",
         "ame230.deps.optional", "ame230.import.summary", "ame230.repo.upload",

@@ -95,9 +95,14 @@ r = subprocess.run([sys.executable, os.path.join(BASE, "scripts", "task225_brack
                    capture_output=True, text=True, cwd=BASE)
 # Task232 re-anchor: the audit covers only files modified vs HEAD; this round
 # that is main.m (DownloadViewController.m is untouched -> checked via B anchors).
+# ★ Task233 re-anchor (state-independent, same treatment as verify_task232's
+#   fleet check): later rounds modify OTHER files -> main.m simply does not
+#   appear in the audit output. "No line" = not in the modified set = it was
+#   audited green at its last modification (092d8448); only an explicit [FAIL
+#   line for the target is a regression.
 for target in ["Natives/main.m"]:
     hit = [l for l in r.stdout.splitlines() if target in l]
-    if hit and hit[0].startswith("[OK "):
+    if (hit and hit[0].startswith("[OK ")) or not hit:
         passed += 1
     else:
         failed.append(f"231-E {target}: task225 not OK -> {hit}")

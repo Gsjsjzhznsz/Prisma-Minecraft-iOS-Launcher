@@ -282,9 +282,9 @@ for l in langs:
         if line.startswith('"') and '" = "' in line:
             ks.add(line.split('"')[1])
     keys[l] = ks
-check("Q1 四语言键集一致且 2715【Task227：+7 ame227 键】",
+check("Q1 四语言键集一致且 2765【Task233：+2 ame233 键，键数诚实重锚】",
       keys["en"] == keys["zh-Hans"] == keys["zh-Hant"] == keys["zh-CN"]
-      and len(keys["en"]) == 2763, f"counts={[len(keys[l]) for l in langs]}")
+      and len(keys["en"]) == 2765, f"counts={[len(keys[l]) for l in langs]}")
 # used keys subset check on the files we touched
 import re
 used = set()

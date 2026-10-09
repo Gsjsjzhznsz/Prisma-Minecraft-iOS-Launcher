@@ -24,4 +24,9 @@ void generateAndSaveDefaultControlForGamepad();
 NSString* restoreDefaultCustomControl();
 void loadControlObject(UIView* targetView, NSMutableDictionary* controlDictionary);
 
+/// Task233（反馈 #1 纠偏）：视图是否为纯装饰控件（背景板）——供
+/// SurfaceViewController 的重叠取证复用 ame83b 同一判定（单一事实源，
+/// 不在调用方重写粗糙版）。非 ControlButton 一律返回 NO。
+BOOL ame233_viewIsDecorativeControlButton(UIView *view);
+
 void initKeycodeTable(NSMutableArray* keyCodeMap, NSMutableArray* keyValueMap);

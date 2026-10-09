@@ -2069,24 +2069,14 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         if (![renderer isEqualToString:profileRenderer]) {
             NSLog(@"[Amethyst] Task120: MobileGL backend override active (profile renderer was %@ -> %@)",
                   profileRenderer, renderer);
-            // ★ Task232（反馈 #3：26.3 进入存档卡死）：4bdd916 装机双会话
-            //   实证——19:21 MobileGL(Vulkan) 会话在 ENTER_WORLD + 26.3
-            //   post-effect 链（"Requested post effect does not exist:
-            //   minecraft:end_of_frame"）之后整个 JVM 冻结 44s+（GC 停摆
-            //   = 渲染线程卡死在 native 里阻塞 safepoint；swap 停在 #2200；
-            //   原生定时器活着 = 半死态，用户强杀）；19:12 tinygl4angle
-            //   会话同一存档同一 mod 集正常游玩 3.5 分钟（swapOK=12525，
-            //   正常退出）。26.x 上 MobileGL 的进世界路径在装机上不可用，
-            //   渲染器家族覆盖（auto + mobilegl_backend）解析出 MobileGL
-            //   且 MC >= 26 时转向 ANGLE（TinyGL）。显式非覆盖选择（profile
-            //   renderer 直写）不受影响；26 以下版本不受影响。
-            NSString *ame232_vid = [PLProfiles.current.selectedProfile[@"lastVersionId"] description];
-            NSInteger ame232_major = ame98_mcMajorFromVersionId(ame232_vid);
-            if (ame232_major >= 26 && [renderer isEqualToString:@ RENDERER_NAME_MOBILEGL]) {
-                renderer = @ RENDERER_NAME_MTL_ANGLE;
-                NSLog(@"[JavaLauncher] Task232: MC >= %ld + MobileGL(Vulkan) via backend override on 26.x -- steering to tinygl4angle (on-device 4bdd916: MobileGL froze the JVM at ENTER_WORLD; ANGLE session played the same world fine)",
-                      (long)ame232_major);
-            }
+            // ★ Task233（反馈 #3 纠偏，Task232 steer 退役）：Task232 曾把
+            //   "家族覆盖解析出 MobileGL 且 MC >= 26" 强制改道 tinygl4angle
+            //   （依据 4bdd916 单次会话的 ENTER_WORLD 冻结）。用户实测纠错：
+            //   MobileGL 同存档【第二次进入正常】，冻结是概率性问题，且用户
+            //   日常就是用 MGL——静默换渲染器等于夺走用户的选择。steer 移除，
+            //   渲染器永远尊重解析结果；概率性冻结改由渲染停滞看门狗
+            //   （SurfaceViewController Task233，25s 零换帧一次性提示
+            //   "退出重进可恢复"）承接，取证留给下一轮设备日志。
         }
         // Metal 渲染器（libmetallum.dylib，Task201 随上游同步移植）：图形后端由
         // metallum agent 走原生 Metal（直接 MTLDevice），不经过 EGL 渲染器。

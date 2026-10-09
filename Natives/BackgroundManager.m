@@ -1871,6 +1871,19 @@ static BOOL ame232_shouldPaintOutline(UILabel *label) {
     return YES;
 }
 
+/// Task233（反馈 #16 后续：字体双层 / 有地方重叠不上 / 有透明度导致偏黑）：
+/// 把任意颜色提为全不透明（getRed 失败的非 RGB 色回落白色）。半透明白字
+/// （secondary 0.82）下面透出深色描边拷贝 = "字体偏黑"的来源——垫底拷贝
+/// 必须不透明。
+static UIColor *ame233_opaqueColor(UIColor *ame233_c) {
+    if (ame233_c == nil) return [UIColor whiteColor];
+    CGFloat r = 0, g = 0, b = 0, a = 0;
+    if ([ame233_c getRed:&r green:&g blue:&b alpha:&a]) {
+        return [UIColor colorWithRed:r green:g blue:b alpha:1.0];
+    }
+    return [UIColor whiteColor];
+}
+
 static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
     @try {
         NSNumber *ame232_mark = objc_getAssociatedObject(self, &ame232_OutlineMarkKey);
@@ -1878,15 +1891,46 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
             UILabel *ame232_label = (UILabel *)self;
             NSAttributedString *ame232_as = ame232_label.attributedText;
             if (ame232_as.length > 0 && UIGraphicsGetCurrentContext() != NULL) {
-                NSMutableAttributedString *ame232_dark =
+                // ★ Task233：Task232 版四份深色拷贝用裸 drawInRect: 绘制——
+                //   NSAttributedString 不携带 UILabel 的 textAlignment /
+                //   lineBreakMode（对齐与截断/换行住在 label 上）：居中或
+                //   截断标签的拷贝按【左对齐 + 自由换行】落笔，与正文本体
+                //   错位 = "字体双层、有地方重叠不上"。半透明白字（0.82）
+                //   下面透出深色拷贝 = "有透明度导致偏黑"。
+                //   修法三件：
+                //   ① 拷贝补【与 label 一致】的段落样式（对齐 + 断行；
+                //     numberOfLines==1 强制尾截断，与 UIKit 单行语义一致）；
+                //   ② 零偏移先铺一层【不透明原色】垫底——半透明正文下面
+                //     是纯色底，深色拷贝不再透出来（偏黑根治）；
+                //   ③ 四份深色拷贝（±0.6pt）画在垫底层之下、正文本体之上
+                //     的正确叠序：深边 → 不透明原色 → 原色正文。
+                NSMutableParagraphStyle *ame233_ps = [[NSMutableParagraphStyle alloc] init];
+                ame233_ps.alignment = ame232_label.textAlignment;
+                ame233_ps.lineBreakMode = ame232_label.lineBreakMode;
+                if (ame232_label.numberOfLines == 1) {
+                    ame233_ps.lineBreakMode = NSLineBreakByTruncatingTail;
+                }
+
+                NSMutableAttributedString *ame233_dark =
                     [[NSMutableAttributedString alloc] initWithAttributedString:ame232_as];
-                [ame232_dark addAttribute:NSForegroundColorAttributeName
+                NSRange ame233_darkRange = NSMakeRange(0, ame233_dark.length);
+                [ame233_dark addAttribute:NSParagraphStyleAttributeName value:ame233_ps range:ame233_darkRange];
+                [ame233_dark addAttribute:NSForegroundColorAttributeName
                                      value:[UIColor colorWithWhite:0.0 alpha:0.82]
-                                     range:NSMakeRange(0, ame232_dark.length)];
-                [ame232_dark drawInRect:CGRectOffset(rect,  0.6f,  0.0f)];
-                [ame232_dark drawInRect:CGRectOffset(rect, -0.6f,  0.0f)];
-                [ame232_dark drawInRect:CGRectOffset(rect,  0.0f,  0.6f)];
-                [ame232_dark drawInRect:CGRectOffset(rect,  0.0f, -0.6f)];
+                                     range:ame233_darkRange];
+                [ame233_dark drawInRect:CGRectOffset(rect,  0.6f,  0.0f)];
+                [ame233_dark drawInRect:CGRectOffset(rect, -0.6f,  0.0f)];
+                [ame233_dark drawInRect:CGRectOffset(rect,  0.0f,  0.6f)];
+                [ame233_dark drawInRect:CGRectOffset(rect,  0.0f, -0.6f)];
+
+                NSMutableAttributedString *ame233_backing =
+                    [[NSMutableAttributedString alloc] initWithAttributedString:ame232_as];
+                NSRange ame233_backRange = NSMakeRange(0, ame233_backing.length);
+                [ame233_backing addAttribute:NSParagraphStyleAttributeName value:ame233_ps range:ame233_backRange];
+                [ame233_backing addAttribute:NSForegroundColorAttributeName
+                                        value:ame233_opaqueColor(ame232_label.textColor)
+                                        range:ame233_backRange];
+                [ame233_backing drawInRect:rect];
             }
         }
     } @catch (NSException *ame232_e) {

@@ -187,13 +187,15 @@ static NSString * const ame224_kRound = @"round";
 
         // 说明卡（毛玻璃材质 + 24pt 连续圆角，iPadOS 26/27 卡语言）
         _ame224_card = [[UIView alloc] init];
-        // ★ Task232（反馈 #14：欢迎界面圆圈焦点介绍显示空白，第三轮）：卡底
-        //   0.96 → 1.0 全实底 + 投影——半透明卡在浅色壁纸/玻璃管线叠加下观感
-        //   趋近“透明”；文字卡必须是全实底才任何环境下可读。masksToBounds
-        //   关闭以放行投影（标签内边 18-20pt 不会溢出圆角）。
-        _ame224_card.backgroundColor = [UIColor systemBackgroundColor];
+        // ★ Task232（反馈 #14）：卡底 0.96 → 1.0 全实底 + 投影。
+        //   ★ Task233（第四轮加固）：底色 systemBackground 在深色模式下是
+        //   纯黑——与 45% 黑幕几乎同色，卡存在感趋零（浅色模式下白卡在
+        //   压暗背景上倒是清晰）。改用 secondarySystemGroupedBackground
+        //   （浅色 ≈ 白、深色 ≈ 深灰）：两种模式下卡都与幕布拉开层次，
+        //   文字卡永远不会“融进背景”。masksToBounds 保持关闭放行投影。
+        _ame224_card.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
         _ame224_card.layer.shadowColor = [UIColor blackColor].CGColor;
-        _ame224_card.layer.shadowOpacity = 0.35;
+        _ame224_card.layer.shadowOpacity = 0.45;
         _ame224_card.layer.shadowRadius = 18.0;
         _ame224_card.layer.shadowOffset = CGSizeMake(0, 8);
         _ame224_card.layer.borderColor = [[UIColor separatorColor] colorWithAlphaComponent:0.6].CGColor;
@@ -353,6 +355,14 @@ static NSString * const ame224_kRound = @"round";
     // ---- 文案 + 按钮 + 页点 ----
     _ame224_titleLabel.text = it[ame224_kTitle];
     _ame224_bodyLabel.text = it[ame224_kBody];
+    // ★ Task233（第四轮加固）：文字可见性零动画依赖——旧版 alpha 0→1 动画
+    //   若被打断/被批渲染异常，模型值虽为 1 但任何链路跟疵都会把“无文字”
+    //   放大；直接可见，仅保留卡的上浮弹入动效。
+    _ame224_titleLabel.alpha = 1.0;
+    _ame224_bodyLabel.alpha = 1.0;
+    _ame224_titleLabel.hidden = NO;
+    _ame224_bodyLabel.hidden = NO;
+    _ame224_card.hidden = NO;
     [_ame224_nextButton setTitle:localize(ame224_last ? @"coachmarks.done" : @"coachmarks.next", nil)
                          forState:UIControlStateNormal];
     [_ame224_skipButton setTitle:localize(@"coachmarks.skip", nil) forState:UIControlStateNormal];
@@ -418,15 +428,45 @@ static NSString * const ame224_kRound = @"round";
     ];
     [NSLayoutConstraint activateConstraints:self.ame224_pageConstraints];
 
-    // 入场（淡入 + 上浮）
-    _ame224_titleLabel.alpha = 0;
-    _ame224_bodyLabel.alpha = 0;
-    CGAffineTransform ame224_base = _ame224_card.transform;
+    // ★ Task233（第四轮加固）：文字卡/按钮每页强制置顶——挂窗子视图可能被
+    //   其他层（玻璃/覆盖层）压住，显式 bringSubviewToFront 消除任何
+    //   z 序不确定性；随后强制布局并验证卡在窗口内（越界即钉回屏内）。
+    [self bringSubviewToFront:_ame224_dimView];
+    [self bringSubviewToFront:_ame224_stage];
+    [self bringSubviewToFront:_ame224_card];
+    [self bringSubviewToFront:_ame224_dotRow];
+    [self bringSubviewToFront:_ame224_nextButton];
+    [self bringSubviewToFront:_ame224_skipButton];
+    [self setNeedsLayout];
+    [self layoutIfNeeded];
+    {
+        CGRect ame233_cardFrame = _ame224_card.frame;
+        if (CGRectIsEmpty(ame233_cardFrame) ||
+            CGRectGetMaxY(ame233_cardFrame) > self.bounds.size.height + 1 ||
+            ame233_cardFrame.origin.y < -1) {
+            NSLog(@"[CoachMarks] Task233 card frame abnormal after layout: %@ (self=%@) -- forcing centered fallback",
+                  NSStringFromCGRect(ame233_cardFrame), NSStringFromCGRect(self.bounds));
+            [NSLayoutConstraint deactivateConstraints:self.ame224_pageConstraints];
+            CGFloat ame233_fixH = MIN(ame224_cardH, self.bounds.size.height - 140);
+            self.ame224_pageConstraints = @[
+                [_ame224_nextButton.bottomAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.bottomAnchor constant:-18],
+                [_ame224_card.topAnchor constraintEqualToAnchor:self.topAnchor constant:MAX(24, ame224_cardY)],
+                [_ame224_card.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
+                [_ame224_card.widthAnchor constraintEqualToConstant:ame224_cardW],
+                [_ame224_card.heightAnchor constraintEqualToConstant:MAX(ame233_fixH, 80)],
+            ];
+            [NSLayoutConstraint activateConstraints:self.ame224_pageConstraints];
+            [self layoutIfNeeded];
+        }
+    }
+
+    // 入场（卡上浮弹入；文字恒可见——Task233 去除 alpha 依赖）。
+    // Task233：transform 每页先归零——旧版以【当前 transform】为基数累加
+    // -6pt，5 页累计 -30pt 上漂（约束定位被视觉偏移吃掉）。
+    _ame224_card.transform = CGAffineTransformIdentity;
     [UIView animateWithDuration:0.35 delay:0.05 options:UIViewAnimationOptionAllowUserInteraction
                      animations:^{
-        _ame224_titleLabel.alpha = 1;
-        _ame224_bodyLabel.alpha = 1;
-        _ame224_card.transform = CGAffineTransformTranslate(ame224_base, 0, -6);
+        _ame224_card.transform = CGAffineTransformMakeTranslation(0, -6);
     } completion:nil];
 }
 

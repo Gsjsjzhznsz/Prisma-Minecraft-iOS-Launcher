@@ -2945,7 +2945,7 @@
 "ame230.repo.upload.author" = "作者";
 "ame230.repo.upload.desc" = "描述（適合的玩法 / 版本）";
 "ame230.repo.upload.github" = "透過 GitHub 提交";
-"ame230.repo.upload.github_hint" = "已在瀏覽器開啟 GitHub 建檔案頁（需登入），提交後等待合併";
+"ame230.repo.upload.github_hint" = "正在開啟 GitHub 建檔案頁（需登入）。布局內容已複製到剪貼簿——網頁預填缺失時直接貼上";
 "ame230.repo.upload.no_layouts" = "沒有可上傳的佈局（請先在編輯器儲存一個）";
 "ame230.repo.upload.invalid" = "佈局檔案無法序列化，上傳已取消";
 
@@ -2970,3 +2970,5 @@
 "ame232.repo.issue.strlen" = "存在過長字串（>256）";
 "ame232.repo.issue.url" = "內嵌網路連結";
 "game.menu.settings" = "設定";
+"ame233.repo.open_fail" = "網頁開啟失敗。布局內容仍在剪貼簿——可用 Safari 手動開啟 GitHub 後貼上提交";
+"ame233.stall.toast" = "畫面已停滯約 25 秒（已知偶發問題）：離開存檔重新進入通常即可恢復";

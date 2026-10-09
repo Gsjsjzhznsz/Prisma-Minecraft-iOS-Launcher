@@ -26,8 +26,12 @@
 }
 
 - (void)restoreButtonVisibility {
+    // ★ Task233（反馈 #1 纠偏）：子按钮可见性此前只看 areButtonsVisible——
+    //   抽屉本体被 displayInMenu/displayInGame/hide-all 规则隐藏时，散点
+    //   子按钮仍可能滞留屏上挡触摸（"有时必须开着抽屉才能用键"的状态机
+    //   脱钩来源）。此处叠加抽屉自身 hidden：抽屉不在场 = 键一律收起。
     for (ControlButton *button in self.buttons) {
-        button.hidden = !self.areButtonsVisible;
+        button.hidden = self.hidden || !self.areButtonsVisible;
     }
 }
 

@@ -544,6 +544,15 @@ static BOOL ame83b_is_decorative_button(NSMutableDictionary *props) {
     return YES;
 }
 
+/// Task233（反馈 #1 纠偏）：ame83b 装饰判定的公开包装（单一事实源）。
+/// SurfaceViewController 的重叠取证与 z 序判定复用同一条规则，
+/// 非 ControlButton 一律 NO。
+BOOL ame233_viewIsDecorativeControlButton(UIView *view) {
+    if (![view isKindOfClass:ControlButton.class]) return NO;
+    if ([view isKindOfClass:ControlSubButton.class]) return NO;
+    return ame83b_is_decorative_button(((ControlButton *)view).properties);
+}
+
 void loadControlObject(UIView* targetView, NSMutableDictionary* controlDictionary) {
     NSMutableString *errorString = [[NSMutableString alloc] init];
 
@@ -614,6 +623,45 @@ void loadControlObject(UIView* targetView, NSMutableDictionary* controlDictionar
         }
 
         controlDictionary[@"scaledAt"] = getPrefObject(@"control.button_scale");
+
+        // ★ Task233（反馈 #1 纠偏："常用操作键"抽屉开启时左右键失灵）：
+        //   装载序 = 主按钮 → 抽屉 → 抽屉子按钮 → 摇杆——子按钮全部压在
+        //   主按钮之上（z 序最顶，仅让位于摇杆）。抽屉子按钮是 FREE 散点
+        //   键（出厂常用操作键 = F5/T/F/F1/F3/右SHIFT/Z 分布全屏），用户
+        //   自编布局里与 左键/右键/方向/字母 主控件重叠时，开启抽屉 =
+        //   重叠区触摸全部被子按钮抢走 = "开着常用操作键就无法左右键"。
+        //   修法（仅游戏模式；编辑器保持原 z 序便于拖动编辑）：把全部
+        //   ControlSubButton 整体下移到【第一个可交互主按钮】之下——抽屉
+        //   键只在空白区可点，与主控件的任何重叠都让位给主控件。子按钮
+        //   相对顺序保持不变（逐个"接龙"插入，背景板仍在最底）。
+        if (!isControlModifiable) {
+            UIView *ame233_firstInteractive = nil;
+            for (UIView *ame233_v in targetView.subviews) {
+                if ([ame233_v isKindOfClass:ControlSubButton.class]) continue;
+                if (![ame233_v isKindOfClass:ControlButton.class]) continue;
+                if (!ame233_v.userInteractionEnabled) continue;   // 装饰板已禁用
+                if (ame83b_is_decorative_button(((ControlButton *)ame233_v).properties)) continue;
+                ame233_firstInteractive = ame233_v;
+                break;
+            }
+            if (ame233_firstInteractive != nil) {
+                int ame233_moved = 0;
+                UIView *ame233_prev = nil;
+                for (UIView *ame233_v in [targetView.subviews copy]) {
+                    if (![ame233_v isKindOfClass:ControlSubButton.class]) continue;
+                    if (ame233_prev == nil) {
+                        [targetView insertSubview:ame233_v belowSubview:ame233_firstInteractive];
+                    } else {
+                        [targetView insertSubview:ame233_v aboveSubview:ame233_prev];
+                    }
+                    ame233_prev = ame233_v;   // 后续插在前一枚之上 → 顺序不反转
+                    ame233_moved++;
+                }
+                if (ame233_moved > 0) {
+                    NSLog(@"[CustomControls] Task233: %d drawer sub-buttons moved below interactive main buttons (drawer keys yield to 左/右键/摇杆 overlaps)", ame233_moved);
+                }
+            }
+        }
 
         if (errorString.length > 0) {
             showDialog(@"Error processing dynamic position", errorString);

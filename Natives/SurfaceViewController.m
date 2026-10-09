@@ -1763,18 +1763,36 @@ void ame139_fsr_heal_reset_input_scale(void) {
 
 - (void)updateControlHiddenState:(BOOL)hide {
     for (UIView *view in self.ctrlView.subviews) {
+        if (![view isKindOfClass:ControlButton.class]) continue;
         ControlButton *button = (ControlButton *)view;
+        // ★ Task233（反馈 #1 纠偏：抽屉子按钮显隐无单一事实源）：
+        //   旧逻辑对"未隐藏"分支的 ControlSubButton 什么都不做——抽屉本体
+        //   被 displayInMenu/displayInGame 规则隐藏时，其散点子按钮不在本
+        //   循环里被收起（得靠抽屉自己 restore，而抽屉已隐藏没人再调），
+        //   "常用操作键"的键滞留屏上挡触摸；hide-all 强制隐藏后又与
+        //   areButtonsVisible 脱钩，解除后抽屉"没开却弹出键"。统一为：
+        //   全局隐藏 || 自身 display 规则 || 抽屉不在场 || 抽屉未展开。
+        if ([button isKindOfClass:ControlSubButton.class]) {
+            ControlDrawer *ame233_drawer = ((ControlSubButton *)button).parentDrawer;
+            BOOL ame233_displayOK =
+                (isGrabbing && [button.properties[@"displayInGame"] boolValue]) ||
+                (!isGrabbing && [button.properties[@"displayInMenu"] boolValue]);
+            button.hidden = hide || !ame233_displayOK ||
+                            ame233_drawer == nil || ame233_drawer.hidden ||
+                            !ame233_drawer.areButtonsVisible;
+            continue;
+        }
         if (!button.canBeHidden) continue;
         BOOL hidden = hide || !(
             (isGrabbing && [button.properties[@"displayInGame"] boolValue]) ||
             (!isGrabbing && [button.properties[@"displayInMenu"] boolValue]));
-        if (!hidden && ![button isKindOfClass:ControlSubButton.class]) {
-            button.hidden = hidden;
+        if (!hidden) {
+            button.hidden = NO;
             if ([button isKindOfClass:ControlDrawer.class]) {
                 [(ControlDrawer *)button restoreButtonVisibility];
             }
-        } else if (hidden) {
-            button.hidden = hidden;
+        } else {
+            button.hidden = YES;
         }
     }
 }
@@ -2404,6 +2422,37 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     }
 
     [self updateControlHiddenState:self.toggleHidden];
+
+    // ★ Task233（反馈 #1 纠偏）取证：抽屉子按钮 × 可交互主控件的重叠清单。
+    //   出厂布局里 F5 与 CTRL 同一水平带仅差 2.3pt、右SHIFT 与右键仅差 5pt
+    //   ——用户自编布局的实际重叠（哪些主控件被"常用操作键"的键盖住）在
+    //   设备日志里一锤定音。z 序已改为主控件优先，本清单只做证据链。
+    {
+        int ame233_logged = 0;
+        for (UIView *ame233_sub in self.ctrlView.subviews) {
+            if (![ame233_sub isKindOfClass:ControlSubButton.class]) continue;
+            if (!ame233_sub.userInteractionEnabled) continue;   // 装饰板
+            for (UIView *ame233_main in self.ctrlView.subviews) {
+                if (ame233_main == ame233_sub) continue;
+                if ([ame233_main isKindOfClass:ControlSubButton.class]) continue;
+                if (![ame233_main isKindOfClass:ControlButton.class]) continue;
+                if (!ame233_main.userInteractionEnabled) continue;
+                if (ame233_viewIsDecorativeControlButton(ame233_main)) continue;
+                if (ame233_main.hidden) continue;
+                if (!CGRectIntersectsRect(ame233_sub.frame, ame233_main.frame)) continue;
+                if (ame233_logged++ < 12) {
+                    NSLog(@"[InputDiag] Task233 drawer-key overlaps main control: sub(%@) %@ x main(%@) %@ -- main wins touch (z-order fix)",
+                          ((ControlButton *)ame233_sub).properties[@"name"],
+                          NSStringFromCGRect(ame233_sub.frame),
+                          ((ControlButton *)ame233_main).properties[@"name"],
+                          NSStringFromCGRect(ame233_main.frame));
+                }
+            }
+        }
+        if (ame233_logged > 12) {
+            NSLog(@"[InputDiag] Task233 ...and %d more drawer-key/main overlaps", ame233_logged - 12);
+        }
+    }
 
     if (menuButton) {
         NSMutableArray *items = [NSMutableArray new];
@@ -3839,6 +3888,44 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
                   presAvg, presMax, buildAvg, buildMax, memoryMB, (__bridge void *)l,
                   drawable.width, drawable.height, (double)l.contentsScale,
                   l.bounds.size.width, l.bounds.size.height, (int)inWindow);
+
+            // ★ Task233（反馈 #3 纠偏）：渲染停滞看门狗——MobileGL 26.x 进
+            //   世界的概率性冻结（4bdd916 双会话实证：ENTER_WORLD 后 JVM
+            //   冻结 44s+，渲染线程卡死在 native 阻塞 safepoint；用户实测
+            //   同存档第二次进入正常）。判定：本局【曾经渲染过】（swapOK
+            //   有增量记录）之后连续 5 个心跳窗（约 25 秒）零换帧零 fps =
+            //   渲染线程已停滞。一次性日志 + 提示"退出重进通常可恢复"，
+            //   不动渲染器（Task232 steer 已按用户纠错退役）。状态挂在
+            //   self 上（关联对象）——同一进程内多次开局互不误报（上局
+            //   的 swapOK 基数不会让"缓慢启动的第二局"误判为停滞）。
+            {
+                static char ame233_stallKey;
+                NSMutableDictionary *ame233_st = objc_getAssociatedObject(self, &ame233_stallKey);
+                if (ame233_st == nil) {
+                    ame233_st = [NSMutableDictionary dictionaryWithDictionary:@{
+                        @"sawLive": @NO, @"lastSwapOK": @(swapOK),
+                        @"windows": @0, @"fired": @NO,
+                    }];
+                    objc_setAssociatedObject(self, &ame233_stallKey, ame233_st, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+                }
+                unsigned long ame233_lastSwap = [ame233_st[@"lastSwapOK"] unsignedLongValue];
+                if (swapOK > ame233_lastSwap || fps > 0) {
+                    // 有进展：刷新"活过"标记，清零停滞窗
+                    ame233_st[@"sawLive"] = @YES;
+                    ame233_st[@"windows"] = @0;
+                } else if ([ame233_st[@"sawLive"] boolValue]) {
+                    ame233_st[@"windows"] = @([ame233_st[@"windows"] intValue] + 1);
+                }
+                ame233_st[@"lastSwapOK"] = @(swapOK);
+                if (![ame233_st[@"fired"] boolValue] &&
+                    [ame233_st[@"sawLive"] boolValue] &&
+                    [ame233_st[@"windows"] intValue] >= 5) {
+                    ame233_st[@"fired"] = @YES;
+                    NSLog(@"[RenderDiag] Task233 RENDER STALL: swapOK frozen at %lu for ~25s after live frames (probabilistic MobileGL-on-26 enter-world freeze; second entry usually recovers; renderer untouched per user correction)",
+                          swapOK);
+                    [NMToast showMessage:localize(@"ame233.stall.toast", nil)];
+                }
+            }
         }
     }
 }

@@ -181,7 +181,7 @@ for l in langs:
     keys[l] = ks
 check("K1 四语言键集一致且 2715",
       keys["en"] == keys["zh-Hans"] == keys["zh-Hant"] == keys["zh-CN"]
-      and len(keys["en"]) == 2763, f"counts={[len(keys[l]) for l in langs]}")
+      and len(keys["en"]) == 2765, f"counts={[len(keys[l]) for l in langs]}")
 ja_ks = set()
 for line in io.open("Natives/resources/ja.lproj/Localizable.strings", encoding='utf-8'):
     if line.startswith('"') and '" = "' in line:

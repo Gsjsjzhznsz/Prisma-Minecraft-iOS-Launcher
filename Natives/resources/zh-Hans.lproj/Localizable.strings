@@ -2948,7 +2948,7 @@
 "ame230.repo.upload.author" = "作者";
 "ame230.repo.upload.desc" = "描述（适合的玩法 / 版本）";
 "ame230.repo.upload.github" = "通过 GitHub 提交";
-"ame230.repo.upload.github_hint" = "已在浏览器打开 GitHub 建文件页（需登录），提交后等待合并";
+"ame230.repo.upload.github_hint" = "正在打开 GitHub 建文件页（需登录）。布局内容已复制到剪贴板——网页预填缺失时直接粘贴";
 "ame230.repo.upload.no_layouts" = "没有可上传的布局（请先在编辑器保存一个）";
 "ame230.repo.upload.invalid" = "布局文件无法序列化，上传已取消";
 
@@ -2973,3 +2973,5 @@
 "ame232.repo.issue.strlen" = "存在超长字符串（>256）";
 "ame232.repo.issue.url" = "内嵌网络链接";
 "game.menu.settings" = "设置";
+"ame233.repo.open_fail" = "网页打开失败。布局内容仍在剪贴板——可用 Safari 手动打开 GitHub 后粘贴提交";
+"ame233.stall.toast" = "画面已停滞约 25 秒（已知偶发问题）：退出存档重新进入通常即可恢复";

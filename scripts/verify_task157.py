@@ -197,7 +197,7 @@ check("E6  确认弹窗标题升级（安装 Sodium + Iris Shaders）",
       '"component.sodium.confirm_title" = "安装 Sodium + Iris Shaders";' in zh
       and '"component.sodium.confirm_title" = "Install Sodium + Iris Shaders";' in read(base + "en.lproj/Localizable.strings"))
 check("E7  四语言键集一致（1952 = Task157 基线 1948 + Task159 净增 4（新增 5 键，退役 memory.current））",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2763,
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2765,
       f"counts={[len(x) for x in sets]}")
 
 print()

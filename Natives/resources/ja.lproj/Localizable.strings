@@ -2035,7 +2035,7 @@
 "ame230.repo.upload.author" = "作者";
 "ame230.repo.upload.desc" = "説明（プレイスタイル / バージョン）";
 "ame230.repo.upload.github" = "GitHub で提出";
-"ame230.repo.upload.github_hint" = "GitHub の新規ファイルページをブラウザで開きました（要ログイン）。提出後にマージをお待ちください";
+"ame230.repo.upload.github_hint" = "GitHub の新規ファイルページを開いています（要ログイン）。レイアウト内容はクリップボードにコピー済み——入力欄が空ならそのまま貼り付けてください";
 "ame230.repo.upload.no_layouts" = "アップロードできるレイアウトがありません（先にエディタで保存してください）";
 "ame230.repo.upload.invalid" = "レイアウトをシリアライズできません——アップロードを中止しました";
 
@@ -2060,3 +2060,5 @@
 "ame232.repo.issue.strlen" = "長すぎる文字列があります（>256）";
 "ame232.repo.issue.url" = "Web リンクが埋め込まれています";
 "game.menu.settings" = "設定";
+"ame233.repo.open_fail" = "ページを開けませんでした。レイアウト内容はクリップボードに残っています——Safari で GitHub を開いて手動で貼り付けてください";
+"ame233.stall.toast" = "描画が約 25 秒停止しました（既知の不定期問題）：ワールドを一度出て再び入ると通常は回復します";
