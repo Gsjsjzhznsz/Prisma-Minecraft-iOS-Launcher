@@ -14,6 +14,9 @@
 // ============================================================================
 // 下载源常量（与 ModVersion.apiSource 字段保持一致：1=Modrinth, 2=CurseForge）
 // ============================================================================
+// Task232：前置详情页（文件尾实现，使用点在前——前向声明）
+@class Ame232DepDetailViewController;
+
 static const NSInteger kSourceModrinth    = 1;
 static const NSInteger kSourceCurseForge  = 2;
 
@@ -1033,7 +1036,7 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     _iconView.clipsToBounds = YES;
     _iconView.layer.cornerRadius = 20.0;
     _iconView.layer.cornerCurve = kCACornerCurveContinuous;
-    _iconView.backgroundColor = [UIColor secondarySystemFill];
+    _iconView.backgroundColor = [UIColor secondarySystemFillColor];
     _iconView.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:_iconView];
 
@@ -1096,7 +1099,8 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
 
 - (void)ame232_fetchDetails {
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        NSString *ame232_desc = nil, *ame232_icon = nil;
+        __block NSString *ame232_desc = nil;
+        NSString *ame232_icon = nil;
         NSString *ame232_stats = nil;
         if (self->_source == kSourceModrinth && self->_pid.length > 0) {
             NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://api.modrinth.com/v2/project/%@", self->_pid]];
@@ -1121,8 +1125,10 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
             __block BOOL waited = NO;
             dispatch_group_t g = dispatch_group_create();
             dispatch_group_enter(g);
+            __weak typeof(self) ame232_wself = self;
             [[CurseForgeAPI sharedInstance] ame227_fetchModTitle:self->_pid completion:^(NSString *title, NSError *err) {
-                if (title.length > 0) ame232_desc = [NSString stringWithFormat:localize(@"ame232.deps.cf_desc", nil), title];
+                typeof(self) ame232_sself = ame232_wself;
+                if (ame232_sself && title.length > 0) ame232_desc = [NSString stringWithFormat:localize(@"ame232.deps.cf_desc", nil), title];
                 waited = YES;
                 dispatch_group_leave(g);
             }];
