@@ -2313,7 +2313,7 @@ Work Log:
   * 双参数问题：filename= 带 %2F 斜杠是 isaacs/github#1527 实锤的已知 bug（指定 filename 时目录上跳一级）；value= 全量 JSON 预填（≤6000 字符）使 /new 编辑器服务端渲染 500
   * 零查询参数终案：URL = /new/main/controls/layouts/community（建文件页原生目录预导航，纯 ASCII 常量）；内容只走剪贴板；hint 文案带出应补文件名（%1$@.json 占位 ×5 语言，键数不变 2765 基线零级联）
 - i18n：github_hint 值改写 ×5（含文件名占位与剪贴板指引）；无键增减
-- 事故：本轮零自造语法事故（task225 权威审计 + task139 语法门 + selfref 扫描提交前全绿，CI 一次过）
+- 事故与修复：① worklog 收尾提交被 GitHub push protection 拦截（GH013：poll_ci_task234.sh 兜底行硬编码了 PAT——secret scanning 拒收含完整 token 的提交内容）；改为纯 origin URL 提取 + 空值硬失败后 amend 重推通过（完整 token 从未落远端）。② 脚本首版 sed 沿用了速览区旧命令的 user:token 形态模式，对本仓 https://TOKEN@ 形态提取恒空——修正为 s|https://\([^@/]*\)@.*|\1|p（速览区旧命令同病，用前先改）。③ 语法/括号零事故（task225 权威审计 + task139 语法门 + selfref 扫描提交前全绿，代码提交 CI 一次过）
 - 验证：verify_task234 40/40；fleet 129-135/137/142/150/151/156/157/159/167/189/190/191/222/225/226/227/229/230/231/232/233 全绿；task138 49/50 + task139 35/36（A1 日志轮换类既有基线，stash 对照 HEAD 确认零新增；task142-F6→task140-G2 同类）；锚点诚实重锚 230-13f/232-16b/233-4b/233-4c/233-5e/225-D5
 
 Stage Summary:

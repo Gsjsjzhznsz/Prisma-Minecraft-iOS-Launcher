@@ -6,7 +6,7 @@ RUN_ID="${1:?usage: poll_ci_task234.sh <run_id>}"
 # token 只从 origin URL 提取（会话内已 set-url）——绝不硬编码：
 # GitHub push protection 的 secret scanning 会拦截含 PAT 的提交内容
 # （Task234 worklog 提交曾因此被拒，GH013）。
-TOK="$(git -C "$(dirname "$0")/.." remote get-url origin | sed -n 's|https://[^:]*:\([^@]*\)@.*|\1|p')"
+TOK="$(git -C "$(dirname "$0")/.." remote get-url origin | sed -n 's|https://\([^@/]*\)@.*|\1|p')"
 [ -z "$TOK" ] && { echo "ERROR: no token in origin URL (run: git remote set-url origin https://<token>@github.com/OWNER/REPO.git)"; exit 1; }
 API="https://api.github.com/repos/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/actions/runs"
 for chunk in $(seq 1 12); do
