@@ -2581,35 +2581,33 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     // ★ Task227：用户手动收起闩锁——游离 Start 抑制（详见声明区注释）。
     // 真输入意图 = 聊天开启键（3s 窗）或近 0.8s 屏幕触摸；二者任一命中
     // 才清闩放行。抑制时只记账不弹起，SDL 侧状态不受影响。
-    // Task229 (feedback #7, FCL-style auto-keyboard): the first Start of a
-    // game session auto-opens when the switch is on; afterwards the normal
-    // latch rules apply (the #6 hard-suppression window still protects the
-    // explicit user dismissal).
-    if (!ame229_autoKbShownThisSession && getPrefBool(@"control.auto_keyboard_sdl")) {
-        ame229_autoKbShownThisSession = YES;
-        ame227_kbUserDismissed = NO;
-        NSLog(@"[SurfaceVC] Task229 auto-keyboard (SDL) fired -- first StartTextInput of session honored (FCL-style switch)");
-    } else if (ame227_kbUserDismissed) {
-        // ★ Task229（反馈 #6：无法关闭键盘）：Task227 的放行条件里聊天开
-        // 启键 3s 窗【优先级高于用户显式收起】——按 T 开聊天（清闩放行）
-        // 后立刻点 ✎ 收起（置闩），3 秒内 MC 26.x 的游离 StartTextInput
-        // 再次命中 chatOpener → 又清闩弹回 → 用户再收 → 再弹（装机日志
-        // 10286-10294 三连：CLEARED→dismissing→becoming 循环实锤）。
-        // 修法（两层收敛）：
-        //   ① 显式收起后 2.5s 硬抑制窗——窗内一切 Start 静默（聊天开启
-        //      键也不豁免；用户真要重开就再按一次 T，那时已出窗）；
-        //   ② recent-touch 清闩退役——游戏内任意屏幕触摸不构成"键盘
-        //      重开意图"，旧逻辑把它当意图等于每摸一下屏幕就给游离
-        //      Start 开门。
-        CFAbsoluteTime ame229_sinceDismiss = CFAbsoluteTimeGetCurrent() - ame227_kbDismissedAt;
-        if (ame229_sinceDismiss < 2.5) {
+    // ★ Task232（反馈 #12：自动打开输入法（SDL）开关无效，复发轮）：
+    //   Task229 的语义是"会话首个 StartTextInput 自动弹"（one-shot）——
+    //   4bdd916 装机 19:21:38 实证：进世界前标题屏的游离 Start 把
+    //   one-shot 消耗（日志只有 Task172 routed、无 Task229 fired），之后
+    //   真输入全部撞上收起闩锁 = "开关无效"。新语义：开关开启 = 每个
+    //   Start 都弹（清闩让 MC 的文本请求始终得到键盘）；仅保留显式收起
+    //   后 2.5s 硬抑制窗（防 #229-6 的"关不掉"循环复发）。开关关闭时
+    //   维持原全套门控（chatOpener 3s 窗放行）。
+    if (ame227_kbUserDismissed) {
+        CFAbsoluteTime ame232_sinceDismiss = CFAbsoluteTimeGetCurrent() - ame227_kbDismissedAt;
+        if (ame232_sinceDismiss < 2.5) {
             ame227_suppressedStarts++;
             if (ame227_suppressedStarts <= 5 || (ame227_suppressedStarts % 25) == 0) {
                 NSLog(@"[SurfaceVC] Task229 hard suppression #%d (dismissed %.1fs ago < 2.5s window -- all Starts muted)",
-                      ame227_suppressedStarts, ame229_sinceDismiss);
+                      ame227_suppressedStarts, ame232_sinceDismiss);
             }
             return;
         }
+    }
+    if (getPrefBool(@"control.auto_keyboard_sdl")) {
+        ame227_kbUserDismissed = NO;
+        if (!ame229_autoKbShownThisSession) {
+            ame229_autoKbShownThisSession = YES;
+            NSLog(@"[SurfaceVC] Task232 auto-keyboard (SDL) first-of-session honored (always-on mode while switch is enabled)");
+        }
+    } else if (ame227_kbUserDismissed) {
+        CFAbsoluteTime ame229_sinceDismiss = CFAbsoluteTimeGetCurrent() - ame227_kbDismissedAt;
         BOOL ame227_chatOpener = ame161_lastSentKeyWasChatOpener(3.0);
         if (ame227_chatOpener) {
             ame227_kbUserDismissed = NO;
@@ -2660,6 +2658,10 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             dispatch_block_cancel(ame223_pendingStopResign);
             ame223_pendingStopResign = NULL;   // Task223 CI 修复：ARC 下静态强引用赋 NULL 即释放（Block_release 需桥接且与 ARC 双重释放）
         }
+        // ★ Task232（⑦ 用户指令）：本议题【按上游问题关闭】——26.x 多人
+        //   游戏界面每字符销毁重建文本上下文（Stop→Start 间隔超过任何
+        //   防抖窗），启动器侧无法完全消除闪断；FAQ"输入与控制"分类已
+        //   收录说明。下方防抖保留为缓解（不再迭代）。
         // ★ Task230（反馈 #6：联机菜单输入一次键盘就关闭一次）：打字活跃
         //   自适应去抖窗——最近 2s 内有字符转发 = MC 的 Stop 大概率是每
         //   字符上下文重建（39633e4 latestlog.1:4862-4882 实锤：联机地址框
@@ -3022,15 +3024,10 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             if (![s_ame229_zeroLogged containsObject:ame229_dedup]) {
                 [s_ame229_zeroLogged addObject:ame229_dedup];
                 NSLog(@"[InputDiag] Task229 UNBOUND button pressed: name=%@ keycodes all zero -- bind a key in the layout editor (e.g. Left Control 341 for sprint)", ame229_btnName);
-                // ★ Task230（反馈 #3：持续奔跑没有效果）：日志取证升级为
-                //   游戏内可见提示——用户按了未绑定按钮只会觉得"没反应"，
-                //   从不知道要去控件编辑器绑定。一次一按钮（会话去重），
-                //   NMToast 悬浮于游戏画面之上。
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [NMToast showMessage:[NSString stringWithFormat:
-                        localize(@"ame230.controls.unbound_toast", nil),
-                        [ame229_btnName stringByReplacingOccurrencesOfString:@"\n" withString:@""]]];
-                });
+                // ★ Task232（反馈 #5）：NMToast 退役——用户反馈"未绑定但属于
+                //   控件功能的按键显示无映射按键"属于误报滋扰（功能性按钮
+                //   的判定无法从键码层面区分，sprint 死按钮也由 ④ 的全量
+                //   迁移根修）。取证保留在日志层。
             }
         }
     }
@@ -3195,13 +3192,35 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 - (void)executebtn_swipe:(UIPanGestureRecognizer *)sender
 {
     if (sender.state == UIGestureRecognizerStateCancelled || sender.state == UIGestureRecognizerStateEnded) {
-        [self executebtn_up:self.swipingButton isOutside:NO];
+        // ★ Task232（反馈 #1："扩展按键"（可滑动键簇：热键栏/方向组）开启时
+        //   左右滑动失灵、时好时坏）：旧收尾走 executebtn_up:isOutside:NO，
+        //   会落入 Task226 的 toggle 翻转补发块——普通键（数字/方向/字母）
+        //   被多补一发 DOWN（isToggleOn 翻 YES 后 re-fire）→ 键卡死在按下
+        //   态，下一次滑动又只发 UP……键状态随 toggle 位漂移 = "时好时坏"。
+        //   滑动语义本就该是干净的 DOWN...UP：收尾只发 UP + 还原高亮 +
+        //   清指针，永不 toggle、永不补发。
+        if (self.swipingButton != nil) {
+            [self executebtn:self.swipingButton withAction:ACTION_UP];
+            if (self.swipingButton.savedBackgroundColor != nil) {
+                self.swipingButton.backgroundColor = self.swipingButton.savedBackgroundColor;
+            }
+            self.swipingButton.isToggleOn = NO;
+            self.swipingButton = nil;
+            NSLog(@"[InputDiag] Task232 swipe release: clean UP (no toggle re-fire)");
+        }
         return;
     }
     CGPoint location = [sender locationInView:self.ctrlView];
     for (ControlButton *button in self.swipeableButtons) {
         if (CGRectContainsPoint(button.frame, location) && (ControlButton *)self.swipingButton != button) {
-            [self executebtn_up:self.swipingButton isOutside:NO];
+            // 切换键同样走干净路径：旧键 UP + 还原，新键 DOWN（不走 toggle 补发）
+            if (self.swipingButton != nil) {
+                [self executebtn:self.swipingButton withAction:ACTION_UP];
+                if (self.swipingButton.savedBackgroundColor != nil) {
+                    self.swipingButton.backgroundColor = self.swipingButton.savedBackgroundColor;
+                }
+                self.swipingButton.isToggleOn = NO;
+            }
             self.swipingButton = (ControlButton *)button;
             [self executebtn:self.swipingButton withAction:ACTION_DOWN];
             break;

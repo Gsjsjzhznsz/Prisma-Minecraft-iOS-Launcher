@@ -254,7 +254,7 @@ for lang in langs:
                   rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M)))
 # Task138 重锚：+2 键（renderer_missing_dylib + mirror_policy-speed_first）
 check("F1 四语言键集一致（Task222 重锚：2715 = Task212 基线 2520 + Task222 45 + Task223 41）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2745,
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2763,
       f"counts={[len(s) for s in sets]}")
 newkeys = ["preference.title.renderer_backend",
            "preference.detail.renderer_backend",

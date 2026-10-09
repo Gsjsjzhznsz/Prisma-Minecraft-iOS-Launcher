@@ -2932,7 +2932,6 @@
 "ame229.keybind.sync.done" = "鍵位同步完成：更新了 %ld 個文件，補充了 %ld 條綁定。";
 
 // Task230：控件倉庫上傳 + 奔跑未綁定提示 + 齒輪標籤 + 前置快速入口 + 匯入摘要
-"ame230.controls.unbound_toast" = "按鈕「%@」未綁定按鍵——請在控件編輯器中綁定（奔跑 = 左Ctrl 341）";
 "ame230.gamemenu.caption" = "選單";
 "ame230.deps.required" = "必要";
 "ame230.deps.optional" = "可選";
@@ -2949,4 +2948,25 @@
 "ame230.repo.upload.github_hint" = "已在瀏覽器開啟 GitHub 建檔案頁（需登入），提交後等待合併";
 "ame230.repo.upload.no_layouts" = "沒有可上傳的佈局（請先在編輯器儲存一個）";
 "ame230.repo.upload.invalid" = "佈局檔案無法序列化，上傳已取消";
-"ame230.repo.safety_blocked" = "佈局未通過安全檢查，已攔截";
+
+/* Task232 */
+"ame232.deps.browser" = "在瀏覽器開啟";
+"ame232.deps.cf_desc" = "CurseForge 專案：%@";
+"ame232.deps.loading" = "正在載入專案資訊…";
+"ame232.deps.no_desc" = "（無介紹）";
+"ame232.deps.stats" = "下載 %lld 次 · 關注 %lld 人";
+"ame232.import.pick_instance" = "存檔在實例：%@——請到「遊戲目錄」切換";
+"ame232.import.switched" = "已自動切換到實例「%@」（你的存檔在這裡）";
+"ame232.mp.auto_msg" = "請在遊戲內暫停選單選擇「對區域網路開放」；偵測到連接埠後會自動產生分享代碼。18 秒未偵測到可改為手動輸入。";
+"ame232.mp.auto_title" = "正在自動偵測連接埠";
+"ame232.repo.check.cancel" = "取消";
+"ame232.repo.check.continue" = "仍要下載";
+"ame232.repo.check.title" = "下載前安全檢查發現以下問題：";
+"ame232.repo.issue.buttons" = "按鈕數 %lu（上限 %d）";
+"ame232.repo.issue.depth" = "巢狀層級過深（>8）";
+"ame232.repo.issue.keycode" = "按鍵碼越界（%d）";
+"ame232.repo.issue.shape" = "不是有效的按鍵佈局檔案";
+"ame232.repo.issue.size" = "檔案體積 %.1f MB（上限 %.0f MB）";
+"ame232.repo.issue.strlen" = "存在過長字串（>256）";
+"ame232.repo.issue.url" = "內嵌網路連結";
+"game.menu.settings" = "設定";

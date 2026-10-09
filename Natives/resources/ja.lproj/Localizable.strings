@@ -2022,7 +2022,6 @@
 "ame229.keybind.sync.done" = "キー設定を同期しました：%ld 個のファイルを更新、%ld 件のバインドを追加。";
 
 // Task230: コントロールリポジトリアップロード + スプリント未バインド通知 + ギアラベル + 依存関係クイック入口 + インポート概要
-"ame230.controls.unbound_toast" = "ボタン「%@」にキーが割り当てられていません——コントロールエディタで割り当ててください（ダッシュ = 左Ctrl 341）";
 "ame230.gamemenu.caption" = "メニュー";
 "ame230.deps.required" = "必須";
 "ame230.deps.optional" = "任意";
@@ -2039,4 +2038,25 @@
 "ame230.repo.upload.github_hint" = "GitHub の新規ファイルページをブラウザで開きました（要ログイン）。提出後にマージをお待ちください";
 "ame230.repo.upload.no_layouts" = "アップロードできるレイアウトがありません（先にエディタで保存してください）";
 "ame230.repo.upload.invalid" = "レイアウトをシリアライズできません——アップロードを中止しました";
-"ame230.repo.safety_blocked" = "レイアウトは安全チェックを通過しませんでした";
+
+/* Task232 */
+"ame232.deps.browser" = "ブラウザで開く";
+"ame232.deps.cf_desc" = "CurseForge プロジェクト：%@";
+"ame232.deps.loading" = "プロジェクト情報を読み込み中…";
+"ame232.deps.no_desc" = "（説明なし）";
+"ame232.deps.stats" = "ダウンロード %lld 回 · フォロー %lld 人";
+"ame232.import.pick_instance" = "セーブデータはインスタンス「%@」にあります——「ゲームディレクトリ」で切り替えてください";
+"ame232.import.switched" = "インスタンス「%@」に自動切り替えしました（セーブデータはこちらにあります）";
+"ame232.mp.auto_msg" = "ゲーム内の一時停止メニューで「LANに公開」を選択してください。ポートを検出すると共有コードを自動生成します。18秒見つからない場合は手動入力に切り替わります。";
+"ame232.mp.auto_title" = "ポートを自動検出中";
+"ame232.repo.check.cancel" = "キャンセル";
+"ame232.repo.check.continue" = "それでもダウンロード";
+"ame232.repo.check.title" = "ダウンロード前のセキュリティチェックで以下の問題が見つかりました：";
+"ame232.repo.issue.buttons" = "ボタン数 %lu（上限 %d）";
+"ame232.repo.issue.depth" = "ネストが深すぎます（>8）";
+"ame232.repo.issue.keycode" = "キーコードが範囲外（%d）";
+"ame232.repo.issue.shape" = "有効なキーレイアウトファイルではありません";
+"ame232.repo.issue.size" = "ファイルサイズ %.1f MB（上限 %.0f MB）";
+"ame232.repo.issue.strlen" = "長すぎる文字列があります（>256）";
+"ame232.repo.issue.url" = "Web リンクが埋め込まれています";
+"game.menu.settings" = "設定";

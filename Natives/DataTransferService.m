@@ -449,11 +449,18 @@ typedef NS_ENUM(NSInteger, Ame229PickerMode) {
         }
 
         NSInteger restored = 0;
+        NSMutableSet<NSString *> *ame232_touchedInstances = [NSMutableSet set];
         if (!failMsg) {
             // 逐文件合并回 POJAV_HOME（同名覆盖 = 恢复语义）。
             NSDirectoryEnumerator *enumerator = [fm enumeratorAtPath:staging];
             NSString *rel;
             while ((rel = [enumerator nextObject])) {
+                // ★ Task232（反馈 #13）：记录本次实际写入的实例名（instances/<name>/...）
+                if ([rel hasPrefix:@"instances/"]) {
+                    NSString *ame232_rest = [rel substringFromIndex:@"instances/".length];
+                    NSString *ame232_name = [ame232_rest componentsSeparatedByString:@"/"].firstObject;
+                    if (ame232_name.length > 0) [ame232_touchedInstances addObject:ame232_name];
+                }
                 NSString *srcAbs = [staging stringByAppendingPathComponent:rel];
                 BOOL isDir = NO;
                 if (![fm fileExistsAtPath:srcAbs isDirectory:&isDir]) continue;
@@ -540,10 +547,50 @@ typedef NS_ENUM(NSInteger, Ame229PickerMode) {
             }
             NSUInteger ame230_savesCount = [fm contentsOfDirectoryAtPath:
                 [ame227_instPath stringByAppendingPathComponent:@"saves"] error:nil].count;
-            NSLog(@"[DataTransfer] Task230: import summary -- %lu instance(s) under POJAV_HOME, current=%@ saves=%lu",
-                  (unsigned long)ame230_instanceCount, ame227_gd, (unsigned long)ame230_savesCount);
+            NSLog(@"[DataTransfer] Task230: import summary -- %lu instance(s) under POJAV_HOME, current=%@ saves=%lu (touched=%@)",
+                  (unsigned long)ame230_instanceCount, ame227_gd, (unsigned long)ame230_savesCount,
+                  [ame232_touchedInstances.allObjects componentsJoinedByString:@","]);
             ame230_summaryExtras = [NSString stringWithFormat:localize(@"ame230.import.summary", nil),
                                     (unsigned long)ame230_instanceCount, ame227_gd, (unsigned long)ame230_savesCount];
+            // ★ Task232（反馈 #13：备份导入无效，第三轮）：导入"成功"但用户
+            //   看不到任何变化的主形态 = 备份里的存档落在【别的实例名】下，
+            //   当前实例（default）依旧是空的——日志全绿、界面纹丝不动。
+            //   实例感知收尾：当前实例无存档、被写入的实例里有存档时，
+            //   自动切到那个实例（重指软链 + 重导偏好 + 重建根视图），
+            //   让"导入完成"立刻可见；多候选时在摘要里列出名字让用户去
+            //   游戏目录里切换，不再无声无息。
+            if (ame230_savesCount == 0 && ame232_touchedInstances.count > 0) {
+                NSMutableArray<NSString *> *ame232_withSaves = [NSMutableArray array];
+                for (NSString *ame232_n in ame232_touchedInstances) {
+                    NSUInteger ame232_sc = [fm contentsOfDirectoryAtPath:
+                        [ame230_instancesDir stringByAppendingPathComponent:
+                            [NSString stringWithFormat:@"%@/saves", ame232_n]] error:nil].count;
+                    if (ame232_sc > 0) [ame232_withSaves addObject:ame232_n];
+                }
+                if (ame232_withSaves.count == 1) {
+                    NSString *ame232_target = ame232_withSaves[0];
+                    setPrefObject(@"general.game_directory", ame232_target);
+                    @try {
+                        init_setupMultiDir();   // 重指 instances/<target> 软链
+                    } @catch (NSException *ame232_e) {
+                        NSLog(@"[DataTransfer] Task232: instance switch symlink exception (%@)", ame232_e);
+                    }
+                    ame227_gd = ame232_target;
+                    ame227_instPath = [NSString stringWithFormat:@"%s/instances/%@",
+                        getenv("POJAV_HOME"), ame232_target];
+                    ame230_savesCount = [fm contentsOfDirectoryAtPath:
+                        [ame227_instPath stringByAppendingPathComponent:@"saves"] error:nil].count;
+                    NSLog(@"[DataTransfer] Task232: auto-switched game directory to '%@' (imported instance with saves; now saves=%lu)",
+                          ame232_target, (unsigned long)ame230_savesCount);
+                    ame230_summaryExtras = [ame230_summaryExtras stringByAppendingFormat:@"\n%@",
+                        [NSString stringWithFormat:localize(@"ame232.import.switched", nil), ame232_target]];
+                } else if (ame232_withSaves.count > 1) {
+                    NSString *ame232_list = [ame232_withSaves componentsJoinedByString:@", "];
+                    NSLog(@"[DataTransfer] Task232: multiple imported instances carry saves: %@", ame232_list);
+                    ame230_summaryExtras = [ame230_summaryExtras stringByAppendingFormat:@"\n%@",
+                        [NSString stringWithFormat:localize(@"ame232.import.pick_instance", nil), ame232_list]];
+                }
+            }
         }
 
         dispatch_async(dispatch_get_main_queue(), ^{

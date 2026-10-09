@@ -360,6 +360,13 @@ check("G3  本地化资源改动仅限 Task138 三键 + Task210 neumorph 双键�
       or all(("renderer_follow_global" in l or "renderer_shadowed_by_profile" in l
               or "hide_controls" in l or "renderer_backend" in l)
              for l in _ame138_added + _ame138_removed if l.strip())
+      # Task232 重锚：本轮新增 20 键（ame232.*/game.menu.settings）+ 退役 2 键
+      # （ame230.controls.unbound_toast / ame230.repo.safety_blocked）×5 语言
+      # + FAQ 四文件加 1 条目（json 行计入 added）。提交后 diff 清空自愈。
+      or all(("ame232." in l or "game.menu.settings" in l
+              or "unbound_toast" in l or "safety_blocked" in l
+              or "/* Task232 */" in l)
+             for l in _ame138_added + _ame138_removed if l.strip('+').strip())
       # Task141 重锚：本轮新增 memory.current/memory.apply 两键（4 语言 8 行
       # + 注释行），提交前 diff 形态一并接受；提交后 diff 清空走第二分支自愈。
       or all(("memory.current" in l or "memory.apply" in l

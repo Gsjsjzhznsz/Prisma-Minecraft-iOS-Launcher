@@ -2932,7 +2932,6 @@
 "ame229.keybind.sync.done" = "键位同步完成：更新了 %ld 个文件，补充了 %ld 条绑定。";
 
 // Task230：控件仓库上传 + 奔跑未绑定提示 + 齿轮标签 + 前置快速入口 + 导入摘要
-"ame230.controls.unbound_toast" = "按钮「%@」未绑定按键——请在控件编辑器中绑定（奔跑 = 左Ctrl 341）";
 "ame230.gamemenu.caption" = "菜单";
 "ame230.deps.required" = "必需";
 "ame230.deps.optional" = "可选";
@@ -2949,4 +2948,25 @@
 "ame230.repo.upload.github_hint" = "已在浏览器打开 GitHub 建文件页（需登录），提交后等待合并";
 "ame230.repo.upload.no_layouts" = "没有可上传的布局（请先在编辑器保存一个）";
 "ame230.repo.upload.invalid" = "布局文件无法序列化，上传已取消";
-"ame230.repo.safety_blocked" = "布局未通过安全检查，已拦截";
+
+/* Task232 */
+"ame232.deps.browser" = "在浏览器打开";
+"ame232.deps.cf_desc" = "CurseForge 项目：%@";
+"ame232.deps.loading" = "正在加载项目信息…";
+"ame232.deps.no_desc" = "（无介绍）";
+"ame232.deps.stats" = "下载 %lld 次 · 关注 %lld 人";
+"ame232.import.pick_instance" = "存档在实例：%@——请到「游戏目录」切换";
+"ame232.import.switched" = "已自动切换到实例「%@」（你的存档在这里）";
+"ame232.mp.auto_msg" = "请在游戏内暂停菜单选择「对局域网开放」；检测到端口后会自动生成分享代码。18 秒未检测到可改为手动输入。";
+"ame232.mp.auto_title" = "正在自动检测端口";
+"ame232.repo.check.cancel" = "取消";
+"ame232.repo.check.continue" = "仍要下载";
+"ame232.repo.check.title" = "下载前安全检查发现以下问题：";
+"ame232.repo.issue.buttons" = "按钮数 %lu（上限 %d）";
+"ame232.repo.issue.depth" = "嵌套层级过深（>8）";
+"ame232.repo.issue.keycode" = "按键码越界（%d）";
+"ame232.repo.issue.shape" = "不是有效的按键布局文件";
+"ame232.repo.issue.size" = "文件体积 %.1f MB（上限 %.0f MB）";
+"ame232.repo.issue.strlen" = "存在超长字符串（>256）";
+"ame232.repo.issue.url" = "内嵌网络链接";
+"game.menu.settings" = "设置";

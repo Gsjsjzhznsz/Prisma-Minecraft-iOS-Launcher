@@ -123,7 +123,89 @@ static BOOL ame230_layoutSafetyCheck(NSData *raw, id jsonObj, NSString **reasonO
     return NO;
 }
 
+/// ★ Task232（反馈 #15）：下载前安全扫描——收集【全部】问题（非首错即止），
+/// 返回本地化的问题描述列表；空数组 = 干净。规则同 Task230 检查（体积/
+/// 按钮数/键码范围/字符串长度/内嵌 URL/嵌套深度），误报侧修正：
+/// 4MB 上限（出厂布局 PrettyPrinted 可近 2MB）、键码下界 -12（特殊键全系）。
+static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
+    NSMutableArray<NSString *> *issues = [NSMutableArray array];
+    if (raw.length > 4 * 1024 * 1024) {
+        [issues addObject:[NSString stringWithFormat:localize(@"ame232.repo.issue.size", nil),
+                           (double)raw.length / 1048576.0, 4.0]];
+    }
+    if (![jsonObj isKindOfClass:[NSDictionary class]] ||
+        ![[jsonObj objectForKey:@"mControlDataList"] isKindOfClass:[NSArray class]]) {
+        [issues addObject:localize(@"ame232.repo.issue.shape", nil)];
+        return issues;   // 结构不对，后续规则无从谈起
+    }
+    __block NSUInteger btns = 0;
+    __block NSMutableArray<NSString *> *detail = [NSMutableArray array];
+    __block void (^walk)(id, int) = ^(id node, int depth) {
+        if (depth > 8) {
+            [detail addObject:localize(@"ame232.repo.issue.depth", nil)];
+            return;
+        }
+        if ([node isKindOfClass:[NSDictionary class]]) {
+            if (node[@"keycodes"] != nil) btns++;
+            for (NSString *k in [node allKeys]) {
+                id v = node[k];
+                if ([k isKindOfClass:[NSString class]] && [k isEqualToString:@"name"] &&
+                    [v isKindOfClass:[NSString class]] && [(NSString *)v length] > 256) {
+                    [detail addObject:localize(@"ame232.repo.issue.strlen", nil)];
+                }
+                if ([v isKindOfClass:[NSString class]] && [(NSString *)v length] > 256 &&
+                    ![k isEqualToString:@"name"]) {
+                    [detail addObject:localize(@"ame232.repo.issue.strlen", nil)];
+                }
+                if ([v isKindOfClass:[NSString class]] &&
+                    ([(NSString *)v containsString:@"http://"] || [(NSString *)v containsString:@"https://"])) {
+                    [detail addObject:localize(@"ame232.repo.issue.url", nil)];
+                }
+                if ([k isEqualToString:@"keycodes"] && [v isKindOfClass:[NSArray class]]) {
+                    for (id kc in (NSArray *)v) {
+                        if (![kc isKindOfClass:[NSNumber class]]) continue;
+                        int iv = [(NSNumber *)kc intValue];
+                        if (iv < -12 || iv > 400) {
+                            [detail addObject:[NSString stringWithFormat:localize(@"ame232.repo.issue.keycode", nil), iv]];
+                        }
+                    }
+                }
+                walk(v, depth + 1);
+            }
+        } else if ([node isKindOfClass:[NSArray class]]) {
+            for (id v in (NSArray *)node) walk(v, depth + 1);
+        }
+    };
+    walk(jsonObj, 0);
+    if (btns > 400) {
+        [issues addObject:[NSString stringWithFormat:localize(@"ame232.repo.issue.buttons", nil),
+                           (unsigned long)btns, 400]];
+    }
+    // 明细去重（同一类问题可能重复出现，列一次即可）
+    for (NSString *d in [NSSet setWithArray:detail]) {
+        [issues addObject:d];
+    }
+    return issues;
+}
+
 @implementation ControlRepoViewController
+
+/// Task232（反馈 #15）：下载落盘安装（直通与"仍要下载"确认两路共用）。
+- (void)ame232_installDownloadedLayout:(NSString *)layoutId data:(NSData *)data {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSString *dir = [NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")];
+        ame188_ensureDirectoryHealed(dir);
+        NSString *dest = [dir stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.json", layoutId]];
+        if (![data writeToFile:dest options:NSDataWritingAtomic error:nil]) {
+            [NMToast showMessage:localize(@"custom_controls.repo.download.failed", nil)];
+            return;
+        }
+        NSLog(@"[ControlRepo] Task232: layout saved -> %@", dest);
+        [self scanLocalVersions];
+        [NMToast showMessage:[NSString stringWithFormat:localize(@"custom_controls.repo.download.done", nil), layoutId]];
+        if (self.whenLayoutDownloaded) self.whenLayoutDownloaded(layoutId);
+    });
+}
 
 - (NSInteger)task189_stickyMirror {
     NSInteger idx = [getPrefObject(@"controlrepo.mirror_idx") integerValue];
@@ -365,28 +447,41 @@ static BOOL ame230_layoutSafetyCheck(NSData *raw, id jsonObj, NSString **reasonO
                 [NMToast showMessage:localize(@"custom_controls.repo.download.invalid", nil)];
                 return;
             }
-            // ★ Task230（反馈 #13：下载时静默检查恶意代码）：结构性安全检查
-            //   （体积/按钮数/键码范围/字符串长度/内嵌 URL/嵌套深度）。
-            //   静默执行；未过检拒装并留取证日志。
-            NSString *ame230_why = nil;
-            if (!ame230_layoutSafetyCheck(data, obj, &ame230_why)) {
-                NSLog(@"[ControlRepo] Task230: layout %@ BLOCKED by safety check (%@)",
-                      layoutId, ame230_why ?: @"unknown");
-                [NMToast showMessage:localize(@"ame230.repo.safety_blocked", nil)];
+            // ★ Task232（反馈 #15）：安全检查从"上传拦截 + 下载静默拦截"
+            //   改为"下载时扫描 + 列出问题 + 询问是否继续"。检查算法同时
+            //   按用户反馈收紧误报（正常默认控件不再误伤）：体积上限 2MB
+            //   → 4MB（5652 行的出厂布局 PrettyPrinted 接近 2MB）；键码
+            //   下界放宽到 -12（SPECIALBTN_KEYBOARD..MENU 全系合法）。
+            NSArray<NSString *> *ame232_issues = ame232_layoutSafetyIssues(data, obj);
+            if (ame232_issues.count > 0) {
+                NSLog(@"[ControlRepo] Task232: layout %@ flagged with %lu issue(s): %@",
+                      layoutId, (unsigned long)ame232_issues.count, ame232_issues);
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    NSMutableString *ame232_msg = [NSMutableString string];
+                    for (NSString *ame232_it in ame232_issues) {
+                        if (ame232_msg.length > 0) [ame232_msg appendString:@"\n"];
+                        [ame232_msg appendFormat:@"· %@", ame232_it];
+                    }
+                    UIAlertController *ame232_alert = [UIAlertController
+                        alertControllerWithTitle:localize(@"ame232.repo.check.title", nil)
+                                         message:ame232_msg
+                                  preferredStyle:UIAlertControllerStyleAlert];
+                    [ame232_alert addAction:[UIAlertAction
+                        actionWithTitle:localize(@"ame232.repo.check.cancel", nil)
+                                  style:UIAlertActionStyleCancel
+                                handler:nil]];
+                    [ame232_alert addAction:[UIAlertAction
+                        actionWithTitle:localize(@"ame232.repo.check.continue", nil)
+                                  style:UIAlertActionStyleDefault
+                                handler:^(UIAlertAction *a) {
+                            [self ame232_installDownloadedLayout:layoutId data:data];
+                        }]];
+                    [self presentViewController:ame232_alert animated:YES completion:nil];
+                });
                 return;
             }
-            NSLog(@"[ControlRepo] Task230: layout %@ passed safety check (silent)", layoutId);
-            NSString *dir = [NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")];
-            ame188_ensureDirectoryHealed(dir);
-            NSString *dest = [dir stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.json", layoutId]];
-            if (![data writeToFile:dest options:NSDataWritingAtomic error:nil]) {
-                [NMToast showMessage:localize(@"custom_controls.repo.download.failed", nil)];
-                return;
-            }
-            NSLog(@"[ControlRepo] Task189: layout saved -> %@", dest);
-            [self scanLocalVersions];
-            [NMToast showMessage:[NSString stringWithFormat:localize(@"custom_controls.repo.download.done", nil), layoutId]];
-            if (self.whenLayoutDownloaded) self.whenLayoutDownloaded(layoutId);
+            NSLog(@"[ControlRepo] Task232: layout %@ passed safety scan", layoutId);
+            [self ame232_installDownloadedLayout:layoutId data:data];
         });
     }];
 }
@@ -490,14 +585,15 @@ static BOOL ame230_layoutSafetyCheck(NSData *raw, id jsonObj, NSString **reasonO
     NSString *dir = [NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")];
     NSString *src = [dir stringByAppendingPathComponent:fileName];
     NSData *raw = [NSData dataWithContentsOfFile:src];
-    id obj = [NSJSONSerialization JSONObjectWithData:raw options:0 error:nil];
-    NSString *why = nil;
-    if (raw == nil || !ame230_layoutSafetyCheck(raw, obj, &why)) {
-        NSLog(@"[ControlRepo] Task230: upload REJECTED by safety check (%@): %@", why, fileName);
-        [NMToast showMessage:[NSString stringWithFormat:@"%@ (%@)",
-            localize(@"ame230.repo.safety_blocked", nil), why ?: @"?"]];
+    // ★ Task232（反馈 #15）：上传免检——用户指令（连默认控件都过不了
+    //   检查 = 算法对正常布局误报）。安全职责全部移到下载侧的
+    //   扫描 + 询问流程（见 ame232_layoutSafetyIssues）。
+    if (raw == nil) {
+        NSLog(@"[ControlRepo] Task232: upload source unreadable: %@", fileName);
+        [NMToast showMessage:localize(@"ame230.repo.upload.invalid", nil)];
         return;
     }
+    id obj = [NSJSONSerialization JSONObjectWithData:raw options:0 error:nil];
     // 提交文件：元信息包裹布局（维护者合入 controls/index.json + layouts/）
     NSString *ame230_id = fileName.stringByDeletingPathExtension;
     NSDictionary *submission = @{

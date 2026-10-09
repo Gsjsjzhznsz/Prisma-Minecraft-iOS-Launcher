@@ -62,7 +62,7 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
         @"game.menu.toggle_virtual_mouse",  // 虚拟鼠标开关
         @"game.menu.toggle_keyboard",       // 游戏内键盘
         @"game.menu.resolution",            // 分辨率调整
-        @"Settings"                         // 设置
+        @"game.menu.settings"               // Task232⑰：原为裸英文字串 "Settings"（ localize 找不到键回退原文 = 硬编码残留）
     ];
 
     // FCL 风格：菜单从底部弹出，宽度为屏幕宽度的 70%（居中），最大高度为屏幕高度的 60%
@@ -142,18 +142,25 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
     LGCRemoveGlassFromView(self.menuView);
     if (LGCIsGlassStyleActive()) {
         BOOL ok = LGCApplyGlassToView(self.menuView, 16.0);
-        // ★ Task230（反馈 #4：液态玻璃悬浮栏没有任何效果）：组合玻璃的
-        //   SystemUltraThinMaterial 在深色游戏画面上几乎不可见（通透 =
-        //   换了跟没换一样）。悬浮菜单是游戏内的独立浮层——直接把玻璃
-        //   层换成 SystemMaterialDark（重磨砂深色）：任何游戏帧上都读得
-        //   清楚、玻璃质感明确可见。效果层 tag 与 LiquidGlassCompat 的
-        //   kLGCGlassEffectTag(888901) 对齐（Remove 走同一常量清理）。
+        // ★ Task230（反馈 #4）：组合玻璃的 SystemUltraThinMaterial 在深色游戏
+        //   画面上几乎不可见。悬浮菜单是游戏内的独立浮层——直接把玻璃
+        //   层换成 SystemMaterialDark（重磨砂深色）。
         for (UIView *ame230_sub in self.menuView.subviews) {
             if (ame230_sub.tag == 888901 && [ame230_sub isKindOfClass:UIVisualEffectView.class]) {
                 [(UIVisualEffectView *)ame230_sub setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
             }
         }
-        NSLog(@"[GameMenu] Task229 floating menu glass applied (composite, ok=%d; Task230 heavy dark material)", ok);
+        // ★ Task232（反馈 #6：仍是原生与液态玻璃混杂样式）：LGC 的无壁纸
+        //   兑底染色层（kLGCGlassSheenTag+1 = 888903，浅色模式下是
+        //   systemBackground 14% 的白纱）叠在重磨砂深色上 = “玻璃上糊了
+        //   一层原生白”的混杂观感。菜单已有重磨砂深色承担可读性，拆除
+        //   这层染色。
+        for (UIView *ame232_sub in [self.menuView.subviews copy]) {
+            if (ame232_sub.tag == 888903) {
+                [ame232_sub removeFromSuperview];
+            }
+        }
+        NSLog(@"[GameMenu] Task229 floating menu glass applied (composite, ok=%d; Task230 heavy dark material; Task232 tint layer stripped)", ok);
     }
 }
 
@@ -184,6 +191,17 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
 
     self.menuView.hidden = NO;
     self.menuDimView.hidden = NO;
+
+    // ★ Task232（反馈 #11：齿轮打开后没有任何文字显示）：并案取证——
+    //   开菜时把行数、首行标题长度、cell 文本色、玻璃状态全量落日志，
+    //   下一轮装机日志直接定位是“cell 没建”还是“文字颜色/玻璃吞了”。
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UITableViewCell *ame232_c0 = [self.menuView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
+        NSLog(@"[GameMenu] Task232 menu shown: rows=%lu firstTitleLen=%lu textColor=%@ glassActive=%d",
+              (unsigned long)self.menuArray.count,
+              (unsigned long)(ame232_c0.textLabel.text ?: @"").length,
+              ame232_c0.textLabel.textColor, (int)LGCIsGlassStyleActive());
+    });
 
     CGFloat screenWidth = [ScreenUtils screenSize].width;
     CGFloat screenHeight = [ScreenUtils screenSize].height;
@@ -552,6 +570,12 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"FCLMenuCell"];
         cell.backgroundColor = [UIColor clearColor];
         cell.textLabel.textColor = [UIColor whiteColor];
+        // ★ Task232（反馈 #11）：白字加软黑投影——无论玻璃层状态如何
+        //   （重磨砂深色/系统材质/实底），文字在任何背景上都可读。
+        cell.textLabel.layer.shadowColor = [UIColor blackColor].CGColor;
+        cell.textLabel.layer.shadowOpacity = 0.85;
+        cell.textLabel.layer.shadowRadius = 1.5;
+        cell.textLabel.layer.shadowOffset = CGSizeMake(0, 1);
         // 修复：游戏内菜单字体不应使用 sp 缩放，使用固定 16pt 保证所有设备一致
         // 原 [ScreenUtils sp:16] 在 iPad 上会放大到 32pt 导致菜单字体过大
         cell.textLabel.font = [UIFont systemFontOfSize:16];

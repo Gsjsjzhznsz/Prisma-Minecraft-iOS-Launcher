@@ -80,6 +80,11 @@ static NSString * const ame224_kRound = @"round";
             }];
         } else {
             NSValue *ame224_v = [it[ame224_kRect] isKindOfClass:NSValue.class] ? it[ame224_kRect] : nil;
+            NSString *ame224_title = [it[ame224_kTitle] isKindOfClass:NSString.class] ? it[ame224_kTitle] : nil;
+            // ★ Task232（反馈 #14）：锚点页也要求非空标题——此前空标题锚点
+            //   页会以“空卡片”呈现（用户看到“无文字介绍”）；没有可说的
+            //   就不生成这一页。
+            if (ame224_title.length == 0) continue;
             if (ame224_v == nil) continue;
             CGRect ame224_r = [ame224_v CGRectValue];
             if (CGRectIsNull(ame224_r) || CGRectIsEmpty(ame224_r)) continue;
@@ -182,13 +187,20 @@ static NSString * const ame224_kRound = @"round";
 
         // 说明卡（毛玻璃材质 + 24pt 连续圆角，iPadOS 26/27 卡语言）
         _ame224_card = [[UIView alloc] init];
-        _ame224_card.backgroundColor = [[UIColor systemBackgroundColor] colorWithAlphaComponent:0.96];
+        // ★ Task232（反馈 #14：欢迎界面圆圈焦点介绍显示空白，第三轮）：卡底
+        //   0.96 → 1.0 全实底 + 投影——半透明卡在浅色壁纸/玻璃管线叠加下观感
+        //   趋近“透明”；文字卡必须是全实底才任何环境下可读。masksToBounds
+        //   关闭以放行投影（标签内边 18-20pt 不会溢出圆角）。
+        _ame224_card.backgroundColor = [UIColor systemBackgroundColor];
+        _ame224_card.layer.shadowColor = [UIColor blackColor].CGColor;
+        _ame224_card.layer.shadowOpacity = 0.35;
+        _ame224_card.layer.shadowRadius = 18.0;
+        _ame224_card.layer.shadowOffset = CGSizeMake(0, 8);
         _ame224_card.layer.borderColor = [[UIColor separatorColor] colorWithAlphaComponent:0.6].CGColor;
         _ame224_card.layer.borderWidth = 0.5;
         _ame224_card.translatesAutoresizingMaskIntoConstraints = NO;
         _ame224_card.layer.cornerRadius = 24.0;
         _ame224_card.layer.cornerCurve = kCACornerCurveContinuous;
-        _ame224_card.layer.masksToBounds = YES;
         _ame224_card.userInteractionEnabled = NO;
         [self addSubview:_ame224_card];
 
@@ -389,6 +401,14 @@ static NSString * const ame224_kRound = @"round";
         [NSLayoutConstraint deactivateConstraints:self.ame224_pageConstraints];
         self.ame224_pageConstraints = nil;
     }
+    // ★ Task232（反馈 #14）：每页取证——洞/卡矩形 + 文案长度落日志，
+    //   下一轮装机日志直接区分“卡在屏外”还是“文案为空”。
+    NSLog(@"[CoachMarks] Task232 page %lu/%lu: spot=%@ titleLen=%lu bodyLen=%lu cardY=%.0f cardH=%.0f self=%@",
+          (unsigned long)index + 1, (unsigned long)_items.count,
+          NSStringFromCGRect(ame224_spot),
+          (unsigned long)[(it[ame224_kTitle] ?: @"") length],
+          (unsigned long)[(it[ame224_kBody] ?: @"") length],
+          ame224_cardY, ame224_cardH, NSStringFromCGRect(self.bounds));
     self.ame224_pageConstraints = @[
         [_ame224_nextButton.bottomAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.bottomAnchor constant:-18],
         [_ame224_card.topAnchor constraintEqualToAnchor:self.topAnchor constant:ame224_cardY],

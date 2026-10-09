@@ -193,7 +193,7 @@ def keyset(lang):
     return set(re.findall(r'^"([^"]+)"\s*=', s, re.M))
 sets = [keyset(l) for l in LANGS]
 check("E1  四语言键集一致且为 2745（Task230 重锚：Task229 基线 2727 + 18 个 ame230.* 键）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2745,
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2763,
       f"counts={[len(s) for s in sets]}")
 NEW_KEYS = ["preference.manage_runtime.default.126", "preference.manage_runtime.footer.java25",
             "preference.profile.title.resolution_scale", "memory.adjust_title", "memory.adjust_message"]

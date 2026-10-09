@@ -360,8 +360,25 @@ void init_setupCustomControls() {
     //   (b) 解析必须 MutableContainers——options:0 返回不可变
     //   __NSDictionaryI，setValue:forKey: 抛 NSInvalidArgumentException
     //   被 @catch 吞掉，迁移永远失效（③白修）。
+    //   反铒：Task232（反馈 #4 复发轮）：仅扫三个固定文件名不够——装机
+    //   4bdd916 会话零 "sprint dead-button migrated" 锚点，用户布局是自建
+    //   文件名（控件编辑器保存的任意名字）；且死按钮名含"持续 奔跑"
+    //   不含"常用"。本轮改为扫描 controlmap 下【全部 .json】（排除 gamepads
+    //   子目录），名字含"常用"或"奔跑"且四键码全零 → 绑 341（Left
+    //   Control；配合 toggleSprint 即点一次持续奔跑）。用户自绑过（任一
+    //   键码非零）的按钮永不动。
     @try {
-        NSArray<NSString *> *ame230_files = @[@"custom.json", @"classic.json", @"large-buttons.json"];
+        NSArray<NSString *> *ame230_all = [[NSFileManager defaultManager]
+            contentsOfDirectoryAtPath:controlPath error:nil] ?: @[];
+        NSMutableArray<NSString *> *ame230_files = [NSMutableArray array];
+        for (NSString *ame230_fn in ame230_all) {
+            if ([ame230_fn.pathExtension caseInsensitiveCompare:@"json"] != NSOrderedSame) continue;
+            // 游戏手柄布局子目录里的文件不扫（形态不同，不迁移）
+            NSString *ame230_full = [controlPath stringByAppendingPathComponent:ame230_fn];
+            BOOL ame230_isDir = NO;
+            if ([[NSFileManager defaultManager] fileExistsAtPath:ame230_full isDirectory:&ame230_isDir] && ame230_isDir) continue;
+            [ame230_files addObject:ame230_fn];
+        }
         for (NSString *ame230_fn in ame230_files) {
             NSString *ame230_p = [controlPath stringByAppendingPathComponent:ame230_fn];
             NSData *ame230_data = [NSData dataWithContentsOfFile:ame230_p];
@@ -376,7 +393,7 @@ void init_setupCustomControls() {
                     NSString *ame230_nm = [node objectForKey:@"name"];
                     NSArray *ame230_kc = [node objectForKey:@"keycodes"];
                     if ([ame230_nm isKindOfClass:[NSString class]] &&
-                        [ame230_nm containsString:@"常用"] &&
+                        ([ame230_nm containsString:@"常用"] || [ame230_nm containsString:@"奔跑"]) &&
                         [ame230_kc isKindOfClass:[NSArray class]] && ame230_kc.count >= 1) {
                         BOOL ame230_allZero = YES;
                         for (id k in ame230_kc) {

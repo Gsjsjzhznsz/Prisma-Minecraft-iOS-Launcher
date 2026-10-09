@@ -960,10 +960,10 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
                     [self showHostShareCodeAlert];
                 }
             } else {
-                // 分享代码不存在：弹出手动输入端口对话框
-                // 关键修复（端口检测改为手动输入）：不再自动检测端口，改为用户手动输入
-                NSLog(@"[MultiplayerVC] Host flow active but share code not yet generated, showing manual port input dialog");
-                [self showManualPortInputAlert];
+                // ★ Task232（反馈 #10）：分享码未生成——先自动检测端口
+                //   （18s 窗口），未检出再回落手动输入（旧流程保留为兜底）。
+                NSLog(@"[MultiplayerVC] Task232: host flow active, share code pending -- starting auto port detection");
+                [self ame232_startAutoPortDetection];
             }
             return;
         }
@@ -1164,13 +1164,47 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
         return;
     }
 
-    // 关键修复（避免重复生成分享代码）：
-    // 手动输入流程中，showManualPortInputAlert 已经在用户点击"生成"按钮时
-    // 直接调用了 generateShareCodeWithPort: 生成分享代码。
-    // 此时 LanPortDetector.setManualPort: 又会发送通知触发本回调，
-    // 会导致分享代码被生成两次（虽然 PortForwarder 启动是幂等的，但显示会闪烁）。
-    // 因此本回调仅做日志记录，不再重复调用 generateShareCodeWithPort:。
-    NSLog(@"[MultiplayerVC] lanPortDidDetect: received port %@ notification (manual input flow already generated share code, skipping duplicate)", port);
+    // ★ Task232（反馈 #10：联机功能仍无法自动扫描端口）：自动检测主路径。
+    //   房主流已激活、ZeroTier 已连、分享码未生成时，检测到端口即自动
+    //   生成分享码（用户在游戏内"对局域网开放"后 MC 会在 latestlog 打出
+    //   端口行，LanPortDetector 的日志尾随 + 本地 MC 协议探测两条路都通）。
+    //   分享码已存在（手动流程已生成过）时仅记日志，避免双重弹窗。
+    if (self.isHostFlowActive && self.lastShareCode.length == 0 && self.hostRoom != nil) {
+        NSLog(@"[MultiplayerVC] Task232: auto-detected LAN port %@ -- generating share code", port);
+        [self generateShareCodeWithPort:port];
+        return;
+    }
+    NSLog(@"[MultiplayerVC] lanPortDidDetect: received port %@ notification (share code already generated, skipping duplicate)", port);
+}
+
+/// ★ Task232（反馈 #10）：房主端口自动检测——先自动（日志尾随 + 本地扫描），
+/// 18 秒无果回落手动输入（旧手动流程完整保留为兜底）。
+- (void)ame232_startAutoPortDetection {
+    if (self.isHostFlowActive && self.lastShareCode.length > 0) {
+        [self showHostShareCodeAlert];
+        return;
+    }
+    uint16_t known = [LanPortDetector sharedInstance].detectedPort;
+    if (known > 0) {
+        NSLog(@"[MultiplayerVC] Task232: port %u already known from earlier detection", known);
+        [self generateShareCodeWithPort:[NSString stringWithFormat:@"%u", known]];
+        return;
+    }
+    // 进度提示 + 起检测 + 18s 兜底
+    [self showSimpleAlertWithTitle:localize(@"ame232.mp.auto_title", nil)
+                            message:localize(@"ame232.mp.auto_msg", nil)];
+    [[LanPortDetector sharedInstance] startAutoDetection];
+    __weak typeof(self) weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(18 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (strongSelf == nil) return;
+        if (!strongSelf.isHostFlowActive) return;
+        if (strongSelf.lastShareCode.length > 0) return;   // 自动路径已成功
+        NSLog(@"[MultiplayerVC] Task232: auto detection window elapsed without a port -- falling back to manual input");
+        [[LanPortDetector sharedInstance] stopAutoDetection];
+        [strongSelf showManualPortInputAlert];
+    });
 }
 
 /// 根据用户输入的 LAN 端口生成分享代码并显示

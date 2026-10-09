@@ -7,6 +7,7 @@
 //
 
 #import "GameMenuOverlayView.h"
+#import "LiquidGlassCompat.h"   // Task232: 悬浮栏玻璃
 #import "LauncherPreferences.h"
 #import "utils.h"        // Task230：localize（齿轮标签文案）
 #import "NMToast.h"     // Task230：预留（未绑定提示等悬浮提示）
@@ -97,6 +98,17 @@ static BOOL ame227_g_dockedLeft = NO;
                     ?: [UIImage systemImageNamed:@"gear"];
     [self.menuButton setImage:icon forState:UIControlStateNormal];
     self.menuButton.tintColor = [UIColor whiteColor];
+    // ★ Task232（反馈 #6：液态玻璃悬浮栏没有任何效果，仍是原生与液态玻璃
+    //   混杂样式）：悬浮栏本体（齿轮球 + FPS/内存统计条 + “菜单”标签）
+    //   此前恒为原生半透明深色——切了液态玻璃风格的用户眼里，菜单弹层有
+    //   玻璃而常驻悬浮件没有 = “混杂”。玻璃风格激活时给三件套上同款
+    //   组合玻璃并换成重磨砂深色（游戏帧上可读）；非玻璃风格保持原生。
+    //   applyInView 系插入 atIndex:0（位于图标/文字之下，不碰命中测试）。
+    [self ame232_applyFloatingGlass];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame232_floatingGlassStyleChanged)
+                                                 name:@"BackgroundUIEffectChanged"
+                                               object:nil];
     // 使用纯 frame 布局（不用 auto layout），因为按钮位置通过 center 手动设置并持久化
     // 不设置 translatesAutoresizingMaskIntoConstraints = NO，保持默认 YES，避免无约束导致 frame 不确定
     // 确保按钮能响应触摸
@@ -149,6 +161,39 @@ static BOOL ame227_g_dockedLeft = NO;
     self.ame230_captionLabel.center = CGPointMake(
         MAX(ame230_halfW, MIN(self.bounds.size.width - ame230_halfW, self.ame230_captionLabel.center.x)),
         MIN(self.bounds.size.height - ame230_sz.height / 2.0, self.ame230_captionLabel.center.y));
+}
+
+#pragma mark - Task232：悬浮栏玻璃（齿轮球/统计条/菜单标签）
+
+- (void)ame232_floatingGlassStyleChanged {
+    [self ame232_applyFloatingGlass];
+}
+
+/// 玻璃风格激活 → 三件套组合玻璃 + 重磨砂深色；否则还原原生半透明深色。
+- (void)ame232_applyFloatingGlass {
+    if (!LGCIsGlassStyleActive()) {
+        // 非玻璃风格：还原原生外观（清玻璃层 + 恢复原底色）
+        LGCRemoveGlassFromView(self.menuButton);
+        LGCRemoveGlassFromView(self.statsLabel);
+        LGCRemoveGlassFromView(self.ame230_captionLabel);
+        self.menuButton.backgroundColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:0.6];
+        self.statsLabel.backgroundColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0.5];
+        self.ame230_captionLabel.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.45];
+        return;
+    }
+    // 齿轮球：圆片玻璃（半径 = 半宽）；统计条/菜单标签：圆角矩形玻璃
+    LGCApplyGlassToView(self.menuButton, kMenuButtonSize / 2.0);
+    LGCApplyGlassToView(self.statsLabel, 8.0);
+    LGCApplyGlassToView(self.ame230_captionLabel, 5.0);
+    // 重磨砂深色：UltraThin 在游戏帧上读不出玻璃感（Task230 菜单同款教训）
+    for (UIView *ame232_host in @[self.menuButton, self.statsLabel, self.ame230_captionLabel]) {
+        for (UIView *ame232_sub in ame232_host.subviews) {
+            if ([ame232_sub isKindOfClass:UIVisualEffectView.class]) {
+                [(UIVisualEffectView *)ame232_sub setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
+            }
+        }
+    }
+    NSLog(@"[GameMenu] Task232 floating bar glass applied (gear + stats + caption, heavy dark material)");
 }
 
 - (void)setupStatsLabel {

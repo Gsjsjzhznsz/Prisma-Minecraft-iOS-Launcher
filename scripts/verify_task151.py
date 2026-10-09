@@ -159,7 +159,7 @@ def main():
         missing = [k for k in bing_keys if k not in ks]
         check(f"G {lang} has all {len(bing_keys)} bing keys", not missing, f"missing={missing}")
     check("G gated baseline 2228 x4", len(set(counts.values())) == 1 and
-          counts["en"] == 2745, str(counts))  # Task230 重锚：+18 ame230.*
+          counts["en"] == 2763, str(counts))  # Task232 重锚：+20 ame232/game.menu.settings，-2 退役 ame230 键
     for lang in ["ja", "km"]:
         s = rd(f"Natives/resources/{lang}.lproj/Localizable.strings")
         ks = set(re.findall(r'^"([^"]+)"\s*=', s, re.M))
@@ -178,12 +178,12 @@ def main():
         # Task168：l10n 基线 2727 -> 1954（净增 background.cards.neumorph.title），
         # 本检查语义 = "所有脚本计数锚与当前基线一致"，随基线诚实重锚。
         for m in re.finditer(r'len\(sets\[0\]\)\s*==\s*(\d+)', s):
-            if m.group(1) != "2745":
+            if m.group(1) != "2763":
                 stale.append(f"{fn}:{m.group(1)}")
         for m in re.finditer(r'vals == \{(\d+)\}', s):
-            if m.group(1) != "2745":
+            if m.group(1) != "2763":
                 stale.append(f"{fn}:vals{m.group(1)}")
-    check("H no stale l10n anchors (expect 2745 everywhere (Task230 re-anchor: +18 ame230.* keys), Task205 baseline)", not stale, str(stale))
+    check("H no stale l10n anchors (expect 2763 everywhere (Task232 re-anchor: +20 ame232/game.menu.settings, -2 retired ame230 keys), Task205 baseline)", not stale, str(stale))
 
     print(f"\n{'=' * 40}\n{PASSED} passed, {len(FAILED)} failed")
     if FAILED:

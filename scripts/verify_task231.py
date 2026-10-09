@@ -81,10 +81,10 @@ if os.path.exists(scan_path):
     for line in r.stdout.splitlines():
         if line.startswith("***"):
             bad.append(line)
-    if "total real self-referencing blocks: 5" in r.stdout and not bad:
+    if "total real self-referencing blocks: 6" in r.stdout and not bad:
         passed += 1
     else:
-        failed.append(f"231-D fleet scan: expected 5 all-OK, got offenders: {bad or 'count mismatch'}")
+        failed.append(f"231-D fleet scan: expected 6 all-OK (5 from Task231 + Task232 repo walk), got offenders: {bad or 'count mismatch'}")
 else:
     failed.append("231-D: scan script missing")
 
@@ -93,7 +93,9 @@ else:
 import subprocess
 r = subprocess.run([sys.executable, os.path.join(BASE, "scripts", "task225_bracket_audit.py")],
                    capture_output=True, text=True, cwd=BASE)
-for target in ["Natives/main.m", "Natives/DownloadViewController.m"]:
+# Task232 re-anchor: the audit covers only files modified vs HEAD; this round
+# that is main.m (DownloadViewController.m is untouched -> checked via B anchors).
+for target in ["Natives/main.m"]:
     hit = [l for l in r.stdout.splitlines() if target in l]
     if hit and hit[0].startswith("[OK "):
         passed += 1

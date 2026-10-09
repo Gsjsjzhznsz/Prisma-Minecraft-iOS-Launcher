@@ -122,11 +122,12 @@ check("D4 cardTarget 选择跳过一切 UIVisualEffectView",
       and '[subview isKindOfClass:[UIVisualEffectView class]]) {\n                continue;' in bm)
 # Task226（#16）：反色开关退役——白底黑边全局字体常开（stroke 描边在
 # ame224_applyAdaptiveTextToLabel，BackgroundManager 不再调用 LGC 开关）
-check("D5 反色漏斗退役（Task226：白底黑边全局字体接管；Task229 重锚：描边 -2.6→-1.6 + 半透明描边色——反馈 #10 的字内黑线根修）",
+check("D5 反色漏斗退役（Task226：白底黑边全局字体接管；Task232 重锚：CoreText stroke/光晕整体退役，四方向 0.6pt 外扩描边——反馈 #16 的 CJK 字内黑线构造性根修）",
       "LGCTextAutoContrastEnabled" not in bm
-      and "NSStrokeWidthAttributeName: @(-1.6)" in bm
-      and "NSStrokeColorAttributeName: [UIColor colorWithWhite:0.0 alpha:0.82]" in bm
-      and "NSStrokeWidthAttributeName: @(-2.6)" not in bm)
+      and "NSStrokeWidthAttributeName" not in bm
+      and "ame232_swizzledLabelDrawTextInRect" in bm
+      and "CGRectOffset(rect,  0.6f,  0.0f)" in bm
+      and "shadowRadius = 2.5" not in bm)
 
 # ---------------------------------------------------------------- E. 隔离
 print("== E. 版本隔离（上游式重构）==")
@@ -262,7 +263,7 @@ NEWKEYS = ["profile.isolation.choice_prompt", "profile.isolation.choice_migrate"
 for lang in ["en", "zh-CN", "zh-Hans", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)" = ', rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
     check(f"M-{lang} 唯一键 2715（… + Task226 12 + Task227 7）",
-          len(keys) == 2727, f"got {len(keys)}")
+          len(keys) == 2763, f"got {len(keys)}")
     miss = [k for k in NEWKEYS if k not in keys]
     check(f"M-{lang} 本轮新键全部在位", not miss, str(miss[:4]))
 

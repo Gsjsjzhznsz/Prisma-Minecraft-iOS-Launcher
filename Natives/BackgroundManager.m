@@ -1155,31 +1155,18 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
     // = 描边 + 填充）+ 软阴影。任何壁纸上文字都可读，无需判定亮度。
     if ([[BackgroundManager sharedManager] hasBackground]) {
         label.textColor = [UIColor whiteColor];
-        // 只对纯文本标签做描边（富文本标签保留既有属性，仅染色 + 阴影）
-        if (label.text.length > 0 && label.attributedText == nil) {
-            NSMutableAttributedString *ame226_attr =
-                [[NSMutableAttributedString alloc] initWithString:label.text
-                                                       attributes:@{
-                NSFontAttributeName: label.font ?: [UIFont systemFontOfSize:15],
-                NSForegroundColorAttributeName: [UIColor whiteColor],
-                NSStrokeColorAttributeName: [UIColor colorWithWhite:0.0 alpha:0.75],   // Task230: 半透明深色
-                // 负值 = CoreText 语义“描边 + 填充”；-1.6 = 字号的 1.6%，
-                // 小字号下近乎不可见的轻描边（仅补笔画边缘对比）
-                NSStrokeWidthAttributeName: @(-1.6),
-            }];
-            label.attributedText = ame226_attr;
-        }
-        // ★ Task230（反馈 #14：白底黑边全局字体内部黑线/双层重影）：IMG_0368
-        //   截图（设置页灰色描述小字）VLM 实锤“白字 + 错位 1pt 的黑字叠加”
-        //   = 旧阴影 offset(0,1) + radius 1.5 在白字下方压了一份黑色拷贝。
-        //   修法：阴影归零偏移成【光晕】（offset 0,0 + radius 2.5）——只在
-        //   字形周围采软黑晕，不产生位移的第二层字形；描边同时减淡
-        //   （0.82→0.75 alpha）双保险防笔画内黑线。
-        label.layer.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.6].CGColor;
-        label.layer.shadowOpacity = 1.0;
-        label.layer.shadowRadius = 2.5;
-        label.layer.shadowOffset = CGSizeMake(0, 0);
-        label.layer.masksToBounds = NO;
+        // ★ Task232（反馈 #16）：同 setText: 交换的改道——CoreText stroke
+        //   与大光晕都向字形内部渗黑（CJK 字腔黑线的构造性来源），
+        //   本入口也改为：染白 + 打标记，描边交给 drawTextInRect: 的
+        //   四方向外扩拷贝（字腔保持纯白）。
+        objc_setAssociatedObject(label, &ame232_OutlineMarkKey,
+                                 @(YES), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        // ★ Task232（反馈 #16）：光晕整体退役——零偏移模糊阴影一样向
+        //   字腔（孔洞）里渗黑（“内部黑线”第二来源）；描边职责全部
+        //   交给四方向外扩拷贝。
+        label.layer.shadowOpacity = 0.0;
+        label.layer.shadowRadius = 0.0;
+        label.layer.shadowOffset = CGSizeZero;
     } else {
         // 无壁纸：语义色 + 清阴影（原生外观零回归）
         label.textColor = secondary ? [BackgroundManager ame224_adaptiveSecondaryTextColor]
@@ -1862,6 +1849,48 @@ static BOOL ame230_viewTreeIsStrokeExempt(UILabel *label) {
     return NO;
 }
 
+// ★ Task232（反馈 #16）：外扩描边标记 + drawTextInRect: 交换。setText: 染白
+//   并打标；本交换在绘制时先画四份 0.6pt 偏移的深色拷贝（字形外侧造边），
+//   再调原实现画白色正文居中盖上。字腔（孔洞）宽度 ≥1.2pt 保持纯白——
+//   CoreText 居中描边与模糊光晕都会向内渗黑，这是“中文字体内部黑线”
+//   连续三轮修不掉的构造性根因。绘制时复核壁纸/豁免状态（壁纸切换后
+//   旧标记的标签立即回到原生外观）。
+static char ame232_OutlineMarkKey;
+static void (*ame232_origLabelDrawTextInRect)(id, SEL, CGRect);
+
+static BOOL ame232_shouldPaintOutline(UILabel *label) {
+    if (![[BackgroundManager sharedManager] hasBackground]) return NO;
+    if (ame229_labelIsStrokeExempt(label)) return NO;
+    if (ame230_viewTreeIsStrokeExempt(label)) return NO;
+    return YES;
+}
+
+static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
+    @try {
+        NSNumber *ame232_mark = objc_getAssociatedObject(self, &ame232_OutlineMarkKey);
+        if (ame232_mark.boolValue && ame232_shouldPaintOutline((UILabel *)self)) {
+            UILabel *ame232_label = (UILabel *)self;
+            NSAttributedString *ame232_as = ame232_label.attributedText;
+            if (ame232_as.length > 0 && UIGraphicsGetCurrentContext() != NULL) {
+                NSMutableAttributedString *ame232_dark =
+                    [[NSMutableAttributedString alloc] initWithAttributedString:ame232_as];
+                [ame232_dark addAttribute:NSForegroundColorAttributeName
+                                     value:[UIColor colorWithWhite:0.0 alpha:0.82]
+                                     range:NSMakeRange(0, ame232_dark.length)];
+                [ame232_dark drawInRect:CGRectOffset(rect,  0.6f,  0.0f)];
+                [ame232_dark drawInRect:CGRectOffset(rect, -0.6f,  0.0f)];
+                [ame232_dark drawInRect:CGRectOffset(rect,  0.0f,  0.6f)];
+                [ame232_dark drawInRect:CGRectOffset(rect,  0.0f, -0.6f)];
+            }
+        }
+    } @catch (NSException *ame232_e) {
+        // 任何意外（系统私有标签子类等）绝不影响绘制主链
+    }
+    if (ame232_origLabelDrawTextInRect) {
+        ame232_origLabelDrawTextInRect(self, _cmd, rect);
+    }
+}
+
 static void ame227_swizzledLabelSetText(id self, SEL _cmd, NSString *text) {
     if (!ame227_origLabelSetText) return;
     ame227_origLabelSetText(self, _cmd, text);
@@ -1888,25 +1917,18 @@ static void ame227_swizzledLabelSetText(id self, SEL _cmd, NSString *text) {
         // strengthened drop shadow carries most of the contrast duty, so
         // legibility on busy wallpapers is preserved while interiors stay
         // clean.
-        NSMutableAttributedString *ame227_styled =
-            [[NSMutableAttributedString alloc] initWithString:text
-                                                    attributes:@{
-            NSFontAttributeName: ame227_label.font,
-            NSForegroundColorAttributeName: [UIColor whiteColor],
-            NSStrokeColorAttributeName: [UIColor colorWithWhite:0.0 alpha:0.75],
-            NSStrokeWidthAttributeName: @(-1.6),
-        }];
+        // ★ Task232（反馈 #16：中文字体内部黑线，第三轮）：CoreText 负
+        //   strokeWidth 的描边以字形轮廓为中心，内半边吃进密集 CJK 笔画
+        //   间隙；零偏移光晕（radius 2.5）向字腔渗黑——两者都是“内部
+        //   黑线”的构造性来源，调参数修不掉。改道：setText: 只负责把
+        //   文字染白 + 打描边标记；真正的描边由 drawTextInRect: 交换做
+        //   【四方向 0.6pt 外扩深色拷贝 + 原色居中】——边只长在字形
+        //   外侧，字腔保持纯白（详见 ame232_swizzledLabelDrawTextInRect）。
         ame227_label.textColor = [UIColor whiteColor];
-        ((void (*)(id, SEL, id))objc_msgSend)(ame227_label,
-            sel_registerName("setAttributedText:"), ame227_styled);
-        // ★ Task230（反馈 #14）：同 ame224_applyAdaptiveTextToLabel 的修正——
-        //   offset(0,1) 的黑色阴影在白字下方错位叠加 = 截图里的“双层重影”。
-        //   归零偏移成软光晕，不再产生第二层字形。
-        ame227_label.layer.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.6].CGColor;
-        ame227_label.layer.shadowOpacity = 1.0;
-        ame227_label.layer.shadowRadius = 2.5;
-        ame227_label.layer.shadowOffset = CGSizeMake(0, 0);
-        ame227_label.layer.masksToBounds = NO;
+        objc_setAssociatedObject(ame227_label, &ame232_OutlineMarkKey,
+                                 @(YES), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        ame227_label.layer.shadowOpacity = 0.0;
+        ame227_label.layer.shadowRadius = 0.0;
     } @catch (NSException *ame227_e) {
         // 任何意外（系统私有标签子类等）绝不影响 setText 主链
     }
@@ -1920,6 +1942,12 @@ static void ame227_swizzledLabelSetText(id self, SEL _cmd, NSString *text) {
         if (ame227_m == NULL) return;
         ame227_origLabelSetText = (void (*)(id, SEL, NSString *))method_getImplementation(ame227_m);
         method_setImplementation(ame227_m, (IMP)ame227_swizzledLabelSetText);
+        // ★ Task232（反馈 #16）：外扩描边绘制交换（与 setText: 交换同装）。
+        Method ame232_m = class_getInstanceMethod(self, @selector(drawTextInRect:));
+        if (ame232_m != NULL) {
+            ame232_origLabelDrawTextInRect = (void (*)(id, SEL, CGRect))method_getImplementation(ame232_m);
+            method_setImplementation(ame232_m, (IMP)ame232_swizzledLabelDrawTextInRect);
+        }
     });
 }
 @end

@@ -15,6 +15,7 @@
 @implementation FolderBrowserViewController
 
 + (UINavigationController *)wrappedControllerForPath:(NSString *)path {
+    NSLog(@"[FolderBrowser] Task232 browser requested for: %@", path);
     FolderBrowserViewController *vc = [[FolderBrowserViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
     vc.rootPath = path;
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
@@ -65,6 +66,21 @@
     } else if (self.rootPath.length > 0) {
         [self ame223_loadPath:self.rootPath];
     }
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    // ★ Task232（反馈 #9：只显示毛玻璃覆盖层和文件夹名称，不显示内容）：
+    //   两轮实底修复后装机仍报"空页"但日志零 FolderBrowser 锚点（打开
+    //   尝试不在留存日志里）。防御 + 取证双管齐下：出现即再断言实底
+    //   （任何管线若再洗它立即纠正），并落行数与首行文件名锚点——
+    //   下一轮装机日志直接区分"没打开/打开了但 0 行/有行但不可见"。
+    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    self.tableView.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+    NSLog(@"[FolderBrowser] Task232 viewWillAppear: rows=%lu first=%@ path=%@",
+          (unsigned long)_rows.count,
+          _rows.count > 0 ? (_rows[0][@"name"] ?: @"-") : @"(none)",
+          self.currentPath);
 }
 
 - (void)reapplyBackgroundEffect {

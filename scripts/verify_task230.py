@@ -37,8 +37,8 @@ check("230-6c fire clears ptr", "Natives/SurfaceViewController.m", "ame223_pendi
 # (10) auto keyboard switch: pref registered
 check("230-10 pref registered", "Natives/PLPreferences.m", '@"auto_keyboard_sdl": @NO,')
 # (14) font ghosting: zero-offset halo both sites
-check("230-14a swizzle halo", "Natives/BackgroundManager.m", "ame227_label.layer.shadowOffset = CGSizeMake(0, 0);")
-check("230-14b adaptive halo", "Natives/BackgroundManager.m", "label.layer.shadowOffset = CGSizeMake(0, 0);")
+check("230-14a swizzle halo (Task232 重锚：⑯ 光晕退役，四方向外扩描边接管)", "Natives/BackgroundManager.m", "ame232_swizzledLabelDrawTextInRect")
+check("230-14b adaptive halo (Task232 重锚：⑯ 光晕退役)", "Natives/BackgroundManager.m", "ame232_OutlineMarkKey")
 # (12) welcome blank: tree exemption
 check("230-12a tree api", "Natives/BackgroundManager.m", "void ame230_setViewTreeStrokeExempt(UIView *view, BOOL exempt)")
 check("230-12b swizzle checks tree", "Natives/BackgroundManager.m", "if (ame230_viewTreeIsStrokeExempt((UILabel *)self)) return;")
@@ -89,21 +89,21 @@ for jf in ["Natives/resources/controlmap/custom.json", "controls/layouts/classic
     except Exception as e:
         failed.append(f"230-3 layout parse error {jf}: {e}")
 check("230-3b migration", "Natives/main.m", "sprint dead-button migrated to Left Control 341")
-check("230-3c unbound toast", "Natives/SurfaceViewController.m", "ame230.controls.unbound_toast")
+check("230-3c unbound toast (Task232 重锚：⑤ NMToast 退役，取证留日志层)", "Natives/SurfaceViewController.m", "Task229 UNBOUND button pressed")
 # (13) control repo: upload + safety check
 check("230-13a sanitizer", "Natives/ControlRepoViewController.m", "static BOOL ame230_layoutSafetyCheck(NSData *raw, id jsonObj, NSString **reasonOut)")
-check("230-13b download check", "Natives/ControlRepoViewController.m", "BLOCKED by safety check")
+check("230-13b download check (Task232 重锚：⑮ 检查移到下载侧询问流)", "Natives/ControlRepoViewController.m", "ame232_layoutSafetyIssues")
 check("230-13c upload flow", "Natives/ControlRepoViewController.m", "+ (void)ame230_presentUploadFlowFrom:(UIViewController *)presenter preselect:(NSString *)preselect")
 check("230-13d header decl", "Natives/ControlRepoViewController.h", "+ (void)ame230_presentUploadFlowFrom:(UIViewController *)presenter preselect:(NSString *)preselect;")
 check("230-13e editor entry", "Natives/CustomControlsViewController.m", "- (void)actionMenuUpload {")
 check("230-13f github deeplink", "Natives/ControlRepoViewController.m", "?filename=controls%%2Flayouts%%2Fcommunity%%2F%@.json&value=%@")
 # (15) i18n: 18 keys x 5 langs
-KEYS = ["ame230.controls.unbound_toast", "ame230.gamemenu.caption", "ame230.deps.required",
+KEYS = ["ame230.gamemenu.caption", "ame230.deps.required",
         "ame230.deps.optional", "ame230.import.summary", "ame230.repo.upload",
         "ame230.repo.upload_editor", "ame230.repo.upload.pick", "ame230.repo.upload.form.title",
         "ame230.repo.upload.form.message", "ame230.repo.upload.name", "ame230.repo.upload.author",
         "ame230.repo.upload.desc", "ame230.repo.upload.github", "ame230.repo.upload.github_hint",
-        "ame230.repo.upload.no_layouts", "ame230.repo.upload.invalid", "ame230.repo.safety_blocked"]
+        "ame230.repo.upload.no_layouts", "ame230.repo.upload.invalid"]
 for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN", "ja"]:
     p = os.path.join(BASE, f"Natives/resources/{lang}.lproj/Localizable.strings")
     src = open(p, encoding="utf-8").read()

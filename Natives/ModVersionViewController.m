@@ -809,9 +809,16 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     } else if (ame230_pid.length > 0) {
         ame230_url = [NSURL URLWithString:[NSString stringWithFormat:@"https://www.curseforge.com/minecraft/search?search=%@", ame230_name ?: ame230_pid]];
     }
-    if (ame230_url == nil) return;
-    NSLog(@"[ModVersionVC] Task230 dependency quick-entry: %@ -> %@", ame230_name, ame230_url.absoluteString);
-    [[UIApplication sharedApplication] openURL:ame230_url options:@{} completionHandler:nil];
+    // ★ Task232（反馈 #8）：快速入口改在【启动器内】打开项目详情页
+    //   （图标 + 标题 + 介绍 + 下载量 + 浏览器入口兜底），不再直接跳网页。
+    if (ame230_pid.length == 0 && ame230_name.length == 0) return;
+    NSLog(@"[ModVersionVC] Task232 dependency quick-entry (in-app detail): %@ (pid=%@ src=%ld)",
+          ame230_name, ame230_pid, (long)ame230_src);
+    Ame232DepDetailViewController *detail = [[Ame232DepDetailViewController alloc]
+        initWithPid:ame230_pid name:ame230_name source:ame230_src];
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:detail];
+    nav.modalPresentationStyle = UIModalPresentationPageSheet;
+    [self presentViewController:nav animated:YES completion:nil];
 }
 
 - (void)processFilters {
@@ -974,6 +981,191 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
         [self.delegate modVersionViewController:self didSelectVersion:selectedVersion];
     }
     [self.navigationController popViewControllerAnimated:YES];
+}
+
+@end
+
+
+// ============================================================================
+// ★ Task232（反馈 #8）：前置项目详情页——像 PCL2CE 一样在启动器内打开，
+//   带介绍和图标显示；浏览器入口收进页内按钮（数据不全时的兜底）。
+//   Modrinth：公开 API /v2/project/{id}（标题/介绍/图标/下载量/关注数）；
+//   CurseForge：无公开免鉴权详情端点，标题沿用既有 ame227_fetchModTitle:，
+//   其余字段留空 + 浏览器兜底。标签全部豁免全局描边字体（实底页）。
+// ============================================================================
+@interface Ame232DepDetailViewController : UIViewController
+- (instancetype)initWithPid:(NSString *)pid name:(NSString *)name source:(NSInteger)source;
+@end
+
+@implementation Ame232DepDetailViewController {
+    NSString *_pid;
+    NSString *_name;
+    NSInteger _source;
+    UIImageView *_iconView;
+    UILabel *_titleLabel;
+    UILabel *_descLabel;
+    UILabel *_statsLabel;
+    UILabel *_placeholder;
+    UIActivityIndicatorView *_spinner;
+}
+
+- (instancetype)initWithPid:(NSString *)pid name:(NSString *)name source:(NSInteger)source {
+    self = [super init];
+    if (self) {
+        _pid = [pid copy];
+        _name = [name copy];
+        _source = source;
+    }
+    return self;
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    self.title = _name.length > 0 ? _name : (_pid ?: @"");
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc]
+        initWithBarButtonSystemItem:UIBarButtonSystemItemDone
+                             target:self action:@selector(ame232_done)];
+
+    // 图标（96pt 圆角方片，加载失败显示占位）
+    _iconView = [[UIImageView alloc] init];
+    _iconView.contentMode = UIViewContentModeScaleAspectFill;
+    _iconView.clipsToBounds = YES;
+    _iconView.layer.cornerRadius = 20.0;
+    _iconView.layer.cornerCurve = kCACornerCurveContinuous;
+    _iconView.backgroundColor = [UIColor secondarySystemFill];
+    _iconView.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addSubview:_iconView];
+
+    _titleLabel = [self ame232_label:20 weight:UIFontWeightBold color:[UIColor labelColor] lines:1];
+    _descLabel = [self ame232_label:14 weight:UIFontWeightRegular color:[UIColor secondaryLabelColor] lines:0];
+    _statsLabel = [self ame232_label:13 weight:UIFontWeightMedium color:[UIColor tertiaryLabelColor] lines:1];
+
+    _spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
+    _spinner.translatesAutoresizingMaskIntoConstraints = NO;
+    _spinner.hidesWhenStopped = YES;
+    [_spinner startAnimating];
+    [self.view addSubview:_spinner];
+
+    // 浏览器兜底按钮（CurseForge 数据不全 / 用户想看原页时）
+    UIButton *browser = [UIButton buttonWithType:UIButtonTypeSystem];
+    [browser setTitle:localize(@"ame232.deps.browser", nil) forState:UIControlStateNormal];
+    browser.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+    [browser addTarget:self action:@selector(ame232_openBrowser) forControlEvents:UIControlEventTouchUpInside];
+    browser.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addSubview:browser];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [_iconView.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:24],
+        [_iconView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [_iconView.widthAnchor constraintEqualToConstant:96],
+        [_iconView.heightAnchor constraintEqualToConstant:96],
+        [_spinner.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [_spinner.topAnchor constraintEqualToAnchor:_iconView.bottomAnchor constant:28],
+        [_titleLabel.topAnchor constraintEqualToAnchor:_iconView.bottomAnchor constant:20],
+        [_titleLabel.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:20],
+        [_titleLabel.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-20],
+        [_descLabel.topAnchor constraintEqualToAnchor:_titleLabel.bottomAnchor constant:8],
+        [_descLabel.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:20],
+        [_descLabel.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-20],
+        [_statsLabel.topAnchor constraintEqualToAnchor:_descLabel.bottomAnchor constant:12],
+        [_statsLabel.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:20],
+        [_statsLabel.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-20],
+        [browser.topAnchor constraintEqualToAnchor:_statsLabel.bottomAnchor constant:20],
+        [browser.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+    ]];
+
+    _titleLabel.text = _name.length > 0 ? _name : (_pid ?: @"");
+    _descLabel.text = localize(@"ame232.deps.loading", nil);
+    [self ame232_fetchDetails];
+}
+
+- (UILabel *)ame232_label:(CGFloat)size weight:(UIFontWeight)weight color:(UIColor *)color lines:(NSInteger)lines {
+    UILabel *l = [[UILabel alloc] init];
+    l.font = [UIFont systemFontOfSize:size weight:weight];
+    l.textColor = color;
+    l.numberOfLines = lines;
+    l.textAlignment = NSTextAlignmentCenter;
+    l.translatesAutoresizingMaskIntoConstraints = NO;
+    // 实底页：豁免全局白底黑边描边字体（白字浅底隐形）
+    extern void ame229_labelSetStrokeExempt(UILabel *, BOOL);
+    ame229_labelSetStrokeExempt(l, YES);
+    [self.view addSubview:l];
+    return l;
+}
+
+- (void)ame232_fetchDetails {
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSString *ame232_desc = nil, *ame232_icon = nil;
+        NSString *ame232_stats = nil;
+        if (self->_source == kSourceModrinth && self->_pid.length > 0) {
+            NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://api.modrinth.com/v2/project/%@", self->_pid]];
+            NSData *data = [NSData dataWithContentsOfURL:url];
+            if (data != nil) {
+                id obj = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                if ([obj isKindOfClass:[NSDictionary class]]) {
+                    NSString *t = [obj objectForKey:@"title"];
+                    if ([t isKindOfClass:[NSString class]] && t.length > 0) self->_name = t;
+                    NSString *d = [obj objectForKey:@"description"];
+                    if ([d isKindOfClass:[NSString class]]) ame232_desc = d;
+                    NSString *ic = [obj objectForKey:@"icon_url"];
+                    if ([ic isKindOfClass:[NSString class]]) ame232_icon = ic;
+                    long long dl = [[obj objectForKey:@"downloads"] longLongValue];
+                    long long fl = [[obj objectForKey:@"followers"] longLongValue];
+                    ame232_stats = [NSString stringWithFormat:localize(@"ame232.deps.stats", nil),
+                                    (long long)dl, (long long)fl];
+                }
+            }
+        } else if (self->_pid.length > 0) {
+            // CurseForge：沿用既有标题抓取（详情字段无公开免鉴权端点）
+            __block BOOL waited = NO;
+            dispatch_group_t g = dispatch_group_create();
+            dispatch_group_enter(g);
+            [[CurseForgeAPI sharedInstance] ame227_fetchModTitle:self->_pid completion:^(NSString *title, NSError *err) {
+                if (title.length > 0) ame232_desc = [NSString stringWithFormat:localize(@"ame232.deps.cf_desc", nil), title];
+                waited = YES;
+                dispatch_group_leave(g);
+            }];
+            dispatch_group_wait(g, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(6 * NSEC_PER_SEC)));
+            (void)waited;
+        }
+        NSString *iconURL = ame232_icon, *desc = ame232_desc, *stats = ame232_stats, *name = self->_name;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self->_spinner stopAnimating];
+            self->_titleLabel.text = name.length > 0 ? name : (self->_pid ?: @"");
+            self->_descLabel.text = desc.length > 0 ? desc : localize(@"ame232.deps.no_desc", nil);
+            self->_statsLabel.text = stats ?: @"";
+            if (iconURL.length > 0) {
+                NSURL *iu = [NSURL URLWithString:iconURL];
+                if (iu != nil) {
+                    dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+                        NSData *idata = [NSData dataWithContentsOfURL:iu];
+                        UIImage *img = idata != nil ? [UIImage imageWithData:idata] : nil;
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            if (img != nil) self->_iconView.image = img;
+                        });
+                    });
+                }
+            }
+            NSLog(@"[ModVersionVC] Task232 dep detail loaded (pid=%@ desc=%@ icon=%d stats=%@)",
+                  self->_pid, desc.length > 0 ? @"yes" : @"no", iconURL.length > 0, stats ?: @"-");
+        });
+    });
+}
+
+- (void)ame232_openBrowser {
+    NSURL *url = nil;
+    if (_source == kSourceModrinth && _pid.length > 0) {
+        url = [NSURL URLWithString:[NSString stringWithFormat:@"https://modrinth.com/mod/%@", _pid]];
+    } else if (_name.length > 0) {
+        url = [NSURL URLWithString:[NSString stringWithFormat:@"https://www.curseforge.com/minecraft/search?search=%@", _name]];
+    }
+    if (url == nil) return;
+    [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+}
+
+- (void)ame232_done {
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 @end

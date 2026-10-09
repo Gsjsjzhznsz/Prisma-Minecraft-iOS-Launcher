@@ -238,10 +238,11 @@ check("O4 反色开关行/读写退役",
       '@"key": @"text_auto_contrast"' not in lpv
       and "LGCSetTextAutoContrastEnabled" not in lpv
       and "LGCTextAutoContrastEnabled" not in bm)
-check("O5 白底黑边全局字体（NSStrokeWidth 负值；Task229 重锚：-2.6→-1.6 半透明，反馈 #10 字内黑线根修）",
-      "NSStrokeWidthAttributeName: @(-1.6)" in bm
-      and "NSStrokeColorAttributeName: [UIColor colorWithWhite:0.0 alpha:0.82]" in bm
-      and "NSForegroundColorAttributeName: [UIColor whiteColor]" in bm)
+check("O5 白底黑边全局字体（Task232 重锚：描边改道 drawTextInRect 四方向 0.6pt 外扩深色拷贝，CoreText stroke 与光晕双双退役——CJK 字腔保持纯白）",
+      "NSStrokeWidthAttributeName" not in bm
+      and "ame232_OutlineMarkKey" in bm
+      and "colorWithWhite:0.0 alpha:0.82" in bm
+      and "NSForegroundColorAttributeName: [UIColor whiteColor]" not in bm)
 check("O6 白底黑边仅壁纸场景（无壁纸回语义色）",
       "hasBackground]) {" in bm and "语义色 + 清阴影" in bm)
 check("O7 adaptive 色族换白（不再按亮度反色）",
@@ -283,7 +284,7 @@ for l in langs:
     keys[l] = ks
 check("Q1 四语言键集一致且 2715【Task227：+7 ame227 键】",
       keys["en"] == keys["zh-Hans"] == keys["zh-Hant"] == keys["zh-CN"]
-      and len(keys["en"]) == 2727, f"counts={[len(keys[l]) for l in langs]}")
+      and len(keys["en"]) == 2763, f"counts={[len(keys[l]) for l in langs]}")
 # used keys subset check on the files we touched
 import re
 used = set()

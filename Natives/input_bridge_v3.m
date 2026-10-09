@@ -850,13 +850,21 @@ NSString* processPath(NSString* path) {
 }
 
 void openURLGlobal(NSString *path) {
-    dispatch_group_t group = dispatch_group_create();
-    dispatch_group_enter(group);
-
+    // ★ Task232（反馈 #9 下半：SDL 版本打开文件夹直接软件卡死）：旧实现
+    //   结尾无条件 dispatch_group_wait(FOREVER)——当本函数在【主线程】被
+    //   调用时（Task230 的 SDL_OpenURL dlsym 钩子正是把 openURLGlobal
+    //   派发到主线程再调它），内部又 dispatch_async 到主队列 + 无限等它
+    //   完成 = 经典主线程自锁：主队列的 present 块永远没有执行机会，
+    //   整个 app 冻结（用户需后台强杀）。修法：主线程调用时跳过等待
+    //   （fire-and-forget）；仅在后台线程（CTC openFile 链等可能有同步
+    //   期待的调用方）保留原等待语义。
+    BOOL ame232_onMain = [NSThread isMainThread];
+    dispatch_group_t group = ame232_onMain ? NULL : dispatch_group_create();
+    if (group != NULL) dispatch_group_enter(group);
     dispatch_async(dispatch_get_main_queue(), ^{
         if ([path hasPrefix:@"http"]) {
             openLink(UIWindow.mainWindow.rootViewController, [NSURL URLWithString:path]);
-            dispatch_group_leave(group);
+            if (group != NULL) dispatch_group_leave(group);
             return;
         }
         // ★ Task222（清单第 10 项）：游戏内"打开文件夹"无反应根修。
@@ -892,7 +900,7 @@ void openURLGlobal(NSString *path) {
             } @catch (NSException *e) {
                 NSLog(@"[input_bridge] Task223: in-app folder browser exception: %@", e);
             }
-            dispatch_group_leave(group);
+            if (group != NULL) dispatch_group_leave(group);
             return;
         }
         NSString *realPath = processPath(path);
@@ -902,11 +910,11 @@ void openURLGlobal(NSString *path) {
             } else {
                 NSLog(@"Failed to open \"%@\"", realPath);
             }
-            dispatch_group_leave(group);
+            if (group != NULL) dispatch_group_leave(group);
         }];
     });
 
-    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+    if (group != NULL) dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
 }
 
 /**
@@ -2084,6 +2092,13 @@ void ame229_inputResumeReassert(void) {
     }
     NSLog(@"[InputDiag] Task229 resume reassert: cursor baseline reset to (%.1f, %.1f), %d toggle-held mod(s) re-driven",
           cursorX, cursorY, ame229_replayed);
+    // ★ Task232（反馈 #2：切后台后输入错位，229/230 两修后的存活取证）：
+    //   恢复时刻把输入坐标换算链全量落日志——错位 = 触点换算与 MC 窗口
+    //   信念失配，四个变量（physical 窗口信念 / guiScale / cursor / grab）
+    //   任何一个跨后台漂移都会在这里现形（对比启动时的同款日志）。
+    NSLog(@"[InputDiag] Task232 resume geometry probe: physical=%dx%d window=%dx%d guiScale=%d cursor=(%.1f,%.1f) grabbing=%d",
+          (int)physicalWidth, (int)physicalHeight, (int)windowWidth, (int)windowHeight,
+          (int)guiScale, cursorX, cursorY, isGrabbing);
 }
 
 void CallbackBridge_nativeSendCursorPos(char event, CGFloat x, CGFloat y) {
