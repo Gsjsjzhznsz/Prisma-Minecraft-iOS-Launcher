@@ -2278,3 +2278,16 @@ Stage Summary:
 - 5 项全部根修/落地：抽屉 z 序+显隐（常用操作键）、steer 退役+停滞看门狗（MGL 概率卡死）、URL 编码+剪贴板（分享 GitHub）、段落样式+不透明垫底（字体双层）、按类锚点+真实 frame（欢迎圆圈第四轮）
 - MobileGlues 无更新可用（本地 2.0.22 ≥ 上游 main@0f1e10b）
 - 待装机验证锚点：[InputDiag] Task233 drawer-key overlaps（用户真实布局重叠清单）、[RenderDiag] Task233 RENDER STALL（概率卡死现场）、[Welcome] Task233 anchor discovery menu/content/right、[CustomControls] Task233 sub-buttons moved、[ControlRepo] Task233 openURL success=
+
+---
+Task ID: 233 (续)
+Agent: main (Super Z)
+Task: Task 233 CI 构建闭环
+
+Work Log:
+- CI run 37951770109（c07243ed）一次绿（约 15 分钟，零编译返工轮——本轮提交前跑了权威括号审计 + 全文件括号复核，两次自造语法事故均在本地抓获）
+- 产物就绪：com.air-devs.air-ios.ipa 220.3MB / trollstore tipa 220.3MB / dSYM 6.1MB
+
+Stage Summary:
+- Task 233 五项纠错/修复全部交付，新 IPA 待装机实测
+- 装机判读锚点（下轮日志直接搜）：Task233 drawer-key overlaps / sub-buttons moved / RENDER STALL / anchor discovery menu=1 content=1 right=1 / openURL success= / coach marks 各页 spot+titleLen
