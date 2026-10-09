@@ -1718,6 +1718,11 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     return self.launchButton;
 }
 
+// Task235：版本与隔离教练页锚点（真身直取，见头文件注释）。
+- (UIView *)ame235_versionAnchorView {
+    return self.manageVersionBtn;
+}
+
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
     // Task102：滚动区 contentSize 变化（下载中心/进度 UI 展开折叠）→ 重算
     // 卡片组居中 inset；与下载进度 KVO 互不干扰（context 区分）

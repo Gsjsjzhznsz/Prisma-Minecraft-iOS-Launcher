@@ -91,8 +91,8 @@ check("234-2h Task232 per-page forensics prefix kept", cmk, "Task232 page %lu/%l
 
 print("== (3) 字体重叠残留：拷贝画进 textRectForBounds 文本矩形 ==")
 check("234-3a tight text rect computed", bm, "ame234_textRect = [ame232_label textRectForBounds:rect")
-check("234-3b four dark copies into text rect", bm, "CGRectOffset(ame234_textRect,  0.6f,  0.0f)")
-check("234-3c backing copy into text rect", bm, "[ame233_backing drawInRect:ame234_textRect]")
+check("234-3b four dark copies into text rect (Task235 重锚：缩字标签改画进 ame235_copyRect，非缩字时与 textRect 同一矩形)", bm, "CGRectOffset(ame235_copyRect,  0.6f,  0.0f)")
+check("234-3c backing copy into text rect (Task235 重锚：ame235_copyRect)", bm, "[ame233_backing drawInRect:ame235_copyRect]")
 check_absent("234-3d raw-rect copies retired", bm, "drawInRect:CGRectOffset(rect,")
 check("234-3e paragraph style retained (233-5a compat)", bm, "ame233_ps.alignment = ame232_label.textAlignment")
 check("234-3f opaque backing retained (233-5c compat)", bm, "ame233_opaqueColor(ame232_label.textColor)")

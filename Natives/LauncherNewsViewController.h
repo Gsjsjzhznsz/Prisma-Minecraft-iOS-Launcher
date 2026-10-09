@@ -45,6 +45,9 @@ extern NSString * const kShortcutActionShaders;
 extern NSString * const kShortcutActionModpack;
 extern NSString * const kShortcutActionBackground;
 extern NSString * const kShortcutActionVersions;
+// Task235（用户：“参考上游把联机功能添加到自定义主页那里”）：
+// 主页“联机”快捷磁贴（陶瓦联机 Terracotta，页内右上角可切 ZeroTier）。
+extern NSString * const kShortcutActionMultiplayer;
 
 // MARK: - LauncherNewsViewController
 

@@ -13,6 +13,8 @@ static NSDictionary *availableShortcuts(void) {
         kShortcutActionModpack:    @{@"title": localize(@"i18n_str_277", nil),  @"icon": @"shippingbox.fill",           @"color": @"#8B5CF6"},
         kShortcutActionBackground: @{@"title": localize(@"i18n_str_278", nil),    @"icon": @"photo.fill.on.rectangle.fill",@"color": @"#EC4899"},
         kShortcutActionVersions:   @{@"title": localize(@"i18n_str_279", nil),    @"icon": @"square.stack.3d.up.fill",    @"color": @"#6366F1"},
+        // Task235：联机快捷磁贴进自定义主页的可选清单（与默认磁贴同配色）。
+        kShortcutActionMultiplayer:@{@"title": localize(@"game.menu.multiplayer", @"联机"), @"icon": @"antenna.radiowaves.left.and.right", @"color": @"#0EA5E9"},
     };
 }
 

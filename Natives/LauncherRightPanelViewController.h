@@ -16,4 +16,10 @@
 // 锚错。直接返回 launchButton 真身，按位置/尺寸的误锚彻底绝迹。
 - (UIView *)ame234_launchAnchorView;
 
+// Task235（欢迎圈圈第六轮，“版本与隔离被指向我的个人主页头像”）：
+// “版本与隔离”教练页的锚点。旧锚 = 主内容区上半 42% 矩形——Card 布局
+// 的主页内容顶部恰好是全宽头像卡，圆圈稳定套在用户头像上。直接返回
+// manageVersionBtn（“选择版本”，版本/隔离管理的真实入口）真身。
+- (UIView *)ame235_versionAnchorView;
+
 @end

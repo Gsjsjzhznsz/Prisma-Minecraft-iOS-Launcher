@@ -830,10 +830,11 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         }];
     }
 
-    // ---- 锚点 4/5（Task226 加入，Task233 根治）：语义区域锚点从【真实
-    //      视图 frame】派生（旧版屏幕比例硬编码 = 圈挖在空白区的直接原因）。
-    //      下载与模组 = 菜单栏下半区（下载/模组入口所在）；版本与隔离 =
-    //      内容区上半区（版本卡/新闻头部）。窗口坐标 + 钳制在窗口内。
+    // ---- 锚点 4/5（Task226 加入，Task233 根治，Task235 锚点 5 重锚）：
+    //      语义区域锚点从【真实视图 frame】派生（旧版屏幕比例硬编码 = 圈挖
+    //      在空白区的直接原因）。下载与模组 = 菜单栏下半区（下载/模组入口
+    //      所在）；版本与隔离 = 右面板“选择版本”按钮（Task235：旧“内容区
+    //      上半 42%”圈住的其实是主页头像卡）。窗口坐标 + 钳制在窗口内。
     CGRect sb = window.bounds;
     if (CGRectIsEmpty(sb)) sb = UIScreen.mainScreen.bounds;
     if (ame233_menuVC != nil && ame233_menuVC.isViewLoaded && ame233_menuVC.view.window != nil) {
@@ -853,20 +854,77 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
             }
         }
     }
-    if (ame233_contentVC != nil && ame233_contentVC.isViewLoaded && ame233_contentVC.view.window != nil) {
-        CGRect cr = [Ame223CoachMarksView screenRectForView:ame233_contentVC.view];
-        if (!CGRectIsNull(cr)) {
-            CGRect vr = cr;
-            vr.size.height = CGRectGetHeight(cr) * 0.42;
-            vr = CGRectIntersection(vr, sb);
-            if (!CGRectIsNull(vr) && !CGRectIsEmpty(vr)) {
-                [items addObject:@{
-                    @"rect": [NSValue valueWithCGRect:vr],
-                    @"title": localize(@"coachmarks.versions.title", nil),
-                    @"body": localize(@"coachmarks.versions.body", nil),
-                    @"round": @NO,
-                }];
+    // ---- 锚点 5（Task226 加入，Task233 根治，Task235 第六轮重锚）：
+    //      “版本与隔离”。Task233 版从【内容区上半 42%】派生——Card 布局的
+    //      主页内容顶部恰是全宽头像卡（用户实测“被指向我的个人主页头像”）。
+    //      版本与隔离的真实入口 = 右面板“选择版本”按钮（manageVersionBtn，
+    //      版本切换与实例隔离管理都在那里）。三级确定性锚定（与锚点 3 同
+    //      范式）：① 右面板 VC 直取真身（ame235_versionAnchorView）；
+    //      ② 标题匹配兜底（i18n_str_38“选择版本”）；③ 整个右面板真实
+    //      frame。全部失败则宁可跳过该页，绝不回落到头像区。
+    CGRect verRect = CGRectNull;
+    NSString *ame235_verTier = @"none";
+    if (ame233_rightVC != nil && ame233_rightVC.isViewLoaded) {
+        // ① 真身直取
+        UIView *ame235_verBtn = [ame233_rightVC ame235_versionAnchorView];
+        if (ame235_verBtn != nil && !ame235_verBtn.hidden && ame235_verBtn.window != nil) {
+            CGRect sr = [Ame223CoachMarksView screenRectForView:ame235_verBtn];
+            if (!CGRectIsNull(sr)) {
+                verRect = CGRectInset(sr, -10, -10);
+                ame235_verTier = @"direct";
             }
+        }
+        // ② 标题匹配兜底（防御未来按钮重构/换类时仍不锚错）
+        if (CGRectIsNull(verRect)) {
+            NSString *ame235_verTitle = localize(@"i18n_str_38", nil);   // 选择版本
+            UIView *ame235_titleMatch = nil;
+            NSMutableArray<UIView *> *ame235_stack = [NSMutableArray arrayWithObject:ame233_rightVC.view];
+            int ame235_visited = 0;
+            while (ame235_stack.count > 0 && ame235_visited < 600) {
+                UIView *ame235_v = [ame235_stack lastObject];
+                [ame235_stack removeLastObject];
+                ame235_visited++;
+                if (ame235_v.hidden || ame235_v.alpha <= 0.01) continue;
+                if ([ame235_v isKindOfClass:[UIButton class]] &&
+                    ame235_v.frame.size.height > 20 && ame235_v.frame.size.width > 60) {
+                    NSString *ame235_t = [(UIButton *)ame235_v currentTitle];
+                    if (ame235_t != nil && [ame235_t isEqualToString:ame235_verTitle]) {
+                        ame235_titleMatch = ame235_v;
+                        break;
+                    }
+                }
+                for (UIView *ame235_sub in ame235_v.subviews) {
+                    [ame235_stack addObject:ame235_sub];
+                }
+            }
+            if (ame235_titleMatch != nil) {
+                CGRect sr = [Ame223CoachMarksView screenRectForView:ame235_titleMatch];
+                if (!CGRectIsNull(sr)) {
+                    verRect = CGRectInset(sr, -10, -10);
+                    ame235_verTier = @"title-match";
+                }
+            }
+        }
+        // ③ 整面板兜底（真实视图 frame）
+        if (CGRectIsNull(verRect)) {
+            CGRect r = [Ame223CoachMarksView screenRectForView:ame233_rightVC.view];
+            if (!CGRectIsNull(r)) {
+                verRect = r;
+                ame235_verTier = @"whole-panel";
+            }
+        }
+    }
+    NSLog(@"[Welcome] Task235 version anchor tier=%@ rect=%@",
+          ame235_verTier, CGRectIsNull(verRect) ? @"null" : NSStringFromCGRect(verRect));
+    if (!CGRectIsNull(verRect)) {
+        verRect = CGRectIntersection(verRect, sb);
+        if (!CGRectIsNull(verRect) && !CGRectIsEmpty(verRect)) {
+            [items addObject:@{
+                @"rect": [NSValue valueWithCGRect:verRect],
+                @"title": localize(@"coachmarks.versions.title", nil),
+                @"body": localize(@"coachmarks.versions.body", nil),
+                @"round": @NO,
+            }];
         }
     }
 

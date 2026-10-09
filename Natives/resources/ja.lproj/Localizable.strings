@@ -2041,6 +2041,7 @@
 
 /* Task232 */
 "ame232.deps.browser" = "ブラウザで開く";
+"ame235.deps.godl" = "ダウンロードページへ";
 "ame232.deps.cf_desc" = "CurseForge プロジェクト：%@";
 "ame232.deps.loading" = "プロジェクト情報を読み込み中…";
 "ame232.deps.no_desc" = "（説明なし）";

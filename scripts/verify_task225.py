@@ -126,7 +126,7 @@ check("D5 反色漏斗退役（Task226：白底黑边全局字体接管；Task23
       "LGCTextAutoContrastEnabled" not in bm
       and "NSStrokeWidthAttributeName" not in bm
       and "ame232_swizzledLabelDrawTextInRect" in bm
-      and "CGRectOffset(ame234_textRect,  0.6f,  0.0f)" in bm
+      and "CGRectOffset(ame235_copyRect,  0.6f,  0.0f)" in bm   # Task235 重锚：缩字标签拷贝画进 ame235_copyRect（非缩字时 == textRect）
       and "shadowRadius = 2.5" not in bm)
 
 # ---------------------------------------------------------------- E. 隔离
@@ -262,8 +262,8 @@ NEWKEYS = ["profile.isolation.choice_prompt", "profile.isolation.choice_migrate"
            "welcome.intro.f6.title"]
 for lang in ["en", "zh-CN", "zh-Hans", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)" = ', rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"M-{lang} 唯一键 2765【Task233：+2 ame233 键，诚实重锚】",
-          len(keys) == 2765, f"got {len(keys)}")
+    check(f"M-{lang} 唯一键 2766【Task233：+2 ame233 键，诚实重锚】",
+          len(keys) == 2766, f"got {len(keys)}")
     miss = [k for k in NEWKEYS if k not in keys]
     check(f"M-{lang} 本轮新键全部在位", not miss, str(miss[:4]))
 

@@ -10,14 +10,26 @@
 #import "AssetDetailHeaderView.h"
 #import "BackgroundManager.h"
 #import <objc/runtime.h>   // Task230：前置快速入口按钮的关联对象传参
+// Task235（前置快速入口直跳模组下载页）：下载服务 + 实例名 + 悬浮提示
+#import "ModService.h"
+#import "PLProfiles.h"
+#import "NMToast.h"
 
 // ============================================================================
 // 下载源常量（与 ModVersion.apiSource 字段保持一致：1=Modrinth, 2=CurseForge）
 // ============================================================================
 // Task232：前置详情页（@implementation 在文件尾；使用点在 817 行附近，
 // alloc/init 需要完整接口可见——接口前置，实现后置）
-@interface Ame232DepDetailViewController : UIViewController
+// ★ Task235（用户：“前置快捷入口为什么没有自己跳转到对应的模组下载
+//   页”）：旧详情页只给“介绍 + 浏览器兜底”，没有启动器内的【下载页】
+//   落地。新增“前往下载页”入口：push 本项目自己的版本列表页
+//   （ModVersionViewController），选中版本后直接下载到当前实例。
+@interface Ame232DepDetailViewController : UIViewController <ModVersionViewControllerDelegate>
 - (instancetype)initWithPid:(NSString *)pid name:(NSString *)name source:(NSInteger)source;
+/// Task235：透传当前 profile 的偏好版本/加载器（版本列表自动选中匹配
+/// chip 并置顶，与下载页主流程同体验）。
+@property (nonatomic, copy, nullable) NSString *preferredGameVersion;
+@property (nonatomic, copy, nullable) NSString *preferredLoader;
 @end
 
 static const NSInteger kSourceModrinth    = 1;
@@ -822,6 +834,10 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
           ame230_name, ame230_pid, (long)ame230_src);
     Ame232DepDetailViewController *detail = [[Ame232DepDetailViewController alloc]
         initWithPid:ame230_pid name:ame230_name source:ame230_src];
+    // ★ Task235：透传偏好版本/加载器——“前往下载页”里自动选中匹配
+    //   chip 并置顶（与下载页主流程同体验）。
+    detail.preferredGameVersion = self.preferredGameVersion;
+    detail.preferredLoader = self.preferredLoader;
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:detail];
     nav.modalPresentationStyle = UIModalPresentationPageSheet;
     [self presentViewController:nav animated:YES completion:nil];
@@ -1057,6 +1073,21 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     browser.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:browser];
 
+    // ★ Task235（用户：“前置快捷入口为什么没有自己跳转到对应的模组下载
+    //   页”）：详情页新增【前往下载页】主操作——在本页导航栈里 push 该
+    //   项目的版本列表（ModVersionViewController），选中版本即下载到
+    //   当前实例。浏览器入口降为兜底。
+    UIButton *ame235_goDl = [UIButton buttonWithType:UIButtonTypeSystem];
+    [ame235_goDl setTitle:localize(@"ame235.deps.godl", nil) forState:UIControlStateNormal];
+    ame235_goDl.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
+    ame235_goDl.tintColor = [UIColor whiteColor];
+    ame235_goDl.backgroundColor = [UIColor systemBlueColor];
+    ame235_goDl.layer.cornerRadius = 12;
+    ame235_goDl.layer.cornerCurve = kCACornerCurveContinuous;
+    [ame235_goDl addTarget:self action:@selector(ame235_openDownloadPage) forControlEvents:UIControlEventTouchUpInside];
+    ame235_goDl.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addSubview:ame235_goDl];
+
     [NSLayoutConstraint activateConstraints:@[
         [_iconView.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:24],
         [_iconView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
@@ -1073,7 +1104,11 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
         [_statsLabel.topAnchor constraintEqualToAnchor:_descLabel.bottomAnchor constant:12],
         [_statsLabel.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:20],
         [_statsLabel.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-20],
-        [browser.topAnchor constraintEqualToAnchor:_statsLabel.bottomAnchor constant:20],
+        [ame235_goDl.topAnchor constraintEqualToAnchor:_statsLabel.bottomAnchor constant:20],
+        [ame235_goDl.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [ame235_goDl.heightAnchor constraintEqualToConstant:44],
+        [ame235_goDl.widthAnchor constraintGreaterThanOrEqualToConstant:180],
+        [browser.topAnchor constraintEqualToAnchor:ame235_goDl.bottomAnchor constant:12],
         [browser.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
     ]];
 
@@ -1167,6 +1202,63 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     }
     if (url == nil) return;
     [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+}
+
+/// ★ Task235：前往下载页——在本页导航栈里 push 该项目的版本列表
+/// （ModVersionViewController），选中版本即下载到当前实例。
+- (void)ame235_openDownloadPage {
+    if (_pid.length == 0) {
+        [NMToast showMessage:localize(@"ame232.deps.no_desc", nil)];
+        return;
+    }
+    ModItem *ame235_item = [[ModItem alloc] init];
+    ame235_item.onlineID = _pid;
+    ame235_item.displayName = _name.length > 0 ? _name : _pid;
+    ModVersionViewController *ame235_vc = [[ModVersionViewController alloc] init];
+    ame235_vc.modItem = ame235_item;
+    ame235_vc.delegate = self;
+    ame235_vc.title = ame235_item.displayName;
+    ame235_vc.apiSource = (_source == kSourceCurseForge) ? kSourceCurseForge : kSourceModrinth;
+    ame235_vc.preferredGameVersion = self.preferredGameVersion;
+    ame235_vc.preferredLoader = self.preferredLoader;
+    [self.navigationController pushViewController:ame235_vc animated:YES];
+    NSLog(@"[ModVersionVC] Task235 dep go-to-download: %@ (pid=%@ src=%ld)",
+          _name, _pid, (long)_source);
+}
+
+/// ★ Task235：选中版本 → 直接下载到当前实例（与 DownloadViewController
+///   startDownloadForModItem 同链路：ModService + SHA1 + 完成提示）。
+- (void)modVersionViewController:(ModVersionViewController *)viewController didSelectVersion:(ModVersion *)version {
+    NSDictionary *ame235_primary = version.primaryFile;
+    if (![ame235_primary[@"url"] isKindOfClass:[NSString class]]) {
+        [NMToast showMessage:localize(@"i18n_str_265", nil)];
+        return;
+    }
+    ModItem *ame235_dl = viewController.modItem;
+    ame235_dl.selectedVersionDownloadURL = ame235_primary[@"url"];
+    ame235_dl.fileName = ame235_primary[@"filename"] ?: [NSString stringWithFormat:@"%@.jar", ame235_dl.displayName];
+    NSDictionary *ame235_hashes = ame235_primary[@"hashes"];
+    if ([ame235_hashes[@"sha1"] isKindOfClass:[NSString class]]) {
+        ame235_dl.fileSHA1 = ame235_hashes[@"sha1"];
+    }
+    NSString *ame235_profile = [PLProfiles current].selectedProfileName ?: @"default";
+    [NMToast showMessage:[NSString stringWithFormat:localize(@"launcher.mcl.downloading_file", nil), ame235_dl.displayName]];
+    [[ModService sharedService] downloadMod:ame235_dl
+                                  toProfile:ame235_profile
+                               expectedSHA1:ame235_dl.fileSHA1
+                                   progress:nil
+                                 completion:^(NSError * _Nullable ame235_err) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (ame235_err != nil) {
+                [NMToast showMessage:ame235_err.localizedDescription];
+                return;
+            }
+            [NMToast showMessage:[NSString stringWithFormat:localize(@"i18n_str_266", nil), ame235_dl.displayName]];
+        });
+    }];
+    // 注：不在这里 pop——ModVersionViewController 的 didSelectRowAtIndexPath
+    // 在回调返回后会自行 pop 回本页（DownloadVC 委托里的 pop 依赖 UIKit
+    // 的转场期忽略才没双弹，这里直接不重蹈）。
 }
 
 - (void)ame232_done {

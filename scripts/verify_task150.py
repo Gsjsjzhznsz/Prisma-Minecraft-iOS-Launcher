@@ -184,7 +184,7 @@ for lg in langs:
     check(f"E[{lg}] 退役 2 键清零 + Sodium 6 键在位", r1 and r2 and n1 and n2 and n3 and n4 and n5 and n6)
     sets.append(set(re.findall(r'^"([^"]+)"\s*=', s, re.M)))
 check("E5 四语言键集一致（1952 = Task156 基线 2727 + Task157 组件键 2）",
-      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2765,
+      sets[0] == sets[1] == sets[2] == sets[3] and len(sets[0]) == 2766,
       f"counts={[len(x) for x in sets]}")
 
 print()

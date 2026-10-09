@@ -1923,6 +1923,44 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                 CGRect ame234_textRect = [ame232_label textRectForBounds:rect
                                                  limitedToNumberOfLines:ame232_label.numberOfLines];
 
+                // ★ Task235（反馈“字体还是重叠，比如版本下载列表等”，第六轮）：
+                //   adjustsFontSizeToFitWidth 的标签（版本下载列表
+                //   versionLabel minimumScaleFactor=0.75 / dateLabel=0.7 等）
+                //   本体由 UIKit 按【缩后字号】绘制，而描边拷贝/垫底用
+                //   attributedText 里的【原字号】—— 16pt 原字四份深边 + 大号
+                //   垫底盖在 12pt 缩后正文上，溢出到相邻行 = “字体重叠”的
+                //   残留根因（Task233 修对齐、Task234 修垂直锚定，都没碰缩字）。
+                //   本轮：镜像 UIKit 单行缩字算法（测自然宽 → scale =
+                //   钳制 [minimumScaleFactor, 1]），拷贝与垫底统一改用缩后
+                //   字号；紧致矩形以同中心重求高度（缩后行高），水平锚点
+                //   由段落对齐保持同源。
+                UIFont *ame235_baseFont = ame232_label.font;
+                UIFont *ame235_scaledFont = nil;
+                CGRect ame235_copyRect = ame234_textRect;
+                if (ame232_label.adjustsFontSizeToFitWidth && ame235_baseFont != nil &&
+                    ame232_label.numberOfLines == 1 && rect.size.width > 0.5) {
+                    CGFloat ame235_natural = [ame232_as boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
+                                                                    options:(NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading)
+                                                                    context:nil].size.width;
+                    if (ame235_natural > rect.size.width + 0.5 && ame235_natural > 0.5) {
+                        CGFloat ame235_scale = rect.size.width / ame235_natural;
+                        CGFloat ame235_minScale = (ame232_label.minimumScaleFactor > 0.01)
+                            ? ame232_label.minimumScaleFactor : 1.0;
+                        if (ame235_scale < ame235_minScale) ame235_scale = ame235_minScale;
+                        if (ame235_scale < 0.999) {
+                            ame235_scaledFont = [ame235_baseFont fontWithSize:ame235_baseFont.pointSize * ame235_scale];
+                            CGSize ame235_scaledSize = [[[NSAttributedString alloc] initWithString:ame232_as.string
+                                attributes:@{NSFontAttributeName: ame235_scaledFont}]
+                                boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
+                                                options:(NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading)
+                                                context:nil].size;
+                            ame235_copyRect = ame234_textRect;
+                            ame235_copyRect.origin.y = CGRectGetMidY(ame234_textRect) - ame235_scaledSize.height / 2.0;
+                            ame235_copyRect.size.height = ame235_scaledSize.height;
+                        }
+                    }
+                }
+
                 NSMutableAttributedString *ame233_dark =
                     [[NSMutableAttributedString alloc] initWithAttributedString:ame232_as];
                 NSRange ame233_darkRange = NSMakeRange(0, ame233_dark.length);
@@ -1930,10 +1968,13 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                 [ame233_dark addAttribute:NSForegroundColorAttributeName
                                      value:[UIColor colorWithWhite:0.0 alpha:0.82]
                                      range:ame233_darkRange];
-                [ame233_dark drawInRect:CGRectOffset(ame234_textRect,  0.6f,  0.0f)];
-                [ame233_dark drawInRect:CGRectOffset(ame234_textRect, -0.6f,  0.0f)];
-                [ame233_dark drawInRect:CGRectOffset(ame234_textRect,  0.0f,  0.6f)];
-                [ame233_dark drawInRect:CGRectOffset(ame234_textRect,  0.0f, -0.6f)];
+                if (ame235_scaledFont != nil) {
+                    [ame233_dark addAttribute:NSFontAttributeName value:ame235_scaledFont range:ame233_darkRange];
+                }
+                [ame233_dark drawInRect:CGRectOffset(ame235_copyRect,  0.6f,  0.0f)];
+                [ame233_dark drawInRect:CGRectOffset(ame235_copyRect, -0.6f,  0.0f)];
+                [ame233_dark drawInRect:CGRectOffset(ame235_copyRect,  0.0f,  0.6f)];
+                [ame233_dark drawInRect:CGRectOffset(ame235_copyRect,  0.0f, -0.6f)];
 
                 NSMutableAttributedString *ame233_backing =
                     [[NSMutableAttributedString alloc] initWithAttributedString:ame232_as];
@@ -1942,7 +1983,10 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                 [ame233_backing addAttribute:NSForegroundColorAttributeName
                                         value:ame233_opaqueColor(ame232_label.textColor)
                                         range:ame233_backRange];
-                [ame233_backing drawInRect:ame234_textRect];
+                if (ame235_scaledFont != nil) {
+                    [ame233_backing addAttribute:NSFontAttributeName value:ame235_scaledFont range:ame233_backRange];
+                }
+                [ame233_backing drawInRect:ame235_copyRect];
             }
         }
     } @catch (NSException *ame232_e) {

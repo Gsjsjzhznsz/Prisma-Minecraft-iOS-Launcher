@@ -2951,6 +2951,7 @@
 
 /* Task232 */
 "ame232.deps.browser" = "在瀏覽器開啟";
+"ame235.deps.godl" = "前往下載頁";
 "ame232.deps.cf_desc" = "CurseForge 專案：%@";
 "ame232.deps.loading" = "正在載入專案資訊…";
 "ame232.deps.no_desc" = "（無介紹）";

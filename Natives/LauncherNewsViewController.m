@@ -20,6 +20,9 @@
 #import "AnnouncementListViewController.h"
 #import "IconLoader.h"
 #import "AvatarManager.h"
+// Task235（联机快捷磁贴）：陶瓦联机页 + 可用性探测
+#import "TerracottaViewController.h"
+#import "TerracottaBridge.h"
 #import <SafariServices/SafariServices.h>
 #import <QuartzCore/QuartzCore.h>
 
@@ -53,6 +56,8 @@ NSString * const kShortcutActionShaders    = @"shaders";
 NSString * const kShortcutActionModpack    = @"modpack";
 NSString * const kShortcutActionBackground = @"background";
 NSString * const kShortcutActionVersions   = @"versions";
+// Task235：联机快捷磁贴（参照上游 MP-RESTORE）。
+NSString * const kShortcutActionMultiplayer = @"multiplayer";
 
 // MARK: - Color Helpers
 
@@ -238,7 +243,23 @@ static UIColor *colorFromHex(NSString *hex) {
     bg.shortcutAction = kShortcutActionBackground;
     bg.accentColorHex = @"#EC4899";
     [tiles addObject:bg];
-    
+
+    // 9. 快捷入口: 联机 (半宽) —— ★ Task235（用户：“参考上游把联机功能
+    //    添加到自定义主页那里”）：恢复主页「多人游戏」入口（陶瓦联机
+    //    Terracotta，页内右上角浮钮可切 ZeroTier）。Tile 语义与上游
+    //    MP-RESTORE 完全同构（tileId/icon/配色一致，老用户迁移见
+    //    loadSavedConfigs）。
+    HomeTileConfig *mp = [[HomeTileConfig alloc] init];
+    mp.tileId = @"shortcut_multiplayer";
+    mp.tileType = HomeTileTypeShortcut;
+    mp.tileSize = HomeTileSizeCompact;
+    mp.visible = YES;
+    mp.customTitle = localize(@"game.menu.multiplayer", @"联机");
+    mp.iconName = @"antenna.radiowaves.left.and.right";
+    mp.shortcutAction = kShortcutActionMultiplayer;
+    mp.accentColorHex = @"#0EA5E9";
+    [tiles addObject:mp];
+
     return tiles;
 }
 
@@ -254,7 +275,38 @@ static UIColor *colorFromHex(NSString *hex) {
             [configs addObject:[self fromDictionary:dict]];
         }
     }
-    return configs.count > 0 ? configs : [self defaultTileConfigs];
+    NSArray<HomeTileConfig *> *result = configs.count > 0 ? configs : [self defaultTileConfigs];
+
+    // ★ Task235（参照上游 MP-RESTORE）：老用户已有布局里若没有「联机」
+    //   快捷入口，一次性补一块（缺失才加，不覆盖用户自定义）。为什么
+    //   需要：loadSavedConfigs 命中已存布局时不会用 defaultTileConfigs
+    //   ⇒ 仅升级 App 的老用户看不到新默认磁贴，入口等于没加。这里按需
+    //   注入一次并落盘，之后由用户自行增删。
+    BOOL hasMultiplayerShortcut = NO;
+    for (HomeTileConfig *c in result) {
+        if (c.tileType == HomeTileTypeShortcut &&
+            [c.shortcutAction isEqualToString:kShortcutActionMultiplayer]) {
+            hasMultiplayerShortcut = YES;
+            break;
+        }
+    }
+    if (!hasMultiplayerShortcut) {
+        NSMutableArray<HomeTileConfig *> *ame235_injected = [result mutableCopy];
+        HomeTileConfig *ame235_mp = [[HomeTileConfig alloc] init];
+        ame235_mp.tileId = @"shortcut_multiplayer";
+        ame235_mp.tileType = HomeTileTypeShortcut;
+        ame235_mp.tileSize = HomeTileSizeCompact;
+        ame235_mp.visible = YES;
+        ame235_mp.customTitle = localize(@"game.menu.multiplayer", @"联机");
+        ame235_mp.iconName = @"antenna.radiowaves.left.and.right";
+        ame235_mp.shortcutAction = kShortcutActionMultiplayer;
+        ame235_mp.accentColorHex = @"#0EA5E9";
+        [ame235_injected addObject:ame235_mp];
+        result = ame235_injected;
+        [self saveConfigs:result];
+        NSLog(@"[HomeTile] Task235 multiplayer shortcut injected into saved layout");
+    }
+    return result;
 }
 
 + (void)saveConfigs:(NSArray<HomeTileConfig *> *)configs {
@@ -1416,6 +1468,29 @@ static NSString *festivalGreeting(void) {
 
     } else if ([action isEqualToString:kShortcutActionVersions]) {
         [[NSNotificationCenter defaultCenter] postNotificationName:@"ShowVersionManager" object:nil];
+
+    } else if ([action isEqualToString:kShortcutActionMultiplayer]) {
+        // ★ Task235（用户：“参考上游把联机功能添加到自定义主页那里”）：
+        //   主页「联机」磁贴 → 陶瓦联机页（与 HMCL/FCL/ZL2 互通，右上角
+        //   浮钮可切 ZeroTier）。PageSheet 模态呈现：TerracottaViewController
+        //   的 setupDismissHandling 会自动注入系统关闭按钮（modal 根分支），
+        //   不动主内容区、返回即回主页。libterracotta 未链接时提示。
+        if (![TerracottaBridge isAvailable]) {
+            UIAlertController *ame235_mpAlert = [UIAlertController
+                alertControllerWithTitle:localize(@"i18n_str_320", nil)
+                                  message:localize(@"i18n_str_321", nil)
+                           preferredStyle:UIAlertControllerStyleAlert];
+            [ame235_mpAlert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_322", nil)
+                                                               style:UIAlertActionStyleDefault
+                                                             handler:nil]];
+            [self presentViewController:ame235_mpAlert animated:YES completion:nil];
+            return;
+        }
+        TerracottaViewController *ame235_mpVC = [[TerracottaViewController alloc] init];
+        UINavigationController *ame235_mpNav = [[UINavigationController alloc] initWithRootViewController:ame235_mpVC];
+        ame235_mpNav.modalPresentationStyle = UIModalPresentationPageSheet;
+        [self presentViewController:ame235_mpNav animated:YES completion:nil];
+        NSLog(@"[HomeTile] Task235 multiplayer tile -> Terracotta (PageSheet)");
     }
 }
 

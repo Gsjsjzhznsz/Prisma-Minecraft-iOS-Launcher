@@ -2954,6 +2954,7 @@
 
 /* Task232 */
 "ame232.deps.browser" = "在浏览器打开";
+"ame235.deps.godl" = "前往下载页";
 "ame232.deps.cf_desc" = "CurseForge 项目：%@";
 "ame232.deps.loading" = "正在加载项目信息…";
 "ame232.deps.no_desc" = "（无介绍）";

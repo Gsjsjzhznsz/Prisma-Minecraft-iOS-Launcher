@@ -81,6 +81,17 @@ static BOOL ame227_g_dockedLeft = NO;
 
         [self restorePositions];
         [self applyStatsLabelVisibility];
+        // ★ Task235（用户：“现在启动游戏都闪退，是所有版本”）：Task232 把
+        //   ame232_applyFloatingGlass 放在 setupMenuButton 里调用——那时
+        //   statsLabel（setupStatsLabel 之后才建）与 ame230_captionLabel
+        //   （setupMenuButton 尾部才建）都还是 nil，而玻璃函数里
+        //   @[menuButton, statsLabel, caption] 数组字面量遇到 nil 元素直接
+        //   抛 NSInvalidArgumentException（“attempt to insert nil object
+        //   from objects[1]”，latestlog 51327919 装机实锤：玻璃风格一旦
+        //   激活，每次进游戏必崩、与版本无关）。两修：①函数内部数组改
+        //   nil 安全收集；②init 末尾三件套全部就绪后再统一铺一次玻璃
+        //   （此前 statsLabel/“菜单”标签首次从未真正上过玻璃）。
+        [self ame232_applyFloatingGlass];
     }
     return self;
 }
@@ -186,7 +197,15 @@ static BOOL ame227_g_dockedLeft = NO;
     LGCApplyGlassToView(self.statsLabel, 8.0);
     LGCApplyGlassToView(self.ame230_captionLabel, 5.0);
     // 重磨砂深色：UltraThin 在游戏帧上读不出玻璃感（Task230 菜单同款教训）
-    for (UIView *ame232_host in @[self.menuButton, self.statsLabel, self.ame230_captionLabel]) {
+    // ★ Task235：数组字面量遇 nil 元素会抛 NSInvalidArgumentException
+    //   （本函数曾被 setupMenuButton 提前调用——statsLabel/captionLabel
+    //   尚为 nil，“所有版本启动闪退”的根因）。改 nil 安全收集：
+    //   未就绪的件跳过（init 末尾会再统一补铺）。
+    NSMutableArray<UIView *> *ame235_hosts = [NSMutableArray array];
+    if (self.menuButton != nil) [ame235_hosts addObject:self.menuButton];
+    if (self.statsLabel != nil) [ame235_hosts addObject:self.statsLabel];
+    if (self.ame230_captionLabel != nil) [ame235_hosts addObject:self.ame230_captionLabel];
+    for (UIView *ame232_host in ame235_hosts) {
         for (UIView *ame232_sub in ame232_host.subviews) {
             if ([ame232_sub isKindOfClass:UIVisualEffectView.class]) {
                 [(UIVisualEffectView *)ame232_sub setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];

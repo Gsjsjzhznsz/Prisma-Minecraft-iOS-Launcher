@@ -2320,3 +2320,39 @@ Stage Summary:
 - 5 项全部闭环：圈错按钮（真身直取）、文字第五轮（body 标签约束冲突根修）、字体重叠（textRectForBounds 对齐）、MobileGL（无更新，已答复）、分享 GitHub（零查询参数）
 - CI run 37959645228（8eddb7fd）一次绿，产物 ipa/tipa 220.3MB + dSYM 6.1MB
 - 装机判读锚点：[Welcome] Task234 launch anchor tier=direct rect=...（圈应落在启动游戏按钮上）；[CoachMarks] Task234 post-layout: card=... title=... body=...（body 非零 = 介绍文字回归）；分享控件到 GitHub 应直接打开建文件页（无错误页），文件名框带 controls/layouts/community/ 前缀，提示语含应补的 <id>.json；字体重叠（按钮白字上方的深色浮影）应消失
+
+---
+Task ID: 235
+Agent: main (Super Z)
+Task: Task234 构建（a32f1f3）装机实测反馈——7 项轮（所有版本启动闪退/版本与隔离锚到头像/字体重叠第六轮/原生弹窗换液态玻璃/联机进自定义主页/前置快捷入口直跳下载页/议题 #11）
+
+Work Log:
+- 侦察：51327919 上传 latestlog（176 行，a32f1f3 构建）判读——[GameMenu] Task229 floating menu glass applied 之后紧接 NSInvalidArgumentException '-[__NSPlaceholderArray initWithObjects:count:]: attempt to insert nil object from objects[1]'，无 game.gear.docked 读取 = 崩在玻璃日志与齿轮初始化之间；对照历史健康日志（Task229/231 期）定位到 GameMenuOverlayView
+- (1) 所有版本启动闪退（最高优先）：
+  * 根因：Task232 把 ame232_applyFloatingGlass 放进 setupMenuButton（第 107 行）调用，而 statsLabel 在其后的 setupStatsLabel 才创建、ame230_captionLabel 在 setupMenuButton 尾部才创建——玻璃函数里的数组字面量 @[menuButton, statsLabel, caption] 遇 nil 元素即抛异常；玻璃风格一旦激活（Task228 起组合玻璃为默认）每次进游戏必崩、与游戏版本完全无关，与用户"所有版本闪退"完全吻合
+  * 修复双层：①函数内数组改 nil 安全收集（NSMutableArray 按需 addObject）；②initWithParentView 末尾三件套全部就绪后统一补铺一次玻璃——顺带修复 statsLabel/"菜单"标签自 Task232 起首次从未真正上过玻璃的隐性缺陷
+- (2) 版本与隔离锚点指到个人主页头像：
+  * 根因：Task233 的语义锚点 = 内容区上半 42% 矩形——Card 布局的主页内容顶部恰是全宽头像卡（profile tile），圆圈稳定套在用户头像上
+  * 修复：三级确定性锚定（与 Task234 启动按钮同范式）——tier-1 = LauncherRightPanelViewController 新增 ame235_versionAnchorView 直取 manageVersionBtn（"选择版本"）真身；tier-2 = i18n_str_38 标题匹配深搜兜底；tier-3 = 整右面板真实 frame；全失败宁可跳过该页绝不回落头像区；tier 落日志
+- (3) 字体重叠第六轮（"版本下载列表等"）：
+  * 根因：VersionCardCell 的 versionLabel（minimumScaleFactor=0.75）/dateLabel（0.7）等 adjustsFontSizeToFitWidth 标签本体由 UIKit 按缩后字号绘制，而描边拷贝/不透明垫底用 attributedText 里的原字号——16pt 原字四份深边 + 大号垫底盖在 12pt 缩后正文上，溢出到相邻行 = "字体重叠"；Task233 修对齐、Task234 修垂直锚定，都没碰缩字维度
+  * 修复：镜像 UIKit 单行缩字算法（测自然宽 → scale 钳制 [minimumScaleFactor, 1]），拷贝与垫底统一改用缩后字号 + 同中心重求缩后行高（ame235_copyRect）；非缩字标签 copyRect == Task234 的 textRect（语义逐字节保留）
+- (4) 原生悬浮弹窗换液态玻璃：
+  * 落地：UIKit+hook.m 新增 UIAlertController(Ame235GlassAlert) 分类，viewWillAppear: 交换（安装带所有权守卫：class_getInstanceMethod 沿父类链查找，若 viewWillAppear: 非 UIAlertController 自身实现整个钩子不装——防波及全部 VC）；玻璃风格激活时给弹窗私有容器（_UIAlertController*View BFS 深搜）铺 T225 组合玻璃 + 重磨砂深色 + 白标题/正文（按钮内标签跳过保 tint 色）+ 拆兑底染色层（888903，Task232 同款）；非玻璃风格零接触
+- (5) 联机功能进自定义主页（用户点名"参考上游"）：
+  * 上游取证（herbrine8403/Amethyst-iOS-MyRemastered）：MP-RESTORE 范式 = kShortcutActionMultiplayer 磁贴（tileId=shortcut_multiplayer，icon=antenna.radiowaves.left.and.right，#0EA5E9）+ loadSavedConfigs 老用户一次性补入（缺失才加不覆盖自定义）
+  * 移植适配：本仓无根 UITabBarController（Card 布局为 setContentViewController 换内容），磁贴点按改 PageSheet 模态呈现 TerracottaViewController（其 setupDismissHandling 的 modal 根分支自动注入系统关闭按钮，返回即回主页，不动主内容区）；libterracotta 未链接走既有 i18n_str_320/321/322 提示；自定义主页可选清单（HomeCustomizeViewController availableShortcuts）同步收录
+- (6) 前置快捷入口直跳模组下载页：
+  * 根因：Task232 的前置详情页只给"介绍 + 浏览器兜底"，没有启动器内的下载页落地
+  * 修复：Ame232DepDetailViewController 挂 ModVersionViewControllerDelegate + 新增"前往下载页"主按钮（ame235.deps.godl）——push 该项目自己的版本列表（apiSource 沿用前置来源、偏好版本/加载器从父页透传自动选中 chip 置顶），选中版本经 ModService 下载到当前实例（SHA1 校验 + NMToast 进度/完成/失败提示）；委托不 pop（版本页 didSelectRow 自 pop，避免 DownloadVC 式双弹）
+- (7) 议题 #11（外部用户 82k9z4rhh7-ship-it，iPad Pro M2 / Java 21 / gl_init_context 原生崩溃）：
+  * fatal_trace.12.txt 判读（460 条）：确定性原生崩溃（固定偏移 gl_init_context+280940 ← pojavCreateContext ← JNI JavaMain），JVM_handle_bsd_signal 是后果非原因；报告的"MSL 运行时库链接"理论与栈不符（崩在启动器自有 GL 桥，先于任何 Metal 着色翻译）
+  * 已回复：判读结论 + 指引（新构建 + 显式 MobileGL/MobileGlues + 复现时提供 Documents/latestlog.txt 供 dSYM 符号化）——评论 6088592862
+- i18n：+1 键 ame235.deps.godl ×5 语言（en/ja/zh-CN/zh-Hans/zh-Hant）；2765 → 2766 基线诚实重锚 ×19 验证器（task235_reanchor.py 先验证四主语言唯一键数再改）
+- 锚点诚实重锚（本改动触碰的存量锚）：232-16b / 233-5e / 233-6f / 234-3b / 234-3c / 225-D5 → Task235 现实（ame235_copyRect / ame235_versionAnchorView）
+- 环境事故与处置：本地快照旧 remote token 失效（公开仓匿名读掩盖），换会话 token 后 API/push 恢复；issue 回复脚本沿用"token 只从 origin URL 提取"纪律（GH013 教训）
+- 验证：verify_task235 63/63（A 闪退 5 + B 字体 10 + C 锚点 7 + D 联机 9 + E 前置 8 + F 弹窗玻璃 10 + G i18n 9 + H 级联 5）；级联全绿：129:47/130:59/131:37/132:50/133:42/134:68/135:33/150:43/151:46/156:52/157:44/159:48/190:59/222:77/225:68/226/227:50/229:71/230:48/232:58/233:53/234:40；既有基线（stash 对照 HEAD 同款）：138:49/50(A1 日志轮换)/139:35/36(J138 级联)/142:48/49(F6→task140 同类)；task139 语法门全平衡、task225 权威括号审计 68/68、selfref 块扫描 0
+
+Stage Summary:
+- 7 项全部闭环：启动闪退（数组字面量 nil 根修 + 玻璃补铺）、版本与隔离锚点（选择版本真身直取）、字体重叠第六轮（缩字维度补全）、原生弹窗液态玻璃（全局交换 + 所有权守卫）、联机进自定义主页（上游 MP-RESTORE 移植 + PageSheet 呈现）、前置直跳下载页（版本列表 + ModService 落地）、议题 #11（判读 + 回复 + 复测指引）
+- 装机判读锚点：①进游戏不再崩（玻璃风格下）+ "[GameMenu] Task232 floating bar glass applied" 首次真正打出且统计条/"菜单"标签带玻璃；②欢迎引导"版本与隔离"圆圈落在右面板"选择版本"按钮上（[Welcome] Task235 version anchor tier=direct）；③版本下载列表长版本号/长日期行无重叠（缩字与描边同字号）；④任意确认弹窗（玻璃风格下）为深色玻璃底 + 白字（[ThemeOps] Task235 alert glass applied）；⑤主页出现"联机"磁贴（老用户布局自动补入），点开陶瓦联机页可关闭返回；⑥模组前置条目 → 详情页"前往下载页" → 版本列表 → 点选即装到当前实例；⑦议题 #11 等用户复测回log

@@ -87,7 +87,7 @@ check("233-5a paragraph style replication", bm, "ame233_ps.alignment = ame232_la
 check("233-5b single-line truncation parity", bm, "ame233_ps.lineBreakMode = NSLineBreakByTruncatingTail")
 check("233-5c opaque backing copy", bm, "ame233_opaqueColor(ame232_label.textColor)")
 check("233-5d opaque helper", bm, "static UIColor *ame233_opaqueColor(UIColor *ame233_c)")
-check("233-5e four offsets preserved (Task234 重锚：拷贝画进 textRectForBounds 文本矩形)", bm, "CGRectOffset(ame234_textRect,  0.6f,  0.0f)")
+check("233-5e four offsets preserved (Task235 重锚：拷贝画进 ame235_copyRect——缩字标签用缩后字号的同中心矩形，非缩字标签 copyRect==textRect 与 Task234 语义逐字节一致)", bm, "CGRectOffset(ame235_copyRect,  0.6f,  0.0f)")
 
 print("== (6) welcome circle focus intro (4th round) ==")
 check("233-6a class-based anchor discovery", wvc, "Task233 anchor discovery: menu=%d content=%d right=%d")
@@ -95,7 +95,7 @@ check("233-6b menu VC by class", wvc, "isKindOfClass:[LauncherMenuViewController
 check("233-6c right panel VC by class", wvc, "isKindOfClass:[LauncherRightPanelViewController class]")
 check("233-6d deep launch-button search", wvc, "ame233_visited < 600")
 check("233-6e semantic anchor from real menu frame", wvc, "CGRectGetHeight(mr) * 0.48")
-check("233-6f semantic anchor from real content frame", wvc, "CGRectGetHeight(cr) * 0.42")
+check("233-6f version anchor re-aimed (Task235 重锚：旧'内容区上半 42%'圈住的是主页头像卡——改锚右面板'选择版本'真身)", wvc, "ame235_versionAnchorView")
 check_absent("233-6g hardcoded screen-fraction rects gone", wvc, "sb.size.height * 0.55")
 check("233-6h anchor log with real-view note", wvc, "all real-view derived")
 check("233-6i card elevated background", cmk, "secondarySystemGroupedBackgroundColor")
