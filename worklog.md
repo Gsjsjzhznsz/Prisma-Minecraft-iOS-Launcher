@@ -2422,3 +2422,22 @@ Stage Summary:
 - 玻璃风格下全启动器所有弹窗（含账号设置）= 全自定义液态玻璃悬浮菜单（毛玻璃/圆角/图标/悬浮/输入框/键盘避让）；原生风格 = 旧版原生弹窗零魔改
 - 游戏内菜单文字可见性由构造保证（不再依赖往 UIKit 视图里塞玻璃层）
 - 无 i18n 变更（2767 基线不动）；工作区保留前会话 task179 遗留脏文件未纳入本轮
+
+---
+Task ID: 239
+Agent: main (Super Z)
+Task: 第 9 轮反馈：全部游戏启动崩溃（致命）+ iOS 26 原生液态玻璃 API 重写所有悬浮菜单 + 文字重叠收尾
+
+Work Log:
+- 装机日志 4db827cf（Task238 构建 843ce93）判读：NSUnknownKeyException '[<__NSCFBoolean> valueForUndefinedKey:]: ... key left.'，每次启动游戏必崩（[GameMenu] Task232 floating bar glass applied 之后，restorePositions 内）
+- 根因：GameMenuOverlayView.m 读 game.gear.docked.left（点号）vs PLPreferences 注册 game.gear.docked_left（下划线）——valueForKeyPath: 语义 = game→gear→docked(布尔)→left 四跳，布尔上取 left 必炸。首次会话先成功写 docked=YES（存在性检查为非 nil 指针判断，@NO 默认也通过）再在 setPrefBool(docked.left) 引爆；后续会话在 getPrefBool 恢复路径更早引爆
+- 修复（双层）：①键名对齐 game.gear.docked_left；②PLPreferences getObject/setObject 换装 Ame239_SafeValueForPath 逐跳 NSDictionary 校验（病态路径返回 nil 走 could-not-find 回退）+ setValue 包裹 @try/@catch——Task142/143/239 KVC 崩溃家族整类根除
+- 原生玻璃（用户指令落地）：CI 实锤 Xcode 26.3/iOS 26.2 SDK（run 38035649720）→ LiquidGlassCompat 新增 LGCNativeGlassEffect()/_Engaged()：#if defined(__IPHONE_26_0) 声明式 [[UIGlassEffect alloc] init]（Task228 regularEffect 幻影选择器退役）+ 老 SDK NSClassFromString 回退 + AME239_NO_SYSTEM_GLASS=1 诊断开关；三处接入：Ame237 玻璃菜单（账号设置等全部应用内弹窗，通透底 0.30/0.58 vs 厚底 0.55/0.80）、游戏内菜单面板（0.50/0.62）、齿轮悬浮球（0.55 底+发丝描边保留）；原生风格零改动（中央路由直通旧版系统弹窗）
+- 文字重叠第八轮收尾：Task238 修复（==0 词换行 + 菜单树描边豁免）随本包首次到达设备；另修三残留——拷贝段落样式继承本体富文本属性（lineSpacing 错行根因；本体自带段落时对齐不覆盖）、单行截断尊重 Middle/Head、==0+缩字纳入二分缩字镜像 + 测量段落与绘制段落同源
+- CI r1（18009470）：LiquidGlassCompat.h:76 'unknown type name nullable'——非下划线 nullable 前缀是 ObjC 方法/属性专属，顶层 C 函数声明须用 '* _Nullable' 后缀；修复后 run 38042727456 全绿，产物 ipa/tipa 220.3MB + dSYM 6.2MB
+- 验证：verify_task239 29/29（B1b 锁定 nullable 语法坑）；236 62/62、237 59/59（诚实重锚 A8/C1/E5）；fleet 39 绿 + 既有红全部 HEAD stash 对拍一致（111/137/138/139/142/143/180/210/211/214/216/218/223/77/82/90/91/168，零 i18n 改动封死 l10n 族回归可能）
+
+Stage Summary:
+- 崩溃根因 = 键名点号 vs 下划线 + KVC 路径炸弹；键名对齐 + 安全行走双层根除
+- 设备预期：启动不崩；玻璃风格弹窗 = iOS 26 原生 UIGlassEffect 液态玻璃（日志 [AmeMenu] Task239 menu material: native UIGlassEffect）；原生风格 = 旧版系统弹窗；Task238 的退出返回/前置置顶/CF 富化/菜单几何随包首次到达
+- 产物：run 38042727456（commit 18009470），com.air-devs.air-ios.ipa + trollstore.tipa + dSYM
