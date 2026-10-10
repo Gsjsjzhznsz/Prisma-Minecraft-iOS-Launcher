@@ -2460,3 +2460,18 @@ Stage Summary:
 - 菜单呈现统一终态：系统 UIMenu 体系（iOS 26 原生 Liquid Glass 直出 = IMG_0370；iOS 14-25 系统标准上下文菜单），自绘玻璃菜单三套体系中的两套（Task227 dim+panel、JRE 私有 API 菜单）退役，AmeFloatingMenu 路由仅剩弹窗接管职责
 - 装机验证锚点：账号页 ⋯ / 长按 → 系统液态玻璃菜单（含"默认皮肤"子菜单 Steve/Alex）；设置页全部 pick 行；下载页筛选/版本/排序/加载器；游戏内齿轮 → 分辨率；第三方登录角色选择（外部点按 = 取消登录不卡死）；日志行分享
 - 遗留：①LiquidGlassCompat 三档界面风格对"菜单"类不再生效（菜单恒为系统呈现——用户基准即原生）；②Long-press 交互与点按 presentMenu 并存（按钮长按也出菜单，符合系统惯例）
+
+---
+Task ID: 240-ci
+Agent: main (Super Z)
+Task: Task 240 CI 修复梯（r1-r3 单错 + r4 终绿）
+
+Work Log:
+- 推送链：25dc55b（主提交）→ 07ab378（r1：withTitle 四参便捷入口 onDismiss 变体声明/实现缺失——ThirdPartyLogin:563 no known class method，单错）→ 2cde447（r2：AmeNativeMenu.m:24 注释续行缺 /// 前缀——写入期缺失 + r0 轮 ninja 取消排队 TU 掩蔽至本轮暴露，od -c 字节级定案非显示层吞字）→ a666f12（r3：presentMenu 类目在 CI iOS 26.2 SDK 本构建配置下不可见——自声明同名类目纯声明兜底，JRE 页旧私有 _presentMenuAtLocation 即同域先例）→ 589d38c（r4：TouchController ✓ 前缀表达式补外层方括号，(ternary) stringByAppendingString: 裸 continuation 非法，三处同型一次修尽）
+- run 38051501602（589d38c）：completed success——Task 240 全链闭环，新 IPA 就绪
+- 打地鼠账本：r1 声明缺失 / r2 注释结构损坏 / r3 SDK 类目可见性 / r4 生成代码括号——四轮四类，无重复类型；task240_syntax_gate 的括号平衡对"缺外层 []"不敏感（括号计数仍平衡），已用裸选择器行首扫描补位（21 文件扫描仅余合法 [receiver selector: 续行）
+
+Stage Summary:
+- Task 240 全链闭环：34 处菜单全量换装系统 UIMenu + AmeNativeMenu 组件落地 + CI 四轮终绿 + 新 IPA
+- 装机验证锚点（对照用户基准 IMG_0370）：账号页 ⋯/长按 = 系统液态玻璃菜单（含"默认皮肤"Steve/Alex 子菜单）；设置页全部 pick 行；下载页筛选/版本（~80 条）/排序/加载器；游戏内齿轮 → 分辨率；第三方登录角色选择（外部点按 = 取消不卡死）；日志行分享；Bing 壁纸操作
+- 教训入库：①ninja 快速失败会掩蔽排队 TU 的真实错误——主目标失败轮必须对"本轮从未编译的触碰文件"做未调度集审计（Task224 教训第③条的 CI 实操版）；②生成 ObjC 字典字面量时，跨行消息表达式必须整体带 []，裸 continuation 是合法括号平衡之外的语法雷（括号平衡门天然探测不到）
