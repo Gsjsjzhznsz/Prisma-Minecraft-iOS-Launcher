@@ -2564,3 +2564,18 @@ Stage Summary:
 - 提交 3e83110 推送 main，CI 轮询中；三个反馈点全链修复：黑条（描边渲染出口根治）/ 游戏内毛玻璃（快照自绘磨砂，主菜单+弹层双覆盖）/ 把手白边（胶囊化+减淡细边）
 - 装机验证锚点：①主页/新闻页描边文字应为"白字细黑边"（无黑条）②玻璃档游戏内开菜单 = 模糊游戏画面透出的深色玻璃面板 ③把手 = 深色胶囊+极细淡边 ④游戏内分辨率调整弹窗 = 同款快照磨砂玻璃
 - 待分诊遗留：IMG_0378 抽屉内"大小"标签错位的确切来源（代码侧四候选全排除，等 [GameMenu] Task237 menu shown 装机日志定位）；上轮遗留 Vulkan 崩溃（待 latestlog）
+
+---
+Task ID: 243-ci
+Agent: main (Super Z)
+Task: Task 243 CI 闭环（r1 修复 + 终绿）
+
+Work Log:
+- run 38070015169（2bc0f46）failure：AmeFloatingMenu.m:775 编译雷 ×2（同源双报）——五参变体【类方法】内误写 presenter.view ?: self.view，类方法 self 是 Class 指针，.view 成员访问 = "member reference type 'struct objc_class *' is a pointer"
+- r1 8915146：直接传 presenter.view——抓帧函数内 hostView.window == nil 护栏天然覆盖 nil view 场景，兜底分支本就多余；类方法上下文禁用实例属性链教训入档注释
+- run 38071105322（8915146）：completed success 一轮终绿
+- 本轮门禁四道在两次提交前均 PASS（语法/平衡门对语义型 Class/实例混淆不敏感——门禁盲区记录：源码级语义检查依赖 CI 实证）
+
+Stage Summary:
+- Task 243 全链闭环：描边黑条根治 + 游戏内快照自绘磨砂（主菜单/AmeFloatingMenu 弹层双覆盖）+ 游戏内常驻件胶囊化去白边，新 IPA 就绪待装机验证
+- 装机验证锚点：①主页描边文字 = 白字细黑边（黑条消失）②玻璃档游戏内开菜单 = 模糊游戏画面透出的深色玻璃面板 ③把手深色胶囊+极细淡边 ④游戏内分辨率弹窗同款磨砂 ⑤"大小"标签错位待装机日志（[GameMenu] Task237 menu shown）定位
