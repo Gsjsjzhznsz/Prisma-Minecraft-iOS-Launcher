@@ -2611,3 +2611,31 @@ Work Log:
 Stage Summary:
 - Task 244 全链闭环：玻璃观感改道快照自绘磨砂（弹窗 + 游戏内双层）、UIGlassEffect 黑块家族退役（AME239_FORCE_SYSTEM_GLASS=1 诊断回取保留）、Vulkan 取证面包屑随包
 - 装机验证锚点：①主页"选择版本"弹窗 = 模糊真实背景 + 深色可读 tint + 圆角细边（非纯黑）②版本设置内存行/下载页筛选/游戏内分辨率弹窗同款 ③界面风格"原生"档零回归（旧版深色分块弹窗）④Vulkan+光影若再崩 → 崩溃诊断弹窗（Task218）+ latestlog [Task244] Vulkan forensics 行回传；上游建议 = VulkanMod 升级最新版或改 zink 渲染器 + Iris（zink 路径已带光影崩溃修复族）
+
+---
+Task ID: 245
+Agent: main (Super Z)
+Task: IMG_0380 用户定案——"这透视有问题吧。还说你不会犯上一个对话一样的问题，我是让你把这些用在不是悬浮弹窗的地方上，比如内存数值输入的地方上，但是这些选择项就应该使用系统原生的液态玻璃。"
+
+Work Log:
+- 取证定案两案同源异症：①账号"选用账号"等【选择型菜单】被 Task242 玻璃档全接管送进魔改磨砂面板（域归属错误——用户定调选择项 = 系统原生液态玻璃，魔改弹窗专属输入类场景如内存数值输入）；②磨砂面板快照底衬 AspectFill 居中裁剪 = 整屏快照的中心放大裁切，弹窗背后根本不是该内容 = "假透视"几何错位 + 柔化不足轮廓可辨（IMG_0380 透见 App UI 轮廓）
+- 【AmeNativeMenu.m 玻璃档按锚点域重新分轨】启动器内选择菜单 → 系统原生液态玻璃直出（IMG_0370 基准）：Task241 三级降级链复活——UIContextMenuInteraction 挂锚点（associated object 复用）+ presentMenu respondsToSelector 探测 → _presentMenuAtLocation:（iOS 13+ 长期稳定，LauncherPrefManageJRE 同域先例）→ 字典 actionSheet 兜底（玻璃档由磨砂面板接管并承接 onDismiss，原生档直通）；UIContextMenuInteractionDelegate（configurationForMenuAtLocation / didEndMenuForConfiguration:animator:）与 ame240_menuSnapshotKey/dismissKey 自 955027d 全链复活； Metal 游戏面判定 = responder 链扫 SurfaceViewController 前缀/GameMenuOverlayView（游戏内分辨率菜单锚点 gameMenuOverlay 命中）→ 保持磨砂面板（系统上下文菜单磨砂在 Metal 上不合成，Task228/230/236 三轮装机实锤同族）
+- 【AmeFloatingMenu.m 窗口对位真透视】快照 1:1 铺进面板圆角裁剪容器（ame245_frostClip 角 26 连续曲率 + masksToBounds 自担裁剪——panel clipsToBounds=NO 为阴影保留不可依赖；帧 = 窗口矩形映射面板坐标，OverFullScreen 呈现下 self.view 即窗口大小），面板下每个像素 = 面板后方真实背景内容 = 真"背景折射"；Ame245SoftenSnapshot 二次柔化（0.5x 半分辨率重渲染，叠加 0.18x 抓帧 ≈ 双重降采样，窗口对位 1:1 上采样后轮廓不可辨）；tint 收编进容器（方角溢出与旧 tint 独立圆角双份几何一并消除）；ame237_layout 帧刷新（键盘避让/旋转/首布局修正，先于 CA 提交无闪烁）；AspectFill 假透视退役
+- 【专属域确认】内存数值输入（ProfileSettings showMemoryAllocator = alert+textField）经中央路由 hook 走磨砂面板 = 用户点名归属，自动获得窗口对位真透视；原生档零回归（旧版系统弹窗直通）
+- 门禁四道全 PASS；NO-IMPORT 假阳性（.m 注释含组件名 + 尾随空格触发门禁 grep，Task241 同族）改写措辞消除；提交前 diff 自审（C 调用裸写/消息表达式带括号/无 .handler 反取/类方法无 self.view 四雷族全过筛）
+
+Stage Summary:
+- 架构终态（玻璃档）：启动器内选择菜单 = 系统原生液态玻璃（UIMenu 直出）；输入类弹窗 + Metal 游戏面菜单 = 魔改磨砂面板（窗口对位真透视）；原生档 = 旧版系统弹窗
+- 装机验证锚点：①账号 ⋯/长按、选择版本、下载筛选、Touch 模式等选择菜单 = 系统玻璃菜单（IMG_0370 同款）②内存数值输入等弹窗 = 背景真实折射磨砂（非透视见底/非纯黑/非错位裁切）③游戏内分辨率弹窗同款磨砂
+
+---
+Task ID: 245-ci
+Agent: main (Super Z)
+Task: Task 245 CI 闭环
+
+Work Log:
+- 推送 55a2413（fetch+rebase 零冲突）→ run 38077518374 completed success 一轮终绿，零修复轮
+- Task241-ci 未调度集审计惯例本轮不适用（单轮全绿无掩蔽面）；NO-IMPORT 假阳性推送前消除复训生效
+
+Stage Summary:
+- Task 245 全链闭环：选择菜单系统原生液态玻璃直出 + 磨砂弹窗窗口对位真透视，新 IPA 就绪待装机验证
