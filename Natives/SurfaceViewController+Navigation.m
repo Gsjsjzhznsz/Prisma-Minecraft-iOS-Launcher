@@ -160,7 +160,23 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
                 [ame232_sub removeFromSuperview];
             }
         }
+        // ★ Task236（用户：“齿轮图标和文件菜单都消失了，打开还是什么都不
+        //   显示”）：LGC 接管时把宿主底色清成了 clearColor——磨砂层在本进程
+        //   游戏画面（Metal 层）之上若不合成（Task228/230 两轮实锤本进程
+        //   效果层渲染不可靠），整个菜单面板就只剩半透明遮罩 = “打开了但
+        //   什么都不显示”。防御性底色：玻璃之下重铺半透明深色实底（磨砂
+        //   可用时是加深的玻璃面板，失效时仍是一块可读的深色面板；cell
+        //   是子视图恒在玻璃层之上，白字永远可见）。
+        self.menuView.backgroundColor = [UIColor colorWithRed:28.0/255.0 green:28.0/255.0 blue:30.0/255.0 alpha:0.72];
+        NSLog(@"[GameMenu] Task236 menu panel hardened: translucent dark base re-asserted under glass (blur failure safe)");
         NSLog(@"[GameMenu] Task229 floating menu glass applied (composite, ok=%d; Task230 heavy dark material; Task232 tint layer stripped)", ok);
+    } else {
+        // ★ Task236：切回原生风格时底色一并恢复——旧代码只拆玻璃层不还原
+        //   backgroundColor（LGC 已把底色清成 clearColor），原生风格下菜单
+        //   面板同样会透明消失（玻璃→原生切换路径的隐性雷）。
+        self.menuView.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+            return [UIColor colorWithRed:28.0/255.0 green:28.0/255.0 blue:30.0/255.0 alpha:0.95];
+        }];
     }
 }
 

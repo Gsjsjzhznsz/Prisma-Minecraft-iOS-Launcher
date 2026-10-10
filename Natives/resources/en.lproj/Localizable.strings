@@ -2957,6 +2957,7 @@
 /* Task232 */
 "ame232.deps.browser" = "Open in Browser";
 "ame235.deps.godl" = "Go to Download Page";
+"ame236.deps.hint" = "Tap a row to jump straight to that mod's download page; tap the info button for details.";
 "ame232.deps.cf_desc" = "CurseForge project: %@";
 "ame232.deps.loading" = "Loading project info…";
 "ame232.deps.no_desc" = "(no description)";

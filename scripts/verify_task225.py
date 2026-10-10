@@ -262,8 +262,8 @@ NEWKEYS = ["profile.isolation.choice_prompt", "profile.isolation.choice_migrate"
            "welcome.intro.f6.title"]
 for lang in ["en", "zh-CN", "zh-Hans", "zh-Hant"]:
     keys = set(re.findall(r'^"([^"]+)" = ', rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"M-{lang} 唯一键 2766【Task233：+2 ame233 键，诚实重锚】",
-          len(keys) == 2766, f"got {len(keys)}")
+    check(f"M-{lang} 唯一键 2767【Task233：+2 ame233 键，诚实重锚】",
+          len(keys) == 2767, f"got {len(keys)}")
     miss = [k for k in NEWKEYS if k not in keys]
     check(f"M-{lang} 本轮新键全部在位", not miss, str(miss[:4]))
 

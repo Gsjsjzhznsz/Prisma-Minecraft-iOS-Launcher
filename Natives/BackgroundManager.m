@@ -1909,6 +1909,16 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                 ame233_ps.lineBreakMode = ame232_label.lineBreakMode;
                 if (ame232_label.numberOfLines == 1) {
                     ame233_ps.lineBreakMode = NSLineBreakByTruncatingTail;
+                } else if (ame232_label.numberOfLines > 1) {
+                    // ★ Task236：多行标签的拷贝必须按【词换行】落笔——
+                    //   UILabel 多行 + lineBreakMode=TruncatingTail 的本体是
+                    //   “换行铺满 N 行、末行截断”，而 NSAttributedString 携带
+                    //   TruncatingTail 时只画【单行截断】不换行：拷贝与本体
+                    //   行数/几何完全错位 = 多行场景“双层/重叠”的残留根因
+                    //   （AssetDetailHeaderView 标题 2 行缩字等）。改用 WordWrap
+                    //   对齐本体的换行几何（末行超长时本体截断、拷贝可能多画，
+                    //   属尾部边缘 case，主体行几何已同源）。
+                    ame233_ps.lineBreakMode = NSLineBreakByWordWrapping;
                 }
 
                 // ★ Task234（反馈“文字重叠依旧有问题”）：Task233 修了水平
@@ -1957,6 +1967,64 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                             ame235_copyRect = ame234_textRect;
                             ame235_copyRect.origin.y = CGRectGetMidY(ame234_textRect) - ame235_scaledSize.height / 2.0;
                             ame235_copyRect.size.height = ame235_scaledSize.height;
+                        }
+                    }
+                }
+                // ★ Task236（用户：“字体还是重叠”，第七轮，多行维度）：
+                //   numberOfLines > 1 且 adjustsFontSizeToFitWidth 的标签
+                //   （资源详情页标题 2 行 min0.75 等）本体由 UIKit 缩到“换行
+                //   后高度恰好装下 N 行”，而拷贝/垫底一直用原字号 = 多行场景
+                //   的双层/重叠残留。单行镜像（上方）不适用（单行按宽度、
+                //   多行按高度），这里用二分搜最大可用 scale：测【词换行后
+                //   的高度 ≤ rect 高度】，与 UIKit “缩到 N 行内装下”的语义
+                //   同源；12 次迭代精度 (1-min)/4096，仅对缩字中的多行标签
+                //   在绘制时求值（可见标签才走 drawTextInRect）。
+                if (ame232_label.adjustsFontSizeToFitWidth && ame235_baseFont != nil &&
+                    ame232_label.numberOfLines > 1 && ame235_scaledFont == nil &&
+                    rect.size.width > 0.5 && rect.size.height > 0.5) {
+                    CGFloat ame236_minScale = (ame232_label.minimumScaleFactor > 0.01)
+                        ? ame232_label.minimumScaleFactor : 1.0;
+                    if (ame236_minScale < 0.999) {
+                        // 注：无自引用（Task231 __block 雷类不适用），普通栈 block 即可。
+                        CGFloat (^ame236_wrappedHeight)(CGFloat) = ^CGFloat(CGFloat ame236_s) {
+                            UIFont *ame236_f = [ame235_baseFont fontWithSize:ame235_baseFont.pointSize * ame236_s];
+                            NSMutableAttributedString *ame236_m =
+                                [[NSMutableAttributedString alloc] initWithString:ame232_as.string];
+                            NSMutableParagraphStyle *ame236_ps = [[NSMutableParagraphStyle alloc] init];
+                            ame236_ps.lineBreakMode = NSLineBreakByWordWrapping;
+                            NSRange ame236_full = NSMakeRange(0, ame236_m.length);
+                            [ame236_m addAttribute:NSFontAttributeName value:ame236_f range:ame236_full];
+                            [ame236_m addAttribute:NSParagraphStyleAttributeName value:ame236_ps range:ame236_full];
+                            return [ame236_m boundingRectWithSize:CGSizeMake(rect.size.width, CGFLOAT_MAX)
+                                                          options:(NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading)
+                                                          context:nil].size.height;
+                        };
+                        if (ame236_wrappedHeight(1.0) > rect.size.height + 0.5) {
+                            // 不变量：lo = 已知最大可容纳 scale，hi = 已知溢出 scale。
+                            // lo 从 minScale 起步（若连 minScale 都溢出，UIKit 语义
+                            // 也是钳到 minScale 后截断——拷贝跟随钳制值）。
+                            CGFloat ame236_lo = ame236_minScale;
+                            CGFloat ame236_hi = 1.0;
+                            if (ame236_wrappedHeight(ame236_lo) > rect.size.height + 0.5) {
+                                // minScale 也溢出：直接钳 minScale（与本体同钳制）
+                                ame236_lo = ame236_minScale;
+                            } else {
+                                for (int ame236_i = 0; ame236_i < 12; ame236_i++) {
+                                    CGFloat ame236_mid = (ame236_lo + ame236_hi) / 2.0;
+                                    if (ame236_wrappedHeight(ame236_mid) <= rect.size.height + 0.5) {
+                                        ame236_lo = ame236_mid;
+                                    } else {
+                                        ame236_hi = ame236_mid;
+                                    }
+                                }
+                            }
+                            if (ame236_lo < 0.999) {
+                                ame235_scaledFont = [ame235_baseFont fontWithSize:ame235_baseFont.pointSize * ame236_lo];
+                                CGFloat ame236_h = ame236_wrappedHeight(ame236_lo);
+                                ame235_copyRect = ame234_textRect;
+                                ame235_copyRect.origin.y = CGRectGetMidY(ame234_textRect) - ame236_h / 2.0;
+                                ame235_copyRect.size.height = ame236_h;
+                            }
                         }
                     }
                 }

@@ -59,7 +59,10 @@ check("230-7a install loader check", "Natives/DownloadViewController.m", "BOOL (
 check("230-7b skip on no match", "Natives/DownloadViewController.m", "dep skipped (no version matches loader=")
 check("230-7c resolver fallback", "Natives/ModDependencyResolver.m", "if (picked == nil) picked = ame230_loaderOnly;")
 check("230-7d quick entry", "Natives/ModVersionViewController.m", "ame230_openDependencyPage:(UIButton *)sender")
-check("230-7e quick entry log", "Natives/ModVersionViewController.m", "[ModVersionVC] Task230 dependency quick-entry footer:")
+# Task236 诚实重锚：footer 已重构为模组列表同款富条目（图标+介绍内联+直跳
+# 下载页），旧"Task230 dependency quick-entry footer"日志由 Task236 rich footer
+# 日志接替；ⓘ 按钮仍走 ame230_openDependencyPage:（230-7d 不变）。
+check("230-7e quick entry log", "Natives/ModVersionViewController.m", "[ModVersionVC] Task236 dependency rich footer:")
 # (11) backup import: reload + refresh + summary
 check("230-11a prefs reload", "Natives/DataTransferService.m", "loadPreferences(NO);")
 check("230-11b root rebuild", "Natives/DataTransferService.m", 'postNotificationName:@"AppLanguageChanged"')

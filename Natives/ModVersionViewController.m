@@ -58,7 +58,7 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     return items;
 }
 
-@interface ModVersionViewController () <UITableViewDataSource, UITableViewDelegate>
+@interface ModVersionViewController () <UITableViewDataSource, UITableViewDelegate, ModVersionViewControllerDelegate>
 
 // 主表格视图（展示版本列表）
 @property (nonatomic, strong) UITableView *tableView;
@@ -705,118 +705,296 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
             strongSelf.tableView.tableFooterView = nil;
             return;
         }
-        dispatch_group_t ame227_fg = dispatch_group_create();
-        for (ModDependencyItem *ame227_dep in ame227_req) {
-            dispatch_group_enter(ame227_fg);
-            void (^ame227_storeTitle)(NSString *) = ^(NSString *ame227_title) {
-                ame227_dep.displayName = ame227_title ?: ame227_dep.projectId;
-                dispatch_group_leave(ame227_fg);
-            };
-            if (ame227_dep.apiSource == 1) {
-                [[ModrinthAPI sharedInstance] ame227_fetchProjectTitle:ame227_dep.projectId
-                                                             completion:^(NSString * _Nullable t, NSError * _Nullable e) {
-                    ame227_storeTitle(t);
-                }];
+        // ★ Task236（用户："前置为什么需要打开才能看介绍和图标，不能像
+        //   外面模组列表一样显示吗，点击就直接跳转对应mod"）：footer 全面
+        //   重构——旧形态是纯文字按钮（"▸ 名称 (必需)"），要看介绍/图标必须
+        //   先打开详情页；新形态与模组列表同款：每行【图标 + 名称 + 介绍】
+        //   内联展示，点按【直接 push 该模组自己的版本下载页】（选中即装到
+        //   当前实例），ⓘ 保留详情页入口（统计/浏览器兜底）。数据一步到位
+        //   （Modrinth /v2/project：标题+介绍+图标；CF 沿用标题 + 提示文案）。
+        [strongSelf ame236_buildDependencyFooterWithItems:ame227_req];
+    }];
+}
+
+/// Task236：前置数据抓取（图标 + 介绍一步到位）→ 主线程渲染富条目 footer。
+- (void)ame236_buildDependencyFooterWithItems:(NSArray<ModDependencyItem *> *)items {
+    if (items.count == 0) {
+        self.tableView.tableFooterView = nil;
+        return;
+    }
+    __weak typeof(self) ame236_wself = self;
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSMutableArray<NSDictionary *> *ame236_rows = [NSMutableArray array];
+        for (ModDependencyItem *ame236_dep in items) {
+            NSString *ame236_name = ame236_dep.displayName ?: ame236_dep.projectId;
+            NSString *ame236_desc = @"";
+            NSString *ame236_icon = @"";
+            if (ame236_dep.apiSource == kSourceModrinth && ame236_dep.projectId.length > 0) {
+                NSURL *ame236_url = [NSURL URLWithString:
+                    [NSString stringWithFormat:@"https://api.modrinth.com/v2/project/%@", ame236_dep.projectId]];
+                NSData *ame236_data = ame236_url != nil ? [NSData dataWithContentsOfURL:ame236_url] : nil;
+                if (ame236_data != nil) {
+                    id ame236_obj = [NSJSONSerialization JSONObjectWithData:ame236_data options:0 error:nil];
+                    if ([ame236_obj isKindOfClass:[NSDictionary class]]) {
+                        NSString *ame236_t = ame236_obj[@"title"];
+                        if ([ame236_t isKindOfClass:[NSString class]] && ame236_t.length > 0) ame236_name = ame236_t;
+                        NSString *ame236_d = ame236_obj[@"description"];
+                        if ([ame236_d isKindOfClass:[NSString class]]) ame236_desc = ame236_d;
+                        NSString *ame236_ic = ame236_obj[@"icon_url"];
+                        if ([ame236_ic isKindOfClass:[NSString class]]) ame236_icon = ame236_ic;
+                    }
+                }
             } else {
-                [[CurseForgeAPI sharedInstance] ame227_fetchModTitle:ame227_dep.projectId
-                                                          completion:^(NSString * _Nullable t, NSError * _Nullable e) {
-                    ame227_storeTitle(t);
-                }];
+                // CurseForge：无公开免鉴权详情端点——介绍位给出来源提示
+                ame236_desc = [NSString stringWithFormat:localize(@"ame232.deps.cf_desc", nil),
+                               ame236_name];
             }
+            [ame236_rows addObject:@{
+                @"pid":  ame236_dep.projectId ?: @"",
+                @"name": ame236_name ?: @"",
+                @"desc": ame236_desc ?: @"",
+                @"icon": ame236_icon ?: @"",
+                @"src":  @(ame236_dep.apiSource),
+                @"kind": @(ame236_dep.kind),
+            }];
         }
-        dispatch_group_notify(ame227_fg, dispatch_get_main_queue(), ^{
-            __strong typeof(weakSelf) strongSelf2 = weakSelf;
-            if (!strongSelf2) return;
-            // ★ Task230（反馈 #7：不显示前置快速入口）：footer 从纯文本升级为
-            //   PCL2CE 风格的可点条目——标题行 + 每个前置一行按钮（名称 +
-            //   必需/可选标记），点按直达该项目的 Modrinth/CurseForge 页面
-            //   （快速查看/手动安装入口）。下载时的"一起安装前置"确认单
-            //   保持不变。
-            NSMutableString *ame227_names = [NSMutableString string];
-            for (ModDependencyItem *ame227_dep in ame227_req) {
-                if (ame227_names.length > 0) [ame227_names appendString:@", "];
-                [ame227_names appendString:ame227_dep.displayName ?: ame227_dep.projectId];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            __strong typeof(ame236_wself) ame236_sself = ame236_wself;
+            if (!ame236_sself) return;
+            [ame236_sself ame236_renderDependencyFooter:ame236_rows];
+        });
+    });
+}
+
+/// Task236：渲染前置 footer——模组列表同款富条目（图标 + 名称 + 介绍内联，
+/// 点按直跳该模组版本下载页，ⓘ 进详情页）。footer 高度按内容手动定 frame
+/// （tableFooterView 不吃 autolayout 高度）。
+- (void)ame236_renderDependencyFooter:(NSArray<NSDictionary *> *)rows {
+    CGFloat ame236_w = self.tableView.bounds.size.width;
+    if (ame236_w < 32) ame236_w = 320;
+    UIView *ame236_footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, ame236_w, 0)];
+
+    // 头部说明：原有统计文案 + Task236 直跳提示
+    NSMutableString *ame236_names = [NSMutableString string];
+    for (NSDictionary *ame236_row in rows) {
+        if (ame236_names.length > 0) [ame236_names appendString:@", "];
+        [ame236_names appendString:ame236_row[@"name"]];
+    }
+    UILabel *ame236_header = [[UILabel alloc] init];
+    ame236_header.numberOfLines = 0;
+    ame236_header.font = [UIFont systemFontOfSize:12 weight:UIFontWeightMedium];
+    ame236_header.textColor = [UIColor secondaryLabelColor];
+    ame236_header.text = [NSString stringWithFormat:@"%@\n%@",
+                          [NSString stringWithFormat:localize(@"ame227.deps.footer", nil),
+                           (unsigned long)rows.count, ame236_names],
+                          localize(@"ame236.deps.hint", nil)];
+    ame236_header.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame236_footer addSubview:ame236_header];
+    [ame236_footer addConstraints:@[
+        [NSLayoutConstraint constraintWithItem:ame236_header attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual
+            toItem:ame236_footer attribute:NSLayoutAttributeTop multiplier:1 constant:10],
+        [NSLayoutConstraint constraintWithItem:ame236_header attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual
+            toItem:ame236_footer attribute:NSLayoutAttributeLeading multiplier:1 constant:16],
+        [NSLayoutConstraint constraintWithItem:ame236_header attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual
+            toItem:ame236_footer attribute:NSLayoutAttributeTrailing multiplier:1 constant:-16],
+    ]];
+
+    UIView *ame236_prev = ame236_header;
+    for (NSDictionary *ame236_row in rows) {
+        UIView *ame236_rowView = [self ame236_dependencyRow:ame236_row];
+        ame236_rowView.translatesAutoresizingMaskIntoConstraints = NO;
+        [ame236_footer addSubview:ame236_rowView];
+        [ame236_footer addConstraints:@[
+            [NSLayoutConstraint constraintWithItem:ame236_rowView attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual
+                toItem:ame236_prev attribute:NSLayoutAttributeBottom multiplier:1 constant:8],
+            [NSLayoutConstraint constraintWithItem:ame236_rowView attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual
+                toItem:ame236_footer attribute:NSLayoutAttributeLeading multiplier:1 constant:0],
+            [NSLayoutConstraint constraintWithItem:ame236_rowView attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual
+                toItem:ame236_footer attribute:NSLayoutAttributeTrailing multiplier:1 constant:0],
+            [NSLayoutConstraint constraintWithItem:ame236_rowView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual
+                toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:64],
+        ]];
+        ame236_prev = ame236_rowView;
+    }
+    [ame236_footer addConstraint:
+        [NSLayoutConstraint constraintWithItem:ame236_prev attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual
+            toItem:ame236_footer attribute:NSLayoutAttributeBottom multiplier:1 constant:-12]];
+
+    [ame236_footer setNeedsLayout];
+    [ame236_footer layoutIfNeeded];
+    CGSize ame236_fit = [ame236_footer systemLayoutSizeFittingSize:CGSizeMake(ame236_w, UILayoutFittingCompressedSize.height)];
+    ame236_footer.frame = CGRectMake(0, 0, ame236_w, ceil(ame236_fit.height));
+    self.tableView.tableFooterView = ame236_footer;
+    NSLog(@"[ModVersionVC] Task236 dependency rich footer: %lu row(s) (inline icon+intro, tap=direct jump)",
+          (unsigned long)rows.count);
+}
+
+/// Task236：单条前置富条目（64pt）：44pt 图标 + 名称 + "必需/可选 · 介绍"两行
+/// + ⓘ 详情。整行点按 = 直跳该模组版本下载页（tap 按钮垫在最底层，文字/
+/// 图标默认不拦截触摸）；ⓘ 沿用既有详情页（统计/浏览器兜底）。
+- (UIView *)ame236_dependencyRow:(NSDictionary *)row {
+    UIView *ame236_row = [[UIView alloc] init];
+    ame236_row.backgroundColor = [UIColor secondarySystemFillColor];
+    ame236_row.layer.cornerRadius = 12;
+    ame236_row.layer.cornerCurve = kCACornerCurveContinuous;
+
+    // 整行点按层（垫底）：直跳该模组的版本下载页
+    UIButton *ame236_tap = [UIButton buttonWithType:UIButtonTypeCustom];
+    ame236_tap.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame236_tap addTarget:self action:@selector(ame236_openDependencyDownload:)
+         forControlEvents:UIControlEventTouchUpInside];
+    objc_setAssociatedObject(ame236_tap, "ame230.dep.pid", row[@"pid"], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(ame236_tap, "ame230.dep.name", row[@"name"], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(ame236_tap, "ame230.dep.src", row[@"src"], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [ame236_row addSubview:ame236_tap];
+
+    // 图标（44pt 圆角方片，占位拼图符号；异步加载真实图标）
+    UIImageView *ame236_icon = [[UIImageView alloc] init];
+    ame236_icon.translatesAutoresizingMaskIntoConstraints = NO;
+    ame236_icon.contentMode = UIViewContentModeScaleAspectFill;
+    ame236_icon.clipsToBounds = YES;
+    ame236_icon.layer.cornerRadius = 10;
+    ame236_icon.layer.cornerCurve = kCACornerCurveContinuous;
+    ame236_icon.backgroundColor = [UIColor tertiarySystemFillColor];
+    ame236_icon.image = [UIImage systemImageNamed:@"puzzlepiece.fill"];
+    ame236_icon.tintColor = [UIColor secondaryLabelColor];
+    [ame236_row addSubview:ame236_icon];
+
+    UILabel *ame236_title = [[UILabel alloc] init];
+    ame236_title.translatesAutoresizingMaskIntoConstraints = NO;
+    ame236_title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+    ame236_title.textColor = [UIColor labelColor];
+    ame236_title.numberOfLines = 1;
+    ame236_title.text = row[@"name"];
+    [ame236_row addSubview:ame236_title];
+
+    UILabel *ame236_desc = [[UILabel alloc] init];
+    ame236_desc.translatesAutoresizingMaskIntoConstraints = NO;
+    ame236_desc.font = [UIFont systemFontOfSize:12];
+    ame236_desc.textColor = [UIColor secondaryLabelColor];
+    ame236_desc.numberOfLines = 2;
+    NSString *ame236_kindText = ([row[@"kind"] integerValue] == ModDependencyKindRequired)
+        ? localize(@"ame230.deps.required", nil)
+        : localize(@"ame230.deps.optional", nil);
+    NSString *ame236_intro = row[@"desc"];
+    ame236_desc.text = ame236_intro.length > 0
+        ? [NSString stringWithFormat:@"%@ · %@", ame236_kindText, ame236_intro]
+        : [NSString stringWithFormat:@"%@ · %@", ame236_kindText, localize(@"ame232.deps.no_desc", nil)];
+    [ame236_row addSubview:ame236_desc];
+
+    // ⓘ：进既有详情页（图标大图/下载量/关注数/浏览器兜底）
+    UIButton *ame236_info = [UIButton buttonWithType:UIButtonTypeSystem];
+    ame236_info.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame236_info setImage:[UIImage systemImageNamed:@"info.circle"] forState:UIControlStateNormal];
+    ame236_info.tintColor = [UIColor tertiaryLabelColor];
+    [ame236_info addTarget:self action:@selector(ame230_openDependencyPage:)
+         forControlEvents:UIControlEventTouchUpInside];
+    objc_setAssociatedObject(ame236_info, "ame230.dep.pid", row[@"pid"], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(ame236_info, "ame230.dep.name", row[@"name"], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(ame236_info, "ame230.dep.src", row[@"src"], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [ame236_row addSubview:ame236_info];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [ame236_tap.topAnchor constraintEqualToAnchor:ame236_row.topAnchor],
+        [ame236_tap.leadingAnchor constraintEqualToAnchor:ame236_row.leadingAnchor],
+        [ame236_tap.trailingAnchor constraintEqualToAnchor:ame236_row.trailingAnchor],
+        [ame236_tap.bottomAnchor constraintEqualToAnchor:ame236_row.bottomAnchor],
+        [ame236_icon.leadingAnchor constraintEqualToAnchor:ame236_row.leadingAnchor constant:12],
+        [ame236_icon.centerYAnchor constraintEqualToAnchor:ame236_row.centerYAnchor],
+        [ame236_icon.widthAnchor constraintEqualToConstant:44],
+        [ame236_icon.heightAnchor constraintEqualToConstant:44],
+        [ame236_title.topAnchor constraintEqualToAnchor:ame236_row.topAnchor constant:10],
+        [ame236_title.leadingAnchor constraintEqualToAnchor:ame236_icon.trailingAnchor constant:12],
+        [ame236_title.trailingAnchor constraintLessThanOrEqualToAnchor:ame236_info.leadingAnchor constant:-8],
+        [ame236_desc.topAnchor constraintEqualToAnchor:ame236_title.bottomAnchor constant:2],
+        [ame236_desc.leadingAnchor constraintEqualToAnchor:ame236_icon.trailingAnchor constant:12],
+        [ame236_desc.trailingAnchor constraintLessThanOrEqualToAnchor:ame236_info.leadingAnchor constant:-8],
+        [ame236_desc.bottomAnchor constraintLessThanOrEqualToAnchor:ame236_row.bottomAnchor constant:-10],
+        [ame236_info.trailingAnchor constraintEqualToAnchor:ame236_row.trailingAnchor constant:-12],
+        [ame236_info.centerYAnchor constraintEqualToAnchor:ame236_row.centerYAnchor],
+        [ame236_info.widthAnchor constraintEqualToConstant:28],
+        [ame236_info.heightAnchor constraintEqualToConstant:28],
+    ]];
+
+    // 异步加载图标（占位先上，取回后替换）
+    NSString *ame236_iconURL = row[@"icon"];
+    if ([ame236_iconURL isKindOfClass:[NSString class]] && ame236_iconURL.length > 0) {
+        NSURL *ame236_iu = [NSURL URLWithString:ame236_iconURL];
+        if (ame236_iu != nil) {
+            dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+                NSData *ame236_idata = [NSData dataWithContentsOfURL:ame236_iu];
+                UIImage *ame236_img = ame236_idata != nil ? [UIImage imageWithData:ame236_idata] : nil;
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (ame236_img != nil) ame236_icon.image = ame236_img;
+                });
+            });
+        }
+    }
+    return ame236_row;
+}
+
+/// Task236：前置条目点按——直跳该模组【自己的版本下载页】（push，非弹层），
+/// 偏好版本/加载器透传（chip 自动选中置顶）；本页作为 delegate，选中版本
+/// 即下载到当前实例（见 modVersionViewController:didSelectVersion:）。
+- (void)ame236_openDependencyDownload:(UIButton *)sender {
+    NSString *ame236_pid = objc_getAssociatedObject(sender, "ame230.dep.pid");
+    NSString *ame236_name = objc_getAssociatedObject(sender, "ame230.dep.name");
+    NSInteger ame236_src = [objc_getAssociatedObject(sender, "ame230.dep.src") integerValue];
+    if (![ame236_pid isKindOfClass:[NSString class]] || ame236_pid.length == 0) {
+        [NMToast showMessage:localize(@"ame232.deps.no_desc", nil)];
+        return;
+    }
+    ModItem *ame236_item = [[ModItem alloc] init];
+    ame236_item.onlineID = ame236_pid;
+    ame236_item.displayName = ame236_name.length > 0 ? ame236_name : ame236_pid;
+    ModVersionViewController *ame236_vc = [[ModVersionViewController alloc] init];
+    ame236_vc.modItem = ame236_item;
+    ame236_vc.delegate = self;
+    ame236_vc.title = ame236_item.displayName;
+    ame236_vc.apiSource = (ame236_src == kSourceCurseForge) ? kSourceCurseForge : kSourceModrinth;
+    ame236_vc.preferredGameVersion = self.preferredGameVersion;
+    ame236_vc.preferredLoader = self.preferredLoader;
+    [self.navigationController pushViewController:ame236_vc animated:YES];
+    NSLog(@"[ModVersionVC] Task236 dependency row direct-jump (in-app version list): %@ (pid=%@ src=%ld)",
+          ame236_name, ame236_pid, (long)ame236_src);
+}
+
+/// ★ Task236：前置直跳页的版本选择回调——与 Ame232DepDetailViewController
+///   同链路下载到当前实例（ModService + SHA1 + NMToast）。版本页 didSelectRow
+///   回调后会自行 pop 回本页，这里不重蹈 DownloadVC 式双弹。
+- (void)modVersionViewController:(ModVersionViewController *)viewController didSelectVersion:(ModVersion *)version {
+    NSDictionary *ame236_primary = version.primaryFile;
+    if (![ame236_primary[@"url"] isKindOfClass:[NSString class]]) {
+        [NMToast showMessage:localize(@"i18n_str_265", nil)];
+        return;
+    }
+    ModItem *ame236_dl = viewController.modItem;
+    ame236_dl.selectedVersionDownloadURL = ame236_primary[@"url"];
+    ame236_dl.fileName = ame236_primary[@"filename"] ?: [NSString stringWithFormat:@"%@.jar", ame236_dl.displayName];
+    NSDictionary *ame236_hashes = ame236_primary[@"hashes"];
+    if ([ame236_hashes[@"sha1"] isKindOfClass:[NSString class]]) {
+        ame236_dl.fileSHA1 = ame236_hashes[@"sha1"];
+    }
+    NSString *ame236_profile = [PLProfiles current].selectedProfileName ?: @"default";
+    [NMToast showMessage:[NSString stringWithFormat:localize(@"launcher.mcl.downloading_file", nil), ame236_dl.displayName]];
+    [[ModService sharedService] downloadMod:ame236_dl
+                                  toProfile:ame236_profile
+                               expectedSHA1:ame236_dl.fileSHA1
+                                   progress:nil
+                                 completion:^(NSError * _Nullable ame236_err) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (ame236_err != nil) {
+                [NMToast showMessage:ame236_err.localizedDescription];
+                return;
             }
-            CGFloat ame230_w = strongSelf2.tableView.bounds.size.width;
-            NSMutableArray<UIButton *> *ame230_rows = [NSMutableArray array];
-            for (ModDependencyItem *ame227_dep in ame227_req) {
-                NSString *ame230_title = [NSString stringWithFormat:@"▸  %@ (%@)",
-                                          ame227_dep.displayName ?: ame227_dep.projectId,
-                                          ame227_dep.kind == ModDependencyKindRequired
-                                              ? localize(@"ame230.deps.required", nil)
-                                              : localize(@"ame230.deps.optional", nil)];
-                UIButton *ame230_btn = [UIButton buttonWithType:UIButtonTypeSystem];
-                [ame230_btn setTitle:ame230_title forState:UIControlStateNormal];
-                ame230_btn.titleLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
-                ame230_btn.titleLabel.numberOfLines = 1;
-                ame230_btn.titleLabel.adjustsFontSizeToFitWidth = YES;
-                ame230_btn.titleLabel.minimumScaleFactor = 0.7;
-                ame230_btn.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
-                ame230_btn.contentEdgeInsets = UIEdgeInsetsMake(0, 16, 0, 16);
-                [ame230_btn setTitleColor:strongSelf2.view.tintColor ?: [UIColor systemBlueColor]
-                                forState:UIControlStateNormal];
-                NSString *ame230_pid = ame227_dep.projectId;
-                NSString *ame230_name = ame227_dep.displayName ?: ame227_dep.projectId;
-                NSInteger ame230_src = ame227_dep.apiSource;
-                [ame230_btn addTarget:strongSelf2
-                               action:@selector(ame230_openDependencyPage:)
-                     forControlEvents:UIControlEventTouchUpInside];
-                // 参数经关联对象传递（多个按钮各自独立）
-                objc_setAssociatedObject(ame230_btn, "ame230.dep.pid", ame230_pid, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-                objc_setAssociatedObject(ame230_btn, "ame230.dep.name", ame230_name, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-                objc_setAssociatedObject(ame230_btn, "ame230.dep.src", @(ame230_src), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-                [ame230_rows addObject:ame230_btn];
-            }
-            UIView *ame227_footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, ame230_w, 0)];
-            UILabel *ame227_label = [[UILabel alloc] init];
-            ame227_label.numberOfLines = 0;
-            ame227_label.font = [UIFont systemFontOfSize:12 weight:UIFontWeightMedium];
-            ame227_label.textColor = [UIColor secondaryLabelColor];
-            ame227_label.text = [NSString stringWithFormat:localize(@"ame227.deps.footer", nil),
-                                 (unsigned long)ame227_req.count, ame227_names];
-            ame227_label.translatesAutoresizingMaskIntoConstraints = NO;
-            [ame227_footer addSubview:ame227_label];
-            [ame227_footer addConstraints:@[
-                [NSLayoutConstraint constraintWithItem:ame227_label attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual
-                    toItem:ame227_footer attribute:NSLayoutAttributeTop multiplier:1 constant:10],
-                [NSLayoutConstraint constraintWithItem:ame227_label attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual
-                    toItem:ame227_footer attribute:NSLayoutAttributeLeading multiplier:1 constant:16],
-                [NSLayoutConstraint constraintWithItem:ame227_label attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual
-                    toItem:ame227_footer attribute:NSLayoutAttributeTrailing multiplier:1 constant:-16],
-            ]];
-            UIView *ame230_prev = ame227_label;
-            for (UIButton *ame230_btn in ame230_rows) {
-                ame230_btn.translatesAutoresizingMaskIntoConstraints = NO;
-                [ame227_footer addSubview:ame230_btn];
-                [ame227_footer addConstraints:@[
-                    [NSLayoutConstraint constraintWithItem:ame230_btn attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual
-                        toItem:ame230_prev attribute:NSLayoutAttributeBottom multiplier:1 constant:8],
-                    [NSLayoutConstraint constraintWithItem:ame230_btn attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual
-                        toItem:ame227_footer attribute:NSLayoutAttributeLeading multiplier:1 constant:0],
-                    [NSLayoutConstraint constraintWithItem:ame230_btn attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual
-                        toItem:ame227_footer attribute:NSLayoutAttributeTrailing multiplier:1 constant:0],
-                    [NSLayoutConstraint constraintWithItem:ame230_btn attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual
-                        toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:34],
-                ]];
-                ame230_prev = ame230_btn;
-            }
-            [ame227_footer addConstraint:
-                [NSLayoutConstraint constraintWithItem:ame230_prev attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual
-                    toItem:ame227_footer attribute:NSLayoutAttributeBottom multiplier:1 constant:-12]];
-            // footer 高度自适应：layoutIfNeeded 后按内容定高（tableFooterView
-            // 不吃 autolayout 高度，需手动定 frame）。
-            [ame227_footer setNeedsLayout];
-            [ame227_footer layoutIfNeeded];
-            CGSize ame230_fit = [ame227_footer systemLayoutSizeFittingSize:CGSizeMake(ame230_w, UILayoutFittingCompressedSize.height)];
-            ame227_footer.frame = CGRectMake(0, 0, ame230_w, ceil(ame230_fit.height));
-            strongSelf2.tableView.tableFooterView = ame227_footer;
-            NSLog(@"[ModVersionVC] Task230 dependency quick-entry footer: %lu row(s)",
-                  (unsigned long)ame230_rows.count);
+            [NMToast showMessage:[NSString stringWithFormat:localize(@"i18n_str_266", nil), ame236_dl.displayName]];
         });
     }];
 }
 
-/// Task230：前置快速入口——点按打开该项目的 Modrinth/CurseForge 页面。
+/// Task230：前置详情入口。★ Task236 起由富条目右侧的 ⓘ 按钮触发（整行
+/// 点按已直跳版本下载页）——打开 Ame232DepDetailViewController 详情页
+/// （图标大图 + 介绍 + 下载量/关注 + 浏览器兜底）。
 - (void)ame230_openDependencyPage:(UIButton *)sender {
     NSString *ame230_pid = objc_getAssociatedObject(sender, "ame230.dep.pid");
     NSString *ame230_name = objc_getAssociatedObject(sender, "ame230.dep.name");

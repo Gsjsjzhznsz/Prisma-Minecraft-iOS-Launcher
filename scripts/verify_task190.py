@@ -57,9 +57,11 @@ check("B", "卡片上下内缩 4pt 语义未动（版本卡同款）",
       ml.count("self.contentView.topAnchor constant:4]") >= 3
       and ml.count("self.contentView.bottomAnchor constant:-4]") >= 3)
 check("B", "行高 64（Task216 重锚：对齐版本表真基准 64；卡 56 + 内缩 4+4）", "_tableView.rowHeight = 64;" in ml and "_tableView.rowHeight = 50;" not in ml)
-check("B", "版本号页基准仍在（minimumLineSpacing 4 + 内缩 4/4 + item 64）",
+# Task236 诚实重锚：行高 64→72（VersionCardCell 垂直超定 ~6.3pt 的根修——
+# 旧几何下日期标签被压到 ~8pt 高，文字溢出与版本号相碰 = "字体重叠"第七轮）。
+check("B", "版本号页基准仍在（minimumLineSpacing 4 + 内缩 4/4 + item 72【Task236 行高根修】）",
       "layout.minimumLineSpacing = 4;" in dv
-      and "layout.itemSize = CGSizeMake(360, 64);" in dv
+      and "layout.itemSize = CGSizeMake(360, 72);" in dv
       and "layout.sectionInset = UIEdgeInsetsMake(8, 16, 8, 16);" in dv)
 
 # ============ C. 账号卡 = 已安装版本页同构（AME190AccountCardCell） ============
@@ -195,7 +197,7 @@ for lang, (u, d) in expect.items():
     keys = set(re.findall(r'^"([^"]+)" =', s, re.M))
     check("G", f"{lang} account.menu.use/delete 键值", f'"account.menu.use" = "{u}";' in s
           and f'"account.menu.delete" = "{d}";' in s)
-    check("G", f"{lang} 唯一键总数 == 2766（Task233 重锚 +2 ame233 键）", len(keys) == 2766, f"got {len(keys)}")
+    check("G", f"{lang} 唯一键总数 == 2767（Task233 重锚 +2 ame233 键）", len(keys) == 2767, f"got {len(keys)}")
     check("G", f"{lang} account.switch_role.* 历史键保留",
           'account.switch_role.button' in keys and 'account.switch_role.title' in keys)
 

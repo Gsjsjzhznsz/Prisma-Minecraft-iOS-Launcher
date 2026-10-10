@@ -180,38 +180,70 @@ static BOOL ame227_g_dockedLeft = NO;
     [self ame232_applyFloatingGlass];
 }
 
-/// 玻璃风格激活 → 三件套组合玻璃 + 重磨砂深色；否则还原原生半透明深色。
+/// 玻璃风格激活 → 齿轮球组合玻璃；否则还原原生半透明深色。
+/// ★ Task236（用户：“游戏界面齿轮图标和文件菜单都消失了”）：装机实测
+///   Task235 构建里悬浮栏整体不可见——两处构造性雷：
+///   ① LGCApplyGlassToView 接管卡面时会把宿主底色清空，而磨砂层在本进程
+///     游戏画面（Metal 层）之上能否合成是未验证的（Task228 实锤过
+///     UIGlassEffect 在本进程渲染为黑；Task230 见过 UltraThin 在游戏帧上
+///     几乎不可见）——底色一清，磨砂再不渲染 = 整个悬浮件透明消失。
+///   ② 磨砂/高光层插进 UILabel 内部会【盖在标签自己的文字上】——UILabel
+///     的文字画在自己的图层，任何子视图（含磨砂层）都在其上：statsLabel/
+///     “菜单”标签的文字被重磨砂深色完全盖住 = “什么都不显示”。
+///   修法（防御性可见性，不磨掉玻璃质感）：
+///   - 齿轮球：保留 LGC 组合玻璃，但铺完后【重铺半透明深色底】（底色在
+///     磨砂层之下参与采样，磨砂可用时是加深的玻璃，磨砂失效时是独立可
+///     见的深色球）；玻璃圆角跟随按钮【当前】圆角（把手态 13 / 悬浮态 22）。
+///   - 两个文本件：不再往标签内插任何磨砂层——改实底半透明深色胶囊 +
+///     0.75pt 白色发丝描边（iOS 26 玻璃边缘语言），文字永远画在最上层。
 - (void)ame232_applyFloatingGlass {
     if (!LGCIsGlassStyleActive()) {
-        // 非玻璃风格：还原原生外观（清玻璃层 + 恢复原底色）
+        // 非玻璃风格：还原原生外观（清玻璃层 + 恢复原底色 + 清 Task236 发丝描边）
         LGCRemoveGlassFromView(self.menuButton);
         LGCRemoveGlassFromView(self.statsLabel);
         LGCRemoveGlassFromView(self.ame230_captionLabel);
         self.menuButton.backgroundColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:0.6];
         self.statsLabel.backgroundColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0.5];
+        self.statsLabel.layer.borderWidth = 0;
         self.ame230_captionLabel.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.45];
+        self.ame230_captionLabel.layer.borderWidth = 0;
         return;
     }
-    // 齿轮球：圆片玻璃（半径 = 半宽）；统计条/菜单标签：圆角矩形玻璃
-    LGCApplyGlassToView(self.menuButton, kMenuButtonSize / 2.0);
-    LGCApplyGlassToView(self.statsLabel, 8.0);
-    LGCApplyGlassToView(self.ame230_captionLabel, 5.0);
-    // 重磨砂深色：UltraThin 在游戏帧上读不出玻璃感（Task230 菜单同款教训）
-    // ★ Task235：数组字面量遇 nil 元素会抛 NSInvalidArgumentException
-    //   （本函数曾被 setupMenuButton 提前调用——statsLabel/captionLabel
-    //   尚为 nil，“所有版本启动闪退”的根因）。改 nil 安全收集：
-    //   未就绪的件跳过（init 末尾会再统一补铺）。
-    NSMutableArray<UIView *> *ame235_hosts = [NSMutableArray array];
-    if (self.menuButton != nil) [ame235_hosts addObject:self.menuButton];
-    if (self.statsLabel != nil) [ame235_hosts addObject:self.statsLabel];
-    if (self.ame230_captionLabel != nil) [ame235_hosts addObject:self.ame230_captionLabel];
-    for (UIView *ame232_host in ame235_hosts) {
-        for (UIView *ame232_sub in ame232_host.subviews) {
-            if ([ame232_sub isKindOfClass:UIVisualEffectView.class]) {
-                [(UIVisualEffectView *)ame232_sub setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
-            }
+    // 齿轮球：组合玻璃（圆角跟随当前形态）+ 防御性深色底（Task236）
+    CGFloat ame236_gearRadius = self.menuButton.layer.cornerRadius > 0.5
+        ? self.menuButton.layer.cornerRadius
+        : kMenuButtonSize / 2.0;
+    LGCRemoveGlassFromView(self.menuButton);
+    LGCApplyGlassToView(self.menuButton, ame236_gearRadius);
+    // ★ 底色重铺：LGC 接管时清空了宿主底色（clearColor）——磨砂层若在本进程
+    //   游戏画面上不合成，这就是“齿轮消失”的直接根因。半透明深色底永远
+    //   在磨砂层之下参与渲染：磨砂可用 = 加深的玻璃质感；磨砂失效 = 独立
+    //   可见的深色球，白色齿轮图标仍在最上层（imageView 是子视图，恒在玻璃层上）。
+    self.menuButton.backgroundColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:0.55];
+    // 重磨砂深色（UltraThin 在游戏帧上读不出玻璃感，Task230 菜单同款教训）
+    for (UIView *ame232_sub in self.menuButton.subviews) {
+        if ([ame232_sub isKindOfClass:UIVisualEffectView.class]) {
+            [(UIVisualEffectView *)ame232_sub setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
         }
     }
+    // 两个文本件：实底半透明深色胶囊 + 发丝描边（绝不往标签内插磨砂层——
+    // UILabel 文字画在自己图层，子视图永远盖在文字上，见方法头注释 ②）。
+    LGCRemoveGlassFromView(self.statsLabel);
+    LGCRemoveGlassFromView(self.ame230_captionLabel);
+    self.statsLabel.backgroundColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0.55];
+    self.statsLabel.layer.borderWidth = 0.75;
+    self.statsLabel.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.32].CGColor;
+    self.statsLabel.layer.cornerCurve = kCACornerCurveContinuous;
+    self.ame230_captionLabel.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.5];
+    self.ame230_captionLabel.layer.borderWidth = 0.75;
+    self.ame230_captionLabel.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.32].CGColor;
+    self.ame230_captionLabel.layer.cornerCurve = kCACornerCurveContinuous;
+    // Task236 取证：下一轮装机日志直接读出三件套的帧/透明度/子视图构成
+    NSLog(@"[GameMenu] Task236 floating bar hardened (gear %@ r=%.1f subs=%lu; stats %@; caption %@)",
+          NSStringFromCGRect(self.menuButton.frame), (double)ame236_gearRadius,
+          (unsigned long)self.menuButton.subviews.count,
+          self.statsLabel != nil ? NSStringFromCGRect(self.statsLabel.frame) : @"nil",
+          self.ame230_captionLabel != nil ? NSStringFromCGRect(self.ame230_captionLabel.frame) : @"nil");
     NSLog(@"[GameMenu] Task232 floating bar glass applied (gear + stats + caption, heavy dark material)");
 }
 
@@ -475,9 +507,14 @@ static BOOL ame227_g_dockedLeft = NO;
                          usingSpringWithDamping:0.78 initialSpringVelocity:0.5
                           options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
                        animations:ame227_apply
-                       completion:nil];
+                       completion:^(BOOL finished) {
+            // ★ Task236：形态切换后玻璃层圆角/尺寸跟随新几何（把手 13 / 球 22）
+            [self ame232_applyFloatingGlass];
+        }];
     } else {
         ame227_apply();
+        // ★ Task236：同上，非动画路径立即重铺（恢复把手态时圆角已变）。
+        [self ame232_applyFloatingGlass];
     }
     NSLog(@"[GameMenu] Task227 gear dock state: %@ (%@)",
           ame227_g_docked ? @"DOCKED handle" : @"floating button",

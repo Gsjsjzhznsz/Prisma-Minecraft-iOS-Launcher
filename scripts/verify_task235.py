@@ -38,8 +38,15 @@ mvv = rd("Natives/ModVersionViewController.m")
 ukh = rd("Natives/UIKit+hook.m")
 
 print("== A. 全版本启动闪退（数组字面量 nil[1]）==")
-check("A1", "nil 安全收集（mutable 数组按需 addObject）",
-      "NSMutableArray<UIView *> *ame235_hosts = [NSMutableArray array];" in gmv)
+# Task236 诚实重锚：ame232_applyFloatingGlass 重构为防御性可见性——statsLabel/
+# captionLabel 不再往标签内插磨砂层（UILabel 文字画在自己图层，子视图磨砂会
+# 盖住文字 = “什么都不显示”），ame235_hosts 收集数组整体退役；nil 安全由
+# 结构保证（LGCRemoveGlassFromView 对 nil 宿卫返回，menuButton 在两处调用
+# 点均非 nil，SystemMaterialDark 升级只迭代 menuButton.subviews）。
+check("A1", "nil 安全（Task236 结构性：hosts 数组退役，LGC 系 nil 宿卫 + 标签不入玻璃）",
+      "LGCRemoveGlassFromView(self.statsLabel);" in gmv and
+      "LGCRemoveGlassFromView(self.ame230_captionLabel);" in gmv and
+      "for (UIView *ame232_sub in self.menuButton.subviews) {" in gmv)
 check_absent("A2", "裸数组字面量退役", gmv, "@[self.menuButton, self.statsLabel, self.statsLabel]")
 check_absent("A3", "三件套裸数组退役（真锚）", gmv,
              "@[self.menuButton, self.statsLabel, self.ame230_captionLabel]")
@@ -124,18 +131,23 @@ check("F6", "私有容器按类名深搜", 'containsString:@"_UIAlertController"
 check("F7", "原生底双清（view + layer）",
       "ame235_container.backgroundColor = [UIColor clearColor];" in ukh and
       "ame235_container.layer.backgroundColor = [UIColor clearColor].CGColor;" in ukh)
-check("F8", "重磨砂深色 + 标签染白（按钮标签跳过）",
-      "UIBlurEffectStyleSystemMaterialDark" in ukh and
-      "![ame235_lv.superview isKindOfClass:[UIControl class]]" in ukh)
+check("F8", "自适应材质 + 自适应文字（Task236 v2：浅色模式浅玻璃/深色模式深玻璃；按钮标签跳过）",
+      "UIBlurEffectStyleSystemMaterial]" in ukh and
+      "![ame235_lv.superview isKindOfClass:[UIControl class]]" in ukh and
+      "[(UILabel *)ame235_lv setTextColor:[UIColor labelColor]];" in ukh and
+      "colorWithAlphaComponent:0.55]" in ukh)
 check("F9", "兑底染色层 888903 拆除（Task232 同款）", "ame235_sub.tag == 888903" in ukh)
-check("F10", "应用日志（限流）", "[ThemeOps] Task235 alert glass applied (#%d style=%ld ok=%d)" in ukh)
+check("F10", "应用日志（限流；Task236 v2 格式）", "[ThemeOps] Task236 alert glass v2 (#%d style=%ld ok=%d; present-hook double-shot, adaptive material+base)" in ukh)
+# Task236：present-hook 双延时补玻璃（必定安装路径）
+check("F11", "Task236 present-hook 安装（UIViewController 基类自有选择器）", "ame236_hook_presentViewController:animated:completion:" in ukh and "Task236 alert glass present-hook installed" in ukh)
+check("F12", "Task236 双延时（0s + 0.45s）", "(int64_t)(0.45 * NSEC_PER_SEC)" in ukh)
 
-print("== G. i18n 基线（2765 → 2766）==")
+print("== G. i18n 基线（2765 → 2767）==")
 langs4 = ["en", "zh-CN", "zh-Hans", "zh-Hant"]
 for l in langs4:
     s = rd(f"Natives/resources/{l}.lproj/Localizable.strings")
     keys = set(re.findall(r'^"([^"]+)" =', s, re.M))
-    check("G1", f"{l} 唯一键总数 == 2766（Task235 重锚 +1 ame235.deps.godl）", len(keys) == 2766, f"got {len(keys)}")
+    check("G1", f"{l} 唯一键总数 == 2767（Task235 重锚 +1 ame235.deps.godl）", len(keys) == 2767, f"got {len(keys)}")
 for l in ["en", "ja", "zh-CN", "zh-Hans", "zh-Hant"]:
     s = rd(f"Natives/resources/{l}.lproj/Localizable.strings")
     check("G2", f"{l} ame235.deps.godl 在场", '"ame235.deps.godl"' in s)

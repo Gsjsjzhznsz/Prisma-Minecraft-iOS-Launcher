@@ -80,6 +80,29 @@ void init_hookUIKitConstructor(void) {
             NSLog(@"[ThemeOps] Task235 UIAlertController glass hook SKIPPED (viewWillAppear not owned -- native look kept)");
         }
     }
+
+    // ★ Task236（用户：“悬浮弹窗还是旧iOS的，不是新iOS26加点液态玻璃悬浮
+    //   弹窗”）：Task235 的 viewWillAppear: 交换带所有权守卫——若用户的
+    //   系统上 UIAlertController 并不【自身拥有】viewWillAppear:（沿父类
+    //   链），钩子整个不装 = 弹窗零变化（“还是旧iOS”的装机实锤）。补一条
+    //   【必定安装】的路径：交换 UIViewController 基类自有的
+    //   presentViewController:animated:completion:（基类必有实现；交换只
+    //   影响基类实现，子类覆写不经 super 的罕见路径不受波及），弹窗呈现后
+    //   双延时补玻璃（0s：viewDidLoad 层级已建；0.45s：越过转场与 UIKit
+    //   自身的底色回写）。钩子内部只对 UIAlertController + 玻璃风格激活
+    //   时才做事，其余呈现零开销直透。
+    {
+        Method ame236_orig = class_getInstanceMethod([UIViewController class],
+                                                      @selector(presentViewController:animated:completion:));
+        Method ame236_hook = class_getInstanceMethod([UIViewController class],
+                                                      @selector(ame236_hook_presentViewController:animated:completion:));
+        if (ame236_orig != NULL && ame236_hook != NULL) {
+            method_exchangeImplementations(ame236_orig, ame236_hook);
+            NSLog(@"[ThemeOps] Task236 alert glass present-hook installed (UIViewController base owns the selector)");
+        } else {
+            NSLog(@"[ThemeOps] Task236 alert glass present-hook SKIPPED (base selector missing -- unexpected)");
+        }
+    }
     
     // Add this line to swizzle the _imageWithSize: method
     swizzleUIImageMethod(NSSelectorFromString(@"_imageWithSize:"), @selector(hook_imageWithSize:));
@@ -330,24 +353,34 @@ UIViewController* currentVC() {
         ? ame235_container.layer.cornerRadius : 14.0;
     BOOL ame235_ok = LGCApplyGlassToView(ame235_container, ame235_radius);
     if (ame235_ok) {
-        // 重磨砂深色（SystemUltraThinMaterial 在游戏帧/深壁纸上读不出
-        // 玻璃感，Task230 菜单同款教训）；标签染白保持可读（按钮内的
-        // 标签跳过，保系统 tint 色）；Task232 同款拆兑底染色层。
+        // ★ Task236（弹窗液态玻璃 v2）：
+        // ① 防御性半透明底——LGC 接管时把宿主底色清成了 clearColor，磨砂层
+        //   在本进程的可靠性两轮实锤存疑（Task228 黑面 / Task230 隐形）：
+        //   systemBackground 55%（明暗自适应）铺在磨砂之下参与采样，磨砂
+        //   可用 = 加深的玻璃弹窗，磨砂失效 = 仍是一块可读的半透明面板，
+        //   绝不会变成“透明面板 + 悬浮文字”。
+        ame235_container.backgroundColor = [[UIColor systemBackgroundColor]
+            colorWithAlphaComponent:0.55];
+        // ② 材质自适应（iOS 26 语义：浅色模式浅玻璃 / 深色模式深玻璃）——
+        //   旧版恒 SystemMaterialDark，浅色模式下是一块突兀的黑。游戏内
+        //   弹窗的深背景可读性由 ① 的半透明底承担。
         for (UIView *ame235_sub in [ame235_container.subviews copy]) {
             if (ame235_sub.tag == 888901 && [ame235_sub isKindOfClass:[UIVisualEffectView class]]) {
-                [(UIVisualEffectView *)ame235_sub setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
+                [(UIVisualEffectView *)ame235_sub setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial]];
             }
             if (ame235_sub.tag == 888903) {
                 [ame235_sub removeFromSuperview];
             }
         }
+        // ③ 文字自适应（labelColor：深色模式白 / 浅色模式黑；旧版恒白在
+        //   浅色玻璃上是白字白底）；按钮内标签不动，保系统 tint 色。
         NSMutableArray<UIView *> *ame235_lstack = [NSMutableArray arrayWithObject:ame235_container];
         while (ame235_lstack.count > 0) {
             UIView *ame235_lv = [ame235_lstack firstObject];
             [ame235_lstack removeObjectAtIndex:0];
             if ([ame235_lv isKindOfClass:[UILabel class]] &&
                 ![ame235_lv.superview isKindOfClass:[UIControl class]]) {
-                [(UILabel *)ame235_lv setTextColor:[UIColor whiteColor]];
+                [(UILabel *)ame235_lv setTextColor:[UIColor labelColor]];
             }
             [ame235_lstack addObjectsFromArray:ame235_lv.subviews];
         }
@@ -355,8 +388,42 @@ UIViewController* currentVC() {
     static int ame235_logCount = 0;
     ame235_logCount++;
     if (ame235_logCount <= 5 || ame235_logCount % 25 == 0) {
-        NSLog(@"[ThemeOps] Task235 alert glass applied (#%d style=%ld ok=%d)",
+        NSLog(@"[ThemeOps] Task236 alert glass v2 (#%d style=%ld ok=%d; present-hook double-shot, adaptive material+base)",
               ame235_logCount, (long)self.preferredStyle, (int)ame235_ok);
+    }
+}
+
+@end
+
+// ============================================================================
+// ★ Task236：弹窗玻璃的【必定安装】钩子——交换 UIViewController 基类自有的
+//   presentViewController:animated:completion:（Task235 的 viewWillAppear:
+//   所有权守卫在用户系统上不成立时整链不装，弹窗维持原生 = “还是旧iOS”
+//   的装机实锤）。弹窗呈现后双延时补玻璃：0s（viewDidLoad 层级已建）+
+//   0.45s（越过转场与 UIKit 自身的底色回写）。只对 UIAlertController 且
+//   玻璃风格激活时做事，其余呈现零开销直透。安体见 init_hookUIKitConstructor
+//   的 Task236 块。
+// ============================================================================
+@implementation UIViewController (Ame236GlassPresent)
+
+- (void)ame236_hook_presentViewController:(UIViewController *)viewControllerToPresent
+                                  animated:(BOOL)flag
+                                completion:(void (^)(void))completion {
+    // 交换后 = 原实现
+    [self ame236_hook_presentViewController:viewControllerToPresent animated:flag completion:completion];
+    @try {
+        if (![viewControllerToPresent isKindOfClass:[UIAlertController class]]) return;
+        if (!LGCIsGlassStyleActive()) return;
+        UIAlertController *ame236_alert = (UIAlertController *)viewControllerToPresent;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [ame236_alert ame235_applyGlassToAlert];
+        });
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.45 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            [ame236_alert ame235_applyGlassToAlert];
+        });
+    } @catch (NSException *ame236_e) {
+        // 任何意外绝不影响呈现主链
     }
 }
 

@@ -166,10 +166,13 @@
             [self.iconImageView.widthAnchor constraintEqualToConstant:22],
             [self.iconImageView.heightAnchor constraintEqualToConstant:22],
 
-            // 顶行 stack：紧跟图标容器右侧 +14，顶部对齐 cardContainer 顶部 +14
+            // 顶行 stack：紧跟图标容器右侧 +14，顶部对齐 cardContainer 顶部 +13
             // 右侧到类型胶囊之间留 8pt；胶囊靠右独立固定
+            // ★ Task236：14→13（配合行高 64→72 的垂直挤压根修，见 DownloadViewController
+            //   setupVersionCollectionView 注释——旧几何下日期标签被压到 ~8pt 高，
+            //   文字溢出与版本号相碰 = “字体重叠”的布局层根因）
             [self.topRowStack.leadingAnchor constraintEqualToAnchor:self.iconContainer.trailingAnchor constant:14],
-            [self.topRowStack.topAnchor constraintEqualToAnchor:self.cardContainer.topAnchor constant:14],
+            [self.topRowStack.topAnchor constraintEqualToAnchor:self.cardContainer.topAnchor constant:13],
             [self.topRowStack.trailingAnchor constraintLessThanOrEqualToAnchor:self.typeLabel.leadingAnchor constant:-8],
 
             // Task136/137：类型胶囊——右侧锚定 chevron 左侧 8pt（不贴卡片边缘），
@@ -178,14 +181,19 @@
             [self.typeLabel.centerYAnchor constraintEqualToAnchor:self.cardContainer.centerYAnchor],
             [self.typeLabel.heightAnchor constraintEqualToConstant:24],
 
-            // 日期：与顶行 stack 左对齐，紧跟顶行下方 +3。
+            // 日期：与顶行 stack 左对齐，紧跟顶行下方 +2。
             // Task141：右侧改锚到 chevron 左侧 8pt（不再锚到顶行 stack 尾部——
             // 旧约束让日期宽度被短版本号拖窄，"2026年5月1日"被截成"2026-…"；
             // 贴齐卡片右缘后 12pt 日期完整显示，超出时缩字不截断）
+            // ★ Task236：间距 3→2 + 底距 12→10 —— 配合行高 64→72 的垂直挤压
+            //   根修（见 DownloadViewController setupVersionCollectionView 注释）：
+            //   卡片 64pt 下内容链 13+19+2+14.3+10 ≈ 58.5pt，余量 ~5.5pt，
+            //   日期标签不再被 Auto Layout 压到 8pt 高（旧几何文字溢出上下
+            //   边界与版本号相碰 = "字体重叠"的布局层根因）。
             [self.dateLabel.leadingAnchor constraintEqualToAnchor:self.topRowStack.leadingAnchor],
-            [self.dateLabel.topAnchor constraintEqualToAnchor:self.topRowStack.bottomAnchor constant:3],
+            [self.dateLabel.topAnchor constraintEqualToAnchor:self.topRowStack.bottomAnchor constant:2],
             [self.dateLabel.trailingAnchor constraintEqualToAnchor:self.chevronView.leadingAnchor constant:-8],
-            [self.dateLabel.bottomAnchor constraintLessThanOrEqualToAnchor:self.cardContainer.bottomAnchor constant:-12],
+            [self.dateLabel.bottomAnchor constraintLessThanOrEqualToAnchor:self.cardContainer.bottomAnchor constant:-10],
 
             // chevron：右侧 -14，垂直居中，14x14
             [self.chevronView.trailingAnchor constraintEqualToAnchor:self.cardContainer.trailingAnchor constant:-14],

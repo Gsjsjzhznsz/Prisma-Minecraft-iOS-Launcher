@@ -877,13 +877,21 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
 
 - (void)setupVersionCollectionView {
     // 参照 FCL (item_remote_version.xml 单列列表) 与 ZL2 (LazyColumn VersionItemLayout)：
-    // 改为单列横向列表行布局，每行一个全宽卡片，行高 64pt（cell 内部再留 4pt 上下边距，实际卡片 56pt）。
+    // 改为单列横向列表行布局，每行一个全宽卡片。
+    // ★ Task236（用户：“字体还是重叠，比如版本下载列表等”，第七轮）：行高 64→72。
+    //   旧几何下卡片 56pt，但垂直内容链 14(顶) + ~19(16pt 版本号行高) + 3(间距)
+    //   + ~14.3(12pt 日期行高) + 12(底) ≈ 62.3pt 超定 ~6.3pt——求解器把日期标签
+    //   压到 ~8pt 高，UILabel 文字垂直居中溢出上下边界，与版本号行相碰；
+    //   描边拷贝再把溢出的深色边放大 = “字体重叠”。Task233/234/235 修的是拷贝
+    //   几何（对齐/垂直锚定/缩字），都治不了布局本身的挤压——本轮把行高抬到
+    //   72（卡片 64pt，内容 62.3pt 后余量 ~1.7pt + cell 内边距同步收紧后 ≥3pt），
+    //   挤压彻底消失。
     // itemSize.width 在 viewDidLayoutSubviews 里按 collectionView 实际宽度动态更新，避免横竖屏切换错位。
     UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc] init];
     layout.scrollDirection = UICollectionViewScrollDirectionVertical;
     layout.minimumInteritemSpacing = 0;  // 单列，无横向间距
     layout.minimumLineSpacing = 4;       // 行间小间距，卡片自带阴影做视觉分隔
-    layout.itemSize = CGSizeMake(360, 64); // 默认宽度，viewDidLayoutSubviews 会覆盖
+    layout.itemSize = CGSizeMake(360, 72); // 默认宽度，viewDidLayoutSubviews 会覆盖（Task236：64→72，垂直挤压根修）
     layout.sectionInset = UIEdgeInsetsMake(8, 16, 8, 16);
 
     self.versionCollectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:layout];
@@ -915,7 +923,7 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
     if (![layout isKindOfClass:[UICollectionViewFlowLayout class]]) return;
     CGFloat horizInset = layout.sectionInset.left + layout.sectionInset.right;
     CGFloat availableWidth = MAX(0, self.versionCollectionView.bounds.size.width - horizInset);
-    CGSize target = CGSizeMake(availableWidth, 64);
+    CGSize target = CGSizeMake(availableWidth, 72);   // Task236：64→72（VersionCardCell 垂直挤压根修，见 setupVersionCollectionView 注释）
     if (!CGSizeEqualToSize(layout.itemSize, target)) {
         layout.itemSize = target;
         // invalidateLayout 触发重新排版，避免 cell 复用时宽度滞后
