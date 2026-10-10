@@ -21,7 +21,7 @@
 @end
 
 /// 菜单快照的 associated object key（文件级唯一——presentMenu 写入与
-delegate 惰性读取必须同 key，局部 static 地址不同会导致取不到菜单）。
+/// delegate 惰性读取必须同 key，局部 static 地址不同会导致取不到菜单）。
 static char ame240_menuSnapshotKey;
 /// 消失回调（onDismiss）的 associated object key。
 static char ame240_dismissKey;
