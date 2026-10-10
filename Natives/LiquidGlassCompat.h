@@ -73,7 +73,10 @@ FOUNDATION_EXPORT BOOL LGCIsGlassStyleActive(void);
 ///   AME239_NO_SYSTEM_GLASS=1）返回 nil，调用方回退系统材质磨砂
 ///   （UIBlurEffect SystemMaterial 家族），绝不回退 UIAlertController。
 ///   玻璃风格下所有悬浮菜单统一走本工厂；原生风格不经过此处。
-FOUNDATION_EXPORT nullable UIVisualEffect *LGCNativeGlassEffect(void);
+///   （CI r1 教训：顶层 C 函数声明的可空性必须用 "* _Nullable" 后缀
+///   形式——非下划线 nullable 前缀是 ObjC 方法/属性专属语法，clang 在
+///   函数声明处报 unknown type name 并丢弃整个声明。）
+FOUNDATION_EXPORT UIVisualEffect * _Nullable LGCNativeGlassEffect(void);
 
 /// Task239：LGCNativeGlassEffect() 是否真的取到了系统 UIGlassEffect
 /// （供调用方选择防御性底色浓度与日志锚点；NO = 走了材质回退）。

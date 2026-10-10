@@ -74,6 +74,10 @@ nav = rd("SurfaceViewController+Navigation.m")
 check("B1 LGCNativeGlassEffect 工厂（头文件声明）",
       "LGCNativeGlassEffect(void)" in lgh and "LGCNativeGlassEngaged(void)" in lgh,
       "真系统 UIGlassEffect 的统一入口")
+check("B1b 声明用 C 函数合法可空形式（CI r1 教训锁定）",
+      "UIVisualEffect * _Nullable LGCNativeGlassEffect(void);" in lgh and
+      "nullable UIVisualEffect *LGCNativeGlassEffect" not in lgh,
+      "非下划线 nullable 前缀 = ObjC 方法/属性专属，C 函数声明处 clang 报 unknown type name 并丢弃声明")
 check("B2 编译期 SDK 门控（__IPHONE_26_0 直接声明 + 老 SDK 运行时回退）",
       "#if defined(__IPHONE_26_0)" in lgc and "NSClassFromString(@\"UIGlassEffect\")" in lgc,
       "CI 实锤 Xcode 26.3/iOS 26.2 SDK；regularEffect 幻影选择器退役")
