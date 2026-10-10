@@ -4,7 +4,7 @@
 [Pre-Init] Upstream: https://github.com/herbrine8403/Amethyst-iOS-MyRemastered
 [Pre-Init] Please try not to post this log of the remastered launcher to the original GitHub Issues for help.
 [Pre-Init] Version: 6.5.0
-[Pre-Init] Commit: 843ce93 (main)
+[Pre-Init] Commit: db246b9 (main)
 [Pre-Init] Device: iPad Air 11-inch (M4)
 [Pre-Init] iPadOS 27.0.1 (24A446) (Unjailbroken)
 [Pre-init] Entitlements availability:
@@ -20,7 +20,6 @@
 [Debugging] Debug log enabled: YES
 [Pre-init] Restored game directory preference (default)
 [Pre-init] Task226 game-dir symlink re-pointed to instances/default
-[AppDelegate] Task189: uncaught-exception handler re-armed after container setup
 [SceneDelegate] Task191: uncaught-exception handler re-armed at willConnect
 [SceneDelegate] Task188: geometry request declined (expected in window mode; Info.plist UIRequiresFullScreen is the primary fix): 当前窗口模式不允许以编程方式更改界面方向。
 [PLPreferences] Getter could not find preference download.speed_probe.bmclapi
@@ -46,88 +45,90 @@
 [FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
 [InputDiag] Task229 resume reassert: cursor baseline reset to (0.0, 0.0), 0 toggle-held mod(s) re-driven
 [InputDiag] Task232 resume geometry probe: physical=0x0 window=0x0 guiScale=1 cursor=(0.0,0.0) grabbing=0
-[HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
 [PLPreferences] Setter could not find preference download.speed_probe.mcim
-2026-10-10 16:18:22.813 AngelAuraAmethyst[18942:5239952] [PLMirrorCenter] Task138 speed probe (family=1): official won (official=119ms mirror=523ms)
+2026-10-10 23:09:28.102 AngelAuraAmethyst[19984:5422800] [PLMirrorCenter] Task138 speed probe (family=1): official won (official=149ms mirror=395ms)
+[HomeAvatar] Task172 direct-sync: 1 visible profile cell(s), image 128x128
 [IconLoader] Initialization complete, disk cache directory: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Library/Caches/IconLoader, mirror enabled: NO
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x1028e5224) -- re-armed at t+2s
+[PLPreferences] Getter could not find preference download.speed_probe.bmclapi
+[MCDL] remoteVersionList not loaded, but parent version JSON exists: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft/versions/26.1.2/26.1.2.json
+[MCDL] insertSafety: how to insert assetIndex?
+[MCDL] insertSafety: how to insert assets?
+[MCDL] Replacing JNA 5.17.0 with 5.13.0 for iOS compatibility (required by fabric-loader-0.19.3-26.1.2)
+2026-10-10 23:09:28.526 AngelAuraAmethyst[19984:5422751] [ThemeOps] Task228 composite glass default (system UIGlassEffect renders black in this process; opt-in trial via AME227_SYSTEM_GLASS=1)
+[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.1
+[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.1
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.1
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.1
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.1
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.4.1
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.4.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.4.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.4.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.4.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.4.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl-tinyfd:3.4.1:natives-windows-x86
+[MDCL] Skipped library org.lwjgl:lwjgl:3.4.1
+[MDCL] Skipped library org.lwjgl:lwjgl:3.4.1:natives-linux
+[MDCL] Skipped library org.lwjgl:lwjgl:3.4.1:natives-macos
+[MDCL] Skipped library org.lwjgl:lwjgl:3.4.1:natives-macos-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl:3.4.1:natives-windows
+[MDCL] Skipped library org.lwjgl:lwjgl:3.4.1:natives-windows-arm64
+[MDCL] Skipped library org.lwjgl:lwjgl:3.4.1:natives-windows-x86
+[MCDL] Unknown artifact object for org.ow2.asm:asm:9.10.1, attempting to generate one
+[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft/libraries/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar, have to assume it's good.
+[MCDL] Unknown artifact object for org.ow2.asm:asm-analysis:9.10.1, attempting to generate one
+[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft/libraries/org/ow2/asm/asm-analysis/9.10.1/asm-analysis-9.10.1.jar, have to assume it's good.
+[MCDL] Unknown artifact object for org.ow2.asm:asm-commons:9.10.1, attempting to generate one
+[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft/libraries/org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar, have to assume it's good.
+[MCDL] Unknown artifact object for org.ow2.asm:asm-tree:9.10.1, attempting to generate one
+[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft/libraries/org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar, have to assume it's good.
+[MCDL] Unknown artifact object for org.ow2.asm:asm-util:9.10.1, attempting to generate one
+[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft/libraries/org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.jar, have to assume it's good.
+[MCDL] Unknown artifact object for net.fabricmc:sponge-mixin:0.17.3+mixin.0.8.7, attempting to generate one
+[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft/libraries/net/fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/sponge-mixin-0.17.3+mixin.0.8.7.jar, have to assume it's good.
+[MCDL] Unknown artifact object for net.fabricmc:fabric-loader:0.19.3, attempting to generate one
+[MCDL] Warning: couldn't find SHA for /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application Support/minecraft/libraries/net/fabricmc/fabric-loader/0.19.3/fabric-loader-0.19.3.jar, have to assume it's good.
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+2s
 [PLPreferences] Setter could not find preference download.speed_probe.bmclapi
-2026-10-10 16:18:24.538 AngelAuraAmethyst[18942:5239952] [PLMirrorCenter] Task138 speed probe (family=0): official won (official=912ms mirror=2247ms)
+2026-10-10 23:09:30.087 AngelAuraAmethyst[19984:5422753] [PLMirrorCenter] Task138 speed probe (family=0): official won (official=894ms mirror=2380ms)
 [LauncherRootVC] Task218 loaded 920 remote versions from bmclapi2.bangbang93.com
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x1028e5224) -- re-armed at t+4s
-2026-10-10 16:18:26.609 AngelAuraAmethyst[18942:5239944] [ThemeOps] Task228 composite glass default (system UIGlassEffect renders black in this process; opt-in trial via AME227_SYSTEM_GLASS=1)
-[MCDL] SHA1 passed for 26.3.json
-[MCDL] Replacing JNA 5.17.0 with 5.13.0 for iOS compatibility (required by 26.3)
-[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.3
-[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.3:natives-linux
-[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.3:natives-macos
-[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.3:natives-macos-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.3:natives-windows
-[MDCL] Skipped library org.lwjgl:lwjgl-freetype:3.4.3:natives-windows-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.3
-[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.3:natives-linux
-[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.3:natives-macos
-[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.3:natives-macos-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.3:natives-windows
-[MDCL] Skipped library org.lwjgl:lwjgl-jemalloc:3.4.3:natives-windows-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.3
-[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.3:natives-linux
-[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.3:natives-macos
-[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.3:natives-macos-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.3:natives-windows
-[MDCL] Skipped library org.lwjgl:lwjgl-openal:3.4.3:natives-windows-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.3
-[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.3:natives-linux
-[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.3:natives-macos
-[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.3:natives-macos-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.3:natives-windows
-[MDCL] Skipped library org.lwjgl:lwjgl-opengl:3.4.3:natives-windows-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-sdl:3.4.3
-[MDCL] Skipped library org.lwjgl:lwjgl-sdl:3.4.3:natives-linux
-[MDCL] Skipped library org.lwjgl:lwjgl-sdl:3.4.3:natives-macos
-[MDCL] Skipped library org.lwjgl:lwjgl-sdl:3.4.3:natives-macos-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-sdl:3.4.3:natives-windows
-[MDCL] Skipped library org.lwjgl:lwjgl-sdl:3.4.3:natives-windows-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-shaderc:3.4.3
-[MDCL] Skipped library org.lwjgl:lwjgl-shaderc:3.4.3:natives-linux
-[MDCL] Skipped library org.lwjgl:lwjgl-shaderc:3.4.3:natives-macos
-[MDCL] Skipped library org.lwjgl:lwjgl-shaderc:3.4.3:natives-macos-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-shaderc:3.4.3:natives-windows
-[MDCL] Skipped library org.lwjgl:lwjgl-shaderc:3.4.3:natives-windows-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-spvc:3.4.3
-[MDCL] Skipped library org.lwjgl:lwjgl-spvc:3.4.3:natives-linux
-[MDCL] Skipped library org.lwjgl:lwjgl-spvc:3.4.3:natives-macos
-[MDCL] Skipped library org.lwjgl:lwjgl-spvc:3.4.3:natives-macos-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-spvc:3.4.3:natives-windows
-[MDCL] Skipped library org.lwjgl:lwjgl-spvc:3.4.3:natives-windows-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.3
-[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.3:natives-linux
-[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.3:natives-macos
-[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.3:natives-macos-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.3:natives-windows
-[MDCL] Skipped library org.lwjgl:lwjgl-stb:3.4.3:natives-windows-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-vma:3.4.3
-[MDCL] Skipped library org.lwjgl:lwjgl-vma:3.4.3:natives-linux
-[MDCL] Skipped library org.lwjgl:lwjgl-vma:3.4.3:natives-macos
-[MDCL] Skipped library org.lwjgl:lwjgl-vma:3.4.3:natives-macos-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-vma:3.4.3:natives-windows
-[MDCL] Skipped library org.lwjgl:lwjgl-vma:3.4.3:natives-windows-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl-vulkan:3.4.3
-[MDCL] Skipped library org.lwjgl:lwjgl-vulkan:3.4.3:natives-macos
-[MDCL] Skipped library org.lwjgl:lwjgl-vulkan:3.4.3:natives-macos-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl:3.4.3
-[MDCL] Skipped library org.lwjgl:lwjgl:3.4.3:natives-linux
-[MDCL] Skipped library org.lwjgl:lwjgl:3.4.3:natives-macos
-[MDCL] Skipped library org.lwjgl:lwjgl:3.4.3:natives-macos-arm64
-[MDCL] Skipped library org.lwjgl:lwjgl:3.4.3:natives-windows
-[MDCL] Skipped library org.lwjgl:lwjgl:3.4.3:natives-windows-arm64
 [MCDL] Task187: verify stage entered (elapsed 1.8s since downloadVersion:)
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x1028e5224) -- re-armed at t+6s
 [JIT] [RightPanel] Task224 closing presented stack ('PLTaskProgressViewController') + 0.8s settle before JIT wait
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+4s
 [JIT] [RightPanel] invokeAfterJITEnabled: dynamicCS=0 trollStore=0 CS_DEBUGGED=0 ppid=1 traced=0 exn=0 JIT_FLAGS=0x7
 [JIT] [RightPanel] Task134 enabler=auto noScript=0
 sandbox_extension_issue_file failed for : 2 (No such file or directory)
-[JIT] [RightPanel] Task179 background task assertion: id=3 valid=1 (remaining bg time fg(n/a))
+[JIT] [RightPanel] Task179 background task assertion: id=2 valid=1 (remaining bg time fg(n/a))
 [JIT] Task181 isJITEnabled wait begin: startForeground=1 traced=0 exn=0 csdbg=0
 [JIT] Task169 isJITEnabled: still waiting after 0s (traced=0 exn=0)
 [FG-Lifecycle] willResignActive: swapOK=0 swapFail=0
@@ -135,25 +136,1030 @@ sandbox_extension_issue_file failed for : 2 (No such file or directory)
 [BG-Park] Task223 render thread parking armed (willResignActive)
 [JIT] [RightPanel] Task176 openURL stikjit:// -> 1
 [JIT] Task181 isJITEnabled app went to BACKGROUND while waiting (traced=0 exn=0)
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x1028e5224) -- re-armed at t+8s
 [FG-Lifecycle] didEnterBackground: swapOK=0 swapFail=0
 [InputDiag] pauseGameIfNeed: skipped (no live session: isGrabbing=0 isInputReady=0 sdlWindow=0x0)
 [IconLoader] App entered background: cancelled all ongoing downloads
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+6s
 [FG-Lifecycle] willEnterForeground: swapOK=0 swapFail=0
 [BG-Park] Task223 render thread released (foreground lifecycle)
-[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x1028e5224) -- re-armed at t+10s
 [JIT] Task181 isJITEnabled condition satisfied after 3.3s (traced=1 exn=1)
 [JIT] [RightPanel] Task183 wait-completed block entered on main (ok=1)
 [JIT] [RightPanel] Task183 invoking launch handler
-[TouchController] Task172 profile '26.3' TouchController off -- global settings untouched
+[TouchController] Task172 profile 'fabric-loader-0.19.3-26.1.2' TouchController off -- global settings untouched
 [SurfaceSwap] Task183 launching SurfaceViewController (synchronous root swap; version=(null))
 [BingWallpaper] Task151 metadata synced: 8 items (host=https://cn.bing.com, today=20261009)
 [SurfaceViewController] FPS counter setup: profileRenderer=auto, envRenderer=(null), graphicsApi=(null), isVulkan=0, configuredVulkanExpected=0 (actual path decided at runtime via pojavIsActualVulkanPath)
 [SurfaceVC] Task83 FSR linkage: renderer=libMobileGL.dylib preset=1 scale=1.30 -- MC render window = surface/1.30 (renderer-side upscale: MobileGlues FSR1); resolution=100%
-[GameMenu] Task237 glass panel applied (frosted + defensive dark base + hairline; rows above blur; icon rows)
+[GameMenu] Task237 glass panel applied (frosted + defensive dark base + hairline; rows above blur; icon rows) [Task239 material: native UIGlassEffect]
 [GameMenu] Task236 floating bar hardened (gear {{0, 0}, {44, 44}} r=22.0 subs=2; stats nil; caption nil)
 [GameMenu] Task232 floating bar glass applied (gear + stats + caption, heavy dark material)
-*** Terminating app due to uncaught exception 'NSUnknownKeyException', reason: '[<__NSCFBoolean 0x1f7674158> valueForUndefinedKey:]: this class is not key value coding-compliant for the key left.'
-*** First throw call stack:
-(0x18ee77190 0x18ebf4380 0x18eedb7a4 0x18f2fd0f0 0x18f2d380c 0x18f2e1b10 0x18f30a414 0x18f2e1b10 0x18f30a414 0x18f2e1b10 0x18f30a414 0x10c110e1c 0x10c0b902c 0x10c0b9ca4 0x10bef21c4 0x10beef498 0x10c13d6e8 0x10c122aa4 0x19305bdfc 0x193057738 0x193090950 0x1930ec144 0x1931d2fb8 0x10c1537b0 0x1bd2d6ccc 0x1bd2f0fb4 0x1bd2e6374 0x1bd2e6044 0x18ee287a0 0x18ee1988c 0x18ee1a7f4 0x23922ff24 0x1930f81cc 0x10bde27b8 0x1028e70f8 0x1028e4b50 0x18ec6b5b8)
-libc++abi: terminating due to uncaught exception of type NSException
+[GameMenu] Task236 floating bar hardened (gear {{1149.8399999999999, 209.99999833106995}, {26, 96}} r=13.0 subs=2; stats {{0, 0}, {130, 24}}; caption {{-6, -3}, {34, 19.5}})
+[GameMenu] Task232 floating bar glass applied (gear + stats + caption, heavy dark material)
+[GameMenu] Task227 gear dock state: DOCKED handle (right edge)
+[GameMenu] Task236 floating bar hardened (gear {{1145, 209.99999833106995}, {26, 96}} r=13.0 subs=2; stats {{4.9999990314245224, 58.999999493360519}, {130, 24}}; caption {{-6, -3}, {34, 19.5}})
+[GameMenu] Task232 floating bar glass applied (gear + stats + caption, heavy dark material)
+[SurfaceVC] CAMetalLayer configured: drawableSize=2360x1640, maximumDrawableCount=3, presentsWithTransaction=0, drawsAsynchronously=1, contentsScale=2.00
+[CustomControls] Task83b decorative sub-button pass-through enabled #1 (name=, touch no longer swallowed)
+[CustomControls] Task83b decorative sub-button pass-through enabled #2 (name=, touch no longer swallowed)
+[CustomControls] Task233: 90 drawer sub-buttons moved below interactive main buttons (drawer keys yield to 左/右键/摇杆 overlaps)
+[InputDiag] Task233 drawer-key overlaps main control: sub(右SHIFT) {{1065.4398193359375, 397.40390014648438}, {66, 43}} x main(右键) {{996.8409423828125, 430.44796752929688}, {68.643569946289062, 64.089111328125}} -- main wins touch (z-order fix)
+[TouchController] Sender ready on port 12450
+[SurfaceViewController] Task238 launch overlay z-order: game menu overlay raised above launch mask (gear/stats/menu visible during launch)
+[SurfaceViewController] Launching Minecraft with accountId: 47e84d5d-0c12-4d51-b768-236bd1779682, version: 25, size: 1814x1262
+[JavaLauncher] Beginning JVM launch
+[JavaLauncher] Task205: AMETHYST_LOG_LEVEL=debug (renderer diagnostics verbose)
+[JavaLauncher] MoltenVK performance tracking + IMMEDIATE present mode requested for VSync diagnosis
+[JavaLauncher] Framerate unlock configuration:
+[JavaLauncher]   video.disable_game_vsync=1
+[JavaLauncher]   POJAV_DISABLE_VSYNC=1
+[JavaLauncher]   UIScreen.maximumFramesPerSecond=60
+[JavaLauncher] Reading custom environment variables
+[JavaLauncher] Warning: skipped empty value custom env variable: 
+[DyldLVBypass] TXM debug JIT mapping active — keeping debugger attached for dyld bypass
+[DyldLVBypass] init
+[DyldLVBypass] Using redirectFunctionMirrored
+[DyldLVBypass] found dyld_mmap at 0x18ec7a7d4
+[DyldLVBypass] hook dyld_mmap succeed!
+[DyldLVBypass] found dyld_fcntl at 0x18ec716cc
+[DyldLVBypass] hook dyld_fcntl succeed!
+[JavaLauncher] init_loadMobileGluesConfig: renderer=libMobileGL.dylib
+[JavaLauncher] MobileGlues renderer detected, config will take effect.
+[JavaLauncher]   mobileglues.enable_no_error = 0 -> enableNoError = 0
+[JavaLauncher]   mobileglues.enable_ext_timer_query = 1 -> enableExtTimerQuery = 1
+[JavaLauncher]   mobileglues.enable_ext_compute_shader = 0 -> enableExtComputeShader = 0
+[JavaLauncher]   mobileglues.enable_ext_direct_state_access = 0 -> enableExtDirectStateAccess = 0
+[JavaLauncher]   mobileglues.max_glsl_cache_size = 128 -> maxGlslCacheSize = 128
+[JavaLauncher]   mobileglues.multidraw_mode = 0 -> multidrawOrder = native,multiindirect,multibasevertex,multiarrays,indirect,basevertex,unroll,compute (旧键 multidrawMode 已被 MG 2.0.16+ 弃用，不再写入)
+[JavaLauncher]   mobileglues.angle_depth_clear_fix_mode = 0 -> angleDepthClearFixMode = 0
+[JavaLauncher]   mobileglues.custom_gl_version = 0 (raw)
+[JavaLauncher]   -> customGLVersion = 40 (decimal, MobileGlues Version(int) format)
+[JavaLauncher]   mobileglues.fsr1_setting = 1 -> fsr1Setting = 1
+[JavaLauncher] Task130: AMETHYST_FSR_RCAS_SHARPNESS=0.2000 exported (RCAS sharpness, mpv scale, default 0.2, negative = off)
+[JavaLauncher] MobileGlues config written to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/MG/config.json
+[JavaLauncher] config.json content:
+{
+  "multidrawOrder" : "native,multiindirect,multibasevertex,multiarrays,indirect,basevertex,unroll,compute",
+  "fsr1Setting" : 1,
+  "fsr1RcasSharpness" : 0.20000000000000001,
+  "maxGlslCacheSize" : 128,
+  "customGLVersion" : 40,
+  "enableExtDirectStateAccess" : 0,
+  "enableExtTimerQuery" : 1,
+  "angleDepthClearFixMode" : 0,
+  "enableExtComputeShader" : 0,
+  "enableNoError" : 0
+}
+[JavaLauncher] Task138: POJAV_NATIVEDIR=/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents (controlify JNA direct-mapping guard: libsdl4j ffi closure thunks are non-executable on iOS, steer Pojav-aware mods to graceful GLFW fallback)
+[PLPreferences] Getter could not find preference general.disable_window_rotation_shim
+[FG-Lifecycle] didBecomeActive: presentation enforcement did=0
+[FG-Lifecycle] didBecomeActive: swapOK=0 swapFail=0
+[InputDiag] Task229 resume reassert: cursor baseline reset to (0.0, 0.0), 0 toggle-held mod(s) re-driven
+[InputDiag] Task232 resume geometry probe: physical=2360x1640 window=1814x1262 guiScale=1 cursor=(0.0,0.0) grabbing=0
+[JavaLauncher] Task158: library gate clean (46 present, 69 skipped)
+[Amethyst] Task120: MobileGL backend override active (profile renderer was auto -> libMobileGL.dylib)
+[JavaLauncher] RENDERER is set to libMobileGL.dylib
+[JavaLauncher] MobileGL renderer active: backend=DirectVulkan
+[JavaLauncher] GRAPHICS_API is set to default
+[Task225] keybind wash RETIRED (dump-only; markers v1=0 v2=0, v3 restore off)
+[Task67] ===== options.txt keybind dump (pre-sanitize) =====
+[Task67]   toggleCrouch:false (sneak/sprint toggle mode)
+[Task67]   toggleSprint:false (sneak/sprint toggle mode)
+[Task67]   key_key.attack:key.mouse.left
+[Task67]   key_key.use:key.mouse.right
+[Task67]   key_key.forward:key.keyboard.w
+[Task67]   key_key.left:key.keyboard.a
+[Task67]   key_key.back:key.keyboard.s
+[Task67]   key_key.right:key.keyboard.d
+[Task67]   key_key.jump:key.keyboard.space
+[Task67]   key_key.sneak:key.keyboard.left.shift
+[Task67]   key_key.sprint:key.keyboard.left.control
+[Task67]   key_key.drop:key.keyboard.q
+[Task67]   key_key.inventory:key.keyboard.e
+[Task67]   key_key.chat:key.keyboard.t
+[Task67]   key_key.playerlist:key.keyboard.tab
+[Task67]   key_key.pickItem:key.mouse.middle
+[Task67]   key_key.command:key.keyboard.slash
+[Task67]   key_key.socialInteractions:key.keyboard.p
+[Task67]   key_key.toggleGui:key.keyboard.f1
+[Task67]   key_key.toggleSpectatorShaderEffects:key.keyboard.f4
+[Task67]   key_key.screenshot:key.keyboard.f2
+[Task67]   key_key.togglePerspective:key.keyboard.f5
+[Task67]   key_key.smoothCamera:key.keyboard.unknown
+[Task67] SUSPICIOUS (unknown-scancode binding, left as-is): key_key.smoothCamera:key.keyboard.unknown
+[Task67]   key_key.fullscreen:key.keyboard.f11
+[Task67]   key_key.spectatorOutlines:key.keyboard.unknown
+[Task67] SUSPICIOUS (unknown-scancode binding, left as-is): key_key.spectatorOutlines:key.keyboard.unknown
+[Task67]   key_key.spectatorHotbar:key.mouse.middle
+[Task67]   key_key.swapOffhand:key.keyboard.f
+[Task67]   key_key.saveToolbarActivator:key.keyboard.c
+[Task67]   key_key.loadToolbarActivator:key.keyboard.x
+[Task67]   key_key.advancements:key.keyboard.l
+[Task67]   key_key.quickActions:key.keyboard.g
+[Task67]   key_key.debug.overlay:key.keyboard.f3
+[Task67]   key_key.debug.modifier:key.keyboard.f3
+[Task67]   key_key.hotbar.1:key.keyboard.1
+[Task67]   key_key.hotbar.2:key.keyboard.2
+[Task67]   key_key.hotbar.3:key.keyboard.3
+[Task67]   key_key.hotbar.4:key.keyboard.4
+[Task67]   key_key.hotbar.5:key.keyboard.5
+[Task67]   key_key.hotbar.6:key.keyboard.6
+[Task67]   key_key.hotbar.7:key.keyboard.7
+[Task67]   key_key.hotbar.8:key.keyboard.8
+[Task67]   key_key.hotbar.9:key.keyboard.9
+[Task67]   key_key.debug.reloadChunk:key.keyboard.a
+[Task67]   key_key.debug.showHitboxes:key.keyboard.b
+[Task67]   key_key.debug.clearChat:key.keyboard.d
+[Task67]   key_key.debug.crash:key.keyboard.c
+[Task67]   key_key.debug.showChunkBorders:key.keyboard.g
+[Task67]   key_key.debug.showAdvancedTooltips:key.keyboard.h
+[Task67]   key_key.debug.copyRecreateCommand:key.keyboard.i
+[Task67]   key_key.debug.spectate:key.keyboard.n
+[Task67]   key_key.debug.switchGameMode:key.keyboard.f4
+[Task67]   key_key.debug.debugOptions:key.keyboard.f6
+[Task67]   key_key.debug.focusPause:key.keyboard.p
+[Task67]   key_key.debug.dumpDynamicTextures:key.keyboard.s
+[Task67]   key_key.debug.reloadResourcePacks:key.keyboard.t
+[Task67]   key_key.debug.profiling:key.keyboard.l
+[Task67]   key_key.debug.copyLocation:key.keyboard.c
+[Task67]   key_key.debug.dumpVersion:key.keyboard.v
+[Task67]   key_key.debug.profilingChart:key.keyboard.1
+[Task67]   key_key.debug.fpsCharts:key.keyboard.2
+[Task67]   key_key.debug.networkCharts:key.keyboard.3
+[Task67]   key_key.debug.lightmapTexture:key.keyboard.4
+[Task67] ===== keybind sanitize: 0 repairs needed (all canonical / defaults) =====
+[PLDisplayLinkTarget] displayLinkTick #1 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[JavaLauncher] Looking for Java 25 or later
+[JavaLauncher] JAVA_HOME has been set to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk
+[Task141] launch memory from instance profile: 2048 MB
+[Task173] safe heap ceiling: os_proc_available_memory=12192MB -> Xmx ceiling 10992MB (native reserve 1200MB, no floor on authoritative path)
+[JavaLauncher] Max RAM allocation is set to 2048 MB
+[JavaLauncher] Task68 GC/safepoint pause logging enabled (-Xlog:gc,safepoint -> stdout)
+[JavaLauncher] library.path = /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks
+[Amethyst] Task112: OpenAL pinned to /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/libopenal.dylib
+[JavaLauncher] Published Metallum surface view: 0x1077f8e00 (scale=2)
+[JavaLauncher] Added JVM property -Dmax.fps=260 (frame rate unlock layer 4)
+[JavaLauncher] Adding authlib-injector arguments for third party account
+[ThirdPartyAuthenticator] Added prefetched metadata parameter (length=1780)
+[JavaLauncher] Added authlib-injector arg: -javaagent:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/authlib-injector/authlib-injector.jar=https://littleskin.cn/api/yggdrasil/
+[JavaLauncher] Added authlib-injector arg: -Dauthlibinjector.side=client
+[JavaLauncher] Added authlib-injector arg: -Dauthlibinjector.yggdrasil.prefetched=eyJtZXRhIjp7ImZlYXR1cmUuZW5hYmxlX21vamFuZ19hbnRpX2ZlYXR1cmVzIjp0cnVlLCJmZWF0dXJlLmVuYWJsZV9wcm9maWxlX2tleSI6dHJ1ZSwiZmVhdHVyZS5ub25fZW1haWxfbG9naW4iOnRydWUsImZlYXR1cmUub3BlbmlkX2NvbmZpZ3VyYXRpb25fdXJsIjoiaHR0cHM6Ly9vcGVuLmxpdHRsZXNraW4uY24vLndlbGwta25vd24vb3BlbmlkLWNvbmZpZ3VyYXRpb24iLCJpbXBsZW1lbnRhdGlvbk5hbWUiOiJZZ2dkcmFzaWwgQ29ubmVjdCIsImltcGxlbWVudGF0aW9uVmVyc2lvbiI6IjAuMC44IiwibGlua3MiOnsiYW5ub3VuY2VtZW50IjoiaHR0cHM6Ly9saXR0bGVza2luLmNuL2FwaS9hbm5vdW5jZW1lbnRzIiwiaG9tZXBhZ2UiOiJodHRwczovL2xpdHRsZXNraW4uY24iLCJyZWdpc3RlciI6Imh0dHBzOi8vbGl0dGxlc2tpbi5jbi9hdXRoL3JlZ2lzdGVyIn0sInNlcnZlck5hbWUiOiJMaXR0bGVTa2luIn0sInNpZ25hdHVyZVB1YmxpY2tleSI6Ii0tLS0tQkVHSU4gUFVCTElDIEtFWS0tLS0tXG5NSUlDSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQWc4QU1JSUNDZ0tDQWdFQXJHY05PT0ZJcUxKU3FvRTN1MGhqXG50T0VuT2NFVDN3ajlEcnNzMUJFNnNCcWdQbzBiTXVsT1VMaHFqa2MvdUgvd3lvc1luenczeGFhekp0ODdqVEhoXG5KOEJQTXhDZVFNb3lFZFJvUzNKbmoxRzBLZXpqNEEyYjYxUEpKTTFEcHZEQWNxUUJZc3JTZHBCSis1Mk1qb0dTXG52Sm9lUU81WFVsSlZRbTIxL0htSm5xc1BoemNBNkhnWTcxUkhZRTV4bmhwV0ppUHhMS1VQdG10NkNOWVVRUW9TXG5vMnYzNlhXZ01tTEJaaEFiTk9QeFlYKzFpb3hLYW1qaExPMjlVaHd0Z1k5VTZQV0VPNy9TQmZYenlSUFR6aFBWXG4ybkhxN0tKcWQ4SUlybHRzbHY2aS80RkVNODFpdlMvbW0rUE4zaFlsSVlLNno2WW1paTFuclFBcGxzSjY3T0dxXG5ZSHRXS092cGZUek9vbGx1Z3NSaWhrQUc0T0I2aE0wUHI0NWpqQzNUSWM3ZU83a09nSWNHVUdVUUd1dXVnREV6XG5KMU45RkZXbk4vSDZQOXVrRmVnNVNtR0M1K3dtVVBaWkN0TkJMcjhvOHNJNUg3UWhLN05nd0NhR0ZvWXVpQUdMXG5nejNrLzNZd0o0MEJid1FheVEyZ0lxZW56K1hPRklBbGFqdisvbnlmY0R2Wkg5dkdOS1A5bFZjSFhVVDVZUm5TXG5aU0hvNWx3dlZyWVVycUVBYmgvekR6OFFNRXlpdWpXdlVrUGhaczlmaDZmaW1VR3h0bThtRklQQ3RQSlZYamVZXG53RDNMdnQzYUlCMUpIZFVUSlIzZUVjNGVJYVRLTXdNUHlKUnpWbjV6S3NpdGFaejNubi9jT0Evd1pDOW9xeUVVXG5tYzloNlpNUlRSVUVFNFR0YUp5ZzlsTUNBd0VBQVE9PVxuLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tXG4iLCJza2luRG9tYWlucyI6WyJsaXR0bGVza2luLmNuIl19
+[JavaLauncher] Task201: Metallum agent enabled: -javaagent:metallum_agent.jar (mcVersion=fabric-loader-0.19.3-26.1.2)
+[JavaLauncher] JVM GC optimization: G1GC + MaxGCPauseMillis=50 + StringDeduplication (Java 17+)
+[SDLHook] Task133: libjli image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib) -- rebinding its _dlopen slots
+[SDLHook] Task133: _dlopen slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlopen chain now routes through the hook
+[SDLHook] Task133: _dlsym slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlsym chain now routes through the hook
+[SDLHook] Task134: JVM image watchdog started (200ms dyld scan, chain-independent JNA rebind backstop)
+[JavaLauncher] Caciocavallo: isJava8=0 libs=libs_caciocavallo17 mode=/a
+[JavaLauncher] Reading custom JVM flags
+[Init] Found JLI lib
+[LWJGLSel] Task98: MC major 26 extracted from version id "fabric-loader-0.19.3-26.1.2" -> LWJGL 341 (SDL3 bindings)
+[JavaLauncher] Using LWJGL 341 (mcVersion=fabric-loader-0.19.3-26.1.2)
+[JavaLauncher] Using LWJGL jar at /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/libs/lwjgl-341/lwjgl.jar
+[CwdAlign] Task97: process CWD aligned to game dir: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/fabric-loader-0.19.3-26.1.2/game
+[AppKitStub] Task99: NSApplication/NSMenu/NSMenuItem stubs installed (iOS has no AppKit; MC 26.3 MacosUtil menu walk no-ops, numberOfItems=0)
+[AppKitStub] Task229: NSImage stub + NSData legacy-b64 selector installed (MC 1.20.1 MacosUtil.loadIcon no-ops instead of crashing; AppKit-free iOS)
+[Init] Calling JLI_Launch
+[SDLHook] Task133: libjvm image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib) -- rebinding its _dlopen slots
+[SDLHook] Task133: _dlopen slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlopen chain now routes through the hook
+[SDLHook] Task133: _dlsym slots rebound for image (hits=1, classic+value-scan) -- JVM-side _dlsym chain now routes through the hook
+OpenJDK 64-Bit Server VM warning: Option UseCompressedClassPointers was deprecated in version 25.0 and will likely be removed in a future release.
+[JIT26] Requesting 64 MB for JIT mapping
+[JIT26] Got JIT mapping 0x158438000 from debugger
+[JIT26] mapping at RW=0x15c438000, RX=0x158438000
+[2026-10-10T23:09:35.453+0800][0.247s] Using G1
+[PLDisplayLinkTarget] displayLinkTick #2 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #3 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #4 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+[PLDisplayLinkTarget] displayLinkTick #5 (configuredVulkan=0, actualVulkanPath=0, stateChanged=0)
+WARNING: Unknown module: cpw.mods.bootstraplauncher specified to --add-exports
+WARNING: package sun.security.action not in java.base
+[authlib-injector] [INFO] Logging file: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/fabric-loader-0.19.3-26.1.2/game/authlib-injector.log
+[authlib-injector] [INFO] Version: 1.2.8
+[authlib-injector] [INFO] Authentication server: https://littleskin.cn/api/yggdrasil/
+PatchJNAAgent: premain called
+[MetallumAgent] version v15 (cs262-route)
+[MetallumAgent] non-Metal renderer: SDL stubs + metallum classes only (render patches disabled)
+[MetallumAgent] spvc preload skipped (FIX-LWJGL-INIT)
+[MetallumAgent] slf4j: /var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/instances/default/versions/fabric-loader-0.19.3-26.1.2/game/libraries/org/slf4j/slf4j-api not found, skip
+[MetallumAgent] premain active (FIX263-slf4j-first)
+[2026-10-10T23:09:35.637+0800][0.431s] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 11M->3M(128M) 1.335ms
+[2026-10-10T23:09:35.637+0800][0.431s] Safepoint "G1CollectForAllocation", Time since last: 157895667 ns, Reaching safepoint: 1458 ns, At safepoint: 1359125 ns, Leaving safepoint: 2959 ns, Total: 1363542 ns, Threads: 0 runnable, 14 total
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::loadLibrary has been called by com.metallum.client.metal.render.bridge.MetalNativeBridge in an unnamed module (file:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/libs/metallum_agent.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+[MetallumAgent] ensureSpvcLibraryConfigured called OK
+[MetallumAgent] Spvc class loadable (FIX-LWJGL-INIT, init deferred)
+Arc Capes DNS Injector
+Parts of Alibaba's DCM library were used, please read https://github.com/alibaba/java-dns-cache-manipulator/blob/main/README.md for more info
+Added DNS cache entry: s.optifine.net/23.95.137.176
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.github.caciocavallosilano.cacio.ctc.CTCPreloadClassLoader
+WARNING: Please consider reporting this to the maintainers of class com.github.caciocavallosilano.cacio.ctc.CTCPreloadClassLoader
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+8s
+[PojavLauncher] VSync disabled, maxFps/maxFramerate/framerateLimit set to 260
+[PojavLauncher]   enableVsync=false
+[PojavLauncher]   maxFps=260
+[PojavLauncher]   maxFramerate=260
+[PojavLauncher]   framerateLimit=260
+[PojavLauncher]   inactivityFpsLimit=minimized
+[PojavLauncher] Task104 on-disk verification: inactivityFpsLimit=minimized maxFps=260 enableVsync=false
+[PojavLauncher] MC 26.2+ graphicsApi cleared (default)
+[Tools] Replacing JNA 5.17.0 with 5.13.0 for iOS compatibility
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+Launching Minecraft fabric-loader-0.19.3-26.1.2
+[PojavLauncher] LWJGL selected by launcher: 341, reported version: 3.4.1 (metadata: 3.4.1)
+[PojavLauncher] Using fallback log4j config: /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/log4j-rce-patch-1.12.xml
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+[Tools] LWJGL report version: 3.4.1 (from version metadata; sodium PreLaunchChecks gate, Task94)
+Args init finished. Now starting game
+[2026-10-10T23:09:35.875+0800][0.670s] GC(1) Pause Young (Normal) (G1 Evacuation Pause) 60M->13M(128M) 1.845ms
+[2026-10-10T23:09:35.875+0800][0.670s] Safepoint "G1CollectForAllocation", Time since last: 236629250 ns, Reaching safepoint: 4291 ns, At safepoint: 1860625 ns, Leaving safepoint: 4667 ns, Total: 1869583 ns, Threads: 0 runnable, 18 total
+[2026-10-10T23:09:36.071+0800][0.865s] GC(2) Pause Young (Concurrent Start) (Metadata GC Threshold) 46M->23M(128M) 2.726ms
+[2026-10-10T23:09:36.071+0800][0.865s] GC(3) Concurrent Mark Cycle
+[2026-10-10T23:09:36.071+0800][0.865s] Safepoint "CollectForMetadataAllocation", Time since last: 192577958 ns, Reaching safepoint: 3375 ns, At safepoint: 2753292 ns, Leaving safepoint: 8875 ns, Total: 2765542 ns, Threads: 0 runnable, 20 total
+[2026-10-10T23:09:36.073+0800][0.867s] GC(3) Pause Remark 24M->24M(128M) 0.753ms
+[2026-10-10T23:09:36.073+0800][0.867s] Safepoint "G1PauseRemark", Time since last: 1019333 ns, Reaching safepoint: 21000 ns, At safepoint: 760042 ns, Leaving safepoint: 5542 ns, Total: 786584 ns, Threads: 2 runnable, 20 total
+[2026-10-10T23:09:36.073+0800][0.867s] GC(3) Pause Cleanup 24M->24M(128M) 0.005ms
+[2026-10-10T23:09:36.073+0800][0.867s] Safepoint "G1PauseCleanup", Time since last: 341041 ns, Reaching safepoint: 16042 ns, At safepoint: 14458 ns, Leaving safepoint: 3500 ns, Total: 34000 ns, Threads: 1 runnable, 20 total
+[2026-10-10T23:09:36.073+0800][0.867s] GC(3) Concurrent Mark Cycle 2.369ms
+[2026-10-10T23:09:36.243+0800][1.038s] GC(4) Pause Young (Normal) (G1 Evacuation Pause) 70M->27M(128M) 3.010ms
+[2026-10-10T23:09:36.243+0800][1.038s] Safepoint "G1CollectForAllocation", Time since last: 167393209 ns, Reaching safepoint: 43291 ns, At safepoint: 3026000 ns, Leaving safepoint: 4334 ns, Total: 3073625 ns, Threads: 1 runnable, 20 total
+[23:09:36] [main/INFO]: Loading Minecraft 26.1.2 with Fabric Loader 0.19.3
+[23:09:36] [main/INFO]: Mappings not present!
+[23:09:36] [main/INFO]: Loading 63 mods:
+	- beryl 0.2.1-alpha
+	   \-- fabric-key-mapping-api-v1 2.0.4+e2bdee78b3
+	- fabric-api 0.155.3+26.1.2
+	   |-- fabric-api-base 2.0.3+ece063234c
+	   |-- fabric-api-lookup-api-v1 2.0.12+d5a053b64c
+	   |-- fabric-biome-api-v1 18.0.5+2fa62b4e4c
+	   |-- fabric-block-api-v1 3.0.2+ec56b6014c
+	   |-- fabric-block-getter-api-v2 2.0.6+ec56b6014c
+	   |-- fabric-command-api-v2 3.0.5+e2bdee784c
+	   |-- fabric-content-registries-v0 11.3.1+af8a297c4c
+	   |-- fabric-convention-tags-v2 4.6.2+4f11f7994c
+	   |-- fabric-crash-report-info-v1 1.0.3+9f78a5a84c
+	   |-- fabric-creative-tab-api-v1 5.0.12+a981f2874c
+	   |-- fabric-data-attachment-api-v1 2.2.10+44a0bd1d4c
+	   |-- fabric-data-generation-api-v1 24.3.4+cda368334c
+	   |-- fabric-debug-api-v1 1.0.1+c792624d4c
+	   |-- fabric-dimensions-v1 5.1.7+ad343a8d4c
+	   |-- fabric-entity-events-v1 5.0.2+e2bdee784c
+	   |-- fabric-events-interaction-v0 5.2.3+07b380be4c
+	   |-- fabric-game-rule-api-v1 4.0.5+d871b99e4c
+	   |-- fabric-item-api-v1 14.3.0+6d1aaa724c
+	   |-- fabric-lifecycle-events-v1 4.1.1+df84eb3d4c
+	   |-- fabric-loot-api-v3 3.0.12+00a1fba64c
+	   |-- fabric-menu-api-v1 2.0.15+d871b99e4c
+	   |-- fabric-message-api-v1 7.0.5+dae8ce3e4c
+	   |-- fabric-model-loading-api-v1 8.0.11+c80601bb4c
+	   |-- fabric-networking-api-v1 6.3.2+a217cccf4c
+	   |-- fabric-object-builder-api-v1 23.1.1+abb459f14c
+	   |-- fabric-particles-v1 5.0.16+b61fef434c
+	   |-- fabric-permission-api-v1 1.0.3+5730ecca4c
+	   |-- fabric-recipe-api-v1 9.0.17+be4b75ae4c
+	   |-- fabric-registry-sync-v0 7.1.1+2fa62b4e4c
+	   |-- fabric-renderer-api-v1 13.0.8+c80601bb4c
+	   |-- fabric-renderer-indigo 8.1.5+1403e82c4c
+	   |-- fabric-rendering-fluids-v1 6.0.1+d871b99e4c
+	   |-- fabric-rendering-v1 23.3.1+e9207d814c
+	   |-- fabric-resource-conditions-api-v1 6.1.0+83dd0ba34c
+	   |-- fabric-resource-loader-v0 3.3.17+4fc5413f4c
+	   |-- fabric-resource-loader-v1 2.0.10+7c44c7324c
+	   |-- fabric-screen-api-v1 5.1.0+981dd9b24c
+	   |-- fabric-serialization-api-v1 2.0.3+11a26f314c
+	   |-- fabric-sound-api-v1 2.0.4+11a26f314c
+	   |-- fabric-tag-api-v1 2.1.1+371cf5db4c
+	   |-- fabric-transfer-api-v1 8.0.6+357ea7334c
+	   \-- fabric-transitive-access-wideners-v1 8.1.3+3ff549fb4c
+	- fabricloader 0.19.3
+	   \-- mixinextras 0.5.4
+	- java 25
+	- minecraft 26.1.2
+	- vulkanmod 0.6.8+26.1.2
+	   |-- fabric-api-base 2.0.3+ece063234c
+	   |-- fabric-resource-loader-v0 3.3.17+4fc5413f4c
+	   |-- org_lwjgl_lwjgl-shaderc 3.4.1
+	   |-- org_lwjgl_lwjgl-shaderc_natives-linux 3.4.1
+	   |-- org_lwjgl_lwjgl-shaderc_natives-macos 3.4.1
+	   |-- org_lwjgl_lwjgl-shaderc_natives-macos-arm64 3.4.1
+	   |-- org_lwjgl_lwjgl-shaderc_natives-windows 3.4.1
+	   |-- org_lwjgl_lwjgl-vma 3.4.1
+	   |-- org_lwjgl_lwjgl-vma_natives-linux 3.4.1
+	   |-- org_lwjgl_lwjgl-vma_natives-macos 3.4.1
+	   |-- org_lwjgl_lwjgl-vma_natives-macos-arm64 3.4.1
+	   |-- org_lwjgl_lwjgl-vma_natives-windows 3.4.1
+	   |-- org_lwjgl_lwjgl-vulkan 3.4.1
+	   |-- org_lwjgl_lwjgl-vulkan_natives-macos 3.4.1
+	   \-- org_lwjgl_lwjgl-vulkan_natives-macos-arm64 3.4.1
+[23:09:36] [main/INFO]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Application%20Support/minecraft/libraries/net/fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/sponge-mixin-0.17.3+mixin.0.8.7.jar Service=Knot/Fabric Env=CLIENT
+[23:09:36] [main/INFO]: Compatibility level set to JAVA_17
+[23:09:36] [main/INFO]: Compatibility level set to JAVA_25
+[2026-10-10T23:09:36.617+0800][1.411s] GC(5) Pause Young (Normal) (G1 Evacuation Pause) 107M->33M(128M) 2.774ms
+[2026-10-10T23:09:36.617+0800][1.411s] Safepoint "G1CollectForAllocation", Time since last: 370781625 ns, Reaching safepoint: 1958 ns, At safepoint: 2801792 ns, Leaving safepoint: 4375 ns, Total: 2808125 ns, Threads: 0 runnable, 20 total
+[2026-10-10T23:09:36.714+0800][1.508s] GC(6) Pause Young (Normal) (G1 Evacuation Pause) 120M->68M(149M) 6.320ms
+[2026-10-10T23:09:36.714+0800][1.508s] Safepoint "G1CollectForAllocation", Time since last: 90551000 ns, Reaching safepoint: 2875 ns, At safepoint: 6339500 ns, Leaving safepoint: 5750 ns, Total: 6348125 ns, Threads: 0 runnable, 20 total
+[2026-10-10T23:09:36.791+0800][1.585s] GC(7) Pause Young (Normal) (G1 Evacuation Pause) 110M->64M(149M) 4.491ms
+[2026-10-10T23:09:36.791+0800][1.585s] Safepoint "G1CollectForAllocation", Time since last: 72202875 ns, Reaching safepoint: 4916 ns, At safepoint: 4509834 ns, Leaving safepoint: 9625 ns, Total: 4524375 ns, Threads: 1 runnable, 20 total
+[2026-10-10T23:09:36.862+0800][1.656s] GC(8) Pause Young (Normal) (G1 Evacuation Pause) 113M->67M(149M) 4.345ms
+[2026-10-10T23:09:36.862+0800][1.656s] Safepoint "G1CollectForAllocation", Time since last: 66856333 ns, Reaching safepoint: 2167 ns, At safepoint: 4361625 ns, Leaving safepoint: 9875 ns, Total: 4373667 ns, Threads: 0 runnable, 19 total
+[2026-10-10T23:09:36.921+0800][1.715s] GC(9) Pause Young (Normal) (G1 Evacuation Pause) 118M->71M(225M) 4.258ms
+[2026-10-10T23:09:36.921+0800][1.715s] Safepoint "G1CollectForAllocation", Time since last: 55081166 ns, Reaching safepoint: 4209 ns, At safepoint: 4287541 ns, Leaving safepoint: 8542 ns, Total: 4300292 ns, Threads: 0 runnable, 19 total
+[2026-10-10T23:09:37.050+0800][1.844s] GC(10) Pause Young (Normal) (G1 Evacuation Pause) 192M->82M(225M) 5.918ms
+[2026-10-10T23:09:37.050+0800][1.844s] Safepoint "G1CollectForAllocation", Time since last: 122665583 ns, Reaching safepoint: 4834 ns, At safepoint: 5935125 ns, Leaving safepoint: 12166 ns, Total: 5952125 ns, Threads: 0 runnable, 19 total
+[23:09:37] [main/INFO]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.4).
+[authlib-injector] [INFO] Transformed [net.minecraft.client.main.Main] with [Main Arguments Transformer]
+[MetallumAgent] FIX457 skip bundled slf4j: org.slf4j.LoggerFactory already visible on target loader net.fabricmc.loader.impl.launch.knot.KnotClassLoader@79dc5318
+[MetallumAgent] FIX263 slf4j classes queued first: 0 (resPrefix=classes261/)
+[MetallumAgent] FIX407 fabricmc api probe done: bundled stubs queued = 0 (0 = loader/classpath 已提供, 原版路线也不再缺接口)
+[MetallumAgent] real org.lwjgl.sdl binding detected - SDL stubs skipped
+[MetallumAgent] bundled com.metallum.Metallum found, will define
+[MetallumAgent] define target loader = net.fabricmc.loader.impl.launch.knot.KnotClassLoader@79dc5318 parent=net.fabricmc.loader.impl.launch.knot.KnotClassLoader$DynamicURLClassLoader@43b9fd5
+[MetallumAgent] defined metallum classes into MC loader (0)
+[MetallumAgent] 1.21.x metallum classes defined (classes261/)
+[2026-10-10T23:09:37.131+0800][1.926s] GC(11) Pause Young (Concurrent Start) (Metadata GC Threshold) 133M->89M(225M) 5.789ms
+[2026-10-10T23:09:37.131+0800][1.926s] GC(12) Concurrent Mark Cycle
+[2026-10-10T23:09:37.131+0800][1.926s] Safepoint "CollectForMetadataAllocation", Time since last: 75866959 ns, Reaching safepoint: 1750 ns, At safepoint: 5815000 ns, Leaving safepoint: 9333 ns, Total: 5826083 ns, Threads: 0 runnable, 19 total
+[2026-10-10T23:09:37.141+0800][1.935s] Safepoint "CollectForMetadataAllocation", Time since last: 9378500 ns, Reaching safepoint: 31542 ns, At safepoint: 18208 ns, Leaving safepoint: 3875 ns, Total: 53625 ns, Threads: 0 runnable, 19 total
+[2026-10-10T23:09:37.154+0800][1.949s] GC(12) Pause Remark 95M->90M(225M) 1.836ms
+[2026-10-10T23:09:37.154+0800][1.949s] Safepoint "G1PauseRemark", Time since last: 11388625 ns, Reaching safepoint: 157875 ns, At safepoint: 1867000 ns, Leaving safepoint: 7875 ns, Total: 2032750 ns, Threads: 1 runnable, 19 total
+[2026-10-10T23:09:37.162+0800][1.957s] GC(12) Pause Cleanup 94M->94M(225M) 0.012ms
+[2026-10-10T23:09:37.162+0800][1.957s] Safepoint "G1PauseCleanup", Time since last: 8025708 ns, Reaching safepoint: 22375 ns, At safepoint: 30084 ns, Leaving safepoint: 2333 ns, Total: 54792 ns, Threads: 1 runnable, 19 total
+[2026-10-10T23:09:37.163+0800][1.957s] GC(12) Concurrent Mark Cycle 31.212ms
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.properties.Property] with [Yggdrasil Public Key Transformer]
+[HotbarDiag] REJECT isGrabbing=0 | x=2256.0 y=516.0 | phys=2360x1640 guiScale=1 resScale=1.00 sdlWin=0x0
+[InputDiag] sendCursorPos #1: event=0 x=907.7 y=630.8 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #2: event=2 x=906.9 y=651.5 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #3: event=2 x=906.9 y=665.4 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[2026-10-10T23:09:37.381+0800][2.175s] GC(13) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 188M->88M(225M) 4.745ms
+[2026-10-10T23:09:37.381+0800][2.175s] Safepoint "G1CollectForAllocation", Time since last: 213741083 ns, Reaching safepoint: 4417 ns, At safepoint: 4838458 ns, Leaving safepoint: 11542 ns, Total: 4854417 ns, Threads: 0 runnable, 19 total
+[InputDiag] sendCursorPos #4: event=2 x=906.9 y=676.9 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #5: event=2 x=906.2 y=687.7 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #6: event=2 x=900.8 y=697.7 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #7: event=2 x=892.3 y=711.5 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #8: event=2 x=881.5 y=727.7 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #9: event=2 x=870.0 y=743.8 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] sendCursorPos #10: event=2 x=860.0 y=756.2 GLFW_invoke_CursorPos=0x0 isInputReady=0 g_sdlWindow=0x0 isGrabbing=0
+PatchJNAAgent: Replacing class
+Platform.isMac called from com.sun.jna.Native
+Platform.isMac called from com.sun.jna.Native
+Platform.isMac called from com.sun.jna.Native
+[SDLHook] Task133: libjnidispatch image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/Library/Caches/JNA/temp/jna12719263475548162045.tmp / install libjnidispatch.jnilib) -- invoking Task132 dlsym rebind (direct hdr+slide)
+[SDLHook] Task135: _dlsym slot 0x122374040 already == hooked_dlsym (idempotent hit, __DATA,__la_symbol_ptr) -- fishhook add-image callback or earlier pass won the race
+Platform.isMac called from com.sun.jna.Native
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+[23:09:37] [main/WARN]: Failed sysctl call: hw.packages, Error code: 1
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+Platform.isMac called from com.sun.jna.NativeLibrary
+[23:09:37] [main/WARN]: Failed sysctl call: machdep.cpu.brand_string, Error code: 1
+[23:09:37] [main/WARN]: Failed sysctl call: machdep.cpu.vendor, Error code: 2
+[23:09:37] [main/WARN]: Failed sysctl call: machdep.cpu.stepping, Error code: 2
+[23:09:37] [main/WARN]: Failed sysctl call: machdep.cpu.model, Error code: 2
+[23:09:37] [main/WARN]: Failed sysctl call: machdep.cpu.family, Error code: 2
+[23:09:37] [main/WARN]: Failed sysctl call: machdep.cpu.signature, Error code: 2
+[23:09:37] [main/WARN]: Failed sysctl call: machdep.cpu.feature_bits, Error code: 2
+[2026-10-10T23:09:37.607+0800][2.401s] GC(14) Pause Young (Mixed) (G1 Evacuation Pause) 208M->114M(239M) 10.404ms
+[2026-10-10T23:09:37.607+0800][2.401s] Safepoint "G1CollectForAllocation", Time since last: 215416708 ns, Reaching safepoint: 28250 ns, At safepoint: 10426459 ns, Leaving safepoint: 13416 ns, Total: 10468125 ns, Threads: 3 runnable, 21 total
+[23:09:37] [main/WARN]: Failed sysctl call: vm.swapusage, Error code: 1
+[2026-10-10T23:09:37.687+0800][2.481s] GC(15) Pause Young (Normal) (G1 Evacuation Pause) 206M->131M(327M) 12.802ms
+[2026-10-10T23:09:37.687+0800][2.481s] Safepoint "G1CollectForAllocation", Time since last: 67154209 ns, Reaching safepoint: 21416 ns, At safepoint: 12820417 ns, Leaving safepoint: 13375 ns, Total: 12855208 ns, Threads: 1 runnable, 21 total
+[23:09:37] [Datafixer Bootstrap/INFO]: 291 Datafixer optimizations took 196 milliseconds
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+10s
+[2026-10-10T23:09:38.043+0800][2.838s] GC(16) Pause Young (Normal) (G1 Evacuation Pause) 276M->138M(327M) 5.285ms
+[2026-10-10T23:09:38.043+0800][2.838s] Safepoint "G1CollectForAllocation", Time since last: 351113167 ns, Reaching safepoint: 2166 ns, At safepoint: 5325042 ns, Leaving safepoint: 13083 ns, Total: 5340291 ns, Threads: 0 runnable, 20 total
+[GameMenu] Task227 gear dock state: DOCKED handle (right edge)
+[2026-10-10T23:09:38.241+0800][3.036s] GC(17) Pause Young (Concurrent Start) (Metadata GC Threshold) 212M->139M(327M) 3.013ms
+[2026-10-10T23:09:38.241+0800][3.036s] GC(18) Concurrent Mark Cycle
+[2026-10-10T23:09:38.241+0800][3.036s] Safepoint "CollectForMetadataAllocation", Time since last: 195085042 ns, Reaching safepoint: 22917 ns, At safepoint: 3054041 ns, Leaving safepoint: 7459 ns, Total: 3084417 ns, Threads: 2 runnable, 20 total
+[2026-10-10T23:09:38.274+0800][3.068s] Safepoint "CollectForMetadataAllocation", Time since last: 32256291 ns, Reaching safepoint: 22042 ns, At safepoint: 28583 ns, Leaving safepoint: 4250 ns, Total: 54875 ns, Threads: 0 runnable, 20 total
+[2026-10-10T23:09:38.290+0800][3.084s] GC(18) Pause Remark 151M->151M(327M) 2.418ms
+[2026-10-10T23:09:38.290+0800][3.084s] Safepoint "G1PauseRemark", Time since last: 13819917 ns, Reaching safepoint: 26708 ns, At safepoint: 2448500 ns, Leaving safepoint: 6250 ns, Total: 2481458 ns, Threads: 1 runnable, 20 total
+[2026-10-10T23:09:38.307+0800][3.102s] GC(18) Pause Cleanup 156M->156M(327M) 0.014ms
+[2026-10-10T23:09:38.307+0800][3.102s] Safepoint "G1PauseCleanup", Time since last: 17163500 ns, Reaching safepoint: 18667 ns, At safepoint: 43625 ns, Leaving safepoint: 5208 ns, Total: 67500 ns, Threads: 1 runnable, 20 total
+[2026-10-10T23:09:38.308+0800][3.102s] GC(18) Concurrent Mark Cycle 66.138ms
+[2026-10-10T23:09:38.480+0800][3.274s] GC(19) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 289M->149M(327M) 7.784ms
+[2026-10-10T23:09:38.480+0800][3.274s] Safepoint "G1CollectForAllocation", Time since last: 164958334 ns, Reaching safepoint: 4250 ns, At safepoint: 7808666 ns, Leaving safepoint: 6542 ns, Total: 7819458 ns, Threads: 0 runnable, 20 total
+[GameMenu] Task236 floating bar hardened (gear {{1145, 288.49999833106995}, {26, 96}} r=13.0 subs=3; stats {{4.9999990314245224, 58.999999493360519}, {130, 24}}; caption {{-6, -3}, {34, 19.5}})
+[GameMenu] Task232 floating bar glass applied (gear + stats + caption, heavy dark material)
+[2026-10-10T23:09:38.707+0800][3.502s] GC(20) Pause Young (Mixed) (G1 Evacuation Pause) 293M->152M(327M) 6.986ms
+[2026-10-10T23:09:38.707+0800][3.502s] Safepoint "G1CollectForAllocation", Time since last: 220217292 ns, Reaching safepoint: 23500 ns, At safepoint: 7012041 ns, Leaving safepoint: 12792 ns, Total: 7048333 ns, Threads: 1 runnable, 20 total
+[GameMenu] Task236 floating bar hardened (gear {{1004.5, 271.99999833106995}, {44, 44}} r=22.0 subs=3; stats {{4.9999990314245224, 58.999999493360519}, {130, 24}}; caption {{-6, -3}, {34, 19.5}})
+[GameMenu] Task232 floating bar glass applied (gear + stats + caption, heavy dark material)
+[GameMenu] Task227 gear dock state: floating button (right edge)
+[2026-10-10T23:09:39.024+0800][3.819s] GC(21) Pause Young (Normal) (G1 Evacuation Pause) 296M->156M(327M) 4.861ms
+[2026-10-10T23:09:39.024+0800][3.819s] Safepoint "G1CollectForAllocation", Time since last: 312041958 ns, Reaching safepoint: 20750 ns, At safepoint: 4879250 ns, Leaving safepoint: 15459 ns, Total: 4915459 ns, Threads: 1 runnable, 20 total
+[2026-10-10T23:09:39.236+0800][4.030s] GC(22) Pause Young (Normal) (G1 Evacuation Pause) 300M->162M(327M) 4.732ms
+[2026-10-10T23:09:39.236+0800][4.030s] Safepoint "G1CollectForAllocation", Time since last: 206689291 ns, Reaching safepoint: 2042 ns, At safepoint: 4762292 ns, Leaving safepoint: 6166 ns, Total: 4770500 ns, Threads: 0 runnable, 20 total
+[2026-10-10T23:09:39.409+0800][4.203s] GC(23) Pause Young (Normal) (G1 Evacuation Pause) 303M->166M(327M) 6.307ms
+[2026-10-10T23:09:39.409+0800][4.203s] Safepoint "G1CollectForAllocation", Time since last: 166402667 ns, Reaching safepoint: 27792 ns, At safepoint: 6343208 ns, Leaving safepoint: 11333 ns, Total: 6382333 ns, Threads: 1 runnable, 20 total
+[GameMenu] Task227 gear dock state: DOCKED handle (right edge)
+[2026-10-10T23:09:39.627+0800][4.422s] GC(24) Pause Young (Concurrent Start) (G1 Evacuation Pause) 305M->170M(511M) 5.380ms
+[2026-10-10T23:09:39.627+0800][4.422s] Safepoint "G1CollectForAllocation", Time since last: 213225750 ns, Reaching safepoint: 1709 ns, At safepoint: 5401666 ns, Leaving safepoint: 3834 ns, Total: 5407209 ns, Threads: 0 runnable, 20 total
+[2026-10-10T23:09:39.627+0800][4.422s] GC(25) Concurrent Mark Cycle
+[2026-10-10T23:09:39.691+0800][4.486s] GC(25) Pause Remark 197M->197M(511M) 2.719ms
+[2026-10-10T23:09:39.691+0800][4.486s] Safepoint "G1PauseRemark", Time since last: 61236750 ns, Reaching safepoint: 5041 ns, At safepoint: 2733542 ns, Leaving safepoint: 5125 ns, Total: 2743708 ns, Threads: 1 runnable, 20 total
+[2026-10-10T23:09:39.715+0800][4.509s] GC(25) Pause Cleanup 208M->208M(511M) 0.046ms
+[2026-10-10T23:09:39.715+0800][4.509s] Safepoint "G1PauseCleanup", Time since last: 23282542 ns, Reaching safepoint: 173416 ns, At safepoint: 75917 ns, Leaving safepoint: 5750 ns, Total: 255083 ns, Threads: 3 runnable, 20 total
+[2026-10-10T23:09:39.715+0800][4.509s] GC(25) Concurrent Mark Cycle 87.949ms
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+12s
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.HttpAuthenticationService] with [ConcatenateURL Workaround]
+[authlib-injector] [INFO] Httpd is running on port 59889
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.YggdrasilEnvironment] with [Constant URL Transformer]
+[23:09:39] [Render thread/INFO]: Environment: Environment[sessionHost=http://127.0.0.1:59889/https/sessionserver.mojang.com, servicesHost=http://127.0.0.1:59889/https/api.minecraftservices.com, profilesHost=http://127.0.0.1:59889/https/api.mojang.com, name=PROD]
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.YggdrasilServicesKeyInfo] with [Yggdrasil Public Key Transformer]
+[GameMenu] Task236 floating bar hardened (gear {{1145, 251.49999833106995}, {26, 96}} r=13.0 subs=3; stats {{4.9999990314245224, 58.999999493360519}, {130, 24}}; caption {{1121.5, 325.29999833106996}, {34, 19.5}})
+[GameMenu] Task232 floating bar glass applied (gear + stats + caption, heavy dark material)
+[23:09:39] [Render thread/INFO]: Setting user: yiqiu4178
+[RenderDiag] fps=0 swapOK=0 swapFail=0 maxGap=0ms avgGap=0ms pres=0/0ms build=0/0ms mem=886MB layer=0x1230b7f80 drawable=2360x1640 scale=2.00 bounds=1180x820 inWindow=1
+[23:09:40] [Render thread/INFO]: == Beryl ==
+[23:09:40] [Render thread/INFO]: [Indigo] Different rendering plugin detected; not applying Indigo.
+[23:09:40] [Render thread/INFO]: == VulkanMod ==
+[SDLHook] hooked SDL_GetKeyboardState (real=0x0, Task67 kb-state poll observability)
+[InputDiag] initSDLEventFuncs: PushEvent=0x0 GetWindowID=0x0 g_sdlWindow=0x0 Task66GetKBState=0x10857c8b0 SetModState=0x0
+[input_bridge] Task225 CTCDesktopPeer resolved via com/github package (Java 17/21/25 caciocavallo)
+[input_bridge] Task226 CTCDesktopPeer openFile/openUri natives registered
+[JNI] JNI_OnLoadGLFW registered, class=0x107eb0b7a, method=0x12b664298, keyDownBuffer=0x1377d5040
+[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl.dylib / install bin/libs/native/macos/arm64/org/lwjgl/liblwjgl.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
+[SDLHook] Task135: _dlsym slot 0x122b180e0 already == hooked_dlsym (idempotent hit, __DATA_CONST,__got) -- fishhook add-image callback or earlier pass won the race
+[23:09:40] [Render thread/INFO]: Selecting Platform: MACOS
+[23:09:40] [Render thread/INFO]: GLFW: 3.4.0
+[23:09:40] [Render thread/INFO]: Backend library: LWJGL version 3.4.1
+[egl_bridge] MobileGL renderer: backend=DirectVulkan
+[PLDisplayLinkTarget] displayLinkTick #300 (configuredVulkan=0, actualVulkanPath=1, stateChanged=1)
+[egl_bridge] First frame rendered (Vulkan displayLink path), game is ready
+[2026-10-10T23:09:40.669+0800][5.463s] GC(26) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 470M->209M(516M) 12.127ms
+[2026-10-10T23:09:40.669+0800][5.463s] Safepoint "G1CollectForAllocation", Time since last: 942121708 ns, Reaching safepoint: 6167 ns, At safepoint: 12169250 ns, Leaving safepoint: 9375 ns, Total: 12184792 ns, Threads: 0 runnable, 30 total
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.properties.Property] with [Yggdrasil Public Key Transformer]
+[egl_bridge] pojavCreateContext: clientAPI=0 (GLFW_NO_API=0), renderer=libMobileGL.dylib, graphicsApi=default
+[egl_bridge] Vulkan path: returning CAMetalLayer as Vulkan surface
+[23:09:40] [metallum-state/INFO]: [STDERR]: [MetallumAgent] MouseHandler fix: onMove=false resync=false
+[23:09:40] [metallum-state/INFO]: [STDOUT]: [MetallumAgent] STATE t=5s pause= pause=ERR:NullPointerException dt=ERR:NullPointerException FLOW=ERR:java.lang.NoClassDefFoundError: com/mojang/blaze3d/systems/GpuSurfaceBackend mce=ERR:java.lang.NoClassDefFoundError: com/mojang/blaze3d/systems/CommandEncoderBackend tm=ERR:java.lang.NoClassDefFoundError: com/mojang/blaze3d/systems/TransientMemory timeSource=Util$$Lambda/0x000000016c332de8 getNanos=421512403001375 getMillis=421512403
+[SurfaceViewController] Launch overlay dismissed after 5.3 seconds
+[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/tmp/lwjgl_mobile/3.4.1/arm64/liblwjgl_vma.dylib / install bin/libs/native/macos/arm64/org/lwjgl/vma/liblwjgl_vma.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
+[SDLHook] Task132: libjnidispatch loaded but no verified _dlsym pointer slot (unexpected layout or write race -- retry scheduled)
+[23:09:41] [Render thread/INFO]: [STDERR]: [LWJGL] [ERROR] Incompatible Java and native library versions detected.
+Possible reasons:
+	a) -Djava.library.path is set to a folder containing shared libraries of an older LWJGL version.
+	b) The classpath contains jar files of an older LWJGL version.
+Possible solutions:
+	a) Make sure to not set -Djava.library.path (it is not needed for developing with LWJGL 3) or make
+	   sure the folder it points to contains the shared libraries of the correct LWJGL version.
+	b) Check the classpath and make sure to only have jar files of the same LWJGL version in it.
+[shaderc] dlsym intercepted: shaderc_compile_into_spv -> 32MB-stack wrapper (real=0x142430474)
+[shaderc] dlsym intercepted: shaderc_compile_into_spv_assembly -> 32MB-stack wrapper (real=0x142430bf8)
+[shaderc] dlsym intercepted: shaderc_compile_into_preprocessed_text -> 32MB-stack wrapper (real=0x142430c00)
+[shaderc] redirecting compiles to a 32MB-stack thread (glslang/spirv-cross deep recursion overflows the JVM 1MB stack)
+[shaderc] compile#0 snapshot: len=2479 kind=0 in='terrain.vsh' entry='main' opt=0x14a136800 head16='#version 460....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#1 snapshot: len=3859 kind=1 in='terrain.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#2 snapshot: len=2479 kind=0 in='terrain_earlyZ.vsh' entry='main' opt=0x14a136800 head16='#version 460....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#3 snapshot: len=3876 kind=1 in='terrain_earlyZ.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#4 snapshot: len=420 kind=0 in='blit.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#5 snapshot: len=323 kind=1 in='blit.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#6 snapshot: len=570 kind=0 in='clouds.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#7 snapshot: len=433 kind=1 in='clouds.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#8 snapshot: len=297 kind=0 in='blit.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#9 snapshot: len=532 kind=1 in='blit.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#10 snapshot: len=257 kind=0 in='blit.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#11 snapshot: len=532 kind=1 in='blit.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#12 snapshot: len=257 kind=0 in='blit.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#13 snapshot: len=242 kind=1 in='blit.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#14 snapshot: len=297 kind=0 in='blit.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#15 snapshot: len=242 kind=1 in='blit.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl_stb.dylib / install /tmp/liblwjgl_stb.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
+[SDLHook] Task132: libjnidispatch loaded but no verified _dlsym pointer slot (unexpected layout or write race -- retry scheduled)
+[23:09:41] [Render thread/INFO]: [STDERR]: [MetallumAgent] MouseHandler fix: onMove=false resync=false
+[23:09:41] [Render thread/INFO]: Using optional rendering extensions: 
+[Amethyst] Task129: OpenAL shim active (ALC_SOFT_system_events stubs advertised over openal-soft 1.20.1 impl; isSupported->ALC_FALSE => MC polling fallback)
+[23:09:41] [Render thread/INFO]: [STDOUT]: [MetallumAgent] CallbackDeviceTracker.isSupportedForPlaybackDevice(I)Z -> false (26.1 iOS: openal 缺 ALC_SOFT_system_events)
+[23:09:41] [Render thread/INFO]: [STDOUT]: [MetallumAgent] CallbackDeviceTracker 打了 1 个方法
+[2026-10-10T23:09:41.564+0800][6.358s] GC(27) Pause Young (Mixed) (G1 Evacuation Pause) 476M->213M(531M) 11.405ms
+[2026-10-10T23:09:41.564+0800][6.358s] Safepoint "G1CollectForAllocation", Time since last: 883685292 ns, Reaching safepoint: 6916 ns, At safepoint: 11423125 ns, Leaving safepoint: 12167 ns, Total: 11442208 ns, Threads: 0 runnable, 36 total
+[shaderc] compile#16 snapshot: len=660 kind=0 in='pipeline/gui.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#17 snapshot: len=539 kind=1 in='pipeline/gui.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#18 snapshot: len=756 kind=0 in='pipeline/gui_textured.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#19 snapshot: len=659 kind=1 in='pipeline/gui_textured.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[23:09:41] [Render thread/INFO]: Reloading ResourceManager: vanilla, beryl, fabric-api, fabric-api-base, fabric-api-lookup-api-v1, fabric-biome-api-v1, fabric-block-api-v1, fabric-block-getter-api-v2, fabric-command-api-v2, fabric-content-registries-v0, fabric-convention-tags-v2, fabric-crash-report-info-v1, fabric-creative-tab-api-v1, fabric-data-attachment-api-v1, fabric-data-generation-api-v1, fabric-debug-api-v1, fabric-dimensions-v1, fabric-entity-events-v1, fabric-events-interaction-v0, fabric-game-rule-api-v1, fabric-item-api-v1, fabric-key-mapping-api-v1, fabric-lifecycle-events-v1, fabric-loot-api-v3, fabric-menu-api-v1, fabric-message-api-v1, fabric-model-loading-api-v1, fabric-networking-api-v1, fabric-object-builder-api-v1, fabric-particles-v1, fabric-permission-api-v1, fabric-recipe-api-v1, fabric-registry-sync-v0, fabric-renderer-api-v1, fabric-renderer-indigo, fabric-rendering-fluids-v1, fabric-rendering-v1, fabric-resource-conditions-api-v1, fabric-resource-loader-v0, fabric-resource-loader-v1, fabric-screen-api-v1, fabric-serialization-api-v1, fabric-sound-api-v1, fabric-tag-api-v1, fabric-transfer-api-v1, fabric-transitive-access-wideners-v1, fabricloader, vulkanmod
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack vulkanmod: vulkanmod:shaders/basic/terrain_earlyZ/terrain_earlyZ.json, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack vulkanmod: vulkanmod:shaders/basic/terrain_earlyZ/terrain_earlyZ.fsh, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack beryl: beryl:shaders/include/shadowSampling.glsl, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack beryl: beryl:shaders/bloom/finalBlend/finalBlend.vsh, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack beryl: beryl:shaders/bloom/finalBlend/finalBlend.json, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack beryl: beryl:shaders/bloom/finalBlend/finalBlend.fsh, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack beryl: beryl:shaders/bloom/filterDownsample/filterDownsample.vsh, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack beryl: beryl:shaders/bloom/filterDownsample/filterDownsample.json, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack beryl: beryl:shaders/bloom/filterDownsample/filterDownsample.fsh, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack beryl: beryl:shaders/blit/gammaTri.fsh, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack beryl: beryl:shaders/blit/blitTri.vsh, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack beryl: beryl:shaders/blit/blitTri.json, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack beryl: beryl:shaders/blit/blitTri.fsh, ignoring
+[23:09:41] [Worker-Main-4/ERROR]: Invalid path in mod resource-pack beryl: beryl:shaders/blit/blitGammaTri.json, ignoring
+[2026-10-10T23:09:41.713+0800][6.508s] GC(28) Pause Young (Concurrent Start) (CodeCache GC Threshold) 287M->216M(531M) 14.330ms
+[2026-10-10T23:09:41.713+0800][6.508s] GC(29) Concurrent Mark Cycle
+[2026-10-10T23:09:41.713+0800][6.508s] Safepoint "G1TryInitiateConcMark", Time since last: 134808792 ns, Reaching safepoint: 45625 ns, At safepoint: 14398958 ns, Leaving safepoint: 22458 ns, Total: 14467041 ns, Threads: 1 runnable, 43 total
+[InputDiag] pojavPumpEvents: isInputReady set to YES, showingWindow=0x0
+[InputDiag] pojavPumpEvents #1: window=0x1230b7f80 GLFW_invoke_Key=0x107a04110 GLFW_invoke_CursorPos=0x107a040d0 GLFW_invoke_Char=0x107a04120 isGrabbing=0 isUseStackQueue=1 eventCounter=0
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+14s
+[2026-10-10T23:09:41.843+0800][6.638s] GC(29) Pause Remark 285M->285M(531M) 4.176ms
+[2026-10-10T23:09:41.843+0800][6.638s] Safepoint "G1PauseRemark", Time since last: 125494834 ns, Reaching safepoint: 137708 ns, At safepoint: 4218083 ns, Leaving safepoint: 13167 ns, Total: 4368958 ns, Threads: 3 runnable, 44 total
+[23:09:41] [Download-1/INFO]: Could not authorize you against Realms server: javax.ws.rs.NotAuthorizedException: HTTP 401 Unauthorized
+[23:09:41] [Download-1/ERROR]: Failed to fetch Realms feature flags
+com.mojang.realmsclient.exception.RealmsServiceException: Realms authentication error with message 'javax.ws.rs.NotAuthorizedException: HTTP 401 Unauthorized'
+	at knot//com.mojang.realmsclient.client.RealmsClient.execute(RealmsClient.java:526)
+	at knot//com.mojang.realmsclient.client.RealmsClient.fetchFeatureFlags(RealmsClient.java:186)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+[2026-10-10T23:09:41.896+0800][6.691s] GC(29) Pause Cleanup 297M->297M(531M) 0.043ms
+[2026-10-10T23:09:41.896+0800][6.691s] Safepoint "G1PauseCleanup", Time since last: 53114917 ns, Reaching safepoint: 29208 ns, At safepoint: 68208 ns, Leaving safepoint: 7459 ns, Total: 104875 ns, Threads: 2 runnable, 44 total
+[2026-10-10T23:09:41.903+0800][6.697s] GC(29) Concurrent Mark Cycle 189.548ms
+[shaderc] compile#20 snapshot: len=756 kind=0 in='pipeline/mojang_logo.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#21 snapshot: len=659 kind=1 in='pipeline/mojang_logo.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[InputDiag] pojavPumpEvents #2: window=0x1230b7f80 GLFW_invoke_Key=0x107a04110 GLFW_invoke_CursorPos=0x107a040d0 GLFW_invoke_Char=0x107a04120 isGrabbing=0 isUseStackQueue=1 eventCounter=0
+[InputDiag] pojavPumpEvents #3: window=0x1230b7f80 GLFW_invoke_Key=0x107a04110 GLFW_invoke_CursorPos=0x107a040d0 GLFW_invoke_Char=0x107a04120 isGrabbing=0 isUseStackQueue=1 eventCounter=0
+[InputDiag] pojavPumpEvents #4: window=0x1230b7f80 GLFW_invoke_Key=0x107a04110 GLFW_invoke_CursorPos=0x107a040d0 GLFW_invoke_Char=0x107a04120 isGrabbing=0 isUseStackQueue=1 eventCounter=0
+[InputDiag] pojavPumpEvents #5: window=0x1230b7f80 GLFW_invoke_Key=0x107a04110 GLFW_invoke_CursorPos=0x107a040d0 GLFW_invoke_Char=0x107a04120 isGrabbing=0 isUseStackQueue=1 eventCounter=0
+[23:09:42] [Worker-Main-2/INFO]: Found unifont_pua-17.0.01.hex, loading
+[23:09:42] [Worker-Main-1/INFO]: Found unifont_all_no_pua-17.0.01.hex, loading
+[23:09:42] [Worker-Main-2/INFO]: Found unifont_jp_patch-17.0.01.hex, loading
+[2026-10-10T23:09:42.141+0800][6.935s] GC(30) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 490M->236M(531M) 7.197ms
+[2026-10-10T23:09:42.141+0800][6.935s] Safepoint "G1CollectForAllocation", Time since last: 236993000 ns, Reaching safepoint: 31125 ns, At safepoint: 7217666 ns, Leaving safepoint: 9959 ns, Total: 7258750 ns, Threads: 4 runnable, 44 total
+[2026-10-10T23:09:42.279+0800][7.073s] GC(31) Pause Young (Mixed) (G1 Evacuation Pause) 501M->266M(559M) 10.856ms
+[2026-10-10T23:09:42.279+0800][7.073s] Safepoint "G1CollectForAllocation", Time since last: 127408125 ns, Reaching safepoint: 27125 ns, At safepoint: 10875375 ns, Leaving safepoint: 16458 ns, Total: 10918958 ns, Threads: 3 runnable, 44 total
+[2026-10-10T23:09:42.603+0800][7.398s] GC(32) Pause Young (Concurrent Start) (G1 Humongous Allocation) 444M->312M(559M) 15.337ms
+[2026-10-10T23:09:42.603+0800][7.398s] Safepoint "G1TryInitiateConcMark", Time since last: 308852375 ns, Reaching safepoint: 8708 ns, At safepoint: 15359042 ns, Leaving safepoint: 8750 ns, Total: 15376500 ns, Threads: 0 runnable, 44 total
+[2026-10-10T23:09:42.603+0800][7.398s] GC(33) Concurrent Mark Cycle
+[shaderc] compile#22 snapshot: len=660 kind=0 in='pipeline/gui_text_highlight.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#23 snapshot: len=539 kind=1 in='pipeline/gui_text_highlight.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#24 snapshot: len=756 kind=0 in='pipeline/gui_textured.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#25 snapshot: len=659 kind=1 in='pipeline/gui_textured.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#26 snapshot: len=782 kind=0 in='pipeline/debug_filled_box.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#27 snapshot: len=434 kind=1 in='pipeline/debug_filled_box.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#28 snapshot: len=879 kind=0 in='pipeline/animate_sprite_blit.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#29 snapshot: len=451 kind=1 in='pipeline/animate_sprite_blit.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#30 snapshot: len=4414 kind=0 in='pipeline/clouds.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#31 snapshot: len=1889 kind=1 in='pipeline/clouds.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#32 snapshot: len=4813 kind=0 in='pipeline/entity_solid_offset_forward.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#33 snapshot: len=3262 kind=1 in='pipeline/entity_solid_offset_forward.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#34 snapshot: len=4934 kind=0 in='pipeline/energy_swirl.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#35 snapshot: len=3383 kind=1 in='pipeline/energy_swirl.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#36 snapshot: len=878 kind=0 in='pipeline/text_intensity_see_through.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#37 snapshot: len=558 kind=1 in='pipeline/text_intensity_see_through.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#38 snapshot: len=4904 kind=0 in='pipeline/entity_translucent_emissive.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#39 snapshot: len=3353 kind=1 in='pipeline/entity_translucent_emissive.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#40 snapshot: len=774 kind=0 in='pipeline/celestial.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#41 snapshot: len=498 kind=1 in='pipeline/celestial.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#42 snapshot: len=3018 kind=0 in='pipeline/translucent_block.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#43 snapshot: len=2442 kind=1 in='pipeline/translucent_block.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#44 snapshot: len=2892 kind=0 in='pipeline/leash.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#45 snapshot: len=2026 kind=1 in='pipeline/leash.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#46 snapshot: len=2966 kind=0 in='pipeline/text_intensity.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#47 snapshot: len=2383 kind=1 in='pipeline/text_intensity.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#48 snapshot: len=1045 kind=0 in='pipeline/debug_points.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#49 snapshot: len=434 kind=1 in='pipeline/debug_points.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#50 snapshot: len=756 kind=0 in='pipeline/mojang_logo.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#51 snapshot: len=659 kind=1 in='pipeline/mojang_logo.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#52 snapshot: len=2966 kind=0 in='pipeline/text_polygon_offset.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#53 snapshot: len=2378 kind=1 in='pipeline/text_polygon_offset.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#54 snapshot: len=4840 kind=0 in='pipeline/entity_translucent_cull.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#55 snapshot: len=3289 kind=1 in='pipeline/entity_translucent_cull.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#56 snapshot: len=4887 kind=0 in='pipeline/entity_translucent.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#57 snapshot: len=3336 kind=1 in='pipeline/entity_translucent.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#58 snapshot: len=878 kind=0 in='pipeline/outline_no_cull.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#59 snapshot: len=578 kind=1 in='pipeline/outline_no_cull.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[2026-10-10T23:09:42.716+0800][7.510s] GC(33) Pause Remark 330M->329M(559M) 4.656ms
+[2026-10-10T23:09:42.716+0800][7.510s] Safepoint "G1PauseRemark", Time since last: 107638583 ns, Reaching safepoint: 61125 ns, At safepoint: 4671584 ns, Leaving safepoint: 6333 ns, Total: 4739042 ns, Threads: 1 runnable, 44 total
+[shaderc] compile#60 snapshot: len=4414 kind=0 in='pipeline/flat_clouds.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#61 snapshot: len=1889 kind=1 in='pipeline/flat_clouds.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#62 snapshot: len=4887 kind=0 in='pipeline/entity_cutout_z_offset.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#63 snapshot: len=3336 kind=1 in='pipeline/entity_cutout_z_offset.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#64 snapshot: len=4813 kind=0 in='pipeline/entity_solid.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#65 snapshot: len=3262 kind=1 in='pipeline/entity_solid.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#66 snapshot: len=335 kind=0 in='pipeline/tracy_blit.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#67 snapshot: len=257 kind=1 in='pipeline/tracy_blit.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#68 snapshot: len=4906 kind=0 in='pipeline/armor_decal_cutout_no_cull.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#69 snapshot: len=3355 kind=1 in='pipeline/armor_decal_cutout_no_cull.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#70 snapshot: len=4887 kind=0 in='pipeline/entity_cutout.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#71 snapshot: len=3336 kind=1 in='pipeline/entity_cutout.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#72 snapshot: len=2639 kind=0 in='pipeline/end_gateway.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#73 snapshot: len=3950 kind=1 in='pipeline/end_gateway.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#74 snapshot: len=756 kind=0 in='pipeline/gui_nausea_overlay.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#75 snapshot: len=659 kind=1 in='pipeline/gui_nausea_overlay.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#76 snapshot: len=4880 kind=0 in='pipeline/eyes.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#77 snapshot: len=3329 kind=1 in='pipeline/eyes.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#78 snapshot: len=2639 kind=0 in='pipeline/end_portal.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#79 snapshot: len=3950 kind=1 in='pipeline/end_portal.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#80 snapshot: len=3736 kind=0 in='pipeline/lines_depth_bias.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#81 snapshot: len=2210 kind=1 in='pipeline/lines_depth_bias.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#82 snapshot: len=4904 kind=0 in='pipeline/entity_cutout_dissolve.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#83 snapshot: len=3373 kind=1 in='pipeline/entity_cutout_dissolve.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#84 snapshot: len=842 kind=0 in='pipeline/world_border.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#85 snapshot: len=498 kind=1 in='pipeline/world_border.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#86 snapshot: len=4859 kind=0 in='pipeline/end_crystal_beam.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#87 snapshot: len=3308 kind=1 in='pipeline/end_crystal_beam.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#88 snapshot: len=782 kind=0 in='pipeline/debug_quads.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#89 snapshot: len=434 kind=1 in='pipeline/debug_quads.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#90 snapshot: len=2578 kind=0 in='pipeline/dragon_rays.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[2026-10-10T23:09:42.759+0800][7.553s] GC(33) Pause Cleanup 334M->334M(559M) 0.040ms
+[2026-10-10T23:09:42.759+0800][7.553s] Safepoint "G1PauseCleanup", Time since last: 42964250 ns, Reaching safepoint: 3917 ns, At safepoint: 67708 ns, Leaving safepoint: 1875 ns, Total: 73500 ns, Threads: 0 runnable, 44 total
+[shaderc] compile#91 snapshot: len=2192 kind=1 in='pipeline/dragon_rays.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[2026-10-10T23:09:42.759+0800][7.554s] GC(33) Concurrent Mark Cycle 155.972ms
+[shaderc] compile#92 snapshot: len=3736 kind=0 in='pipeline/secondary_block_outline.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#93 snapshot: len=2210 kind=1 in='pipeline/secondary_block_outline.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#94 snapshot: len=879 kind=0 in='pipeline/animate_sprite_interpolate.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#95 snapshot: len=696 kind=1 in='pipeline/animate_sprite_interpolate.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#96 snapshot: len=756 kind=0 in='pipeline/gui_textured_premultiplied_alpha.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#97 snapshot: len=659 kind=1 in='pipeline/gui_textured_premultiplied_alpha.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#98 snapshot: len=782 kind=0 in='pipeline/text_background_see_through.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#99 snapshot: len=433 kind=1 in='pipeline/text_background_see_through.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#100 snapshot: len=2604 kind=0 in='pipeline/glint.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#101 snapshot: len=2575 kind=1 in='pipeline/glint.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#102 snapshot: len=4840 kind=0 in='pipeline/entity_cutout_cull.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#103 snapshot: len=3289 kind=1 in='pipeline/entity_cutout_cull.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#104 snapshot: len=676 kind=0 in='pipeline/water_mask.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#105 snapshot: len=304 kind=1 in='pipeline/water_mask.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#106 snapshot: len=3248 kind=0 in='pipeline/translucent_terrain.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#107 snapshot: len=5358 kind=1 in='pipeline/translucent_terrain.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#108 snapshot: len=2990 kind=0 in='pipeline/solid_block.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#109 snapshot: len=2414 kind=1 in='pipeline/solid_block.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#110 snapshot: len=2474 kind=0 in='pipeline/dragon_rays_depth.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#111 snapshot: len=2130 kind=1 in='pipeline/dragon_rays_depth.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#112 snapshot: len=4917 kind=0 in='pipeline/breeze_wind.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#113 snapshot: len=3366 kind=1 in='pipeline/breeze_wind.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#114 snapshot: len=2578 kind=0 in='pipeline/lightning.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#115 snapshot: len=2192 kind=1 in='pipeline/lightning.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#116 snapshot: len=3017 kind=0 in='pipeline/cutout_block.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#117 snapshot: len=2441 kind=1 in='pipeline/cutout_block.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#118 snapshot: len=878 kind=0 in='pipeline/beacon_beam_opaque.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#119 snapshot: len=2613 kind=1 in='pipeline/beacon_beam_opaque.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#120 snapshot: len=744 kind=0 in='pipeline/panorama.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#121 snapshot: len=259 kind=1 in='pipeline/panorama.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#122 snapshot: len=2966 kind=0 in='pipeline/translucent_particle.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#123 snapshot: len=2378 kind=1 in='pipeline/translucent_particle.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#124 snapshot: len=335 kind=0 in='pipeline/entity_outline_blit.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#125 snapshot: len=257 kind=1 in='pipeline/entity_outline_blit.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#126 snapshot: len=3736 kind=0 in='pipeline/lines_translucent.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#127 snapshot: len=2210 kind=1 in='pipeline/lines_translucent.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#128 snapshot: len=3949 kind=0 in='pipeline/item_cutout.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#129 snapshot: len=2454 kind=1 in='pipeline/item_cutout.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#130 snapshot: len=660 kind=0 in='pipeline/gui_invert.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#131 snapshot: len=539 kind=1 in='pipeline/gui_invert.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#132 snapshot: len=3247 kind=0 in='pipeline/cutout_terrain.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#133 snapshot: len=5357 kind=1 in='pipeline/cutout_terrain.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#134 snapshot: len=782 kind=0 in='pipeline/debug_triangle_fan.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#135 snapshot: len=434 kind=1 in='pipeline/debug_triangle_fan.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#136 snapshot: len=4906 kind=0 in='pipeline/armor_cutout_no_cull.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#137 snapshot: len=3355 kind=1 in='pipeline/armor_cutout_no_cull.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#138 snapshot: len=782 kind=0 in='pipeline/sunrise_sunset.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#139 snapshot: len=434 kind=1 in='pipeline/sunrise_sunset.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#140 snapshot: len=4834 kind=0 in='pipeline/banner_pattern.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#141 snapshot: len=3283 kind=1 in='pipeline/banner_pattern.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[23:09:42] [Render thread/ERROR]: Element Normal not found in elements [Position, Color, UV0, UV2]
+[shaderc] compile#142 snapshot: len=2746 kind=0 in='pipeline/crumbling.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#143 snapshot: len=2397 kind=1 in='pipeline/crumbling.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#144 snapshot: len=756 kind=0 in='pipeline/vignette.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#145 snapshot: len=659 kind=1 in='pipeline/vignette.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#146 snapshot: len=2966 kind=0 in='pipeline/gui_text_intensity.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#147 snapshot: len=2383 kind=1 in='pipeline/gui_text_intensity.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#148 snapshot: len=878 kind=0 in='pipeline/text_see_through.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#149 snapshot: len=553 kind=1 in='pipeline/text_see_through.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#150 snapshot: len=2966 kind=0 in='pipeline/gui_text.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#151 snapshot: len=2378 kind=1 in='pipeline/gui_text.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#152 snapshot: len=756 kind=0 in='pipeline/fire_screen_effect.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#153 snapshot: len=659 kind=1 in='pipeline/fire_screen_effect.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#154 snapshot: len=756 kind=0 in='pipeline/gui_opaque_textured_background.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#155 snapshot: len=659 kind=1 in='pipeline/gui_opaque_textured_background.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#156 snapshot: len=2966 kind=0 in='pipeline/weather_depth_write.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#157 snapshot: len=2378 kind=1 in='pipeline/weather_depth_write.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#158 snapshot: len=756 kind=0 in='pipeline/end_sky.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#159 snapshot: len=659 kind=1 in='pipeline/end_sky.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#160 snapshot: len=2966 kind=0 in='pipeline/text.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#161 snapshot: len=2378 kind=1 in='pipeline/text.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#162 snapshot: len=878 kind=0 in='pipeline/outline_cull.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#163 snapshot: len=578 kind=1 in='pipeline/outline_cull.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#164 snapshot: len=4906 kind=0 in='pipeline/armor_translucent.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#165 snapshot: len=3355 kind=1 in='pipeline/armor_translucent.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#166 snapshot: len=2674 kind=0 in='pipeline/entity_shadow.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#167 snapshot: len=2359 kind=1 in='pipeline/entity_shadow.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#168 snapshot: len=756 kind=0 in='pipeline/crosshair.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#169 snapshot: len=659 kind=1 in='pipeline/crosshair.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#170 snapshot: len=3949 kind=0 in='pipeline/item_translucent.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#171 snapshot: len=2454 kind=1 in='pipeline/item_translucent.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#172 snapshot: len=3220 kind=0 in='pipeline/wireframe.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#173 snapshot: len=5330 kind=1 in='pipeline/wireframe.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#174 snapshot: len=2870 kind=0 in='pipeline/text_background.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#175 snapshot: len=2307 kind=1 in='pipeline/text_background.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#176 snapshot: len=676 kind=0 in='pipeline/stars.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#177 snapshot: len=304 kind=1 in='pipeline/stars.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#178 snapshot: len=335 kind=0 in='pipeline/lightmap.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#179 snapshot: len=2167 kind=1 in='pipeline/lightmap.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#180 snapshot: len=3736 kind=0 in='pipeline/lines.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#181 snapshot: len=2210 kind=1 in='pipeline/lines.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#182 snapshot: len=2966 kind=0 in='pipeline/weather_no_depth_write.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#183 snapshot: len=2378 kind=1 in='pipeline/weather_no_depth_write.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#184 snapshot: len=2966 kind=0 in='pipeline/opaque_particle.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#185 snapshot: len=2378 kind=1 in='pipeline/opaque_particle.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#186 snapshot: len=660 kind=0 in='pipeline/gui.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#187 snapshot: len=539 kind=1 in='pipeline/gui.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#188 snapshot: len=756 kind=0 in='pipeline/block_screen_effect.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#189 snapshot: len=659 kind=1 in='pipeline/block_screen_effect.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#190 snapshot: len=878 kind=0 in='pipeline/beacon_beam_translucent.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#191 snapshot: len=2613 kind=1 in='pipeline/beacon_beam_translucent.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#192 snapshot: len=3220 kind=0 in='pipeline/solid_terrain.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#193 snapshot: len=5330 kind=1 in='pipeline/solid_terrain.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#194 snapshot: len=2474 kind=0 in='pipeline/sky.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#195 snapshot: len=2078 kind=1 in='pipeline/sky.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#196 snapshot: len=660 kind=0 in='pipeline/gui.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#197 snapshot: len=539 kind=1 in='pipeline/gui.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[23:09:42] [Render thread/INFO]: OpenAL initialized on device CoreAudio Default
+[23:09:42] [Render thread/INFO]: Sound engine started
+[23:09:42] [Render thread/INFO]: Created: 512x256x0 minecraft:textures/atlas/particles.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 128x128x0 minecraft:textures/atlas/decorated_pot.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 2048x1024x0 minecraft:textures/atlas/armor_trims.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 512x256x0 minecraft:textures/atlas/paintings.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 1024x512x0 minecraft:textures/atlas/shield_patterns.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 1024x512x0 minecraft:textures/atlas/blocks.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 512x512x0 minecraft:textures/atlas/chest.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 256x128x0 minecraft:textures/atlas/celestials.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 1024x512x0 minecraft:textures/atlas/banner_patterns.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 512x512x0 minecraft:textures/atlas/beds.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 1024x512x0 minecraft:textures/atlas/items.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 1024x1024x0 minecraft:textures/atlas/gui.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 128x64x0 minecraft:textures/atlas/map_decorations.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 512x256x0 minecraft:textures/atlas/signs.png-atlas
+[23:09:42] [Render thread/INFO]: Created: 512x512x0 minecraft:textures/atlas/shulker_boxes.png-atlas
+[SDLHook] Task193: LWJGL native image detected (/private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl_opengl.dylib / install bin/libs/native/macos/arm64/org/lwjgl/opengl/liblwjgl_opengl.dylib) -- rebinding its _dlsym slots (GL NULL-resolution forensics)
+[SDLHook] Task132: libjnidispatch image missing symtab/linkedit (layout change?), dlsym rebind skipped
+[23:09:43] [IO-Worker-1/INFO]: Could not authorize you against Realms server: javax.ws.rs.NotAuthorizedException: HTTP 401 Unauthorized
+[23:09:43] [IO-Worker-1/ERROR]: Couldn't connect to realms
+com.mojang.realmsclient.exception.RealmsServiceException: Realms authentication error with message 'javax.ws.rs.NotAuthorizedException: HTTP 401 Unauthorized'
+	at knot//com.mojang.realmsclient.client.RealmsClient.execute(RealmsClient.java:526)
+	at knot//com.mojang.realmsclient.client.RealmsClient.clientCompatible(RealmsClient.java:307)
+	at knot//com.mojang.realmsclient.RealmsAvailability.lambda$check$0(RealmsAvailability.java:48)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+16s
+[InputDiag] sendCursorPos #50: event=2 x=883.1 y=548.5 GLFW_invoke_CursorPos=0x107a040d0 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
+[RenderDiag] fps=60 swapOK=0 swapFail=0 maxGap=0ms avgGap=0ms pres=0/0ms build=0/0ms mem=1809MB layer=0x1230b7f80 drawable=2360x1640 scale=2.00 bounds=1180x820 inWindow=1
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+18s
+[23:09:45] [metallum-state/INFO]: [STDOUT]: [MetallumAgent] STATE t=10s pause= pause=ERR:NullPointerException dt=ERR:NullPointerException FLOW=ERR:java.lang.NoClassDefFoundError: com/mojang/blaze3d/systems/GpuSurfaceBackend mce=ERR:java.lang.NoClassDefFoundError: com/mojang/blaze3d/systems/CommandEncoderBackend tm=ERR:java.lang.NoClassDefFoundError: com/mojang/blaze3d/systems/TransientMemory timeSource=Util$$Lambda/0x000000016c332de8 getNanos=421517410067041 getMillis=421517410
+[2026-10-10T23:09:46.065+0800][10.860s] GC(34) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 480M->335M(559M) 14.582ms
+[2026-10-10T23:09:46.065+0800][10.860s] Safepoint "G1CollectForAllocation", Time since last: 3292222375 ns, Reaching safepoint: 2917 ns, At safepoint: 14597583 ns, Leaving safepoint: 2958 ns, Total: 14603458 ns, Threads: 0 runnable, 40 total
+[shaderc] compile#198 snapshot: len=335 kind=0 in='blur/0.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#199 snapshot: len=1342 kind=1 in='blur/0.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#200 snapshot: len=335 kind=0 in='blur/1.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#201 snapshot: len=1342 kind=1 in='blur/1.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#202 snapshot: len=335 kind=0 in='blur/2.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#203 snapshot: len=1342 kind=1 in='blur/2.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#204 snapshot: len=335 kind=0 in='blur/3.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#205 snapshot: len=1342 kind=1 in='blur/3.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#206 snapshot: len=335 kind=0 in='blur/4.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#207 snapshot: len=1342 kind=1 in='blur/4.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#208 snapshot: len=335 kind=0 in='blur/5.vsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[shaderc] compile#209 snapshot: len=1342 kind=1 in='blur/5.fsh' entry='main' opt=0x14a136800 head16='#version 450..#d' (source snapshot + 32MB-stack hop)
+[InputDiag] sendCursorPos #100: event=2 x=457.7 y=335.4 GLFW_invoke_CursorPos=0x107a040d0 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
+[InputDiag] pojavPumpEvents #300: window=0x1230b7f80 GLFW_invoke_Key=0x107a04110 GLFW_invoke_CursorPos=0x107a040d0 GLFW_invoke_Char=0x107a04120 isGrabbing=0 isUseStackQueue=1 eventCounter=0
+[InputDiag] sendCursorPos #150: event=1 x=992.3 y=1098.5 GLFW_invoke_CursorPos=0x107a040d0 isInputReady=1 g_sdlWindow=0x0 isGrabbing=0
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+20s
+[2026-10-10T23:09:47.875+0800][12.670s] GC(35) Pause Young (Mixed) (G1 Evacuation Pause) 476M->337M(559M) 5.719ms
+[2026-10-10T23:09:47.875+0800][12.670s] Safepoint "G1CollectForAllocation", Time since last: 1804299584 ns, Reaching safepoint: 54208 ns, At safepoint: 5741625 ns, Leaving safepoint: 21292 ns, Total: 5817125 ns, Threads: 5 runnable, 42 total
+[2026-10-10T23:09:48.019+0800][12.814s] GC(36) Pause Young (Concurrent Start) (G1 Evacuation Pause) 488M->339M(559M) 3.328ms
+[2026-10-10T23:09:48.019+0800][12.814s] GC(37) Concurrent Mark Cycle
+[2026-10-10T23:09:48.019+0800][12.814s] Safepoint "G1CollectForAllocation", Time since last: 140264458 ns, Reaching safepoint: 12958 ns, At safepoint: 3349834 ns, Leaving safepoint: 14041 ns, Total: 3376833 ns, Threads: 0 runnable, 42 total
+[2026-10-10T23:09:48.119+0800][12.914s] Safepoint "G1TryInitiateConcMark", Time since last: 100040500 ns, Reaching safepoint: 32625 ns, At safepoint: 5875 ns, Leaving safepoint: 2542 ns, Total: 41042 ns, Threads: 0 runnable, 42 total
+[2026-10-10T23:09:48.159+0800][12.953s] GC(37) Pause Remark 432M->432M(567M) 8.232ms
+[2026-10-10T23:09:48.159+0800][12.953s] Safepoint "G1PauseRemark", Time since last: 31083875 ns, Reaching safepoint: 24458 ns, At safepoint: 8248000 ns, Leaving safepoint: 11417 ns, Total: 8283875 ns, Threads: 1 runnable, 42 total
+[2026-10-10T23:09:48.211+0800][13.005s] GC(37) Pause Cleanup 455M->455M(567M) 0.028ms
+[2026-10-10T23:09:48.211+0800][13.005s] Safepoint "G1PauseCleanup", Time since last: 52043083 ns, Reaching safepoint: 30375 ns, At safepoint: 47459 ns, Leaving safepoint: 7291 ns, Total: 85125 ns, Threads: 2 runnable, 42 total
+[2026-10-10T23:09:48.211+0800][13.006s] GC(37) Concurrent Mark Cycle 192.005ms
+[2026-10-10T23:09:48.266+0800][13.061s] GC(38) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 499M->347M(567M) 5.184ms
+[2026-10-10T23:09:48.266+0800][13.061s] Safepoint "G1CollectForAllocation", Time since last: 50251500 ns, Reaching safepoint: 27042 ns, At safepoint: 5202625 ns, Leaving safepoint: 16875 ns, Total: 5246542 ns, Threads: 1 runnable, 42 total
+[2026-10-10T23:09:48.337+0800][13.132s] GC(39) Pause Young (Mixed) (G1 Evacuation Pause) 514M->342M(567M) 5.643ms
+[2026-10-10T23:09:48.337+0800][13.132s] Safepoint "G1CollectForAllocation", Time since last: 65557833 ns, Reaching safepoint: 7000 ns, At safepoint: 5670542 ns, Leaving safepoint: 14250 ns, Total: 5691792 ns, Threads: 1 runnable, 42 total
+[23:09:48] [Render thread/INFO]: Loaded 1515 recipes
+[23:09:48] [Render thread/INFO]: Loaded 1617 advancements
+[23:09:49] [Render thread/INFO]: Applied 0 biome modifications to 0 of 65 new biomes in 480.5 μs
+[23:09:49] [Server thread/INFO]: Starting integrated minecraft server version 26.1.2
+[23:09:49] [Server thread/INFO]: Generating keypair
+[23:09:49] [Server thread/INFO]: Selecting global world spawn...
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+22s
+[RenderDiag] fps=60 swapOK=0 swapFail=0 maxGap=0ms avgGap=0ms pres=0/0ms build=0/0ms mem=1807MB layer=0x1230b7f80 drawable=2360x1640 scale=2.00 bounds=1180x820 inWindow=1
+[2026-10-10T23:09:50.281+0800][15.076s] GC(40) Pause Young (Concurrent Start) (G1 Evacuation Pause) 522M->346M(567M) 4.248ms
+[2026-10-10T23:09:50.281+0800][15.076s] GC(41) Concurrent Mark Cycle
+[2026-10-10T23:09:50.281+0800][15.076s] Safepoint "G1CollectForAllocation", Time since last: 1939515042 ns, Reaching safepoint: 50083 ns, At safepoint: 4269583 ns, Leaving safepoint: 23959 ns, Total: 4343625 ns, Threads: 4 runnable, 42 total
+[2026-10-10T23:09:50.434+0800][15.229s] GC(41) Pause Remark 376M->376M(579M) 4.457ms
+[2026-10-10T23:09:50.434+0800][15.229s] Safepoint "G1PauseRemark", Time since last: 148685708 ns, Reaching safepoint: 25292 ns, At safepoint: 4487333 ns, Leaving safepoint: 13958 ns, Total: 4526583 ns, Threads: 2 runnable, 46 total
+[2026-10-10T23:09:50.490+0800][15.285s] GC(41) Pause Cleanup 389M->389M(579M) 0.055ms
+[2026-10-10T23:09:50.490+0800][15.285s] Safepoint "G1PauseCleanup", Time since last: 55927375 ns, Reaching safepoint: 23750 ns, At safepoint: 70334 ns, Leaving safepoint: 7333 ns, Total: 101417 ns, Threads: 2 runnable, 46 total
+[2026-10-10T23:09:50.491+0800][15.286s] GC(41) Concurrent Mark Cycle 209.731ms
+[2026-10-10T23:09:50.728+0800][15.523s] GC(42) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 528M->359M(579M) 6.467ms
+[2026-10-10T23:09:50.729+0800][15.523s] Safepoint "G1CollectForAllocation", Time since last: 231543625 ns, Reaching safepoint: 34083 ns, At safepoint: 6487000 ns, Leaving safepoint: 19084 ns, Total: 6540167 ns, Threads: 7 runnable, 46 total
+[23:09:50] [metallum-state/INFO]: [STDOUT]: [MetallumAgent] STATE t=15s pause= pause=ERR:NullPointerException dt=ERR:NullPointerException FLOW=ERR:java.lang.NoClassDefFoundError: com/mojang/blaze3d/systems/GpuSurfaceBackend mce=ERR:java.lang.NoClassDefFoundError: com/mojang/blaze3d/systems/CommandEncoderBackend tm=ERR:java.lang.NoClassDefFoundError: com/mojang/blaze3d/systems/TransientMemory timeSource=Util$$Lambda/0x000000016c332de8 getNanos=421522416646000 getMillis=421522416
+[23:09:50] [Launch-Watchdog/INFO]: [STDOUT]: [LaunchWatchdog] Task86 game thread renamed: main -> Render thread
+[23:09:50] [Launch-Watchdog/INFO]: [STDOUT]: [LaunchWatchdog] Task86 launch reached MinecraftClient (window init), sample #1
+[2026-10-10T23:09:51.172+0800][15.967s] GC(43) Pause Young (Mixed) (G1 Evacuation Pause) 536M->360M(579M) 6.755ms
+[2026-10-10T23:09:51.172+0800][15.967s] Safepoint "G1CollectForAllocation", Time since last: 436943291 ns, Reaching safepoint: 27250 ns, At safepoint: 6775334 ns, Leaving safepoint: 11833 ns, Total: 6814417 ns, Threads: 1 runnable, 46 total
+[23:09:51] [Server thread/INFO]: Loading 0 persistent chunks...
+[23:09:51] [Server thread/INFO]: 准备生成区域中：16%
+[23:09:51] [Server thread/INFO]: Saving chunks for level 'ServerLevel[新的世界]'/minecraft:overworld
+[23:09:51] [Server thread/INFO]: Saving chunks for level 'ServerLevel[新的世界]'/minecraft:the_end
+[23:09:51] [Server thread/INFO]: Saving chunks for level 'ServerLevel[新的世界]'/minecraft:the_nether
+[23:09:51] [Server thread/INFO]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[23:09:51] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[23:09:51] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[23:09:51] [Server thread/INFO]: ThreadedAnvilChunkStorage: All dimensions are saved
+[authlib-injector] [INFO] Transformed [net.minecraft.server.network.ServerLoginPacketListenerImpl] with [Username Character Check Transformer]
+[2026-10-10T23:09:51.694+0800][16.488s] GC(44) Pause Young (Concurrent Start) (G1 Humongous Allocation) 522M->364M(579M) 2.800ms
+[2026-10-10T23:09:51.694+0800][16.489s] GC(45) Concurrent Mark Cycle
+[2026-10-10T23:09:51.694+0800][16.489s] Safepoint "G1TryInitiateConcMark", Time since last: 518727417 ns, Reaching safepoint: 28916 ns, At safepoint: 2820334 ns, Leaving safepoint: 23833 ns, Total: 2873083 ns, Threads: 6 runnable, 49 total
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+24s
+[2026-10-10T23:09:51.891+0800][16.686s] GC(45) Pause Remark 413M->413M(610M) 9.253ms
+[2026-10-10T23:09:51.891+0800][16.686s] Safepoint "G1PauseRemark", Time since last: 188233208 ns, Reaching safepoint: 16167 ns, At safepoint: 9288250 ns, Leaving safepoint: 14750 ns, Total: 9319167 ns, Threads: 0 runnable, 49 total
+[2026-10-10T23:09:51.952+0800][16.747s] GC(45) Pause Cleanup 415M->415M(610M) 0.036ms
+[2026-10-10T23:09:51.952+0800][16.747s] Safepoint "G1PauseCleanup", Time since last: 60655500 ns, Reaching safepoint: 4458 ns, At safepoint: 54209 ns, Leaving safepoint: 1541 ns, Total: 60208 ns, Threads: 0 runnable, 49 total
+[2026-10-10T23:09:51.953+0800][16.747s] GC(45) Concurrent Mark Cycle 258.704ms
+[23:09:52] [Server thread/INFO]: Loading 47 chunks for player spawn...
+[23:09:52] [Server thread/INFO]: 准备生成区域中：16%
+[23:09:52] [Server thread/INFO]: 准备生成区域中：16%
+[23:09:52] [Server thread/INFO]: 准备生成区域中：16%
+[23:09:52] [Server thread/INFO]: 准备生成区域中：16%
+[2026-10-10T23:09:52.210+0800][17.005s] GC(46) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 546M->375M(610M) 4.096ms
+[2026-10-10T23:09:52.210+0800][17.005s] Safepoint "G1CollectForAllocation", Time since last: 253955584 ns, Reaching safepoint: 45583 ns, At safepoint: 4114500 ns, Leaving safepoint: 14167 ns, Total: 4174250 ns, Threads: 1 runnable, 49 total
+[23:09:52] [Server thread/INFO]: 准备生成区域中：16%
+[2026-10-10T23:09:52.469+0800][17.263s] GC(47) Pause Young (Mixed) (G1 Evacuation Pause) 570M->389M(616M) 9.093ms
+[2026-10-10T23:09:52.469+0800][17.263s] Safepoint "G1CollectForAllocation", Time since last: 249309041 ns, Reaching safepoint: 30542 ns, At safepoint: 9119875 ns, Leaving safepoint: 15250 ns, Total: 9165667 ns, Threads: 1 runnable, 49 total
+[2026-10-10T23:09:52.650+0800][17.444s] GC(48) Pause Young (Concurrent Start) (G1 Evacuation Pause) 570M->398M(616M) 5.159ms
+[2026-10-10T23:09:52.650+0800][17.444s] GC(49) Concurrent Mark Cycle
+[2026-10-10T23:09:52.650+0800][17.444s] Safepoint "G1CollectForAllocation", Time since last: 175647125 ns, Reaching safepoint: 44875 ns, At safepoint: 5205125 ns, Leaving safepoint: 17125 ns, Total: 5267125 ns, Threads: 4 runnable, 49 total
+[23:09:52] [Server thread/INFO]: 准备生成区域中：29%
+[2026-10-10T23:09:52.885+0800][17.680s] GC(49) Pause Remark 513M->513M(664M) 6.602ms
+[2026-10-10T23:09:52.885+0800][17.680s] Safepoint "G1PauseRemark", Time since last: 228561958 ns, Reaching safepoint: 21792 ns, At safepoint: 6626917 ns, Leaving safepoint: 7125 ns, Total: 6655834 ns, Threads: 2 runnable, 49 total
+[2026-10-10T23:09:52.956+0800][17.751s] GC(49) Pause Cleanup 544M->544M(664M) 0.079ms
+[2026-10-10T23:09:52.956+0800][17.751s] Safepoint "G1PauseCleanup", Time since last: 71505666 ns, Reaching safepoint: 9625 ns, At safepoint: 103667 ns, Leaving safepoint: 2333 ns, Total: 115625 ns, Threads: 1 runnable, 49 total
+[2026-10-10T23:09:52.957+0800][17.752s] GC(49) Concurrent Mark Cycle 307.527ms
+[2026-10-10T23:09:53.018+0800][17.812s] GC(50) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 577M->398M(664M) 3.682ms
+[2026-10-10T23:09:53.018+0800][17.812s] Safepoint "G1CollectForAllocation", Time since last: 57622667 ns, Reaching safepoint: 4125 ns, At safepoint: 3706375 ns, Leaving safepoint: 8500 ns, Total: 3719000 ns, Threads: 0 runnable, 49 total
+[23:09:53] [Server thread/INFO]: 准备生成区域中：57%
+[2026-10-10T23:09:53.308+0800][18.103s] GC(51) Pause Young (Mixed) (G1 Evacuation Pause) 618M->405M(664M) 4.863ms
+[2026-10-10T23:09:53.308+0800][18.103s] Safepoint "G1CollectForAllocation", Time since last: 285548000 ns, Reaching safepoint: 48042 ns, At safepoint: 4884000 ns, Leaving safepoint: 19458 ns, Total: 4951500 ns, Threads: 7 runnable, 49 total
+[23:09:53] [Server thread/INFO]: Time elapsed: 3978 ms
+[23:09:53] [Server thread/INFO]: yiqiu4178[local:E:11e46935] logged in with entity id 49 at (-246.5, 66.0, 198.5)
+[2026-10-10T23:09:53.706+0800][18.501s] GC(52) Pause Young (Concurrent Start) (G1 Evacuation Pause) 622M->412M(664M) 4.155ms
+[2026-10-10T23:09:53.706+0800][18.501s] GC(53) Concurrent Mark Cycle
+[2026-10-10T23:09:53.706+0800][18.501s] Safepoint "G1CollectForAllocation", Time since last: 393945333 ns, Reaching safepoint: 20542 ns, At safepoint: 4193833 ns, Leaving safepoint: 10625 ns, Total: 4225000 ns, Threads: 0 runnable, 49 total
+[23:09:53] [Server thread/INFO]: yiqiu4178加入了游戏
+[23:09:53] [Render thread/WARN]: Failed sysctl call: hw.packages, Error code: 1
+[input_bridge] Blocked fork/exec of 'sysctl' (iOS sandbox forbids fork/exec)
+[23:09:53] [Render thread/WARN]: Failed sysctl call: machdep.cpu.brand_string, Error code: 1
+[23:09:53] [Render thread/WARN]: Failed sysctl call: machdep.cpu.vendor, Error code: 2
+[23:09:53] [Render thread/WARN]: Failed sysctl call: machdep.cpu.stepping, Error code: 2
+[23:09:53] [Render thread/WARN]: Failed sysctl call: machdep.cpu.model, Error code: 2
+[23:09:53] [Render thread/WARN]: Failed sysctl call: machdep.cpu.family, Error code: 2
+[23:09:53] [Render thread/WARN]: Failed sysctl call: machdep.cpu.signature, Error code: 2
+[23:09:53] [Render thread/WARN]: Failed sysctl call: machdep.cpu.feature_bits, Error code: 2
+[23:09:53] [Server thread/INFO]: Changing view distance to 2, from 10
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+26s
+[23:09:53] [Server thread/INFO]: Changing simulation distance to 5, from 0
+[2026-10-10T23:09:53.909+0800][18.704s] GC(53) Pause Remark 464M->464M(697M) 3.893ms
+[2026-10-10T23:09:53.909+0800][18.704s] Safepoint "G1PauseRemark", Time since last: 198841542 ns, Reaching safepoint: 7792 ns, At safepoint: 3911750 ns, Leaving safepoint: 10333 ns, Total: 3929875 ns, Threads: 3 runnable, 52 total
+[23:09:53] [Render thread/INFO]: Loaded 2 advancements
+[2026-10-10T23:09:53.991+0800][18.786s] GC(53) Pause Cleanup 502M->502M(697M) 0.037ms
+[2026-10-10T23:09:53.991+0800][18.786s] Safepoint "G1PauseCleanup", Time since last: 81699375 ns, Reaching safepoint: 29208 ns, At safepoint: 70959 ns, Leaving safepoint: 11833 ns, Total: 112000 ns, Threads: 3 runnable, 55 total
+[2026-10-10T23:09:53.994+0800][18.789s] GC(53) Concurrent Mark Cycle 287.489ms
+[authlib-injector] [INFO] Transformed [com.mojang.authlib.yggdrasil.TextureUrlChecker] with [Texture Whitelist Transformer]
+[shaderc] compile#210 snapshot: len=257 kind=0 in='final.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#211 snapshot: len=1647 kind=1 in='final.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#212 snapshot: len=297 kind=0 in='blit.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#213 snapshot: len=242 kind=1 in='blit.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#214 snapshot: len=295 kind=0 in='blit.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#215 snapshot: len=324 kind=1 in='blit.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#216 snapshot: len=257 kind=0 in='blit.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#217 snapshot: len=324 kind=1 in='blit.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#218 snapshot: len=488 kind=0 in='sky.vsh' entry='main' opt=0x14a136800 head16='#version 450...#' (source snapshot + 32MB-stack hop)
+[shaderc] compile#219 snapshot: len=1671 kind=1 in='sky.fsh' entry='main' opt=0x14a136800 head16='#version 450...#' (source snapshot + 32MB-stack hop)
+[shaderc] compile#220 snapshot: len=995 kind=0 in='clouds.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#221 snapshot: len=1530 kind=1 in='clouds.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#222 snapshot: len=390 kind=0 in='sky.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#223 snapshot: len=357 kind=1 in='sky.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#224 snapshot: len=3998 kind=0 in='terrain.vsh' entry='main' opt=0x14a136800 head16='#version 450...#' (source snapshot + 32MB-stack hop)
+[shaderc] compile#225 snapshot: len=6713 kind=1 in='terrain.fsh' entry='main' opt=0x14a136800 head16='#version 450...#' (source snapshot + 32MB-stack hop)
+[shaderc] compile#226 snapshot: len=2270 kind=0 in='shadow.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#227 snapshot: len=548 kind=1 in='shadow.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#228 snapshot: len=1319 kind=0 in='shadow.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#229 snapshot: len=791 kind=1 in='shadow.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#230 snapshot: len=4052 kind=0 in='translucent.vsh' entry='main' opt=0x14a136800 head16='#version 450...#' (source snapshot + 32MB-stack hop)
+[shaderc] compile#231 snapshot: len=6622 kind=1 in='translucent.fsh' entry='main' opt=0x14a136800 head16='#version 450...#' (source snapshot + 32MB-stack hop)
+[shaderc] compile#232 snapshot: len=3972 kind=0 in='translucent.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#233 snapshot: len=6542 kind=1 in='translucent.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#234 snapshot: len=2539 kind=0 in='entity.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#235 snapshot: len=3037 kind=1 in='entity.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#236 snapshot: len=2359 kind=0 in='block.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#237 snapshot: len=2675 kind=1 in='block.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#238 snapshot: len=2342 kind=0 in='particle.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#239 snapshot: len=2803 kind=1 in='particle.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[2026-10-10T23:09:54.305+0800][19.100s] GC(54) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 632M->427M(697M) 4.419ms
+[2026-10-10T23:09:54.305+0800][19.100s] Safepoint "G1CollectForAllocation", Time since last: 309764208 ns, Reaching safepoint: 25417 ns, At safepoint: 4437625 ns, Leaving safepoint: 11167 ns, Total: 4474209 ns, Threads: 8 runnable, 73 total
+[shaderc] compile#240 snapshot: len=443 kind=0 in='bloom/downsample.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#241 snapshot: len=2533 kind=1 in='bloom/downsample.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#242 snapshot: len=445 kind=0 in='bloom/blend.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#243 snapshot: len=1915 kind=1 in='bloom/blend.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#244 snapshot: len=257 kind=0 in='bloom/finalBlend.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#245 snapshot: len=684 kind=1 in='bloom/finalBlend.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#246 snapshot: len=2739 kind=2 in='bloom_comp/downsample.comp' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#247 snapshot: len=5261 kind=2 in='bloom_comp/upsample.comp' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#248 snapshot: len=297 kind=0 in='blit.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#249 snapshot: len=532 kind=1 in='blit.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#250 snapshot: len=257 kind=0 in='blit.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#251 snapshot: len=532 kind=1 in='blit.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#252 snapshot: len=257 kind=0 in='blit.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#253 snapshot: len=242 kind=1 in='blit.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#254 snapshot: len=297 kind=0 in='blit.vsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[shaderc] compile#255 snapshot: len=242 kind=1 in='blit.fsh' entry='main' opt=0x14a136800 head16='#version 450....' (source snapshot + 32MB-stack hop)
+[23:09:54] [Render thread/INFO]: Resizing Dynamic Transforms UBO, capacity limit of 2 reached during a single frame. New capacity will be 4.
+[23:09:54] [Render thread/INFO]: Reallocating AutoIndexBuffer from 65536 to 187180
+[23:09:54] [Render thread/INFO]: Resizing Dynamic Transforms UBO, capacity limit of 4 reached during a single frame. New capacity will be 8.
+[2026-10-10T23:09:54.657+0800][19.452s] GC(55) Pause Young (Mixed) (G1 Evacuation Pause) 655M->433M(697M) 6.272ms
+[2026-10-10T23:09:54.657+0800][19.452s] Safepoint "G1CollectForAllocation", Time since last: 345450291 ns, Reaching safepoint: 61834 ns, At safepoint: 6327000 ns, Leaving safepoint: 15000 ns, Total: 6403834 ns, Threads: 5 runnable, 74 total
+[HotbarDiag] Task63 native guiScale refresh: 1 -> 5 (raw=0 auto=5 win=1814x1262)
+[RenderDiag] fps=60 swapOK=0 swapFail=0 maxGap=0ms avgGap=0ms pres=0/0ms build=0/0ms mem=2683MB layer=0x1230b7f80 drawable=2360x1640 scale=2.00 bounds=1180x820 inWindow=1
+[2026-10-10T23:09:55.047+0800][19.841s] GC(56) Pause Young (Concurrent Start) (G1 Evacuation Pause) 658M->445M(697M) 4.695ms
+[2026-10-10T23:09:55.047+0800][19.841s] GC(57) Concurrent Mark Cycle
+[2026-10-10T23:09:55.047+0800][19.841s] Safepoint "G1CollectForAllocation", Time since last: 384708791 ns, Reaching safepoint: 11667 ns, At safepoint: 4728333 ns, Leaving safepoint: 22417 ns, Total: 4762417 ns, Threads: 2 runnable, 74 total
+[2026-10-10T23:09:55.136+0800][19.931s] Safepoint "G1TryInitiateConcMark", Time since last: 89819708 ns, Reaching safepoint: 44500 ns, At safepoint: 6709 ns, Leaving safepoint: 5291 ns, Total: 56500 ns, Threads: 0 runnable, 74 total
+[2026-10-10T23:09:55.280+0800][20.075s] GC(57) Pause Remark 498M->498M(744M) 5.057ms
+[2026-10-10T23:09:55.280+0800][20.075s] Safepoint "G1PauseRemark", Time since last: 138310959 ns, Reaching safepoint: 58000 ns, At safepoint: 5074750 ns, Leaving safepoint: 13041 ns, Total: 5145791 ns, Threads: 1 runnable, 74 total
+[2026-10-10T23:09:55.346+0800][20.141s] GC(57) Pause Cleanup 504M->504M(744M) 0.029ms
+[2026-10-10T23:09:55.346+0800][20.141s] Safepoint "G1PauseCleanup", Time since last: 66370625 ns, Reaching safepoint: 4125 ns, At safepoint: 44917 ns, Leaving safepoint: 4625 ns, Total: 53667 ns, Threads: 0 runnable, 74 total
+[2026-10-10T23:09:55.347+0800][20.142s] GC(57) Concurrent Mark Cycle 300.287ms
+[SceneDelegate] Task192: uncaught-exception handler STOLEN (was=0x100311224) -- re-armed at t+28s
+[23:09:55] [metallum-state/INFO]: [STDOUT]: [MetallumAgent] STATE t=20s pause= pause=ERR:NullPointerException dt=ERR:NullPointerException FLOW=ERR:java.lang.NoClassDefFoundError: com/mojang/blaze3d/systems/GpuSurfaceBackend mce=ERR:java.lang.NoClassDefFoundError: com/mojang/blaze3d/systems/CommandEncoderBackend tm=ERR:java.lang.NoClassDefFoundError: com/mojang/blaze3d/systems/TransientMemory timeSource=Util$$Lambda/0x000000016c332de8 getNanos=421527423013291 getMillis=421527423
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  SIGSEGV (0xb) at pc=0x000000019ab5bff8, pid=19984, tid=48395
+#
+# JRE version: OpenJDK Runtime Environment (25.0.4) (build 25.0.4-internal-adhoc.ci.openjdk-25)
+# Java VM: OpenJDK 64-Bit Server VM (25.0.4-internal-adhoc.ci.openjdk-25, mixed mode, tiered, compressed oops, g1 gc, bsd-aarch64)
+# Problematic frame:
+# C  [libsystem_platform.dylib+0xff8]  _platform_memmove+0x58
+#
+# No core dump will be written. Core dumps have been disabled. To enable core dumping, try "ulimit -c unlimited" before starting Java again
+#
+# An error report file with more information is saved as:
+# /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Data/Application/DD494159-2E89-48F1-AE0A-AF2F80552843/Documents/hs_err_pid19984.log
+[2026-10-10T23:09:56.505+0800][21.300s] Loading hsdis library failed
+#
+# If you would like to submit a bug report, please visit:
+#   https://bugreport.java.com/bugreport/crash.jsp
+# The crash happened outside the Java Virtual Machine in native code.
+# See problematic frame for where to report the bug.
+#
+abort() called
+
+===== [Amethyst fatal trace] 2026-10-10 23:09:56.586 =====
+reason: abort() called
+thread: (unnamed)
+  #00 0x10856eaec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 76524
+  #01 0x10856ef08  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_abort + 77576
+  #02 0x143ca2224  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5abortEbPKvS1_ + 9052708
+  #03 0x143f74078  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12009592
+  #04 0x143f736b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12007096
+  #05 0x143f743b4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadPKcim11VMErrorTypeS3_Pc + 12010420
+  #06 0x143e27678  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12PosixSignals12user_handlerEv + 10647160
+  #07 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
+  #08 0x122b16568  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl.dylib  ? + 222568
+  #09 0x158bee1e8
+  #10 0x159072c74
+  #11 0x15843ca84
+  #12 0x15843ca84
+  #13 0x15843d01c
+  #14 0x15843ca84
+  #15 0x15843ca84
+  #16 0x15843ca84
+  #17 0x15843ca84
+  #18 0x15843ca84
+  #19 0x15843ca84
+  #20 0x15843ca84
+  #21 0x159d78e78
+  #22 0x15a018de0
+
+[main_hook] Task208: abort() originated inside libjvm (JVM fatal) -- terminating for real, no crash-view park
