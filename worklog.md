@@ -2404,3 +2404,21 @@ Stage Summary:
 - 5 项全部闭环：字体重叠第七轮（布局超定根修 + 多行缩字镜像）、游戏内齿轮+菜单（防御性可见性双层修）、前置条目（模组列表同款富条目 + 整行直跳下载页 + 自委托即装）、弹窗玻璃 v2（present-hook 必定安装 + 自适应配方）、i18n +1×5
 - CI run 38022978747（03e7acb4）一次绿零编译返工；产物就绪（ipa/tipa 220.3MB + dSYM 6.1MB）
 - 装机判读锚点：①版本下载列表日期不再与版本号相碰（行高 72）；②进游戏齿轮=深色玻璃球（含吸边把手态），"[GameMenu] Task236 floating bar hardened"，统计条/"菜单"=带白描边深色胶囊；③齿轮打开的底部菜单为可读深色面板（"[GameMenu] Task236 menu panel hardened"）；④前置条目内联图标+介绍，点行直达版本列表，选版本即装当前实例，ⓘ 看详情；⑤玻璃风格下任意确认弹窗=自适应半透明玻璃（"[ThemeOps] Task236 alert glass present-hook installed" + "Task236 alert glass v2"）
+
+---
+Task ID: 237
+Agent: main (Super Z)
+Task: 悬浮菜单体系彻底重写（用户第 7 轮指令）——不要 UIAlertController 加魔改 / 不要原生与玻璃混杂；玻璃风格=真液态玻璃悬浮菜单（UIVisualEffectView 毛玻璃+圆角+图标+悬浮）；原生风格=旧版原生弹窗；覆盖账号设置等全部弹窗；游戏内菜单"只有玻璃覆盖层无文字/不贴边只有全屏灰遮罩"根修
+
+Work Log:
+- 侦察：风格中枢 API（LGCIsGlassStyleActive / LGCApplyGlassToView 清底色雷）→ 游戏内菜单三轮补丁史（229→232→236 仍无字）→ UIKit+hook.m 双魔改现场 → UIAlertController 全仓 50 文件调用面（8 文件带输入框）→ CMake 登记方式 / hook 安装点（main.m:614）
+- 新建 Natives/AmeFloatingMenu.h/m：Ame237GlassMenuViewController（自控分层：明暗实底→SystemMaterial 磨砂→内容→发丝环；26pt 圆角+弹簧入场；destructive/cancel 语义；长菜单滚动）+ 标题语义图标启发式（中英 40+ 关键词、✓ 前缀、回退链）+ UIAlertAction KVC 镜像（失败整体回退原生）+ 输入框镜像双向同步 + 键盘避让 + 动作退场后触发；Ame237MenuRow 行控件公开共用
+- UIKit+hook.m：Task235/236 魔改双钩子整体拆除 → Task237 中央路由（交换基类 presentViewController）：玻璃风格下 UIAlertController 永不上屏（构造性杜绝混杂），非玻璃零开销直透（旧版原生逐字节不变）→ 一次覆盖账号设置等全部弹窗
+- SurfaceViewController+Navigation.m：游戏内菜单面板重写为自控分层 UIView（0.62 实底永不清空 + SystemMaterialDark index 0 + 行区恒在其上）+ 11 项 SF Symbol 图标行 + didSelectMenuItem 动作链不变 + 两形态保留 + 表委托六方法退役 + Task237 开菜取证
+- 验证：verify_task237 59/59 新建；229-D / 232-6c/11a/11b / 235-F / 236-C,E 诚实重锚；舰队全绿（138/139/142 环境性基线与 HEAD 一致；223-N4 为 Task235 时代既有漂移，stash 实证；137-G4 仅因前会话遗留 task179 脏文件，干净树 47/47）
+- 提交 abf9dbe4 推送；CI run 38028720623 一次绿（零编译修复轮）；产物 ipa/tipa 220.3MB + dSYM 6.2MB 就绪
+
+Stage Summary:
+- 玻璃风格下全启动器所有弹窗（含账号设置）= 全自定义液态玻璃悬浮菜单（毛玻璃/圆角/图标/悬浮/输入框/键盘避让）；原生风格 = 旧版原生弹窗零魔改
+- 游戏内菜单文字可见性由构造保证（不再依赖往 UIKit 视图里塞玻璃层）
+- 无 i18n 变更（2767 基线不动）；工作区保留前会话 task179 遗留脏文件未纳入本轮
