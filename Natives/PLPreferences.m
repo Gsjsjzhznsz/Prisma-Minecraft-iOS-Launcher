@@ -257,7 +257,7 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
             //   以"贴边但不吸住"的悬浮球形态恢复。注册后写读双向生效。
             //   valueForKeyPath: 语义：game.gear.docked = game→gear→docked，
             //   内层字典必须可变（setValue:forKeyPath: 最后一跳落在它上面）。
-            @"gear": [{
+            @"gear": [@{
                 @"docked": @NO,
                 @"docked_left": @NO
             } mutableCopy]
