@@ -1,4 +1,5 @@
 #import "DownloadViewController.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "BackgroundManager.h"
 #import "ControlRepoViewController.h"   // Task189：下载页控件仓库 tab
 // IconLoader：统一的项目图标加载器（双层缓存 + 降采样 + 并发控制 + CDN 镜像），
@@ -2485,83 +2486,36 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
 - (void)showFilterOptions {
     NSInteger tabIndex = self.tabSegment.selectedSegmentIndex;
 
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_187", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
 
     if (tabIndex == 1 || tabIndex == 2 || tabIndex == 3 || tabIndex == 4) {
-        [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_188", nil)
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            [self showGameVersionPicker];
-        }]];
-
-        [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_161", nil)
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            [self showSortOptions];
-        }]];
-
+        [ame240_items addObject:@{ @"title": localize(@"i18n_str_188", nil), @"handler": ^{ [self showGameVersionPicker]; } }];
+        [ame240_items addObject:@{ @"title": localize(@"i18n_str_161", nil), @"handler": ^{ [self showSortOptions]; } }];
         if (tabIndex == 1) {
-            [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_160", nil)
-                                                      style:UIAlertActionStyleDefault
-                                                    handler:^(UIAlertAction * _Nonnull action) {
-                [self showModLoaderPicker];
-            }]];
+            [ame240_items addObject:@{ @"title": localize(@"i18n_str_160", nil), @"handler": ^{ [self showModLoaderPicker]; } }];
         }
-
-        [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_163", nil)
-                                                  style:UIAlertActionStyleDestructive
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            [self resetFilters];
-        }]];
+        [ame240_items addObject:@{ @"title": localize(@"i18n_str_163", nil), @"destructive": @YES, @"handler": ^{ [self resetFilters]; } }];
     } else if (tabIndex == 5) {
-        [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_189", nil)
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            [self openImportModpackView];
-        }]];
-        [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_188", nil)
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            [self showGameVersionPicker];
-        }]];
-        [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_163", nil)
-                                                  style:UIAlertActionStyleDestructive
-                                                handler:^(UIAlertAction * _Nonnull action) {
+        [ame240_items addObject:@{ @"title": localize(@"i18n_str_189", nil), @"handler": ^{ [self openImportModpackView]; } }];
+        [ame240_items addObject:@{ @"title": localize(@"i18n_str_188", nil), @"handler": ^{ [self showGameVersionPicker]; } }];
+        [ame240_items addObject:@{ @"title": localize(@"i18n_str_163", nil), @"destructive": @YES, @"handler": ^{
             self.currentGameVersion = nil;
             [self refreshModpackList];
-        }]];
+        } }];
     } else if (tabIndex == 6) {
         // 世界 tab: 强制 CurseForge，提供 API Key 入口与版本筛选
-        [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_190", nil)
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            [self openCurseForgeAPIKeySettings];
-        }]];
-        [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_188", nil)
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            [self showGameVersionPicker];
-        }]];
-        [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_163", nil)
-                                                  style:UIAlertActionStyleDestructive
-                                                handler:^(UIAlertAction * _Nonnull action) {
+        [ame240_items addObject:@{ @"title": localize(@"i18n_str_190", nil), @"handler": ^{ [self openCurseForgeAPIKeySettings]; } }];
+        [ame240_items addObject:@{ @"title": localize(@"i18n_str_188", nil), @"handler": ^{ [self showGameVersionPicker]; } }];
+        [ame240_items addObject:@{ @"title": localize(@"i18n_str_163", nil), @"destructive": @YES, @"handler": ^{
             self.currentGameVersion = nil;
             [self refreshWorldList];
-        }]];
+        } }];
     }
-    
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
-    
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        alert.popoverPresentationController.sourceView = self.filterButton;
-        alert.popoverPresentationController.sourceRect = self.filterButton.bounds;
-    }
-    
-    [self presentViewController:alert animated:YES completion:nil];
+
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_187", nil)
+                                     dictItems:ame240_items
+                                    sourceView:self.filterButton ?: self.view];
 }
 
 /// Task179：versions 列表里是否已收录 “1.<minor>.” 开头的条目（旧次版本
@@ -2575,9 +2529,9 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
 }
 
 - (void)showGameVersionPicker {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_188", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役；~80 条长列表
+    // 由系统菜单自带滚动承载，iPhone/iPad 表现一致）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
 
     // 动态构建版本列表：优先使用已加载的 Mojang version_manifest 中的 release 版本，
     // 这样能自动跟随 MC 版本更新（不再使用硬编码列表）。
@@ -2658,35 +2612,29 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
     // 最末 patch ≈ 80 条），全量展示，actionSheet 可滚动。
 
     for (NSString *version in versions) {
-        [alert addAction:[UIAlertAction actionWithTitle:version
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            if ([version isEqualToString:localize(@"ame193.misc.2", @"全部版本")]) {
-                self.currentGameVersion = nil;
-            } else {
-                self.currentGameVersion = version;
-            }
-            // 用户手动选择后标记，不再自动覆盖
-            self.hasUserTouchedFilters = YES;
-            [self updateSidebarFilterValues];
-            [self reloadCurrentList];
-        }]];
+        [ame240_items addObject:@{
+            @"title": version,
+            @"handler": ^{
+                if ([version isEqualToString:localize(@"ame193.misc.2", @"全部版本")]) {
+                    self.currentGameVersion = nil;
+                } else {
+                    self.currentGameVersion = version;
+                }
+                // 用户手动选择后标记，不再自动覆盖
+                self.hasUserTouchedFilters = YES;
+                [self updateSidebarFilterValues];
+                [self reloadCurrentList];
+            },
+        }];
     }
-
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
 
     // iPad popover sourceView：版本 tab 上侧边栏容器整体隐藏但按钮自身
     // hidden=NO（Task212 修：旧逻辑查 sidebarVersionButton.hidden 永假，
     // popover 锚到不可见容器内的按钮上，位置漂移）——改查容器可见性。
     UIView *sourceView = self.filterSidebarContainer.hidden ? self.filterButton : self.sidebarVersionButton;
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        alert.popoverPresentationController.sourceView = sourceView;
-        alert.popoverPresentationController.sourceRect = sourceView.bounds;
-    }
-
-    [self presentViewController:alert animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_188", nil)
+                                     dictItems:ame240_items
+                                    sourceView:sourceView ?: self.view];
 }
 
 /// 解析当前 profile 的 Minecraft 版本（用于模组下载版本预选）
@@ -2750,9 +2698,8 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
 }
 
 - (void)showSortOptions {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_161", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
 
     NSDictionary *sortOptions = @{
         localize(@"i18n_str_2035", nil): @"follows",
@@ -2763,32 +2710,25 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
     };
 
     for (NSString *title in sortOptions) {
-        [alert addAction:[UIAlertAction actionWithTitle:title
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            self.currentSortField = sortOptions[title];
-            [self updateSidebarFilterValues];
-            [self reloadCurrentList];
-        }]];
+        [ame240_items addObject:@{
+            @"title": title,
+            @"handler": ^{
+                self.currentSortField = sortOptions[title];
+                [self updateSidebarFilterValues];
+                [self reloadCurrentList];
+            },
+        }];
     }
-
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
 
     UIView *sourceView = self.filterSidebarContainer.hidden ? self.filterButton : self.sidebarSortButton;  // Task212: 容器可见性
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        alert.popoverPresentationController.sourceView = sourceView;
-        alert.popoverPresentationController.sourceRect = sourceView.bounds;
-    }
-
-    [self presentViewController:alert animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_161", nil)
+                                     dictItems:ame240_items
+                                    sourceView:sourceView ?: self.view];
 }
 
 - (void)showModLoaderPicker {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_160", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
 
     NSArray *loaderNames = @[localize(@"resman.mods.filter.all", nil), @"Fabric", @"Forge", @"Quilt", @"NeoForge"];
     NSArray *loaderValues = @[[NSNull null], @"fabric", @"forge", @"quilt", @"neoforge"];
@@ -2797,28 +2737,22 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
         NSString *name = loaderNames[i];
         id value = loaderValues[i];
 
-        [alert addAction:[UIAlertAction actionWithTitle:name
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            self.currentModLoader = (value == [NSNull null]) ? nil : value;
-            // 用户手动选择后标记，不再自动覆盖
-            self.hasUserTouchedFilters = YES;
-            [self updateSidebarFilterValues];
-            [self reloadCurrentList];
-        }]];
+        [ame240_items addObject:@{
+            @"title": name,
+            @"handler": ^{
+                self.currentModLoader = (value == [NSNull null]) ? nil : value;
+                // 用户手动选择后标记，不再自动覆盖
+                self.hasUserTouchedFilters = YES;
+                [self updateSidebarFilterValues];
+                [self reloadCurrentList];
+            },
+        }];
     }
-
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
 
     UIView *sourceView = self.filterSidebarContainer.hidden ? self.filterButton : self.sidebarLoaderButton;  // Task212: 容器可见性
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        alert.popoverPresentationController.sourceView = sourceView;
-        alert.popoverPresentationController.sourceRect = sourceView.bounds;
-    }
-
-    [self presentViewController:alert animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_160", nil)
+                                     dictItems:ame240_items
+                                    sourceView:sourceView ?: self.view];
 }
 
 - (void)resetFilters {

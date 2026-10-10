@@ -15,6 +15,7 @@
 //
 
 #import "ModpackExportViewController.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "BackgroundManager.h"
 #import "ModpackExportService.h"
 #import "PLProfiles.h"
@@ -426,29 +427,27 @@
 - (void)showProfilePicker {
     if (self.profileNames.count == 0) return;
 
-    UIAlertController *sheet = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_492", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
     for (NSString *name in self.profileNames) {
         NSString *title = name;
         if ([name isEqualToString:self.selectedProfileName]) {
             title = [NSString stringWithFormat:@"%@ ✓", name];
         }
-        [sheet addAction:[UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            self.selectedProfileName = name;
-            [self refreshProfileInfo];
-            if (self.nameField.text.length == 0 || [self.profileNames containsObject:self.nameField.text]) {
-                self.nameField.text = name;
-            }
-        }]];
+        [ame240_items addObject:@{
+            @"title": title,
+            @"handler": ^{
+                self.selectedProfileName = name;
+                [self refreshProfileInfo];
+                if (self.nameField.text.length == 0 || [self.profileNames containsObject:self.nameField.text]) {
+                    self.nameField.text = name;
+                }
+            },
+        }];
     }
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
-
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        sheet.popoverPresentationController.sourceView = self.profileButton;
-        sheet.popoverPresentationController.sourceRect = self.profileButton.bounds;
-    }
-    [self presentViewController:sheet animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_492", nil)
+                                     dictItems:ame240_items
+                                    sourceView:self.profileButton ?: self.view];
 }
 
 #pragma mark - Export

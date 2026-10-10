@@ -1,5 +1,6 @@
 #import "PLLogOutputView.h"
 #import "PLCrashView.h"
+#import "AmeNativeMenu.h"   // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "SurfaceViewController.h"
 #import "utils.h"
 
@@ -84,21 +85,18 @@ static PLLogOutputView* current;
         return;
     }
 
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:nil message:line preferredStyle:UIAlertControllerStyleActionSheet];
-    alert.popoverPresentationController.sourceView = cell;
-    alert.popoverPresentationController.sourceRect = cell.bounds;
+    // ★ Task240：换装系统原生 UIMenu（锚定点按行；旧 actionSheet 退役）。
     // Task 64: 修复双重 localize —— 旧代码 localize(localize(@"Share")) 把翻译结果再当
     // key 查一次（英文环境碰巧自反，中文环境查"分享"落回原值，纯冗余调用）。
-    UIAlertAction *share = [UIAlertAction actionWithTitle:localize(@"Share", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[line] applicationActivities:nil];
-        activityVC.popoverPresentationController.sourceView = _navigationBar;
-        activityVC.popoverPresentationController.sourceRect = _navigationBar.bounds;
-        [currentVC() presentViewController:activityVC animated:YES completion:nil];
-    }];
-    UIAlertAction *cancel = [UIAlertAction actionWithTitle:localize(@"Cancel", nil) style:UIAlertActionStyleCancel handler:nil];
-    [alert addAction:share];
-    [alert addAction:cancel];
-    [currentVC() presentViewController:alert animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:nil
+                                     dictItems:@[
+        @{ @"title": localize(@"Share", nil), @"handler": ^{
+            UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[line] applicationActivities:nil];
+            activityVC.popoverPresentationController.sourceView = _navigationBar;
+            activityVC.popoverPresentationController.sourceRect = _navigationBar.bounds;
+            [currentVC() presentViewController:activityVC animated:YES completion:nil];
+        } },
+    ] sourceView:cell];
 }
 
 - (void)actionClearLogOutput {

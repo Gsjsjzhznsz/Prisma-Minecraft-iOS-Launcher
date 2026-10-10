@@ -6,6 +6,7 @@
 //
 
 #import "ThirdPartyLoginViewController.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "authenticator/ThirdPartyAuthenticator.h"
 #import "BackgroundManager.h"
 #import "LauncherPreferences.h"
@@ -422,24 +423,17 @@
     NSString *url = chip.accessibilityLabel;
     if (url.length == 0) return;
 
-    UIAlertController *alert = [UIAlertController
-        alertControllerWithTitle:localize(@"login.thirdparty.servers.remove.title", @"删除该服务器？")
-                         message:url
-                  preferredStyle:UIAlertControllerStyleActionSheet];
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"login.thirdparty.servers.remove.confirm", @"删除")
-                                              style:UIAlertActionStyleDestructive
-                                            handler:^(UIAlertAction *a) {
-        NSMutableArray<NSString *> *list = [ThirdPartyLoginViewController savedServerList];
-        [list removeObject:url];
-        [ThirdPartyLoginViewController saveServerList:list];
-        [self rebuildServerChips];
-    }]];
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"Cancel", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
-    alert.popoverPresentationController.sourceView = chip;
-    alert.popoverPresentationController.sourceRect = chip.bounds;
-    [self presentViewController:alert animated:YES completion:nil];
+    // ★ Task240：换装系统原生 UIMenu（长按服务器 chip → 删除项；
+    // 旧 actionSheet 确认壳退役）。
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"login.thirdparty.servers.remove.title", @"删除该服务器？")
+                                     dictItems:@[
+        @{ @"title": localize(@"login.thirdparty.servers.remove.confirm", @"删除"), @"destructive": @YES, @"handler": ^{
+            NSMutableArray<NSString *> *list = [ThirdPartyLoginViewController savedServerList];
+            [list removeObject:url];
+            [ThirdPartyLoginViewController saveServerList:list];
+            [self rebuildServerChips];
+        } },
+    ] sourceView:chip];
 }
 
 - (void)rebuildServerChips {
@@ -556,26 +550,20 @@
                     complete(nil);
                     return;
                 }
-                UIAlertController *picker = [UIAlertController
-                    alertControllerWithTitle:localize(@"login.thirdparty.profiles.title", @"选择要登录的角色")
-                                     message:nil
-                              preferredStyle:UIAlertControllerStyleActionSheet];
+                // ★ Task240：换装系统原生 UIMenu（角色选择器；外部点按
+                // 未选任何人 = 旧取消语义 → complete(nil)，流程不悬死）。
+                NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
                 for (NSDictionary *p in profiles) {
                     NSString *pname = [p[@"name"] isKindOfClass:[NSString class]] ? p[@"name"] : @"?";
-                    [picker addAction:[UIAlertAction actionWithTitle:pname
-                                                                style:UIAlertActionStyleDefault
-                                                              handler:^(UIAlertAction *a) {
-                        complete(p);
-                    }]];
+                    [ame240_items addObject:@{
+                        @"title": pname,
+                        @"handler": ^{ complete(p); },
+                    }];
                 }
-                [picker addAction:[UIAlertAction actionWithTitle:localize(@"Cancel", nil)
-                                                            style:UIAlertActionStyleCancel
-                                                          handler:^(UIAlertAction *a) {
-                    complete(nil);
-                }]];
-                picker.popoverPresentationController.sourceView = sSelf.loginButton;
-                picker.popoverPresentationController.sourceRect = sSelf.loginButton.bounds;
-                [sSelf presentViewController:picker animated:YES completion:nil];
+                [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"login.thirdparty.profiles.title", @"选择要登录的角色")
+                                                 dictItems:ame240_items
+                                                sourceView:sSelf.loginButton
+                                                onDismiss:^{ complete(nil); }];
             });
         };
 

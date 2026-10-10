@@ -9,6 +9,7 @@
 //
 
 #import "BingWallpaperGalleryViewController.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "BingWallpaperManager.h"
 #import "BackgroundManager.h"
 #import "utils.h"
@@ -237,34 +238,28 @@ static NSString * const kBingCellIdentifier = @"BingWallpaperCell";
 }
 
 - (void)showItemActions:(BingWallpaperItem *)item sourceCell:(nullable UICollectionViewCell *)cell {
-    NSString *message = [NSString stringWithFormat:@"%@\n%@", item.copyright ?: @"", item.title ?: @""];
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"bing.gallery.nav.title", nil)
-                                                                   message:message
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役；版权/标题
+    // 信息以禁用头行保留）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
+    [ame240_items addObject:@{
+        @"title": [NSString stringWithFormat:@"%@\n%@", item.copyright ?: @"", item.title ?: @""],
+        @"disabled": @YES,
+    }];
 
     __weak typeof(self) weakSelf = self;
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"bing.setwallpaper.title", nil)
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction *action) {
-        [weakSelf applyItem:item];
-    }]];
+    [ame240_items addObject:@{
+        @"title": localize(@"bing.setwallpaper.title", nil),
+        @"handler": ^{ [weakSelf applyItem:item]; },
+    }];
 
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"bing.save.title", nil)
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction *action) {
-        [weakSelf saveItemToPhotos:item];
-    }]];
+    [ame240_items addObject:@{
+        @"title": localize(@"bing.save.title", nil),
+        @"handler": ^{ [weakSelf saveItemToPhotos:item]; },
+    }];
 
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
-
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        alert.popoverPresentationController.sourceView = cell ?: self.view;
-        alert.popoverPresentationController.sourceRect = cell ? cell.frame : self.view.bounds;
-    }
-
-    [self presentViewController:alert animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"bing.gallery.nav.title", nil)
+                                     dictItems:ame240_items
+                                    sourceView:cell ?: self.view];
 }
 
 /// 统一「下载中」HUD（无按钮 alert，完成后 dismiss，与既有壁纸流程一致）

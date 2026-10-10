@@ -1,4 +1,5 @@
 #import "CustomControlsViewController.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "LauncherPreferences.h"
 #import "LauncherPreferencesViewController.h"
 #import "PLProfiles.h"
@@ -647,9 +648,8 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
 
 /// FCL/ZL2 风格：调整游戏分辨率（对应 FCL window_scale / ZL2 resolutionRatio）
 - (void)actionAdjustResolution {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"game.menu.resolution", nil)
-                                                                   message:localize(@"game.menu.resolution.message", nil)
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役；锚定常驻的
+    // 齿轮悬浮球，避免面板关闭后锚点失效）。
 
     NSArray *options = @[@25, @50, @75, @100, @125, @150];
     // Task186（分辨率调节失效根修）：Task159 实例化后生效链（updateSavedResolution）
@@ -659,12 +659,15 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
     // 生效值脱节。修法：读写全部对齐 profile 层（与生效链同源）。
     NSInteger currentValue = [PLProfiles resolveKeyForCurrentProfile:@"resolution"].integerValue;
     if (currentValue <= 0) currentValue = 100;
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
     for (NSNumber *value in options) {
         NSString *title = [NSString stringWithFormat:@"%ld%%", (long)value.intValue];
         if (value.intValue == currentValue) {
             title = [NSString stringWithFormat:@"✓ %@", title];
         }
-        [alert addAction:[UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        [ame240_items addObject:@{
+            @"title": title,
+            @"handler": ^{
             // Task186：写当前实例的 resolution 键（setServerIp 同款 mutableCopy
             // 写回模式，updateSavedResolution 立即可见——PLProfiles.current 同一
             // 内存对象，无需重建）；
@@ -698,15 +701,14 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
             }
             NSLog(@"[Task187] in-game resolution saved %ld%% -- geometry applies next launch (in-session resize would desync MC window belief + touch mapping)",
                   (long)value.intValue);
-        }]];
+            },
+        }];
     }
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"Cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
 
-    // iPad 适配
-    alert.popoverPresentationController.sourceView = self.view;
-    alert.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2, self.view.bounds.size.height / 2, 1, 1);
-
-    [self presentViewController:alert animated:YES completion:nil];
+    // ★ Task240：系统 UIMenu 呈现。
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"game.menu.resolution", nil)
+                                     dictItems:ame240_items
+                                    sourceView:self.gameMenuOverlay ?: self.view];
 }
 
 - (void)actionOpenNavigationMenu {

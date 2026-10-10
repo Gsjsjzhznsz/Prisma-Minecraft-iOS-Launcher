@@ -45,6 +45,7 @@
 //
 
 #import "Ame223CoachMarksView.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "BackgroundManager.h"
 #import "WelcomeViewController.h"
 #import "AboutViewController.h"
@@ -1145,30 +1146,25 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         @"English",
     ];
     NSLog(@"[Welcome] Task224 language picker opened (current=%@)", self.pickedLanguage);
-    UIAlertController *ame224_sheet = [UIAlertController
-        alertControllerWithTitle:localize(@"welcome.lang.row.title", nil)
-                         message:nil
-                  preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
     for (NSUInteger i = 0; i < ame224_codes.count; i++) {
         NSString *ame224_code = ame224_codes[i];
         NSString *ame224_name = ame224_names[i];
         BOOL ame224_current = [self.pickedLanguage isEqualToString:ame224_code];
-        [ame224_sheet addAction:[UIAlertAction
-            actionWithTitle:ame224_current ? [NSString stringWithFormat:@"✓ %@", ame224_name] : ame224_name
-                     style:UIAlertActionStyleDefault
-                   handler:^(UIAlertAction *ame224_act) {
-            self.pickedLanguage = ame224_code;
-            self.languageChanged = YES;
-            NSLog(@"[Welcome] Task224 language picked: %@", ame224_code);
-            [self ame224_refreshLangValue];
-        }]];
+        [ame240_items addObject:@{
+            @"title": ame224_current ? [NSString stringWithFormat:@"✓ %@", ame224_name] : ame224_name,
+            @"handler": ^{
+                self.pickedLanguage = ame224_code;
+                self.languageChanged = YES;
+                NSLog(@"[Welcome] Task224 language picked: %@", ame224_code);
+                [self ame224_refreshLangValue];
+            },
+        }];
     }
-    [ame224_sheet addAction:[UIAlertAction actionWithTitle:localize(@"Cancel", nil)
-                                                     style:UIAlertActionStyleCancel
-                                                   handler:nil]];
-    ame224_sheet.popoverPresentationController.sourceView = sender;
-    ame224_sheet.popoverPresentationController.sourceRect = sender.bounds;
-    [self presentViewController:ame224_sheet animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"welcome.lang.row.title", nil)
+                                     dictItems:ame240_items
+                                    sourceView:sender];
 }
 
 /// Task224：语言行当前值刷新。

@@ -17,6 +17,7 @@
 #import "ALTServerConnection.h"
 #import "BackgroundManager.h"
 #import "LiquidGlassCompat.h"   // Task224（#19）：界面缩放（右栏字号/间距）
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "AboutViewController.h"   // Task217：启动器版本卡 about 路由
 #import "ios_uikit_bridge.h"
 #import "utils.h"
@@ -819,152 +820,34 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
 
     BOOL hasCustom = [[AvatarManager sharedManager] hasCustomAvatarForAccount:accountId];
 
-    // ★ Task227（反馈 #3：悬浮弹窗风格统一）：界面风格 = 液态玻璃时，长按
-    // 头像的菜单改走玻璃悬浮浮层（与整体设置一致）；native 风格保持系统
-    // UIAlertController（原生外观）。此前所有弹窗一律 UIAlertController，
-    // 与液态玻璃设置不符（用户实测"不符合设置"）。
-    if (LGCIsGlassStyleActive()) {
-        NSMutableArray<NSDictionary *> *ame227_actions = [NSMutableArray array];
-        [ame227_actions addObject:@{
-            @"title": localize(@"i18n_str_417", nil),
-            @"style": @(UIAlertActionStyleDefault),
-            @"handler": @"avatarPick",
-        }];
-        if (hasCustom) {
-            [ame227_actions addObject:@{
-                @"title": localize(@"i18n_str_418", nil),
-                @"style": @(UIAlertActionStyleDestructive),
-                @"handler": @"avatarRemove",
-            }];
-        }
-        [ame227_actions addObject:@{
-            @"title": localize(@"resman.common.cancel", nil),
-            @"style": @(UIAlertActionStyleCancel),
-            @"handler": @"",
-        }];
-        [self ame227_presentGlassMenu:ame227_actions
-                           sourceView:self.avatarImageView
-                                 accountId:accountId];
-        return;
-    }
-
-    UIAlertController *sheet = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_416", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_417", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        [self openAvatarImagePicker];
-    }]];
+    // ★ Task240（用户指令：菜单全面系统原生 UIMenu 化 = IMG_0370）：
+    // Task227 自绘 dim+panel 与 Task237 路由 actionSheet 双轨退役——长按
+    // 头像直接呈现系统 UIMenu（锚定头像视图；iOS 26 系统自动渲染原生
+    // 液态玻璃，iOS 14-25 系统标准上下文菜单），与账号页 ⋯ 菜单同一套
+    // 原生菜单语言。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
+    [ame240_items addObject:@{
+        @"title": localize(@"i18n_str_417", nil),
+        @"handler": ^{ [self openAvatarImagePicker]; },
+    }];
     if (hasCustom) {
-        [sheet addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_418", nil) style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-            [[AvatarManager sharedManager] removeAvatarForAccount:accountId];
-            [self updateAccountInfo];
-        }]];
+        [ame240_items addObject:@{
+            @"title": localize(@"i18n_str_418", nil),
+            @"destructive": @YES,
+            @"handler": ^{
+                [[AvatarManager sharedManager] removeAvatarForAccount:accountId];
+                [self updateAccountInfo];
+            },
+        }];
     }
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
-
-    // iPad 适配：用 popover 锚定到头像
-    if (sheet.popoverPresentationController) {
-        sheet.popoverPresentationController.sourceView = self.avatarImageView;
-        sheet.popoverPresentationController.sourceRect = self.avatarImageView.bounds;
-    }
-    [self presentViewController:sheet animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_416", nil)
+                                     dictItems:ame240_items
+                                    sourceView:self.avatarImageView];
 }
 
-/// ★ Task227：玻璃悬浮菜单（液态玻璃风格专用）：锚定 sourceView 的浮层，
-/// 玻璃底 + 连续圆角 + 主色标题；点按动作后收起。遮罩点击取消。
-- (void)ame227_presentGlassMenu:(NSArray<NSDictionary *> *)actions
-                     sourceView:(UIView *)sourceView
-                     accountId:(NSString *)accountId {
-    UIViewController *presenter = self;
-    while (presenter.presentedViewController != nil) presenter = presenter.presentedViewController;
-
-    UIView *ame227_dim = [[UIView alloc] initWithFrame:presenter.view.bounds];
-    ame227_dim.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    ame227_dim.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.25];
-    ame227_dim.userInteractionEnabled = YES;
-
-    UIVisualEffectView *ame227_panel = [[UIVisualEffectView alloc]
-        initWithEffect:LGCCreateGlassEffectView(NO).effect];
-    ame227_panel.layer.cornerRadius = 20.0;
-    ame227_panel.layer.cornerCurve = kCACornerCurveContinuous;
-    ame227_panel.layer.masksToBounds = YES;
-
-    UIStackView *ame227_stack = [[UIStackView alloc] init];
-    ame227_stack.axis = UILayoutConstraintAxisVertical;
-    ame227_stack.spacing = 2;
-    ame227_stack.translatesAutoresizingMaskIntoConstraints = NO;
-    [ame227_panel.contentView addSubview:ame227_stack];
-
-    UITapGestureRecognizer *ame227_dimTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(ame227_glassMenuDimTapped:)];
-    [ame227_dim addGestureRecognizer:ame227_dimTap];
-
-    for (NSDictionary *ame227_act in actions) {
-        NSString *ame227_title = ame227_act[@"title"];
-        NSInteger ame227_style = [ame227_act[@"style"] integerValue];
-        NSString *ame227_handler = ame227_act[@"handler"];
-        UIButton *ame227_btn = [UIButton buttonWithType:UIButtonTypeSystem];
-        [ame227_btn setTitle:ame227_title forState:UIControlStateNormal];
-        ame227_btn.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
-        UIColor *ame227_color = (ame227_style == UIAlertActionStyleDestructive)
-            ? [UIColor systemRedColor]
-            : [UIColor labelColor];
-        [ame227_btn setTitleColor:ame227_color forState:UIControlStateNormal];
-        ame227_btn.contentEdgeInsets = UIEdgeInsetsMake(12, 20, 12, 20);
-        [ame227_btn addTarget:self action:@selector(ame227_glassMenuAction:) forControlEvents:UIControlEventTouchUpInside];
-        ame227_btn.tag = 0;
-        objc_setAssociatedObject(ame227_btn, "ame227.handler", ame227_handler, OBJC_ASSOCIATION_COPY_NONATOMIC);
-        objc_setAssociatedObject(ame227_btn, "ame227.accountId", accountId, OBJC_ASSOCIATION_COPY_NONATOMIC);
-        [ame227_stack addArrangedSubview:ame227_btn];
-        [ame227_btn.heightAnchor constraintEqualToConstant:44].active = YES;
-        [ame227_btn.widthAnchor constraintGreaterThanOrEqualToConstant:220].active = YES;
-    }
-
-    [presenter.view addSubview:ame227_dim];
-    [ame227_dim addSubview:ame227_panel];
-    ame227_panel.translatesAutoresizingMaskIntoConstraints = NO;
-    CGRect ame227_src = [sourceView convertRect:sourceView.bounds toView:presenter.view];
-    [NSLayoutConstraint activateConstraints:@[
-        [ame227_panel.widthAnchor constraintEqualToAnchor:ame227_stack.widthAnchor constant:40],
-        [ame227_panel.centerXAnchor constraintLessThanOrEqualToAnchor:presenter.view.centerXAnchor],
-        [ame227_panel.leadingAnchor constraintGreaterThanOrEqualToAnchor:presenter.view.leadingAnchor constant:16],
-        [ame227_panel.trailingAnchor constraintLessThanOrEqualToAnchor:presenter.view.trailingAnchor constant:-16],
-        [ame227_panel.topAnchor constraintEqualToAnchor:presenter.view.topAnchor
-                                              constant:MAX(60.0, CGRectGetMinY(ame227_src) + CGRectGetHeight(ame227_src) + 10.0)],
-    ]];
-    ame227_dim.alpha = 0;
-    [UIView animateWithDuration:0.2 animations:^{
-        ame227_dim.alpha = 1;
-    }];
-}
-
-- (void)ame227_glassMenuDimTapped:(UITapGestureRecognizer *)t {
-    [UIView animateWithDuration:0.18 animations:^{
-        t.view.alpha = 0;
-    } completion:^(BOOL finished) {
-        [t.view removeFromSuperview];
-    }];
-}
-
-- (void)ame227_glassMenuAction:(UIButton *)sender {
-    NSString *ame227_handler = objc_getAssociatedObject(sender, "ame227.handler");
-    NSString *ame227_accountId = objc_getAssociatedObject(sender, "ame227.accountId");
-    // 收起浮层（dim 是面板的父链根）
-    UIView *ame227_root = sender.superview;
-    while (ame227_root != nil && ame227_root.gestureRecognizers.count == 0) {
-        ame227_root = ame227_root.superview;
-    }
-    [UIView animateWithDuration:0.18 animations:^{
-        ame227_root.alpha = 0;
-    } completion:^(BOOL finished) {
-        [ame227_root removeFromSuperview];
-    }];
-    if ([ame227_handler isEqualToString:@"avatarPick"]) {
-        [self openAvatarImagePicker];
-    } else if ([ame227_handler isEqualToString:@"avatarRemove"] && ame227_accountId.length > 0) {
-        [[AvatarManager sharedManager] removeAvatarForAccount:ame227_accountId];
-        [self updateAccountInfo];
-    }
-}
+// ★ Task240：Task227 自绘玻璃悬浮菜单三件套（ame227_presentGlassMenu /
+// ame227_glassMenuDimTapped / ame227_glassMenuAction）随头像菜单换装系统
+// UIMenu 一并退役——自绘 dim+panel 呈现链不再有任何调用点。
 
 - (void)openAvatarImagePicker {
     // 防止重复弹出
@@ -1363,20 +1246,18 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
 }
 
 - (void)showVersionPicker {
-    // FCL 风格：在右侧面板弹出 ActionSheet 让用户选择已安装的版本
+    // FCL 风格：选择已安装的版本。★ Task240：换装系统原生 UIMenu（锚定
+    // 版本按钮；旧 actionSheet 退役，长列表由系统菜单自带滚动承载）。
     NSDictionary *profiles = PLProfiles.current.profiles;
     NSArray *sortedNames = [[profiles allKeys] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
     NSString *currentSelected = PLProfiles.current.selectedProfileName;
-    
+
     if (sortedNames.count == 0) {
         [self showAlert:localize(@"i18n_str_423", nil) message:localize(@"i18n_str_424", nil)];
         return;
     }
-    
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_38", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
-    
+
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
     for (NSString *profileName in sortedNames) {
         NSDictionary *profile = profiles[profileName];
         NSString *versionId = profile[@"lastVersionId"] ?: @"";
@@ -1392,24 +1273,23 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         if (isolated) {
             [title appendString:[@"  · " stringByAppendingString:localize(@"i18n_str_2026", nil)]];
         }
-        [alert addAction:[UIAlertAction actionWithTitle:title
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            [self selectProfile:profileName];
-        }]];
+        [ame240_items addObject:@{
+            @"title": title,
+            @"handler": ^{ [self selectProfile:profileName]; },
+        }];
     }
-    
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_426", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        // 跳转到版本管理页面
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"ShowVersionManager" object:nil];
-    }]];
-    
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
-    
-    // iPad 上 ActionSheet 必须指定 popoverPresentationController
-    alert.popoverPresentationController.sourceView = self.manageVersionBtn;
-    alert.popoverPresentationController.sourceRect = self.manageVersionBtn.bounds;
-    [self presentViewController:alert animated:YES completion:nil];
+
+    [ame240_items addObject:@{
+        @"title": localize(@"i18n_str_426", nil),
+        @"handler": ^{
+            // 跳转到版本管理页面
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"ShowVersionManager" object:nil];
+        },
+    }];
+
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_38", nil)
+                                     dictItems:ame240_items
+                                    sourceView:self.manageVersionBtn ?: self.view];
 }
 
 - (void)selectProfile:(NSString *)profileName {

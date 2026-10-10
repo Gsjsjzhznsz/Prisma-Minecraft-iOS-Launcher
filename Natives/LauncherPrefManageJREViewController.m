@@ -1,4 +1,5 @@
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "LauncherNavigationController.h"
 #import "LauncherPreferences.h"
 #import "PLMirrorCenter.h"   // Task218: download-source label token
@@ -41,7 +42,6 @@ static NSString *currentImportTaskId;
 @property(nonatomic) NSMutableArray<NSNumber *> *sortedJavaVersions;
 @property(nonatomic) NSArray<NSString *> *selectedRTTags;
 @property(nonatomic) NSMutableDictionary<NSString *, NSString *> *selectedRuntimes;
-@property(nonatomic) UIMenu* currentMenu;
 @property(nonatomic, weak) NSIndexPath* installingIndexPath;
 @end
 
@@ -450,89 +450,34 @@ static NSString *currentImportTaskId;
         [versionNumbers addObject:self.sortedJavaVersions[i]];
     }
 
-    // iPhone 上改用 UIAlertController actionSheet，避免紧凑菜单被压缩不可调整
-    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPhone) {
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:cell.textLabel.text
-                                                                       message:nil
-                                                                preferredStyle:UIAlertControllerStyleActionSheet];
-        if (versionTitles.count == 0) {
-            [alert addAction:[UIAlertAction actionWithTitle:localize(@"None", nil)
-                                                       style:UIAlertActionStyleDefault
-                                                     handler:nil]];
-        } else {
-            for (int i = 0; i < versionTitles.count; i++) {
-                NSString *version = versionTitles[i];
-                NSNumber *verNum = versionNumbers[i];
-                // 当前选中项前加 ✓ 标记
-                NSString *title = version;
-                if ([cell.detailTextLabel.text isEqualToString:version]) {
-                    title = [NSString stringWithFormat:@"✓ %@", version];
-                }
-                [alert addAction:[UIAlertAction actionWithTitle:title
-                                                           style:UIAlertActionStyleDefault
-                                                         handler:^(UIAlertAction *a) {
+    // ★ Task240：iPhone/iPad 统一走系统原生 UIMenu（旧 iPhone actionSheet
+    // + iPad 私有 _presentMenuAtLocation/_UIContextMenuStyle 双轨退役；
+    // iOS 26 自动原生液态玻璃）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
+    if (versionTitles.count == 0) {
+        [ame240_items addObject:@{ @"title": localize(@"None", nil) }];
+    } else {
+        for (int i = 0; i < versionTitles.count; i++) {
+            NSString *version = versionTitles[i];
+            NSNumber *verNum = versionNumbers[i];
+            // 当前选中项前加 ✓ 标记
+            NSString *title = version;
+            if ([cell.detailTextLabel.text isEqualToString:version]) {
+                title = [NSString stringWithFormat:@"✓ %@", version];
+            }
+            [ame240_items addObject:@{
+                @"title": title,
+                @"handler": ^{
                     cell.detailTextLabel.text = version;
                     ((NSMutableDictionary *)self.selectedRuntimes[@"0"])[self.selectedRTTags[indexPath.row]] = verNum.stringValue;
                     setPrefObject(@"java.java_homes", self.selectedRuntimes);
-                }]];
-            }
+                },
+            }];
         }
-        [alert addAction:[UIAlertAction actionWithTitle:localize(@"Cancel", nil)
-                                                   style:UIAlertActionStyleCancel
-                                                 handler:nil]];
-        alert.popoverPresentationController.sourceView = cell;
-        alert.popoverPresentationController.sourceRect = cell.bounds;
-        [self presentViewController:alert animated:YES completion:nil];
-        return;
     }
-
-    // iPad：保留 UIContextMenuInteraction 紧凑菜单
-    NSMutableArray *menuItems = [NSMutableArray new];
-    for (int i = 0; i < versionTitles.count; i++) {
-        NSString *version = versionTitles[i];
-        NSNumber *verNum = versionNumbers[i];
-        [menuItems addObject:[UIAction
-            actionWithTitle:version
-            image:nil
-            identifier:nil
-            handler:^(UIAction *action) {
-                cell.detailTextLabel.text = version;
-                ((NSMutableDictionary *)self.selectedRuntimes[@"0"])[self.selectedRTTags[indexPath.row]] = verNum.stringValue;
-                setPrefObject(@"java.java_homes", self.selectedRuntimes);
-            }]];
-    }
-
-    cell.detailTextLabel.interactions = [NSArray new];
-
-    if (menuItems.count == 0) {
-        [menuItems addObject:[UIAction
-            actionWithTitle:localize(@"None", nil)
-            image:nil
-            identifier:nil
-            handler:^(UIAction *action){}]];
-    }
-
-    self.currentMenu = [UIMenu menuWithTitle:cell.textLabel.text children:menuItems];
-    UIContextMenuInteraction *interaction = [[UIContextMenuInteraction alloc] initWithDelegate:self];
-    [cell addInteraction:interaction];
-    CGRect detailFrame = cell.detailTextLabel.frame;
-    CGPoint location = CGPointMake(CGRectGetMidX(detailFrame), CGRectGetMidY(detailFrame));
-    [interaction _presentMenuAtLocation:location];
-}
-
-- (UIContextMenuConfiguration *)contextMenuInteraction:(UIContextMenuInteraction *)interaction configurationForMenuAtLocation:(CGPoint)location
-{
-    return [UIContextMenuConfiguration configurationWithIdentifier:nil previewProvider:nil actionProvider:^UIMenu * _Nullable(NSArray<UIMenuElement *> * _Nonnull suggestedActions) {
-        return self.currentMenu;
-    }];
-}
-
-- (_UIContextMenuStyle *)_contextMenuInteraction:(UIContextMenuInteraction *)interaction
-styleForMenuWithConfiguration:(UIContextMenuConfiguration *)configuration
-{
-    _UIContextMenuStyle *style = [_UIContextMenuStyle defaultStyle];
-    style.preferredLayout = 3; // _UIContextMenuLayoutCompactMenu
-    return style;
+    [AmeNativeMenu ame240_presentMenuWithTitle:cell.textLabel.text
+                                     dictItems:ame240_items
+                                    sourceView:cell ?: self.view];
 }
 
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath

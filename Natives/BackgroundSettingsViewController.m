@@ -7,6 +7,7 @@
 //
 
 #import "BackgroundSettingsViewController.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "BackgroundManager.h"
 #import "ImageCropperViewController.h"
 // Task151：Bing 每日壁纸（开关/画廊/刷新）
@@ -566,103 +567,44 @@
 }
 
 - (void)showUIEffectPicker {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_66", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
-    
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
     BackgroundManager *manager = [BackgroundManager sharedManager];
     
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_67", nil)
-                                              style:manager.uiEffect == BackgroundUIEffectBlur ? UIAlertActionStyleDefault : UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction * _Nonnull action) {
-        manager.uiEffect = BackgroundUIEffectBlur;
-        [manager refreshUIEffect];
-        [self.tableView reloadData];
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"BackgroundUIEffectChanged" object:nil];
-    }]];
-    
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_68", nil)
-                                              style:manager.uiEffect == BackgroundUIEffectTranslucent ? UIAlertActionStyleDefault : UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction * _Nonnull action) {
-        manager.uiEffect = BackgroundUIEffectTranslucent;
-        [manager refreshUIEffect];
-        [self.tableView reloadData];
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"BackgroundUIEffectChanged" object:nil];
-    }]];
-    
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
-    
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
-        alert.popoverPresentationController.sourceView = cell ?: self.view;
-        alert.popoverPresentationController.sourceRect = cell ? cell.bounds : self.view.bounds;
-    }
-    
-    [self presentViewController:alert animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_66", nil)
+                                     dictItems:@[
+        @{ @"title": localize(@"i18n_str_67", nil), @"handler": ^{
+            manager.uiEffect = BackgroundUIEffectBlur;
+            [manager refreshUIEffect];
+            [self.tableView reloadData];
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"BackgroundUIEffectChanged" object:nil];
+        } },
+        @{ @"title": localize(@"i18n_str_68", nil), @"handler": ^{
+            manager.uiEffect = BackgroundUIEffectTranslucent;
+            [manager refreshUIEffect];
+            [self.tableView reloadData];
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"BackgroundUIEffectChanged" object:nil];
+        } },
+    ] sourceView:[self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]] ?: self.view];
 }
 
 #pragma mark - Background Selection
 
 - (void)selectImageBackground {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_70", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
-    
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_71", nil)
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction * _Nonnull action) {
-        [self openPhotoLibraryForImage];
-    }]];
-    
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_72", nil)
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction * _Nonnull action) {
-        [self openDocumentPickerForImage];
-    }]];
-    
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
-    
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:2]];
-        alert.popoverPresentationController.sourceView = cell;
-        alert.popoverPresentationController.sourceRect = cell.bounds;
-    }
-    
-    [self presentViewController:alert animated:YES completion:nil];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_70", nil)
+                                     dictItems:@[
+        @{ @"title": localize(@"i18n_str_71", nil), @"handler": ^{ [self openPhotoLibraryForImage]; } },
+        @{ @"title": localize(@"i18n_str_72", nil), @"handler": ^{ [self openDocumentPickerForImage]; } },
+    ] sourceView:[self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:2]] ?: self.view];
 }
 
 - (void)selectVideoBackground {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_73", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
-    
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_71", nil)
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction * _Nonnull action) {
-        [self openPhotoLibraryForVideo];
-    }]];
-    
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_72", nil)
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction * _Nonnull action) {
-        [self openDocumentPickerForVideo];
-    }]];
-    
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
-    
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:1 inSection:2]];
-        alert.popoverPresentationController.sourceView = cell;
-        alert.popoverPresentationController.sourceRect = cell.bounds;
-    }
-    
-    [self presentViewController:alert animated:YES completion:nil];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_73", nil)
+                                     dictItems:@[
+        @{ @"title": localize(@"i18n_str_71", nil), @"handler": ^{ [self openPhotoLibraryForVideo]; } },
+        @{ @"title": localize(@"i18n_str_72", nil), @"handler": ^{ [self openDocumentPickerForVideo]; } },
+    ] sourceView:[self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:1 inSection:2]] ?: self.view];
 }
 
 - (void)restoreDefaultBackground {

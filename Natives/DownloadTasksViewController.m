@@ -1,5 +1,6 @@
 #import "utils.h"
 #import "DownloadTasksViewController.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "DownloadTaskManager.h"
 #import "DownloadTaskItem.h"
 #import "LauncherPreferences.h"
@@ -1047,55 +1048,29 @@ static const CGFloat kSectionInset = 16.0;
 - (void)showActionsForTask:(DownloadTaskItem *)task {
     // FCL 风格重构后，常用操作（暂停/继续/取消/重试/移除）已在卡片上直接显示按钮。
     // 长按仅作为辅助入口，提供"切换下载源"等进阶操作。
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:task.displayName
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
-
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_140", nil)
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction *action) {
-        [self showSourceSwitcherForTask:task];
-    }]];
-
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_141", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
-
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        alert.popoverPresentationController.sourceView = self.view;
-        alert.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(self.view.bounds), CGRectGetMidY(self.view.bounds), 1, 1);
-        alert.popoverPresentationController.permittedArrowDirections = 0;
-    }
-
-    [self presentViewController:alert animated:YES completion:nil];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    [AmeNativeMenu ame240_presentMenuWithTitle:task.displayName
+                                     dictItems:@[
+        @{ @"title": localize(@"i18n_str_140", nil), @"handler": ^{
+            [self showSourceSwitcherForTask:task];
+        } },
+    ] sourceView:self.view];
 }
 
 - (void)showSourceSwitcherForTask:(DownloadTaskItem *)task {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_140", nil)
-                                                                   message:[NSString stringWithFormat:localize(@"i18n_str_142", nil), task.downloadSource ?: @"official"]
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
-
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
     NSArray<NSString *> *sources = @[@"official", @"bmclapi"];
     for (NSString *source in sources) {
         if ([source isEqualToString:task.downloadSource]) continue;
-        [alert addAction:[UIAlertAction actionWithTitle:source
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction *action) {
-            [self confirmSwitchSourceForTask:task toSource:source];
-        }]];
+        [ame240_items addObject:@{
+            @"title": source,
+            @"handler": ^{ [self confirmSwitchSourceForTask:task toSource:source]; },
+        }];
     }
-
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
-
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        alert.popoverPresentationController.sourceView = self.view;
-        alert.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(self.view.bounds), CGRectGetMidY(self.view.bounds), 1, 1);
-        alert.popoverPresentationController.permittedArrowDirections = 0;
-    }
-
-    [self presentViewController:alert animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_140", nil)
+                                     dictItems:ame240_items
+                                    sourceView:self.view];
 }
 
 - (void)confirmSwitchSourceForTask:(DownloadTaskItem *)task toSource:(NSString *)source {

@@ -6,6 +6,7 @@
 //
 
 #import "TouchControllerPreferencesViewController.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "LauncherPreferences.h"
 #import "PLPreferences.h"
 #import "BackgroundManager.h"
@@ -303,9 +304,9 @@ typedef NS_ENUM(NSInteger, TouchControllerCommMode) {
 }
 
 - (void)showModeSelectionAlert {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"preference.touchcontroller.select_mode.title", nil) ?: @"Select Communication Mode"
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役；旧实现给
+    // UIAlertAction 发私有 KVC "checked"，顺带清除——✓ 改为标题前缀）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
 
     // 获取当前模式
     NSInteger currentMode = [self.getPreference(@"control", @"mod_touch_mode") integerValue];
@@ -313,55 +314,41 @@ typedef NS_ENUM(NSInteger, TouchControllerCommMode) {
     if (![self.getPreference(@"control", @"mod_touch_enable") boolValue]) currentMode = TouchControllerCommModeDisabled;
 
     // 禁用选项
-    UIAlertAction *disableAction = [UIAlertAction actionWithTitle:localize(@"preference.touchcontroller.mode.disabled", nil) ?: @"Disabled"
-                                                             style:UIAlertActionStyleDestructive
-                                                           handler:^(UIAlertAction * _Nonnull action) {
-        [self updateTouchControllerSetting:TouchControllerCommModeDisabled];
-        [self.tableView reloadData];
+    [ame240_items addObject:@{
+        @"title": (currentMode == TouchControllerCommModeDisabled ? @"✓ " : @"")
+            stringByAppendingString:(localize(@"preference.touchcontroller.mode.disabled", nil) ?: @"Disabled"),
+        @"destructive": @YES,
+        @"handler": ^{
+            [self updateTouchControllerSetting:TouchControllerCommModeDisabled];
+            [self.tableView reloadData];
+        },
     }];
-    if (currentMode == TouchControllerCommModeDisabled) {
-        [disableAction setValue:@(YES) forKey:@"checked"];
-    }
-    [alert addAction:disableAction];
 
     // UDP 模式选项
-    UIAlertAction *udpAction = [UIAlertAction actionWithTitle:localize(@"preference.touchcontroller.mode.udp", nil) ?: @"UDP Protocol"
-                                                         style:UIAlertActionStyleDefault
-                                                       handler:^(UIAlertAction * _Nonnull action) {
-        [self updateTouchControllerSetting:TouchControllerCommModeUDP];
-        [self.tableView reloadData];
-        [self showModeDescriptionAlert:TouchControllerCommModeUDP];
+    [ame240_items addObject:@{
+        @"title": (currentMode == TouchControllerCommModeUDP ? @"✓ " : @"")
+            stringByAppendingString:(localize(@"preference.touchcontroller.mode.udp", nil) ?: @"UDP Protocol"),
+        @"handler": ^{
+            [self updateTouchControllerSetting:TouchControllerCommModeUDP];
+            [self.tableView reloadData];
+            [self showModeDescriptionAlert:TouchControllerCommModeUDP];
+        },
     }];
-    if (currentMode == TouchControllerCommModeUDP) {
-        [udpAction setValue:@(YES) forKey:@"checked"];
-    }
-    [alert addAction:udpAction];
 
     // 静态库模式选项
-    UIAlertAction *staticLibAction = [UIAlertAction actionWithTitle:localize(@"preference.touchcontroller.mode.staticlib", nil) ?: @"Static Library"
-                                                                style:UIAlertActionStyleDefault
-                                                              handler:^(UIAlertAction * _Nonnull action) {
-        [self updateTouchControllerSetting:TouchControllerCommModeStaticLib];
-        [self.tableView reloadData];
-        [self showModeDescriptionAlert:TouchControllerCommModeStaticLib];
+    [ame240_items addObject:@{
+        @"title": (currentMode == TouchControllerCommModeStaticLib ? @"✓ " : @"")
+            stringByAppendingString:(localize(@"preference.touchcontroller.mode.staticlib", nil) ?: @"Static Library"),
+        @"handler": ^{
+            [self updateTouchControllerSetting:TouchControllerCommModeStaticLib];
+            [self.tableView reloadData];
+            [self showModeDescriptionAlert:TouchControllerCommModeStaticLib];
+        },
     }];
-    if (currentMode == TouchControllerCommModeStaticLib) {
-        [staticLibAction setValue:@(YES) forKey:@"checked"];
-    }
-    [alert addAction:staticLibAction];
 
-    // 取消按钮
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"preference.touchcontroller.cancel", nil) ?: @"Cancel"
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
-
-    // iPad 支持
-    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        alert.popoverPresentationController.sourceView = self.view;
-        alert.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2, self.view.bounds.size.height / 2, 1, 1);
-    }
-
-    [self presentViewController:alert animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"preference.touchcontroller.select_mode.title", nil) ?: @"Select Communication Mode"
+                                     dictItems:ame240_items
+                                    sourceView:self.view];
 }
 
 - (void)showModeDescriptionAlert:(TouchControllerCommMode)mode {

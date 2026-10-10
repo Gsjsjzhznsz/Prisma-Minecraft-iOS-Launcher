@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import <objc/runtime.h>
 
 #import "DBNumberedSlider.h"
@@ -374,9 +375,8 @@
 }
 
 - (void)showAlertOnView:(UIView *)view title:(NSString *)title message:(NSString *)message {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleActionSheet];
-    alert.popoverPresentationController.sourceView = view;
-    alert.popoverPresentationController.sourceRect = view.bounds;
+    // ★ Task240：纯提示弹窗（非菜单）→ 改用居中 Alert 形态。
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
     UIAlertAction *ok = [UIAlertAction actionWithTitle:localize(@"OK", nil) style:UIAlertActionStyleCancel handler:nil];
     [alert addAction:ok];
     [self presentViewController:alert animated:YES completion:nil];
@@ -553,9 +553,10 @@
     // 弹出全宽选择器；iPad 经 popoverPresentationController 锚定在行旁，呈现为
     // 标准悬浮面板（与设置页其余浮层一致）。✓ 选中标记沿用 Task121 的存储值
     // 比较与本地化标签回写。
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:message
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：pick 行换装系统原生 UIMenu（iPhone/iPad 一致；iOS 26
+    // 自动原生液态玻璃；旧 actionSheet/popover 双轨退役）。✓ 选中标记
+    // 沿用 Task121 的存储值比较与本地化标签回写。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
     // Task 121：✓ 选中标记改按【存储值】比较——Task120 起 pick 行右侧
     // 显示本地化标签而非原始存储值，按 cell 文本比较会永远失配。
     id ame121_cur = self.getPreference(self.prefSections[indexPath.section], item[@"key"]);
@@ -568,43 +569,30 @@
         if ([ame121_curs isEqualToString:value]) {
             title = [NSString stringWithFormat:@"✓ %@", title];
         }
-        UIAlertAction *action = [UIAlertAction actionWithTitle:title
-                                                          style:UIAlertActionStyleDefault
-                                                        handler:^(UIAlertAction *a) {
-            // Task 121：选中后 cell 右侧显示本地化标签（存储值不变）。
-            cell.detailTextLabel.text = pickList[i];
-            self.setPreference(self.prefSections[indexPath.section], item[@"key"], value);
-            void(^invokeAction)(NSString *) = item[@"action"];
-            if (invokeAction) {
-                invokeAction(value);
-            }
+        [ame240_items addObject:@{
+            @"title": title,
+            @"handler": ^{
+                // Task 121：选中后 cell 右侧显示本地化标签（存储值不变）。
+                cell.detailTextLabel.text = pickList[i];
+                self.setPreference(self.prefSections[indexPath.section], item[@"key"], value);
+                void(^invokeAction)(NSString *) = item[@"action"];
+                if (invokeAction) {
+                    invokeAction(value);
+                }
+            },
         }];
-        [alert addAction:action];
     }
     // Task 134：附加动作机制随三个浮窗行回归二级页面而退役（唯一使用者
     // 已在 Task 134 恢复 typeChildPane；机制代码移除，l10n 键
     // preference.pickextra.* 同步清理）。
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"Cancel", nil)
-                                               style:UIAlertActionStyleCancel
-                                             handler:nil]];
-    // Task 131：呈现加固 + 设备侧取证锚点。
-    // 要点一（诊断日志）：记录 pick 打开事件（section.key + 选项数）——此前
-    // "悬浮菜单无法使用"的反馈只有用户描述没有设备证据，今后日志可直接判读
-    // pick 是否触发；
-    // 要点二（呈现收口）：self 若正处于某个呈现中（面板/搜索残留），
-    // presentViewController 会被 UIKit 静默拒绝（表现为"点了没反应"）。沿
-    // presentedViewController 链上溯到最外层再呈现，消除该静默失败面。
-    // popover 锚点保持在被点击的行上（iPad 悬浮面板形态不变）。
-    NSLog(@"[PLPrefTable] Task131: pick opened: %@.%@ (%lu options)",
+    // Task 131：诊断日志保留（取证锚点延续）。“呈现收口”（沿 presented
+    // 链上溯再 present）随 UIMenu 呈现自然消亡：上下文菜单不走
+    // presentViewController，不存在“点了没反应”的静默拒绝面。
+    NSLog(@"[PLPrefTable] Task131/240: pick opened as native UIMenu: %@.%@ (%lu options)",
           self.prefSections[indexPath.section], item[@"key"], (unsigned long)pickList.count);
-    UIViewController *ame131_presenter = self;
-    while (ame131_presenter.presentedViewController != nil) {
-        ame131_presenter = ame131_presenter.presentedViewController;
-    }
-    alert.popoverPresentationController.sourceView = cell;
-    alert.popoverPresentationController.sourceRect = cell.bounds;
-    alert.popoverPresentationController.permittedArrowDirections = UIPopoverArrowDirectionAny;
-    [ame131_presenter presentViewController:alert animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:message
+                                     dictItems:ame240_items
+                                    sourceView:cell ?: self.view];
 }
 
 - (void)tableView:(UITableView *)tableView invokeActionWithPromptAtIndexPath:(NSIndexPath *)indexPath {

@@ -2441,3 +2441,22 @@ Stage Summary:
 - 崩溃根因 = 键名点号 vs 下划线 + KVC 路径炸弹；键名对齐 + 安全行走双层根除
 - 设备预期：启动不崩；玻璃风格弹窗 = iOS 26 原生 UIGlassEffect 液态玻璃（日志 [AmeMenu] Task239 menu material: native UIGlassEffect）；原生风格 = 旧版系统弹窗；Task238 的退出返回/前置置顶/CF 富化/菜单几何随包首次到达
 - 产物：run 38042727456（commit 18009470），com.air-devs.air-ios.ipa + trollstore.tipa + dSYM
+
+---
+Task ID: 240
+Agent: main (Super Z)
+Task: 用户指令"菜单全面系统原生 UIMenu 化（= 基准截图 IMG_0370 的原生液态玻璃），要改全部"——34 处菜单/选择器 actionSheet + Task227 自绘 dim+panel + JRE 私有 API 上下文菜单全量换装 AmeNativeMenu（系统 UIMenu 体系）
+
+Work Log:
+- 沙箱同步：fetch 对齐远端（Task239 闭环 5282a9e）；token 按惯例接管 remote URL
+- 根因定案（承接 Task237/239 的"玻璃菜单"路线修正）：此前三套菜单呈现（①UIAlertController actionSheet 原生直通 = IMG_0372 旧材质；②AmeFloatingMenu 自绘玻璃路由 = 自绘面板贴 UIGlassEffect，形似神不似；③ame227 dim+panel 自绘菜单）都产不出系统真液态玻璃。用户基准 IMG_0370 = 系统 UIContextMenu/UIMenu 在 iOS 26 的自动渲染——正解是【不写任何玻璃代码】，把菜单类交互全部交给系统 UIMenu 体系
+- 新组件 Natives/AmeNativeMenu.h/.m（CMakeLists 已注册）：UIContextMenuInteraction（associated object 挂锚点视图，重复呈现复用同一交互）+ presentMenu；menuProvider 惰性读快照（associated object 文件级唯一 key，首版双局部 static 地址不一致 bug 已修）；字典协议（title/systemImage/destructive/handler/subitems/cancel/disabled，与 Task223 协议同源扩展，Steve/Alex 子菜单即用 subitems）；onDismiss 机制（didEndMenuForConfiguration + 全局 fired 标记——外部点按未选中任何动作才回调，承接旧取消项语义，第三方登录角色选择器 complete(nil) 流程不悬死）；全程公开 API（UIAlertAction.handler 非公开属性，KVC 取用属 Task239 炸弹家族禁忌，故字典协议直迁）；单例承担 delegate（弱引用安全，Class 级生命周期）
+- 换装清单（34 处 / 19 文件）：AccountListViewController（⋯ 按钮 3 处 + 长按统一 UIMenu 单一事实源 + 默认皮肤 Steve/Alex 改子菜单 + 切角色 + 皮肤模型选择改 Alert 形态 + 本地登录提示改 Alert）、LauncherRightPanel（头像长按菜单换装 + ame227 三件套删除 + 版本选择器）、DownloadViewController（筛选/版本~80 条/排序/加载器 4 处）、ProfileSettings（隔离/迁移先问/渲染器/图形API/Java 版本 5 处）、PLPrefTable（中央 pick 行 = 全设置页选择器入口，showAlertOnView 改 Alert）、HomeCustomize（加磁贴/编辑磁贴/颜色 3 处）、BackgroundSettings（界面效果/图片/视频 3 处）、Multiplayer（房间操作三件套，删除二次确认保留 Alert）、ThirdPartyLogin（服务器 chip 删除 + 角色选择 onDismiss）、DownloadTasks（长按 + 换源 2 处）、ModpackImport/Export（操作 + 实例选择）、TouchControllerPreferences（模式选择——顺带清除 UIAlertAction 私有 KVC "checked"，✓ 改标题前缀）、Welcome（语言选择）、ControlRepo（布局选择）、Bing 壁纸（操作菜单，版权信息改禁用头行）、SurfaceViewController+Navigation（游戏内分辨率选择，锚定常驻齿轮球避免面板关闭锚点失效）、LauncherPrefManageJRE（Java 版本选择 iPhone/iPad 双轨统一——iPad 私有 _presentMenuAtLocation/_UIContextMenuStyle preferredLayout=3 整体退役，currentMenu 属性退役）、PLLogOutputView（日志行分享）
+- 语义保留边界（弹窗 ≠ 菜单，Task240 定案）：4 处破坏性二次确认（JRE 删除/游戏目录/JVM 参数重置/设置项执行确认）保留 UIAlertController actionSheet——Task237 玻璃路由对弹窗的原有接管不变；Pure info 弹窗（登录本地模式警告/showAlertOnView/皮肤模型选择）改居中 Alert 形态
+- 显示层吞字第四次实证（hex 级对拍）：BackgroundSettings "anager refreshUIEffect" 与 CardLayout "return odel containsString" 均为显示层吞 "[m" 假象，真实源码完好（Task239 CI 绿佐证）——此前外部分析报告的"CardLayout:47 语法损坏 P0"结论正式撤回；LauncherPrefManageJRE 编辑时 old_str 两度构造失败同因（"enuItems" 实为 "[menuItems"），全部以 od -c 字节级核对后重构造。教训升级：凡跨会话/跨工具的文本对拍，"缺 [m/! 前缀"一律先 od -c 再定性
+- 验证：task240_syntax_gate（新写，22 触碰文件 ()/[]/{} 平衡 + 退役方法代码引用零残留 + import 完整性）ALL PASS；task139 门 all balanced；task175 门 ALL PASS；残余 actionSheet = 4 处确认类（符合定案）；吞字模式扫描零命中；AmeNativeMenu 调用点 38 处 / 20 文件全部有 import
+
+Stage Summary:
+- 菜单呈现统一终态：系统 UIMenu 体系（iOS 26 原生 Liquid Glass 直出 = IMG_0370；iOS 14-25 系统标准上下文菜单），自绘玻璃菜单三套体系中的两套（Task227 dim+panel、JRE 私有 API 菜单）退役，AmeFloatingMenu 路由仅剩弹窗接管职责
+- 装机验证锚点：账号页 ⋯ / 长按 → 系统液态玻璃菜单（含"默认皮肤"子菜单 Steve/Alex）；设置页全部 pick 行；下载页筛选/版本/排序/加载器；游戏内齿轮 → 分辨率；第三方登录角色选择（外部点按 = 取消登录不卡死）；日志行分享
+- 遗留：①LiquidGlassCompat 三档界面风格对"菜单"类不再生效（菜单恒为系统呈现——用户基准即原生）；②Long-press 交互与点按 presentMenu 并存（按钮长按也出菜单，符合系统惯例）

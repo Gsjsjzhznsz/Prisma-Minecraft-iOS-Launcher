@@ -16,6 +16,7 @@
 //
 
 #import "ModpackImportViewController.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "BackgroundManager.h"
 #import "ModpackImportService.h"
 #import "ModpackExportViewController.h"
@@ -611,20 +612,16 @@
 }
 
 - (void)showModpackOptions:(NSDictionary *)modpack {
-    UIAlertController *actionSheet = [UIAlertController alertControllerWithTitle:modpack[@"name"] message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    [actionSheet addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_593", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        [self launchModpack:modpack];
-    }]];
-    [actionSheet addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_306", nil) style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-        [self deleteModpack:modpack];
-    }]];
-    [actionSheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
-
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        actionSheet.popoverPresentationController.sourceView = self.view;
-        actionSheet.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(self.view.bounds), CGRectGetMidY(self.view.bounds), 0, 0);
-    }
-    [self presentViewController:actionSheet animated:YES completion:nil];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    [AmeNativeMenu ame240_presentMenuWithTitle:modpack[@"name"]
+                                     dictItems:@[
+        @{ @"title": localize(@"i18n_str_593", nil), @"handler": ^{
+            [self launchModpack:modpack];
+        } },
+        @{ @"title": localize(@"i18n_str_306", nil), @"destructive": @YES, @"handler": ^{
+            [self deleteModpack:modpack];
+        } },
+    ] sourceView:self.view];
 }
 
 - (void)launchModpack:(NSDictionary *)modpack {

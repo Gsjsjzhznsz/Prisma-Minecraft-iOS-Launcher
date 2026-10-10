@@ -1,4 +1,5 @@
 #import "ProfileSettingsViewController.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "ModsManagerViewController.h"
 #import "ShadersManagerViewController.h"
 #import "ResourcePacksManagerViewController.h"
@@ -1632,38 +1633,24 @@ static NSString * localizeProfileTitle(NSString *title) {
         return;
     }
 
-    UIAlertController *sheet = [UIAlertController
-        alertControllerWithTitle:localize(@"profile.isolation.title", nil)
-                         message:[NSString stringWithFormat:localize(@"profile.isolation.subtitle", nil), lastVersionId]
-                  preferredStyle:UIAlertControllerStyleActionSheet];
-
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
     NSString *noneMark = (state == 0) ? @" ✓" : @"";
-    [sheet addAction:[UIAlertAction actionWithTitle:[localize(@"profile.isolation.none", nil) stringByAppendingString:noneMark]
-        style:UIAlertActionStyleDefault
-        handler:^(UIAlertAction * _Nonnull action) {
+    NSString *isoMark = (state == 1) ? @" ✓" : @"";
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"profile.isolation.title", nil)
+                                     dictItems:@[
+        @{ @"title": [localize(@"profile.isolation.none", nil) stringByAppendingString:noneMark], @"handler": ^{
             if (state == 0) return;
             // Task224：回切共享改为【可选搬回】（旧实现单向不搬回 = 数据
             // 滞留隔离目录，用户视角“存档消失”——两轮实测实测铁）。
             [self ame224_disableIsolationWithOptionalMigration];
-        }]];
-
-    NSString *isoMark = (state == 1) ? @" ✓" : @"";
-    [sheet addAction:[UIAlertAction actionWithTitle:[localize(@"profile.isolation.isolate", nil) stringByAppendingString:isoMark]
-        style:UIAlertActionStyleDefault
-        handler:^(UIAlertAction * _Nonnull action) {
+        } },
+        @{ @"title": [localize(@"profile.isolation.isolate", nil) stringByAppendingString:isoMark], @"handler": ^{
             [self ame217_enableIsolationWithMigration];
-        }]];
-
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"profile.isolation.custom", nil)
-        style:UIAlertActionStyleDefault
-        handler:^(UIAlertAction * _Nonnull action) {
+        } },
+        @{ @"title": localize(@"profile.isolation.custom", nil), @"handler": ^{
             [self editGameDir];
-        }]];
-
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
-    sheet.popoverPresentationController.sourceView = self.view;
-    sheet.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0, self.view.bounds.size.height / 2.0, 1.0, 1.0);
-    [self presentViewController:sheet animated:YES completion:nil];
+        } },
+    ] sourceView:self.view];
 }
 
 /// 开启隔离 + 旧版升级自动迁移。把实例根目录下的运行时用户数据移入
@@ -1683,27 +1670,16 @@ static NSString * localizeProfileTitle(NSString *title) {
     }
     // Task225（反馈 #5）：先问再动（上游 PCL/VER-ISOLATE 哲学 = 只写设置、
     // 数据永不丢；我们的文件迁移是增强，必须成为显式选择）。
-    UIAlertController *ame225_choice = [UIAlertController
-        alertControllerWithTitle:localize(@"profile.isolation.title", nil)
-                         message:localize(@"profile.isolation.choice_prompt", nil)
-                  preferredStyle:UIAlertControllerStyleActionSheet];
-    [ame225_choice addAction:[UIAlertAction
-        actionWithTitle:localize(@"profile.isolation.choice_migrate", nil)
-                  style:UIAlertActionStyleDefault
-                handler:^(UIAlertAction * _Nonnull action) {
-        [self ame225_enableIsolationWorker:lastVersionId migrate:YES];
-    }]];
-    [ame225_choice addAction:[UIAlertAction
-        actionWithTitle:localize(@"profile.isolation.choice_keep", nil)
-                  style:UIAlertActionStyleDefault
-                handler:^(UIAlertAction * _Nonnull action) {
-        [self ame225_enableIsolationWorker:lastVersionId migrate:NO];
-    }]];
-    [ame225_choice addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                                      style:UIAlertActionStyleCancel handler:nil]];
-    ame225_choice.popoverPresentationController.sourceView = self.view;
-    ame225_choice.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0, self.view.bounds.size.height / 2.0, 1.0, 1.0);
-    [self presentViewController:ame225_choice animated:YES completion:nil];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"profile.isolation.title", nil)
+                                     dictItems:@[
+        @{ @"title": localize(@"profile.isolation.choice_migrate", nil), @"handler": ^{
+            [self ame225_enableIsolationWorker:lastVersionId migrate:YES];
+        } },
+        @{ @"title": localize(@"profile.isolation.choice_keep", nil), @"handler": ^{
+            [self ame225_enableIsolationWorker:lastVersionId migrate:NO];
+        } },
+    ] sourceView:self.view];
 }
 
 /// Task225：开启隔离执行体。migrate=NO 只写 gameDir（上游"只写设置"语义，
@@ -3003,9 +2979,8 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
 // 开启时渲染器行置灰不可点。legacy 家族键（迁移前残留）在 ✓ 匹配上
 // 归一到 "mg"。
 - (void)showRendererSelector {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_940", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
 
     NSArray *renderers = getRendererKeys(NO);
     NSArray *displayNames = getRendererNames(NO);
@@ -3020,28 +2995,23 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
         if (ame142_selected) {
             name = [NSString stringWithFormat:@"✓ %@", name];
         }
-        [alert addAction:[UIAlertAction actionWithTitle:name
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            self.selectedRenderer = renderer;
-            [self saveSettings];
-            [self reloadAllTableViews];
-        }]];
+        [ame240_items addObject:@{
+            @"title": name,
+            @"handler": ^{
+                self.selectedRenderer = renderer;
+                [self saveSettings];
+                [self reloadAllTableViews];
+            },
+        }];
     }
 
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
-
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        // Task 150：渲染器行现在是高级设置 section 的第 1 行（跟随全局
-        // 开关已退役）
-        UITableViewCell *cell = [self cellForGlobalSection:3 row:0];
-        alert.popoverPresentationController.sourceView = cell ?: self.view;
-        alert.popoverPresentationController.sourceRect = cell ? cell.bounds : self.view.bounds;
-    }
+    UITableViewCell *ame240_cell = [self cellForGlobalSection:3 row:0];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_940", nil)
+                                     dictItems:ame240_items
+                                    sourceView:ame240_cell ?: self.view];
 
     NSLog(@"[ProfileSettings] Task150: renderer picker opened (%ld options incl. single 'mg'; follow-global retired)",
           (long)renderers.count);
-    [self presentViewController:alert animated:YES completion:nil];
 }
 
 // Task 150（[可撤销] 删除渲染器全局控制）：跟随全局开关整体退役
@@ -3082,9 +3052,8 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
 
 /// 图形 API 选择器（MC 26.2+ 专用）
 - (void)showGraphicsApiSelector {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_944", nil)
-                                                                   message:localize(@"i18n_str_945", nil)
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
 
     NSArray *keys = @[@"default", @"prefer_vulkan", @"prefer_opengl"];
     NSArray *names = @[localize(@"i18n_str_943", nil), localize(@"i18n_str_941", nil), localize(@"i18n_str_942", nil)];
@@ -3092,24 +3061,20 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
     for (NSInteger i = 0; i < keys.count; i++) {
         NSString *key = keys[i];
         NSString *name = i < names.count ? names[i] : key;
-        [alert addAction:[UIAlertAction actionWithTitle:name
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            self.selectedGraphicsApi = key;
-            [self saveSettings];
-            [self reloadAllTableViews];
-        }]];
+        [ame240_items addObject:@{
+            @"title": name,
+            @"handler": ^{
+                self.selectedGraphicsApi = key;
+                [self saveSettings];
+                [self reloadAllTableViews];
+            },
+        }];
     }
 
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
-
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        UITableViewCell *cell = [self cellForGlobalSection:3 row:1];
-        alert.popoverPresentationController.sourceView = cell ?: self.view;
-        alert.popoverPresentationController.sourceRect = cell ? cell.bounds : self.view.bounds;
-    }
-
-    [self presentViewController:alert animated:YES completion:nil];
+    UITableViewCell *ame240_cell = [self cellForGlobalSection:3 row:1];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_944", nil)
+                                     dictItems:ame240_items
+                                    sourceView:ame240_cell ?: self.view];
 }
 
 /// Task173：TouchController 一键安装 + 自动配置（Sodium 同款流程，取代
@@ -3273,9 +3238,8 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
 }
 
 - (void)showJavaVersionSelector {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_946", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
 
     // 从 java.java_homes 偏好动态获取已安装的 Java 版本列表
     NSMutableDictionary *javaHomes = [getPrefObject(@"java.java_homes") mutableCopy];
@@ -3291,24 +3255,20 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
 
     for (NSString *ver in versions) {
         NSString *name = [ver isEqualToString:@"0"] ? localize(@"preference.auto_select", nil) : [NSString stringWithFormat:@"Java %@", ver];
-        [alert addAction:[UIAlertAction actionWithTitle:name
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            self.selectedJavaVersion = ver;
-            [self saveSettings];
-            [self reloadAllTableViews];
-        }]];
+        [ame240_items addObject:@{
+            @"title": name,
+            @"handler": ^{
+                self.selectedJavaVersion = ver;
+                [self saveSettings];
+                [self reloadAllTableViews];
+            },
+        }];
     }
 
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
-
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        UITableViewCell *cell = [self cellForGlobalSection:3 row:1];
-        alert.popoverPresentationController.sourceView = cell ?: self.view;
-        alert.popoverPresentationController.sourceRect = cell ? cell.bounds : self.view.bounds;
-    }
-
-    [self presentViewController:alert animated:YES completion:nil];
+    UITableViewCell *ame240_cell = [self cellForGlobalSection:3 row:1];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_946", nil)
+                                     dictItems:ame240_items
+                                    sourceView:ame240_cell ?: self.view];
 }
 
 - (void)showMemoryAllocator {

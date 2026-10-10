@@ -1,5 +1,6 @@
 #import "utils.h"
 #import "HomeCustomizeViewController.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "LauncherNewsViewController.h"
 #import "BackgroundManager.h"
 #import <QuartzCore/QuartzCore.h>
@@ -298,10 +299,8 @@ static UIColor *hexColor(NSString *hex) {
 }
 
 - (void)addShortcutTapped {
-    UIAlertController *sheet = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_293", nil)
-                                                                   message:localize(@"i18n_str_298", nil)
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
-    
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
     NSDictionary *shortcuts = availableShortcuts();
     for (NSString *key in shortcuts) {
         NSDictionary *info = shortcuts[key];
@@ -316,29 +315,29 @@ static UIColor *hexColor(NSString *hex) {
         }
         if (exists) continue;
         
-        [sheet addAction:[UIAlertAction actionWithTitle:info[@"title"] style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-            HomeTileConfig *newTile = [[HomeTileConfig alloc] init];
-            newTile.tileId = [NSString stringWithFormat:@"shortcut_%@_%@", key, [[NSUUID UUID] UUIDString]];
-            newTile.tileType = HomeTileTypeShortcut;
-            newTile.tileSize = HomeTileSizeCompact;
-            newTile.visible = YES;
-            newTile.customTitle = info[@"title"];
-            newTile.iconName = info[@"icon"];
-            newTile.shortcutAction = key;
-            newTile.accentColorHex = info[@"color"];
-            
-            [self.editingConfigs addObject:newTile];
-            [self.tableView insertRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:self.editingConfigs.count - 1 inSection:0]]
-                                  withRowAnimation:UITableViewRowAnimationAutomatic];
-        }]];
+        [ame240_items addObject:@{
+            @"title": info[@"title"],
+            @"handler": ^{
+                HomeTileConfig *newTile = [[HomeTileConfig alloc] init];
+                newTile.tileId = [NSString stringWithFormat:@"shortcut_%@_%@", key, [[NSUUID UUID] UUIDString]];
+                newTile.tileType = HomeTileTypeShortcut;
+                newTile.tileSize = HomeTileSizeCompact;
+                newTile.visible = YES;
+                newTile.customTitle = info[@"title"];
+                newTile.iconName = info[@"icon"];
+                newTile.shortcutAction = key;
+                newTile.accentColorHex = info[@"color"];
+                
+                [self.editingConfigs addObject:newTile];
+                [self.tableView insertRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:self.editingConfigs.count - 1 inSection:0]]
+                                      withRowAnimation:UITableViewRowAnimationAutomatic];
+            },
+        }];
     }
     
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
-    
-    // iPad popover support
-    sheet.popoverPresentationController.barButtonItem = self.toolbarItems.firstObject;
-    
-    [self presentViewController:sheet animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_293", nil)
+                                     dictItems:ame240_items
+                                    sourceView:self.view];
 }
 
 // MARK: - UITableView DataSource
@@ -400,54 +399,50 @@ static UIColor *hexColor(NSString *hex) {
 // MARK: - Edit Tile Options
 
 - (void)showEditOptionsForTile:(HomeTileConfig *)tile atIndex:(NSInteger)index {
-    UIAlertController *sheet = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_299", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
     
     // 切换大小
     NSString *sizeTitle = tile.tileSize == HomeTileSizeCompact ? localize(@"i18n_str_2020", nil) : localize(@"i18n_str_301", nil);
-    [sheet addAction:[UIAlertAction actionWithTitle:sizeTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    [ame240_items addObject:@{ @"title": sizeTitle, @"handler": ^{
         tile.tileSize = (tile.tileSize == HomeTileSizeCompact) ? HomeTileSizeFull : HomeTileSizeCompact;
         [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:index inSection:0]]
                               withRowAnimation:UITableViewRowAnimationAutomatic];
-    }]];
+    } }];
     
     // 修改标题 (仅快捷入口和部分磁贴)
     if (tile.tileType == HomeTileTypeShortcut || tile.tileType == HomeTileTypeVersionRelease || tile.tileType == HomeTileTypeVersionSnapshot) {
-        [sheet addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_302", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        [ame240_items addObject:@{ @"title": localize(@"i18n_str_302", nil), @"handler": ^{
             [self showEditTitleForTile:tile atIndex:index];
-        }]];
+        } }];
     }
     
     // 修改颜色
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_303", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    [ame240_items addObject:@{ @"title": localize(@"i18n_str_303", nil), @"handler": ^{
         [self showColorPickerForTile:tile atIndex:index];
-    }]];
+    } }];
     
     // 切换可见性
     NSString *visTitle = tile.visible ? localize(@"i18n_str_2021", nil) : localize(@"i18n_str_305", nil);
-    [sheet addAction:[UIAlertAction actionWithTitle:visTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    [ame240_items addObject:@{ @"title": visTitle, @"handler": ^{
         tile.visible = !tile.visible;
         [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:index inSection:0]]
                               withRowAnimation:UITableViewRowAnimationAutomatic];
-    }]];
+    } }];
     
     // 删除 (仅快捷入口)
     if (tile.tileType == HomeTileTypeShortcut) {
-        [sheet addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_306", nil) style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
+        [ame240_items addObject:@{ @"title": localize(@"i18n_str_306", nil), @"destructive": @YES, @"handler": ^{
             [self.editingConfigs removeObjectAtIndex:index];
             [self.tableView deleteRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:index inSection:0]]
                                   withRowAnimation:UITableViewRowAnimationFade];
-        }]];
+        } }];
     }
     
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
-    
-    // iPad popover
-    sheet.popoverPresentationController.sourceView = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:index inSection:0]];
-    sheet.popoverPresentationController.sourceRect = sheet.popoverPresentationController.sourceView.bounds;
-    
-    [self presentViewController:sheet animated:YES completion:nil];
+    // ★ Task240：系统 UIMenu 呈现（锚定所在行）。
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_299", nil)
+                                     dictItems:ame240_items
+                                    sourceView:[self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:index inSection:0]] ?: self.view];
 }
 
 - (void)showEditTitleForTile:(HomeTileConfig *)tile atIndex:(NSInteger)index {
@@ -474,9 +469,8 @@ static UIColor *hexColor(NSString *hex) {
 }
 
 - (void)showColorPickerForTile:(HomeTileConfig *)tile atIndex:(NSInteger)index {
-    UIAlertController *sheet = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_309", nil)
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
     
     NSDictionary *colors = @{
         localize(@"i18n_str_2022", nil):   @"#8B5CF6",
@@ -492,19 +486,20 @@ static UIColor *hexColor(NSString *hex) {
     
     for (NSString *name in @[localize(@"i18n_str_2022", nil), localize(@"i18n_str_2062", nil), localize(@"i18n_str_2063", nil), localize(@"i18n_str_2065", nil), localize(@"i18n_str_2066", nil), localize(@"i18n_str_2067", nil), localize(@"i18n_str_2023", nil), localize(@"i18n_str_2024", nil), localize(@"i18n_str_2025", nil)]) {
         NSString *hex = colors[name];
-        [sheet addAction:[UIAlertAction actionWithTitle:name style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-            tile.accentColorHex = hex;
-            [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:index inSection:0]]
-                                  withRowAnimation:UITableViewRowAnimationAutomatic];
-        }]];
+        [ame240_items addObject:@{
+            @"title": name,
+            @"handler": ^{
+                tile.accentColorHex = hex;
+                [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:index inSection:0]]
+                                      withRowAnimation:UITableViewRowAnimationAutomatic];
+            },
+        }];
     }
     
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
-    
-    sheet.popoverPresentationController.sourceView = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:index inSection:0]];
-    sheet.popoverPresentationController.sourceRect = sheet.popoverPresentationController.sourceView.bounds;
-    
-    [self presentViewController:sheet animated:YES completion:nil];
+    // ★ Task240：系统 UIMenu 呈现（锚定所在行）。
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_309", nil)
+                                     dictItems:ame240_items
+                                    sourceView:[self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:index inSection:0]] ?: self.view];
 }
 
 // MARK: - Switch Actions

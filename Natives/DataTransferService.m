@@ -16,6 +16,7 @@
 //
 
 #import "DataTransferService.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "external/UnzipKit/UZKArchive.h"
 #import "utils.h"
 #import "LauncherPreferences.h"   // getPrefObject（Task224 分区口径读当前实例名）
@@ -183,29 +184,25 @@ typedef NS_ENUM(NSInteger, Ame229PickerMode) {
     }
     NSString *sizeText = [NSByteCountFormatter stringFromByteCount:totalBytes
                                                          countStyle:NSByteCountFormatterCountStyleFile];
-    UIAlertController *sheet = [UIAlertController
-        alertControllerWithTitle:localize(@"ame219.export.pick_level", nil)
-                         message:[NSString stringWithFormat:
-                             localize(@"ame219.export.summary", nil),
-                             (unsigned long)fileCount, sizeText]
-                  preferredStyle:UIAlertControllerStyleActionSheet];
-    void (^ame219_add)(NSString *title, UZKCompressionMethod method) = ^(NSString *title, UZKCompressionMethod method) {
-        [sheet addAction:[UIAlertAction actionWithTitle:title
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            [self ame219_runExportWithCompression:method];
-        }]];
+    // ★ Task240：压缩级别选择换装系统原生 UIMenu（旧 actionSheet 退役）。
+    // 导出摘要（文件数/体积）以禁用头行保留在菜单顶部（UIMenu 无副标题）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
+    [ame240_items addObject:@{
+        @"title": [NSString stringWithFormat:localize(@"ame219.export.summary", nil), (unsigned long)fileCount, sizeText],
+        @"disabled": @YES,
+    }];
+    void (^ame240_add)(NSString *title, UZKCompressionMethod method) = ^(NSString *title, UZKCompressionMethod method) {
+        [ame240_items addObject:@{
+            @"title": title,
+            @"handler": ^{ [self ame219_runExportWithCompression:method]; },
+        }];
     };
-    ame219_add(localize(@"ame219.export.level_none", nil), UZKCompressionMethodNone);
-    ame219_add(localize(@"ame219.export.level_default", nil), UZKCompressionMethodDefault);
-    ame219_add(localize(@"ame219.export.level_best", nil), UZKCompressionMethodBest);
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
-    sheet.popoverPresentationController.sourceView = presenter.view;
-    sheet.popoverPresentationController.sourceRect = CGRectMake(presenter.view.bounds.size.width / 2.0,
-                                                                presenter.view.bounds.size.height / 2.0, 1, 1);
-    [presenter presentViewController:sheet animated:YES completion:nil];
+    ame240_add(localize(@"ame219.export.level_none", nil), UZKCompressionMethodNone);
+    ame240_add(localize(@"ame219.export.level_default", nil), UZKCompressionMethodDefault);
+    ame240_add(localize(@"ame219.export.level_best", nil), UZKCompressionMethodBest);
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"ame219.export.pick_level", nil)
+                                     dictItems:ame240_items
+                                    sourceView:presenter.view];
 }
 
 /// 带进度详情的导出执行（Task219 用户指令："添加进度条等详细信息"）。

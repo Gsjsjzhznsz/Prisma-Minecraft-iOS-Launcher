@@ -496,6 +496,7 @@ add_executable(AngelAuraAmethyst
   ThirdPartyLoginViewController.m
   GameMenuOverlayView.m
   AmeFloatingMenu.m
+  AmeNativeMenu.m
   InlineMessageView.m
   DownloadTaskItem.m
   DownloadTaskManager.m

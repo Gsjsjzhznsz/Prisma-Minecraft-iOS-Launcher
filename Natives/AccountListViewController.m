@@ -11,6 +11,7 @@
 #import "LauncherPreferences.h"
 #import "UIImageView+AFNetworking.h"
 #import "BackgroundManager.h"
+#import "AmeNativeMenu.h"
 // Task213：AmeCard 主/次文字色函数声明处（安装器同构卡配色依赖；CI 15.4 SDK
 // 实锤"call to undeclared function 'AmeCardPrimaryTextColor'"——本地无 clang
 // 的静态门没拦住，装机绿门在此收口）
@@ -596,27 +597,25 @@ static NSMutableSet *ame128_validatedSet(void) {
 - (UIContextMenuConfiguration *)tableView:(UITableView *)tableView
     contextMenuConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath
     point:(CGPoint)point API_AVAILABLE(ios(13.0)) {
+    // ★ Task240：菜单内容统一由 ame240_nativeMenuForAccountAtIndexPath 提供
+    //   （与行内 ⋯ 按钮同一数据源同一 UIMenu；iOS 26 由系统自动渲染原生
+    //   液态玻璃 = 用户基准截图 IMG_0370；Task223 的逐项 UIAction 手搓循环
+    //   退役——同步/子菜单/图标语义全部收敛到 AmeNativeMenu 字典协议）。
+    UIMenu *ame240_menu = [self ame240_nativeMenuForAccountAtIndexPath:indexPath];
+    if (ame240_menu == nil || ame240_menu.children.count == 0) return nil;
+    return [UIContextMenuConfiguration configurationWithIdentifier:nil previewProvider:nil
+        actionProvider:^UIMenu * _Nullable(NSArray<UIMenuElement *> * _Nonnull suggestedActions) {
+            return ame240_menu;
+        }];
+}
+
+/// ★ Task240：账号菜单 UIMenu 单一事实源（长按与 ⋯ 按钮共用）。
+- (UIMenu *)ame240_nativeMenuForAccountAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.row >= self.accountList.count) return nil;
     NSDictionary *accountData = self.accountList[indexPath.row];
     NSString *displayName = accountData[@"username"] ?: @"";
-    NSMutableArray<UIAction *> *actions = [NSMutableArray array];
-    for (NSDictionary *it in [self ame223_accountMenuItemsAtIndexPath:indexPath]) {
-        void (^handler)(void) = it[@"handler"];
-        UIAction *a = [UIAction actionWithTitle:it[@"title"]
-                                          image:([it[@"systemImage"] length] > 0
-                                                     ? [UIImage systemImageNamed:it[@"systemImage"]] : nil)
-                                     identifier:nil
-                                         handler:^(UIAction * _Nonnull act) {
-            if (handler) handler();
-        }];
-        if ([it[@"destructive"] boolValue]) a.attributes = UIMenuElementAttributesDestructive;
-        [actions addObject:a];
-    }
-    UIMenu *menu = [UIMenu menuWithTitle:displayName children:actions];
-    return [UIContextMenuConfiguration configurationWithIdentifier:nil previewProvider:nil
-        actionProvider:^UIMenu * _Nullable(NSArray<UIMenuElement *> * _Nonnull suggestedActions) {
-            return menu;
-        }];
+    return [AmeNativeMenu ame240_menuWithTitle:displayName
+                                     dictItems:[self ame223_accountMenuItemsAtIndexPath:indexPath]];
 }
 
 /// Task223：完整菜单项（长按与行内 ⋯ 共用的单一事实源）。
@@ -686,9 +685,20 @@ static NSMutableSet *ame128_validatedSet(void) {
             [self ame224_changeSkinForAccountAtIndexPath:indexPath];
         });
     } else if (isLocal) {
-        ame223_add(localize(@"account.menu.default_skin", @"默认皮肤"), @"person.crop.square", NO, ^{
-            [self ame223_pickOfflineDefaultSkinAtIndexPath:indexPath];
-        });
+        // ★ Task240：默认皮肤改为【子菜单】（Steve / Alex 直达 apply 链，
+        //   不再二次弹 sheet——旧 ame223_pickOfflineDefaultSkinAtIndexPath
+        //   仅保留给快捷操作区换皮肤入口）。
+        NSString *ame240_loadKey = accountData[@"accountId"] ?: accountData[@"username"];
+        void (^ame240_steve)(void) = ^{ [self ame224_applyOfflineDefaultSkin:@"Steve" forAccountAtIndexPath:indexPath loadKey:ame240_loadKey]; };
+        void (^ame240_alex)(void) = ^{ [self ame224_applyOfflineDefaultSkin:@"Alex" forAccountAtIndexPath:indexPath loadKey:ame240_loadKey]; };
+        [items addObject:@{
+            @"title": localize(@"account.menu.default_skin", @"默认皮肤"),
+            @"systemImage": @"person.crop.square",
+            @"subitems": @[
+                @{ @"title": @"Steve", @"handler": ame240_steve },
+                @{ @"title": @"Alex", @"handler": ame240_alex },
+            ],
+        }];
     }
 
     // ③ 删除账号（红字破坏性）——与左滑删除同一条删除链
@@ -699,59 +709,40 @@ static NSMutableSet *ame128_validatedSet(void) {
     return items;
 }
 
-/// Task223：行内 “⋯” 按钮的菜单呈现（iPad popover 锚点 / iPhone actionSheet）。
+/// Task223/240：行内 “⋯” 按钮的菜单呈现——★ Task240 换装系统原生
+/// UIMenu（锚定按钮本身；iOS 26 系统自动渲染原生液态玻璃 = IMG_0370；
+/// iOS 14-25 系统标准上下文菜单）。旧 UIAlertController actionSheet
+/// （iPad popover 锚点 / iPhone 深色分块列表 = IMG_0372）退役。
 - (void)ame223_showAccountMenuAtIndexPath:(NSIndexPath *)indexPath fromView:(UIView *)sourceView {
     if (indexPath.row >= self.accountList.count) return;
+    NSArray<NSDictionary *> *items = [self ame223_accountMenuItemsAtIndexPath:indexPath];
+    if (items.count == 0) return;
     NSDictionary *accountData = self.accountList[indexPath.row];
     NSString *displayName = accountData[@"username"] ?: @"";
-    NSArray<NSDictionary *> *items = [self ame223_accountMenuItemsAtIndexPath:indexPath];
-    UIAlertController *sheet = [UIAlertController alertControllerWithTitle:displayName
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
-    for (NSDictionary *it in items) {
-        void (^handler)(void) = it[@"handler"];
-        UIAlertActionStyle style = [it[@"destructive"] boolValue] ? UIAlertActionStyleDestructive : UIAlertActionStyleDefault;
-        [sheet addAction:[UIAlertAction actionWithTitle:it[@"title"] style:style handler:^(UIAlertAction * _Nonnull act) {
-            if (handler) handler();
-        }]];
-    }
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", @"取消")
-                                              style:UIAlertActionStyleCancel handler:nil]];
-    sheet.popoverPresentationController.sourceView = sourceView ?: self.view;
-    sheet.popoverPresentationController.sourceRect = sourceView ? sourceView.bounds : self.view.bounds;
-    [self presentViewController:sheet animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:displayName
+                                     dictItems:items
+                                    sourceView:sourceView ?: self.view];
 }
 
-/// Task223（清单第 20 项）：离线账号默认皮肤选择（Steve / Alex 两张原版默认）。
-/// 头像与 profilePicURL 同步落盘（账号文件 + keychain 无关字段），
-/// 并提示其作用范围（启动器头像/支持皮肤协议的联机服务）。
+/// Task223/224/240：离线账号默认皮肤选择（Steve / Alex）——快捷操作区
+/// 入口。★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役；菜单项
+/// 内的默认皮肤已直接以子菜单形式内联，本方法仅服务 ame224_changeSkin
+/// 链路的本地账号分支）。
 - (void)ame223_pickOfflineDefaultSkinAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.row >= self.accountList.count) return;
     NSDictionary *accountData = self.accountList[indexPath.row];
     NSString *loadKey = accountData[@"accountId"] ?: accountData[@"username"];
     if (loadKey.length == 0) return;
 
-    UIAlertController *sheet = [UIAlertController
-        alertControllerWithTitle:localize(@"account.default_skin.title", @"默认皮肤")
-                         message:localize(@"account.default_skin.hint", @"选择原版默认皮肤（Steve / Alex）")
-                  preferredStyle:UIAlertControllerStyleActionSheet];
-    [sheet addAction:[UIAlertAction actionWithTitle:@"Steve"
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction *a) {
-        [self ame224_applyOfflineDefaultSkin:@"Steve"
-                          forAccountAtIndexPath:indexPath loadKey:loadKey];
-    }]];
-    [sheet addAction:[UIAlertAction actionWithTitle:@"Alex"
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction *a) {
-        [self ame224_applyOfflineDefaultSkin:@"Alex"
-                          forAccountAtIndexPath:indexPath loadKey:loadKey];
-    }]];
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", @"取消")
-                                              style:UIAlertActionStyleCancel handler:nil]];
-    sheet.popoverPresentationController.sourceView = self.view;
-    sheet.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0, self.view.bounds.size.height / 2.0, 1, 1);
-    [self presentViewController:sheet animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"account.default_skin.title", @"默认皮肤")
+                                     dictItems:@[
+        @{ @"title": @"Steve", @"handler": ^{
+            [self ame224_applyOfflineDefaultSkin:@"Steve" forAccountAtIndexPath:indexPath loadKey:loadKey];
+        } },
+        @{ @"title": @"Alex", @"handler": ^{
+            [self ame224_applyOfflineDefaultSkin:@"Alex" forAccountAtIndexPath:indexPath loadKey:loadKey];
+        } },
+    ] sourceView:self.view];
 }
 
 /// ★ Task224（反馈第 17 项）：离线账号默认皮肤落地（在 Task223 仅改头像的
@@ -1083,7 +1074,7 @@ static NSMutableSet *ame128_validatedSet(void) {
                          message:[NSString stringWithFormat:@"%@\n%@",
                              localize(@"account.skin.pick_variant.hint", @"经典 = Steve 宽体模型，纤细 = Alex 窄体模型"),
                              fileName ?: @""]
-                  preferredStyle:UIAlertControllerStyleActionSheet];
+                  preferredStyle:UIAlertControllerStyleAlert];
     [sheet addAction:[UIAlertAction actionWithTitle:localize(@"account.skin.variant.classic", @"经典（Steve）")
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction *a) {
@@ -1096,9 +1087,6 @@ static NSMutableSet *ame128_validatedSet(void) {
     }]];
     [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", @"取消")
                                               style:UIAlertActionStyleCancel handler:nil]];
-    sheet.popoverPresentationController.sourceView = self.view;
-    sheet.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0,
-                                                                self.view.bounds.size.height / 2.0, 1, 1);
     [self presentViewController:sheet animated:YES completion:nil];
 }
 
@@ -1229,10 +1217,8 @@ static NSMutableSet *ame128_validatedSet(void) {
     NSArray *profiles = accountData[@"availableProfiles"];
     if (![profiles isKindOfClass:[NSArray class]] || profiles.count < 2) return;
     NSString *currentProfileId = accountData[@"profileId"];
-    UIAlertController *sheet = [UIAlertController
-        alertControllerWithTitle:localize(@"account.switch_role.button", @"切换角色")
-                         message:nil
-                  preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
     for (NSDictionary *p in profiles) {
         if (![p isKindOfClass:[NSDictionary class]]) continue;
         NSString *pid = [p[@"id"] isKindOfClass:[NSString class]] ? p[@"id"] : nil;
@@ -1242,18 +1228,14 @@ static NSMutableSet *ame128_validatedSet(void) {
         NSString *curNorm = [currentProfileId stringByReplacingOccurrencesOfString:@"-" withString:@""];
         NSString *title = [pidNorm isEqualToString:curNorm]
             ? [NSString stringWithFormat:@"✓ %@", pname] : pname;
-        [sheet addAction:[UIAlertAction actionWithTitle:title
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction *a) {
-            [self ame129b_switchAccountAtIndexPath:indexPath toProfile:p];
-        }]];
+        [ame240_items addObject:@{
+            @"title": title,
+            @"handler": ^{ [self ame129b_switchAccountAtIndexPath:indexPath toProfile:p]; },
+        }];
     }
-    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", @"取消")
-                                              style:UIAlertActionStyleCancel handler:nil]];
-    sheet.popoverPresentationController.sourceView = self.view;
-    sheet.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0,
-                                                                self.view.bounds.size.height / 2.0, 1, 1);
-    [self presentViewController:sheet animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"account.switch_role.button", @"切换角色")
+                                     dictItems:ame240_items
+                                    sourceView:self.view];
 }
 
 /// Task224：就地改写账号 json（读-改-写；离线默认皮肤 / 改名共用）。
@@ -1400,7 +1382,7 @@ static NSMutableSet *ame128_validatedSet(void) {
 - (void)actionLoginLocal:(UIView *)sender {
     if (getPrefBool(@"warnings.local_warn")) {
         setPrefBool(@"warnings.local_warn", NO);
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"login.warn.title.localmode", nil) message:localize(@"login.warn.message.localmode", nil) preferredStyle:UIAlertControllerStyleActionSheet];
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"login.warn.title.localmode", nil) message:localize(@"login.warn.message.localmode", nil) preferredStyle:UIAlertControllerStyleAlert];
         // 修复：sender 为 nil 时（从 addAccountTapped -> actionAddAccount:nil 链路进入），
         // ActionSheet 在 iPad/LiveContainer 等 popover 场景下必须提供 sourceView，
         // 否则会因 popoverPresentationController.sourceView 为 nil 而崩溃。

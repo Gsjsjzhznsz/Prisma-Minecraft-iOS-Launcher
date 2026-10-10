@@ -42,6 +42,7 @@
 
 #import "MultiplayerViewController.h"
 #import "MultiplayerManager.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "BackgroundManager.h"
 #import "LauncherPreferences.h"
 #import "PLProfiles.h"
@@ -737,9 +738,8 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
                          MPLocalized(@"mp.room.network_id", @"Network ID"),
                          room.networkId ?: @"-"];
 
-    UIAlertController *sheet = [UIAlertController alertControllerWithTitle:title
-                                                                   message:message
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：房间操作菜单换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
 
     // 连接 / 断开按钮（根据当前状态切换标题）
     NSString *connectTitle = (room.status == MultiplayerRoomStatusConnected)
@@ -747,83 +747,81 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
         : MPLocalized(@"mp.room.action.connect", localize(@"ame193.mp.52", @"连接房间"));
 
     __weak typeof(self) weakSelf = self;
-    [sheet addAction:[UIAlertAction actionWithTitle:connectTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (!strongSelf) return;
-
-        if (room.status == MultiplayerRoomStatusConnected) {
-            [strongSelf disconnectRoom:room];
-        } else {
-            [strongSelf connectToRoom:room completion:^(BOOL success, NSError *error) {
-                if (!success) {
-                    [strongSelf showSimpleAlertWithTitle:MPLocalized(@"mp.connect.failed", localize(@"ame193.mp.48", @"连接失败"))
-                                                  message:error.localizedDescription ?: MPLocalized(@"mp.connect.failed_msg", localize(@"ame193.mp.49", @"无法连接到房间，请检查 Network ID 是否正确以及网络是否畅通。"))];
-                }
-            }];
-        }
-    }]];
-
-    // 分享房间按钮（使用 shareTextForRoom: 生成可读分享文本）
-    [sheet addAction:[UIAlertAction actionWithTitle:MPLocalized(@"mp.room.action.share", localize(@"ame193.mp.53", @"分享房间"))
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction *action) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (!strongSelf) return;
-
-        NSString *shareText = [[MultiplayerManager sharedManager] shareTextForRoom:room];
-        UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[shareText] applicationActivities:nil];
-
-        // iPad 适配：popover 指向屏幕中央
-        if (activityVC.popoverPresentationController) {
-            activityVC.popoverPresentationController.sourceView = strongSelf.view;
-            activityVC.popoverPresentationController.sourceRect = CGRectMake(strongSelf.view.bounds.size.width / 2.0,
-                                                                              strongSelf.view.bounds.size.height / 2.0,
-                                                                              1, 1);
-        }
-        [strongSelf presentViewController:activityVC animated:YES completion:nil];
-    }]];
-
-    // 删除房间按钮（destructive 红色）
-    [sheet addAction:[UIAlertAction actionWithTitle:MPLocalized(@"mp.room.action.delete", localize(@"ame193.mp.54", @"删除房间"))
-                                              style:UIAlertActionStyleDestructive
-                                            handler:^(UIAlertAction *action) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (!strongSelf) return;
-
-        // 二次确认对话框
-        UIAlertController *confirm = [UIAlertController alertControllerWithTitle:MPLocalized(@"mp.room.delete.confirm_title", localize(@"ame193.mp.55", @"确认删除"))
-                                                                         message:[NSString stringWithFormat:@"%@「%@」？\n%@",
-                                                                                  MPLocalized(@"mp.room.delete.confirm_prefix", localize(@"ame193.mp.56", @"确定要删除房间")),
-                                                                                  room.name,
-                                                                                  MPLocalized(@"mp.room.delete.confirm_warning", localize(@"ame193.mp.57", @"此操作无法撤销。"))]
-                                                                  preferredStyle:UIAlertControllerStyleAlert];
-        [confirm addAction:[UIAlertAction actionWithTitle:MPLocalized(@"common.cancel", localize(@"Cancel", @"取消")) style:UIAlertActionStyleCancel handler:nil]];
-        [confirm addAction:[UIAlertAction actionWithTitle:MPLocalized(@"mp.room.delete.button", localize(@"Delete", @"删除")) style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
+    [ame240_items addObject:@{
+        @"title": connectTitle,
+        @"handler": ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
 
-            // 如果该房间已连接，先断开连接
             if (room.status == MultiplayerRoomStatusConnected) {
-                [[MultiplayerManager sharedManager] disconnectCurrentRoom];
+                [strongSelf disconnectRoom:room];
+            } else {
+                [strongSelf connectToRoom:room completion:^(BOOL success, NSError *error) {
+                    if (!success) {
+                        [strongSelf showSimpleAlertWithTitle:MPLocalized(@"mp.connect.failed", localize(@"ame193.mp.48", @"连接失败"))
+                                                      message:error.localizedDescription ?: MPLocalized(@"mp.connect.failed_msg", localize(@"ame193.mp.49", @"无法连接到房间，请检查 Network ID 是否正确以及网络是否畅通。"))];
+                    }
+                }];
             }
-            [[MultiplayerManager sharedManager] removeRoom:room.roomId];
-            [strongSelf refreshRooms];
-        }]];
-        [strongSelf presentViewController:confirm animated:YES completion:nil];
-    }]];
+        },
+    }];
 
-    // 取消按钮
-    [sheet addAction:[UIAlertAction actionWithTitle:MPLocalized(@"common.cancel", localize(@"Cancel", @"取消")) style:UIAlertActionStyleCancel handler:nil]];
+    // 分享房间按钮（使用 shareTextForRoom: 生成可读分享文本）
+    [ame240_items addObject:@{
+        @"title": MPLocalized(@"mp.room.action.share", localize(@"ame193.mp.53", @"分享房间")),
+        @"handler": ^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
 
-    // iPad 适配：popover 指向屏幕中央
-    if (sheet.popoverPresentationController) {
-        sheet.popoverPresentationController.sourceView = self.view;
-        sheet.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0,
-                                                                    self.view.bounds.size.height / 2.0,
-                                                                    1, 1);
-    }
+            NSString *shareText = [[MultiplayerManager sharedManager] shareTextForRoom:room];
+            UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[shareText] applicationActivities:nil];
 
-    [self presentViewController:sheet animated:YES completion:nil];
+            // iPad 适配：popover 指向屏幕中央
+            if (activityVC.popoverPresentationController) {
+                activityVC.popoverPresentationController.sourceView = strongSelf.view;
+                activityVC.popoverPresentationController.sourceRect = CGRectMake(strongSelf.view.bounds.size.width / 2.0,
+                                                                                  strongSelf.view.bounds.size.height / 2.0,
+                                                                                  1, 1);
+            }
+            [strongSelf presentViewController:activityVC animated:YES completion:nil];
+        },
+    }];
+
+    // 删除房间按钮（destructive 红色；二次确认为弹窗语义，保留 UIAlertController Alert）
+    [ame240_items addObject:@{
+        @"title": MPLocalized(@"mp.room.action.delete", localize(@"ame193.mp.54", @"删除房间")),
+        @"destructive": @YES,
+        @"handler": ^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
+
+            // 二次确认对话框
+            UIAlertController *confirm = [UIAlertController alertControllerWithTitle:MPLocalized(@"mp.room.delete.confirm_title", localize(@"ame193.mp.55", @"确认删除"))
+                                                                             message:[NSString stringWithFormat:@"%@「%@」？\n%@",
+                                                                                      MPLocalized(@"mp.room.delete.confirm_prefix", localize(@"ame193.mp.56", @"确定要删除房间")),
+                                                                                      room.name,
+                                                                                      MPLocalized(@"mp.room.delete.confirm_warning", localize(@"ame193.mp.57", @"此操作无法撤销。"))]
+                                                                      preferredStyle:UIAlertControllerStyleAlert];
+            [confirm addAction:[UIAlertAction actionWithTitle:MPLocalized(@"common.cancel", localize(@"Cancel", @"取消")) style:UIAlertActionStyleCancel handler:nil]];
+            [confirm addAction:[UIAlertAction actionWithTitle:MPLocalized(@"mp.room.delete.button", localize(@"Delete", @"删除")) style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                if (!strongSelf) return;
+
+                // 如果该房间已连接，先断开连接
+                if (room.status == MultiplayerRoomStatusConnected) {
+                    [[MultiplayerManager sharedManager] disconnectCurrentRoom];
+                }
+                [[MultiplayerManager sharedManager] removeRoom:room.roomId];
+                [strongSelf refreshRooms];
+            }]];
+            [strongSelf presentViewController:confirm animated:YES completion:nil];
+        },
+    }];
+
+    // ★ Task240：系统 UIMenu 呈现（锚定本视图；取消项由系统菜单点按外部
+    // 消失语义天然承担，Task223 口径的显式取消项退役）。
+    UIMenu *ame240_menu = [AmeNativeMenu ame240_menuWithTitle:title dictItems:ame240_items];
+    [AmeNativeMenu ame240_presentMenu:ame240_menu sourceView:self.view];
 }
 
 #pragma mark - 启动器模式：直连

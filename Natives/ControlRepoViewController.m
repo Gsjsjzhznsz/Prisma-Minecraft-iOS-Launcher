@@ -1,4 +1,5 @@
 #import "ControlRepoViewController.h"
+#import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "NMToast.h"
 #import "utils.h"
 #import "LauncherPreferences.h"
@@ -556,23 +557,17 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
         [NMToast showMessage:localize(@"ame230.repo.upload.no_layouts", nil)];
         return;
     }
-    UIAlertController *picker = [UIAlertController
-        alertControllerWithTitle:localize(@"ame230.repo.upload.pick", nil)
-                         message:nil
-                  preferredStyle:UIAlertControllerStyleActionSheet];
+    // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
     for (NSString *f in installed) {
-        [picker addAction:[UIAlertAction actionWithTitle:f.stringByDeletingPathExtension
-                                                   style:UIAlertActionStyleDefault
-                                                 handler:^(UIAlertAction *a) { fillForm(f); }]];
+        [ame240_items addObject:@{
+            @"title": f.stringByDeletingPathExtension,
+            @"handler": ^{ fillForm(f); },
+        }];
     }
-    [picker addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
-                                               style:UIAlertActionStyleCancel handler:nil]];
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        picker.popoverPresentationController.sourceView = presenter.view;
-        picker.popoverPresentationController.sourceRect = CGRectMake(presenter.view.bounds.size.width / 2.0,
-                                                                     presenter.view.bounds.size.height / 2.0, 1, 1);
-    }
-    [presenter presentViewController:picker animated:YES completion:nil];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"ame230.repo.upload.pick", nil)
+                                     dictItems:ame240_items
+                                    sourceView:presenter.view];
 }
 
 /// Task230：上传收尾——安全检查 → 提交文件生成 → 分享 / GitHub 深链。
