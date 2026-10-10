@@ -2597,3 +2597,17 @@ Stage Summary:
 - 玻璃观感改道快照自绘磨砂终局：弹窗（含 37 处菜单玻璃档接管 + 中央路由 alert 弹窗）+ 游戏内主菜单双层全覆盖，UIGlassEffect 黑块家族与本进程彻底解耦；装机预期 = "选择版本"等全部玻璃档弹窗显示模糊背景 + 可读 tint + 圆角细边（用户夸过的魔改弹窗观感回归）
 - Vulkan 崩溃待分诊输入：装机后若再崩 → ①看启动器崩溃诊断弹窗（Task218）②latestlog 搜 [Task244] Vulkan forensics——若报 VulkanMod+Iris 共存则删其一；否则 hs_err 内容回传
 - 装机验证锚点：①主页"选择版本"弹窗 = 模糊磨砂面板（非纯黑）②版本设置内存行/游戏内分辨率弹窗同款 ③游戏内开菜单 = 模糊游戏画面 + 深色可读面板 ④界面风格切"原生" = 旧版深色分块弹窗（原生档不受影响）
+
+---
+Task ID: 244-ci
+Agent: main (Super Z)
+Task: Task 244 CI 闭环 + 用户 latestlog（ba93107）取证定案
+
+Work Log:
+- 顺手取证：用户网页上传 latestlog.txt（commit ba93107，Task242/243 两轮待要的日志）——①玻璃线实锤：[AmeMenu] Task239 menu material: native UIGlassEffect (true liquid glass) 在用户设备上打出"已挂玻璃"但装机所见纯黑 = UIGlassEffect 对象取得、渲染恒黑，Task244 退役判定与证据链闭合；②Vulkan 线定案：VulkanMod 0.6.8+26.1.2 + etallum 光影（无 Iris/Oculus，Task244 嗅探对该案不误报——组合是 VulkanMod 自带光影链路）、进世界渲染正常（fps=60、hotbar 已画）后 ~19s SIGSEGV at _platform_memmove+0x58（hs_err Problematic frame；Amethyst fatal trace 显示 liblwjgl.dylib 帧参与）= VulkanMod/MoltenVK 驱动层内存拷贝崩溃，启动器侧不可修（新面包屑在下轮日志标 vulkanmod=1/iris=0 供持续分诊）
+- run 38074831106（6719a29）：completed success 一轮终绿，零修复轮；产物 ipa/tipa 各 220.3MB + dSYM 6.2MB
+- rebase 前置：网页上传 ba93107 先落远端，fetch + rebase 零冲突后推送（62f9318/142c143 同款惯例第三次复用）
+
+Stage Summary:
+- Task 244 全链闭环：玻璃观感改道快照自绘磨砂（弹窗 + 游戏内双层）、UIGlassEffect 黑块家族退役（AME239_FORCE_SYSTEM_GLASS=1 诊断回取保留）、Vulkan 取证面包屑随包
+- 装机验证锚点：①主页"选择版本"弹窗 = 模糊真实背景 + 深色可读 tint + 圆角细边（非纯黑）②版本设置内存行/下载页筛选/游戏内分辨率弹窗同款 ③界面风格"原生"档零回归（旧版深色分块弹窗）④Vulkan+光影若再崩 → 崩溃诊断弹窗（Task218）+ latestlog [Task244] Vulkan forensics 行回传；上游建议 = VulkanMod 升级最新版或改 zink 渲染器 + Iris（zink 路径已带光影崩溃修复族）
