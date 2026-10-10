@@ -69,6 +69,12 @@ NS_ASSUME_NONNULL_BEGIN
                           dictItems:(NSArray<NSDictionary *> *)items
                          sourceView:(UIView *)sourceView;
 
+/// 一站式便捷入口（带消失回调，语义同 ame240_presentMenu:onDismiss:）。
++ (void)ame240_presentMenuWithTitle:(nullable NSString *)title
+                          dictItems:(NSArray<NSDictionary *> *)items
+                         sourceView:(UIView *)sourceView
+                          onDismiss:(nullable void (^)(void))onDismiss;
+
 @end
 
 NS_ASSUME_NONNULL_END

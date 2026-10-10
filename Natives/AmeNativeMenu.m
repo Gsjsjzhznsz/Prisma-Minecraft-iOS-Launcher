@@ -141,8 +141,15 @@ static BOOL ame240_actionFired = NO;
 + (void)ame240_presentMenuWithTitle:(NSString *)title
                           dictItems:(NSArray<NSDictionary *> *)items
                          sourceView:(UIView *)sourceView {
+    [self ame240_presentMenuWithTitle:title dictItems:items sourceView:sourceView onDismiss:nil];
+}
+
++ (void)ame240_presentMenuWithTitle:(NSString *)title
+                          dictItems:(NSArray<NSDictionary *> *)items
+                         sourceView:(UIView *)sourceView
+                          onDismiss:(void (^)(void))onDismiss {
     UIMenu *ame240_menu = [self ame240_menuWithTitle:title dictItems:items];
-    [self ame240_presentMenu:ame240_menu sourceView:sourceView];
+    [self ame240_presentMenu:ame240_menu sourceView:sourceView onDismiss:onDismiss];
 }
 
 #pragma mark - UIContextMenuInteractionDelegate
