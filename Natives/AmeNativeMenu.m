@@ -10,8 +10,11 @@
 //    - 菜单快照挂在交互实例的 associated object 上，menuProvider 惰性
 //      取用——ame240_presentMenu 每次调用都会刷新快照，多次呈现同一
 //      锚点永远拿到最新菜单；
-//    - UIAlertAction 不参与本组件（其 handler 非公开属性，KVC 取用属
-//      Task239 炸弹家族禁忌）——调用点一律走字典协议（公开 API）。
+//    - handler 只能从字典协议取（公开 API）——UIAction/UIAlertAction
+//      的 handler 均非公开属性，KVC 取用属 Task239 炸弹家族禁忌，
+//      从已构建 UIMenu 反取在 iOS 26.2 SDK 为编译错误（Task241 CI r1
+//      双雷实证）。UIAlertAction 仅在 actionSheet 兜底中作为呈现容器
+//      （Task241 第三级），动作语义仍全部来自字典协议。
 //
 
 #import "AmeNativeMenu.h"
@@ -31,6 +34,14 @@
 //   先例，iOS 13+ 长期稳定）→ 系统 actionSheet 弹窗兜底；任一环节
 //   respondsToSelector 不响应或 @try 抛出即降下一级，绝不再以
 //   unrecognized selector 崩溃；双私有入口缺失时功能仍不断供。
+//
+// ★ Task241 CI r1（编译雷两族）：兜底拍平从字典协议直驱——
+//   UIAction.handler 非公开属性（本文件头禁忌原文即此，Task241 首版
+//   自踩），从已构建 UIMenu 反取在 iOS 26.2 SDK 为编译错误（:79 双雷），
+//   KVC 反取属运行时炸弹；dictsForFallback: 把字典快照送入呈现链，
+//   全部取用为公开 API。另 ：85 C 函数调用误包方括号当消息表达式
+//   （Task240-ci r4 括号教训的镜像：裸 continuation 缺 [] vs C 调用
+//   多 []，括号平衡门双盲区），整函数重写后此行消失。
 @interface UIContextMenuInteraction (Ame240PresentMenuCompat)
 - (void)presentMenu;
 - (void)_presentMenuAtLocation:(CGPoint)location;
@@ -58,32 +69,48 @@ static void (^ame240_fallbackDismiss)(void);
 
 #pragma mark - Task241 presentation chain
 
-/// UIMenu 树拍平为 UIAlertAction 列表（子菜单降一级缩进，语义保留：
-/// destructive 红字 / disabled 置灰 / handler 透传并置已选中标记）。
-static void ame240_flattenMenuForAlert(UIMenu *menu,
+/// Task241-ci：字典协议 → UIAlertAction 拍平（子菜单降一级缩进，语义
+/// 保留：destructive 红字 / disabled 置灰 / handler 透传并置已选中标记）。
+/// ★ handler 只能从字典协议取——UIAction.handler 与 UIAlertAction.handler
+/// 同属非公开属性（Task240 定案禁忌，本文件头注释原文即此），从已构建
+/// UIMenu 反取在 iOS 26.2 SDK 即编译错误（Task241 CI r1 :79 双雷），
+/// KVC 反取属 Task239 运行时炸弹家族，均不可行；字典快照经呈现链
+/// dictsForFallback: 传入，此处全部取用为公开 API。跨行消息表达式
+/// 整体带 []（Task240-ci r4 教训：裸 continuation 与 C 调用误包 []
+/// 是括号平衡门双盲区的对偶雷）。
+static void ame240_addDictItemsToAlert(NSArray<NSDictionary *> *items,
                                        NSMutableArray<UIAlertAction *> *out,
                                        NSString *prefix) {
-    for (UIMenuElement *child in menu.children) {
-        if ([child isKindOfClass:[UIAction class]]) {
-            UIAction *action = (UIAction *)child;
-            BOOL destructive = (action.attributes & UIMenuElementAttributesDestructive) != 0;
-            BOOL disabled = (action.attributes & UIMenuElementAttributesDisabled) != 0;
-            NSString *title = [prefix stringByAppendingString:(action.title ?: @"")];
-            __kindof UIAction *captured = action;
-            UIAlertAction *alertAction = [UIAlertAction
-                actionWithTitle:title
-                          style:(destructive ? UIAlertActionStyleDestructive
-                                             : UIAlertActionStyleDefault)
-                        handler:^(UIAlertAction *ignored) {
-                    ame240_actionFired = YES;
-                    if (captured.handler) captured.handler(captured);
-                }];
-            alertAction.enabled = !disabled;
-            [out addObject:alertAction];
-        } else if ([child isKindOfClass:[UIMenu class]]) {
-            [ame240_flattenMenuForAlert((UIMenu *)child, out,
-                                        [prefix stringByAppendingString:@"· "])];
+    for (NSDictionary *ame241_it in items) {
+        if (![ame241_it isKindOfClass:[NSDictionary class]]) continue;
+        // cancel 项跳过：actionSheet 外部点按即关闭，取消语义由
+        // presentationControllerDidDismiss 承担（同系统菜单口径）。
+        if ([ame241_it[@"cancel"] boolValue]) continue;
+        NSString *ame241_title = ame241_it[@"title"];
+        if (![ame241_title isKindOfClass:[NSString class]]) continue;
+
+        // 子菜单（@"subitems" 非空）递归降一级缩进（与旧 UIMenu 树拍平同语义）
+        NSArray *ame241_sub = ame241_it[@"subitems"];
+        if ([ame241_sub isKindOfClass:[NSArray class]] && ame241_sub.count > 0) {
+            NSString *ame241_next = [prefix stringByAppendingString:@"· "];
+            ame240_addDictItemsToAlert(ame241_sub, out, ame241_next);
+            continue;
         }
+
+        BOOL ame241_destructive = [ame241_it[@"destructive"] boolValue];
+        BOOL ame241_disabled = [ame241_it[@"disabled"] boolValue];
+        void (^ame241_handler)(void) = ame241_it[@"handler"];
+        NSString *ame241_fullTitle = [prefix stringByAppendingString:ame241_title];
+        UIAlertAction *ame241_aa = [UIAlertAction
+            actionWithTitle:ame241_fullTitle
+                      style:(ame241_destructive ? UIAlertActionStyleDestructive
+                                                : UIAlertActionStyleDefault)
+                    handler:^(UIAlertAction *ame241_ignored) {
+                ame240_actionFired = YES;
+                if (ame241_handler) ame241_handler();
+            }];
+        ame241_aa.enabled = !ame241_disabled;
+        [out addObject:ame241_aa];
     }
 }
 
@@ -92,11 +119,19 @@ static void ame240_flattenMenuForAlert(UIMenu *menu,
 /// 既有玻璃路由接管，风格与全局弹窗一致），保证菜单功能不断供；外部
 /// 点按关闭且未选中动作时回调 onDismiss（承接取消语义，流程不悬死）。
 /// 呈现失败（无宿主 VC 等）立即回调 onDismiss。
+///
+/// ★ Task241-ci：动作重建只能走字典快照 dicts（handler 不可从已构建
+///   UIMenu 反取，见 ame240_addDictItemsToAlert 注释）——dicts 缺失或
+///   拍平为零动作时【不呈现假菜单】（点了没反应的空壳劣于不出现），
+///   按取消语义回调 onDismiss。
 static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
                                        UIMenu *menu,
+                                       NSArray<NSDictionary *> *dicts,
                                        void (^onDismiss)(void)) {
     UIView *anchor = ix.view;
-    if (anchor == nil || menu.children.count == 0) {
+    if (anchor == nil || dicts.count == 0) {
+        NSLog(@"[AmeNativeMenu] Task241-ci: fallback unavailable (anchor=%p dicts=%lu), treated as cancel",
+              anchor, (unsigned long)dicts.count);
         if (onDismiss) onDismiss();
         return;
     }
@@ -115,7 +150,11 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
                          message:nil
                   preferredStyle:UIAlertControllerStyleActionSheet];
     NSMutableArray<UIAlertAction *> *items = [NSMutableArray array];
-    ame240_flattenMenuForAlert(menu, items, @"");
+    ame240_addDictItemsToAlert(dicts, items, @"");
+    if (items.count == 0) { // 字典全为 cancel/无效项 → 无可呈现动作
+        if (onDismiss) onDismiss();
+        return;
+    }
     for (UIAlertAction *aa in items) [alert addAction:aa];
 
     ame240_fallbackDismiss = onDismiss;
@@ -181,6 +220,19 @@ static BOOL ame240_openInteractionMenu(UIContextMenuInteraction *ix) {
 + (void)ame240_presentMenu:(UIMenu *)menu
                 sourceView:(UIView *)sourceView
                 onDismiss:(void (^)(void))onDismiss {
+    // Task241-ci：UIMenu 直构入口无字典快照——兜底链在双私有入口缺失的
+    // 理论场景下按取消语义回调（不呈现点了没反应的假菜单）。业务调用
+    // 一律走 ame240_presentMenuWithTitle:dictItems:（唯一持有 handler
+    // 的入口；全仓唯一 UIMenu 入口调用点 Multiplayer 已于 Task241-ci
+    // 收编字典入口，37 处调用点全部统一）。
+    [self ame240_presentMenu:menu sourceView:sourceView
+                   onDismiss:onDismiss dictsForFallback:nil];
+}
+
++ (void)ame240_presentMenu:(UIMenu *)menu
+                sourceView:(UIView *)sourceView
+                  onDismiss:(void (^)(void))onDismiss
+          dictsForFallback:(NSArray<NSDictionary *> *)dicts {
     if (menu == nil || sourceView == nil) return;
     if (menu.children.count == 0) return; // 空菜单（全部项被丢弃）不呈现
     if (@available(iOS 14.0, *)) {
@@ -216,14 +268,15 @@ static BOOL ame240_openInteractionMenu(UIContextMenuInteraction *ix) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (sourceView.window != nil) {
                     if (!ame240_openInteractionMenu(ame240_ix)) {
-                        ame240_actionSheetFallback(ame240_ix, menu, onDismiss);
+                        ame240_actionSheetFallback(ame240_ix, menu, dicts,
+                                                   onDismiss);
                     }
                 } else if (onDismiss) {
                     onDismiss();
                 }
             });
         } else if (!ame240_openInteractionMenu(ame240_ix)) {
-            ame240_actionSheetFallback(ame240_ix, menu, onDismiss);
+            ame240_actionSheetFallback(ame240_ix, menu, dicts, onDismiss);
         }
     }
     // < iOS 14 不可达（部署目标 14.0）；真出现时静默不呈现 = 不劣于现状。
@@ -287,7 +340,10 @@ static BOOL ame240_openInteractionMenu(UIContextMenuInteraction *ix) {
                          sourceView:(UIView *)sourceView
                           onDismiss:(void (^)(void))onDismiss {
     UIMenu *ame240_menu = [self ame240_menuWithTitle:title dictItems:items];
-    [self ame240_presentMenu:ame240_menu sourceView:sourceView onDismiss:onDismiss];
+    // Task241-ci：字典快照随呈现链下传——actionSheet 兜底的 handler
+    // 只能从字典取（UIAction 反取非公开属性不可行，见文件头注释）。
+    [self ame240_presentMenu:ame240_menu sourceView:sourceView
+                   onDismiss:onDismiss dictsForFallback:items];
 }
 
 #pragma mark - UIContextMenuInteractionDelegate

@@ -819,9 +819,15 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
     }];
 
     // ★ Task240：系统 UIMenu 呈现（锚定本视图；取消项由系统菜单点按外部
-    // 消失语义天然承担，Task223 口径的显式取消项退役）。
-    UIMenu *ame240_menu = [AmeNativeMenu ame240_menuWithTitle:title dictItems:ame240_items];
-    [AmeNativeMenu ame240_presentMenu:ame240_menu sourceView:self.view];
+    //   消失语义天然承担，Task223 口径的显式取消项退役）。
+    // ★ Task241-ci：改走字典便捷入口——actionSheet 兜底链需要字典快照
+    //   取 handler（UIAction 反取 handler 非公开属性不可行，见
+    //   AmeNativeMenu.m 文件头注释）；本方法原先"字典建 UIMenu 再直构
+    //   呈现"属全仓唯一 UIMenu 入口调用点，收编后 37 处调用点统一字典
+    //   协议（呈现语义与 Task240 完全一致）。
+    [AmeNativeMenu ame240_presentMenuWithTitle:title
+                                     dictItems:ame240_items
+                                    sourceView:self.view];
 }
 
 #pragma mark - 启动器模式：直连
