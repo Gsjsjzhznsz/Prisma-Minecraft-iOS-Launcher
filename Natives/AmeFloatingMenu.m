@@ -1006,6 +1006,9 @@ static UIColor *Ame244SnapshotTint(void) {
               replacedCount, (long)alert.preferredStyle, (unsigned long)mirrors.count,
               (unsigned long)alert.textFields.count, alert.title);
     }
+    return YES;
+}
+
 #pragma mark - Task247 镜像 alert 动态通路
 
 // 沿场景呈现链查找 sourceAlert 匹配的已上屏镜像面板。
