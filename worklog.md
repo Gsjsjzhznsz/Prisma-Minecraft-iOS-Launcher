@@ -2659,3 +2659,15 @@ Stage Summary:
 - 四档界面风格终态：自动（iOS 26+→液态玻璃）/ 原生（旧版弹窗）/ 液态玻璃（选择菜单系统原生直出 + 输入类/Metal 魔改磨砂）/ 伪液态玻璃（魔改磨砂全接管，全版本可用）；欢迎向导第 6 步可选+真实预览
 - 动态磨砂背景：8Hz 重抓（呈现方视图源，无自噬）+ 键盘动画帧跟踪 + 黑帧/几何双护栏
 - MoltenVK 1.4.3（main @ 2c28e0c8）随包，Vulkan 光影崩溃修复族上游跟进，装机验证锚点 = VulkanMod+etallum 进世界 19s 崩溃点是否消失 + latestlog [mvk-info] 版本行
+
+---
+Task ID: 246-ci
+Agent: main (Super Z)
+Task: Task 246 CI 闭环
+
+Work Log:
+- 推送 8105017（fetch+rebase 零冲突）→ run 38080642144 completed success 一轮终绿，零修复轮；产物 ipa/tipa 常规管线
+- 未调度集审计惯例本轮不适用（单轮全绿无掩蔽面）；MoltenVK 1.4.3 随包（resources cp 链，ldid -S 重签）
+
+Stage Summary:
+- Task 246 全链闭环：伪液态玻璃风格档 + 欢迎向导风格选择页（真实预览）+ 动态磨砂背景重抓 + MoltenVK 1.4.3，新 IPA 就绪待装机验证
