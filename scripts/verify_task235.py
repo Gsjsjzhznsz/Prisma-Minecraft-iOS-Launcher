@@ -120,27 +120,32 @@ check("E7", "无双弹（委托不 pop——版本页自 pop）",
 check("E8", "进度/完成提示（NMToast + i18n_str_266）",
       "[NMToast showMessage:" in mvv and 'localize(@"i18n_str_266", nil)' in mvv)
 
-print("== F. UIAlertController 液态玻璃化 ==")
-check("F1", "导入 LiquidGlassCompat", '#import "LiquidGlassCompat.h"' in ukh)
-check("F2", "安装块带所有权守卫（class_copyMethodList）",
-      "class_copyMethodList([UIAlertController class], &ame235_mcount)" in ukh)
-check("F3", "守卫失败优雅降级日志", "glass hook SKIPPED" in ukh)
-check("F4", "hook 先调原实现", "[self ame235_hook_viewWillAppear:animated];   // 交换后 = 原实现" in ukh)
-check("F5", "玻璃风格门（非玻璃零接触）", "if (!LGCIsGlassStyleActive()) return;" in ukh)
-check("F6", "私有容器按类名深搜", 'containsString:@"_UIAlertController"' in ukh)
-check("F7", "原生底双清（view + layer）",
-      "ame235_container.backgroundColor = [UIColor clearColor];" in ukh and
-      "ame235_container.layer.backgroundColor = [UIColor clearColor].CGColor;" in ukh)
-check("F8", "自适应材质 + 自适应文字（Task236 v2：浅色模式浅玻璃/深色模式深玻璃；按钮标签跳过）",
-      "UIBlurEffectStyleSystemMaterial]" in ukh and
-      "![ame235_lv.superview isKindOfClass:[UIControl class]]" in ukh and
-      "[(UILabel *)ame235_lv setTextColor:[UIColor labelColor]];" in ukh and
-      "colorWithAlphaComponent:0.55]" in ukh)
-check("F9", "兑底染色层 888903 拆除（Task232 同款）", "ame235_sub.tag == 888903" in ukh)
-check("F10", "应用日志（限流；Task236 v2 格式）", "[ThemeOps] Task236 alert glass v2 (#%d style=%ld ok=%d; present-hook double-shot, adaptive material+base)" in ukh)
-# Task236：present-hook 双延时补玻璃（必定安装路径）
-check("F11", "Task236 present-hook 安装（UIViewController 基类自有选择器）", "ame236_hook_presentViewController:animated:completion:" in ukh and "Task236 alert glass present-hook installed" in ukh)
-check("F12", "Task236 双延时（0s + 0.45s）", "(int64_t)(0.45 * NSEC_PER_SEC)" in ukh)
+print("== F. UIAlertController 液态玻璃化（Task237 重锚：魔改路线整体退役 → 中央路由整体替换）==")
+# Task237（用户指令“彻底重写所有悬浮菜单样式。不要使用原生 UIAlertController
+# 加魔改”）：Task235/236 的 viewWillAppear/present-hook 玻璃化魔改被整体
+# 拆除；同一关切（玻璃风格下弹窗呈现液态玻璃外观）由 AmeFloatingMenu 的
+# 全自定义组件 + 中央路由承接——玻璃风格下 UIAlertController 永不上屏。
+fm = rd("Natives/AmeFloatingMenu.m")
+check("F1", "路由钩子实现迁移至 AmeFloatingMenu.m", "- (void)ame237_hook_presentViewController:" in fm and
+      "Ame237FloatingMenuRouter)" in fm)
+check("F2", "UIKit+hook.m 魔改双钩子拆除（viewWillAppear 交换退役）", "ame235_hook_viewWillAppear" not in ukh and
+      "class_copyMethodList([UIAlertController class], &ame235_mcount)" not in ukh)
+check("F3", "Task236 present-hook 魔改拆除（路由日志仍在）", "ame236_hook_presentViewController" not in ukh and
+      "[AmeMenu] Task237 floating-menu router installed" in ukh)
+check("F4", "路由先判类型与风格（非玻璃零接触直透）",
+      "isKindOfClass:[UIAlertController class]] && LGCIsGlassStyleActive()" in fm)
+check("F5", "玻璃风格下原生弹窗永不上屏（镜像接管 return）",
+      "presentGlassMenuForAlert:(UIAlertController *)viewControllerToPresent" in fm)
+check("F6", "UIAlertAction KVC 镜像 + 失败回退原生", 'valueForKey:@"title"' in fm and
+      'valueForKey:@"handler"' in fm and "native passthrough" in fm)
+check("F7", "自适应材质（SystemMaterial）+ 防御性明暗实底",
+      "UIBlurEffectStyleSystemMaterial]" in fm and "Ame237PanelBase" in fm)
+check("F8", "文字自适应（labelColor/secondaryLabel）", "[UIColor labelColor]" in fm and "[UIColor secondaryLabelColor]" in fm)
+check("F9", "菜单项带图标（SF Symbol 启发式 + 回退链）", "iconNameForTitle:" in fm and
+      'systemImageNamed:@"circle"' in fm)
+check("F10", "替换日志（限流）", "[AmeMenu] Task237 glass menu replaced native alert" in fm)
+check("F11", "输入框镜像 + 双向同步", "ame237_fieldChanged:" in fm and "ame237_syncAllFields" in fm)
+check("F12", "键盘避让", "UIKeyboardWillShowNotification" in fm and "UIKeyboardWillHideNotification" in fm)
 
 print("== G. i18n 基线（2765 → 2767）==")
 langs4 = ["en", "zh-CN", "zh-Hans", "zh-Hant"]

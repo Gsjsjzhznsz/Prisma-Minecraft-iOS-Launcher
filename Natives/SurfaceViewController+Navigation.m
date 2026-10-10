@@ -5,6 +5,7 @@
 #import "SurfaceViewController.h"
 #import "GameMenuOverlayView.h"
 #import "LiquidGlassCompat.h"   // Task229: floating menu composite glass
+#import "AmeFloatingMenu.h"     // ★ Task237：菜单行控件与统一悬浮菜单组件
 #import "TrackedTextField.h"
 #import "customcontrols/CustomControlsUtils.h"
 #import "ios_uikit_bridge.h"
@@ -32,6 +33,10 @@
 
 // category 不能存储 ivar，用 associated object 实现 menuDimView
 static const void *kMenuDimViewKey = &kMenuDimViewKey;
+// ★ Task237：自定义菜单面板的关联存储（行滚动区 / 行数组 / 磨砂层）
+static const void *kAme237RowsScrollKey = &kAme237RowsScrollKey;
+static const void *kAme237RowsKey = &kAme237RowsKey;
+static const void *kAme237BlurKey = &kAme237BlurKey;
 
 @interface SurfaceViewController(Navigation)
 // FCL 风格菜单的背景遮罩（半透明黑色，点击关闭菜单）
@@ -65,38 +70,91 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
         @"game.menu.settings"               // Task232⑰：原为裸英文字串 "Settings"（ localize 找不到键回退原文 = 硬编码残留）
     ];
 
-    // FCL 风格：菜单从底部弹出，宽度为屏幕宽度的 70%（居中），最大高度为屏幕高度的 60%
+    // ★ Task237（用户："现在游戏内菜单打开还是就液态玻璃的覆盖层，根本
+    //   没有任何文字，要是不贴边，就只会给我全部屏幕覆盖层灰色"）：菜单
+    //   面板整体重建——旧 UITableView + "往表里塞玻璃层"方案（Task229→
+    //   232→236 三轮补丁）把分层控制权交给了 UIKit，磨砂层在本进程 Metal
+    //   游戏层上合成不可靠（Task228 黑面 / Task230 隐形 / Task236 仍无字）。
+    //   新面板分层自控：容器半透明深色实底（永不清空）→ UIVisualEffectView
+    //   （最底层子视图）→ 行滚动区（内容恒在磨砂之上，文字可见性由构造
+    //   保证）。玻璃风格 = 24pt 圆角磨砂面板 + 发丝描边 + SF Symbol 图标行；
+    //   原生风格 = 旧版深色 FCL 面板纯文本行。底部弹层/侧滑把手两形态、
+    //   全部 11 项动作与遮罩关闭行为全部保留。
     CGFloat screenWidth = [ScreenUtils screenSize].width;
     CGFloat screenHeight = [ScreenUtils screenSize].height;
     CGFloat menuWidth = MIN(screenWidth * 0.7, 400);
     CGFloat menuMaxHeight = screenHeight * 0.6;
-    CGFloat menuEstimatedHeight = self.menuArray.count * 48 + 16;
+    CGFloat menuEstimatedHeight = self.menuArray.count * 48 + 20;
     CGFloat menuHeight = MIN(menuEstimatedHeight, menuMaxHeight);
 
-    self.menuView = [[UITableView alloc] initWithFrame:CGRectMake(
+    self.menuView = [[UIView alloc] initWithFrame:CGRectMake(
         (screenWidth - menuWidth) / 2.0,
         screenHeight,  // 初始放在屏幕底部外（动画时上滑）
         menuWidth,
         menuHeight
-    ) style:UITableViewStylePlain];
-
-    self.menuView.dataSource = self;
-    self.menuView.delegate = self;
+    )];
     self.menuView.hidden = YES;
-    self.menuView.layer.cornerRadius = 16;
-    self.menuView.clipsToBounds = YES;
-    self.menuView.scrollEnabled = YES;
-    self.menuView.separatorInset = UIEdgeInsetsMake(0, 16, 0, 16);
-    // FCL 风格：半透明深色背景
-    self.menuView.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return [UIColor colorWithRed:28.0/255.0 green:28.0/255.0 blue:30.0/255.0 alpha:0.95];
-    }];
-    // 添加阴影
+    self.menuView.clipsToBounds = NO;
     self.menuView.layer.shadowColor = [UIColor blackColor].CGColor;
     self.menuView.layer.shadowOffset = CGSizeMake(0, -2);
     self.menuView.layer.shadowRadius = 12;
     self.menuView.layer.shadowOpacity = 0.4;
     [self.view addSubview:self.menuView];
+
+    // 行滚动区（唯一内容层；玻璃层永远在其下）
+    UIScrollView *ame237_rowsScroll = [[UIScrollView alloc] init];
+    ame237_rowsScroll.showsVerticalScrollIndicator = NO;
+    ame237_rowsScroll.delaysContentTouches = NO;
+    ame237_rowsScroll.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [self.menuView addSubview:ame237_rowsScroll];
+    objc_setAssociatedObject(self, kAme237RowsScrollKey, ame237_rowsScroll,
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+    // 菜单行：SF Symbol 图标 + 标题（与 menuArray 逐项对齐；符号缺失安全降级为纯文本行）
+    NSArray<NSString *> *ame237_gmIcons = @[
+        @"xmark.circle.fill",                     // 强制关闭（destructive，红色）
+        @"doc.text.viewfinder",                   // 日志输出
+        @"slider.horizontal.3",                   // 按键布局编辑
+        @"arrow.counterclockwise.circle",         // 恢复默认控件
+        @"antenna.radiowaves.left.and.right",     // 联机
+        @"chart.bar.fill",                        // FPS/内存显示开关
+        @"eye.fill",                              // 隐藏/显示控制按钮
+        @"cursorarrow.rays",                      // 虚拟鼠标
+        @"keyboard",                              // 游戏内键盘
+        @"textformat.size",                       // 分辨率调整
+        @"gearshape.fill",                        // 设置
+    ];
+    NSMutableArray<Ame237MenuRow *> *ame237_rows = [NSMutableArray array];
+    for (NSUInteger ame237_i = 0; ame237_i < self.menuArray.count; ame237_i++) {
+        NSString *ame237_iconName = (ame237_i < ame237_gmIcons.count) ? ame237_gmIcons[ame237_i] : nil;
+        UIImage *ame237_icon = [AmeFloatingMenu symbolImageForName:ame237_iconName];
+        Ame237MenuRow *ame237_row = [[Ame237MenuRow alloc] init];
+        BOOL ame237_destructive = (ame237_i == 0);   // 强制关闭 = 破坏性动作
+        UIColor *ame237_rowColor = ame237_destructive ? [UIColor systemRedColor] : [UIColor whiteColor];
+        [ame237_row ame237_configureWithIcon:ame237_icon
+                                       title:localize(self.menuArray[ame237_i], nil)
+                                   textColor:ame237_rowColor
+                                 symbolTint:ame237_rowColor
+                                    emphasis:NO];
+        // 文字可读性沿用 Task232 #11 的教训：软黑投影，任何背景上可读
+        ame237_row.rowLabel.layer.shadowColor = [UIColor blackColor].CGColor;
+        ame237_row.rowLabel.layer.shadowOpacity = 0.85;
+        ame237_row.rowLabel.layer.shadowRadius = 1.5;
+        ame237_row.rowLabel.layer.shadowOffset = CGSizeMake(0, 1);
+        ame237_row.tag = (NSInteger)ame237_i;
+        [ame237_row addTarget:self action:@selector(ame237_gmRowTouched:)
+            forControlEvents:UIControlEventTouchUpInside];
+        [ame237_rowsScroll addSubview:ame237_row];
+        [ame237_rows addObject:ame237_row];
+        if (ame237_i + 1 < self.menuArray.count) {
+            UIView *ame237_sep = [[UIView alloc] init];
+            ame237_sep.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.14];
+            ame237_sep.userInteractionEnabled = NO;
+            [ame237_rowsScroll addSubview:ame237_sep];
+        }
+    }
+    objc_setAssociatedObject(self, kAme237RowsKey, [ame237_rows copy],
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
     // FCL 风格：半透明背景遮罩（点击关闭菜单）
     self.menuDimView = [[UIView alloc] initWithFrame:self.view.bounds];
@@ -110,15 +168,9 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
     // 确保菜单在遮罩之上
     [self.view bringSubviewToFront:self.menuView];
 
-    // ★ Task229（反馈 #3：液态玻璃悬浮栏没有任何效果）：游戏内悬浮菜单
-    // （底部弹层/侧滑面板）属于用户分类里的"悬浮弹窗"（软件 UI 原样、
-    // 玻璃只给悬浮件）。Task228 把主界面玻璃全数退役时，这个菜单也被
-    // 顺手留在原生深色半透明——切了液态玻璃风格的用户看到"悬浮栏完全
-    // 没有效果"。修法：风格激活时用 T225 装机验证过的组合玻璃原语
-    // （LGCApplyGlassToView = SystemUltraThinMaterial + 高光 + 发丝描边）
-    // 给菜单面板上玻璃；非玻璃风格保持原生外观（恒定先清层保证幂等，
-    // 风格切换广播由 BackgroundUIEffectChanged -> reapplyMenuGlass 接力）。
-    [self ame229_reapplyMenuGlass];
+    // 面板风格（玻璃/原生）与行区布局
+    [self ame237_applyMenuStyle];
+    [self ame237_layoutMenuContent];
 
     // FCL/ZL2 风格悬浮按钮 + FPS/内存显示
     GameMenuOverlayView *overlay = [[GameMenuOverlayView alloc] initWithParentView:self.view];
@@ -136,52 +188,102 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
                                                object:nil];
 }
 
-/// Task229：游戏内悬浮菜单的玻璃重铺（风格切换广播后也走这里）。
-- (void)ame229_reapplyMenuGlass {
-    if (![self.menuView isKindOfClass:UIView.class]) return;
-    LGCRemoveGlassFromView(self.menuView);
+/// ★ Task237：按当前界面风格应用/还原面板样式（风格切换广播也走这里）。
+/// 玻璃 = 液态玻璃面板（SystemMaterialDark 磨砂 + 防御性深色实底 +
+/// 发丝描边 + 图标行）；原生 = 旧版深色 FCL 面板（纯文本行）。
+/// 分层：磨砂层是 index 0 子视图，行滚动区恒在其上——底色永不清空
+/// （不再使用会清宿主底色的 LGCApplyGlassToView，三轮装机教训的根除）。
+- (void)ame237_applyMenuStyle {
+    if (![self.menuView isKindOfClass:[UIView class]]) return;
+    // 幂等：先拆旧磨砂层（本函数是唯一写点）
+    UIView *ame237_oldBlur = objc_getAssociatedObject(self, kAme237BlurKey);
+    if (ame237_oldBlur != nil) {
+        [ame237_oldBlur removeFromSuperview];
+        objc_setAssociatedObject(self, kAme237BlurKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    UIScrollView *ame237_scroll = objc_getAssociatedObject(self, kAme237RowsScrollKey);
+    NSArray<Ame237MenuRow *> *ame237_rows = objc_getAssociatedObject(self, kAme237RowsKey);
     if (LGCIsGlassStyleActive()) {
-        BOOL ok = LGCApplyGlassToView(self.menuView, 16.0);
-        // ★ Task230（反馈 #4）：组合玻璃的 SystemUltraThinMaterial 在深色游戏
-        //   画面上几乎不可见。悬浮菜单是游戏内的独立浮层——直接把玻璃
-        //   层换成 SystemMaterialDark（重磨砂深色）。
-        for (UIView *ame230_sub in self.menuView.subviews) {
-            if (ame230_sub.tag == 888901 && [ame230_sub isKindOfClass:UIVisualEffectView.class]) {
-                [(UIVisualEffectView *)ame230_sub setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
-            }
+        // 液态玻璃面板：SystemMaterialDark（Task230 游戏帧可读性教训）
+        UIVisualEffectView *ame237_blur = [[UIVisualEffectView alloc]
+            initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
+        ame237_blur.frame = self.menuView.bounds;
+        ame237_blur.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        ame237_blur.userInteractionEnabled = NO;
+        ame237_blur.layer.cornerRadius = 24.0;
+        ame237_blur.layer.cornerCurve = kCACornerCurveContinuous;
+        ame237_blur.layer.masksToBounds = YES;
+        [self.menuView insertSubview:ame237_blur atIndex:0];
+        objc_setAssociatedObject(self, kAme237BlurKey, ame237_blur, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        if (ame237_scroll != nil) [self.menuView bringSubviewToFront:ame237_scroll];
+        // 防御性深色实底：磨砂在游戏帧上不合成时独立承载面板可见性
+        //   （Task236 教训；此处底色只由本函数管理，永不清空）
+        self.menuView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.62];
+        self.menuView.layer.cornerRadius = 24.0;
+        self.menuView.layer.cornerCurve = kCACornerCurveContinuous;
+        self.menuView.layer.borderWidth = 0.75;
+        self.menuView.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.28].CGColor;
+        for (Ame237MenuRow *ame237_row in ame237_rows) {
+            ame237_row.showsIcon = YES;
+            [ame237_row setNeedsLayout];
         }
-        // ★ Task232（反馈 #6：仍是原生与液态玻璃混杂样式）：LGC 的无壁纸
-        //   兑底染色层（kLGCGlassSheenTag+1 = 888903，浅色模式下是
-        //   systemBackground 14% 的白纱）叠在重磨砂深色上 = “玻璃上糊了
-        //   一层原生白”的混杂观感。菜单已有重磨砂深色承担可读性，拆除
-        //   这层染色。
-        for (UIView *ame232_sub in [self.menuView.subviews copy]) {
-            if (ame232_sub.tag == 888903) {
-                [ame232_sub removeFromSuperview];
-            }
-        }
-        // ★ Task236（用户：“齿轮图标和文件菜单都消失了，打开还是什么都不
-        //   显示”）：LGC 接管时把宿主底色清成了 clearColor——磨砂层在本进程
-        //   游戏画面（Metal 层）之上若不合成（Task228/230 两轮实锤本进程
-        //   效果层渲染不可靠），整个菜单面板就只剩半透明遮罩 = “打开了但
-        //   什么都不显示”。防御性底色：玻璃之下重铺半透明深色实底（磨砂
-        //   可用时是加深的玻璃面板，失效时仍是一块可读的深色面板；cell
-        //   是子视图恒在玻璃层之上，白字永远可见）。
-        self.menuView.backgroundColor = [UIColor colorWithRed:28.0/255.0 green:28.0/255.0 blue:30.0/255.0 alpha:0.72];
-        NSLog(@"[GameMenu] Task236 menu panel hardened: translucent dark base re-asserted under glass (blur failure safe)");
-        NSLog(@"[GameMenu] Task229 floating menu glass applied (composite, ok=%d; Task230 heavy dark material; Task232 tint layer stripped)", ok);
+        NSLog(@"[GameMenu] Task237 glass panel applied (frosted + defensive dark base + hairline; rows above blur; icon rows)");
     } else {
-        // ★ Task236：切回原生风格时底色一并恢复——旧代码只拆玻璃层不还原
-        //   backgroundColor（LGC 已把底色清成 clearColor），原生风格下菜单
-        //   面板同样会透明消失（玻璃→原生切换路径的隐性雷）。
+        // 原生 = 旧版 FCL 面板（深色半透明、纯文本行）
         self.menuView.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return [UIColor colorWithRed:28.0/255.0 green:28.0/255.0 blue:30.0/255.0 alpha:0.95];
         }];
+        self.menuView.layer.cornerRadius = 16.0;
+        self.menuView.layer.borderWidth = 0.0;
+        self.menuView.layer.borderColor = nil;
+        for (Ame237MenuRow *ame237_row in ame237_rows) {
+            ame237_row.showsIcon = NO;
+            [ame237_row setNeedsLayout];
+        }
+        NSLog(@"[GameMenu] Task237 native panel applied (legacy FCL look, text-only rows)");
     }
 }
 
+/// Task237：行/分隔线/滚动区布局（面板几何确定后调用：构造、旋转、侧滑形态切换）。
+- (void)ame237_layoutMenuContent {
+    UIScrollView *ame237_scroll = objc_getAssociatedObject(self, kAme237RowsScrollKey);
+    NSArray<Ame237MenuRow *> *ame237_rows = objc_getAssociatedObject(self, kAme237RowsKey);
+    if (![ame237_scroll isKindOfClass:[UIScrollView class]] || ame237_rows.count == 0) return;
+    CGFloat ame237_w = self.menuView.bounds.size.width;
+    CGFloat ame237_h = self.menuView.bounds.size.height;
+    CGFloat ame237_pad = 10.0;
+    ame237_scroll.frame = CGRectMake(0.0, ame237_pad, ame237_w, MAX(0.0, ame237_h - ame237_pad * 2.0));
+    // 分隔线 = 行滚动区内的非行子视图（构造顺序即排列顺序）
+    NSMutableArray<UIView *> *ame237_seps = [NSMutableArray array];
+    for (UIView *ame237_sub in ame237_scroll.subviews) {
+        if (![ame237_sub isKindOfClass:[Ame237MenuRow class]]) {
+            [ame237_seps addObject:ame237_sub];
+        }
+    }
+    CGFloat ame237_y = 0.0;
+    NSUInteger ame237_sepIdx = 0;
+    for (NSUInteger ame237_i = 0; ame237_i < ame237_rows.count; ame237_i++) {
+        Ame237MenuRow *ame237_row = ame237_rows[ame237_i];
+        ame237_row.frame = CGRectMake(0.0, ame237_y, ame237_w, 48.0);
+        ame237_y += 48.0;
+        if (ame237_i + 1 < ame237_rows.count && ame237_sepIdx < ame237_seps.count) {
+            UIView *ame237_sep = ame237_seps[ame237_sepIdx++];
+            ame237_sep.frame = CGRectMake(22.0, ame237_y, ame237_w - 44.0, 0.5);
+            ame237_y += 0.5;
+        }
+    }
+    ame237_scroll.contentSize = CGSizeMake(ame237_w, ame237_y);
+    ame237_scroll.scrollEnabled = (ame237_y > ame237_scroll.bounds.size.height + 0.5);
+}
+
+/// Task237：菜单行点击（与旧 tableView:didSelectRowAtIndexPath: 同一动作链）。
+- (void)ame237_gmRowTouched:(Ame237MenuRow *)sender {
+    [self didSelectMenuItem:(int)sender.tag];
+}
+
 - (void)ame229_handleBackgroundUIEffectChanged {
-    [self ame229_reapplyMenuGlass];
+    [self ame237_applyMenuStyle];
+    [self ame237_layoutMenuContent];
 }
 
 /// 切换菜单显示状态（悬浮按钮点击触发）
@@ -208,15 +310,20 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
     self.menuView.hidden = NO;
     self.menuDimView.hidden = NO;
 
-    // ★ Task232（反馈 #11：齿轮打开后没有任何文字显示）：并案取证——
-    //   开菜时把行数、首行标题长度、cell 文本色、玻璃状态全量落日志，
-    //   下一轮装机日志直接定位是“cell 没建”还是“文字颜色/玻璃吞了”。
+    // ★ Task237：开菜取证（接替 Task232 的 cell 取证——菜单已非表视图）——
+    //   面板帧/底色/磨砂层/首行帧与标签尺寸全量落日志，下一轮装机日志
+    //   直接验证“面板可见 + 文字在上层”是否成立。
     dispatch_async(dispatch_get_main_queue(), ^{
-        UITableViewCell *ame232_c0 = [self.menuView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
-        NSLog(@"[GameMenu] Task232 menu shown: rows=%lu firstTitleLen=%lu textColor=%@ glassActive=%d",
-              (unsigned long)self.menuArray.count,
-              (unsigned long)(ame232_c0.textLabel.text ?: @"").length,
-              ame232_c0.textLabel.textColor, (int)LGCIsGlassStyleActive());
+        NSArray<Ame237MenuRow *> *ame237_rows = objc_getAssociatedObject(self, kAme237RowsKey);
+        Ame237MenuRow *ame237_r0 = ame237_rows.firstObject;
+        NSLog(@"[GameMenu] Task237 menu shown: rows=%lu firstRow=%@ label=%@ panel=%@ bg=%@ blur=%ld glass=%d",
+              (unsigned long)ame237_rows.count,
+              ame237_r0 != nil ? NSStringFromCGRect(ame237_r0.frame) : @"nil",
+              ame237_r0 != nil ? NSStringFromCGSize(ame237_r0.rowLabel.frame.size) : @"nil",
+              NSStringFromCGRect(self.menuView.frame),
+              self.menuView.backgroundColor,
+              (long)(objc_getAssociatedObject(self, kAme237BlurKey) != nil),
+              (int)LGCIsGlassStyleActive());
     });
 
     CGFloat screenWidth = [ScreenUtils screenSize].width;
@@ -231,6 +338,8 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
         CGFloat ame227_drawerH = screenHeight;
         CGFloat ame227_offX = ame227_fromLeft ? -ame227_drawerW : screenWidth;
         self.menuView.frame = CGRectMake(ame227_offX, 0, ame227_drawerW, ame227_drawerH);
+        // ★ Task237：几何变更（全高抽屉）后重排行区
+        [self ame237_layoutMenuContent];
         CGFloat ame227_targetX = ame227_fromLeft ? 0 : (screenWidth - ame227_drawerW);
         [UIView animateWithDuration:0.32
                               delay:0
@@ -255,6 +364,8 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
         menuWidth,
         menuHeight
     );
+    // ★ Task237：底部弹层形态几何回归构造值，重排行区（幂等）
+    [self ame237_layoutMenuContent];
 
     // 计算目标位置：底部弹出，留出安全区域
     CGFloat safeBottom = [ScreenUtils safeAreaBottom];
@@ -575,73 +686,10 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
     return self.menuView.hidden;
 }
 
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return self.menuArray.count;
-}
-
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"FCLMenuCell"];
-
-    if (cell == nil) {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"FCLMenuCell"];
-        cell.backgroundColor = [UIColor clearColor];
-        cell.textLabel.textColor = [UIColor whiteColor];
-        // ★ Task232（反馈 #11）：白字加软黑投影——无论玻璃层状态如何
-        //   （重磨砂深色/系统材质/实底），文字在任何背景上都可读。
-        cell.textLabel.layer.shadowColor = [UIColor blackColor].CGColor;
-        cell.textLabel.layer.shadowOpacity = 0.85;
-        cell.textLabel.layer.shadowRadius = 1.5;
-        cell.textLabel.layer.shadowOffset = CGSizeMake(0, 1);
-        // 修复：游戏内菜单字体不应使用 sp 缩放，使用固定 16pt 保证所有设备一致
-        // 原 [ScreenUtils sp:16] 在 iPad 上会放大到 32pt 导致菜单字体过大
-        cell.textLabel.font = [UIFont systemFontOfSize:16];
-        cell.textLabel.textAlignment = NSTextAlignmentLeft;
-        // FCL 风格：左侧留出图标空间，cell 高度 48
-        cell.separatorInset = UIEdgeInsetsMake(0, 16, 0, 16);
-        cell.selectionStyle = UITableViewCellSelectionStyleDefault;
-        // 选中状态背景
-        UIView *selectedBg = [[UIView alloc] init];
-        selectedBg.backgroundColor = [UIColor colorWithRed:80.0/255.0 green:80.0/255.0 blue:90.0/255.0 alpha:0.6];
-        cell.selectedBackgroundView = selectedBg;
-    }
-
-    cell.textLabel.text = localize(self.menuArray[indexPath.row], nil);
-    return cell;
-}
-
-- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    // 修复：行高使用固定值 48pt，不随屏幕缩放
-    // 原 [ScreenUtils sp:48] 在 iPad 上会放大到 96pt 导致菜单项过高
-    return 48;
-}
-
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    [tableView deselectRowAtIndexPath:indexPath animated:NO];
-    [self didSelectMenuItem:indexPath.row];
-}
-
-// Task224（#16）：菜单行按压反馈——按下快速缩到 0.96，松手弹簧回弹
-// （右面板信息卡 ame156 同款交互语言；按下 0.12s + 回弹 0.32s）。
-- (void)tableView:(UITableView *)tableView didHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *ame224_cell = [tableView cellForRowAtIndexPath:indexPath];
-    if (!ame224_cell) return;
-    [UIView animateWithDuration:0.12 delay:0
-                        options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
-                     animations:^{
-        ame224_cell.transform = CGAffineTransformMakeScale(0.96, 0.96);
-    } completion:nil];
-}
-
-- (void)tableView:(UITableView *)tableView didUnhighlightRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *ame224_cell = [tableView cellForRowAtIndexPath:indexPath];
-    if (!ame224_cell) return;
-    [UIView animateWithDuration:0.32 delay:0
-         usingSpringWithDamping:0.55 initialSpringVelocity:0.5
-                        options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
-                     animations:^{
-        ame224_cell.transform = CGAffineTransformIdentity;
-    } completion:nil];
-}
+// ★ Task237：UITableView 数据源/委托六方法（numberOfRows / cellForRow /
+// heightForRow / didSelectRow / didHighlight / didUnhighlight）随菜单面板
+// 重写整体退役——菜单行是 Ame237MenuRow 控件（点击走 ame237_gmRowTouched:，
+// 按压反馈由行控件自带），动作分发 didSelectMenuItem: 保持不变。
 
 - (void)didSelectMenuItem:(int)item {
     switch (item) {
@@ -689,7 +737,7 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
     CGFloat screenHeight = frame.size.height;
     CGFloat menuWidth = MIN(screenWidth * 0.7, 400);
     CGFloat menuMaxHeight = screenHeight * 0.6;
-    CGFloat menuEstimatedHeight = self.menuArray.count * 48 + 16;
+    CGFloat menuEstimatedHeight = self.menuArray.count * 48 + 20;
     CGFloat menuHeight = MIN(menuEstimatedHeight, menuMaxHeight);
 
     if (!self.menuView.hidden) {
@@ -711,6 +759,8 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
             menuHeight
         );
     }
+    // ★ Task237：旋转后面板几何变更，行区/滚动内容随之重排
+    [self ame237_layoutMenuContent];
     // 更新遮罩 frame
     self.menuDimView.frame = CGRectMake(0, 0, screenWidth, screenHeight);
 }

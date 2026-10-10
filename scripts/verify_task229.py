@@ -67,10 +67,16 @@ check("C5 keybind sync settings entry", '"keybind_sync"' in lp)
 check("C6 toggleSprint log typo fixed", 'toggleSprint written' in lp and 'toggleSpring written' not in lp)
 
 # ---------- D: floating menu glass (SurfaceViewController+Navigation.m) ----------
+# Task237 重锚：游戏内菜单面板已彻底重写为自定义 UIView（旧 UITableView +
+# LGCApplyGlassToView 塞玻璃层的路线被用户明令退役）。本区锚点改为验证
+# 同一关切在 Task237 现实下的形态：风格应用函数存在、磨砂层分层受控、
+# 内容恒在磨砂之上、风格切换广播接力不变。
 nav = rd('Natives/SurfaceViewController+Navigation.m')
-check("D1 glass reapply helper", 'ame229_reapplyMenuGlass' in nav)
-check("D2 composite glass via LGCApplyGlassToView", 'LGCApplyGlassToView(self.menuView, 16.0)' in nav)
-check("D3 glass removal first (idempotent)", 'LGCRemoveGlassFromView(self.menuView);' in nav)
+check("D1 style apply helper (Task237 renamed)", 'ame237_applyMenuStyle' in nav and 'ame229_reapplyMenuGlass' not in nav)
+check("D2 LGC glass-in-table retired (Task237)", 'LGCApplyGlassToView(self.menuView' not in nav and
+      'LGCRemoveGlassFromView(self.menuView' not in nav)
+check("D3 layered blur at index 0 + rows above (Task237)", 'insertSubview:ame237_blur atIndex:0]' in nav and
+      'bringSubviewToFront:ame237_scroll' in nav)
 check("D4 style-gated", 'LGCIsGlassStyleActive()' in nav)
 check("D5 style-change observer", 'ame229_handleBackgroundUIEffectChanged' in nav and 'BackgroundUIEffectChanged' in nav)
 check("D6 import present", 'LiquidGlassCompat.h' in nav)

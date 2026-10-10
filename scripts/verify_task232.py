@@ -54,7 +54,7 @@ check_absent("232-5b no toast call", svc, "ame230.controls.unbound_toast")
 # (6) 悬浮栏玻璃：齿轮/统计/标签三件套 + 菜单 tint 拆除
 check("232-6a floating bar glass", gmv, "ame232_applyFloatingGlass")
 check("232-6b gear glass heavy dark", gmv, "floating bar glass applied (gear + stats + caption, heavy dark material)")
-check("232-6c menu tint stripped", nav, "ame232_sub.tag == 888903")
+check_absent("232-6c menu tint stripped (Task237 重锚：面板重写后 LGC 玻璃链整体退役，888903 染色层由构造杜绝)", nav, "LGCApplyGlassToView(self.menuView")
 
 # (7) 上游问题关闭：FAQ 四文件 + 代码标记
 faq = 0
@@ -84,9 +84,9 @@ check("232-10a auto detect", "Natives/MultiplayerViewController.m", "ame232_star
 check("232-10b detector reactivated", "Natives/MultiplayerViewController.m", "auto-detected LAN port %@ -- generating share code")
 check("232-10c 18s fallback", "Natives/MultiplayerViewController.m", "auto detection window elapsed without a port -- falling back to manual input")
 
-# (11) 齿轮菜单文字：cell 白字 + 软黑投影 + 开菜取证
-check("232-11a cell shadow", nav, "cell.textLabel.layer.shadowOpacity = 0.85")
-check("232-11b menu shown forensics", nav, "Task232 menu shown: rows=%lu firstTitleLen=%lu")
+# (11) 齿轮菜单文字：行白字 + 软黑投影 + 开菜取证（Task237 重锚：cell → Ame237MenuRow 行控件）
+check("232-11a row text shadow (Task237 重锚)", nav, "rowLabel.layer.shadowOpacity = 0.85")
+check("232-11b menu shown forensics (Task237 重锚)", nav, "[GameMenu] Task237 menu shown")
 
 # (12) 自动开输入法(SDL)：常驻放行语义（非 one-shot）
 check("232-12a always-on mode", svc, "always-on mode while switch is enabled")

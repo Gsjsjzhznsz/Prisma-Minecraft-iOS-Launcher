@@ -37,7 +37,9 @@ CGPoint lastVirtualMousePoint;
 
 // Navigation category
 @property(nonatomic) NSArray *menuArray;
-@property(nonatomic) UITableView *menuView;
+// ★ Task237：游戏内菜单面板重写为自定义 UIView（原 UITableView + “往表里
+// 塞玻璃层”的补丁路线退役——分层自控：底色永不清空、内容恒在磨砂之上）。
+@property(nonatomic) UIView *menuView;
 @property(nonatomic) UIScreenEdgePanGestureRecognizer* edgeGesture;
 @property(nonatomic) UIView *gameMenuOverlay; // FCL 风格悬浮按钮 + FPS/内存显示
 

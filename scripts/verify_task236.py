@@ -77,16 +77,19 @@ check("B9", "SystemMaterialDark 升级保留（Task230 锚）",
       "UIBlurEffectStyleSystemMaterialDark" in gmv)
 check("B10", "方法头根因注释（磨砂层覆盖标签文字）", "盖在标签自己的文字上" in gmv)
 
-print("== C. 菜单面板防御性底色 ==")
-check("C1", "玻璃之下重铺半透明深色实底（0.72）",
-      'green:28.0/255.0 blue:30.0/255.0 alpha:0.72];' in svn)
-check("C2", "面板加固日志", "[GameMenu] Task236 menu panel hardened" in svn)
-check("C3", "原生风格底色恢复（玻璃→原生切换隐性雷）",
-      "} else {\n        // ★ Task236：切回原生风格时底色一并恢复" in svn)
-check("C4", "Task229/230/232 玻璃链保留（锚不回归）",
-      "LGCApplyGlassToView(self.menuView, 16.0)" in svn and
-      "UIBlurEffectStyleSystemMaterialDark" in svn and
-      "ame232_sub.tag == 888903" in svn)
+print("== C. 菜单面板防御性底色（Task237 重锚：面板彻底重写为自控分层自定义 UIView）==")
+# Task237（用户：“游戏内菜单打开还是就液态玻璃的覆盖层，根本没有任何文字”）：
+# UITableView + 塞玻璃层方案整体退役，同一关切（面板可见 + 文字恒在）由
+# 自控分层构造性保证。
+check("C1", "防御性深色实底（0.62，永不被 LGC 清空）",
+      "colorWithWhite:0.0 alpha:0.62]" in svn and "LGCApplyGlassToView(self.menuView" not in svn)
+check("C2", "面板重写日志（玻璃/原生两分支）", "[GameMenu] Task237 glass panel applied" in svn and
+      "[GameMenu] Task237 native panel applied" in svn)
+check("C3", "原生风格旧版 FCL 外观恢复（纯文本行）", "showsIcon = NO" in svn and
+      "legacy FCL look" in svn)
+check("C4", "分层构造（磨砂 index 0 + 行区恒在其上 + 开菜取证）",
+      "insertSubview:ame237_blur atIndex:0]" in svn and
+      "[GameMenu] Task237 menu shown" in svn)
 
 print("== D. 前置条目模组列表化 + 直跳 ==")
 check("D1", "富条目渲染 + 日志", "[ModVersionVC] Task236 dependency rich footer:" in mvv)
@@ -106,20 +109,23 @@ check("D9", "直跳日志", "[ModVersionVC] Task236 dependency row direct-jump" 
 check("D10", "头部提示（ame236.deps.hint）", 'localize(@"ame236.deps.hint", nil)' in mvv)
 check_absent("D11", "旧纯文字按钮形态退役", mvv, '"▸  %@ (%@)"')
 
-print("== E. 弹窗液态玻璃 v2（present-hook 必定安装）==")
-check("E1", "present-hook 安装块（基类自有选择器）",
-      "Task236 alert glass present-hook installed" in ukh)
-check("E2", "钩子先调原实现", "[self ame236_hook_presentViewController:viewControllerToPresent animated:flag completion:completion];" in ukh)
-check("E3", "只对 UIAlertController + 玻璃风格激活", 
-      "if (![viewControllerToPresent isKindOfClass:[UIAlertController class]]) return;" in ukh)
-check("E4", "双延时补玻璃（0s + 0.45s）", "(int64_t)(0.45 * NSEC_PER_SEC)" in ukh)
-check("E5", "自适应材质（SystemMaterial 非 Dark）",
-      "UIBlurEffectStyleSystemMaterial]" in ukh)
-check("E6", "防御性半透明底（systemBackground 55%）",
-      "[[UIColor systemBackgroundColor]\n            colorWithAlphaComponent:0.55];" in ukh)
-check("E7", "文字自适应（labelColor）", "setTextColor:[UIColor labelColor]];" in ukh)
-check("E8", "v2 应用日志", "[ThemeOps] Task236 alert glass v2 (#%d style=%ld ok=%d; present-hook double-shot, adaptive material+base)" in ukh)
-check("E9", "viewWillAppear 钩子保留（Task235 首层）", "ame235_hook_viewWillAppear:(BOOL)animated" in ukh)
+print("== E. 弹窗液态玻璃 v2（Task237 重锚：present-hook 魔改拆除 → 中央路由整体替换）==")
+fm2 = rd("Natives/AmeFloatingMenu.m")
+check("E1", "Task237 路由安装（基类自有选择器，接替 Task236 hook）",
+      "[AmeMenu] Task237 floating-menu router installed" in ukh)
+check("E2", "路由先判后透传（原生直通零魔改）",
+      "[self ame237_hook_presentViewController:viewControllerToPresent animated:flag completion:completion];" in fm2)
+check("E3", "只对 UIAlertController + 玻璃风格激活",
+      "isKindOfClass:[UIAlertController class]] && LGCIsGlassStyleActive()" in fm2)
+check("E4", "魔改双钩子整体退役（无延时补玻璃残留）", "ame235_" not in ukh and "ame236_" not in ukh and
+      "0.45 * NSEC_PER_SEC" not in ukh)
+check("E5", "自适应材质（SystemMaterial）",
+      "UIBlurEffectStyleSystemMaterial]" in fm2)
+check("E6", "防御性明暗实底（Ame237PanelBase）",
+      "static UIColor *Ame237PanelBase(void)" in fm2)
+check("E7", "文字自适应（labelColor）", "[UIColor labelColor]" in fm2)
+check("E8", "替换日志（限流）", "[AmeMenu] Task237 glass menu replaced native alert" in fm2)
+check("E9", "行控件公开共用（头文件 Ame237MenuRow）", "Ame237MenuRow" in rd("Natives/AmeFloatingMenu.h"))
 
 print("== F. i18n（+ame236.deps.hint x5，基线 2766→2767）==")
 langs4 = ["en", "zh-CN", "zh-Hans", "zh-Hant"]
