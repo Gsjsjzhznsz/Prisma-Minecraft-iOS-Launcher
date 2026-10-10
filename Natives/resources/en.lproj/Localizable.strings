@@ -2840,6 +2840,14 @@
 "prisma.interface_style.auto" = "Auto";
 "prisma.interface_style.liquid_glass" = "Liquid Glass";
 "prisma.interface_style.native" = "Native";
+"prisma.interface_style.pseudo_glass" = "Pseudo Liquid Glass";
+"welcome.style.title" = "Interface Style";
+"welcome.style.subtitle" = "Pick the glass material for popups and menus. Changeable anytime in Settings - Interface Style";
+"welcome.style.liquid.desc" = "Native system Liquid Glass (iOS 26+); menus render with real system glass";
+"welcome.style.pseudo.desc" = "Custom frost glass: snapshot-based refraction that works on every iOS version";
+"welcome.style.native.desc" = "Stock system popups, plain and stable";
+"welcome.style.preview" = "Preview Sample Menu";
+"welcome.style.preview.hint" = "Tap a card to pick a style; tap Preview to pop a real sample menu in the current style";
 "prisma.ui_zoom.reset" = "Reset";
 "profile.isolation.keep_isolated" = "Keep in Isolated Folder";
 "profile.isolation.legacy_upgraded" = "\nLegacy layout upgraded: %ld item(s) moved into versions/<id>/game.";

@@ -31,7 +31,13 @@ NS_ASSUME_NONNULL_BEGIN
 typedef NS_ENUM(NSInteger, LGCInterfaceStyle) {
     LGCInterfaceStyleAuto = 0,
     LGCInterfaceStyleNative,
-    LGCInterfaceStyleLiquidGlass
+    LGCInterfaceStyleLiquidGlass,
+    /// ★ Task246（用户指令：“在界面风格再添加一个伪液态玻璃，把之前写的
+    ///   魔改玻璃用上去”）：伪液态玻璃档——魔改快照自绘磨砂（AmeFloatingMenu
+    ///   Task244/245 配方）全接管：启动器内选择菜单、输入类弹窗、Metal 游戏
+    ///   面菜单一律磨砂面板，不走系统 UIGlassEffect。快照自绘不依赖 iOS 26
+    ///   能力（低版本也可用），“降低透明度”仍为硬闸门。
+    LGCInterfaceStylePseudoGlass
 };
 
 /// 界面风格变化广播（object = 解析后的 LGCInterfaceStyle 包装为 NSNumber）
@@ -60,11 +66,18 @@ FOUNDATION_EXPORT void LGCSetStoredInterfaceStyle(LGCInterfaceStyle style);
 /// - auto：iOS 26+ 且未开启「降低透明度」→ LiquidGlass，否则 Native
 /// - native：恒 Native
 /// - liquid_glass：iOS 26+ 且未开启「降低透明度」→ LiquidGlass，否则 Native
-/// （即「降低透明度」是硬闸门——辅助功能优先于视觉偏好）
+/// - pseudo_glass：未开启「降低透明度」→ PseudoGlass（快照自绘磨砂不依赖
+///   iOS 26 能力，全版本可用），否则 Native
+/// （「降低透明度」是硬闸门——辅助功能优先于视觉偏好）
 FOUNDATION_EXPORT LGCInterfaceStyle LGCResolvedInterfaceStyle(void);
 
-/// 便捷判定：当前是否应呈现液态玻璃外观（native 恒 NO = 原路径零回归）
+/// 便捷判定：当前是否应呈现液态玻璃外观（LiquidGlass 与 PseudoGlass 均
+/// 为玻璃家族 = YES；native 恒 NO = 原路径零回归）
 FOUNDATION_EXPORT BOOL LGCIsGlassStyleActive(void);
+
+/// ★ Task246：当前是否为伪液态玻璃档（魔改快照磨砂面板全接管：菜单/弹窗
+///   一律 AmeFloatingMenu 自绘磨砂，不经系统 UIMenu 玻璃材质）。
+FOUNDATION_EXPORT BOOL LGCIsPseudoGlassStyleActive(void);
 
 /// ★ Task239（用户指令："请用 iOS 26 原生液态玻璃 API 重写所有悬浮菜单…
 ///   使用 .glassEffect()（SwiftUI）或 UIGlassEffect（UIKit）实现真正的
@@ -86,7 +99,7 @@ FOUNDATION_EXPORT UIVisualEffect * _Nullable LGCNativeGlassEffect(void);
 ///   默认档恒 NO——快照磨砂接管玻璃观感后，防御底色浓度档位随之固定）。
 FOUNDATION_EXPORT BOOL LGCNativeGlassEngaged(void);
 
-/// 风格 <-> 存储字符串（"auto" / "native" / "liquid_glass"）
+/// 风格 <-> 存储字符串（"auto" / "native" / "liquid_glass" / "pseudo_glass"）
 FOUNDATION_EXPORT NSString *LGCStringFromInterfaceStyle(LGCInterfaceStyle style);
 FOUNDATION_EXPORT LGCInterfaceStyle LGCInterfaceStyleFromString(NSString *string);
 

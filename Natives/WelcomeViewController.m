@@ -46,6 +46,7 @@
 
 #import "Ame223CoachMarksView.h"
 #import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
+#import "LiquidGlassCompat.h"   // ★ Task246：界面风格存取（欢迎页风格选择步骤）
 #import "BackgroundManager.h"
 #import "WelcomeViewController.h"
 #import "AboutViewController.h"
@@ -60,8 +61,8 @@
 #include <mach-o/dyld.h>
 #include <unistd.h>
 
-/// 步骤总数（Hero / 语言 / 环境与 JIT / 下载源 / 数据迁移 / 完成）。
-static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格介绍页（Data 与 Done 之间）
+/// 步骤总数（Hero / 语言 / 环境与 JIT / 下载源 / 数据迁移 / 界面风格 / 完成）。
+static const NSInteger ame218_welcomeStepCount = 8;  // Task246：+1 界面风格选择页（Data 与 Intro 之间）
 
 @interface WelcomeViewController ()
 /// 进度圆点（StepCount 个）。
@@ -92,6 +93,8 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
 @property (nonatomic, strong) NSMutableArray<UIView *> *jitRows;
 /// 下载源选项卡片（选中态切换用）。
 @property (nonatomic, strong) NSMutableArray<UIView *> *sourceCards;
+/// ★ Task246：界面风格选项行（选中态切换用）。
+@property (nonatomic, strong) NSMutableArray<UIView *> *styleRows;
 /// JIT 状态行（回前台时刷新）。
 @property (nonatomic, strong) UILabel *jitStatusLabel;
 /// 前台通知观察者（JIT 状态刷新）。
@@ -562,8 +565,9 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
         case 2: [self ame218_buildEnvJitStep:ame218_new]; break;
         case 3: [self ame218_buildSourceStep:ame218_new]; break;
         case 4: [self ame218_buildDataStep:ame218_new]; break;
-        case 5: [self ame222_buildIntroStep:ame218_new]; break;  // Task222：zl2 风格介绍页
-        case 6: [self ame218_buildDoneStep:ame218_new]; break;
+        case 5: [self ame246_buildStyleStep:ame218_new]; break;   // ★ Task246：界面风格选择页
+        case 6: [self ame222_buildIntroStep:ame218_new]; break;  // Task222：zl2 风格介绍页
+        case 7: [self ame218_buildDoneStep:ame218_new]; break;
     }
 
     // 滚回顶部（新步骤从首行开始）
@@ -1838,13 +1842,162 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
 }
 
 - (void)ame218_dataSkipTapped2 {
-    // Task224：跳过数据迁移 → 特性介绍页（5）——Next 会先走灰屏圆圈焦点
-    // 介绍再进 Done（旧代码直达 6，把介绍页也跳掉了——Task222 注释与行为
-    // 不符的存量偏差，本轮顺手对齐）。
+    // Task224：跳过数据迁移 → 界面风格选择页（5，Task246 插入）——随后
+    // Next 依次走特性介绍页（6）→ Done；Next 在介绍页会先走灰屏圆圈焦点
+    // 介绍再进 Done（Task222 注释与行为不符的存量偏差已由 Task224 对齐）。
     [self ame218_showStep:5 animated:YES];
 }
 
-#pragma mark - 步骤内容：5 zl2 风格介绍页（Task222，清单第 17 项）
+#pragma mark - 步骤内容：5 界面风格选择页（★ Task246）
+
+/// 用户指令：“在界面风格再添加一个伪液态玻璃，把之前写的魔改玻璃用上去。
+/// 新添在一开始的欢迎界面供用户选择并提供预览。”本页 = 三档风格卡片
+/// （液态玻璃 / 伪液态玻璃 / 原生）+ 真实预览按钮——点卡片即时落键
+/// （LGCSetStoredInterfaceStyle，与设置页同通路）；点「预览」以当前风格
+/// 经 AmeNativeMenu 统一路由弹出真实示例菜单（液态玻璃档 = 系统原生
+/// UIMenu 直出；伪液态玻璃档 = 魔改快照磨砂面板；原生档 = 旧版
+/// actionSheet）——预览即真实效果，非静态仿造图。
+- (void)ame246_buildStyleStep:(UIView *)container {
+    [self ame219_addHeaderTo:container
+                       title:localize(@"welcome.style.title", nil)
+                    subtitle:localize(@"welcome.style.subtitle", nil)];
+    UIView *ame246_anchor = container.subviews.lastObject;
+
+    UIVisualEffectView *ame246_group = [self ame224_materialCard];
+    ame246_group.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:ame246_group];
+    UIStackView *ame246_rows = [[UIStackView alloc] init];
+    ame246_rows.axis = UILayoutConstraintAxisVertical;
+    ame246_rows.translatesAutoresizingMaskIntoConstraints = NO;
+    [ame246_group.contentView addSubview:ame246_rows];
+
+    self.styleRows = [NSMutableArray array];
+    NSArray<NSString *> *ame246_values = @[
+        @"liquid_glass", @"pseudo_glass", @"native"
+    ];
+    NSArray<NSString *> *ame246_names = @[
+        localize(@"prisma.interface_style.liquid_glass", nil),
+        localize(@"prisma.interface_style.pseudo_glass", nil),
+        localize(@"prisma.interface_style.native", nil),
+    ];
+    NSArray<NSString *> *ame246_descs = @[
+        localize(@"welcome.style.liquid.desc", nil),
+        localize(@"welcome.style.pseudo.desc", nil),
+        localize(@"welcome.style.native.desc", nil),
+    ];
+    NSArray<NSString *> *ame246_icons = @[@"drop.fill", @"sparkles", @"list.bullet.rectangle"];
+
+    for (NSUInteger i = 0; i < ame246_values.count; i++) {
+        UIButton *ame246_row = [self ame224_selectionRowWithIcon:ame246_icons[i]
+                                                           title:ame246_names[i]
+                                                        subtitle:ame246_descs[i]];
+        ame246_row.tag = 3000 + (NSInteger)i;
+        [ame246_row addTarget:self action:@selector(ame246_styleRowTapped:)
+           forControlEvents:UIControlEventTouchUpInside];
+        [ame246_rows addArrangedSubview:ame246_row];
+        [self.styleRows addObject:ame246_row];
+    }
+
+    [NSLayoutConstraint activateConstraints:@[
+        [ame246_group.topAnchor constraintEqualToAnchor:ame246_anchor.bottomAnchor constant:22],
+        [ame246_group.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [ame246_group.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [ame246_rows.topAnchor constraintEqualToAnchor:ame246_group.contentView.topAnchor constant:6],
+        [ame246_rows.leadingAnchor constraintEqualToAnchor:ame246_group.contentView.leadingAnchor constant:6],
+        [ame246_rows.trailingAnchor constraintEqualToAnchor:ame246_group.contentView.trailingAnchor constant:-6],
+        [ame246_rows.bottomAnchor constraintEqualToAnchor:ame246_group.contentView.bottomAnchor constant:-6],
+    ]];
+
+    // 真实预览按钮（accent 实底胶囊）——点按弹【当前风格】的真实示例菜单
+    UIButton *ame246_preview = [UIButton buttonWithType:UIButtonTypeSystem];
+    ame246_preview.backgroundColor = accentColor();
+    ame246_preview.layer.cornerRadius = 14.0;
+    ame246_preview.layer.cornerCurve = kCACornerCurveContinuous;
+    ame246_preview.contentEdgeInsets = UIEdgeInsetsMake(13, 18, 13, 18);
+    [ame246_preview setTitle:localize(@"welcome.style.preview", nil)
+                    forState:UIControlStateNormal];
+    [ame246_preview setTitleColor:[UIColor whiteColor]
+                         forState:UIControlStateNormal];
+    ame246_preview.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
+    [ame246_preview addTarget:self action:@selector(ame246_previewTapped:)
+           forControlEvents:UIControlEventTouchUpInside];
+    ame246_preview.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:ame246_preview];
+
+    UILabel *ame246_hint = [[UILabel alloc] init];
+    ame246_hint.text = localize(@"welcome.style.preview.hint", nil);
+    ame246_hint.font = [UIFont systemFontOfSize:11];
+    ame246_hint.textColor = [self ame224_directSecondaryColor];
+    ame246_hint.textAlignment = NSTextAlignmentCenter;
+    ame246_hint.numberOfLines = 0;
+    ame246_hint.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:ame246_hint];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [ame246_preview.topAnchor constraintEqualToAnchor:ame246_group.bottomAnchor constant:16],
+        [ame246_preview.centerXAnchor constraintEqualToAnchor:container.centerXAnchor],
+        [ame246_hint.topAnchor constraintEqualToAnchor:ame246_preview.bottomAnchor constant:10],
+        [ame246_hint.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:4],
+        [ame246_hint.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-4],
+        // Task224 同款：链尾 ≤ 底锚（配合 showStep 高度下限，高度唯一可解）
+        [ame246_hint.bottomAnchor constraintLessThanOrEqualToAnchor:container.bottomAnchor constant:-10],
+    ]];
+
+    [self ame246_refreshStyleRows];
+}
+
+- (void)ame246_styleRowTapped:(UIButton *)sender {
+    NSInteger ame246_i = (NSInteger)sender.tag - 3000;
+    NSArray<NSString *> *ame246_values = @[@"liquid_glass", @"pseudo_glass", @"native"];
+    if (ame246_i < 0 || (NSUInteger)ame246_i >= ame246_values.count) return;
+    NSString *ame246_value = ame246_values[(NSUInteger)ame246_i];
+    LGCSetStoredInterfaceStyle(LGCInterfaceStyleFromString(ame246_value));
+    NSLog(@"[Welcome] Task246: interface style set to %@ in onboarding", ame246_value);
+    [self ame246_refreshStyleRows];
+}
+
+/// 选中态刷新：与设置页同源（读存储值；auto = 暂未选择，三行都不勾——
+/// 副标题已说明默认自动，iOS 26+ 自动解析为液态玻璃）。
+- (void)ame246_refreshStyleRows {
+    NSArray<NSString *> *ame246_values = @[@"liquid_glass", @"pseudo_glass", @"native"];
+    NSString *ame246_stored = LGCStringFromInterfaceStyle(LGCStoredInterfaceStyle());
+    for (NSUInteger i = 0; i < self.styleRows.count; i++) {
+        BOOL ame246_sel = [ame246_stored isEqualToString:ame246_values[i]];
+        [self ame219_refreshOptionRow:self.styleRows[i] selected:ame246_sel];
+    }
+}
+
+/// 真实预览：以【当前生效风格】经 AmeNativeMenu 统一路由弹出示例菜单。
+/// 三档风格各自落到自己的真实渲染路径（系统 UIMenu / 魔改磨砂面板 /
+/// 旧版 actionSheet），预览即装机效果。伪液态玻璃档下 AmeFloatingMenu
+/// 会对欢迎页抓帧——欢迎页背景即是磨砂原料，效果最直观。
+- (void)ame246_previewTapped:(UIButton *)sender {
+    NSMutableArray<NSDictionary *> *ame246_items = [NSMutableArray array];
+    [ame246_items addObject:@{
+        @"title": @"\u6db2\u6001\u73bb\u7483",
+        @"systemImage": @"drop.fill",
+        @"handler": ^{ NSLog(@"[Welcome] Task246 preview: liquid glass item"); },
+    }];
+    [ame246_items addObject:@{
+        @"title": @"\u4f2a\u6db2\u6001\u73bb\u7483",
+        @"systemImage": @"sparkles",
+        @"handler": ^{ NSLog(@"[Welcome] Task246 preview: pseudo glass item"); },
+    }];
+    [ame246_items addObject:@{
+        @"title": @"\u539f\u751f",
+        @"systemImage": @"list.bullet.rectangle",
+        @"handler": ^{ NSLog(@"[Welcome] Task246 preview: native item"); },
+    }];
+    [ame246_items addObject:@{
+        @"title": @"\u53d6\u6d88",
+        @"cancel": @YES,
+    }];
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"welcome.style.preview", nil)
+                                     dictItems:ame246_items
+                                    sourceView:sender];
+}
+
+#pragma mark - 步骤内容：6 zl2 风格介绍页（Task222，清单第 17 项）
 
 /// zl2（ZalithLauncher2）风格的特性介绍页：插入在数据迁移与完成页之间。
 /// 品牌图标 + 特性行列表（SF 图标 + 标题 + 副标题）+ 社区卡（QQ 群/爱发电，
@@ -1982,7 +2135,7 @@ static const NSInteger ame218_welcomeStepCount = 7;  // Task222：+1 zl2 风格�
     ]];
 }
 
-#pragma mark - 步骤内容：6 完成
+#pragma mark - 步骤内容：7 完成
 
 - (void)ame218_buildDoneStep:(UIView *)container {
     UIView *ame218_center = [[UIView alloc] init];

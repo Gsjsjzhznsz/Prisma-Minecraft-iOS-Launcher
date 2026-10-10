@@ -32,6 +32,14 @@
 //      Task228/230/236 三轮装机实锤同族）；③魔改磨砂面板专属域 =
 //      输入类弹窗（内存数值输入等中央路由 UIAlertController 接管不变；
 //      快照显示改窗口对位真透视，见 AmeFloatingMenu Task245）。
+//    - ★ Task246（用户指令：“在界面风格再添加一个伪液态玻璃，把之前写的
+//      魔改玻璃用上去。新添在一开始的欢迎界面供用户选择并提供预览”）：
+//      玻璃家族新增【伪液态玻璃档】（prisma.interface_style = pseudo_glass，
+//      LGCInterfaceStylePseudoGlass）——魔改快照自绘磨砂面板全接管：启动
+//      器内选择菜单也走磨砂面板（真玻璃档仅 Metal 游戏面保留该轨）；快照
+//      自绘不依赖 iOS 26 能力，低版本同样可用。真液态玻璃档路由不变
+//      （Task245：启动器内系统原生直出 / Metal 面磨砂面板）。欢迎向导
+//      新增风格选择步骤（WelcomeViewController Task246，真实预览菜单直出）。
 //    - handler 唯一合法来源 = 字典协议（公开 API）：UIAction/
 //      UIAlertAction.handler 均非公开属性，从已构建 UIMenu 反取在
 //      iOS 26.2 SDK 为编译错误（Task241 CI r1 :79 双雷实证），KVC
@@ -354,15 +362,18 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
     }
     ame240_actionFired = NO; // 本轮会话开始，重新计数
     if (LGCIsGlassStyleActive()) {
-        if ([self ame245_anchorInsideGameSurface:sourceView]) {
-            // ★ Task245：Metal 游戏面上选择菜单保持磨砂面板（系统上下文
-            //   菜单磨砂在 Metal 上不合成）。
+        if (LGCIsPseudoGlassStyleActive() ||
+            [self ame245_anchorInsideGameSurface:sourceView]) {
+            // ★ Task246：伪液态玻璃档 = 魔改磨砂面板全接管（含启动器内选择
+            //   菜单——用户指令把魔改玻璃升格为独立风格档）；真液态玻璃档下
+            //   仅 Metal 游戏面保持磨砂面板（系统上下文菜单磨砂在 Metal 上
+            //   不合成，Task228/230/236 三轮装机实锤同族）。
             [self ame242_presentViaGlassMenu:ame242_alert
                                         host:ame242_host
                                    onDismiss:onDismiss];
         } else {
-            // ★ Task245（IMG_0380 用户定案）：启动器内选择菜单 = 系统原生
-            //   液态玻璃直出；磨砂面板退役到输入类弹窗专属。
+            // ★ Task245（IMG_0380 用户定案）：真液态玻璃档启动器内选择菜单 =
+            //   系统原生液态玻璃直出；磨砂面板退役到输入类弹窗专属。
             [self ame245_presentViaSystemMenu:menu
                                    sourceView:sourceView
                                         dicts:dicts

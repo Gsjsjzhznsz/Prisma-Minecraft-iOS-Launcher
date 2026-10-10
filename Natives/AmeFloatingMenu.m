@@ -104,6 +104,32 @@ static UIImage *Ame243BlurredKeyWindowSnapshot(UIView *hostView) {
     }
 }
 
+/// ★ Task246：动态背景重抓——呈现中面板背后的真实背景内容重渲染。
+///   与 Ame243 的关键差异：源不是 keyWindow（会把自家面板/遮罩一起拍进去
+///   = 自噬），而是【正在呈现方的 view】（OverFullScreen 呈现下呈现方
+///   视图仍在窗口层级内、且位于本组件之下 = 纯背景内容，无自噬面）；
+///   0.18x 抓帧即模糊。异常/参数缺失返回 nil（调用方保留上一张有效图）。
+static UIImage *Ame246PresenterViewSnapshot(UIView *hostView) {
+    if (hostView == nil || hostView.window == nil ||
+        hostView.bounds.size.width < 40.0 ||
+        hostView.bounds.size.height < 40.0) return nil;
+    @try {
+        UIGraphicsImageRendererFormat *ame246_fmt =
+            [[UIGraphicsImageRendererFormat alloc] init];
+        ame246_fmt.scale = 0.18;
+        ame246_fmt.opaque = YES;
+        UIGraphicsImageRenderer *ame246_r =
+            [[UIGraphicsImageRenderer alloc] initWithSize:hostView.bounds.size
+                                                   format:ame246_fmt];
+        return [ame246_r imageWithActions:^(UIGraphicsImageRendererContext *ame246_rc) {
+            [hostView drawViewHierarchyInRect:hostView.bounds
+                           afterScreenUpdates:NO];
+        }];
+    } @catch (NSException *ame246_e) {
+        return nil;
+    }
+}
+
 /// ★ Task245：二次柔化——0.18x 抓帧成品再半分辨率重渲染一次（位图像素
 ///   再减半），窗口对位 1:1 上采样后背景轮廓不可辨认 = 标准磨砂观感；
 ///   IMG_0380 的“透视见底”一半来自 AspectFill 裁剪几何错位，另一半就
@@ -239,6 +265,11 @@ static UIColor *Ame244SnapshotTint(void) {
 @property (nonatomic, assign) BOOL ame237_dismissing;
 @property (nonatomic, assign) BOOL ame237_didEntrance;
 @property (nonatomic, assign) CGFloat ame237_kbShift;
+/// ★ Task246：动态背景刷新驱动（呈现期间 8Hz 重抓磨砂原料——背景内容
+///   变化（滚动/动画/状态更新）在 ≤125ms 内跟上；“伪液态玻璃背景不随
+///   背景变化”根治）。display link 主线程调度，抓帧 0.18x + 二次柔化
+///   总成本单帧 <1ms 量级，无性能面。
+@property (nonatomic, strong, nullable) CADisplayLink *ame246_refreshLink;
 /// ★ Task242：未选中实质动作而关闭面板（dim 点按/cancel 项）时的回调
 ///   （统一菜单呈现器分轨呈现的取消语义接线，见 .h 变体注释）。
 @property (nonatomic, copy, nullable) void (^ame237_onDismiss)(void);
@@ -513,6 +544,7 @@ static UIColor *Ame244SnapshotTint(void) {
 
 - (void)dealloc {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [self.ame246_refreshLink invalidate];
 }
 
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
@@ -546,11 +578,53 @@ static UIColor *Ame244SnapshotTint(void) {
         self.panel.alpha = 1.0;
         self.panel.transform = CGAffineTransformIdentity;
     }
+    // ★ Task246：呈现完成后启动动态背景重抓（8Hz；背景变化/面板挪位后
+    //   磨砂原料持续跟上）。逐帧窗口快照会把自家面板拍进去（自噬），
+    //   重抓源 = presentingViewController.view（OverFullScreen 下恒在
+    //   本组件之下，纯背景内容）。
+    [self ame246_startBackgroundRefresh];
     if (self.mirrorFields.count > 0) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.mirrorFields.firstObject becomeFirstResponder];
         });
     }
+}
+
+#pragma mark - Task246 动态背景重抓
+
+- (void)ame246_startBackgroundRefresh {
+    if (self.ame246_refreshLink != nil) return;
+    CADisplayLink *ame246_link = [CADisplayLink
+        displayLinkWithTarget:self
+                     selector:@selector(ame246_refreshTick)];
+    if (@available(iOS 10.0, *)) {
+        ame246_link.preferredFramesPerSecond = 8;   // 8Hz：磨砂观感足够连贯，功耗可忽略
+    }
+    [ame246_link addToRunLoop:[NSRunLoop mainRunLoop]
+                      forMode:NSRunLoopCommonModes];
+    self.ame246_refreshLink = ame246_link;
+    NSLog(@"[AmeMenu] Task246 dynamic frost refresh engaged (8Hz, presenter-view source)");
+}
+
+- (void)ame246_stopBackgroundRefresh {
+    [self.ame246_refreshLink invalidate];
+    self.ame246_refreshLink = nil;
+}
+
+- (void)ame246_refreshTick {
+    if (self.ame237_dismissing || self.ame245_frostSnap == nil) return;
+    UIView *ame246_bg = self.presentingViewController.view;
+    UIWindow *ame246_win = self.view.window;
+    if (ame246_bg == nil || ame246_bg.window == nil || ame246_win == nil) return;
+    // 几何一致性护栏：呈现方视图与窗口不同大（理论边缘）时映射不再
+    // 1:1，保持首帧窗口快照不动（宁旧勿错位）。
+    if (fabs(ame246_bg.bounds.size.width - ame246_win.bounds.size.width) > 1.0 ||
+        fabs(ame246_bg.bounds.size.height - ame246_win.bounds.size.height) > 1.0) return;
+    UIImage *ame246_fresh = Ame246PresenterViewSnapshot(ame246_bg);
+    // 全黑帧护栏（Metal 游戏面 drawViewHierarchy 不渲染内容）：保留上一张
+    // 有效图，绝不降级为黑磨砂（Task244 家族护栏同源）。
+    if (!Ame244SnapshotLooksValid(ame246_fresh)) return;
+    self.ame245_frostSnap.image = Ame245SoftenSnapshot(ame246_fresh);
 }
 
 #pragma mark - 布局（纯 frame：无 Auto Layout 约束竞态）
@@ -651,6 +725,11 @@ static UIColor *Ame244SnapshotTint(void) {
     [UIView animateWithDuration:dur delay:0 options:UIViewAnimationOptionBeginFromCurrentState
                      animations:^{
         self.panel.frame = CGRectOffset(self.panel.frame, 0.0, -overlap);
+        // ★ Task246：磨砂快照帧随面板位移动画同步走位（窗口对位 1:1 不
+        //   在动画期间脱钩——“背景不随窗口位置变化”根治的动画侧）。
+        self.ame245_frostSnap.frame =
+            CGRectMake(-self.panel.frame.origin.x, -self.panel.frame.origin.y,
+                       self.view.bounds.size.width, self.view.bounds.size.height);
     } completion:nil];
 }
 
@@ -664,6 +743,10 @@ static UIColor *Ame244SnapshotTint(void) {
     [UIView animateWithDuration:dur delay:0 options:UIViewAnimationOptionBeginFromCurrentState
                      animations:^{
         self.panel.frame = CGRectOffset(self.panel.frame, 0.0, shift);
+        // ★ Task246：归位侧同帧跟踪（与 show 侧对称）。
+        self.ame245_frostSnap.frame =
+            CGRectMake(-self.panel.frame.origin.x, -self.panel.frame.origin.y,
+                       self.view.bounds.size.width, self.view.bounds.size.height);
     } completion:nil];
 }
 
@@ -704,6 +787,7 @@ static UIColor *Ame244SnapshotTint(void) {
 - (void)ame237_dismissWithAction:(nullable Ame237MenuActionMirror *)action {
     if (self.ame237_dismissing) return;
     self.ame237_dismissing = YES;
+    [self ame246_stopBackgroundRefresh];   // Task246：退场即停重抓
     [self ame237_syncAllFields];
     [self.view endEditing:YES];
     void (^finish)(void) = ^{

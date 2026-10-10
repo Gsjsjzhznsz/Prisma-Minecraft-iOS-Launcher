@@ -93,12 +93,12 @@ check("C2 旧 step 移除仅限叶子（移除的是 currentStepView 的前值�
 check("C3 返回上一步按钮（chevron.left + 步骤 0 隐藏）",
       'localize(@"welcome.back"' in wv and "ame219_backTapped" in wv
       and "self.backButton.hidden = (index == 0)" in wv)
-check("C4 七步流程（Hero/语言/环境与JIT/下载源/数据/zl2介绍/完成；Task222 +1）",
-      "ame218_welcomeStepCount = 7" in wv)
-check("C5 步骤构建器 6/6 与 switch 对齐（run621 事故类防线；Task222：zl2 介绍页 ame222 前缀）",
+check("C4 八步流程（Hero/语言/环境与JIT/下载源/数据/界面风格/zl2介绍/完成；Task222 +1 / Task246 +1）",
+      "ame218_welcomeStepCount = 8" in wv)
+check("C5 步骤构建器 8/8 与 switch 对齐（run621 事故类防线；Task222：zl2 介绍页 ame222 前缀 / Task246：界面风格页 ame246 前缀）",
       set(re.findall(r"\[self (ame\d+_build\w+Step):", wv)) ==
       set(re.findall(r"^- \(void\)(ame\d+_build\w+Step):", wv, re.M)) and
-      len(set(re.findall(r"^- \(void\)(ame\d+_build\w+Step):", wv, re.M))) == 7)
+      len(set(re.findall(r"^- \(void\)(ame\d+_build\w+Step):", wv, re.M))) == 8)
 check("C6 iPadOS 视觉（systemBackground / labelColor / secondarySystemGroupedBackground 卡片）",
       "systemBackgroundColor" in wv and "labelColor" in wv
       and "secondarySystemGroupedBackgroundColor" in wv)
@@ -209,7 +209,7 @@ print("== J. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"J-{lang} 唯一键 2715（Task223 +41 / Task224 +69 / Task225 +21 + Task226 +12 + Task227 +7）", len(keys) == 2727, f"got {len(keys)}")
+    check(f"J-{lang} 唯一键 2775（Task246 风格档 + welcome.style +8 后）", len(keys) == 2775, f"got {len(keys)}")
 check("J-公告 42 条 + task219 尾锚 + 家族顺延（Task223 追加后：220@-2 / 219@-3 / 218@-4 / 217@-5 / 216@-6 / 206@-7）",
       len(ann) == 43
       and ann[-3]["id"] == "task219-virgl-angle-welcome-rebuild-2026-10-04"

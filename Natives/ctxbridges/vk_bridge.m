@@ -26,11 +26,15 @@ typedef uintptr_t VkInstance;
 // 需要通过 dlsym 从 libMoltenVK.dylib 中直接获取符号。
 //
 // 注意：仓库中的 vk_mvk_moltenvk.h 头文件是旧版本（1.1.2, spec 30），
-// 但实际运行的 libMoltenVK.dylib 已是 1.2.9（从二进制 strings 确认）。
-// MoltenVK 1.2.9 支持 MVK_CONFIG_SWAPCHAIN_PRESENT_MODE 环境变量（0=IMMEDIATE, 2=FIFO），
-// JavaLauncher.m 中已设置 MVK_CONFIG_SWAPCHAIN_PRESENT_MODE=0。
-// MoltenVK 1.2.9 在 vkCreateSwapchainKHR 时会读取此环境变量覆盖应用的 presentMode，
-// 这是 Vulkan 模式帧率解锁的关键机制。
+// 实际运行的 libMoltenVK.dylib 版本以二进制 strings 确认为准。
+// ★ Task246：libMoltenVK.dylib 已更新为 1.4.3（上游 main @ 2c28e0c8
+//   2026-10-09 CI 构建，领先 v1.4.2 release 54 提交：draw indirect count /
+//   零除数绑定 / indexed indirect 状态终化 / Metal encoder 执行依赖与
+//   fence ordering / memoryTypeBits / MTLTexture 导入内存修复族）。
+//   vkGet/vkSetMoltenVKConfigurationMVK 在 1.4.3 仍导出（已弃用告警，
+//   dlsym 可用），本文件的配置结构体通路不变。
+// JavaLauncher.m 中曾设置 MVK_CONFIG_SWAPCHAIN_PRESENT_MODE=0
+// （1.2.9 时代经验，1.4.x 未实现该环境变量，保留无害）。
 //
 // 以下成员顺序严格参照 vk_mvk_moltenvk.h 中的 MVKConfiguration 结构体定义。
 // 即使结构体大小与 MoltenVK 实际版本不完全匹配，vkGetMoltenVKConfigurationMVK

@@ -841,12 +841,14 @@ if ([section isEqualToString:@"general"]) {
               @"pickKeys": @[
                   @"auto",
                   @"native",
-                  @"liquid_glass"
+                  @"liquid_glass",
+                  @"pseudo_glass"
               ],
               @"pickList": @[
                   localize(@"prisma.interface_style.auto", nil),
                   localize(@"prisma.interface_style.native", nil),
-                  localize(@"prisma.interface_style.liquid_glass", nil)
+                  localize(@"prisma.interface_style.liquid_glass", nil),
+                  localize(@"prisma.interface_style.pseudo_glass", nil)
               ],
               @"action": ^(NSString *value){
                   // Task224（#4）：全量重铺与背景设置页同一既有 live-reload

@@ -2639,3 +2639,23 @@ Work Log:
 
 Stage Summary:
 - Task 245 全链闭环：选择菜单系统原生液态玻璃直出 + 磨砂弹窗窗口对位真透视，新 IPA 就绪待装机验证
+
+---
+Task ID: 246
+Agent: main (Super Z)
+Task: 用户指令四件套——①界面风格新增「伪液态玻璃」档（魔改玻璃升格为独立风格）②欢迎向导新增风格选择页+真实预览 ③伪玻璃背景动态跟随窗口位置/背景变化根治 ④MoltenVK 版本更新
+
+Work Log:
+- 【伪液态玻璃档】LiquidGlassCompat.h/.m：LGCInterfaceStyle 新增 PseudoGlass（=3，追加不重排；prisma.interface_style 存储串 pseudo_glass）；解析规则 = 仅受「降低透明度」硬闸门（快照自绘磨砂不依赖 iOS 26 能力，全版本可用）；LGCIsGlassStyleActive 扩为玻璃家族双档（卡片合成玻璃/BackgroundManager 效果随档生效），新增 LGCIsPseudoGlassStyleActive 判定
+- 【菜单路由】AmeNativeMenu.m ame242_presentStyleRoutedWithMenu：伪玻璃档 = 魔改磨砂面板全接管（含启动器内选择菜单——用户指令把魔改玻璃升格为独立风格档）；真液态玻璃档路由不变（启动器内系统原生直出 / Metal 面磨砂）；原生档零回归
+- 【动态磨砂背景根治】AmeFloatingMenu.m：①Ame246PresenterViewSnapshot——重抓源改为 presentingViewController.view（OverFullScreen 下恒在本组件之下 = 纯背景内容，keyWindow 快照会把自家面板拍进去 = 自噬面，弃用）；②CADisplayLink 8Hz 持续重抓（viewDidAppear 起、退场即停、dealloc 兜底），背景内容变化 ≤125ms 跟上；③全黑帧护栏（Metal 面保留上一张有效图，绝不降级黑磨砂）+ 几何一致性护栏（呈现方视图与窗口不同大时保持首帧窗口快照，宁旧勿错位）；④键盘避让 show/hide 动画块内 frostSnap 帧同步走位（窗口对位 1:1 动画期间不脱钩）——「背景不随窗口位置/背景变化」双根因同轮根治
+- 【欢迎向导风格选择页】WelcomeViewController.m：步骤总数 7→8，新步骤 5 = 界面风格选择页（Data 与 Intro 之间；intro→6、done→7，ame218_dataSkipTapped2 的 showStep:5 语义自动落新页）；三档风格行（液态玻璃 drop.fill / 伪液态玻璃 sparkles / 原生 list.bullet.rectangle，复用 ame224_selectionRowWithIcon + ame219_refreshOptionRow 选中语言）+ 点行即时落键（LGCSetStoredInterfaceStyle，与设置页同通路）+「预览示例菜单」accent 胶囊按钮——以当前生效风格经 AmeNativeMenu 统一路由弹真实示例菜单（预览即装机效果，非静态仿造图）；伪玻璃档预览对欢迎页抓帧，效果最直观
+- 【设置页】LauncherPreferencesViewController.m interface_style 行 pickKeys/pickList 扩四档（auto/native/liquid_glass/pseudo_glass）；getPreference/setPreference 经 LGC 串转换自动兼容
+- 【l10n】zh-CN/zh-Hans/zh-Hant/en 四表 +9 键（prisma.interface_style.pseudo_glass + welcome.style.* 8 键）；task191_validate_strings 四表 2809 条全 OK
+- 【MoltenVK 1.4.2→1.4.3】取证：内置 dylib（b066e8c 用户上传，strings "MoltenVK version 1.4.2"）= 官方 v1.4.2 release（尺寸逐字节同 4,822,128B）；官方最新 release 仍为 v1.4.2（2026-07-24），但上游 main 领先 54 提交且 GitHub Actions 有 2026-10-09 main 构建 artifact（MoltenVK-ios，5,457,451B）——取 artifact（main @ 2c28e0c8）内 MoltenVK.xcframework/ios-arm64 动态库（4,904,816B，strings 确认 1.4.3）替换 Natives/resources/Frameworks/libMoltenVK.dylib；API 兼容面核验（vkGet/vkSetMoltenVKConfigurationMVK 仍导出，vk_bridge.m dlsym 通路不变）；修复族直指用户 Vulkan 光影崩溃线索（draw indirect count / 零除数绑定 / indexed indirect 状态终化 / Metal encoder 执行依赖 + fence ordering / memoryTypeBits / MTLTexture 导入内存修复族）；vk_bridge.m/JavaLauncher.m 版本注释同步（1.2.9/1.4.2 陈旧注 → 1.4.3 取证链）
+- 【门禁】task240/139/158/175/211 五道 + task191 全 PASS；verify_task219 期望值重锚（七步→八步/构建器 7→8/唯一键 2775）后 81/81 全绿；N4（verify_task223）既有矛盾断言（stash 复核未改动亦失败，与本轮无关）；NO-IMPORT 假阳性/尾随空格/四大雷族 diff 自审零命中
+
+Stage Summary:
+- 四档界面风格终态：自动（iOS 26+→液态玻璃）/ 原生（旧版弹窗）/ 液态玻璃（选择菜单系统原生直出 + 输入类/Metal 魔改磨砂）/ 伪液态玻璃（魔改磨砂全接管，全版本可用）；欢迎向导第 6 步可选+真实预览
+- 动态磨砂背景：8Hz 重抓（呈现方视图源，无自噬）+ 键盘动画帧跟踪 + 黑帧/几何双护栏
+- MoltenVK 1.4.3（main @ 2c28e0c8）随包，Vulkan 光影崩溃修复族上游跟进，装机验证锚点 = VulkanMod+etallum 进世界 19s 崩溃点是否消失 + latestlog [mvk-info] 版本行

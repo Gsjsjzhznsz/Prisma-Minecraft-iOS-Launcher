@@ -2835,6 +2835,14 @@
 "prisma.interface_style.auto" = "自動";
 "prisma.interface_style.liquid_glass" = "液態玻璃";
 "prisma.interface_style.native" = "原生";
+"prisma.interface_style.pseudo_glass" = "偽液態玻璃";
+"welcome.style.title" = "介面風格";
+"welcome.style.subtitle" = "選擇彈出視窗與選單的玻璃材質，可隨時在「設定 → 介面風格」中更改";
+"welcome.style.liquid.desc" = "系統原生液態玻璃（iOS 26+），選單由系統直出真玻璃材質";
+"welcome.style.pseudo.desc" = "魔改磨砂玻璃：快照自繪透視，任何系統版本都可用的液態玻璃觀感";
+"welcome.style.native.desc" = "舊版系統彈出視窗，最樸素穩定";
+"welcome.style.preview" = "預覽範例選單";
+"welcome.style.preview.hint" = "點按卡片選擇風格；點「預覽」以目前風格彈出真實範例選單";
 "prisma.ui_zoom.reset" = "重設";
 "profile.isolation.keep_isolated" = "留在隔離目錄";
 "profile.isolation.legacy_upgraded" = "\n舊版佈局已升級：%ld 項資料已移入 versions/<id>/game。";

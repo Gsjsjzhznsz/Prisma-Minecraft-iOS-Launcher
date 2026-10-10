@@ -57,6 +57,7 @@ NSString *LGCStringFromInterfaceStyle(LGCInterfaceStyle style) {
     switch (style) {
         case LGCInterfaceStyleNative:       return @"native";
         case LGCInterfaceStyleLiquidGlass:  return @"liquid_glass";
+        case LGCInterfaceStylePseudoGlass:  return @"pseudo_glass";
         case LGCInterfaceStyleAuto:
         default:                            return @"auto";
     }
@@ -66,6 +67,7 @@ LGCInterfaceStyle LGCInterfaceStyleFromString(NSString *string) {
     if ([string isKindOfClass:[NSString class]]) {
         if ([string isEqualToString:@"native"]) return LGCInterfaceStyleNative;
         if ([string isEqualToString:@"liquid_glass"]) return LGCInterfaceStyleLiquidGlass;
+        if ([string isEqualToString:@"pseudo_glass"]) return LGCInterfaceStylePseudoGlass;
     }
     return LGCInterfaceStyleAuto;
 }
@@ -86,12 +88,24 @@ static BOOL LGCGlassCapable(void) {
 LGCInterfaceStyle LGCResolvedInterfaceStyle(void) {
     LGCInterfaceStyle stored = LGCStoredInterfaceStyle();
     if (stored == LGCInterfaceStyleNative) return LGCInterfaceStyleNative;
+    if (stored == LGCInterfaceStylePseudoGlass) {
+        // ★ Task246：伪液态玻璃档——快照自绘磨砂不依赖 iOS 26 能力
+        // （任意版本可用），仅受「降低透明度」硬闸门约束。
+        return UIAccessibilityIsReduceTransparencyEnabled()
+            ? LGCInterfaceStyleNative : LGCInterfaceStylePseudoGlass;
+    }
     // auto 与 liquid_glass 共用同一能力判定：能力不足一律回退 native
     return LGCGlassCapable() ? LGCInterfaceStyleLiquidGlass : LGCInterfaceStyleNative;
 }
 
 BOOL LGCIsGlassStyleActive(void) {
-    return LGCResolvedInterfaceStyle() == LGCInterfaceStyleLiquidGlass;
+    LGCInterfaceStyle ame246_resolved = LGCResolvedInterfaceStyle();
+    return ame246_resolved == LGCInterfaceStyleLiquidGlass ||
+           ame246_resolved == LGCInterfaceStylePseudoGlass;
+}
+
+BOOL LGCIsPseudoGlassStyleActive(void) {
+    return LGCResolvedInterfaceStyle() == LGCInterfaceStylePseudoGlass;
 }
 
 // ★ Task239（用户指令：iOS 26 原生液态玻璃 API 重写所有悬浮菜单）：系统
