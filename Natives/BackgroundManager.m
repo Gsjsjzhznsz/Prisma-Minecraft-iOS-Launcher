@@ -2073,6 +2073,20 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                     }
                 }
 
+                // ★ Task241（第九轮：主页新闻磁贴“文字双层 + 日期压字”，即
+                //   IMG_0373）：几何同源假设的最后一块拼图——当标签 frame
+                //   被 Auto Layout 压得比文本自然高度小（固定 100pt 磁贴 ×
+                //   不限行长摘要的压缩/溢出态）时，textRectForBounds: 返回
+                //   【完整文本高度】的矩形（垂直居中语义附带负向 y 偏移），
+                //   而本体按溢出语义从 frame 顶部落笔——拷贝与本体整体错位
+                //   数行 = 深色拷贝脱离白色覆盖裸露为“第二层文字”。本轮：
+                //   拷贝矩形任一维度溢出绘制矩形时【整组跳过】（描边缺席
+                //   远劣于鬼影；溢出源头由 Task241 布局侧消灭——磁贴摘要
+                //   限 3 行 + 日期入栈，正常放得下的标签不受任何影响）。
+                if (ame235_copyRect.size.height > rect.size.height + 0.5 ||
+                    ame235_copyRect.size.width  > rect.size.width  + 0.5) {
+                    // 溢出态：拷贝/垫底不画，仅走原实现（原生截断渲染）
+                } else {
                 NSMutableAttributedString *ame233_dark =
                     [[NSMutableAttributedString alloc] initWithAttributedString:ame232_as];
                 NSRange ame233_darkRange = NSMakeRange(0, ame233_dark.length);
@@ -2099,6 +2113,7 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                     [ame233_backing addAttribute:NSFontAttributeName value:ame235_scaledFont range:ame233_backRange];
                 }
                 [ame233_backing drawInRect:ame235_copyRect];
+                } // Task241 溢出跳过护栏结束
             }
         }
     } @catch (NSException *ame232_e) {

@@ -2475,3 +2475,21 @@ Stage Summary:
 - Task 240 全链闭环：34 处菜单全量换装系统 UIMenu + AmeNativeMenu 组件落地 + CI 四轮终绿 + 新 IPA
 - 装机验证锚点（对照用户基准 IMG_0370）：账号页 ⋯/长按 = 系统液态玻璃菜单（含"默认皮肤"Steve/Alex 子菜单）；设置页全部 pick 行；下载页筛选/版本（~80 条）/排序/加载器；游戏内齿轮 → 分辨率；第三方登录角色选择（外部点按 = 取消不卡死）；日志行分享；Bing 壁纸操作
 - 教训入库：①ninja 快速失败会掩蔽排队 TU 的真实错误——主目标失败轮必须对"本轮从未编译的触碰文件"做未调度集审计（Task224 教训第③条的 CI 实操版）；②生成 ObjC 字典字面量时，跨行消息表达式必须整体带 []，裸 continuation 是合法括号平衡之外的语法雷（括号平衡门天然探测不到）
+
+---
+Task ID: 241
+Agent: main (Super Z)
+Task: 用户装机反馈两连修——①"悬浮菜单全部打开崩溃"（Task240 裸赌私有选择器 presentMenu 的真机破产）；②主页新闻磁贴文字重叠（IMG_0373：双层鬼影 + 日期压正文）
+
+Work Log:
+- 崩溃定案：AmeNativeMenu 的 presentMenu 类目是"纯声明、无 IMP"的运行时赌注（Task240 CI r3 只解决了编译可见性，没人验证过运行时存在性）；真机 iOS 26 无 -[UIContextMenuInteraction presentMenu]，38 处调用点一点开即 unrecognized selector → 与"全部打开崩溃"逐字吻合。教训定性：私有 API 必须运行时探测（respondsToSelector），编译期自声明 ≠ 运行期存在
+- 修复（AmeNativeMenu.m/.h）：呈现改三级降级链 ame240_openInteractionMenu——① presentMenu（Task240 首选，探测失败静默降级）→ ② _presentMenuAtLocation:（锚点中心坐标，UIKit+hook.h:20 同域先例、iOS 13+ 长期稳定）→ ③ ame240_actionSheetFallback 系统 actionSheet 兜底（UIMenu 树拍平为 UIAlertAction，destructive/disabled/子菜单缩进语义保留，iPad popover 锚定防崩，presentationControllerDidDismiss + ame240_actionFired 承接 onDismiss 取消语义）；任一环节 @try 护栏，onDismiss 在"无法呈现"时立即回调（=取消，ThirdPartyLogin complete(nil) 流程不悬死）；类目补 _presentMenuAtLocation: 双声明，类扩展提升 ame240_shared 可见性（静态兜底函数在 @implementation 前合法调用，规避 Task240 CI r1 "no known class method" 同款错误）
+- 文字重叠定案（三因同发）：①heightForTileConfig: 新闻磁贴恒 100pt 绝对高度 × Task149 numberOfLines=0 不限行摘要 → 长摘要文字需求高度远超磁贴，Auto Layout 压扁/溢出（Task149 的"自 sizing"前提在本页 compositional layout 上从未成立）；②描边镜像层（Task232 drawTextInRect: 交换）在压缩/溢出态几何同源失效——textRectForBounds: 返回完整文本高度矩形（垂直居中负 y 偏移）而本体按溢出语义落笔，四份深色拷贝整体错位数行 = IMG_0373 的"第二层文字"（Task233/234/235/236/238/239 六轮几何镜像全在"放得下"前提下，溢出态是第九轮盲区）；③日期复用 placeholderLabel 的右下角绝对定位，文字流必盖之 = "日期压正文"
+- 修复（LauncherNewsViewController.m HomeNewsTileCell）：摘要恢复 numberOfLines=3 + clipsToBounds=YES（磁贴是预览入口，全文在新闻页——不违背 Task149 对新闻列表页的指令）；新增 dateLabel 迁入 textStack 随流排布（结构性不可能再重叠），placeholderLabel 回归纯占位职责（加载中/失败/无新闻），prepareForReuse 重置可见性；dateLabel 同走 ame224_styleHomeTileLabel 壁纸描边处理
+- 修复（BackgroundManager.m）：ame232_swizzledLabelDrawTextInRect 拷贝绘制前加溢出护栏——copyRect 任一维度超出 rect 即整组跳过（描边缺席远劣于鬼影），放得下的标签零影响；全仓库压缩态标签的鬼影家族就此根除
+- 验证：task240_syntax_gate ALL PASS（22 文件 + retired refs=0）、task139 all balanced、task175 ALL PASS；字符级状态机平衡扫描（AmeNativeMenu/.h、LauncherNews、BackgroundManager）零残留；粗扫描器的"[差1"为字符串内 https:// 被当注释吞掉的假阳性，已用状态机复核排除
+
+Stage Summary:
+- 崩溃根除：unrecognized selector 类崩溃在本组件结构性不可能复发（探测 + @try + 双后备）；真机主路径预期落在 _presentMenuAtLocation:（若 iOS 26 连它也移除则自动落 actionSheet 兜底，latestlog 留有 [AmeNativeMenu] Task241 面包屑可诊断）
+- 重叠根除：磁贴侧（限行 + 自裁剪 + 日期入栈）消灭溢出源头，swizzle 侧（溢出跳过）兜底全仓库压缩态标签
+- 装机验证锚点：账号页 ⋯/长按菜单、设置页 pick 行、下载页四菜单、游戏内齿轮、第三方登录角色选择（外部点按取消不卡死）、日志行分享；主页新闻磁贴长摘要卡片（3 行截断 + 日期右下随流不压字、无第二层文字）

@@ -725,6 +725,7 @@ static NSString *festivalGreeting(void) {
 @property (nonatomic, strong) UIImageView *thumbnailView;
 @property (nonatomic, strong) UILabel *titleLabel;
 @property (nonatomic, strong) UILabel *summaryLabel;
+@property (nonatomic, strong) UILabel *dateLabel;    // Task241：新闻日期（文字流内）
 @property (nonatomic, strong) UILabel *placeholderLabel;
 @end
 
@@ -759,8 +760,32 @@ static NSString *festivalGreeting(void) {
     self.summaryLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.summaryLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
     self.summaryLabel.textColor = AmeCardSecondaryTextColor(); // Task160 新闻卡简介
-    self.summaryLabel.numberOfLines = 2;
+    // ★ Task241（用户装机反馈：主页新闻磁贴“文字重叠”）：恢复行数上限。
+    //   Task149 的“摘要全部显示”以“卡片高度随内容自 sizing”为前提，
+    //   但本页 compositional layout 是【绝对高度】（heightForTileConfig:
+    //   恒 100pt，不自 sizing）——长摘要时文字需求高度远超磁贴，Auto
+    //   Layout 压扁/溢出，文字流盖过右下角日期并触发描边镜像层错位
+    //   （双层鬼影）。磁贴是预览入口，3 行 + 尾截断（全文在新闻页/详情）。
+    self.summaryLabel.numberOfLines = 3;
+    // 溢出保险：UILabel 默认不裁剪绘制溢出，压缩态下白字会越过 frame
+    // 盖住相邻视图（Task241 截图实证）——本标签自裁剪，溢出硬止于 frame。
+    self.summaryLabel.clipsToBounds = YES;
     [self.contentContainer addSubview:self.summaryLabel];
+
+    // ★ Task241：新闻日期——从 placeholderLabel 的右下角【绝对定位】
+    //   迁入文字栈随流排布。绝对定位的日期在长摘要文字流下方必然被
+    //   盖住（IMG_0373 实证“日期压正文”）；入栈后日期永远排在摘要
+    //   之后，结构性不可能重叠。占位职责（加载中/失败/无新闻）仍由
+    //   placeholderLabel 右下角承担，两职分离。
+    self.dateLabel = [[UILabel alloc] init];
+    self.dateLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    self.dateLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
+    self.dateLabel.textColor = [UIColor quaternaryLabelColor];
+    self.dateLabel.textAlignment = NSTextAlignmentRight;
+    self.dateLabel.numberOfLines = 1;
+    self.dateLabel.hidden = YES;
+    [self.dateLabel setContentCompressionResistancePriority:999 forAxis:UILayoutConstraintAxisVertical];
+    [self.contentContainer addSubview:self.dateLabel];
     
     // 占位提示
     self.placeholderLabel = [[UILabel alloc] init];
@@ -774,8 +799,7 @@ static NSString *festivalGreeting(void) {
     // 纵轴居中；高度不够时简介优先截断（750 < 标题 997）
     [self.summaryLabel setContentCompressionResistancePriority:750 forAxis:UILayoutConstraintAxisVertical];
     [self.titleLabel setContentCompressionResistancePriority:997 forAxis:UILayoutConstraintAxisVertical];
-    self.summaryLabel.numberOfLines = 0;
-    UIStackView *ame149_textStack = [[UIStackView alloc] initWithArrangedSubviews:@[self.titleLabel, self.summaryLabel]];
+    UIStackView *ame149_textStack = [[UIStackView alloc] initWithArrangedSubviews:@[self.titleLabel, self.summaryLabel, self.dateLabel]];
     ame149_textStack.translatesAutoresizingMaskIntoConstraints = NO;
     ame149_textStack.axis = UILayoutConstraintAxisVertical;
     ame149_textStack.alignment = UIStackViewAlignmentFill;
@@ -798,10 +822,22 @@ static NSString *festivalGreeting(void) {
         
         [self.placeholderLabel.bottomAnchor constraintEqualToAnchor:self.thumbnailView.bottomAnchor],
         [self.placeholderLabel.trailingAnchor constraintEqualToAnchor:self.contentContainer.trailingAnchor constant:-14],
+        // Task241：日期与占位同列右缘（纵向随栈内文字流，右对齐由
+        // textAlignment 保证；此约束仅为与文字块横向起点同源）
+        [self.dateLabel.leadingAnchor constraintEqualToAnchor:self.thumbnailView.trailingAnchor constant:20],
     ]];
     NSLayoutConstraint *ame149_newsTextCenter = [ame149_textStack.centerYAnchor constraintEqualToAnchor:self.contentContainer.centerYAnchor];
     ame149_newsTextCenter.priority = 999;
     ame149_newsTextCenter.active = YES;
+}
+
+// Task241：复用重置——日期/占位可见性随内容状态重建，
+// 防止上一条内容的日期残留到占位态。
+- (void)prepareForReuse {
+    [super prepareForReuse];
+    self.dateLabel.text = nil;
+    self.dateLabel.hidden = YES;
+    self.placeholderLabel.hidden = NO;
 }
 
 @end
@@ -1372,12 +1408,19 @@ static NSString *festivalGreeting(void) {
             ame224_styleHomeTileLabel(cell.titleLabel, 15, UIFontWeightSemibold, NO, NO);
             ame224_styleHomeTileLabel(cell.summaryLabel, 12, UIFontWeightRegular, YES, NO);
             ame224_styleHomeTileLabel(cell.placeholderLabel, 11, UIFontWeightMedium, YES, YES);
+            // Task241：日期与占位同级处理（壁纸描边 + 缩放字号；原生色保留语义同占位）
+            ame224_styleHomeTileLabel(cell.dateLabel, 11, UIFontWeightMedium, YES, YES);
 
             if (self.latestNewsItem) {
                 // 显示最新一条新闻的标题/摘要/封面
                 cell.titleLabel.text = self.latestNewsItem.title ?: localize(@"i18n_str_285", nil);
                 cell.summaryLabel.text = self.latestNewsItem.summary ?: @"";
-                cell.placeholderLabel.text = self.latestNewsItem.formattedDateString ?: @"";
+                // ★ Task241：日期迁入文字栈（原 placeholderLabel 右下角
+                //   绝对定位退役——长摘要时被文字流盖住，IMG_0373 实证）
+                cell.dateLabel.text = self.latestNewsItem.formattedDateString ?: @"";
+                cell.dateLabel.hidden = NO;
+                cell.placeholderLabel.hidden = YES;
+                cell.placeholderLabel.text = nil;
                 // 加载封面图（用 IconLoader，带缓存）
                 [IconLoader cancelLoadingForImageView:cell.thumbnailView];
                 if (self.latestNewsItem.imageURL.length > 0) {
@@ -1393,12 +1436,18 @@ static NSString *festivalGreeting(void) {
                 cell.titleLabel.text = localize(@"i18n_str_285", nil);
                 cell.summaryLabel.text = localize(@"i18n_str_354", nil);
                 cell.placeholderLabel.text = localize(@"i18n_str_40", nil);
+                cell.dateLabel.hidden = YES;
+                cell.dateLabel.text = nil;
+                cell.placeholderLabel.hidden = NO;
                 cell.thumbnailView.image = [UIImage systemImageNamed:@"newspaper.fill"];
             } else {
                 // 加载失败或未加载
                 cell.titleLabel.text = localize(@"i18n_str_285", nil);
                 cell.summaryLabel.text = localize(@"i18n_str_355", nil);
                 cell.placeholderLabel.text = localize(@"i18n_str_356", nil);
+                cell.dateLabel.hidden = YES;
+                cell.dateLabel.text = nil;
+                cell.placeholderLabel.hidden = NO;
                 cell.thumbnailView.image = [UIImage systemImageNamed:@"newspaper.fill"];
             }
             return cell;

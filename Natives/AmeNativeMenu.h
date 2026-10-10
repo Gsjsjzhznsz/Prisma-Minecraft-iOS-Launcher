@@ -25,9 +25,13 @@
 //    - 确认（破坏性二次确认）/输入/纯提示弹窗 → 保留 UIAlertController
 //      （弹窗不是菜单，Task237 玻璃路由对弹窗的原有接管不变）。
 //
-//  兼容性：UIContextMenuInteraction iOS 13+，presentMenu iOS 14+（项目
-//  最低部署 iOS 14.0，无需 @available 门）；全程公开 API，无 KVC/私有
-//  选择器（Task239 KVC 炸弹家族教训）。
+//  兼容性：UIContextMenuInteraction iOS 13+。程序化呈现依赖系统私有
+//  入口（Task241 定案）：presentMenu → _presentMenuAtLocation: →
+//  系统 actionSheet 三级降级，respondsToSelector 探测 + @try 兜底——
+//  任一私有入口缺失自动降级，不再以 unrecognized selector 崩溃
+//  （Task240 曾裸赌 presentMenu 存在，真机 iOS 26 实测 38 处调用点
+//  全崩，即本组件的头号教训）；双私有入口缺失时 actionSheet 兜底
+//  保证功能不断供，外部点按关闭仍回调 onDismiss（取消语义不悬死）。
 //
 
 #import <UIKit/UIKit.h>
