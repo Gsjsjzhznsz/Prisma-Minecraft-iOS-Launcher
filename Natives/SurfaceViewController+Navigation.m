@@ -292,6 +292,24 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
     [self ame237_layoutMenuContent];
 }
 
+/// ★ Task238（用户："刚启动游戏⚙️和文字没有显示"）：把游戏内悬浮件
+///   （遮罩 < 菜单面板 < 悬浮球，相对次序保持）提到启动遮罩层之上——
+///   启动遮罩是 viewDidLoad 后 addSubview 的，默认盖住全部悬浮件 8.5 秒；
+///   遮罩本身 userInteractionEnabled=NO（设计意图就是启动期间可拖悬浮球、
+///   查 FPS）。menuDimView 是本分类的关联对象属性——方法必须住在本分类
+///   里才可见（SurfaceViewController.m 经 performSelector 调用）。
+- (void)ame238_raiseGameMenuAboveLaunchMask {
+    if ([self.menuDimView isKindOfClass:[UIView class]]) {
+        [self.view bringSubviewToFront:self.menuDimView];
+    }
+    if ([self.menuView isKindOfClass:[UIView class]]) {
+        [self.view bringSubviewToFront:self.menuView];
+    }
+    if ([self.gameMenuOverlay isKindOfClass:[UIView class]]) {
+        [self.view bringSubviewToFront:self.gameMenuOverlay];
+    }
+}
+
 /// 切换菜单显示状态（悬浮按钮点击触发）
 - (void)toggleMenu {
     if (self.menuView.hidden) {

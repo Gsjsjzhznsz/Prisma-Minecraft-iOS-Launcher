@@ -2229,16 +2229,12 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     //   FPS·内存条 / "菜单"标签 / 菜单面板）。遮罩本身
     //   userInteractionEnabled=NO（设计意图就是"启动期间可拖悬浮球、查
     //   FPS"，见方法头注释），却把悬浮件全部压在下面 = 启动的 8.5 秒里
-    //   齿轮与文字全部不可见。把悬浮三件套提到遮罩之上（保持
-    //   遮罩 < 菜单面板 < 悬浮球的相对次序），取消按钮重新置顶。
-    if ([self.menuDimView isKindOfClass:[UIView class]]) {
-        [self.view bringSubviewToFront:self.menuDimView];
-    }
-    if ([self.menuView isKindOfClass:[UIView class]]) {
-        [self.view bringSubviewToFront:self.menuView];
-    }
-    if ([self.gameMenuOverlay isKindOfClass:[UIView class]]) {
-        [self.view bringSubviewToFront:self.gameMenuOverlay];
+    //   齿轮与文字全部不可见。把悬浮件提到遮罩之上——menuDimView 是
+    //   Navigation 分类的关联对象属性（本编译单元不可见），整组提升以
+    //   分类的 ame238_raiseGameMenuAboveLaunchMask 实现（performSelector
+    //   调用，与 initCategory_Navigation 同模式）。
+    if ([self respondsToSelector:@selector(ame238_raiseGameMenuAboveLaunchMask)]) {
+        [self performSelector:@selector(ame238_raiseGameMenuAboveLaunchMask)];
     }
     if ([self.launchCancelButton isKindOfClass:[UIView class]]) {
         [self.view bringSubviewToFront:self.launchCancelButton];

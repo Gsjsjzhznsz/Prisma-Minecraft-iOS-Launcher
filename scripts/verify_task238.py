@@ -58,10 +58,11 @@ check("B4 首启落盘守卫(bw/bh>0)",
 svc = rd("SurfaceViewController.m")
 check("C1 悬浮三件套提到遮罩之上",
       "Task238 launch overlay z-order" in svc and
-      "bringSubviewToFront:self.gameMenuOverlay" in svc and
-      "bringSubviewToFront:self.menuView" in svc and
-      "bringSubviewToFront:self.menuDimView" in svc,
-      "遮罩<菜单面板<悬浮球次序保持，取消按钮置顶")
+      "ame238_raiseGameMenuAboveLaunchMask" in svc and
+      "bringSubviewToFront:self.gameMenuOverlay" in nav and
+      "bringSubviewToFront:self.menuView" in nav and
+      "bringSubviewToFront:self.menuDimView" in nav,
+      "分类方法整组提升(dim<panel<gear),主类 performSelector 调用,取消按钮置顶")
 
 # ---------- D. JVM 退出返回启动器 ----------
 check("D1 launchResult==0 返回启动器主页",
