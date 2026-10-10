@@ -43,8 +43,8 @@ check("A4", "顶行上距 14→13", "self.cardContainer.topAnchor constant:13" i
 check("A5", "日期间距 3→2", "self.topRowStack.bottomAnchor constant:2" in vcc)
 check("A6", "日期底距 12→10", "self.cardContainer.bottomAnchor constant:-10" in vcc)
 check("A7", "旧 64 行高退役", "CGSizeMake(availableWidth, 64)" not in dlv and "CGSizeMake(360, 64)" not in dlv)
-check("A8", "多行缩字镜像（numberOfLines > 1 分支）",
-      "ame232_label.numberOfLines > 1 && ame235_scaledFont == nil" in bgm)
+check("A8", "多行缩字镜像（Task239：!= 1 分支，==0 不限行标签纳入）",
+      "ame232_label.numberOfLines != 1 && ame235_scaledFont == nil" in bgm)
 check("A9", "二分搜索 12 次迭代", "ame236_i < 12; ame236_i++" in bgm)
 check("A10", "多行拷贝词换行（TruncatingTail 单行陷阱修复）",
       "ame233_ps.lineBreakMode = NSLineBreakByWordWrapping;" in bgm)
@@ -81,8 +81,8 @@ print("== C. 菜单面板防御性底色（Task237 重锚：面板彻底重写�
 # Task237（用户：“游戏内菜单打开还是就液态玻璃的覆盖层，根本没有任何文字”）：
 # UITableView + 塞玻璃层方案整体退役，同一关切（面板可见 + 文字恒在）由
 # 自控分层构造性保证。
-check("C1", "防御性深色实底（0.62，永不被 LGC 清空）",
-      "colorWithWhite:0.0 alpha:0.62]" in svn and "LGCApplyGlassToView(self.menuView" not in svn)
+check("C1", "防御性深色实底（Task239：原生玻璃 0.50 通透档 / 材质回退 0.62 厚底，永不被 LGC 清空）",
+      "alpha:LGCNativeGlassEngaged() ? 0.50 : 0.62]" in svn and "LGCApplyGlassToView(self.menuView" not in svn)
 check("C2", "面板重写日志（玻璃/原生两分支）", "[GameMenu] Task237 glass panel applied" in svn and
       "[GameMenu] Task237 native panel applied" in svn)
 check("C3", "原生风格旧版 FCL 外观恢复（纯文本行）", "showsIcon = NO" in svn and

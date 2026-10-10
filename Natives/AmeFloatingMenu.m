@@ -50,6 +50,17 @@ static UIColor *Ame237PanelBase(void) {
     }];
 }
 
+/// ★ Task239：原生玻璃（UIGlassEffect）面板底——比 Task237 防御底更通透
+///   （真玻璃自带磨砂与折光，厚底会把它闷成实心板）；仍保留中等浓度
+///   兑底（玻璃在个别进程环境渲染异常时面板不会变成“透明 + 悬浮文字”）。
+static UIColor *Ame239GlassPanelBase(void) {
+    return [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull tc) {
+        return (tc.userInterfaceStyle == UIUserInterfaceStyleDark)
+            ? [UIColor colorWithWhite:0.02 alpha:0.30]
+            : [UIColor colorWithWhite:1.0 alpha:0.58];
+    }];
+}
+
 static CGFloat Ame237TextHeight(NSString *text, UIFont *font, CGFloat width) {
     if (text.length == 0) return 0.0;
     NSAttributedString *s = [[NSAttributedString alloc] initWithString:text
@@ -176,7 +187,12 @@ static CGFloat Ame237TextHeight(NSString *text, UIFont *font, CGFloat width) {
 
     // 悬浮面板（防御性实底 + 毛玻璃 + 阴影）
     self.panel = [[UIView alloc] init];
-    self.panel.backgroundColor = Ame237PanelBase();
+    // ★ Task239（用户指令：“请用 iOS 26 原生液态玻璃 API 重写所有悬浮菜单
+    //   …使用 UIGlassEffect（UIKit）实现真正的液态玻璃弹窗”）：玻璃风格下
+    //   底色分两档——原生玻璃用通透底（真玻璃自带磨砂折光），材质回退
+    //   保留 Task237 厚防御底（磨砂不合成时独立承载可读性）。
+    self.panel.backgroundColor = LGCNativeGlassEngaged() ? Ame239GlassPanelBase()
+                                                         : Ame237PanelBase();
     self.panel.layer.cornerRadius = 26.0;
     self.panel.layer.cornerCurve = kCACornerCurveContinuous;
     self.panel.layer.shadowColor = [UIColor blackColor].CGColor;
@@ -186,13 +202,28 @@ static CGFloat Ame237TextHeight(NSString *text, UIFont *font, CGFloat width) {
     self.panel.clipsToBounds = NO;
     [self.view addSubview:self.panel];
 
-    self.blurView = [[UIVisualEffectView alloc] initWithEffect:
-                     [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial]];
+    // ★ Task239：材质选择——玻璃风格优先【系统原生 UIGlassEffect】（iOS 26+，
+    //   真液态玻璃：磨砂 + 折光 + 边缘高光一体的系统材质）；取不到
+    //   （<iOS 26 / AME239_NO_SYSTEM_GLASS=1 诊断开关）回退 SystemMaterial
+    //   磨砂（Task237 路径，装机验证可读）。原生风格不经过本组件——中央
+    //   路由（ame237_hook_presentViewController）直通旧版系统弹窗。
+    UIVisualEffect *ame239_effect = nil;
+    if (LGCIsGlassStyleActive()) {
+        ame239_effect = LGCNativeGlassEffect();
+    }
+    if (ame239_effect == nil) {
+        ame239_effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial];
+    }
+    self.blurView = [[UIVisualEffectView alloc] initWithEffect:ame239_effect];
     self.blurView.userInteractionEnabled = NO;
     self.blurView.layer.cornerRadius = 26.0;
     self.blurView.layer.cornerCurve = kCACornerCurveContinuous;
     self.blurView.layer.masksToBounds = YES;
     [self.panel addSubview:self.blurView];   // index 0：恒在全部内容之下
+    NSLog(@"[AmeMenu] Task239 menu material: %@ (style=%@)",
+          LGCNativeGlassEngaged() ? @"native UIGlassEffect (true liquid glass)"
+                                  : @"SystemMaterial fallback",
+          LGCIsGlassStyleActive() ? @"glass" : @"native");
 
     // 内容
     if (self.ame237_title.length > 0) {

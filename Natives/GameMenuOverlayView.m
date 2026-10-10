@@ -29,7 +29,14 @@ static const CGFloat kAme227DockThreshold = 96.0;   // 距边小于此值才吸�
 static const CGFloat kAme227HandleWidth = 26.0;    // 把手宽
 static const CGFloat kAme227HandleHeight = 96.0;   // 把手高
 static NSString * const kAme227DockedPref = @"game.gear.docked";
-static NSString * const kAme227DockedSidePref = @"game.gear.docked.left";
+// ★ Task239（装机日志 4db827cf 实锤：全部游戏启动崩溃）：本键原为
+//   @"game.gear.docked.left"——PLPreferences 的 valueForKeyPath: 语义下
+//   它不是"gear 字典里的 docked_left 标量"，而是 game→gear→docked→left
+//   四跳路径：第三跳落在 game.gear.docked 的【布尔值】上，第四跳对
+//   __NSCFBoolean 取 left → NSUnknownKeyException（valueForUndefinedKey:）
+//   → 启动游戏必崩（Task238 构建每次进游戏闪退的直接根因）。改为与
+//   PLPreferences 注册默认值一致的 game.gear.docked_left（下划线，单跳）。
+static NSString * const kAme227DockedSidePref = @"game.gear.docked_left";
 // 拖拽阈值：超过此距离算拖动，否则算点击（参照 FCL MenuView 的 10px 阈值）
 static const CGFloat kDragThreshold = 10.0;
 
@@ -220,10 +227,17 @@ static BOOL ame227_g_dockedLeft = NO;
     //   在磨砂层之下参与渲染：磨砂可用 = 加深的玻璃质感；磨砂失效 = 独立
     //   可见的深色球，白色齿轮图标仍在最上层（imageView 是子视图，恒在玻璃层上）。
     self.menuButton.backgroundColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:0.55];
-    // 重磨砂深色（UltraThin 在游戏帧上读不出玻璃感，Task230 菜单同款教训）
+    // ★ Task239（用户指令：iOS 26 原生液态玻璃 API）：齿轮球的磨砂层升级——
+    //   玻璃风格下优先换成【系统原生 UIGlassEffect】（真液态玻璃）；取不到
+    //   （<iOS 26 / AME239_NO_SYSTEM_GLASS=1 诊断开关）保持 SystemMaterialDark
+    //   （Task230 游戏帧可读性教训的装机验证路径）。0.55 深色底 + 白色发丝
+    //   描边保留：玻璃在游戏帧上渲染异常时齿轮仍是可见的深色球。
+    UIVisualEffect *ame239_gearEffect = LGCNativeGlassEffect();
     for (UIView *ame232_sub in self.menuButton.subviews) {
         if ([ame232_sub isKindOfClass:UIVisualEffectView.class]) {
-            [(UIVisualEffectView *)ame232_sub setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
+            [(UIVisualEffectView *)ame232_sub setEffect:(ame239_gearEffect != nil)
+                ? ame239_gearEffect
+                : [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
         }
     }
     // 两个文本件：实底半透明深色胶囊 + 发丝描边（绝不往标签内插磨砂层——

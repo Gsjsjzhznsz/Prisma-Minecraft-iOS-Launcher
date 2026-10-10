@@ -66,6 +66,19 @@ FOUNDATION_EXPORT LGCInterfaceStyle LGCResolvedInterfaceStyle(void);
 /// 便捷判定：当前是否应呈现液态玻璃外观（native 恒 NO = 原路径零回归）
 FOUNDATION_EXPORT BOOL LGCIsGlassStyleActive(void);
 
+/// ★ Task239（用户指令："请用 iOS 26 原生液态玻璃 API 重写所有悬浮菜单…
+///   使用 .glassEffect()（SwiftUI）或 UIGlassEffect（UIKit）实现真正的
+///   液态玻璃弹窗"）：系统原生 UIGlassEffect 工厂。iOS 26+ 返回真玻璃
+///   效果对象；取不到（<iOS 26 / 老 SDK 运行时类缺失 / 诊断开关
+///   AME239_NO_SYSTEM_GLASS=1）返回 nil，调用方回退系统材质磨砂
+///   （UIBlurEffect SystemMaterial 家族），绝不回退 UIAlertController。
+///   玻璃风格下所有悬浮菜单统一走本工厂；原生风格不经过此处。
+FOUNDATION_EXPORT nullable UIVisualEffect *LGCNativeGlassEffect(void);
+
+/// Task239：LGCNativeGlassEffect() 是否真的取到了系统 UIGlassEffect
+/// （供调用方选择防御性底色浓度与日志锚点；NO = 走了材质回退）。
+FOUNDATION_EXPORT BOOL LGCNativeGlassEngaged(void);
+
 /// 风格 <-> 存储字符串（"auto" / "native" / "liquid_glass"）
 FOUNDATION_EXPORT NSString *LGCStringFromInterfaceStyle(LGCInterfaceStyle style);
 FOUNDATION_EXPORT LGCInterfaceStyle LGCInterfaceStyleFromString(NSString *string);

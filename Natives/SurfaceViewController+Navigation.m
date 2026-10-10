@@ -210,9 +210,15 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
     UIScrollView *ame237_scroll = objc_getAssociatedObject(self, kAme237RowsScrollKey);
     NSArray<Ame237MenuRow *> *ame237_rows = objc_getAssociatedObject(self, kAme237RowsKey);
     if (LGCIsGlassStyleActive()) {
-        // 液态玻璃面板：SystemMaterialDark（Task230 游戏帧可读性教训）
-        UIVisualEffectView *ame237_blur = [[UIVisualEffectView alloc]
-            initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
+        // ★ Task239（用户指令：iOS 26 原生液态玻璃 API）：玻璃风格优先
+        //   【系统原生 UIGlassEffect】（iOS 26+，真液态玻璃：磨砂 + 折光 +
+        //   边缘高光一体）；取不到（<26 / AME239_NO_SYSTEM_GLASS=1）回退
+        //   SystemMaterialDark 磨砂（Task230 游戏帧可读性教训的装机验证路径）。
+        UIVisualEffect *ame239_gmEffect = LGCNativeGlassEffect();
+        if (ame239_gmEffect == nil) {
+            ame239_gmEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark];
+        }
+        UIVisualEffectView *ame237_blur = [[UIVisualEffectView alloc] initWithEffect:ame239_gmEffect];
         ame237_blur.frame = self.menuView.bounds;
         ame237_blur.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         ame237_blur.userInteractionEnabled = NO;
@@ -223,8 +229,11 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
         objc_setAssociatedObject(self, kAme237BlurKey, ame237_blur, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         if (ame237_scroll != nil) [self.menuView bringSubviewToFront:ame237_scroll];
         // 防御性深色实底：磨砂在游戏帧上不合成时独立承载面板可见性
-        //   （Task236 教训；此处底色只由本函数管理，永不清空）
-        self.menuView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.62];
+        //   （Task236 教训；此处底色只由本函数管理，永不清空）。
+        //   Task239：原生玻璃用 0.50 通透档（真玻璃自带磨砂折光），
+        //   材质回退保持 0.62 厚底（行文字为白色，两档均可读）。
+        self.menuView.backgroundColor = [UIColor colorWithWhite:0.0
+                                                          alpha:LGCNativeGlassEngaged() ? 0.50 : 0.62];
         self.menuView.layer.cornerRadius = 24.0;
         self.menuView.layer.cornerCurve = kCACornerCurveContinuous;
         self.menuView.layer.borderWidth = 0.75;
@@ -233,7 +242,8 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
             ame237_row.showsIcon = YES;
             [ame237_row setNeedsLayout];
         }
-        NSLog(@"[GameMenu] Task237 glass panel applied (frosted + defensive dark base + hairline; rows above blur; icon rows)");
+        NSLog(@"[GameMenu] Task237 glass panel applied (frosted + defensive dark base + hairline; rows above blur; icon rows) [Task239 material: %@]",
+              LGCNativeGlassEngaged() ? @"native UIGlassEffect" : @"SystemMaterialDark fallback");
     } else {
         // 原生 = 旧版 FCL 面板（深色半透明、纯文本行）
         self.menuView.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {

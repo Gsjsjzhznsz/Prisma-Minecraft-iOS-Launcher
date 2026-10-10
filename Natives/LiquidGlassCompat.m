@@ -94,6 +94,71 @@ BOOL LGCIsGlassStyleActive(void) {
     return LGCResolvedInterfaceStyle() == LGCInterfaceStyleLiquidGlass;
 }
 
+// ★ Task239（用户指令：iOS 26 原生液态玻璃 API 重写所有悬浮菜单）：系统
+//   真 UIGlassEffect 工厂。与 Task228 时代的 _LGCCreateGlassEffect 的三点
+//   本质区别：
+//   ① 编译期 SDK 门控——CI 已实锤用 Xcode 26.3 / iPhoneOS 26.2 SDK 构建
+//     （run 38035649720 日志："★ iPhoneOS SDK = 26.2"），SDK 头里有
+//     UIGlassEffect 声明，直接 [[UIGlassEffect alloc] init]（编译器完整
+//     类型检查 + 弱链接），不再走 NSClassFromString + objc_msgSend 的
+//     无类型裸调（Task228 的 regularEffect 选择器在 SDK 头里并不存在，
+//     运行时 respondsToSelector 探测后落到裸 alloc/init——路径对但无
+//     编译期保障）；老 SDK 本地构建走运行时类探测回退。
+//   ② 诊断开关反向：AME239_NO_SYSTEM_GLASS=1 可一键退回材质磨砂
+//     （Task228 的黑屏观察若在新路径上复现，装机侧无需重编译即可分诊）。
+//   ③ 只用于"玻璃风格下的悬浮菜单呈现层"，配防御性底色（调用方持有），
+//     文字恒为效果层之上的子视图——玻璃若在个别进程环境渲染异常，
+//     面板仍是可读的半透明浮层，绝无"透明面板 + 悬浮文字"。
+static BOOL ame239_nativeGlassCache = NO;
+static BOOL ame239_nativeGlassDecided = NO;
+
+UIVisualEffect *LGCNativeGlassEffect(void) {
+    if (!LGCIsLiquidGlassAvailable()) return nil;
+    // 诊断开关：装机侧一键禁用（返回 nil = 调用方走材质回退）
+    static NSInteger ame239_decision = 0;   // 0=未决 1=启用 -1=禁用
+    if (ame239_decision == 0) {
+        const char *ame239_env = getenv("AME239_NO_SYSTEM_GLASS");
+        ame239_decision = (ame239_env && strcmp(ame239_env, "1") == 0) ? -1 : 1;
+    }
+    if (ame239_decision == -1) {
+        ame239_nativeGlassCache = NO;
+        ame239_nativeGlassDecided = YES;
+        return nil;
+    }
+#if defined(__IPHONE_26_0)
+    if (@available(iOS 26.0, *)) {
+        UIGlassEffect *ame239_glass = [[UIGlassEffect alloc] init];
+        if (ame239_glass != nil) {
+            ame239_nativeGlassCache = YES;
+            ame239_nativeGlassDecided = YES;
+            return ame239_glass;
+        }
+    }
+#else
+    // 老 SDK（无 UIGlassEffect 声明）的运行时回退：类存在才用（26+ 系统
+    // 上弱链接类恒在；26 以下 LGCIsLiquidGlassAvailable 已提前拦截）。
+    Class ame239_cls = NSClassFromString(@"UIGlassEffect");
+    if (ame239_cls != nil) {
+        id ame239_effect = [[ame239_cls alloc] init];
+        if ([ame239_effect isKindOfClass:[UIVisualEffect class]]) {
+            ame239_nativeGlassCache = YES;
+            ame239_nativeGlassDecided = YES;
+            return (UIVisualEffect *)ame239_effect;
+        }
+    }
+#endif
+    ame239_nativeGlassCache = NO;
+    ame239_nativeGlassDecided = YES;
+    return nil;
+}
+
+BOOL LGCNativeGlassEngaged(void) {
+    if (!ame239_nativeGlassDecided) {
+        (void)LGCNativeGlassEffect();
+    }
+    return ame239_nativeGlassCache;
+}
+
 void LGCSetStoredInterfaceStyle(LGCInterfaceStyle style) {
     LGCInterfaceStyle ame224_old = LGCStoredInterfaceStyle();
     [[NSUserDefaults standardUserDefaults] setObject:LGCStringFromInterfaceStyle(style)

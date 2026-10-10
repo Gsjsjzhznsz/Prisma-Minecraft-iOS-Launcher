@@ -450,10 +450,32 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
     }
 }
 
+// ★ Task239（装机日志 4db827cf：全部游戏启动崩溃）：valueForKeyPath: 在
+//   中间一跳落到【非字典】（标量/布尔/数组）时会对它继续 KVC 取下一键 →
+//   NSUnknownKeyException 直接炸进程（Task238 的 game.gear.docked.left 踩中：
+//   game→gear→docked(布尔)→left）。本类偏好键全部是"点分字典路径"语义，
+//   逐跳 objectForKey: 行走 + 每跳校验 NSDictionary，等价于健康路径上的
+//   valueForKeyPath:，病态路径返回 nil（= 键不存在，走 Getter/Setter
+//   "could not find" 的既有回退链），从此这一整类崩溃被构造性根除
+//   （Task142/143 "只能读写已注册键"家族的最后一颗雷）。
+static id Ame239_SafeValueForPath(NSString *key, NSDictionary *root) {
+    if (key.length == 0 || ![root isKindOfClass:[NSDictionary class]]) return nil;
+    NSArray *comps = [key componentsSeparatedByString:@"."];
+    if (comps.count == 0) return nil;
+    id current = root;
+    for (NSString *hop in comps) {
+        if (![current isKindOfClass:[NSDictionary class]]) return nil;
+        current = ((NSDictionary *)current)[hop];
+        if (current == nil) return nil;
+    }
+    return current;
+}
+
 - (id)getObject:(NSString *)key {
-    id value = [self.instancePref valueForKeyPath:key];
+    // Task239：安全行走替换 valueForKeyPath:（中间跳非字典 = nil，不再炸）
+    id value = Ame239_SafeValueForPath(key, self.instancePref);
     if (!value) {
-        value = [self.globalPref valueForKeyPath:key];
+        value = Ame239_SafeValueForPath(key, self.globalPref);
     }
     if (!value) {
         NSLog(@"[PLPreferences] Getter could not find preference %@", key);
@@ -462,12 +484,24 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
 }
 
 - (BOOL)setObject:(NSString *)key value:(id)value {
-    if ([self.instancePref valueForKeyPath:key]) {
-        [self.instancePref setValue:value forKeyPath:key];
+    // Task239：存在性检查改安全行走（原 valueForKeyPath: 会因中间跳落到
+    // 布尔/标量而抛 NSUnknownKeyException——写入路径的同类崩溃源）。
+    if (Ame239_SafeValueForPath(key, self.instancePref)) {
+        @try {
+            [self.instancePref setValue:value forKeyPath:key];
+        } @catch (NSException *ame239_e) {
+            NSLog(@"[PLPreferences] Task239 instance write guarded (%@: %@)", key, ame239_e.name);
+            return NO;
+        }
         [self saveInstancePref];
         return YES;
-    } else if ([self.globalPref valueForKeyPath:key]) {
-        [self.globalPref setValue:value forKeyPath:key];
+    } else if (Ame239_SafeValueForPath(key, self.globalPref)) {
+        @try {
+            [self.globalPref setValue:value forKeyPath:key];
+        } @catch (NSException *ame239_e) {
+            NSLog(@"[PLPreferences] Task239 global write guarded (%@: %@)", key, ame239_e.name);
+            return NO;
+        }
         [self saveGlobalPref];
         return YES;
     }

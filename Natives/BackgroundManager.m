@@ -1904,11 +1904,37 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                 //     是纯色底，深色拷贝不再透出来（偏黑根治）；
                 //   ③ 四份深色拷贝（±0.6pt）画在垫底层之下、正文本体之上
                 //     的正确叠序：深边 → 不透明原色 → 原色正文。
-                NSMutableParagraphStyle *ame233_ps = [[NSMutableParagraphStyle alloc] init];
-                ame233_ps.alignment = ame232_label.textAlignment;
+                // ★ Task239（用户：“许多地方文字依旧有重叠”，第八轮收尾）：
+                //   拷贝段落样式改为【继承正文本体自带的段落属性】再覆盖
+                //   断行——本体的 attributedText 若携带 lineSpacing /
+                //   lineHeight 等富文本排版（详情页、卡片副标题多处使用），
+                //   Task233 起的拷贝一直用裸段落样式重建 = 行距几何与本体
+                //   错位，多行场景肉眼可见的“双层/错行”残留。同源继承后
+                //   逐行对齐；对齐属性同理：本体自带段落样式时以其为准
+                //   （UIKit 渲染富文本时字符串内段落优先于 label 属性），
+                //   只有裸文本才用 label 的 textAlignment。
+                NSMutableParagraphStyle *ame233_ps = nil;
+                NSRange ame239_psEffRange;
+                id ame239_bodyPS = [ame232_as attribute:NSParagraphStyleAttributeName
+                                                atIndex:0
+                                          effectiveRange:&ame239_psEffRange];
+                if ([ame239_bodyPS isKindOfClass:[NSParagraphStyle class]]) {
+                    ame233_ps = [((NSParagraphStyle *)ame239_bodyPS) mutableCopy];
+                } else {
+                    ame233_ps = [[NSMutableParagraphStyle alloc] init];
+                    ame233_ps.alignment = ame232_label.textAlignment;
+                }
                 ame233_ps.lineBreakMode = ame232_label.lineBreakMode;
                 if (ame232_label.numberOfLines == 1) {
-                    ame233_ps.lineBreakMode = NSLineBreakByTruncatingTail;
+                    // ★ Task233：单行语义 = 尾截断；★ Task239 补丁：尊重
+                    //   本体的 TruncatingMiddle/Head 等显式模式（拷贝强制
+                    //   Tail 而本体 Middle 截断时，截断位置错位 = 单行场景
+                    //   残留重叠）；仅包裹类模式（Word/CharWrapping）才归一
+                    //   为尾截断（UIKit 单行语义）。
+                    if (ame232_label.lineBreakMode == NSLineBreakByWordWrapping ||
+                        ame232_label.lineBreakMode == NSLineBreakByCharWrapping) {
+                        ame233_ps.lineBreakMode = NSLineBreakByTruncatingTail;
+                    }
                 } else if (ame232_label.numberOfLines > 1) {
                     // ★ Task236：多行标签的拷贝必须按【词换行】落笔——
                     //   UILabel 多行 + lineBreakMode=TruncatingTail 的本体是
@@ -1990,22 +2016,29 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                 //   的高度 ≤ rect 高度】，与 UIKit “缩到 N 行内装下”的语义
                 //   同源；12 次迭代精度 (1-min)/4096，仅对缩字中的多行标签
                 //   在绘制时求值（可见标签才走 drawTextInRect）。
+                // ★ Task239（第八轮“许多地方文字依旧有重叠”）：分支从 >1
+                //   扩到【!= 1】——numberOfLines == 0（不限行数）+ 缩字的
+                //   标签此前两个分支都进不去：单行镜像要求 ==1，多行镜像
+                //   要求 >1，==0 拷贝恒用原字号 = 外部约束压扁的不限行标签
+                //   （说明文案/详情副标题）拷贝溢出到相邻内容的残留重叠源。
                 if (ame232_label.adjustsFontSizeToFitWidth && ame235_baseFont != nil &&
-                    ame232_label.numberOfLines > 1 && ame235_scaledFont == nil &&
+                    ame232_label.numberOfLines != 1 && ame235_scaledFont == nil &&
                     rect.size.width > 0.5 && rect.size.height > 0.5) {
                     CGFloat ame236_minScale = (ame232_label.minimumScaleFactor > 0.01)
                         ? ame232_label.minimumScaleFactor : 1.0;
                     if (ame236_minScale < 0.999) {
                         // 注：无自引用（Task231 __block 雷类不适用），普通栈 block 即可。
+                        // Task239：测量段落样式用【继承后的 ame233_ps 拷贝】而非
+                        // 裸样式——本体自带 lineSpacing/lineHeight 时，测量与
+                        // 绘制必须同一套行距几何，二分结果才与拷贝实际高度一致。
+                        NSParagraphStyle *ame239_measurePS = [ame233_ps copy];
                         CGFloat (^ame236_wrappedHeight)(CGFloat) = ^CGFloat(CGFloat ame236_s) {
                             UIFont *ame236_f = [ame235_baseFont fontWithSize:ame235_baseFont.pointSize * ame236_s];
                             NSMutableAttributedString *ame236_m =
                                 [[NSMutableAttributedString alloc] initWithString:ame232_as.string];
-                            NSMutableParagraphStyle *ame236_ps = [[NSMutableParagraphStyle alloc] init];
-                            ame236_ps.lineBreakMode = NSLineBreakByWordWrapping;
                             NSRange ame236_full = NSMakeRange(0, ame236_m.length);
                             [ame236_m addAttribute:NSFontAttributeName value:ame236_f range:ame236_full];
-                            [ame236_m addAttribute:NSParagraphStyleAttributeName value:ame236_ps range:ame236_full];
+                            [ame236_m addAttribute:NSParagraphStyleAttributeName value:ame239_measurePS range:ame236_full];
                             return [ame236_m boundingRectWithSize:CGSizeMake(rect.size.width, CGFLOAT_MAX)
                                                           options:(NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading)
                                                           context:nil].size.height;

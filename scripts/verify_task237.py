@@ -139,9 +139,9 @@ check("E3", "行控件 + 图标表（11 项对齐）",
       "antenna.radiowaves.left.and.right" in svn and "gearshape.fill" in svn)
 check("E4", "行点击走同一动作链",
       "ame237_gmRowTouched:" in svn)
-check("E5", "玻璃分支：磨砂 index 0 + 防御性深色实底 0.62 + 发丝描边",
+check("E5", "玻璃分支：磨砂 index 0 + 防御性深色实底（Task239：原生玻璃 0.50 / 回退 0.62）+ 发丝描边",
       "insertSubview:ame237_blur atIndex:0]" in svn and
-      "colorWithWhite:0.0 alpha:0.62]" in svn and
+      "alpha:LGCNativeGlassEngaged() ? 0.50 : 0.62]" in svn and
       "borderWidth = 0.75" in svn)
 check("E6", "原生分支：旧版 FCL 深色 0.95 + 纯文本行",
       "alpha:0.95]" in svn and "showsIcon = NO" in svn)
