@@ -5,6 +5,7 @@
 #import "SurfaceViewController.h"
 #import "GameMenuOverlayView.h"
 #import "LiquidGlassCompat.h"   // Task229: floating menu composite glass
+#import "BackgroundManager.h"   // ★ Task238：菜单树描边豁免（字体重叠根治）
 #import "AmeFloatingMenu.h"     // ★ Task237：菜单行控件与统一悬浮菜单组件
 #import "TrackedTextField.h"
 #import "customcontrols/CustomControlsUtils.h"
@@ -100,6 +101,11 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
     self.menuView.layer.shadowRadius = 12;
     self.menuView.layer.shadowOpacity = 0.4;
     [self.view addSubview:self.menuView];
+
+    // ★ Task238（用户：“修复字体与选项文本重叠问题”）：菜单面板行文字住在
+    //   自控的磨砂/深色面板上（行自带软投影，Task232 #11），不再叠加全局
+    //   壁纸描边（拷贝+垫底在面板上就是“文字双层/重叠”）。豁免整棵树。
+    ame230_setViewTreeStrokeExempt(self.menuView, YES);
 
     // 行滚动区（唯一内容层；玻璃层永远在其下）
     UIScrollView *ame237_rowsScroll = [[UIScrollView alloc] init];
@@ -328,13 +334,12 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
 
     CGFloat screenWidth = [ScreenUtils screenSize].width;
     CGFloat screenHeight = [ScreenUtils screenSize].height;
-    CGFloat menuWidth = self.menuView.frame.size.width;
-    CGFloat menuHeight = self.menuView.frame.size.height;
     self.menuView.transform = CGAffineTransformIdentity;
 
     if (ame227_sideDrawer) {
-        // 侧滑形态：全高面板从吸边侧滑入（宽度取原菜单宽，最小 280）
-        CGFloat ame227_drawerW = MAX(menuWidth, 280);
+        // 侧滑形态：全高面板从吸边侧滑入（宽度与构造公式同源，最小 280；
+        // ★ Task238：不再读残留 frame 宽——上一形态可能是不同宽度的弹层）
+        CGFloat ame227_drawerW = MAX(MIN(screenWidth * 0.7, 400), 280);
         CGFloat ame227_drawerH = screenHeight;
         CGFloat ame227_offX = ame227_fromLeft ? -ame227_drawerW : screenWidth;
         self.menuView.frame = CGRectMake(ame227_offX, 0, ame227_drawerW, ame227_drawerH);
@@ -358,18 +363,29 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
     }
 
     // 准备动画初始状态：菜单在屏幕底部外
+    // ★ Task238（用户：“不贴边在中间打开菜单完全没有，只有层覆盖层”）：
+    //   装机日志实锤根因——Task227 侧滑抽屉形态会把 menuView 的宽高改写成
+    //   抽屉几何（400×屏高）并把 x 留在屏外；旧代码从【当前 frame】读
+    //   menuWidth/menuHeight/origin.x（残留抽屉值）→ 悬浮形态的“底部弹层”
+    //   整块被摆到屏外（日志：panel={{1180, -41}, {400, 820}}，1180 = 屏幕
+    //   右缘）——只有遮罩可见，菜单本体完全不在屏内。
+    //   修法：悬浮形态几何全部重算（与构造函数同源公式），不再信任残留帧。
+    CGFloat ame238_sheetW = MIN(screenWidth * 0.7, 400);
+    CGFloat ame238_sheetMaxH = screenHeight * 0.6;
+    CGFloat ame238_sheetEstH = self.menuArray.count * 48 + 20;
+    CGFloat ame238_sheetH = MIN(ame238_sheetEstH, ame238_sheetMaxH);
     self.menuView.frame = CGRectMake(
-        self.menuView.frame.origin.x,
-        screenHeight,  // 屏幕底部外
-        menuWidth,
-        menuHeight
+        (screenWidth - ame238_sheetW) / 2.0,   // 水平居中（不继承抽屉的屏外 x）
+        screenHeight,                          // 屏幕底部外
+        ame238_sheetW,
+        ame238_sheetH
     );
     // ★ Task237：底部弹层形态几何回归构造值，重排行区（幂等）
     [self ame237_layoutMenuContent];
 
     // 计算目标位置：底部弹出，留出安全区域
     CGFloat safeBottom = [ScreenUtils safeAreaBottom];
-    CGFloat targetY = screenHeight - menuHeight - safeBottom - 16;
+    CGFloat targetY = screenHeight - ame238_sheetH - safeBottom - 16;
 
     [UIView animateWithDuration:0.3
                           delay:0
@@ -379,10 +395,10 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
                      animations:^{
         // 菜单上滑到目标位置
         self.menuView.frame = CGRectMake(
-            self.menuView.frame.origin.x,
+            (screenWidth - ame238_sheetW) / 2.0,
             targetY,
-            self.menuView.frame.size.width,
-            menuHeight
+            ame238_sheetW,
+            ame238_sheetH
         );
         // 背景遮罩淡入
         self.menuDimView.alpha = 1.0;

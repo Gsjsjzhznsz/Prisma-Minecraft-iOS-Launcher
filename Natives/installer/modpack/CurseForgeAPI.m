@@ -1392,4 +1392,37 @@ static NSString *CFA169NormalizeGameVersion(NSString *v) {
     });
 }
 
+
+- (void)ame238_fetchProjectInfo:(NSString *)modID
+                     completion:(void (^)(NSDictionary * _Nullable info, NSError * _Nullable error))completion {
+    // ★ Task238（用户："cf源没有显示前置"）：与 ame227_fetchModTitle 同一
+    //   端点（GET /mods/{id}），但完整取出 name / summary / logo.thumbnailUrl
+    //   ——前置富卡片（图标+名称+介绍）在 CF 源下的数据一步到位。
+    if (modID.length == 0) {
+        if (completion) completion(nil, [NSError errorWithDomain:@"CurseForgeAPI" code:62 userInfo:@{NSLocalizedDescriptionKey: @"no mod id"}]);
+        return;
+    }
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSDictionary *resp = [self getEndpoint:[NSString stringWithFormat:@"mods/%@", modID] params:nil];
+        NSDictionary *info = nil;
+        if ([resp isKindOfClass:[NSDictionary class]]) {
+            id data = resp[@"data"];
+            if ([data isKindOfClass:[NSDictionary class]]) {
+                NSMutableDictionary *ame238_out = [NSMutableDictionary dictionary];
+                if ([data[@"name"] isKindOfClass:[NSString class]]) ame238_out[@"name"] = data[@"name"];
+                if ([data[@"summary"] isKindOfClass:[NSString class]]) ame238_out[@"summary"] = data[@"summary"];
+                id ame238_logo = data[@"logo"];
+                if ([ame238_logo isKindOfClass:[NSDictionary class]] &&
+                    [ame238_logo[@"thumbnailUrl"] isKindOfClass:[NSString class]]) {
+                    ame238_out[@"icon"] = ame238_logo[@"thumbnailUrl"];
+                }
+                if (ame238_out.count > 0) info = ame238_out;
+            }
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) completion(info, info ? nil : (self.lastError ?: [NSError errorWithDomain:@"CurseForgeAPI" code:63 userInfo:@{NSLocalizedDescriptionKey: @"no project info"}]));
+        });
+    });
+}
+
 @end

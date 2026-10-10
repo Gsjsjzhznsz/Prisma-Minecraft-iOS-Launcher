@@ -99,6 +99,18 @@ typedef NS_ENUM(NSInteger, BackgroundUIEffect) {
 FOUNDATION_EXPORT NSNotificationName const Ame223WallpaperChangedNotification;
 
 // ============================================================================
+// ★ Task238（用户："修复字体与选项文本重叠问题"）：全局描边（壁纸在场时
+// UILabel setText: 染白 + drawTextInRect: 四方向深色拷贝）的两个豁免入口
+// 公开给自定义菜单组件——Ame237 玻璃悬浮菜单与游戏内菜单面板都有自带
+// 的可控底面（磨砂面板 / 行软阴影），不需要壁纸兼容描边；描边副本在
+// 半透明面板上只会表现为"文字双层/重叠"。
+// ============================================================================
+/// 把一棵视图树上的全部 UILabel 排除出全局描边（含以后新加的标签）。
+void ame230_setViewTreeStrokeExempt(UIView *view, BOOL exempt);
+/// 单个标签豁免（描边与染白都不再作用）。
+void ame229_labelSetStrokeExempt(UILabel *label, BOOL exempt);
+
+// ============================================================================
 // Task224（反馈 #18）：通用动态反色文字——欢迎页之外的壁纸透出文字
 // （主菜单磁贴、右面板标题等）统一取色入口。无壁纸时回落 Task210 卡面
 // 规格色（与既有外观逐字节一致）；有壁纸时按亮度反色 + 软阴影兜底。

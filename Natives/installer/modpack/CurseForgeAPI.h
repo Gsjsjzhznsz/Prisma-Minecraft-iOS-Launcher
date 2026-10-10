@@ -44,6 +44,13 @@ extern NSString *const CurseForgeResponseSnippetKey;
 - (void)ame227_fetchModTitle:(NSString *)modID
                   completion:(void (^)(NSString * _Nullable title, NSError * _Nullable error))completion;
 
+/// ★ Task238（用户："cf源没有显示前置"）：拉取 CF 项目的完整元数据
+/// （GET /mods/{id} 的 data：name / summary / logo.thumbnailUrl）——
+/// 前置条目富卡片（图标 + 名称 + 介绍）的 CF 侧数据源。
+/// 回调字典键：name / summary / icon（均可能缺失，调用方自行兜底）。
+- (void)ame238_fetchProjectInfo:(NSString *)modID
+                     completion:(void (^)(NSDictionary * _Nullable info, NSError * _Nullable error))completion;
+
 - (void)getVersionsForModWithID:(NSString *)modID
                      completion:(void (^)(NSArray<ModVersion *> * _Nullable versions, NSError * _Nullable error))completion;
 

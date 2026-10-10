@@ -104,6 +104,13 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
 // 项目详情头部视图（展示项目封面图/标题/作者/下载量/标签/描述，补齐信息显示缺口）
 @property (nonatomic, strong) AssetDetailHeaderView *detailHeaderView;
 
+// ★ Task238（用户：“模组前置能不能像其他启动器一样摆在最上面合理的地方，
+//   下面太不明显”）：前置区从表尾（tableFooterView）上移到【详情头之下、
+//   版本列表之上】——tableHeaderView 已被项目详情头占用，这里用堆叠容器
+//   把 [详情头 + 前置区] 合成一个头部。前置区存在性变化时重装头部。
+@property (nonatomic, strong, nullable) UIView *ame238_depsSectionView;   // 前置区（nil = 无）
+@property (nonatomic, strong, nullable) UIView *ame238_headerStackView;  // 堆叠容器（复用）
+
 @end
 
 @implementation ModVersionViewController
@@ -183,18 +190,61 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
 }
 
 /// 重新计算 tableHeaderView 高度并刷新（在 viewDidLayoutSubviews 和描述展开/收起时调用）
+/// ★ Task238：头部堆叠——无前置区 = 仅详情头（逐字节旧路径）；有前置区 =
+/// [详情头 + 前置区] 垂直堆叠进同一 tableHeaderView（前置上移到列表上方）。
 - (void)updateTableHeaderHeight {
     if (!self.detailHeaderView) return;
     CGFloat width = self.tableView.bounds.size.width;
     if (width <= 0) width = self.view.bounds.size.width;
     if (width <= 0) width = [UIScreen mainScreen].bounds.size.width;
     CGFloat height = [self.detailHeaderView fittingHeightForWidth:width];
-    CGRect frame = self.detailHeaderView.frame;
-    if (fabs(frame.size.height - height) < 1) return; // 高度未变化则跳过
-    frame.size.height = height;
-    self.detailHeaderView.frame = frame;
+
+    UIView *ame238_deps = self.ame238_depsSectionView;
+    if (![ame238_deps isKindOfClass:[UIView class]]) {
+        // 无前置区：旧路径（仅详情头；高度未变则跳过重赋值）
+        CGRect frame = self.detailHeaderView.frame;
+        if (fabs(frame.size.height - height) < 1 &&
+            self.tableView.tableHeaderView == self.detailHeaderView) return;
+        frame.size.height = height;
+        self.detailHeaderView.frame = frame;
+        // 重新赋值触发 tableView 重新布局 header
+        self.tableView.tableHeaderView = self.detailHeaderView;
+        return;
+    }
+
+    // 有前置区：堆叠头部（详情头在上，前置区紧随其下，都在版本列表之上）
+    CGFloat ame238_depsH = ceil([ame238_deps systemLayoutSizeFittingSize:CGSizeMake(width, UILayoutFittingCompressedSize.height)].height);
+    CGFloat ame238_totalH = ceil(height) + ame238_depsH;
+    CGRect ame238_stackFrame = CGRectMake(0, 0, width, ame238_totalH);
+    if (self.ame238_headerStackView == nil) {
+        self.ame238_headerStackView = [[UIView alloc] init];
+    }
+    if (fabs(self.ame238_headerStackView.frame.size.height - ame238_totalH) < 1 &&
+        self.tableView.tableHeaderView == self.ame238_headerStackView &&
+        fabs(self.detailHeaderView.frame.size.height - height) < 1 &&
+        ame238_deps.superview == self.ame238_headerStackView) {
+        return;   // 几何未变且当前前置区已入栈（CF 回填重渲染的新视图必须入栈，不能早退）
+    }
+    self.ame238_headerStackView.frame = ame238_stackFrame;
+    self.detailHeaderView.frame = CGRectMake(0, 0, width, ceil(height));
+    ame238_deps.frame = CGRectMake(0, ceil(height), width, ame238_depsH);
+    if (ame238_deps.superview != self.ame238_headerStackView) {
+        // 新前置区入栈：清掉旧的前置区（CF 富元数据回填后重渲染会生成新
+        // 视图，旧视图不能残留在堆叠里重复显示）。
+        for (UIView *ame238_old in [self.ame238_headerStackView.subviews copy]) {
+            if (ame238_old != self.detailHeaderView && ame238_old != ame238_deps) {
+                [ame238_old removeFromSuperview];
+            }
+        }
+        [self.ame238_headerStackView addSubview:ame238_deps];
+    }
+    if (self.detailHeaderView.superview != self.ame238_headerStackView) {
+        [self.ame238_headerStackView addSubview:self.detailHeaderView];
+    } else {
+        [self.ame238_headerStackView bringSubviewToFront:self.detailHeaderView];
+    }
     // 重新赋值触发 tableView 重新布局 header
-    self.tableView.tableHeaderView = self.detailHeaderView;
+    self.tableView.tableHeaderView = self.ame238_headerStackView;
 }
 
 - (void)viewDidLayoutSubviews {
@@ -685,15 +735,32 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
 /// 最新版本的必需依赖并展示在表尾（"本模组需要以下前置，下载时会询问
 /// 是否一起安装"）。解析失败静默（footer 不出现，不影响列表）。
 - (void)ame227_refreshDependenciesFooter {
-    ModVersion *ame227_latest = self.allVersions.firstObject;
-    if (ame227_latest.rawDictionary == nil) {
-        self.tableView.tableFooterView = nil;
+    // ★ Task238（用户："cf源没有显示前置" + "前置摆在最上面"）：
+    //   ① 数据源探测——最新版本的 dependencies[] 可能为空（老文件字段
+    //      缺失 / 镜像裁剪），逐个向后探测最多 6 个版本直到找到携带
+    //      依赖清单的一个，CF 源"看不到前置"的一路根因消除；
+    //   ② 展示位从表尾上移到详情头之下、版本列表之上（头部堆叠）。
+    NSDictionary *ame238_detail = nil;
+    NSInteger ame238_src = 0;
+    NSUInteger ame238_probe = MIN((NSUInteger)6, self.allVersions.count);
+    for (NSUInteger ame238_i = 0; ame238_i < ame238_probe; ame238_i++) {
+        ModVersion *ame238_v = self.allVersions[ame238_i];
+        if (![ame238_v isKindOfClass:[ModVersion class]] || ame238_v.rawDictionary == nil) continue;
+        id ame238_depsArr = ame238_v.rawDictionary[@"dependencies"];
+        if ([ame238_depsArr isKindOfClass:[NSArray class]] && ((NSArray *)ame238_depsArr).count > 0) {
+            ame238_detail = ame238_v.rawDictionary;
+            ame238_src = ame238_v.apiSource;
+            break;
+        }
+    }
+    if (ame238_detail == nil) {
+        self.ame238_depsSectionView = nil;
+        [self updateTableHeaderHeight];
         return;
     }
-    NSInteger ame227_source = ame227_latest.apiSource;
     __weak typeof(self) weakSelf = self;
-    [[ModDependencyResolver sharedResolver] resolveDependenciesFromVersionDetail:ame227_latest.rawDictionary
-                                                                       apiSource:ame227_source
+    [[ModDependencyResolver sharedResolver] resolveDependenciesFromVersionDetail:ame238_detail
+                                                                       apiSource:ame238_src
                                                             installedProjectIds:nil
                                                                           loader:nil
                                                                      gameVersion:nil
@@ -702,29 +769,28 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
         if (!strongSelf) return;
         NSArray<ModDependencyItem *> *ame227_req = plan.required ?: @[];
         if (ame227_req.count == 0) {
-            strongSelf.tableView.tableFooterView = nil;
+            strongSelf.ame238_depsSectionView = nil;
+            [strongSelf updateTableHeaderHeight];
             return;
         }
-        // ★ Task236（用户："前置为什么需要打开才能看介绍和图标，不能像
-        //   外面模组列表一样显示吗，点击就直接跳转对应mod"）：footer 全面
-        //   重构——旧形态是纯文字按钮（"▸ 名称 (必需)"），要看介绍/图标必须
-        //   先打开详情页；新形态与模组列表同款：每行【图标 + 名称 + 介绍】
-        //   内联展示，点按【直接 push 该模组自己的版本下载页】（选中即装到
-        //   当前实例），ⓘ 保留详情页入口（统计/浏览器兜底）。数据一步到位
-        //   （Modrinth /v2/project：标题+介绍+图标；CF 沿用标题 + 提示文案）。
+        // ★ Task236（富条目沿用）：每行【图标 + 名称 + 介绍】内联展示，
+        //   点按直接 push 该模组自己的版本下载页，ⓘ 保留详情页入口。
+        //   数据：Modrinth /v2/project；CF 走 Task238 的 /mods/{id} 回填。
         [strongSelf ame236_buildDependencyFooterWithItems:ame227_req];
     }];
 }
 
+
 /// Task236：前置数据抓取（图标 + 介绍一步到位）→ 主线程渲染富条目 footer。
 - (void)ame236_buildDependencyFooterWithItems:(NSArray<ModDependencyItem *> *)items {
     if (items.count == 0) {
-        self.tableView.tableFooterView = nil;
+        self.ame238_depsSectionView = nil;
+        [self updateTableHeaderHeight];
         return;
     }
     __weak typeof(self) ame236_wself = self;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        NSMutableArray<NSDictionary *> *ame236_rows = [NSMutableArray array];
+        NSMutableArray<NSMutableDictionary *> *ame236_rows = [NSMutableArray array];
         for (ModDependencyItem *ame236_dep in items) {
             NSString *ame236_name = ame236_dep.displayName ?: ame236_dep.projectId;
             NSString *ame236_desc = @"";
@@ -744,31 +810,77 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
                         if ([ame236_ic isKindOfClass:[NSString class]]) ame236_icon = ame236_ic;
                     }
                 }
-            } else {
-                // CurseForge：无公开免鉴权详情端点——介绍位给出来源提示
+            } else if (ame236_dep.apiSource == kSourceCurseForge && ame236_dep.projectId.length > 0) {
+                // ★ Task238（用户："cf源没有显示前置"）：CF 前置行先给来源
+                //   提示占位，渲染后由主线程的 /mods/{id} 富元数据回填。
                 ame236_desc = [NSString stringWithFormat:localize(@"ame232.deps.cf_desc", nil),
                                ame236_name];
             }
-            [ame236_rows addObject:@{
+            [ame236_rows addObject:[NSMutableDictionary dictionaryWithDictionary:@{
                 @"pid":  ame236_dep.projectId ?: @"",
                 @"name": ame236_name ?: @"",
                 @"desc": ame236_desc ?: @"",
                 @"icon": ame236_icon ?: @"",
                 @"src":  @(ame236_dep.apiSource),
                 @"kind": @(ame236_dep.kind),
-            }];
+            }]];
         }
         dispatch_async(dispatch_get_main_queue(), ^{
             __strong typeof(ame236_wself) ame236_sself = ame236_wself;
             if (!ame236_sself) return;
             [ame236_sself ame236_renderDependencyFooter:ame236_rows];
+            // ★ Task238：CF 前置行的富元数据回填（全链主线程，无跨线程
+            //   写入；全部回填完成后重渲染一次）。占位先行 → 名称/介绍/
+            //   图标到达后升级为与 Modrinth 同款的富卡片。
+            NSMutableArray<NSString *> *ame238_cfPids = [NSMutableArray array];
+            for (NSDictionary *ame238_row in ame236_rows) {
+                if ([ame238_row[@"src"] integerValue] == kSourceCurseForge &&
+                    [ame238_row[@"pid"] isKindOfClass:[NSString class]] &&
+                    ((NSString *)ame238_row[@"pid"]).length > 0) {
+                    [ame238_cfPids addObject:ame238_row[@"pid"]];
+                }
+            }
+            if (ame238_cfPids.count == 0) return;
+            dispatch_group_t ame238_group = dispatch_group_create();
+            for (NSString *ame238_pid in ame238_cfPids) {
+                dispatch_group_enter(ame238_group);
+                [[CurseForgeAPI sharedInstance] ame238_fetchProjectInfo:ame238_pid completion:^(NSDictionary * _Nullable info, NSError * _Nullable error) {
+                    if ([info isKindOfClass:[NSDictionary class]]) {
+                        for (NSMutableDictionary *ame238_row in ame236_rows) {
+                            if ([ame238_row[@"pid"] isEqualToString:ame238_pid]) {
+                                NSString *ame238_n = info[@"name"];
+                                if ([ame238_n isKindOfClass:[NSString class]] && ame238_n.length > 0) {
+                                    ame238_row[@"name"] = ame238_n;
+                                }
+                                NSString *ame238_s = info[@"summary"];
+                                if ([ame238_s isKindOfClass:[NSString class]] && ame238_s.length > 0) {
+                                    ame238_row[@"desc"] = ame238_s;
+                                }
+                                NSString *ame238_ic = info[@"icon"];
+                                if ([ame238_ic isKindOfClass:[NSString class]] && ame238_ic.length > 0) {
+                                    ame238_row[@"icon"] = ame238_ic;
+                                }
+                            }
+                        }
+                    }
+                    dispatch_group_leave(ame238_group);
+                }];
+            }
+            dispatch_group_notify(ame238_group, dispatch_get_main_queue(), ^{
+                __strong typeof(ame236_wself) ame238_sself2 = ame236_wself;
+                if (!ame238_sself2) return;
+                [ame238_sself2 ame236_renderDependencyFooter:ame236_rows];
+                NSLog(@"[ModVersionVC] Task238 CF dependency rows enriched (%lu project lookups)",
+                      (unsigned long)ame238_cfPids.count);
+            });
         });
     });
 }
 
-/// Task236：渲染前置 footer——模组列表同款富条目（图标 + 名称 + 介绍内联，
-/// 点按直跳该模组版本下载页，ⓘ 进详情页）。footer 高度按内容手动定 frame
-/// （tableFooterView 不吃 autolayout 高度）。
+
+/// Task236：渲染前置区——模组列表同款富条目（图标 + 名称 + 介绍内联，
+/// 点按直跳该模组版本下载页，ⓘ 进详情页）。高度按内容手动定 frame。
+/// ★ Task238：目标从表尾（tableFooterView）改为头部堆叠前置区（最上面）。
 - (void)ame236_renderDependencyFooter:(NSArray<NSDictionary *> *)rows {
     CGFloat ame236_w = self.tableView.bounds.size.width;
     if (ame236_w < 32) ame236_w = 320;
@@ -824,8 +936,12 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     [ame236_footer layoutIfNeeded];
     CGSize ame236_fit = [ame236_footer systemLayoutSizeFittingSize:CGSizeMake(ame236_w, UILayoutFittingCompressedSize.height)];
     ame236_footer.frame = CGRectMake(0, 0, ame236_w, ceil(ame236_fit.height));
-    self.tableView.tableFooterView = ame236_footer;
-    NSLog(@"[ModVersionVC] Task236 dependency rich footer: %lu row(s) (inline icon+intro, tap=direct jump)",
+    // ★ Task238：渲染目标从 tableFooterView（列表底部，用户反馈"下面太
+    //   不明显"）改为头部堆叠前置区——存属性 + updateTableHeaderHeight
+    //   把 [详情头 + 前置区] 合成 tableHeaderView，前置摆在最上面。
+    self.ame238_depsSectionView = ame236_footer;
+    [self updateTableHeaderHeight];
+    NSLog(@"[ModVersionVC] Task238 dependency section pinned above version list: %lu row(s) (inline icon+intro, tap=direct jump)",
           (unsigned long)rows.count);
 }
 

@@ -1919,6 +1919,17 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                     //   对齐本体的换行几何（末行超长时本体截断、拷贝可能多画，
                     //   属尾部边缘 case，主体行几何已同源）。
                     ame233_ps.lineBreakMode = NSLineBreakByWordWrapping;
+                } else {
+                    // ★ Task238（用户：“修复字体与选项文本重叠问题”，多行
+                    //   unlimited 维度）：numberOfLines == 0（不限行数）的标签
+                    //   ——Task237 玻璃悬浮菜单的标题/正文、各处说明文案——
+                    //   本体按词换行铺满任意多行，而 Task236 只修了
+                    //   numberOfLines > 1 的分支：==0 的拷贝仍带
+                    //   lineBreakMode（默认 byTruncatingTail）→ NSAttributedString
+                    //   携带截断模式时【只画单行】——四份深色拷贝 + 不透明垫底
+                    //   全部拉成一条长线，横穿换行后的正文本体 =
+                    //   “字体与选项文本重叠”的直接来源。与 >1 分支同修：词换行。
+                    ame233_ps.lineBreakMode = NSLineBreakByWordWrapping;
                 }
 
                 // ★ Task234（反馈“文字重叠依旧有问题”）：Task233 修了水平

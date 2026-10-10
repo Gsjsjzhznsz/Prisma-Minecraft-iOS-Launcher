@@ -16,6 +16,7 @@
 
 #import "AmeFloatingMenu.h"
 #import "LiquidGlassCompat.h"
+#import "BackgroundManager.h"   // ★ Task238：菜单树描边豁免（字体重叠根治）
 
 #pragma mark - 前向声明与工具
 
@@ -156,6 +157,12 @@ static CGFloat Ame237TextHeight(NSString *text, UIFont *font, CGFloat width) {
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor clearColor];
     self.view.userInteractionEnabled = YES;
+
+    // ★ Task238（用户：“修复字体与选项文本重叠问题”）：本组件的全部文字
+    //   （标题/正文/菜单行）住在自控的磨砂面板上——不再叠加全局壁纸描边
+    //   （四方向深色拷贝 + 不透明垫底在半透明玻璃面板上就是“文字双层/
+    //   重叠”的观感）。豁免整棵树：拷贝与染白都不作用于本菜单。
+    ame230_setViewTreeStrokeExempt(self.view, YES);
 
     // 遮罩（点击 = 取消/关闭；与游戏内菜单同语义）
     self.dimView = [[UIView alloc] initWithFrame:self.view.bounds];

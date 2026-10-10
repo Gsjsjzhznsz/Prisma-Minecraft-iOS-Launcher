@@ -309,26 +309,59 @@ static BOOL ame227_g_dockedLeft = NO;
     CGFloat bw = self.bounds.size.width;
     CGFloat bh = self.bounds.size.height;
 
-    // 设置按钮默认位置：右上角偏下（避开状态栏和右上角控件）
-    CGFloat defaultBtnX = bw - kMenuButtonSize - 20;
-    CGFloat defaultBtnY = bh * 0.3;
-
-    // 哨兵值 -1 表示未设置（PLPreferences 默认值），回退到硬编码默认位置
+    // ★ Task238（用户："在默认边边没有贴边，需要手动刷新状态再拖出来才有
+    //   显示"）：默认形态从"右侧悬浮球（距边 20pt）"改为【右侧吸边把手】
+    //   ——与其他启动器一致：齿轮默认就是贴边的侧边栏把手，点击拉出侧滑
+    //   菜单；拖离边缘即回悬浮球。首启即落盘（位置 + 吸边态），后续会话
+    //   与用户显式操作同链路。
     NSNumber *savedX = getPrefObject(kPrefMenuButtonX);
     NSNumber *savedY = getPrefObject(kPrefMenuButtonY);
-    if (savedX && savedY && [savedX floatValue] >= 0 && [savedY floatValue] >= 0) {
+    BOOL ame238_hasSaved = (savedX && savedY &&
+                            [savedX floatValue] >= 0 && [savedY floatValue] >= 0);
+
+    // ★ Task227：dock 状态恢复（上次吸边的把手形态跨会话保持；
+    //   Task238 注册键后本读取才真正生效——旧版写入被静默丢弃）
+    BOOL ame238_dockPref = getPrefBool(kAme227DockedPref);
+
+    if (!ame238_hasSaved) {
+        // 首次使用：右侧吸边把手，垂直位置 45%（拇指自然高度）
+        ame227_g_docked = YES;
+        ame227_g_dockedLeft = NO;
+        self.menuButton.center = CGPointMake(kAme227HandleWidth * 0.66,
+                                             bh > 0 ? bh * 0.45 : 300.0);
+        [self ame227_applyDockedAppearanceAnimated:NO];
+        if (bw > 0 && bh > 0) {
+            setPrefObject(kPrefMenuButtonX, @(self.menuButton.center.x / bw));
+            setPrefObject(kPrefMenuButtonY, @(self.menuButton.center.y / bh));
+            setPrefBool(kAme227DockedPref, YES);
+            setPrefBool(kAme227DockedSidePref, NO);
+        }
+        NSLog(@"[GameMenu] Task238 gear default: docked right handle (first run)");
+    } else {
         CGFloat x = [savedX floatValue] * bw;
         CGFloat y = [savedY floatValue] * bh;
         self.menuButton.center = CGPointMake(x, y);
-    } else {
-        self.menuButton.center = CGPointMake(defaultBtnX, defaultBtnY);
-    }
-
-    // ★ Task227：dock 状态恢复（上次吸边的把手形态跨会话保持）
-    if (getPrefBool(kAme227DockedPref)) {
-        ame227_g_docked = YES;
-        ame227_g_dockedLeft = getPrefBool(kAme227DockedSidePref);
-        [self ame227_applyDockedAppearanceAnimated:NO];
+        if (ame238_dockPref) {
+            ame227_g_docked = YES;
+            ame227_g_dockedLeft = getPrefBool(kAme227DockedSidePref);
+            [self ame227_applyDockedAppearanceAnimated:NO];
+        } else {
+            // ★ Task238：存量设备兜底——旧版吸边态从不持久化（注册缺失），
+            //   齿轮常以"贴着边但没吸住"的悬浮球恢复（用户本次反馈的形态）。
+            //   与拖拽结束同规则：恢复位置落在吸边阈值内 → 直接吸附成把手。
+            CGFloat ame238_half = kMenuButtonSize / 2.0;
+            CGFloat ame238_distL = self.menuButton.center.x - ame238_half;
+            CGFloat ame238_distR = bw - self.menuButton.center.x - ame238_half;
+            if (ame238_distL < kAme227DockThreshold || ame238_distR < kAme227DockThreshold) {
+                BOOL ame238_left = (self.menuButton.center.x < bw / 2.0);
+                ame227_g_docked = YES;
+                ame227_g_dockedLeft = ame238_left;
+                [self ame227_applyDockedAppearanceAnimated:NO];
+                setPrefBool(kAme227DockedPref, YES);
+                setPrefBool(kAme227DockedSidePref, ame238_left);
+                NSLog(@"[GameMenu] Task238 gear auto-docked on restore (legacy near-edge floating state healed)");
+            }
+        }
     }
     [self ame230_layoutCaption];
 

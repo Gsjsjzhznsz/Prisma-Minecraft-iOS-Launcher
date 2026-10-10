@@ -1979,6 +1979,24 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self dismissLaunchOverlayOnError];
             });
+        } else {
+            // ★ Task238（用户："26.3点击退出游戏，启动器会一直显示，没有
+            //   退出，但是游戏退出了"）：JLI_Launch 正常返回 = 用户在游戏内
+            //  点了"退出游戏"、JVM 主线程结束——旧代码在这里什么都不做，
+            //   根视图仍是 SurfaceViewController，最后一帧冻结在屏上，
+            //   启动器"卡死"在死亡的游戏画面。现返回启动器主页
+            //   （UIKit_returnToSplitView 的既有换根链：优先 tmpRootVC，
+            //   否则新建 LauncherSplitViewController——与 FCL/Android 的
+            //   "退游戏回启动器"行为一致；崩溃/强退路径不经此处，语义不变）。
+            NSLog(@"[SurfaceViewController] Task238 JVM exited normally (user quit the game) -- returning to launcher home");
+            dispatch_async(dispatch_get_main_queue(), ^{
+                UIWindow *ame238_win = UIWindow.mainWindow;
+                if ([ame238_win.rootViewController isKindOfClass:[SurfaceViewController class]]) {
+                    UIKit_returnToSplitView();
+                } else {
+                    NSLog(@"[SurfaceViewController] Task238 root already left the game surface -- skip return-to-launcher");
+                }
+            });
         }
     });
 }
@@ -2205,6 +2223,27 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         [self.launchCancelButton.widthAnchor constraintEqualToConstant:120],
         [self.launchCancelButton.heightAnchor constraintEqualToConstant:36],
     ]];
+
+    // ★ Task238（用户："刚启动游戏⚙️和文字没有显示"）：启动遮罩层是
+    //   viewDidLoad 之后才 addSubview 的——它盖住了游戏内悬浮件（齿轮球 /
+    //   FPS·内存条 / "菜单"标签 / 菜单面板）。遮罩本身
+    //   userInteractionEnabled=NO（设计意图就是"启动期间可拖悬浮球、查
+    //   FPS"，见方法头注释），却把悬浮件全部压在下面 = 启动的 8.5 秒里
+    //   齿轮与文字全部不可见。把悬浮三件套提到遮罩之上（保持
+    //   遮罩 < 菜单面板 < 悬浮球的相对次序），取消按钮重新置顶。
+    if ([self.menuDimView isKindOfClass:[UIView class]]) {
+        [self.view bringSubviewToFront:self.menuDimView];
+    }
+    if ([self.menuView isKindOfClass:[UIView class]]) {
+        [self.view bringSubviewToFront:self.menuView];
+    }
+    if ([self.gameMenuOverlay isKindOfClass:[UIView class]]) {
+        [self.view bringSubviewToFront:self.gameMenuOverlay];
+    }
+    if ([self.launchCancelButton isKindOfClass:[UIView class]]) {
+        [self.view bringSubviewToFront:self.launchCancelButton];
+    }
+    NSLog(@"[SurfaceViewController] Task238 launch overlay z-order: game menu overlay raised above launch mask (gear/stats/menu visible during launch)");
 
     // 注册首帧渲染通知（egl_bridge.m 中 pojavSwapBuffers 首次调用时发送）
     [[NSNotificationCenter defaultCenter] addObserver:self

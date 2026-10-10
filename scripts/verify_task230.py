@@ -62,7 +62,9 @@ check("230-7d quick entry", "Natives/ModVersionViewController.m", "ame230_openDe
 # Task236 诚实重锚：footer 已重构为模组列表同款富条目（图标+介绍内联+直跳
 # 下载页），旧"Task230 dependency quick-entry footer"日志由 Task236 rich footer
 # 日志接替；ⓘ 按钮仍走 ame230_openDependencyPage:（230-7d 不变）。
-check("230-7e quick entry log", "Natives/ModVersionViewController.m", "[ModVersionVC] Task236 dependency rich footer:")
+# Task238 诚实重锚：前置区从表尾上移到头部堆叠（详情头之下、版本列表
+# 之上），日志文案随之升级；富条目渲染 + 直跳行为不变（230-7d 不变）。
+check("230-7e quick entry log", "Natives/ModVersionViewController.m", "[ModVersionVC] Task238 dependency section pinned above version list:")
 # (11) backup import: reload + refresh + summary
 check("230-11a prefs reload", "Natives/DataTransferService.m", "loadPreferences(NO);")
 check("230-11b root rebuild", "Natives/DataTransferService.m", 'postNotificationName:@"AppLanguageChanged"')

@@ -248,7 +248,19 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
             @"menu_button_y": @(-1.0),
             @"stats_label_x": @(-1.0),
             @"stats_label_y": @(-1.0),
-            @"stats_label_visible": @YES
+            @"stats_label_visible": @YES,
+            // ★ Task238（用户："在默认边边没有贴边"+装机日志
+            //   "[PLPreferences] Setter could not find preference
+            //    game.gear.docked"）：Task227 的吸边状态键从未注册——
+            //   PLPreferences 只能读写已注册键（Task142/143 病历同款），
+            //   setPrefBool 写入被静默丢弃 → 每次启动吸边状态丢失，齿轮
+            //   以"贴边但不吸住"的悬浮球形态恢复。注册后写读双向生效。
+            //   valueForKeyPath: 语义：game.gear.docked = game→gear→docked，
+            //   内层字典必须可变（setValue:forKeyPath: 最后一跳落在它上面）。
+            @"gear": [{
+                @"docked": @NO,
+                @"docked_left": @NO
+            } mutableCopy]
         }.mutableCopy,
         @"internal": @{
             @"isolated": @NO,

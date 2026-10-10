@@ -92,7 +92,9 @@ check("C4", "分层构造（磨砂 index 0 + 行区恒在其上 + 开菜取证�
       "[GameMenu] Task237 menu shown" in svn)
 
 print("== D. 前置条目模组列表化 + 直跳 ==")
-check("D1", "富条目渲染 + 日志", "[ModVersionVC] Task236 dependency rich footer:" in mvv)
+# Task238 诚实重锚：前置区上移到头部堆叠（用户："摆在最上面合理的地方"），
+# 渲染日志升级为 Task238 pinned above version list；富条目/直跳/iⓘ 行为不变。
+check("D1", "富条目渲染 + 日志", "[ModVersionVC] Task238 dependency section pinned above version list:" in mvv)
 check("D2", "数据抓取（图标 + 介绍一步到位）", "ame236_buildDependencyFooterWithItems:" in mvv)
 check("D3", "行构造（44pt 图标 + 标题 + 介绍 + ⓘ）", "ame236_dependencyRow:(NSDictionary *)row" in mvv and
       'constraintEqualToConstant:44' in mvv and 'systemImageNamed:@"info.circle"' in mvv)
