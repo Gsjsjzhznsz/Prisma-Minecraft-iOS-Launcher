@@ -315,8 +315,8 @@ typedef NS_ENUM(NSInteger, TouchControllerCommMode) {
 
     // 禁用选项
     [ame240_items addObject:@{
-        @"title": (currentMode == TouchControllerCommModeDisabled ? @"✓ " : @"")
-            stringByAppendingString:(localize(@"preference.touchcontroller.mode.disabled", nil) ?: @"Disabled"),
+        @"title": [(currentMode == TouchControllerCommModeDisabled ? @"✓ " : @"")
+            stringByAppendingString:(localize(@"preference.touchcontroller.mode.disabled", nil) ?: @"Disabled")],
         @"destructive": @YES,
         @"handler": ^{
             [self updateTouchControllerSetting:TouchControllerCommModeDisabled];
@@ -326,8 +326,8 @@ typedef NS_ENUM(NSInteger, TouchControllerCommMode) {
 
     // UDP 模式选项
     [ame240_items addObject:@{
-        @"title": (currentMode == TouchControllerCommModeUDP ? @"✓ " : @"")
-            stringByAppendingString:(localize(@"preference.touchcontroller.mode.udp", nil) ?: @"UDP Protocol"),
+        @"title": [(currentMode == TouchControllerCommModeUDP ? @"✓ " : @"")
+            stringByAppendingString:(localize(@"preference.touchcontroller.mode.udp", nil) ?: @"UDP Protocol")],
         @"handler": ^{
             [self updateTouchControllerSetting:TouchControllerCommModeUDP];
             [self.tableView reloadData];
@@ -337,8 +337,8 @@ typedef NS_ENUM(NSInteger, TouchControllerCommMode) {
 
     // 静态库模式选项
     [ame240_items addObject:@{
-        @"title": (currentMode == TouchControllerCommModeStaticLib ? @"✓ " : @"")
-            stringByAppendingString:(localize(@"preference.touchcontroller.mode.staticlib", nil) ?: @"Static Library"),
+        @"title": [(currentMode == TouchControllerCommModeStaticLib ? @"✓ " : @"")
+            stringByAppendingString:(localize(@"preference.touchcontroller.mode.staticlib", nil) ?: @"Static Library")],
         @"handler": ^{
             [self updateTouchControllerSetting:TouchControllerCommModeStaticLib];
             [self.tableView reloadData];
