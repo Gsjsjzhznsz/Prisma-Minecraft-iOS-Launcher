@@ -87,6 +87,11 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
 
 // ===== 当前选中的筛选状态 =====
 @property (nonatomic, assign) NSInteger selectedSource;  // 1=Modrinth, 2=CurseForge
+// ★ Task247（T11 模组切源显示“未找到可下载的版本”）：跨源 ID 解析缓存
+// （key = selectedSource）。源切换后旧源 id/slug 对另一源无意义
+// （Modrinth slug → CF /mods/{slug}/files 404；CF 数字 id → Modrinth
+// /project/{id}/version 空列表）→ 命中空列表报错文案。解析结果缓存。
+@property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSString *> *ame247_resolvedIDs;
 @property (nonatomic, copy)   NSString *selectedSort;    // 排序方式 key
 
 // ===== 数据源 =====
@@ -678,13 +683,99 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
 
 /// 根据当前选中的下载源拉取版本列表
 /// Modrinth 源 → ModrinthAPI；CurseForge 源 → CurseForgeAPI
+/// ★ Task247（T11）：同源 id 直拉；跨源（Modrinth slug ↔ CF 数字 id）先
+/// 解析对应源的项目 id 再拉——旧实现拿同一个 onlineID 请求两个源的 API，
+/// 对端必然 404/空列表（用户报“在模组其中一个源打开，切换源显示未找到
+/// 可下载的版本”根因）。
 - (void)fetchVersionsFromCurrentSource {
     [self.activityIndicator startAnimating];
 
+    NSString *ame247_id = self.modItem.onlineID ?: @"";
+    BOOL ame247_numeric = (ame247_id.length > 0 &&
+        [ame247_id rangeOfCharacterFromSet:[[NSCharacterSet decimalDigitCharacterSet] invertedSet]].location == NSNotFound);
+    // 判定是否需要跨源解析：CF 源要数字 id；Modrinth 源要 slug/项目码（非全数字）
+    BOOL ame247_needResolve =
+        (self.selectedSource == kSourceCurseForge) ? !ame247_numeric : ame247_numeric;
+    if (!ame247_needResolve) {
+        [self ame247_fetchVersionsWithID:ame247_id];
+        return;
+    }
+    // 会话级解析缓存命中：切过去再切回来不重复搜索
+    NSString *ame247_cached = self.ame247_resolvedIDs[@(self.selectedSource)];
+    if (ame247_cached.length > 0) {
+        [self ame247_fetchVersionsWithID:ame247_cached];
+        return;
+    }
+    [self ame247_searchCrossSourceCounterpart];
+}
+
+/// Task247（T11）：以项目名搜索对端源，解析出该源的项目 id。
+/// 匹配规则：displayName 完全等值（忽略大小写）优先 → 首个结果；
+/// 解析结果入缓存。搜索无结果时落空列表分支（既有报错文案提示切源）。
+- (void)ame247_searchCrossSourceCounterpart {
+    NSString *ame247_query = self.modItem.displayName ?: @"";
+    NSString *ame247_norm = [ame247_query stringByReplacingOccurrencesOfString:@" " withString:@""];
+    NSString *ame247_lower = ame247_norm.lowercaseString;
+    __weak typeof(self) weakSelf = self;
+    void (^ame247_finish)(NSString * _Nullable) = ^(NSString * _Nullable resolved) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
+            if (resolved.length > 0) {
+                if (strongSelf.ame247_resolvedIDs == nil) {
+                    strongSelf.ame247_resolvedIDs = [NSMutableDictionary dictionary];
+                }
+                strongSelf.ame247_resolvedIDs[@(strongSelf.selectedSource)] = resolved;
+                NSLog(@"[ModVersionVC] Task247: cross-source id resolved (source=%ld): %@",
+                      (long)strongSelf.selectedSource, resolved);
+                [strongSelf ame247_fetchVersionsWithID:resolved];
+            } else {
+                NSLog(@"[ModVersionVC] Task247: cross-source id unresolved (source=%ld) -- empty fallback",
+                      (long)strongSelf.selectedSource);
+                [strongSelf handleVersionsResponse:@[] error:nil];
+            }
+        });
+    };
+    void (^ame247_pick)(NSArray * _Nullable, NSError * _Nullable) = ^(NSArray * _Nullable results, NSError * _Nullable error) {
+        if (error != nil || results.count == 0) {
+            ame247_finish(nil);
+            return;
+        }
+        NSString *ame247_best = nil;
+        for (ModItem *ame247_item in results) {
+            if (![ame247_item isKindOfClass:[ModItem class]]) continue;
+            if (ame247_item.onlineID.length == 0) continue;
+            NSString *ame247_dn = (ame247_item.displayName ?: @"").lowercaseString;
+            NSString *ame247_dsq = [ame247_dn stringByReplacingOccurrencesOfString:@" " withString:@""];
+            // 完全等值优先（含 slug 形态：Modrinth slug 常为去空格连字串）
+            if ([ame247_dsq isEqualToString:ame247_lower]) {
+                ame247_best = ame247_item.onlineID;
+                break;
+            }
+            if (ame247_best == nil) ame247_best = ame247_item.onlineID;   // 兖底取首个
+        }
+        ame247_finish(ame247_best);
+    };
+    NSDictionary *ame247_filters = @{
+        @"name": ame247_query,
+        @"projectType": @"mod",
+        @"limit": @20,
+    };
+    NSLog(@"[ModVersionVC] Task247: resolving cross-source id (source=%ld) via search: %@",
+          (long)self.selectedSource, ame247_query);
+    if (self.selectedSource == kSourceCurseForge) {
+        [[CurseForgeAPI sharedInstance] searchModWithFilters:ame247_filters completion:ame247_pick];
+    } else {
+        [[ModrinthAPI sharedInstance] searchModWithFilters:ame247_filters completion:ame247_pick];
+    }
+}
+
+/// Task247（T11）：按解析后的 id 拉版本列表（原两分支主体收编于此）
+- (void)ame247_fetchVersionsWithID:(NSString *)ame247_fetchID {
     if (self.selectedSource == kSourceCurseForge) {
         // ===== CurseForge 源 =====
         // CurseForgeAPI.getVersionsForModWithID: 返回 ModVersion 数组（含 CurseForge 的 fileId/projectId）
-        [[CurseForgeAPI sharedInstance] getVersionsForModWithID:self.modItem.onlineID
+        [[CurseForgeAPI sharedInstance] getVersionsForModWithID:ame247_fetchID
                                                      completion:^(NSArray<ModVersion *> * _Nullable versions, NSError * _Nullable error) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self handleVersionsResponse:versions error:error];
@@ -692,7 +783,7 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
         }];
     } else {
         // ===== Modrinth 源（默认）=====
-        [[ModrinthAPI sharedInstance] getVersionsForModWithID:self.modItem.onlineID
+        [[ModrinthAPI sharedInstance] getVersionsForModWithID:ame247_fetchID
                                                    completion:^(NSArray<ModVersion *> * _Nullable versions, NSError * _Nullable error) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self handleVersionsResponse:versions error:error];

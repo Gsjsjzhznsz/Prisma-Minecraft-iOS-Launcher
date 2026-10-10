@@ -2671,3 +2671,27 @@ Work Log:
 
 Stage Summary:
 - Task 246 全链闭环：伪液态玻璃风格档 + 欢迎向导风格选择页（真实预览）+ 动态磨砂背景重抓 + MoltenVK 1.4.3，新 IPA 就绪待装机验证
+
+---
+Task ID: 247
+Agent: main (Super Z)
+Task: 用户装机反馈 12 项——①非SDL开常用操作键无法左右键 ②MobileGL 切后台输入错位 ③持续奔跑无效/Ctrl 像持续奔跑 ④联机菜单输入一次键盘关闭一次 ⑤SDL 键盘关闭行为恢复 ⑥文件夹浏览器改导入中转 ⑦联机自动扫描端口 ⑧自动打开输入法(SDL)开关 ⑨伪玻璃档联机菜单等位置接管+原生档回归 ⑩游戏内菜单伪玻璃动态背景 ⑪模组源切换版本列表 ⑫国际化审计
+
+Work Log:
+- 【T1 抽屉本体 Ctrl 污染根治】取证：Task230 全量迁移把"常用\n操作键"抽屉本体（Task233 实锤 [0,0,0,0]=抽屉开关按钮）误改绑 341——用户每点一次抽屉 = Task179 轻点锁定把 Ctrl 钉住，游戏内左/右键与疾跑行为随抽屉开合漂移（"非 SDL 无法左右键，有时又必须开启才能"根因）。三线修复：①出厂 custom.json 抽屉本体复位 [0,0,0,0]；②main.m 迁移重构——抽屉容器（含 buttonProperties）的 properties 子节点永不改绑，已污染布局（[341,0,0,0] 恰为迁移产物）复位全零，主按钮旧迁移规则保留（用户自绑永不动）；③SurfaceVC AME176_IS_MOD_KEY 移出 LEFT/RIGHT_CONTROL（见 T3）
+- 【T3 持续奔跑死键修复 + Ctrl 回归常规键】①"持续 奔跑"[341,87]/保持CTRL[341]/保持SHIFT[340]/保持左键[-3]/保持右键[-4] 五个保持型 toggle 按钮全死：按下分支被 savedBackgroundColor!=nil 跳过 + Task226 补发块拒绝修饰键/特殊键 = 全程零键事件。修复：Task226 排除名单收窄到动作型特殊键（-1/-2/-5/-7/-8/-9），其余放行走新增 ame247_sendHoldKeyEvents:down: 直发路径——正键 nativeSendKey（DOWN 顺槽位序/UP 逆序）、鼠标保持键 nativeSendMouseButton、绕开 Task179 轻点锁定、前后清理 Task179 账本（statics 提升文件级）；②Ctrl 移出轻点锁定集——轻点 CTRL 不再把疾跑钉死（"Ctrl 像持续奔跑"根修），Shift/Alt 语义保留；锁定型疾跑走持续奔跑按钮或设置页切换疾跑
+- 【T2 MobileGL 切后台错位】①SurfaceVC 新增 UIApplicationDidBecomeActiveNotification 观察者 → ame247_didBecomeActive：会话在场时重跑 updateSavedResolution（幂等重申，几何未漂移=no-op，漂移时 surface/输入/announce 三口径重新对齐；Task187 红线只针对分辨率偏好变更场景，本处永远用同一偏好值）；②热栏换算与主触点链统一 scene scale 口径（此前热栏用 UIScreen.mainScreen.scale，Stage Manager/外接屏下与 scene.screen.scale 不等）
+- 【T5 SDL 键盘关闭行为恢复】①inputTextField 挂标准 iOS 附属条（"收起键盘"按钮，ame247.keyboard.dismiss 四表入键）→ ame225 包夹 + Task227 闩锁（与 ✎ 同语义；"有光标状态下无法关闭键盘，除非按输入法控件"根修）；②touchesBegan 落游戏画面的触摸（键盘开着时）= 显式离开文本模式：包夹收起 + 置闩（游离 Start 不再弹回）；③StopTextInput 去抖窗到点仍残留组字态（markedTextRange 非空）旧实现无限跳过收起（"光标没了不自动关"存活根因）→ 改 unmarkText 提交组字后照常收起（快速 Stop→Start 循环仍在窗内被 Start 取消，Task222/223 保护面不变）
+- 【T8 自动打开输入法(SDL) 开关语义落地】根因：开关 OFF 分支漏"非闩锁态"——latch=NO 时两个分支都不命中，Start 照样落弹键盘（开关形同虚设）。新语义：ON = 每个 Start 自动弹（保留显式收起 2.5s 硬抑制窗）；OFF = 不自动弹，仅聊天开键（T/斜杠 3s 窗）跟随 + ✎/附属条/点画面手动唤起。默认值改 YES（PLPreferences）——存量未显式写键的安装跟随新默认后行为不变
+- 【T4 联机菜单键盘随后台事件收起】TerracottaViewController.updateForCurrentState 每次整台拆除 stageView 重装（first responder 随 removeFromSuperview 打断），TerracottaManager 状态/LanPortDetector 进度回调打字期间每次触发 = 键盘收一次。修复：幂等短路——目标态未变且舞台已在位只做轻量刷新（HostForm 端口回填/Session 内容），状态真正迁移才拆装
+- 【T7 联机自动扫描端口】双根因：①LanPortDetector 通知观察者注册被 mode==MultiplayerVCModeInGame 死分支挡死（三个创建点全 Launcher 模式）→ Task232 自动检测主路径通知永远无人接收 → 18s 必回落手动——改无条件注册（lanPortDidDetect: 内有 isHostFlowActive 闸门）；②自动检测只跑日志尾随（正则随 MC 版本漂移）→ ame232_startAutoPortDetection 并行起 127.0.0.1 回环 MC 协议扫描（scanLocalPortsWithProgress，与日志格式无关），命中经 publishPort→通知→同一主路径生成分享码
+- 【T6 文件夹浏览器导入中转】FolderBrowserViewController 新增 + 号导入（UIDocumentPickerViewController asCopy:YES 多选，public.data 全类型）：系统拷临时目录 → 免覆盖命名（name (2).ext 族）→ 拷入当前浏览目录 → 复用既有刷新链 + NMToast 结果提示（四表入键 folderbrowser.import.done/failed）；子页同样带按钮（导入目标=当前浏览目录）
+- 【T9 伪玻璃档盲区接管】①游戏内 ⚙ 主菜单按钮（menuButton.menu+showsMenuAsPrimaryAction = 系统 UIMenu 直出）伪玻璃档改走 ame240 字典路由磨砂面板（摘 executebtn 目标防双重呈现；真玻璃/原生档保留系统菜单=IMG_0370 定案/用回原生）；②账号列表长按 UIContextMenu 伪玻璃档 nil 化 + 长按手势 → ame223_showAccountMenu（与 ⋯ 按钮同入口）；③游戏目录行上下文菜单同款重路由（dict 菜单含 Files/Filza/Santander 外部打开+重命名+删除）；④玻璃镜像 alert 动态通路——AmeFloatingMenu 新增 ame237_sourceAlert 反向引用 + ame247_setMessage（联机进度"步骤 x/6"镜像下实时刷新）+ ame247_dismissMirroredAlert（进度面板收尾：旧实现 presentedViewController==alert 判定在镜像下恒假 = 面板滞留 + 后续弹窗 present 被吞），MultiplayerViewController 两方法接线
+- 【T10 游戏内菜单动态磨砂】Task246 8Hz 机制移植到 SurfaceViewController+Navigation：快照源改 surfaceView 直抓（ame247_surfaceSnapshot——keyWindow 快照会把 menuView/menuDimView 拍进去自噬；surfaceView 恒不含菜单 UI）；showMenu 起 8Hz CADisplayLink（NSRunLoopCommonModes），tick 内菜单隐藏/非玻璃族自停 + 全黑帧护栏（保留上一张有效图绝不降级黑磨砂），菜单关闭 completion 即停
+- 【T11 模组切源版本列表】根因：两个 API 共用同一 modItem.onlineID（Modrinth slug → CF /mods/{slug}/files 404；CF 数字 id → Modrinth /project/{id}/version 空）= 必然空列表报"未找到可下载的版本"。修复：fetchVersionsFromCurrentSource 同源直拉/跨源先解析（numeric 判定 + displayName 搜索对端源 + 等值优先/首个兜底 + 会话级解析缓存），解析失败落既有空列表分支
+- 【T12 国际化审计】脚本 task247_i18n_audit.py：①全仓 localize/MPLocalized 键 100% 在表（除本轮 3 新键已补）；②UI 字面量硬编码扫描 = 零命中（AI/AiFileTools.m 的中文为 AI 工具对话诊断文案，非启动器 UI，接受）；③四表同步补键 ame247.keyboard.dismiss / folderbrowser.import.done / folderbrowser.import.failed（2778 唯一键）；verify_task219 期望值重锚 2775→2778 后 81/81 全绿；task191_validate_strings 54 表全 OK
+- 【门禁】task240/139/158/175 四道全 PASS；diff 自审：零 .handler 反取/零类方法 self.view（新 self.view 命中均在 viewDidLoad 实例方法）/C 调用裸写均为合法表达式/消息表达式括号齐备；显示层吞字家族再实证（[mirrors copy] 被 bash/python repr 吞成 irrors copy，od -c 十六进制定案文件无损）
+
+Stage Summary:
+- 12 项全链修复提交待推送；输入簇（T1/T2/T3/T5/T8）+ 联机簇（T4/T7/T9镜像）+ 玻璃簇（T9路由/T10动态）+ 资产簇（T6/T11/T12）五域并进
+- 装机验证锚点：①开"常用操作键"抽屉不再锁 Ctrl，左右键/疾跑行为稳定；"持续 奔跑"按钮按一次=持续奔跑（再按取消）；轻点 CTRL=短按（不再钉死疾跑）②MobileGL 切后台回来自动几何重申（热栏/主触点同口径）③SDL 聊天：键盘附属条"收起键盘"/点游戏画面均可关闭；光标消失自动收起④联机页打字期间后台事件不再关键盘⑤开关 OFF=不自动弹（T 键跟随保留），ON=自动弹 ⑥文件夹打开后 + 号导入文件到当前目录⑦房主流程自动检测（日志+回环扫描双路）⑧游戏内 ⚙ 菜单/账号长按/游戏目录长按在伪玻璃档呈磨砂面板，原生档保持原生⑨游戏内菜单磨砂背景随游戏画面 8Hz 跟随⑩模组切源自动解析对端 id⑪全界面无裸键名

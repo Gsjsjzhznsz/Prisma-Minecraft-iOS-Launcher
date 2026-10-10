@@ -42,11 +42,42 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
 static const void *kAme243SnapKey = &kAme243SnapKey;
 /// ★ Task244：快照磨砂可读性 tint 层（浮在快照之上、内容/滚动区之下）
 static const void *kAme244TintKey = &kAme244TintKey;
+/// ★ Task247：菜单展示期动态重抓的 CADisplayLink（T10：游戏内菜单伪玻璃
+///   背景不随背景变化）
+static const void *kAme247RefreshLinkKey = &kAme247RefreshLinkKey;
 
 @interface SurfaceViewController(Navigation)
 // FCL 风格菜单的背景遮罩（半透明黑色，点击关闭菜单）
 @property(nonatomic) UIView *menuDimView;
 @end
+
+/// ★ Task247（T10）：游戏画面快照（surfaceView 直抓）——菜单展示期的动态
+///   磨砂原料。与 ame243_blurredGameSnapshot（keyWindow 全窗抓）的关键差
+///   异：菜单打开后 menuView/menuDimView 都叠在 self.view 上，继续抓
+///   keyWindow 会把面板自己拍进去（自噬 = 背景永不变化、菜单开着时背景
+///   一直是一张静止图）；surfaceView 是游戏的 Metal 呈现面，永远不含菜
+///   单 UI，8Hz 重抓零自噬面。drawViewHierarchyInRect afterScreenUpdates:NO
+///   与 Task243 同序（Metal 帧安全，抓帧即模糊）。
+static UIImage *ame247_surfaceSnapshot(UIView *ame247_surface) {
+    if (ame247_surface == nil || ame247_surface.window == nil ||
+        ame247_surface.bounds.size.width < 40.0 ||
+        ame247_surface.bounds.size.height < 40.0) return nil;
+    @try {
+        UIGraphicsImageRendererFormat *ame247_fmt =
+            [[UIGraphicsImageRendererFormat alloc] init];
+        ame247_fmt.scale = 0.18;
+        ame247_fmt.opaque = YES;
+        UIGraphicsImageRenderer *ame247_r =
+            [[UIGraphicsImageRenderer alloc] initWithSize:ame247_surface.bounds.size
+                                                   format:ame247_fmt];
+        return [ame247_r imageWithActions:^(UIGraphicsImageRendererContext *ame247_rc) {
+            [ame247_surface drawViewHierarchyInRect:ame247_surface.bounds
+                                afterScreenUpdates:NO];
+        }];
+    } @catch (NSException *ame247_e) {
+        return nil;
+    }
+}
 
 @implementation SurfaceViewController(Navigation)
 
@@ -455,6 +486,57 @@ static UIColor *ame244_snapshotTint(void) {
     }
 }
 
+/// ★ Task247（T10）：菜单展示期动态磨砂——8Hz 重抓游戏画面（Task246 在
+///   AmeFloatingMenu 弹窗上的同款机制移植到游戏内主菜单）。停止条件：
+///   菜单隐藏/风格切换非玻璃族/链接失效，tick 内自查自停（分类无 dealloc
+///   钩子，靠隐藏态自愈 + showMenu 重启）。
+- (void)ame247_stopMenuSnapshotRefresh {
+    CADisplayLink *ame247_link = objc_getAssociatedObject(self, kAme247RefreshLinkKey);
+    if (ame247_link != nil) {
+        [ame247_link invalidate];
+        objc_setAssociatedObject(self, kAme247RefreshLinkKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+}
+
+- (void)ame247_menuSnapshotTick:(CADisplayLink *)ame247_sender {
+    if (self.menuView == nil || self.menuView.hidden ||
+        !LGCIsGlassStyleActive()) {
+        [self ame247_stopMenuSnapshotRefresh];
+        return;
+    }
+    UIImageView *ame247_snap = objc_getAssociatedObject(self, kAme243SnapKey);
+    if (ame247_snap == nil) {
+        [self ame247_stopMenuSnapshotRefresh];
+        return;
+    }
+    UIImage *ame247_fresh = ame247_surfaceSnapshot(self.surfaceView);
+    if (ame247_fresh != nil && !ame244_snapshotLooksValid(ame247_fresh)) {
+        // 全黑帧护栏：Metal 抓帧病态产物 = 保留上一张有效图，绝不降级黑磨砂
+        return;
+    }
+    if (ame247_fresh != nil) {
+        ame247_snap.image = ame247_fresh;
+        if (ame247_snap.hidden) {
+            ame247_snap.hidden = NO;
+            UIView *ame247_tint = objc_getAssociatedObject(self, kAme244TintKey);
+            if (ame247_tint != nil) ame247_tint.hidden = NO;
+            UIView *ame247_blur = objc_getAssociatedObject(self, kAme237BlurKey);
+            if (ame247_blur != nil) ame247_blur.hidden = YES;
+        }
+    }
+}
+
+- (void)ame247_startMenuSnapshotRefresh {
+    if (!LGCIsGlassStyleActive()) return;
+    [self ame247_stopMenuSnapshotRefresh];
+    CADisplayLink *ame247_link = [CADisplayLink displayLinkWithTarget:self
+                                                             selector:@selector(ame247_menuSnapshotTick:)];
+    ame247_link.preferredFramesPerSecond = 8;   // Task246 同款 8Hz：背景变化 ≤125ms 跟上
+    [ame247_link addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+    objc_setAssociatedObject(self, kAme247RefreshLinkKey, ame247_link,
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
 /// FCL 风格：从底部弹出菜单（游戏画面不缩小）
 /// ★ Task227（反馈 #8）：齿轮吸边成把手时，菜单改从吸边侧滑出（侧边栏
 /// 形态）；悬浮球形态保持原底部弹层。
@@ -506,6 +588,11 @@ static UIColor *ame244_snapshotTint(void) {
 
     self.menuView.hidden = NO;
     self.menuDimView.hidden = NO;
+
+    // ★ Task247（T10）：菜单展示期动态重抓（8Hz）——伪玻璃/玻璃档下背景
+    //   随游戏画面持续变化（此前只在打开瞬间抓一帧，菜单开着时背景永远
+    //   是静止图）。
+    [self ame247_startMenuSnapshotRefresh];
 
     // ★ Task237：开菜取证（接替 Task232 的 cell 取证——菜单已非表视图）——
     //   面板帧/底色/磨砂层/首行帧与标签尺寸全量落日志，下一轮装机日志
@@ -638,6 +725,7 @@ static UIColor *ame244_snapshotTint(void) {
     } completion:^(BOOL finished) {
         self.menuView.hidden = YES;
         self.menuDimView.hidden = YES;
+        [self ame247_stopMenuSnapshotRefresh];   // Task247（T10）：菜单关闭即停重抓
         [self setNeedsUpdateOfHomeIndicatorAutoHidden];
         [self setNeedsUpdateOfScreenEdgesDeferringSystemGestures];
         [self setNeedsStatusBarAppearanceUpdate];

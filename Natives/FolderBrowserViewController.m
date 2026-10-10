@@ -2,7 +2,9 @@
 #import "BackgroundManager.h"
 #import "LiquidGlassCompat.h"   // Task224（#4）：界面风格解析（文件夹浏览器头部随风格）
 #import "utils.h"
+#import "NMToast.h"
 #import <QuickLook/QuickLook.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #include <objc/runtime.h>
 
 @interface FolderBrowserViewController () {
@@ -59,6 +61,15 @@
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc]
         initWithBarButtonSystemItem:UIBarButtonSystemItemDone
                              target:self action:@selector(actionDone)];
+    // ★ Task247（T6）：导入到当前文件夹——游戏内“打开目录”改为软件中转
+    //   导入流（用户指令：文件夹能打开但只显示毛玻璃覆盖层和文件夹名 →
+    //   改成导入文件到对应文件夹，使用软件进行中转）。asCopy:YES = 系统
+    //   选完即拷到临时目录（免安全域时序坑，DataTransferService 同款），
+    //   再由本页拷入 currentPath——完全“软件中转”语义；允许多选，与
+    //   浏览深度无关（子页同样带此按钮，导入目标 = 当前浏览目录）。
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc]
+        initWithBarButtonSystemItem:UIBarButtonSystemItemAdd
+                             target:self action:@selector(ame247_importTapped)];
     // Task223：currentPath 已由 ame223_setRootAndLoad 预置（子页下钻）时优
     // 先用之；否则加载根目录。
     if (self.currentPath.length > 0) {
@@ -217,6 +228,82 @@
 
 - (void)actionDone {
     [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+#pragma mark - Task247 导入到当前文件夹（软件中转）
+
+- (void)ame247_importTapped {
+    UTType *ame247_any = [UTType typeWithIdentifier:@"public.data"];
+    if (ame247_any == nil) ame247_any = UTTypeItem;
+    UIDocumentPickerViewController *ame247_picker =
+        [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ame247_any]
+                                                                    asCopy:YES];
+    ame247_picker.delegate = self;
+    ame247_picker.allowsMultipleSelection = YES;
+    ame247_picker.modalPresentationStyle = UIModalPresentationFormSheet;
+    NSLog(@"[FolderBrowser] Task247: import picker presented (target=%@)", self.currentPath);
+    [self presentViewController:ame247_picker animated:YES completion:nil];
+}
+
+/// 目标同名冲突的免覆盖命名："name.ext" 在场 → "name (2).ext"、"name (3).ext"…
+- (NSString *)ame247_nonCollidingNameFor:(NSString *)ame247_name inDirectory:(NSString *)ame247_dir {
+    NSFileManager *ame247_fm = NSFileManager.defaultManager;
+    if (![ame247_fm fileExistsAtPath:[ame247_dir stringByAppendingPathComponent:ame247_name]]) {
+        return ame247_name;
+    }
+    NSString *ame247_base = ame247_name.stringByDeletingPathExtension;
+    NSString *ame247_ext = ame247_name.pathExtension;
+    for (NSInteger ame247_i = 2; ame247_i < 1000; ame247_i++) {
+        NSString *ame247_candidate = (ame247_ext.length > 0)
+            ? [NSString stringWithFormat:@"%@ (%@.%@", ame247_base, @(ame247_i), ame247_ext]
+            : [NSString stringWithFormat:@"%@ (%@", ame247_base, @(ame247_i)];
+        if (![ame247_fm fileExistsAtPath:[ame247_dir stringByAppendingPathComponent:ame247_candidate]]) {
+            return ame247_candidate;
+        }
+    }
+    return nil;
+}
+
+- (void)documentPicker:(UIDocumentPickerViewController *)controller
+didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls {
+    NSString *ame247_dest = self.currentPath;
+    if (ame247_dest.length == 0) ame247_dest = self.rootPath;
+    NSFileManager *ame247_fm = NSFileManager.defaultManager;
+    NSMutableArray<NSString *> *ame247_imported = [NSMutableArray array];
+    NSMutableArray<NSString *> *ame247_failed = [NSMutableArray array];
+    for (NSURL *ame247_src in urls) {
+        NSString *ame247_name = ame247_src.lastPathComponent ?: @"imported.file";
+        NSString *ame247_final = [self ame247_nonCollidingNameFor:ame247_name inDirectory:ame247_dest];
+        if (ame247_final == nil) {
+            [ame247_failed addObject:ame247_name];
+            continue;
+        }
+        NSString *ame247_to = [ame247_dest stringByAppendingPathComponent:ame247_final];
+        // 中转拷贝：先拷到 NSTemporaryDirectory 再落位（“软件中转”），
+        // 源安全域文件与目标目录权限解耦；拷完即清理中转。
+        NSString *ame247_staging = [NSTemporaryDirectory()
+            stringByAppendingPathComponent:[NSString stringWithFormat:@"ame247-import-%@", ame247_final]];
+        NSError *ame247_err = nil;
+        [[NSFileManager defaultManager] removeItemAtPath:ame247_staging error:nil];
+        if ([ame247_fm copyItemAtURL:ame247_src toURL:[NSURL fileURLWithPath:ame247_staging] error:&ame247_err] &&
+            [ame247_fm moveItemAtPath:ame247_staging toPath:ame247_to error:&ame247_err]) {
+            [ame247_imported addObject:ame247_final];
+        } else {
+            [ame247_fm removeItemAtPath:ame247_staging error:nil];
+            [ame247_failed addObject:ame247_name];
+            NSLog(@"[FolderBrowser] Task247 import failed (%@): %@", ame247_name, ame247_err.localizedDescription);
+        }
+    }
+    [self ame223_loadPath:ame247_dest];
+    if (ame247_failed.count > 0) {
+        [NMToast showMessage:[NSString stringWithFormat:localize(@"folderbrowser.import.failed", nil),
+                              (unsigned long)ame247_imported.count, (unsigned long)ame247_failed.count]];
+    } else {
+        [NMToast showMessage:[NSString stringWithFormat:localize(@"folderbrowser.import.done", nil),
+                              (unsigned long)ame247_imported.count]];
+    }
+    NSLog(@"[FolderBrowser] Task247: imported %lu file(s) into %@ (%lu failed)",
+          (unsigned long)ame247_imported.count, ame247_dest, (unsigned long)ame247_failed.count);
 }
 
 #pragma mark - Table view data source

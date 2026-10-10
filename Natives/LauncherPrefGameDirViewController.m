@@ -6,6 +6,8 @@
 #import "PLProfiles.h"
 #import "ios_uikit_bridge.h"
 #import "utils.h"
+#import "AmeNativeMenu.h"       // Task247（T9）：伪玻璃档长按菜单 ame240 路由
+#import "LiquidGlassCompat.h"   // Task247（T9）：伪玻璃档分档判定
 
 @interface LauncherPrefGameDirViewController ()<UITextFieldDelegate>
 @property(nonatomic) NSMutableArray *array;
@@ -13,9 +15,17 @@
 
 @implementation LauncherPrefGameDirViewController
 
-- (void)viewDidLoad
-{
+- (void)viewDidLoad {
     [super viewDidLoad];
+    // ★ Task247（T9）：伪玻璃档——系统 UIContextMenu 长按菜单改由长按手势
+    //   + ame240 统一路由（磨砂面板）；真液态玻璃/原生档保留系统菜单。
+    if (LGCIsPseudoGlassStyleActive()) {
+        UILongPressGestureRecognizer *ame247_lp =
+            [[UILongPressGestureRecognizer alloc] initWithTarget:self
+                                                          action:@selector(ame247_longPressDirMenu:)];
+        ame247_lp.minimumPressDuration = 0.45;
+        [self.tableView addGestureRecognizer:ame247_lp];
+    }
     [self setTitle:localize(@"preference.title.game_directory", nil)];
 
     self.array = [[NSMutableArray alloc] init];
@@ -172,8 +182,67 @@ viewForFooterInSection:(NSInteger)section
     };
 }
 
+// ★ Task247（T9）：伪玻璃档长按手势 → ame240 统一路由（磨砂面板）。
+//   菜单项与系统上下文菜单同源：外部打开（按可用 scheme）+ 重命名 + 删除
+//   （default 实例仅外部打开）。
+- (void)ame247_longPressDirMenu:(UILongPressGestureRecognizer *)gesture {
+    if (gesture.state != UIGestureRecognizerStateBegan) return;
+    CGPoint ame247_pt = [gesture locationInView:self.tableView];
+    NSIndexPath *ame247_ip = [self.tableView indexPathForRowAtPoint:ame247_pt];
+    if (ame247_ip == nil || ame247_ip.row >= self.array.count) return;
+
+    NSString *ame247_name = self.array[ame247_ip.row];
+    NSString *ame247_dir = [NSString stringWithFormat:@"%s/instances/%@", getenv("POJAV_HOME"), ame247_name];
+    NSMutableArray<NSDictionary *> *ame247_items = [NSMutableArray array];
+    NSDictionary *ame247_apps = @{
+        @"shareddocuments": @"Files",
+        @"filza": @"Filza",
+        @"santander": @"Santander",
+    };
+    for (NSString *ame247_key in ame247_apps.allKeys) {
+        NSString *ame247_url = [NSString stringWithFormat:@"%@://", ame247_key];
+        if ([UIApplication.sharedApplication canOpenURL:[NSURL URLWithString:ame247_url]]) {
+            NSString *ame247_scheme = ame247_key;
+            [ame247_items addObject:@{
+                @"title": ame247_apps[ame247_key],
+                @"handler": ^{
+                    [UIApplication.sharedApplication
+                        openURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@://%@", ame247_scheme, ame247_dir]]
+                        options:@{} completionHandler:nil];
+                },
+            }];
+        }
+    }
+    if (ame247_ip.row != 0) {
+        [ame247_items addObject:@{
+            @"title": localize(@"Rename", nil),
+            @"systemImage": @"pencil",
+            @"handler": ^{
+                UITableViewCell *ame247_cell = [self.tableView cellForRowAtIndexPath:ame247_ip];
+                [ame247_cell.contentView.subviews.firstObject becomeFirstResponder];
+            },
+        }];
+        [ame247_items addObject:@{
+            @"title": localize(@"Delete", nil),
+            @"systemImage": @"trash",
+            @"destructive": @YES,
+            @"handler": ^{
+                [self actionDeleteAtIndexPath:ame247_ip];
+            },
+        }];
+    }
+    if (ame247_items.count == 0) return;
+    UITableViewCell *ame247_anchor = [self.tableView cellForRowAtIndexPath:ame247_ip];
+    [AmeNativeMenu ame240_presentMenuWithTitle:ame247_name
+                                     dictItems:ame247_items
+                                    sourceView:ame247_anchor ?: self.view];
+}
+
 - (UIContextMenuConfiguration *)tableView:(UITableView *)tableView contextMenuConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath point:(CGPoint)point 
 {
+    // ★ Task247（T9）：伪玻璃档返回 nil（系统上下文菜单不上场），长按由
+    //   viewDidLoad 挂的手势经 ame240 路由呈磨砂面板。
+    if (LGCIsPseudoGlassStyleActive()) return nil;
     NSArray *menuItems;
     NSMutableArray *openItems = [[NSMutableArray alloc] init];
 

@@ -2987,3 +2987,6 @@
 "game.menu.settings" = "Settings";
 "ame233.repo.open_fail" = "Could not open the webpage. The layout JSON is still on your clipboard - open github.com in Safari and paste it manually";
 "ame233.stall.toast" = "Rendering stalled for 25s. This is a known occasional issue - exiting and re-entering the world usually fixes it";
+"ame247.keyboard.dismiss" = "Dismiss Keyboard";
+"folderbrowser.import.done" = "Imported %lu file(s) into this folder.";
+"folderbrowser.import.failed" = "Import finished: %lu succeeded, %lu failed.";

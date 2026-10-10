@@ -273,6 +273,10 @@ static UIColor *Ame244SnapshotTint(void) {
 /// ★ Task242：未选中实质动作而关闭面板（dim 点按/cancel 项）时的回调
 ///   （统一菜单呈现器分轨呈现的取消语义接线，见 .h 变体注释）。
 @property (nonatomic, copy, nullable) void (^ame237_onDismiss)(void);
+/// ★ Task247（T9）：镜像源 alert 反向引用（动态 message 更新/外部关闭的
+///   定位锚——联机进度弹窗等“present 后持续更新内容”的 alert 在玻璃
+///   镜像下的同步通路；weak 不延长 alert 生命周期）。
+@property (nonatomic, weak, nullable) UIAlertController *ame237_sourceAlert;
 /// ★ Task243：呈现前的 keyWindow 重度降采样快照（自绘磨砂原料）。
 ///   Metal 游戏层上 UIVisualEffectView 不合成（Task228/230/236 三轮装机
 ///   实锤），游戏内弹层（分辨率调整等）玻璃档只剩深色底 = 黑面板。
@@ -768,6 +772,18 @@ static UIColor *Ame244SnapshotTint(void) {
     }
 }
 
+/// ★ Task247（T9）：镜像面板 message 动态更新（重跑布局，面板高度随文本
+///   自适应；首次建面板时 message 为空未建标签的场景仅更新数据源，不
+///   补建标签——进度弹窗带初始 message 建面板，标签恒在场）。
+- (void)ame247_updateMessage:(nullable NSString *)message {
+    self.ame237_message = message;
+    if (self.messageLabel != nil) {
+        self.messageLabel.text = message ?: @"";
+        self.messageLabel.hidden = (message.length == 0);
+    }
+    if (self.viewLoaded) [self ame237_layout];
+}
+
 - (void)ame237_rowTapped:(Ame237MenuRow *)sender {
     if (self.ame237_dismissing) return;
     NSInteger i = sender.tag;
@@ -962,6 +978,7 @@ static UIColor *Ame244SnapshotTint(void) {
     menu.ame237_message = alert.message;
     menu.ame237_actions = [mirrors copy];
     menu.ame237_alertFields = [alert.textFields copy];
+    menu.ame237_sourceAlert = alert;   // ★ Task247（T9）：动态通路定位锚
     menu.ame237_animated = animated;
     // ★ Task242：取消语义接线（未选实质动作关闭 → onDismiss，见 .h；
     //   调用方 = 统一菜单呈现器玻璃档分轨）。
@@ -989,6 +1006,52 @@ static UIColor *Ame244SnapshotTint(void) {
               replacedCount, (long)alert.preferredStyle, (unsigned long)mirrors.count,
               (unsigned long)alert.textFields.count, alert.title);
     }
+#pragma mark - Task247 镜像 alert 动态通路
+
+// 沿场景呈现链查找 sourceAlert 匹配的已上屏镜像面板。
++ (nullable Ame237GlassMenuViewController *)ame247_findMirrorForAlert:(UIAlertController *)alert {
+    if (alert == nil) return nil;
+    for (UIScene *ame247_scene in UIApplication.sharedApplication.connectedScenes) {
+        if (![ame247_scene isKindOfClass:[UIWindowScene class]]) continue;
+        for (UIWindow *ame247_win in ((UIWindowScene *)ame247_scene).windows) {
+            if (!ame247_win.isKeyWindow) continue;
+            UIViewController *ame247_vc = ame247_win.rootViewController;
+            while (ame247_vc != nil) {
+                if ([ame247_vc isKindOfClass:[Ame237GlassMenuViewController class]] &&
+                    ((Ame237GlassMenuViewController *)ame247_vc).ame237_sourceAlert == alert) {
+                    return (Ame237GlassMenuViewController *)ame247_vc;
+                }
+                ame247_vc = ame247_vc.presentedViewController;
+            }
+        }
+    }
+    return nil;
+}
+
++ (BOOL)ame247_setMessage:(nullable NSString *)message forMirroredAlert:(UIAlertController *)alert {
+    Ame237GlassMenuViewController *ame247_mirror = [self ame247_findMirrorForAlert:alert];
+    if (ame247_mirror == nil) return NO;
+    [ame247_mirror ame247_updateMessage:message];
+    return YES;
+}
+
++ (BOOL)ame247_dismissMirroredAlert:(UIAlertController *)alert
+                         completion:(nullable void (^)(void))completion {
+    Ame237GlassMenuViewController *ame247_mirror = [self ame247_findMirrorForAlert:alert];
+    if (ame247_mirror == nil) return NO;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // 复用面板自身退场（含入场动画对称的退出动画 + dismissViewControllerAnimated）；
+        // 完成/超时双保险后再回调，避免调用方在退场进行中 present 新面板被 UIKit 吞掉。
+        __block BOOL ame247_done = NO;
+        void (^ame247_finish)(void) = ^() {
+            if (ame247_done) return;
+            ame247_done = YES;
+            if (completion != nil) completion();
+        };
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ame247_finish);
+        [ame247_mirror ame237_dismissWithAction:nil];
+    });
     return YES;
 }
 

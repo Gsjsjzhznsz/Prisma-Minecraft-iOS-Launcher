@@ -25,6 +25,8 @@
 #import "ios_uikit_bridge.h"
 #import "LanPortDetector.h"
 #import "BackgroundManager.h"
+#import "AmeNativeMenu.h"   // Task247（T9）：伪玻璃档 ⚙ 按钮菜单走磨砂面板路由
+#import "LiquidGlassCompat.h"   // Task247（T9）：LGCIsPseudoGlassStyleActive 风格分档判定
 // Task 166：MobileGL DirectVulkan 的 Metal 层 FSR1（updateSavedResolution 钩子）。
 #import "ctxbridges/mgl_metal_fsr.h"
 // ZeroTier/Terracotta 联机暂时移除（排查启动崩溃）
@@ -1414,6 +1416,24 @@ void ame139_fsr_heal_reset_input_scale(void) {
                              action:@selector(ame224_keyboardActivityRefresh)
                    forControlEvents:UIControlEventEditingChanged];
 
+    // Task247（T5）：键盘附属条（收起按钮）——preventUnexpectedResign 拦截
+    // 了一切系统侧收起路径后，✎ 输入法按钮曾是唯一显式出口（用户报
+    // "无法关闭键盘"）。附属条提供标准 iOS 出口：走 ame225 包夹 + 置
+    // Task227 闩锁，与 ✎ 同语义。
+    {
+        UIButton *ame247_dismissBar = [UIButton buttonWithType:UIButtonTypeSystem];
+        ame247_dismissBar.frame = CGRectMake(0, 0, self.view.frame.size.width, 36.0);
+        ame247_dismissBar.backgroundColor = UIColor.tertiarySystemBackgroundColor;
+        [ame247_dismissBar setTitle:localize(@"ame247.keyboard.dismiss", nil)
+                           forState:UIControlStateNormal];
+        [ame247_dismissBar setTitleColor:UIColor.secondaryLabelColor forState:UIControlStateNormal];
+        ame247_dismissBar.titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
+        [ame247_dismissBar addTarget:self
+                              action:@selector(ame247_dismissKeyboardFromBar)
+                    forControlEvents:UIControlEventTouchUpInside];
+        self.inputTextField.inputAccessoryView = ame247_dismissBar;
+    }
+
     self.swipeableButtons = [[NSMutableArray alloc] init];
 
     [KeyboardInput initKeycodeTable];
@@ -2289,6 +2309,12 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
                                              selector:@selector(ame172_sdlStopTextInput:)
                                                  name:@"AME172_SDLStopTextInput"
                                                object:nil];
+    // Task247（T2）：回前台几何重申（MobileGlues 跨后台 contentsScale/
+    // drawableSize/FSR 漂移 → 触点换算与 MC 窗口信念失配；见方法注释）。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame247_didBecomeActive)
+                                                 name:UIApplicationDidBecomeActiveNotification
+                                               object:nil];
 }
 
 /// 取消启动：用户点击"取消启动"按钮时调用。
@@ -2527,6 +2553,24 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     }
 
     if (menuButton) {
+        if (LGCIsPseudoGlassStyleActive()) {
+            // ★ Task247（T9）：伪玻璃档——⚙ 主菜单按钮的 menuArray 快捷菜单
+            //   走魔改磨砂面板（ame240 统一路由，锚定按钮本身）。旧实现直
+            //   挂 menuButton.menu + showsMenuAsPrimaryAction = 系统 UIMenu
+            //   直出（iOS 26 下即系统原生液态玻璃）——伪玻璃档下用户看到
+            //   的就是"仍然使用原生界面"。真液态玻璃档/原生档保留系统菜
+            //   单（IMG_0370 定案：选择项 = 系统原生液态玻璃；原生档 = 用
+            //   回原生）。showsMenuAsPrimaryAction 消费 tap 的语义改由点按
+            //   目标等价承担；同时摘除 executebtn 目标防双重呈现
+            //   （-9 SPECIALBTN_MENU 的抽屉路径与弹层菜单冲突）。
+            menuButton.menu = nil;
+            menuButton.showsMenuAsPrimaryAction = NO;
+            [menuButton removeTarget:self action:@selector(executebtn_down:) forControlEvents:UIControlEventTouchDown];
+            [menuButton removeTarget:self action:@selector(executebtn_up_inside:) forControlEvents:UIControlEventTouchUpInside];
+            [menuButton removeTarget:self action:@selector(executebtn_up_outside:) forControlEvents:UIControlEventTouchUpOutside];
+            [menuButton addTarget:self action:@selector(ame247_menuButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+            self.edgeGesture.enabled = NO;
+        } else {
         NSMutableArray *items = [NSMutableArray new];
         for (int i = 0; i < self.menuArray.count; i++) {
             UIAction *item = [UIAction actionWithTitle:localize(self.menuArray[i], nil) image:nil identifier:nil
@@ -2537,7 +2581,25 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             options:UIMenuOptionsDisplayInline children:items];
         menuButton.showsMenuAsPrimaryAction = YES;
         self.edgeGesture.enabled = NO;
+        }
     }
+}
+
+// ★ Task247（T9）：伪玻璃档 ⚙ 按钮点按 → 魔改磨砂面板（ame240 字典路由）。
+- (void)ame247_menuButtonTapped:(UIButton *)sender {
+    NSMutableArray<NSDictionary *> *ame247_items = [NSMutableArray new];
+    for (int ame247_i = 0; ame247_i < self.menuArray.count; ame247_i++) {
+        int ame247_idx = ame247_i;
+        [ame247_items addObject:@{
+            @"title": localize(self.menuArray[ame247_i], nil),
+            @"handler": ^{
+                [self didSelectMenuItem:ame247_idx];
+            },
+        }];
+    }
+    [AmeNativeMenu ame240_presentMenuWithTitle:@""
+                                     dictItems:ame247_items
+                                    sourceView:sender];
 }
 
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
@@ -2647,6 +2709,31 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     self.inputTextField.preventUnexpectedResign = YES;
 }
 
+// Task247（T5）：键盘附属条"收起键盘"按钮出口（与 ✎ 按钮同语义的显式收起）。
+- (void)ame247_dismissKeyboardFromBar {
+    if (!self.inputTextField.isFirstResponder) return;
+    ame171_keyboardDismissGeneration++;
+    [self ame225_resignInputTextField];
+    ame227_kbUserDismissed = YES;
+    ame227_kbDismissedAt = CFAbsoluteTimeGetCurrent();
+    self.inputTextField.alpha = 1.0f;
+    NSLog(@"[SurfaceVC] Task247: keyboard dismissed via accessory bar (latch armed)");
+}
+
+// Task247（T2）：回前台几何全量重申——MobileGlues 路径跨后台可能发生
+// contentsScale/drawableSize/FSR 漂移（UIKit 层重建 / mg 上下文重建），
+// 而 updateSavedResolution 此前只在 viewDidLoad/偏好/旋转/外接屏四点
+// 调用，回前台无人重算 = 触点换算与 MC 窗口信念失配（"切后台后输入
+// 错位"存活面）。updateSavedResolution 幂等：几何未漂移时重算结果与现
+// 值相同（announce 同尺寸 = no-op）；漂移时把 surface/输入/announce 三
+// 口径重新对齐。Task187 的"会话内几何不可变"红线只针对【分辨率偏好变
+// 更】场景——本处重算永远使用同一偏好值，不引入新比例。
+- (void)ame247_didBecomeActive {
+    if (self.surfaceView.superview == nil) return;   // 会话未启动
+    [self updateSavedResolution];
+    NSLog(@"[SurfaceVC] Task247: didBecomeActive geometry re-synced (screenScale=%.2f)", self.screenScale);
+}
+
 - (void)ame171_armKeyboardRecheck:(int)depth {
     if (depth == 0 || ame224_kbWatchArmedGen != ame171_keyboardDismissGeneration) {
         // 新一轮用户意图（✎/Start/手势）：清预算、重置截止时间
@@ -2721,24 +2808,31 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             return;
         }
     }
+    // ★ Task247（T8 开关语义落地）：开关 OFF 旧实现漏了"非闩锁态"分支——
+    //   latch=NO 时两个分支都不命中，Start 照样落到下方弹键盘（开关形同
+    //   虚设，用户感知 = "自动打开输入法（SDL）开关功能无效"）。新语义：
+    //   ON = 每个 Start 都自动弹（保留显式收起 2.5s 硬抑制窗，见上）；
+    //   OFF = 不自动弹——仅聊天开键（T/斜杠，3s 窗）跟随放行（用户按 T
+    //   打开聊天时的键盘跟随是显式意图），其余文本请求一律静默，键盘由
+    //   ✎ 输入法按钮/附属条/点游戏画面手动唤起。默认值已随本任务改为
+    //   YES（PLPreferences），存量用户的默认体验（自动弹）不变。
     if (getPrefBool(@"control.auto_keyboard_sdl")) {
         ame227_kbUserDismissed = NO;
         if (!ame229_autoKbShownThisSession) {
             ame229_autoKbShownThisSession = YES;
             NSLog(@"[SurfaceVC] Task232 auto-keyboard (SDL) first-of-session honored (always-on mode while switch is enabled)");
         }
-    } else if (ame227_kbUserDismissed) {
+    } else {
         CFAbsoluteTime ame229_sinceDismiss = CFAbsoluteTimeGetCurrent() - ame227_kbDismissedAt;
         BOOL ame227_chatOpener = ame161_lastSentKeyWasChatOpener(3.0);
         if (ame227_chatOpener) {
             ame227_kbUserDismissed = NO;
-            NSLog(@"[SurfaceVC] Task229 keyboard latch CLEARED (chat-opener key, %.1fs after dismissal) -- showing keyboard",
+            NSLog(@"[SurfaceVC] Task247 keyboard shown via chat-opener grace (switch OFF; %.1fs after last dismissal)",
                   ame229_sinceDismiss);
         } else {
             ame227_suppressedStarts++;
             if (ame227_suppressedStarts <= 5 || (ame227_suppressedStarts % 25) == 0) {
-                NSLog(@"[SurfaceVC] Task227 stray StartTextInput SUPPRESSED #%d (user dismissed keyboard %.1fs ago -- tap input-method button or press T to reopen)",
-                      ame227_suppressedStarts, ame229_sinceDismiss);
+                NSLog(@"[SurfaceVC] Task247 StartTextInput suppressed (auto-keyboard switch OFF; enable it or tap the input-method button to open keyboard manually)");
             }
             return;
         }
@@ -2800,9 +2894,14 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             if (!strongSelf) return;
             ame223_pendingStopResign = NULL;   // ★ Task230：触发即清指针——旧实现残留已执行块的悬挂指针，下一轮 Start 的"取消"分支变成假阳性（4880 行实锤）
             if (!strongSelf.inputTextField.isFirstResponder) return;
+            // Task247（T5）：去抖窗到点仍无 Start 跟随 = 真会话结束。此时若
+            // 残留组字态（拼音缓冲，markedTextRange 非空）旧实现会无限跳过
+            // 收起（"光标没了不会自动关闭键盘"存活根因）。提交组字
+            // （unmarkText 把缓冲上屏）后照常收起；快速 Stop→Start 循环场景
+            // 在窗内即被 Start 取消，不会走到这里（Task222/223 保护面不变）。
             if (strongSelf.inputTextField.markedTextRange != nil) {
-                NSLog(@"[SurfaceVC] Task223 IME debounce: resign skipped at fire time (composition active)");
-                return;
+                [strongSelf.inputTextField unmarkText];
+                NSLog(@"[SurfaceVC] Task247 IME composition committed (unmarkText) before stop-resign");
             }
             ame171_keyboardDismissGeneration++;
             [strongSelf ame225_resignInputTextField];
@@ -2868,7 +2967,11 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     }
 
     if (touchEvent == self.hotbarTouch && self.slideableHotbar && ![self isTouchInactive:self.hotbarTouch]) {
-        CGFloat screenScale = [[UIScreen mainScreen] scale];
+        // Task247（T2）：口径统一——热栏换算此前用 UIScreen.mainScreen.scale，
+        // 主触点链用 self.screenScale（scene.screen.scale，updateSavedResolution
+        // 写入）；Stage Manager/外接屏场景两者不等 → 热栏手势与主触点同一根
+        // 触摸两套像素坐标 = 错位存活面之一。
+        CGFloat screenScale = (self.screenScale > 0.0f) ? self.screenScale : [[UIScreen mainScreen] scale];
         int slot = self.enableHotbarGestures ?
         callback_SurfaceViewController_touchHotbar(locationInView.x * screenScale, locationInView.y * screenScale) : -1;
         if (slot != -1 && currentHotbarSlot != slot && (event == ACTION_DOWN || currentHotbarSlot != -1)) {
@@ -3110,6 +3213,12 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 
 #pragma mark - On-screen button functions
 
+// Task247（T3）：Task179 修饰键账本（原 executebtn 函数内 static，为让
+// 保持型 toggle 按钮的直发路径 ame247_sendHoldKeyEvents 能清理同一份
+// 状态而提升到文件级）。
+static NSMutableDictionary<NSNumber *, NSNumber *> *s_ame176_modDownTime = nil;
+static NSMutableSet<NSNumber *> *s_ame179_toggledMods = nil;
+
 - (void)executebtn:(ControlButton *)sender withAction:(int)action {
     // Task 83b：入口取证——⌨ 面板问题的日志闭环。此前 sendKey（nativeSendKey）
     // 与字符合成端（buttonKeySynthesizeText）都有日志，唯独 executebtn 入口
@@ -3163,15 +3272,19 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     //   长按（≥0.4s）= 常规按住：抬手即释放（并清除该键的 toggle 态）。
     // 潜行（点 shift→移动→再点关）、shift+点击（点 shift→点击→再点关）、
     // 大写字母（长按 shift+字母）三种用法全部成立。
-    static NSMutableDictionary<NSNumber *, NSNumber *> *s_ame176_modDownTime = nil;
-    static NSMutableSet<NSNumber *> *s_ame179_toggledMods = nil;
+    // Task247：账本 static 已提升文件级（见上方声明），此处仅保留惰性初始化。
     if (s_ame176_modDownTime == nil) {
         s_ame176_modDownTime = [NSMutableDictionary dictionary];
         s_ame179_toggledMods = [NSMutableSet set];
     }
+// Task247（T3 "Ctrl 像持续奔跑"根修）：LEFT/RIGHT_CONTROL 移出 Task179
+// 轻点锁定集。旧语义下轻点 CTRL 按钮即把 Ctrl 钉在按下态（MC 侧等价于
+// 疾跑持续命中，叠加 options.txt 的 toggleSprint 后更是双锁）——用户感知
+// 即"反而 Ctrl 像持续奔跑"。Ctrl 回归常规按住键（按住疾跑、松开停止）；
+// Shift/Alt 的轻点锁定玩法保留。锁定型疾跑用「持续 奔跑」按钮（Task247
+// 已修复其死键）或设置页"切换疾跑"开关（写入 MC toggleSprint）。
 #define AME176_IS_MOD_KEY(kc) \
     ((kc) == GLFW_KEY_LEFT_SHIFT || (kc) == GLFW_KEY_RIGHT_SHIFT || \
-     (kc) == GLFW_KEY_LEFT_CONTROL || (kc) == GLFW_KEY_RIGHT_CONTROL || \
      (kc) == GLFW_KEY_LEFT_ALT || (kc) == GLFW_KEY_RIGHT_ALT || \
      (kc) == GLFW_KEY_LEFT_SUPER || (kc) == GLFW_KEY_RIGHT_SUPER)
     for (int i = 0; i < 4; i++) {
@@ -3370,12 +3483,22 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     // 对特殊键（SPECIALBTN_KEYBOARD 等）：held==0 的分支语义是"切键盘显隐"，
     // 补发把一次点击放大成 dismissing+become 连发 = 键盘开关循环
     // （"输入会关闭键盘，恢复程序会打开键盘，一直循环"）。
-    // 修法：补发块只对【普通键】（4 个 keycode 全部 >=0 且非修饰键）生效；
-    // 修饰键的配对由 Task179 全权管理，特殊键的点击语义只走一次。
+    // 修法（Task226 原规则 + Task247 重定义）：补发块的排除名单收窄到
+    // 【动作型特殊键】（键盘 -1 / GUI 切换 -2 / 虚拟鼠标 -5 / 滚轮 -7/-8 /
+    // 菜单 -9）——它们是"释放即触发"的动作语义，补发会放大成连发，保持
+    // 拒绝。其余全部放行，但事件改走 ame247 直发路径：
+    //   · 修饰键（保持CTRL[341]/保持SHIFT[340]/持续 奔跑[341,87]）：旧规则
+    //     拒绝补发 + 按下分支又被 savedBackgroundColor 跳过 = 全程零键事件
+    //     （"持续奔跑没有效果"根因实锤）；直发路径绕开 Task179 轻点锁定，
+    //     toggle ON=按住、OFF=释放，语义自洽。
+    //   · 鼠标保持键（保持左键[-3]/保持右键[-4]）：旧规则同门死键；直发走
+    //     nativeSendMouseButton（与普通左键/右键按钮同路）。
     BOOL ame226_reFireAllowed = YES;
     for (int ame226_i = 0; ame226_i < 4; ame226_i++) {
         int ame226_kc = ((NSNumber *)sender.properties[@"keycodes"][ame226_i]).intValue;
-        if (ame226_kc < 0 || AME176_IS_MOD_KEY(ame226_kc)) {
+        if (ame226_kc == SPECIALBTN_KEYBOARD || ame226_kc == SPECIALBTN_TOGGLECTRL ||
+            ame226_kc == SPECIALBTN_VIRTUALMOUSE || ame226_kc == SPECIALBTN_SCROLLUP ||
+            ame226_kc == SPECIALBTN_SCROLLDOWN || ame226_kc == SPECIALBTN_MENU) {
             ame226_reFireAllowed = NO;
             break;
         }
@@ -3383,19 +3506,67 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 
     sender.isToggleOn = !sender.isToggleOn;
     if (!ame226_reFireAllowed) {
-        // 特殊/修饰键：保持 UI 高亮翻转但不再补发事件（Task179 已完成配对）
+        // 动作型特殊键：保持 UI 高亮翻转但不再补发事件（点击语义只走一次）
         sender.backgroundColor = sender.isToggleOn
             ? [self.view.tintColor colorWithAlphaComponent:CGColorGetAlpha(sender.savedBackgroundColor.CGColor)]
             : sender.savedBackgroundColor;
     } else if (sender.isToggleOn) {
         sender.backgroundColor = [self.view.tintColor colorWithAlphaComponent:CGColorGetAlpha(sender.savedBackgroundColor.CGColor)];
-        [self executebtn:sender withAction:ACTION_DOWN];
+        [self ame247_sendHoldKeyEvents:sender down:YES];
     } else {
         sender.backgroundColor = sender.savedBackgroundColor;
-        [self executebtn:sender withAction:ACTION_UP];
+        [self ame247_sendHoldKeyEvents:sender down:NO];
     }
 
     if(self.shouldTriggerHaptic) { [self.lightHaptic impactOccurred]; }
+}
+
+// Task247（T3）：保持型 toggle 按钮的键事件直发（绕过 executebtn 的
+// Task179 轻点锁定语义）。下游消费方：executebtn_up 的 toggle 翻转补发。
+// 规则：
+//   · 正键 = nativeSendKey 直发（DOWN 按槽位序，UP 逆序释放——组合键
+//     [341,87] 的释放顺序对 MC 键状态缓存更友好）；
+//   · 鼠标保持型特殊键（-3/-4/-6）= nativeSendMouseButton 直发（与普通
+//     左/右/中键按钮同一条桥接路径）；
+//   · 动作型特殊键（键盘/GUI/虚拟鼠标/滚轮/菜单）不进本路径（Task226
+//     排除名单已挡）；
+//   · 修饰键事件前后同步清理 Task179 账本（toggledMods/modDownTime），
+//     本 toggle 成为该键唯一事实源——防"Task179 已扣住 UP + toggle 再
+//     DOWN"的双按悬挂。
+- (void)ame247_sendHoldKeyEvents:(ControlButton *)sender down:(BOOL)isDown {
+    NSArray *ame247_kcs = sender.properties[@"keycodes"];
+    for (int ame247_i = 0; ame247_i < 4; ame247_i++) {
+        int ame247_slot = isDown ? ame247_i : (3 - ame247_i);   // UP 逆序释放
+        if (ame247_slot >= (int)ame247_kcs.count) continue;
+        int keycode = ((NSNumber *)ame247_kcs[ame247_slot]).intValue;
+        if (keycode == 0) continue;
+        if (keycode < 0) {
+            switch (keycode) {
+                case SPECIALBTN_MOUSEPRI:
+                    CallbackBridge_nativeSendMouseButton(GLFW_MOUSE_BUTTON_LEFT, isDown, 0);
+                    break;
+                case SPECIALBTN_MOUSESEC:
+                    CallbackBridge_nativeSendMouseButton(GLFW_MOUSE_BUTTON_RIGHT, isDown, 0);
+                    break;
+                case SPECIALBTN_MOUSEMID:
+                    CallbackBridge_nativeSendMouseButton(GLFW_MOUSE_BUTTON_MIDDLE, isDown, 0);
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            if (s_ame179_toggledMods) {
+                [s_ame179_toggledMods removeObject:@(keycode)];
+            }
+            if (s_ame176_modDownTime) {
+                [s_ame176_modDownTime removeObjectForKey:@(keycode)];
+            }
+            CallbackBridge_nativeSendKey(keycode, 0, isDown, 0);
+            if (isDown) {
+                CallbackBridge_buttonKeySynthesizeText(keycode);
+            }
+        }
+    }
 }
 
 - (void)executebtn_up_inside:(ControlButton *)sender { [self executebtn_up:sender isOutside:NO]; }
@@ -3720,6 +3891,26 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
 
     [super touchesBegan:touches withEvent:event];
 
+    // Task247（T5）：点游戏画面收键盘——"有光标状态下无法关闭键盘，除非按
+    // 输入法控件"根修。键盘开着时，落在游戏画面（surfaceView；控件按钮的
+    // 触摸由 UIControl 自行消费不会进这里）的触摸 = 用户离开文本模式的
+    // 显式意图：包夹收起 + 置 Task227 闩锁（游离 StartTextInput 不再把
+    // 键盘弹回；聊天开键 3s 窗与 ✎ 按钮照常可用）。
+    if (self.inputTextField.isFirstResponder) {
+        BOOL ame247_touchOnGameArea = NO;
+        for (UITouch *ame247_t in touches) {
+            if (ame247_t.view == self.surfaceView) { ame247_touchOnGameArea = YES; break; }
+        }
+        if (ame247_touchOnGameArea) {
+            ame171_keyboardDismissGeneration++;
+            [self ame225_resignInputTextField];
+            ame227_kbUserDismissed = YES;
+            ame227_kbDismissedAt = CFAbsoluteTimeGetCurrent();
+            self.inputTextField.alpha = 1.0f;
+            NSLog(@"[SurfaceVC] Task247: game-surface tap while keyboard open -> explicit dismiss (latch armed)");
+        }
+    }
+
     if (getPrefBool(@"control.mod_touch_enable")) {
         NSInteger mode = [getPrefObject(@"control.mod_touch_mode") integerValue];
 
@@ -3752,7 +3943,8 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
     for (UITouch *touch in touches) {
         if (touch.type == UITouchTypeIndirectPointer) continue;
         CGPoint locationInView = [touch locationInView:self.rootView];
-        CGFloat screenScale = [[UIScreen mainScreen] scale];
+        // Task247（T2）：同上——热栏探测与主触点链统一 scene scale 口径。
+        CGFloat screenScale = (self.screenScale > 0.0f) ? self.screenScale : [[UIScreen mainScreen] scale];
         currentHotbarSlot = self.enableHotbarGestures ?
             callback_SurfaceViewController_touchHotbar(locationInView.x * screenScale, locationInView.y * screenScale) : -1;
         if ([self isTouchInactive:self.hotbarTouch] && currentHotbarSlot != -1) {
@@ -4032,6 +4224,7 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"PojavFirstFrameRendered" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"AME172_SDLStartTextInput" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"AME172_SDLStopTextInput" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidBecomeActiveNotification object:nil];   // Task247
     self.launchOverlayView = nil;
     self.launchGradientLayer = nil;
 

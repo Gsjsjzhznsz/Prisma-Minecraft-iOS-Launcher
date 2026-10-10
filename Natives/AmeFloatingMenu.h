@@ -80,6 +80,16 @@ NS_ASSUME_NONNULL_BEGIN
                        completion:(nullable void (^)(void))completion
                         onDismiss:(nullable void (^)(void))onDismiss;
 
+/// ★ Task247（T9）：镜像 alert 动态通路（present 后持续更新内容的 alert
+///   ——如联机连接进度弹窗"步骤 x/6"——在玻璃镜像下的同步/收尾）：
+///   玻璃接管后 alert 本体永不上屏，改 message 属性系统不会刷新任何可见
+///   UI；presentedViewController == alert 判定也恒假（上屏的是镜像 VC）。
+///   两入口均返回 NO = 该 alert 未被镜像（原生直通中），调用方回退原生。
++ (BOOL)ame247_setMessage:(nullable NSString *)message
+        forMirroredAlert:(UIAlertController *)alert;
++ (BOOL)ame247_dismissMirroredAlert:(UIAlertController *)alert
+                         completion:(nullable void (^)(void))completion;
+
 /// 标题语义 → SF Symbol 图标名（公开给游戏内菜单共用同一套图标语言）。
 + (nullable NSString *)iconNameForTitle:(NSString *)title;
 

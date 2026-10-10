@@ -695,6 +695,28 @@ typedef NS_ENUM(NSInteger, TCUIState) {
     if (sessionActive) target = TCUIStateSession;
     if (target == TCUIStateSession && !sessionActive) target = TCUIStateMenu;
 
+    // ★ Task247（T4 联机菜单输入一次键盘就关闭一次 根修）：幂等短路。
+    // 本方法每次都整台拆除 stageView 子视图再重装——舞台内的 first
+    // responder（codeField/portField）随 removeFromSuperview 被打断；
+    // 而 TerracottaManager 状态回调 / LanPortDetector 进度回调 / 分享码
+    // 轮询在打字期间每次触发都走到这里 = 键盘随任意后台事件收起一次。
+    // 目标态未变且舞台已在位时不再拆装，只做轻量内容刷新（端口回填）；
+    // 状态真正迁移时才走拆除-重建。
+    if (target == self.uiState && self.stageView.subviews.count > 0) {
+        if (target == TCUIStateHostForm) {
+            uint16_t ame247_known = [LanPortDetector sharedInstance].detectedPort;
+            if (ame247_known > 0) {
+                self.portField.text = [NSString stringWithFormat:@"%u", ame247_known];
+                self.portHintLabel.text = [NSString stringWithFormat:localize(@"i18n_str_2074", nil), ame247_known];
+            }
+        }
+        [self updateHeader];
+        if (target == TCUIStateSession) {
+            [self updateSessionContent];
+        }
+        return;
+    }
+
     for (UIView *sub in self.stageView.subviews) {
         [sub removeFromSuperview];
     }

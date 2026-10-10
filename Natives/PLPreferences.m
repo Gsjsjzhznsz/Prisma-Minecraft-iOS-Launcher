@@ -135,7 +135,7 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
             // preference control.auto_keyboard_sdl"）→ Getter 恒回落默认
             // false → SurfaceVC 的 auto-keyboard 分支永不触发。注册后写读
             // 双向生效。
-            @"auto_keyboard_sdl": @NO,
+            @"auto_keyboard_sdl": @YES,   // Task247（T8）：默认改为 YES——开关语义落地后 ON=Start 自动弹（Task172 默认体验），OFF=不自动弹仅 ✎/T 键唤起；存量安装未显式写过此键，跟随新默认后行为不变
             @"gyroscope_enable": @NO,
             @"gyroscope_invert_x_axis": @NO,
             @"gyroscope_sensitivity": @(100),

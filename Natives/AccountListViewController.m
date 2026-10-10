@@ -12,6 +12,7 @@
 #import "UIImageView+AFNetworking.h"
 #import "BackgroundManager.h"
 #import "AmeNativeMenu.h"
+#import "LiquidGlassCompat.h"   // Task247（T9）：伪玻璃档长按菜单路由分档
 // Task213：AmeCard 主/次文字色函数声明处（安装器同构卡配色依赖；CI 15.4 SDK
 // 实锤"call to undeclared function 'AmeCardPrimaryTextColor'"——本地无 clang
 // 的静态门没拦住，装机绿门在此收口）
@@ -281,6 +282,19 @@
     [super viewDidLoad];
     // 适配自定义启动器背景：将当前视图控制器透明化，使全局背景壁纸能够透出
     [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
+
+    // ★ Task247（T9）：伪玻璃档——系统 UIContextMenu 长按菜单（iOS 26 原
+    //   生液态玻璃直出）改由长按手势 + ame240 统一路由（魔改磨砂面板）
+    //   承接；真液态玻璃/原生档保留系统长按菜单（IMG_0370 定案 / 原生档
+    //   用回原生）。呈现与行内 ⋯ 按钮同一入口（ame223_showAccountMenu…）。
+    if (LGCIsPseudoGlassStyleActive()) {
+        UILongPressGestureRecognizer *ame247_lp =
+            [[UILongPressGestureRecognizer alloc] initWithTarget:self
+                                                          action:@selector(ame247_longPressAccountMenu:)];
+        ame247_lp.minimumPressDuration = 0.45;
+        ame247_lp.delegate = self;
+        [self.tableView addGestureRecognizer:ame247_lp];
+    }
 
     self.title = localize(@"login.title", @"账户管理");
     self.view.backgroundColor = [UIColor clearColor];
@@ -597,6 +611,9 @@ static NSMutableSet *ame128_validatedSet(void) {
 - (UIContextMenuConfiguration *)tableView:(UITableView *)tableView
     contextMenuConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath
     point:(CGPoint)point API_AVAILABLE(ios(13.0)) {
+    // ★ Task247（T9）：伪玻璃档返回 nil（系统上下文菜单不上场），长按由
+    //   viewDidLoad 挂的手势经 ame240 路由呈磨砂面板。
+    if (LGCIsPseudoGlassStyleActive()) return nil;
     // ★ Task240：菜单内容统一由 ame240_nativeMenuForAccountAtIndexPath 提供
     //   （与行内 ⋯ 按钮同一数据源同一 UIMenu；iOS 26 由系统自动渲染原生
     //   液态玻璃 = 用户基准截图 IMG_0370；Task223 的逐项 UIAction 手搓循环
@@ -722,6 +739,16 @@ static NSMutableSet *ame128_validatedSet(void) {
     [AmeNativeMenu ame240_presentMenuWithTitle:displayName
                                      dictItems:items
                                     sourceView:sourceView ?: self.view];
+}
+
+// ★ Task247（T9）：伪玻璃档长按手势 → ame240 统一路由（与 ⋯ 按钮同入口）。
+- (void)ame247_longPressAccountMenu:(UILongPressGestureRecognizer *)gesture {
+    if (gesture.state != UIGestureRecognizerStateBegan) return;
+    CGPoint ame247_pt = [gesture locationInView:self.tableView];
+    NSIndexPath *ame247_ip = [self.tableView indexPathForRowAtPoint:ame247_pt];
+    if (ame247_ip == nil) return;
+    UITableViewCell *ame247_cell = [self.tableView cellForRowAtIndexPath:ame247_ip];
+    [self ame223_showAccountMenuAtIndexPath:ame247_ip fromView:ame247_cell ?: self.view];
 }
 
 /// Task223/224/240：离线账号默认皮肤选择（Steve / Alex）——快捷操作区

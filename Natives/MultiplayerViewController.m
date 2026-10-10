@@ -43,6 +43,7 @@
 #import "MultiplayerViewController.h"
 #import "MultiplayerManager.h"
 #import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
+#import "AmeFloatingMenu.h"     // ★ Task247（T9）：玻璃镜像 alert 动态通路（进度文本/收尾）
 #import "BackgroundManager.h"
 #import "LauncherPreferences.h"
 #import "PLProfiles.h"
@@ -160,13 +161,16 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
                                                  name:@"BackgroundUIEffectChanged"
                                                object:nil];
 
-    // 游戏内模式：监听 LAN 端口检测通知（房主流程依赖）
-    if (self.mode == MultiplayerVCModeInGame) {
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(lanPortDidDetect:)
-                                                     name:LanPortDetectorDidDetectPortNotification
-                                                   object:nil];
-    }
+    // ★ Task247（T7 联机仍无法自动扫描端口 根修）：LAN 端口检测通知改为
+    //   无条件注册——旧条件（mode == MultiplayerVCModeInGame）是死分支
+    //   （全仓三个创建点全走 Launcher 模式 init），Task232 的自动检测主
+    //   路径（日志尾随 + 本机扫描 → publishPort → 通知）永远无人接收 =
+    //   18s 兑底必回落手动输入。lanPortDidDetect: 内部有 isHostFlowActive
+    //   闸门，常驻注册无副作用。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(lanPortDidDetect:)
+                                                 name:LanPortDetectorDidDetectPortNotification
+                                               object:nil];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -1198,6 +1202,12 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
     [self showSimpleAlertWithTitle:localize(@"ame232.mp.auto_title", nil)
                             message:localize(@"ame232.mp.auto_msg", nil)];
     [[LanPortDetector sharedInstance] startAutoDetection];
+    // ★ Task247（T7）：日志尾随之外并行起本机回环 MC 协议扫描——日志措辞
+    //   随 MC 版本漂移（正则盲区 = 自动检测"仍"失败主因之一），而
+    //   127.0.0.1 扫描 + Server-List-Ping 校验与日志格式无关；命中后经
+    //   publishPort → 通知 → lanPortDidDetect:（本任务已改为无条件注册）
+    //   同一主路径生成分享码。扫描只读探测，与 18s 兜底/手动输入互不干扰。
+    [[LanPortDetector sharedInstance] scanLocalPortsWithProgress:nil completion:nil];
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(18 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
@@ -1574,10 +1584,17 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
 - (void)multiplayerConnectionProgress:(NSString *)message {
     // 此方法已在主线程调用（由 MultiplayerManager.notifyConnectionProgress: 保证）
     if (self.connectionProgressAlert) {
-        // 更新已显示的进度 Alert 的 message
-        // UIAlertController 的 message 属性可以在 present 后动态更新，
-        // 系统会自动刷新 UI 显示，无需重新 present。
-        self.connectionProgressAlert.message = message;
+        // ★ Task247（T9）：玻璃/伪玻璃镜像接管后 alert 本体永不上屏，改
+        //   message 属性系统不会刷新任何可见 UI（"步骤 x/6"冻在首屏文本）
+        //   ——改走镜像通路实时刷新面板文本；未被镜像（原生档）才回退
+        //   直写 alert.message。
+        if (![AmeFloatingMenu ame247_setMessage:message
+                              forMirroredAlert:self.connectionProgressAlert]) {
+            // 更新已显示的进度 Alert 的 message
+            // UIAlertController 的 message 属性可以在 present 后动态更新，
+            // 系统会自动刷新 UI 显示，无需重新 present。
+            self.connectionProgressAlert.message = message;
+        }
     }
     NSLog(@"[MultiplayerVC] Connection progress: %@", message);
 }
@@ -1696,6 +1713,16 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
 /// @param completion Alert 关闭后的回调
 - (void)dismissConnectionProgressAlertWithCompletion:(void (^)(void))completion {
     dispatch_async(dispatch_get_main_queue(), ^{
+        // ★ Task247（T9）：玻璃/伪玻璃镜像模式下上屏的是镜像 VC 而非 alert
+        //   本体，presentedViewController == alert 判定恒假——旧实现只清引
+        //   用不关闭 = 进度面板滞留屏上，后续结果弹窗又在镜像还在场时
+        //   present 被 UIKit 吞掉。先走镜像关闭通路（完成回调后才继续）。
+        if (self.connectionProgressAlert != nil &&
+            [AmeFloatingMenu ame247_dismissMirroredAlert:self.connectionProgressAlert
+                                              completion:completion]) {
+            self.connectionProgressAlert = nil;
+            return;
+        }
         if (self.connectionProgressAlert && self.presentedViewController == self.connectionProgressAlert) {
             // 进度 Alert 正在显示：关闭它，然后在 completion 中执行后续操作
             self.connectionProgressAlert = nil;

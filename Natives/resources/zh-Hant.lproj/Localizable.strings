@@ -2982,3 +2982,6 @@
 "game.menu.settings" = "設定";
 "ame233.repo.open_fail" = "網頁開啟失敗。布局內容仍在剪貼簿——可用 Safari 手動開啟 GitHub 後貼上提交";
 "ame233.stall.toast" = "畫面已停滯約 25 秒（已知偶發問題）：離開存檔重新進入通常即可恢復";
+"ame247.keyboard.dismiss" = "收起鍵盤";
+"folderbrowser.import.done" = "已匯入 %lu 個檔案到目前資料夾。";
+"folderbrowser.import.failed" = "匯入完成：%lu 個成功，%lu 個失敗。";

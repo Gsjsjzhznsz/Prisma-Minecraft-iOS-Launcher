@@ -390,6 +390,40 @@ void init_setupCustomControls() {
             __block BOOL ame230_changed = NO;
             __block void (^ame230_walk)(id) = ^(id node) {
                 if ([node isKindOfClass:[NSDictionary class]]) {
+                    // ★ Task247（T1 非SDL开常用操作键无法左右键 根修）：抽屉本体
+                    //   保护。Task230 的全量 walk 把"常用\n操作键"抽屉本体的
+                    //   [0,0,0,0] 误改绑 341（当时不知道这是抽屉开关按钮；Task233
+                    //   实锤全零 = 抽屉本体合法形态）——用户每点一次抽屉 =
+                    //   Task179 轻点锁定把 Ctrl 钉住，游戏内左/右键与疾跑行为随
+                    //   抽屉开合漂移。本轮两件事：
+                    //   ① 已污染布局修复：抽屉本体名字命中"常用/奔跑"且键码恰
+                    //     为迁移产物 [341,0,0,0] → 复位全零（写回文件）；
+                    //   ② 迁移规则收紧：抽屉容器（含 buttonProperties 的节点）
+                    //     的 properties 子节点永不改绑；旧"全零→341"迁移仅对
+                    //     非抽屉节点继续生效（用户自绑过的永不动）。
+                    if ([node objectForKey:@"buttonProperties"] != nil) {
+                        id ame230_body = [node objectForKey:@"properties"];
+                        NSString *ame230_bodyName = [ame230_body isKindOfClass:[NSDictionary class]]
+                            ? [ame230_body objectForKey:@"name"] : nil;
+                        NSArray *ame230_bodyKc = [ame230_body isKindOfClass:[NSDictionary class]]
+                            ? [ame230_body objectForKey:@"keycodes"] : nil;
+                        if ([ame230_bodyName isKindOfClass:[NSString class]] &&
+                            ([ame230_bodyName containsString:@"常用"] || [ame230_bodyName containsString:@"奔跑"]) &&
+                            [ame230_bodyKc isKindOfClass:[NSArray class]] && ame230_bodyKc.count == 4 &&
+                            [ame230_bodyKc[0] intValue] == 341 &&
+                            [ame230_bodyKc[1] intValue] == 0 &&
+                            [ame230_bodyKc[2] intValue] == 0 &&
+                            [ame230_bodyKc[3] intValue] == 0) {
+                            [ame230_body setValue:@[@0, @0, @0, @0] forKey:@"keycodes"];
+                            ame230_changed = YES;
+                            NSLog(@"[Pre-init] Task247: drawer-body Ctrl pollution reset (name=%@)", ame230_bodyName);
+                        }
+                        // 抽屉容器只递归 buttonProperties 子按钮（properties 已在上面处理）
+                        NSArray *ame230_subs = [node objectForKey:@"buttonProperties"];
+                        if ([ame230_subs isKindOfClass:[NSArray class]]) {
+                            for (id ame230_sub in ame230_subs) ame230_walk(ame230_sub);
+                        }
+                    } else {
                     NSString *ame230_nm = [node objectForKey:@"name"];
                     NSArray *ame230_kc = [node objectForKey:@"keycodes"];
                     if ([ame230_nm isKindOfClass:[NSString class]] &&
@@ -407,6 +441,7 @@ void init_setupCustomControls() {
                         }
                     }
                     for (NSString *ame230_k in [node allKeys]) ame230_walk([node objectForKey:ame230_k]);
+                    }
                 } else if ([node isKindOfClass:[NSArray class]]) {
                     for (id v in (NSArray *)node) ame230_walk(v);
                 }
