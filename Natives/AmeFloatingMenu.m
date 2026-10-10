@@ -96,6 +96,37 @@ static UIImage *Ame243BlurredKeyWindowSnapshot(UIView *hostView) {
     }
 }
 
+/// ★ Task244：快照有效性护栏——全黑帧检测。opaque=YES 的渲染器在抓帧
+///   失败/异常时的病态产物是纯黑图（非 nil），直接上屏就是黑面板。
+///   降采样到 1x1 读平均色：总亮度低于约 2.5% 视为无效帧。
+static BOOL Ame244SnapshotLooksValid(UIImage *ame244_img) {
+    if (ame244_img == nil || ame244_img.size.width < 1.0 ||
+        ame244_img.size.height < 1.0) return NO;
+    CGImageRef ame244_cg = ame244_img.CGImage;
+    if (ame244_cg == NULL) return NO;
+    unsigned char ame244_px[4] = {0, 0, 0, 0};
+    CGColorSpaceRef ame244_cs = CGColorSpaceCreateDeviceRGB();
+    CGContextRef ame244_ctx = CGBitmapContextCreate(ame244_px, 1, 1, 8, 4,
+        ame244_cs, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(ame244_cs);
+    if (ame244_ctx == NULL) return NO;
+    CGContextDrawImage(ame244_ctx, CGRectMake(0, 0, 1, 1), ame244_cg);
+    CGContextRelease(ame244_ctx);
+    int ame244_sum = (int)ame244_px[0] + (int)ame244_px[1] + (int)ame244_px[2];
+    return ame244_sum > 19;   // 平均每通道 > ~6/255
+}
+
+/// ★ Task244：快照磨砂上的可读性 tint——快照不透明，panel 底色被它盖住
+///   无法再压暗，压暗层必须浮在快照【之上】、内容之下。深色 = 黑 0.40
+///   （暗玻璃）；浅色 = 白 0.42（奶白玻璃，labelColor 黑字可读）。
+static UIColor *Ame244SnapshotTint(void) {
+    return [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull tc) {
+        return (tc.userInterfaceStyle == UIUserInterfaceStyleDark)
+            ? [UIColor colorWithWhite:0.0 alpha:0.40]
+            : [UIColor colorWithWhite:1.0 alpha:0.42];
+    }];
+}
+
 #pragma mark - 菜单行控件（图标 + 标题；自带按压反馈；头文件公开供游戏内菜单共用）
 
 @implementation Ame237MenuRow
@@ -239,7 +270,8 @@ static UIImage *Ame243BlurredKeyWindowSnapshot(UIView *hostView) {
 
     // ★ Task239：材质选择——玻璃风格优先【系统原生 UIGlassEffect】（iOS 26+，
     //   真液态玻璃：磨砂 + 折光 + 边缘高光一体的系统材质）；取不到
-    //   （<iOS 26 / AME239_NO_SYSTEM_GLASS=1 诊断开关）回退 SystemMaterial
+    //   （<iOS 26 / Task244 默认退役；AME239_FORCE_SYSTEM_GLASS=1 诊断
+    //   才回取）回退 SystemMaterial
     //   磨砂（Task237 路径，装机验证可读）。原生风格不经过本组件——中央
     //   路由（ame237_hook_presentViewController）直通旧版系统弹窗。
     UIVisualEffect *ame239_effect = nil;
@@ -255,13 +287,22 @@ static UIImage *Ame243BlurredKeyWindowSnapshot(UIView *hostView) {
     self.blurView.layer.cornerCurve = kCACornerCurveContinuous;
     self.blurView.layer.masksToBounds = YES;
     [self.panel addSubview:self.blurView];   // index 0：恒在全部内容之下
-    // ★ Task243：自绘磨砂层（呈现入口传入的 keyWindow 快照）——插在
-    //   blurView 之下（panel 的 index 0）。image 为 nil 时保持 hidden
-    //   （启动器外无快照可用时面板回退深色底，护栏不变）。
-    if (self.ame243_snapshotImage != nil) {
+    // ★ Task243：自绘磨砂层（呈现入口传入的 keyWindow 快照）。
+    // ★ Task244（IMG_0379：26.3/27.0.1 弹窗恒纯黑定案）：UIGlassEffect 在
+    //   本进程渲染为不透明黑块，把垫在它下面的快照整体盖死——层序改定
+    //   【快照即成品磨砂】：有效性护栏（全黑帧视为抓帧失败）→ tint 浮
+    //   其上（可读性，底色在快照下已无法压暗）→ 系统材质层整体隐藏
+    //   （无论玻璃还是 SystemMaterial——快照已是成品磨砂，多叠一层只
+    //   会再次引入“黑块/过糊”变量）。快照无效时回退材质磨砂护栏不变。
+    UIImage *ame244_snapImg = self.ame243_snapshotImage;
+    if (ame244_snapImg != nil && !Ame244SnapshotLooksValid(ame244_snapImg)) {
+        NSLog(@"[AmeMenu] Task244: keyWindow snapshot blank (capture failure), fallback to material blur");
+        ame244_snapImg = nil;
+    }
+    if (ame244_snapImg != nil) {
         UIImageView *ame243_snap = [[UIImageView alloc] initWithFrame:self.panel.bounds];
         ame243_snap.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        ame243_snap.image = self.ame243_snapshotImage;
+        ame243_snap.image = ame244_snapImg;
         ame243_snap.contentMode = UIViewContentModeScaleAspectFill;
         ame243_snap.clipsToBounds = YES;
         ame243_snap.userInteractionEnabled = NO;
@@ -270,11 +311,21 @@ static UIImage *Ame243BlurredKeyWindowSnapshot(UIView *hostView) {
         ame243_snap.layer.masksToBounds = YES;
         [self.panel insertSubview:ame243_snap belowSubview:self.blurView];
         self.panel.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.42];
+        UIView *ame244_tint = [[UIView alloc] initWithFrame:self.panel.bounds];
+        ame244_tint.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        ame244_tint.backgroundColor = Ame244SnapshotTint();
+        ame244_tint.layer.cornerRadius = 26.0;
+        ame244_tint.layer.cornerCurve = kCACornerCurveContinuous;
+        ame244_tint.layer.masksToBounds = YES;
+        ame244_tint.userInteractionEnabled = NO;
+        [self.panel insertSubview:ame244_tint aboveSubview:ame243_snap];
+        self.blurView.hidden = YES;   // 快照成品磨砂上岗，系统材质层退场
     }
-    NSLog(@"[AmeMenu] Task239 menu material: %@ (style=%@)",
-          LGCNativeGlassEngaged() ? @"native UIGlassEffect (true liquid glass)"
+    NSLog(@"[AmeMenu] Task239/244 menu material: %@ (style=%@, background=%@)",
+          LGCNativeGlassEngaged() ? @"native UIGlassEffect (force-enabled, diagnostic)"
                                   : @"SystemMaterial fallback",
-          LGCIsGlassStyleActive() ? @"glass" : @"native");
+          LGCIsGlassStyleActive() ? @"glass" : @"native",
+          ame244_snapImg != nil ? @"frost-snapshot+tint" : @"material-blur");
 
     // 内容
     if (self.ame237_title.length > 0) {

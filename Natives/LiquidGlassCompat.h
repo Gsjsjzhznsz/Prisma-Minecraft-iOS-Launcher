@@ -68,18 +68,22 @@ FOUNDATION_EXPORT BOOL LGCIsGlassStyleActive(void);
 
 /// ★ Task239（用户指令："请用 iOS 26 原生液态玻璃 API 重写所有悬浮菜单…
 ///   使用 .glassEffect()（SwiftUI）或 UIGlassEffect（UIKit）实现真正的
-///   液态玻璃弹窗"）：系统原生 UIGlassEffect 工厂。iOS 26+ 返回真玻璃
-///   效果对象；取不到（<iOS 26 / 老 SDK 运行时类缺失 / 诊断开关
-///   AME239_NO_SYSTEM_GLASS=1）返回 nil，调用方回退系统材质磨砂
-///   （UIBlurEffect SystemMaterial 家族），绝不回退 UIAlertController。
-///   玻璃风格下所有悬浮菜单统一走本工厂；原生风格不经过此处。
+///   液态玻璃弹窗"）→ ★ Task244 默认退役：装机四轮实证（Task239/242/243
+///   三轮"毛玻璃没生效"+ IMG_0379 纯黑弹窗，iOS 26.3 与 iPadOS 27.0.1
+///   双版本复现）UIGlassEffect 在本进程恒不渲染——启动器内为不透明
+///   黑块（把下层快照整体盖死 = 纯黑面板），Metal 上不合成。玻璃观感
+///   改由【keyWindow 重度降采样快照自绘磨砂】承接（AmeFloatingMenu/
+///   游戏内菜单双层）。本工厂默认返回 nil（调用方回退系统材质磨砂，
+///   绝不回退 UIAlertController）；诊断开关 AME239_FORCE_SYSTEM_GLASS=1
+///   可装机侧一键重新启用真玻璃（用于新 OS 版本回归验证）。
 ///   （CI r1 教训：顶层 C 函数声明的可空性必须用 "* _Nullable" 后缀
 ///   形式——非下划线 nullable 前缀是 ObjC 方法/属性专属语法，clang 在
 ///   函数声明处报 unknown type name 并丢弃整个声明。）
 FOUNDATION_EXPORT UIVisualEffect * _Nullable LGCNativeGlassEffect(void);
 
-/// Task239：LGCNativeGlassEffect() 是否真的取到了系统 UIGlassEffect
-/// （供调用方选择防御性底色浓度与日志锚点；NO = 走了材质回退）。
+/// Task239/244：LGCNativeGlassEffect() 是否真的取到了系统 UIGlassEffect
+/// （供调用方选择防御性底色浓度与日志锚点；NO = 走了材质回退。Task244
+///   默认档恒 NO——快照磨砂接管玻璃观感后，防御底色浓度档位随之固定）。
 FOUNDATION_EXPORT BOOL LGCNativeGlassEngaged(void);
 
 /// 风格 <-> 存储字符串（"auto" / "native" / "liquid_glass"）

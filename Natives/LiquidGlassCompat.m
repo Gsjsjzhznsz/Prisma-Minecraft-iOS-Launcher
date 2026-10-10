@@ -104,8 +104,9 @@ BOOL LGCIsGlassStyleActive(void) {
 //     无类型裸调（Task228 的 regularEffect 选择器在 SDK 头里并不存在，
 //     运行时 respondsToSelector 探测后落到裸 alloc/init——路径对但无
 //     编译期保障）；老 SDK 本地构建走运行时类探测回退。
-//   ② 诊断开关反向：AME239_NO_SYSTEM_GLASS=1 可一键退回材质磨砂
-//     （Task228 的黑屏观察若在新路径上复现，装机侧无需重编译即可分诊）。
+//   ② 诊断开关反向：原 AME239_NO_SYSTEM_GLASS=1 关断语义已被 Task244
+//     默认退役档吞并（默认即不取玻璃）；反向开关 = AME239_FORCE_SYSTEM_
+//     GLASS=1 强制启用（见函数内 Task244 注释）
 //   ③ 只用于"玻璃风格下的悬浮菜单呈现层"，配防御性底色（调用方持有），
 //     文字恒为效果层之上的子视图——玻璃若在个别进程环境渲染异常，
 //     面板仍是可读的半透明浮层，绝无"透明面板 + 悬浮文字"。
@@ -114,13 +115,18 @@ static BOOL ame239_nativeGlassDecided = NO;
 
 UIVisualEffect *LGCNativeGlassEffect(void) {
     if (!LGCIsLiquidGlassAvailable()) return nil;
-    // 诊断开关：装机侧一键禁用（返回 nil = 调用方走材质回退）
-    static NSInteger ame239_decision = 0;   // 0=未决 1=启用 -1=禁用
-    if (ame239_decision == 0) {
-        const char *ame239_env = getenv("AME239_NO_SYSTEM_GLASS");
-        ame239_decision = (ame239_env && strcmp(ame239_env, "1") == 0) ? -1 : 1;
+    // ★ Task244 默认退役档（证据链见 .h 契约注释）：UIGlassEffect 在本
+    //   进程恒不渲染（启动器 = 不透明黑块盖死下层快照 = IMG_0379 纯黑
+    //   弹窗；Metal = 不合成）。默认返回 nil → 调用方走系统材质磨砂 +
+    //   快照自绘磨砂双轨；装机侧诊断开关 AME239_FORCE_SYSTEM_GLASS=1
+    //   可重新启用真玻璃取用（新 OS 版本回归验证用，原 AME239_NO_
+    //   SYSTEM_GLASS 关断语义已被本默认档吞并，无需再设）。
+    static NSInteger ame244_decision = 0;   // 0=未决 1=强制启用 -1=退役
+    if (ame244_decision == 0) {
+        const char *ame244_env = getenv("AME239_FORCE_SYSTEM_GLASS");
+        ame244_decision = (ame244_env && strcmp(ame244_env, "1") == 0) ? 1 : -1;
     }
-    if (ame239_decision == -1) {
+    if (ame244_decision == -1) {
         ame239_nativeGlassCache = NO;
         ame239_nativeGlassDecided = YES;
         return nil;
@@ -131,6 +137,7 @@ UIVisualEffect *LGCNativeGlassEffect(void) {
         if (ame239_glass != nil) {
             ame239_nativeGlassCache = YES;
             ame239_nativeGlassDecided = YES;
+            NSLog(@"[LGC] Task244: UIGlassEffect force-enabled via AME239_FORCE_SYSTEM_GLASS=1 (diagnostic)");
             return ame239_glass;
         }
     }

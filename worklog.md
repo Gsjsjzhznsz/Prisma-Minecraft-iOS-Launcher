@@ -2579,3 +2579,21 @@ Work Log:
 Stage Summary:
 - Task 243 全链闭环：描边黑条根治 + 游戏内快照自绘磨砂（主菜单/AmeFloatingMenu 弹层双覆盖）+ 游戏内常驻件胶囊化去白边，新 IPA 就绪待装机验证
 - 装机验证锚点：①主页描边文字 = 白字细黑边（黑条消失）②玻璃档游戏内开菜单 = 模糊游戏画面透出的深色玻璃面板 ③把手深色胶囊+极细淡边 ④游戏内分辨率弹窗同款磨砂 ⑤"大小"标签错位待装机日志（[GameMenu] Task237 menu shown）定位
+
+---
+Task ID: 244
+Agent: main (Super Z)
+Task: 用户装机反馈（IMG_0379）——①"能不能把液态玻璃改回来呀"②"怎么还是纯黑"（主页选择版本弹窗纯黑，iPadOS 27.0.1）③vulkan模组光影闪退
+
+Work Log:
+- 【纯黑定案（①②同源）】IMG_0379 取证：主页"选择版本"弹窗 = AmeNativeMenu 玻璃档 → AmeFloatingMenu 面板，纯黑不透；设备系统已升 iPadOS 27.0.1（截图右侧系统行）。时间线复盘：用户夸"非常好"的魔改弹窗是 Task237 时代（SystemMaterial 磨砂）；Task239 换上 UIGlassEffect 后"毛玻璃没生效"连报三轮（Task242 ①、前轮"魔改弹窗毛玻璃依旧没有"、本轮"还是纯黑"）——定性 UIGlassEffect 在本进程【从未渲染成功】（26.3 与 27.0.1 双版本、启动器与 Metal 双场景）：启动器内 = 不透明黑块，把 Task243 垫在其下的快照整体盖死 = 纯黑面板；Metal 上不合成（Task228/230/236 旧患）。"为什么把液态玻璃改回去了/改回来"两问合流：用户要的是"看得见的玻璃观感"，UIGlassEffect 路线在真机上从未交付过
+- 【玻璃观感接管（AmeFloatingMenu.m）】viewDidLoad 快照块重写：①新增 Ame244SnapshotLooksValid 全黑帧护栏（opaque=YES 渲染器抓帧失败的病态产物是纯黑图而非 nil；1x1 位图降采样读平均色，总亮度 <~2.5% 判无效回退材质磨砂）②快照有效 = 成品磨砂直接上岗：tint 层（Ame244SnapshotTint，深色=黑 0.40/浅色=白 0.42，动态 provider）浮在快照【之上】内容之下——快照不透明，panel 底色被盖住无法再压暗，压暗层必须上移（Task243 快照无 tint 的结构缺口一并补上）③系统材质层（blurView）快照在场时整体 hidden——无论玻璃还是 SystemMaterial，多叠一层只会再引入黑块/过糊变量
+- 【游戏内菜单同修（SurfaceViewController+Navigation.m）】applyMenuStyle 玻璃档：新增 kAme244TintKey tint 层（关联对象幂等，先拆再插，insertSubview aboveSubview:snap）、ame244_snapshotLooksValid 同源护栏；blur.hidden=(snap.image!=nil)、tint.hidden=(snap.image==nil) 幂等态对齐；showMenu 抓帧点联动：抓帧成功 → 材质层退场/tint 上岗，抓帧失败或全黑 → 材质磨砂回归/tint 撤下；原生档幂等清理同步恢复 blur/撤 tint
+- 【LGC 玻璃退役（LiquidGlassCompat.h/.m）】LGCNativeGlassEffect 默认档改判 -1（退役）——默认返回 nil，调用方回退 SystemMaterial；AME239_FORCE_SYSTEM_GLASS=1 诊断开关可装机侧一键重新启用（新 OS 回归验证用）；原 AME239_NO_SYSTEM_GLASS 关断语义被默认档吞并；.h 契约注释全量改写（证据链入档）；LGCNativeGlassEngaged 默认恒 NO → 面板防御底色自动落厚档。三处旧开关名注释同步更新
+- 【Vulkan+光影闪退（③，取证优先不盲修）】无 latestlog/hs_err 不盲改渲染管线（Task242/243 两轮待日志未获）。启动前取证面包屑（JavaLauncher.m，gameDir 终值解析后）：Vulkan 路径（renderer=libMoltenVK.dylib 或 graphicsApi=prefer_vulkan）扫描 mods 目录 VulkanMod 与 Iris/Oculus 共存——Iris/Oculus 为 GL 管线注入器、VulkanMod 整体替换渲染器，同装 = 确定性光影崩溃（用户侧二选一，非启动器可修）；非该组合的信号级死亡由 Task218 hs_err 诊断弹窗承接。latestlog 留 [Task244] Vulkan forensics 锚点
+- 门禁：task240_syntax_gate（retired refs=0）/ task158 / task175 全 PASS；自审 diff（NSLog 形参对位、幂等清理完备性、C 调用/消息表达式书写纪律）
+
+Stage Summary:
+- 玻璃观感改道快照自绘磨砂终局：弹窗（含 37 处菜单玻璃档接管 + 中央路由 alert 弹窗）+ 游戏内主菜单双层全覆盖，UIGlassEffect 黑块家族与本进程彻底解耦；装机预期 = "选择版本"等全部玻璃档弹窗显示模糊背景 + 可读 tint + 圆角细边（用户夸过的魔改弹窗观感回归）
+- Vulkan 崩溃待分诊输入：装机后若再崩 → ①看启动器崩溃诊断弹窗（Task218）②latestlog 搜 [Task244] Vulkan forensics——若报 VulkanMod+Iris 共存则删其一；否则 hs_err 内容回传
+- 装机验证锚点：①主页"选择版本"弹窗 = 模糊磨砂面板（非纯黑）②版本设置内存行/游戏内分辨率弹窗同款 ③游戏内开菜单 = 模糊游戏画面 + 深色可读面板 ④界面风格切"原生" = 旧版深色分块弹窗（原生档不受影响）

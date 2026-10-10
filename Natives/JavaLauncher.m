@@ -2278,6 +2278,42 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         // ——读实例根目录的 import_report.json，有未确认缺失时一次性提醒，不阻断启动。
         ame95_warnIncompleteImport(gameDir);
 
+        // ★ Task244（Vulkan+光影"启动直接崩溃"取证面包屑）：Vulkan 路径
+        //   （MoltenVK 直连渲染器或 graphicsApi=prefer_vulkan）下扫描 mods
+        //   目录的 VulkanMod 与 Iris/Oculus 共存——Iris/Oculus 是 GL 渲染管
+        //   线注入器，与整体替换渲染器的 VulkanMod 已知不兼容，同装时光影
+        //   阶段崩溃是确定性结果（非启动器侧可修，用户应二选一）。非该组
+        //   合的崩溃留给 hs_err 诊断弹窗（Task218 机制）+ 本面包屑分诊。
+        {
+            BOOL ame244_vkPath = [renderer isEqualToString:@(RENDERER_NAME_VULKAN)] ||
+                [graphicsApi isEqualToString:@"prefer_vulkan"];
+            if (ame244_vkPath) {
+                NSString *ame244_modsDir = [gameDir stringByAppendingPathComponent:@"mods"];
+                NSArray<NSString *> *ame244_entries = [[NSFileManager defaultManager]
+                    contentsOfDirectoryAtPath:ame244_modsDir error:NULL];
+                BOOL ame244_hasVulkanMod = NO;
+                BOOL ame244_hasIrisLike = NO;
+                for (NSString *ame244_name in ame244_entries) {
+                    NSString *ame244_low = ame244_name.lowercaseString;
+                    if (![ame244_low hasSuffix:@".jar"] &&
+                        ![ame244_low hasSuffix:@".jar.disabled"]) continue;
+                    if ([ame244_low containsString:@"vulkanmod"]) ame244_hasVulkanMod = YES;
+                    if ([ame244_low containsString:@"iris"] ||
+                        [ame244_low containsString:@"oculus"]) ame244_hasIrisLike = YES;
+                }
+                BOOL ame244_shaderpackDir = [[NSFileManager defaultManager]
+                    fileExistsAtPath:[gameDir stringByAppendingPathComponent:@"shaderpacks"]];
+                if (ame244_hasVulkanMod && ame244_hasIrisLike) {
+                    NSLog(@"[Task244] Vulkan forensics: VulkanMod + Iris/Oculus BOTH present under %@/mods — known-incompatible combo, shader-stage crash is deterministic; remove one of them",
+                          gameDir.lastPathComponent);
+                } else {
+                    NSLog(@"[Task244] Vulkan forensics: vulkanmod=%d, iris/oculus=%d, shaderpacks-dir=%d (renderer=%@, graphicsApi=%@) — if crash persists, share the hs_err diagnosis dialog content",
+                          ame244_hasVulkanMod, ame244_hasIrisLike, ame244_shaderpackDir,
+                          renderer, graphicsApi);
+                }
+            }
+        }
+
         // Task 140：TouchController mod 侧配置一次性修复（Task134-139 污染的
         // 空布局指针恢复/移除；mod 在 JVM 启动早期读取 config/touchcontroller/，
         // 此处调用当次生效。启动器不再向 mod 写入任何配置）

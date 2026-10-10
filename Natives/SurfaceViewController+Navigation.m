@@ -40,6 +40,8 @@ static const void *kAme237RowsScrollKey = &kAme237RowsScrollKey;
 static const void *kAme237RowsKey = &kAme237RowsKey;
 static const void *kAme237BlurKey = &kAme237BlurKey;
 static const void *kAme243SnapKey = &kAme243SnapKey;
+/// ★ Task244：快照磨砂可读性 tint 层（浮在快照之上、内容/滚动区之下）
+static const void *kAme244TintKey = &kAme244TintKey;
 
 @interface SurfaceViewController(Navigation)
 // FCL 风格菜单的背景遮罩（半透明黑色，点击关闭菜单）
@@ -85,6 +87,35 @@ static UIImage *ame243_blurredGameSnapshot(UIView *hostView) {
     } @catch (NSException *ame243_e) {
         return nil;
     }
+}
+
+/// ★ Task244：快照有效性护栏（全黑帧检测，与 AmeFloatingMenu 同源）。
+///   opaque=YES 抓帧失败/异常的病态产物是纯黑图（非 nil），上屏即黑面板。
+static BOOL ame244_snapshotLooksValid(UIImage *ame244_img) {
+    if (ame244_img == nil || ame244_img.size.width < 1.0 ||
+        ame244_img.size.height < 1.0) return NO;
+    CGImageRef ame244_cg = ame244_img.CGImage;
+    if (ame244_cg == NULL) return NO;
+    unsigned char ame244_px[4] = {0, 0, 0, 0};
+    CGColorSpaceRef ame244_cs = CGColorSpaceCreateDeviceRGB();
+    CGContextRef ame244_ctx = CGBitmapContextCreate(ame244_px, 1, 1, 8, 4,
+        ame244_cs, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(ame244_cs);
+    if (ame244_ctx == NULL) return NO;
+    CGContextDrawImage(ame244_ctx, CGRectMake(0, 0, 1, 1), ame244_cg);
+    CGContextRelease(ame244_ctx);
+    int ame244_sum = (int)ame244_px[0] + (int)ame244_px[1] + (int)ame244_px[2];
+    return ame244_sum > 19;   // 平均每通道 > ~6/255
+}
+
+/// ★ Task244：快照磨砂上的可读性 tint（快照不透明，menuView 底色被盖住
+///   无法压暗）。深色 = 黑 0.40（暗玻璃）；浅色 = 白 0.42（奶白玻璃）。
+static UIColor *ame244_snapshotTint(void) {
+    return [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull tc) {
+        return (tc.userInterfaceStyle == UIUserInterfaceStyleDark)
+            ? [UIColor colorWithWhite:0.0 alpha:0.40]
+            : [UIColor colorWithWhite:1.0 alpha:0.42];
+    }];
 }
 
 - (void)initCategory_Navigation {
@@ -245,7 +276,8 @@ static UIImage *ame243_blurredGameSnapshot(UIView *hostView) {
     if (LGCIsGlassStyleActive()) {
         // ★ Task239（用户指令：iOS 26 原生液态玻璃 API）：玻璃风格优先
         //   【系统原生 UIGlassEffect】（iOS 26+，真液态玻璃：磨砂 + 折光 +
-        //   边缘高光一体）；取不到（<26 / AME239_NO_SYSTEM_GLASS=1）回退
+        //   边缘高光一体）；Task244 默认退役（本进程恒不渲染，见 LGC），
+        //   诊断开关 AME239_FORCE_SYSTEM_GLASS=1 才回取；默认回退
         //   SystemMaterialDark 磨砂（Task230 游戏帧可读性教训的装机验证路径）。
         UIVisualEffect *ame239_gmEffect = LGCNativeGlassEffect();
         if (ame239_gmEffect == nil) {
@@ -282,6 +314,29 @@ static UIImage *ame243_blurredGameSnapshot(UIView *hostView) {
         [self.menuView insertSubview:ame243_snap atIndex:0];
         [self.menuView insertSubview:ame237_blur aboveSubview:ame243_snap];
         objc_setAssociatedObject(self, kAme237BlurKey, ame237_blur, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        // ★ Task244：快照磨砂 tint 层——浮在快照之上、滚动区之下。
+        //   快照不透明，menuView 底色在其下无法压暗；系统材质层（无论
+        //   玻璃还是 SystemMaterialDark）在 27.0.1 上已实证不可靠，快照
+        //   成品磨砂到位后整体退场（见 showMenu 抓帧点联动）。首建时尚
+        //   未抓帧（image=nil）：tint/快照均保持 hidden，面板走材质磨砂。
+        UIView *ame244_tint = objc_getAssociatedObject(self, kAme244TintKey);
+        if (ame244_tint == nil) {
+            ame244_tint = [[UIView alloc] init];
+            ame244_tint.backgroundColor = ame244_snapshotTint();
+            ame244_tint.userInteractionEnabled = NO;
+            ame244_tint.layer.cornerRadius = 24.0;
+            ame244_tint.layer.cornerCurve = kCACornerCurveContinuous;
+            ame244_tint.layer.masksToBounds = YES;
+            objc_setAssociatedObject(self, kAme244TintKey, ame244_tint,
+                                     OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        } else {
+            [ame244_tint removeFromSuperview];   // 幂等：先拆再插（本函数是唯一写点）
+        }
+        ame244_tint.frame = self.menuView.bounds;
+        ame244_tint.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        [self.menuView insertSubview:ame244_tint aboveSubview:ame243_snap];
+        ame244_tint.hidden = (ame243_snap.image == nil);
+        ame237_blur.hidden = (ame243_snap.image != nil);
         if (ame237_scroll != nil) [self.menuView bringSubviewToFront:ame237_scroll];
         // 防御性深色实底：磨砂在游戏帧上不合成时独立承载面板可见性
         //   （Task236 教训；此处底色只由本函数管理，永不清空）。
@@ -305,10 +360,17 @@ static UIImage *ame243_blurredGameSnapshot(UIView *hostView) {
     } else {
         // 原生 = 旧版 FCL 面板（深色半透明、纯文本行）
         // ★ Task243：风格切回原生时同步隐藏快照磨砂层（幂等清理）。
+        // ★ Task244：同步恢复材质层/撤下 tint（与抓帧点两分支对齐）。
         UIImageView *ame243_snap = objc_getAssociatedObject(self, kAme243SnapKey);
         if (ame243_snap != nil) {
             ame243_snap.hidden = YES;
             ame243_snap.image = nil;
+        }
+        {
+            UIView *ame244_blurBack = objc_getAssociatedObject(self, kAme237BlurKey);
+            if (ame244_blurBack != nil) ame244_blurBack.hidden = NO;
+            UIView *ame244_tintBack = objc_getAssociatedObject(self, kAme244TintKey);
+            if (ame244_tintBack != nil) ame244_tintBack.hidden = YES;
         }
         self.menuView.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return [UIColor colorWithRed:28.0/255.0 green:28.0/255.0 blue:30.0/255.0 alpha:0.95];
@@ -413,14 +475,33 @@ static UIImage *ame243_blurredGameSnapshot(UIView *hostView) {
     UIImageView *ame243_snap = objc_getAssociatedObject(self, kAme243SnapKey);
     if (ame243_snap != nil && LGCIsGlassStyleActive()) {
         UIImage *ame243_img = ame243_blurredGameSnapshot(self.view);
+        if (ame243_img != nil && !ame244_snapshotLooksValid(ame243_img)) {
+            NSLog(@"[GameMenu] Task244: snapshot blank (capture failure), panel falls back to material blur");
+            ame243_img = nil;
+        }
         if (ame243_img != nil) {
             ame243_snap.image = ame243_img;
             ame243_snap.hidden = NO;
+            // ★ Task244：快照成品磨砂到位——系统材质层退场、tint 上岗
+            //   （快照不透明，磨砂/玻璃叠在其上只会引入黑块/过糊变量）。
+            UIView *ame244_blur = objc_getAssociatedObject(self, kAme237BlurKey);
+            if (ame244_blur != nil) ame244_blur.hidden = YES;
+            UIView *ame244_tintOn = objc_getAssociatedObject(self, kAme244TintKey);
+            if (ame244_tintOn != nil) ame244_tintOn.hidden = NO;
         } else {
             ame243_snap.hidden = YES;
+            // 快照缺席：材质磨砂回归、tint 撤下（与 applyMenuStyle 幂等态对齐）
+            UIView *ame244_blurFb = objc_getAssociatedObject(self, kAme237BlurKey);
+            if (ame244_blurFb != nil) ame244_blurFb.hidden = NO;
+            UIView *ame244_tintOff = objc_getAssociatedObject(self, kAme244TintKey);
+            if (ame244_tintOff != nil) ame244_tintOff.hidden = YES;
         }
     } else if (ame243_snap != nil) {
         ame243_snap.hidden = YES;
+        UIView *ame244_blurNat = objc_getAssociatedObject(self, kAme237BlurKey);
+        if (ame244_blurNat != nil) ame244_blurNat.hidden = NO;
+        UIView *ame244_tintNat = objc_getAssociatedObject(self, kAme244TintKey);
+        if (ame244_tintNat != nil) ame244_tintNat.hidden = YES;
     }
 
     self.menuView.hidden = NO;
