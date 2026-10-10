@@ -772,7 +772,10 @@ static UIImage *Ame243BlurredKeyWindowSnapshot(UIView *hostView) {
     //   呈现前的画面，无自噬风险）——重度降采样快照作为面板自绘磨砂。
     //   抓帧失败（nil）保持面板深色底现状；桌面/普通窗口上系统磨砂
     //   本就合成，快照叠加观感中性。
-    menu.ame243_snapshotImage = Ame243BlurredKeyWindowSnapshot(presenter.view ?: self.view);
+    menu.ame243_snapshotImage = Ame243BlurredKeyWindowSnapshot(presenter.view);
+    // 注：presenter.view 为 nil（理论边缘）时函数内 hostView.window == nil
+    // 直接返回 nil，面板走深色底护栏——无需额外兜底分支（类方法内 self
+    // 是 Class 不能写 self.view，Task 243 CI r1 实证）。
     menu.modalPresentationStyle = UIModalPresentationOverFullScreen;
     menu.modalPresentationCapturesStatusBarAppearance = NO;
 
