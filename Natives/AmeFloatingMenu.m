@@ -13,6 +13,14 @@
 //    → 发丝描边覆盖环（最上层，不参与命中）
 //  文字恒在磨砂之上——“打开只有玻璃没有字”的构造性根除。
 //
+//  ★ Task245（IMG_0380 用户定案“这透视有问题吧”）：快照磨砂显示改
+//    【窗口对位真透视】——快照按窗口几何 1:1 铺进面板圆角裁剪容器
+//    （面板下每个像素 = 面板后方真实背景内容）+ 二次柔化 + tint；
+//    AspectFill 居中裁剪的“假透视”（显示整屏中心放大裁切，几何错位）
+//    退役。专属域 = 输入类弹窗（中央路由接管）与 Metal 游戏面菜单
+//    （统一菜单呈现器 Task245 域分轨），启动器内选择菜单已回归系统
+//    原生液态玻璃直出。
+//
 
 #import "AmeFloatingMenu.h"
 #import "LiquidGlassCompat.h"
@@ -93,6 +101,32 @@ static UIImage *Ame243BlurredKeyWindowSnapshot(UIView *hostView) {
         }];
     } @catch (NSException *ame243_e) {
         return nil;
+    }
+}
+
+/// ★ Task245：二次柔化——0.18x 抓帧成品再半分辨率重渲染一次（位图像素
+///   再减半），窗口对位 1:1 上采样后背景轮廓不可辨认 = 标准磨砂观感；
+///   IMG_0380 的“透视见底”一半来自 AspectFill 裁剪几何错位，另一半就
+///   是柔化不足。失败（理论不可达）退回原快照，不阻断观感。
+static UIImage *Ame245SoftenSnapshot(UIImage *ame245_img) {
+    if (ame245_img == nil) return nil;
+    @try {
+        CGSize ame245_sz = ame245_img.size;
+        if (ame245_sz.width < 1.0 || ame245_sz.height < 1.0) return ame245_img;
+        UIGraphicsImageRendererFormat *ame245_fmt =
+            [[UIGraphicsImageRendererFormat alloc] init];
+        ame245_fmt.scale = 0.5;
+        ame245_fmt.opaque = YES;
+        UIGraphicsImageRenderer *ame245_r =
+            [[UIGraphicsImageRenderer alloc] initWithSize:ame245_sz
+                                                   format:ame245_fmt];
+        UIImage *ame245_soft =
+            [ame245_r imageWithActions:^(UIGraphicsImageRendererContext *ame245_rc) {
+                [ame245_img drawInRect:CGRectMake(0, 0, ame245_sz.width, ame245_sz.height)];
+            }];
+        return ame245_soft ?: ame245_img;
+    } @catch (NSException *ame245_e) {
+        return ame245_img;
     }
 }
 
@@ -215,6 +249,10 @@ static UIColor *Ame244SnapshotTint(void) {
 ///   blurView 之下：Metal 上承载毛玻璃观感；启动器内 blur 合成时它
 ///   参与下层采样，观感不劣化。
 @property (nonatomic, strong, nullable) UIImage *ame243_snapshotImage;
+/// ★ Task245：窗口对位磨砂容器/快照引用（ame237_layout 帧刷新用——
+///   面板挪位/旋转/键盘避让后快照与窗口几何保持 1:1 对位）。
+@property (nonatomic, strong, nullable) UIView *ame245_frostClip;
+@property (nonatomic, strong, nullable) UIImageView *ame245_frostSnap;
 
 @property (nonatomic, strong) UIView *dimView;
 @property (nonatomic, strong) UIView *panel;
@@ -300,25 +338,42 @@ static UIColor *Ame244SnapshotTint(void) {
         ame244_snapImg = nil;
     }
     if (ame244_snapImg != nil) {
-        UIImageView *ame243_snap = [[UIImageView alloc] initWithFrame:self.panel.bounds];
-        ame243_snap.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        ame243_snap.image = ame244_snapImg;
-        ame243_snap.contentMode = UIViewContentModeScaleAspectFill;
-        ame243_snap.clipsToBounds = YES;
-        ame243_snap.userInteractionEnabled = NO;
-        ame243_snap.layer.cornerRadius = 26.0;
-        ame243_snap.layer.cornerCurve = kCACornerCurveContinuous;
-        ame243_snap.layer.masksToBounds = YES;
-        [self.panel insertSubview:ame243_snap belowSubview:self.blurView];
-        self.panel.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.42];
+        // ★ Task245（IMG_0380 用户定案“透视有问题”）：旧摆法 AspectFill
+        //   居中裁剪 = 显示的是整屏快照的中心放大裁切，弹窗背后根本不是
+        //   这个内容，几何错位的“假透视”。改【窗口对位真透视】：快照按
+        //   窗口几何 1:1 铺进面板圆角裁剪容器（帧 = 窗口矩形映射到面板
+        //   坐标，OverFullScreen 呈现下 self.view 即窗口大小），面板下每
+        //   个像素 = 面板后方真实背景内容，叠二次柔化 + tint = 标准“背景
+        //   折射”磨砂观感；面板挪位（键盘避让/旋转）由 ame237_layout 同
+        //   步刷新帧。裁剪容器自担圆角裁剪（panel clipsToBounds=NO 为
+        //   阴影保留，不能依赖面板裁剪；tint 一并收编进容器，方角溢出
+        //   与旧 tint 独立设圆角的双份几何一并消除）。
+        UIView *ame245_clip = [[UIView alloc] initWithFrame:self.panel.bounds];
+        ame245_clip.autoresizingMask =
+            UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        ame245_clip.layer.cornerRadius = 26.0;
+        ame245_clip.layer.cornerCurve = kCACornerCurveContinuous;
+        ame245_clip.layer.masksToBounds = YES;
+        ame245_clip.userInteractionEnabled = NO;
+
+        UIImageView *ame245_snap = [[UIImageView alloc] initWithFrame:
+            CGRectMake(-self.panel.frame.origin.x, -self.panel.frame.origin.y,
+                       self.view.bounds.size.width, self.view.bounds.size.height)];
+        ame245_snap.image = Ame245SoftenSnapshot(ame244_snapImg);
+        ame245_snap.contentMode = UIViewContentModeScaleToFill;
+        ame245_snap.userInteractionEnabled = NO;
+        [ame245_clip addSubview:ame245_snap];
+
         UIView *ame244_tint = [[UIView alloc] initWithFrame:self.panel.bounds];
-        ame244_tint.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        ame244_tint.autoresizingMask =
+            UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         ame244_tint.backgroundColor = Ame244SnapshotTint();
-        ame244_tint.layer.cornerRadius = 26.0;
-        ame244_tint.layer.cornerCurve = kCACornerCurveContinuous;
-        ame244_tint.layer.masksToBounds = YES;
         ame244_tint.userInteractionEnabled = NO;
-        [self.panel insertSubview:ame244_tint aboveSubview:ame243_snap];
+        [ame245_clip addSubview:ame244_tint];
+
+        self.ame245_frostClip = ame245_clip;
+        self.ame245_frostSnap = ame245_snap;
+        [self.panel insertSubview:ame245_clip belowSubview:self.blurView];
         self.blurView.hidden = YES;   // 快照成品磨砂上岗，系统材质层退场
     }
     NSLog(@"[AmeMenu] Task239/244 menu material: %@ (style=%@, background=%@)",
@@ -545,6 +600,14 @@ static UIColor *Ame244SnapshotTint(void) {
         self.panel.frame = CGRectOffset(self.panel.frame, 0.0, -self.ame237_kbShift);
     }
     self.blurView.frame = self.panel.bounds;
+    // ★ Task245：窗口对位磨砂帧刷新（面板挪位/旋转/键盘避让后，快照与
+    //   窗口几何保持 1:1 对位——“玻璃折射”不随面板位移错位；首次布局
+    //   时 viewDidLoad 阶段的临时帧也在此修正，先于 CA 提交无闪烁）。
+    if (self.ame245_frostSnap != nil) {
+        self.ame245_frostSnap.frame =
+            CGRectMake(-self.panel.frame.origin.x, -self.panel.frame.origin.y,
+                       bw, bh);
+    }
     self.borderOverlay.frame = self.panel.bounds;
     self.rowsScroll.frame = CGRectMake(0.0, rowsTop, W, rowsAvail);
     self.rowsScroll.contentSize = CGSizeMake(W, rowsH);

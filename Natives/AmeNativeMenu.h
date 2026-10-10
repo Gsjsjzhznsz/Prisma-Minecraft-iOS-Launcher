@@ -41,6 +41,15 @@
 //      错误（Task241 CI r1 双雷实证）；字典快照经 dictsForFallback:
 //      随呈现链下传，37 处调用点全部走字典便捷入口。
 //    - 外部点按关闭且未选中任何动作 → onDismiss 回调（取消语义不悬死）。
+//    - ★ Task245（IMG_0380 用户定案"这些选择项就应该使用系统原生的
+//      液态玻璃"）：玻璃档按【锚点域】重新分轨——启动器内选择菜单回归
+//      系统 UIMenu 直出（Task241 三级降级链复活：presentMenu 探测 →
+//      _presentMenuAtLocation: → 字典 actionSheet 兜底，玻璃档兜底由磨砂
+//      面板接管；IMG_0370 基准）；Metal 游戏面（SurfaceViewController 层级
+//      /gameMenuOverlay）保持磨砂面板（系统上下文菜单磨砂在 Metal 上
+//      不合成，Task228/230/236 同族实锤）。魔改磨砂面板专属域 = 输入类
+//      弹窗（内存数值输入等中央路由 UIAlertController 接管不变，快照改
+//      窗口对位真透视，见 AmeFloatingMenu Task245）。
 //
 
 #import <UIKit/UIKit.h>

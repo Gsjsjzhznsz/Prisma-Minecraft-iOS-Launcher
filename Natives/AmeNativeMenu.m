@@ -22,6 +22,16 @@
 //      私有 API 三级降级链（presentMenu/_presentMenuAtLocation: 类目
 //      声明 + 运行时探测）随之整体退役——全链回归公开 API +
 //      UIAlertController(actionSheet) 数据源 + Task237 组件渲染。
+//    - ★ Task245（IMG_0380 用户定案"这些选择项就应该使用系统原生的
+//      液态玻璃" + "这透视有问题吧"）：玻璃档按【锚点域】重新分轨——
+//      ①启动器内选择菜单 → 系统原生液态玻璃直出（Task241 三级降级链
+//      复活：presentMenu 探测 → _presentMenuAtLocation: → 字典
+//      actionSheet 兜底，玻璃档兜底由磨砂面板接管；IMG_0370 基准）；
+//      ②Metal 游戏面（SurfaceViewController 层级/gameMenuOverlay）→
+//      保持魔改快照磨砂面板（系统上下文菜单磨砂在 Metal 上不合成，
+//      Task228/230/236 三轮装机实锤同族）；③魔改磨砂面板专属域 =
+//      输入类弹窗（内存数值输入等中央路由 UIAlertController 接管不变；
+//      快照显示改窗口对位真透视，见 AmeFloatingMenu Task245）。
 //    - handler 唯一合法来源 = 字典协议（公开 API）：UIAction/
 //      UIAlertAction.handler 均非公开属性，从已构建 UIMenu 反取在
 //      iOS 26.2 SDK 为编译错误（Task241 CI r1 :79 双雷实证），KVC
@@ -32,8 +42,18 @@
 #import "AmeNativeMenu.h"
 #import "AmeFloatingMenu.h"
 #import "LiquidGlassCompat.h"
+#import <objc/runtime.h>
 
-@interface AmeNativeMenu () <UIAdaptivePresentationControllerDelegate>
+// ★ Task245：私有呈现入口同名自声明（纯声明、无 IMP——链接期不产生
+//   新选择器；消费端一律 respondsToSelector 探测 + @try 双护栏，
+//   Task241 全链实证模式，绝不会 unrecognized selector 崩溃）。
+@interface UIContextMenuInteraction (Ame240PresentMenuCompat)
+- (void)presentMenu;
+- (void)_presentMenuAtLocation:(CGPoint)location;
+@end
+
+@interface AmeNativeMenu () <UIContextMenuInteractionDelegate,
+                             UIAdaptivePresentationControllerDelegate>
 // 单例访问器提升为本文件可见——类方法在其 @implementation 之前被
 // 静态/实例上下文引用时避免 "no known class method"（Task240 CI r1
 // 同款错误家族）。
@@ -45,6 +65,10 @@
 static BOOL ame240_actionFired = NO;
 /// actionSheet 呈现期间待回调的 onDismiss（原生档直通路径；主线程串行）。
 static void (^ame240_fallbackDismiss)(void);
+/// ★ Task245：系统菜单快照与消失回调（挂交互实例，delegate 惰性读取；
+///   每次呈现前刷新——同一锚点重复呈现永远拿到最新菜单）。
+static char ame240_menuSnapshotKey;
+static char ame240_dismissKey;
 
 #pragma mark - 字典协议 → UIAlertAction 拍平
 
@@ -88,7 +112,96 @@ static void ame240_addDictItemsToAlert(NSArray<NSDictionary *> *items,
     }
 }
 
-#pragma mark - 呈现装配（Task242）
+#pragma mark - Task245 系统菜单呈现链（Task241 三级降级复活）
+
+/// 程序化呈现降级链。返回 YES = 已呈现；NO = 双私有入口均缺失（调用方
+/// 转 actionSheet 兜底）。每级 respondsToSelector 探测 + @try 双护栏：
+/// presentMenu（部分 iOS 26 运行时无 IMP）→ _presentMenuAtLocation:（锚点
+/// 中心；iOS 13+ 长期稳定，LauncherPrefManageJRE 同域先例）。绝不
+/// unrecognized selector 崩溃（Task241 全链实证模式）。
+static BOOL ame240_openInteractionMenu(UIContextMenuInteraction *ix) {
+    if (ix == nil) return NO;
+    if ([ix respondsToSelector:@selector(presentMenu)]) {
+        @try {
+            [ix presentMenu];
+            return YES;
+        } @catch (NSException *ame240_e) {}
+    }
+    if ([ix respondsToSelector:@selector(_presentMenuAtLocation:)]) {
+        UIView *ame240_v = ix.view;
+        if (ame240_v != nil) {
+            CGPoint ame240_p = CGPointMake(CGRectGetMidX(ame240_v.bounds),
+                                           CGRectGetMidY(ame240_v.bounds));
+            @try {
+                [ix _presentMenuAtLocation:ame240_p];
+                return YES;
+            } @catch (NSException *ame240_e) {}
+        }
+    }
+    NSLog(@"[AmeNativeMenu] Task245: neither presentMenu nor _presentMenuAtLocation: responded");
+    return NO;
+}
+
+/// 系统菜单双私有入口缺失时的 actionSheet 兜底（理论不可达——防未来
+/// iOS 移除私有 API）。动作语义全部来自字典快照（handler 只能从字典
+/// 取，见文件头）；玻璃档由磨砂面板接管（与输入类弹窗同观感，取消
+/// 语义由面板 onDismiss 承接），接管失败回退直通 actionSheet（iPad
+/// 必须 popover 锚定）；原生档直通（中央路由 hook 不会截胡）。无可
+/// 呈现动作时按取消语义回调 onDismiss（不呈现点了没反应的空壳）。
+static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
+                                       UIMenu *menu,
+                                       NSArray<NSDictionary *> *dicts,
+                                       void (^onDismiss)(void)) {
+    UIView *ame245_anchor = ix.view;
+    if (ame245_anchor == nil || dicts.count == 0) {
+        NSLog(@"[AmeNativeMenu] Task245: fallback unavailable (anchor=%p dicts=%lu), treated as cancel",
+              ame245_anchor, (unsigned long)dicts.count);
+        if (onDismiss) onDismiss();
+        return;
+    }
+    UIResponder *ame245_r = ame245_anchor;
+    while (ame245_r != nil && ![ame245_r isKindOfClass:[UIViewController class]]) {
+        ame245_r = ame245_r.nextResponder;
+    }
+    UIViewController *ame245_host = (UIViewController *)ame245_r;
+    if (ame245_host == nil || ame245_host.presentedViewController != nil) {
+        if (onDismiss) onDismiss();
+        return;
+    }
+    UIAlertController *ame245_alert = [UIAlertController
+        alertControllerWithTitle:(menu.title.length > 0 ? menu.title : nil)
+                         message:nil
+                  preferredStyle:UIAlertControllerStyleActionSheet];
+    NSMutableArray<UIAlertAction *> *ame245_items = [NSMutableArray array];
+    ame240_addDictItemsToAlert(dicts, ame245_items, @"");
+    if (ame245_items.count == 0) {
+        if (onDismiss) onDismiss();
+        return;
+    }
+    for (UIAlertAction *ame245_aa in ame245_items) [ame245_alert addAction:ame245_aa];
+
+    if (LGCIsGlassStyleActive()) {
+        BOOL ame245_ok = [AmeFloatingMenu presentGlassMenuForAlert:ame245_alert
+                                                     fromPresenter:ame245_host
+                                                          animated:YES
+                                                        completion:nil
+                                                         onDismiss:onDismiss];
+        if (ame245_ok) {
+            NSLog(@"[AmeNativeMenu] Task245: system menu unavailable, glass panel fallback");
+            return;
+        }
+    }
+    ame240_fallbackDismiss = onDismiss;
+    ame245_alert.presentationController.delegate = [AmeNativeMenu ame240_shared];
+    ame245_alert.popoverPresentationController.sourceView = ame245_anchor;
+    ame245_alert.popoverPresentationController.sourceRect = ame245_anchor.bounds;
+    ame245_alert.popoverPresentationController.permittedArrowDirections =
+        UIPopoverArrowDirectionAny;
+    [ame245_host presentViewController:ame245_alert animated:YES completion:nil];
+    NSLog(@"[AmeNativeMenu] Task245: system menu unavailable, stock actionSheet fallback");
+}
+
+#pragma mark - 呈现装配（Task242/245）
 
 @implementation AmeNativeMenu
 
@@ -132,8 +245,11 @@ static void ame240_addDictItemsToAlert(NSArray<NSDictionary *> *items,
     return ame242_alert;
 }
 
-/// ★ Task242 玻璃档呈现：AmeFloatingMenu 真液态玻璃面板接管
-/// （UIGlassEffect 材质，Task237/239 组件；用户基准 = "魔改悬浮弹窗"）。
+/// ★ Task245 域收窄：玻璃档磨砂面板呈现，仅服务两个域——①Metal 游戏
+///   面上的选择菜单（系统上下文菜单磨砂在 Metal 上不合成，Task228/
+///   230/236 同族实锤）；②系统菜单双私有入口缺失时的兜底。启动器内
+///   选择菜单主路径已回归系统 UIMenu（Task245），磨砂面板专属域 =
+///   输入类弹窗（中央路由 hook 接管，不经本方法）。
 /// onDismiss = 未选实质动作关闭（面板内 dim 点按/cancel 项）时回调。
 /// 镜像失败（理论边缘）→ presentViewController 兜底：中央路由 hook 会
 /// 再次尝试玻璃接管，仍失败则直通原生 actionSheet（功能保底，取消
@@ -147,7 +263,7 @@ static void ame240_addDictItemsToAlert(NSArray<NSDictionary *> *items,
                                                     completion:nil
                                                      onDismiss:onDismiss];
     if (ame242_ok) {
-        NSLog(@"[AmeNativeMenu] Task242: glass menu route (UIGlassEffect panel)");
+        NSLog(@"[AmeNativeMenu] Task245: glass panel route (snapshot frost, Metal domain)");
         return;
     }
     NSLog(@"[AmeNativeMenu] Task242: glass mirror failed, router passthrough");
@@ -175,7 +291,53 @@ static void ame240_addDictItemsToAlert(NSArray<NSDictionary *> *items,
     NSLog(@"[AmeNativeMenu] Task242: native sheet route (stock style)");
 }
 
-/// Task242 分轨调度：host/alert 装配 → 按界面风格选择呈现路径。
+/// ★ Task245：锚点是否处于游戏内渲染面（Metal）之上——SurfaceViewController
+///   层级 / gameMenuOverlay 之内。系统上下文菜单的磨砂材质在 Metal 上
+///   不合成（Task228/230/236 三轮装机实锤同族），游戏内选择菜单保持
+///   魔改快照磨砂面板；启动器内一律系统原生液态玻璃。
++ (BOOL)ame245_anchorInsideGameSurface:(UIView *)view {
+    UIResponder *ame245_r = view;
+    while (ame245_r != nil) {
+        NSString *ame245_cls = NSStringFromClass([ame245_r class]);
+        if ([ame245_cls hasPrefix:@"SurfaceViewController"] ||
+            [ame245_cls isEqualToString:@"GameMenuOverlayView"]) {
+            return YES;
+        }
+        ame245_r = ame245_r.nextResponder;
+    }
+    return NO;
+}
+
+/// ★ Task245：启动器内选择菜单 = 系统原生液态玻璃直出（IMG_0370 基准，
+///   用户定案"选择项就应该使用系统原生的液态玻璃"）。UIContextMenuInteraction
+///   挂锚点视图（associated object 复用同一交互实例）+ 菜单快照/消失
+///   回调随挂 + Task241 三级降级链呈现。进入本方法前外层调度已保证
+///   sourceView 在窗口内（window == nil 的防御回退在外层统一处理）。
++ (void)ame245_presentViaSystemMenu:(UIMenu *)menu
+                         sourceView:(UIView *)sourceView
+                              dicts:(NSArray<NSDictionary *> *)dicts
+                          onDismiss:(void (^)(void))onDismiss {
+    static char ame245_interactionKey;
+    UIContextMenuInteraction *ame245_ix =
+        objc_getAssociatedObject(sourceView, &ame245_interactionKey);
+    if (ame245_ix == nil) {
+        ame245_ix = [[UIContextMenuInteraction alloc]
+            initWithDelegate:[self ame240_shared]];
+        [sourceView addInteraction:ame245_ix];
+        objc_setAssociatedObject(sourceView, &ame245_interactionKey,
+                                 ame245_ix, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    objc_setAssociatedObject(ame245_ix, &ame240_menuSnapshotKey, menu,
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(ame245_ix, &ame240_dismissKey, onDismiss,
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    NSLog(@"[AmeNativeMenu] Task245: system menu route (native liquid glass, IMG_0370)");
+    if (!ame240_openInteractionMenu(ame245_ix)) {
+        ame240_actionSheetFallback(ame245_ix, menu, dicts, onDismiss);
+    }
+}
+
+/// Task242/245 分轨调度：host/alert 装配 → 按界面风格与锚点域选择呈现路径。
 + (void)ame242_presentStyleRoutedWithMenu:(UIMenu *)menu
                                sourceView:(UIView *)sourceView
                                     dicts:(NSArray<NSDictionary *> *)dicts
@@ -192,9 +354,20 @@ static void ame240_addDictItemsToAlert(NSArray<NSDictionary *> *items,
     }
     ame240_actionFired = NO; // 本轮会话开始，重新计数
     if (LGCIsGlassStyleActive()) {
-        [self ame242_presentViaGlassMenu:ame242_alert
-                                    host:ame242_host
-                               onDismiss:onDismiss];
+        if ([self ame245_anchorInsideGameSurface:sourceView]) {
+            // ★ Task245：Metal 游戏面上选择菜单保持磨砂面板（系统上下文
+            //   菜单磨砂在 Metal 上不合成）。
+            [self ame242_presentViaGlassMenu:ame242_alert
+                                        host:ame242_host
+                                   onDismiss:onDismiss];
+        } else {
+            // ★ Task245（IMG_0380 用户定案）：启动器内选择菜单 = 系统原生
+            //   液态玻璃直出；磨砂面板退役到输入类弹窗专属。
+            [self ame245_presentViaSystemMenu:menu
+                                   sourceView:sourceView
+                                        dicts:dicts
+                                    onDismiss:onDismiss];
+        }
     } else {
         [self ame242_presentViaNativeSheet:ame242_alert
                                       view:sourceView
@@ -314,6 +487,37 @@ static void ame240_addDictItemsToAlert(NSArray<NSDictionary *> *items,
     // 见文件头注释）。
     [self ame240_presentMenu:ame240_menu sourceView:sourceView
                    onDismiss:onDismiss dictsForFallback:items];
+}
+
+#pragma mark - UIContextMenuInteractionDelegate（Task245 复活）
+
+// delegate 为弱引用；单例永不释放 → 安全。菜单快照自 associated object
+// 惰性读取（ame245_presentViaSystemMenu 每次呈现前已刷新）。
+- (UIContextMenuConfiguration *)contextMenuInteraction:
+    (UIContextMenuInteraction *)interaction
+    configurationForMenuAtLocation:(CGPoint)location {
+    UIMenu *ame240_menu = objc_getAssociatedObject(interaction, &ame240_menuSnapshotKey);
+    if (ame240_menu == nil) return nil;
+    ame240_actionFired = NO; // 本轮会话开始，重新计数
+    return [UIContextMenuConfiguration
+        configurationWithIdentifier:nil
+                     previewProvider:nil
+                      actionProvider:^UIMenu *_Nullable(
+                          NSArray<UIMenuElement *> *_Nonnull suggestedActions) {
+            return ame240_menu;
+        }];
+}
+
+// 外部点按导致菜单消失且未选中任何动作 → 回调 onDismiss（承接旧
+// actionSheet 取消项语义；选中动作后的菜单关闭不触发）。
+- (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction
+    didEndMenuForConfiguration:(UIContextMenuConfiguration *)configuration
+                       animator:(nullable id<UIContextMenuInteractionAnimating>)animator {
+    void (^ame240_onDismiss)(void) = objc_getAssociatedObject(interaction, &ame240_dismissKey);
+    if (!ame240_actionFired && ame240_onDismiss) {
+        ame240_onDismiss();
+    }
+    ame240_actionFired = NO;
 }
 
 #pragma mark - UIAdaptivePresentationControllerDelegate
