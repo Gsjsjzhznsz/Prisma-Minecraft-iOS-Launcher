@@ -2545,3 +2545,22 @@ Work Log:
 Stage Summary:
 - 新 IPA 就绪：菜单风格分轨 / 模组端自动隔离 / 描边镜像自适应 / 退出三级解析 / 齿轮球补提升 随包待装机验证
 - 待用户输入：齿轮球透明边截图；Vulkan+光影崩溃 latestlog
+
+---
+Task ID: 243
+Agent: main (Super Z)
+Task: 用户装机反馈 IMG_0376/0377/0378——①满屏文字黑条（"文字重叠自适应黑边"）②游戏内菜单黑面板毛玻璃没生效/液态玻璃像被改回去 ③把手黑条白边难看（"透明的边边没有处理好"）
+
+Work Log:
+- 三截图取证：IMG_0376 主页每行文字带实心黑条（vs IMG_0373 Task241 构建无黑条——唯一变量 = Task242 描边渲染出口换成 renderInContext）；IMG_0378 游戏内菜单全高抽屉纯黑面板；IMG_0377 把手黑竖条+粗白框
+- 【黑条定案（BackgroundManager ame232）】Task242 镜像 UILabel 的 [mirror.layer renderInContext:] 在真机 iOS 26 产生 contents 管线异常——新建 label 不在 window 层级、contentsScale=1，renderInContext 强制 layer display 嵌套在本体制画 ctx（UIKit flipped + 设备 3x scale）里，黑色字形被放大/吞并成实心黑条。修法：保留属性镜像（自适应核心不变），渲染出口改【直调镜像 label 的 drawTextInRect:】（UILabel 类目自声明，Task240 CI r3 先例）——当前 ctx 即系统调本 swizzle 的同一 flipped 上下文；镜像经类级 swizzle（mark=nil）落原生 IMP = 纯文本绘制，彻底绕开 layer display/contents 管线；四向拷贝→垫底→本体叠序与排版同源性（垂直居中/截断/缩字/段落继承）不变
+- 【游戏内快照自绘磨砂（SurfaceViewController+Navigation）】玻璃档 UIGlassEffect 在 Metal 游戏帧上不合成（Task228/230/236 三轮装机实锤）= 黑面板主因。showMenu 在 menuView.hidden=NO 之前对 keyWindow 0.18x 抓帧（重度降采样=抓帧即模糊，afterScreenUpdates:NO Metal 帧安全，@try 护栏），快照 UIImageView 插 blurView 之下（次序随 applyMenuStyle 幂等重建保持）；底色 0.50→0.42 防闷黑；抓帧失败回退深色底；原生档幂等清理。【时序雷自纠：抓帧初版误放在 hidden=NO 之后（面板黑底自噬快照），提交前修正为先抓后显】
+- 【AmeFloatingMenu 弹层同修】游戏内弹窗（分辨率调整等）同悬于 Metal：presentGlassMenuForAlert 在 present 动画前抓帧传 ame243_snapshotImage（无自噬风险），viewDidLoad 插 panel blurView 之下（有快照时底色 0.30→0.42）；启动器内 blur 正常合成时快照参与下层采样观感中性；中央路由 hook 同入口自动获得
+- 【游戏内常驻件胶囊化（GameMenuOverlayView ame232_applyFloatingGlass）】齿轮球/统计条/caption 三件套恒在 Metal 上——LGC 组合玻璃磨砂无贡献而 _LGCSheenView 高光白边恒裸露 = 黑把手粗白框。定案跳过 LGCApplyGlassToView，纯深色胶囊 + 0.5pt/0.20 减淡细边（玻璃边缘语言保留）
+- 【CI 疑云虚惊排除】推送前发现 AmeNativeMenu.m:156/174 疑似 "ost presentViewController" 编译炸弹（bash 显示层吞字家族再实证：python3 repr 输出同样被吞）——git blob/GitHub API/CI 日志三重验证实际内容为 "[host presentViewController:...]"，Read 工具显示完整，run 38064942317 success 为真；【显示层吞字教训升级：bash 管道输出的 python3 repr 也会吞字，关键字符验证必须用 Read 工具或 base64 中转】
+- 门禁：task240_syntax_gate / task139 / task158 / task175 全 PASS
+
+Stage Summary:
+- 提交 3e83110 推送 main，CI 轮询中；三个反馈点全链修复：黑条（描边渲染出口根治）/ 游戏内毛玻璃（快照自绘磨砂，主菜单+弹层双覆盖）/ 把手白边（胶囊化+减淡细边）
+- 装机验证锚点：①主页/新闻页描边文字应为"白字细黑边"（无黑条）②玻璃档游戏内开菜单 = 模糊游戏画面透出的深色玻璃面板 ③把手 = 深色胶囊+极细淡边 ④游戏内分辨率调整弹窗 = 同款快照磨砂玻璃
+- 待分诊遗留：IMG_0378 抽屉内"大小"标签错位的确切来源（代码侧四候选全排除，等 [GameMenu] Task237 menu shown 装机日志定位）；上轮遗留 Vulkan 崩溃（待 latestlog）
