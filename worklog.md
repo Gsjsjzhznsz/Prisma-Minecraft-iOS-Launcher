@@ -2493,3 +2493,21 @@ Stage Summary:
 - 崩溃根除：unrecognized selector 类崩溃在本组件结构性不可能复发（探测 + @try + 双后备）；真机主路径预期落在 _presentMenuAtLocation:（若 iOS 26 连它也移除则自动落 actionSheet 兜底，latestlog 留有 [AmeNativeMenu] Task241 面包屑可诊断）
 - 重叠根除：磁贴侧（限行 + 自裁剪 + 日期入栈）消灭溢出源头，swizzle 侧（溢出跳过）兜底全仓库压缩态标签
 - 装机验证锚点：账号页 ⋯/长按菜单、设置页 pick 行、下载页四菜单、游戏内齿轮、第三方登录角色选择（外部点按取消不卡死）、日志行分享；主页新闻磁贴长摘要卡片（3 行截断 + 日期右下随流不压字、无第二层文字）
+
+---
+Task ID: 241-ci
+Agent: main (Super Z)
+Task: 用户反馈"错误了"——Task 241 提交（9df3f61）CI 失败（run 38054003971），定位三处编译错误并根治
+
+Work Log:
+- 定案（CI 日志 diag 三行全中 AmeNativeMenu.m 单文件）：①:79 captured.handler ×2——兜底拍平从已构建 UIMenu 反取 handler，而 UIAction.handler 与 UIAlertAction.handler 同属非公开属性（Task240 定案禁忌、本文件头注释原文即此，Task241 首版自踩；iOS 26.2 SDK 编译期即报 property not found）；②:85 [ame240_flattenMenuForAlert(...)]——static C 函数调用误包方括号当消息表达式，解析器把函数调用当 receiver、读到 ] 处期待选择器 = "expected identifier"（Task240-ci r4 括号教训的对偶镜像：裸 continuation 缺 [] vs C 调用多 []，括号平衡门对两族双盲——本轮教训：C 函数调用永远裸写，消息表达式才配 []）
+- 修复（AmeNativeMenu.m）：兜底拍平重写为 ame240_addDictItemsToAlert——字典协议直驱（title/cancel/subitems 递归缩进/destructive/disabled/handler 全公开 API 取用，handler 唯一合法来源即字典快照）；呈现链新增内部四参入口 ame240_presentMenu:sourceView:onDismiss:dictsForFallback:（字典便捷入口传 items，UIMenu 直构入口传 nil）；dicts 缺失或拍平为零动作时不呈现假菜单（点了没反应的空壳劣于不出现），按取消语义回调 onDismiss 并留 [AmeNativeMenu] Task241-ci 面包屑
+- 收编（MultiplayerViewController.m）：全仓唯一 UIMenu 直构调用点（ame240_menuWithTitle 建 UIMenu 再 ame240_presentMenu）改走 ame240_presentMenuWithTitle:dictItems:sourceView: 字典便捷入口——呈现语义完全一致（内部本就走同一 ame240_menuWithTitle 构建），收编后 37 处调用点统一字典协议，兜底链永远持有 handler 快照；UIMenu 入口保留并注明无字典快照时的取消语义
+- 未调度集审计（Task240-ci 教训复训）：BackgroundManager.m / LauncherNewsViewController.m 的 Task241 改动在本失败轮 CI 日志零编译痕迹（排队被取消掩蔽）——人工核验 diff（溢出护栏 if/else 括号自洽、dateLabel 入栈结构与复用重置完备）后判定无雷，本轮 CI 全绿佐证
+- 验证：task240_syntax_gate / task139 / task158 / task175 全 PASS；全仓 .handler 反取扫描零残留（AmeFloatingMenu:546 为自建 Ame237MenuActionMirror 自有属性非雷）；全仓 AmeNativeMenu 调用点普查 36 字典 + 1 UIMenu → 收编后 37 全字典
+
+Stage Summary:
+- run 38056791753（955027d）completed success 一轮终绿，产物 ipa/tipa 各 220.3MB + dSYM 6.2MB
+- Task 241 全链闭环：真机悬浮菜单崩溃（unrecognized selector）+ CI 编译雷（handler 反取 ×2、C 调用误包 []）+ 新闻磁贴文字重叠（三层根因）全部根治
+- 装机验证锚点（对照 IMG_0370 基准）：账号页 ⋯/长按菜单（含 Steve/Alex 子菜单）、设置页全部 pick 行、下载页四菜单、游戏内齿轮 → 分辨率、多人联机房主菜单（本轮收编点）、第三方登录角色选择、日志行分享；主页新闻磁贴 3 行截断 + 日期随流不压字
+- 教训入库：①"组件禁忌注释写在自己文件头，首版实现照样踩"——禁忌条目必须在实现时重新 grep 自查而非依赖记忆；②括号平衡门的双盲区（缺 [] 与多 [] 对偶）收编进 Task240-ci r4 教训家族，C 函数调用与消息表达式的书写纪律就此分立
