@@ -2511,3 +2511,23 @@ Stage Summary:
 - Task 241 全链闭环：真机悬浮菜单崩溃（unrecognized selector）+ CI 编译雷（handler 反取 ×2、C 调用误包 []）+ 新闻磁贴文字重叠（三层根因）全部根治
 - 装机验证锚点（对照 IMG_0370 基准）：账号页 ⋯/长按菜单（含 Steve/Alex 子菜单）、设置页全部 pick 行、下载页四菜单、游戏内齿轮 → 分辨率、多人联机房主菜单（本轮收编点）、第三方登录角色选择、日志行分享；主页新闻磁贴 3 行截断 + 日期随流不压字
 - 教训入库：①"组件禁忌注释写在自己文件头，首版实现照样踩"——禁忌条目必须在实现时重新 grep 自查而非依赖记忆；②括号平衡门的双盲区（缺 [] 与多 [] 对偶）收编进 Task240-ci r4 教训家族，C 函数调用与消息表达式的书写纪律就此分立
+
+---
+Task ID: 242
+Agent: main (Super Z)
+Task: 用户装机实测八连反馈——①毛玻璃未生效（游戏内菜单/内存设置）②魔改悬浮弹窗适配更多菜单 ③安装模组端不自动开版本隔离 ④文字重叠角落残留（要求自适应）⑤Vulkan+光影启动崩溃 ⑥界面风格=原生时仍液态玻璃 ⑦启动完成后齿轮球不显示需手动刷新+透明边边 ⑧26.3 退出游戏启动器无反应
+
+Work Log:
+- 【菜单风格分轨（①②⑥三问同源根治，AmeNativeMenu.m 整体重写）】程序化系统菜单主路径（Task241 三级私有链）被装机实测推翻：系统上下文菜单程序化呈现的材质既非用户要的玻璃（"毛玻璃没生效"）、原生档下又恒为系统玻璃（"原生时还是液态玻璃"）。Task242 定案【按界面风格分轨】：玻璃档（LGCIsGlassStyleActive）→ AmeFloatingMenu 真液态玻璃面板接管（UIGlassEffect，Task237/239 组件 = 用户实测"非常好"的魔改悬浮弹窗，自此覆盖全部 37 处菜单）；原生档 → 旧版 actionSheet 直通（Task237 契约名实相符）。presentMenu/_presentMenuAtLocation: 类目声明与运行时探测链整体退役（全链回归公开 API）；actionSheet 数据源装配（ame242_actionSheetFromDicts）复用 Task241-ci 字典拍平；onDismiss 语义玻璃档由面板承接（AmeFloatingMenu 新增五参变体 presentGlassMenuForAlert:onDismiss: + ame237_onDismiss 属性，dim 点按/cancel 项关闭回调、实质动作不回调）、原生档由 adaptive delegate 承接（ame240_fallbackDismiss 机制沿用）；window==nil 防御性回退一跑循环保留；AmeNativeMenu.h 契约注释同步定案
+- 【模组端自动版本隔离（③）】四处新装 profile 注册点全部自动开隔离：ForgeDirectInstaller/NeoForgeDirectInstaller（原 gameDir="." 共享根）、FabricInstallViewController（原连 gameDir 都没写）、DownloadViewController vanilla 安装——统一改 gameDir = versions/<id>/game（Task224 数据分居新口径，ame217_isolationState 识别为"隔离此版本"；mods/saves/configs 由 ModService 隔离优先解析自动落隔离目录；用户仍可在版本设置三态选择器改回）
+- 【文字重叠系统性根治（④）】BackgroundManager ame232 描边 swizzle 重构：【镜像 UILabel 渲染】取代 Task233-241 九轮手动几何镜像（223 行手动计算 → 镜像块）——深拷贝/垫底不再 NSAttributedString drawInRect 复刻 UILabel 排版（每轮只修一个分歧点、角落漏网即用户所见），改构造镜像 UILabel（attributedText + numberOfLines/lineBreakMode/textAlignment/adjustsFontSizeToFitWidth/minimumScaleFactor/baselineAdjustment 全属性镜像）由 UIKit 同一套 drawTextInRect 内核渲染 = 与本体制画 100% 同源，分歧族构造性不存在 = 自适应；叠序不变（四向 0.6pt 深拷贝 → 不透明垫底 → 本体）；镜像 label 未打描边标记无递归风险；task240 gate 的 NO-IMPORT 假阳性（注释含组件名误触 grep）已消除
+- 【退出游戏挂起加固（⑧）】SurfaceViewController Task238 换根主路径单点依赖 UIWindow.mainWindow 静态指针——iOS 26.3 scene 生命周期下失效即静默跳过。三级解析加固：mainWindow → connectedScenes foreground-active keyWindow 兜底 → 根判定换根；两级失败打 [SurfaceViewController] Task242 面包屑（若连 Task238 exited 日志都没有 = launchJVM 未返回，另一类问题，待 latestlog 分诊）
+- 【齿轮球启动完成不显示（⑦a）】根因 = Task238 的 z 序提升只在遮罩创建时执行一次，启动期间后续 addSubview（ctrlView 等）重新压回，遮罩移除后悬浮件被压在新层之下（手动开关菜单的 bringSubviewToFront = "手动刷新"的真相）——onFirstFrameRendered completion 与 dismissLaunchOverlayOnError 两条遮罩移除路径均补 raise（与创建时对偶）
+- 【齿轮球透明边边（⑦b）】低置信度暂缓——无截图下盲改渲染参数风险大于收益，待用户截图后精准修
+- 【Vulkan+光影崩溃（⑤）】未盲修——无 latestlog/崩溃日志，Vulkan 管线+shaderpack 组合的失败点（glslang 编译/uniform 上限/纹理阵列）无法从代码侧单一定案，待日志
+- 验证：task240_syntax_gate / task139 / task158（11 触碰文件）/ task175 全 PASS；旧手动镜像变量（ame233_ps/ame234_textRect/ame235_*/ame233_dark/backing）零残留；MultiplayerViewController Task241-ci 收编点兼容性复核（字典协议契约不变）
+
+Stage Summary:
+- 菜单呈现终态：风格三档全语义生效——玻璃档全部菜单 = 魔改液态玻璃悬浮面板（UIGlassEffect），原生档全部菜单 = 旧版系统弹窗；私有 API 全链退役，unrecognized selector 类崩溃结构性不可能复发
+- 装机验证锚点：①玻璃档下游戏内分辨率菜单/版本设置内存行/下载页筛选等应全部呈现魔改玻璃悬浮弹窗（"毛玻璃生效"）；②风格切"原生"后菜单应为旧版深色分块弹窗（无玻璃）；③新装 Fabric/Forge/NeoForge/整合包/新版本 → 版本设置自动显示"隔离此版本"，mods 落隔离目录；④文字重叠角落（任意描边标签压缩/截断/缩字场景）自适应消除；⑤退出游戏 → 启动器回主页（26.3；若仍挂起请发 latestlog 抓 Task242 面包屑）；⑥启动完成后齿轮球/菜单标签立即可见
+- 待用户提供：⑦b 透明边边截图；⑤ Vulkan+光影崩溃的 latestlog/崩溃日志

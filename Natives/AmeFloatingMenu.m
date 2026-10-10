@@ -149,6 +149,9 @@ static CGFloat Ame237TextHeight(NSString *text, UIFont *font, CGFloat width) {
 @property (nonatomic, assign) BOOL ame237_dismissing;
 @property (nonatomic, assign) BOOL ame237_didEntrance;
 @property (nonatomic, assign) CGFloat ame237_kbShift;
+/// ★ Task242：未选中实质动作而关闭面板（dim 点按/cancel 项）时的回调
+///   （统一菜单呈现器分轨呈现的取消语义接线，见 .h 变体注释）。
+@property (nonatomic, copy, nullable) void (^ame237_onDismiss)(void);
 
 @property (nonatomic, strong) UIView *dimView;
 @property (nonatomic, strong) UIView *panel;
@@ -546,6 +549,12 @@ static CGFloat Ame237TextHeight(NSString *text, UIFont *font, CGFloat width) {
             if (action != nil && action.handler != nil) {
                 action.handler(action.orig);
             }
+            // ★ Task242：未选中实质动作（dim 点按 = nil；cancel 项 = style 1）
+            //   而关闭 → 回调 onDismiss（取消语义；实质动作关闭不回调）。
+            if (self.ame237_onDismiss) {
+                BOOL ame242_fired = (action != nil && action.style != 1);
+                if (!ame242_fired) self.ame237_onDismiss();
+            }
         }];
     };
     if (self.ame237_animated) {
@@ -661,6 +670,17 @@ static CGFloat Ame237TextHeight(NSString *text, UIFont *font, CGFloat width) {
                    fromPresenter:(UIViewController *)presenter
                          animated:(BOOL)animated
                        completion:(nullable void (^)(void))completion {
+    // ★ Task242：旧四参变体转发（无取消语义，中央路由弹窗接管沿用）。
+    return [self presentGlassMenuForAlert:alert fromPresenter:presenter
+                                 animated:animated completion:completion
+                                onDismiss:nil];
+}
+
++ (BOOL)presentGlassMenuForAlert:(UIAlertController *)alert
+                   fromPresenter:(UIViewController *)presenter
+                         animated:(BOOL)animated
+                       completion:(nullable void (^)(void))completion
+                        onDismiss:(nullable void (^)(void))onDismiss {
     if (![alert isKindOfClass:[UIAlertController class]]) return NO;
     if (presenter == nil) return NO;
 
@@ -697,6 +717,9 @@ static CGFloat Ame237TextHeight(NSString *text, UIFont *font, CGFloat width) {
     menu.ame237_actions = [mirrors copy];
     menu.ame237_alertFields = [alert.textFields copy];
     menu.ame237_animated = animated;
+    // ★ Task242：取消语义接线（未选实质动作关闭 → onDismiss，见 .h；
+    //   调用方 = 统一菜单呈现器玻璃档分轨）。
+    menu.ame237_onDismiss = onDismiss;
     menu.modalPresentationStyle = UIModalPresentationOverFullScreen;
     menu.modalPresentationCapturesStatusBarAppearance = NO;
 

@@ -61,6 +61,18 @@ NS_ASSUME_NONNULL_BEGIN
                          animated:(BOOL)animated
                        completion:(nullable void (^)(void))completion;
 
+/// ★ Task242：带取消语义的接管入口（AmeNativeMenu 菜单分轨呈现用）。
+///   onDismiss = 用户未选中任何实质动作而关闭面板（点按面板外部遮罩且
+///   无 cancel 项，或点按 cancel 项）时回调——承接系统 UIMenu didEnd 的
+///   外部点按取消语义（Task240 定案：等待回调的流程不悬死，如第三方
+///   登录角色选择 complete(nil)）。点选实质动作（default/destructive）
+///   关闭不回调。
++ (BOOL)presentGlassMenuForAlert:(UIAlertController *)alert
+                   fromPresenter:(UIViewController *)presenter
+                         animated:(BOOL)animated
+                       completion:(nullable void (^)(void))completion
+                        onDismiss:(nullable void (^)(void))onDismiss;
+
 /// 标题语义 → SF Symbol 图标名（公开给游戏内菜单共用同一套图标语言）。
 + (nullable NSString *)iconNameForTitle:(NSString *)title;
 

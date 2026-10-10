@@ -217,6 +217,11 @@ extern NSMutableArray *localVersionList;
         NSMutableDictionary *profile = [NSMutableDictionary dictionary];
         profile[@"name"] = response[@"id"];
         profile[@"lastVersionId"] = response[@"id"];
+        // ★ Task242（用户："安装模组端的时候为什么不会自动开启版本隔离"）：
+        //   Fabric 直装自动开版本隔离（原实现连 gameDir 都未写 = 共享根）；
+        //   后续 installFabricAPIWithCompletion 读本 profile 的 gameDir
+        //   会直接落隔离目录（语义正确：API 属于该实例）。
+        profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", response[@"id"]];
         profile[@"type"] = @"custom";
         profile[@"created"] = [NSDate date].description;
         [PLProfiles.current saveProfile:profile withName:response[@"id"]];

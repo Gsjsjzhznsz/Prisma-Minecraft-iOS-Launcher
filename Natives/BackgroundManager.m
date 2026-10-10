@@ -1891,229 +1891,67 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
             UILabel *ame232_label = (UILabel *)self;
             NSAttributedString *ame232_as = ame232_label.attributedText;
             if (ame232_as.length > 0 && UIGraphicsGetCurrentContext() != NULL) {
-                // ★ Task233：Task232 版四份深色拷贝用裸 drawInRect: 绘制——
-                //   NSAttributedString 不携带 UILabel 的 textAlignment /
-                //   lineBreakMode（对齐与截断/换行住在 label 上）：居中或
-                //   截断标签的拷贝按【左对齐 + 自由换行】落笔，与正文本体
-                //   错位 = "字体双层、有地方重叠不上"。半透明白字（0.82）
-                //   下面透出深色拷贝 = "有透明度导致偏黑"。
-                //   修法三件：
-                //   ① 拷贝补【与 label 一致】的段落样式（对齐 + 断行；
-                //     numberOfLines==1 强制尾截断，与 UIKit 单行语义一致）；
-                //   ② 零偏移先铺一层【不透明原色】垫底——半透明正文下面
-                //     是纯色底，深色拷贝不再透出来（偏黑根治）；
-                //   ③ 四份深色拷贝（±0.6pt）画在垫底层之下、正文本体之上
-                //     的正确叠序：深边 → 不透明原色 → 原色正文。
-                // ★ Task239（用户：“许多地方文字依旧有重叠”，第八轮收尾）：
-                //   拷贝段落样式改为【继承正文本体自带的段落属性】再覆盖
-                //   断行——本体的 attributedText 若携带 lineSpacing /
-                //   lineHeight 等富文本排版（详情页、卡片副标题多处使用），
-                //   Task233 起的拷贝一直用裸段落样式重建 = 行距几何与本体
-                //   错位，多行场景肉眼可见的“双层/错行”残留。同源继承后
-                //   逐行对齐；对齐属性同理：本体自带段落样式时以其为准
-                //   （UIKit 渲染富文本时字符串内段落优先于 label 属性），
-                //   只有裸文本才用 label 的 textAlignment。
-                NSMutableParagraphStyle *ame233_ps = nil;
-                NSRange ame239_psEffRange;
-                id ame239_bodyPS = [ame232_as attribute:NSParagraphStyleAttributeName
-                                                atIndex:0
-                                          effectiveRange:&ame239_psEffRange];
-                if ([ame239_bodyPS isKindOfClass:[NSParagraphStyle class]]) {
-                    ame233_ps = [((NSParagraphStyle *)ame239_bodyPS) mutableCopy];
-                } else {
-                    ame233_ps = [[NSMutableParagraphStyle alloc] init];
-                    ame233_ps.alignment = ame232_label.textAlignment;
-                }
-                ame233_ps.lineBreakMode = ame232_label.lineBreakMode;
-                if (ame232_label.numberOfLines == 1) {
-                    // ★ Task233：单行语义 = 尾截断；★ Task239 补丁：尊重
-                    //   本体的 TruncatingMiddle/Head 等显式模式（拷贝强制
-                    //   Tail 而本体 Middle 截断时，截断位置错位 = 单行场景
-                    //   残留重叠）；仅包裹类模式（Word/CharWrapping）才归一
-                    //   为尾截断（UIKit 单行语义）。
-                    if (ame232_label.lineBreakMode == NSLineBreakByWordWrapping ||
-                        ame232_label.lineBreakMode == NSLineBreakByCharWrapping) {
-                        ame233_ps.lineBreakMode = NSLineBreakByTruncatingTail;
-                    }
-                } else if (ame232_label.numberOfLines > 1) {
-                    // ★ Task236：多行标签的拷贝必须按【词换行】落笔——
-                    //   UILabel 多行 + lineBreakMode=TruncatingTail 的本体是
-                    //   “换行铺满 N 行、末行截断”，而 NSAttributedString 携带
-                    //   TruncatingTail 时只画【单行截断】不换行：拷贝与本体
-                    //   行数/几何完全错位 = 多行场景“双层/重叠”的残留根因
-                    //   （AssetDetailHeaderView 标题 2 行缩字等）。改用 WordWrap
-                    //   对齐本体的换行几何（末行超长时本体截断、拷贝可能多画，
-                    //   属尾部边缘 case，主体行几何已同源）。
-                    ame233_ps.lineBreakMode = NSLineBreakByWordWrapping;
-                } else {
-                    // ★ Task238（用户：“修复字体与选项文本重叠问题”，多行
-                    //   unlimited 维度）：numberOfLines == 0（不限行数）的标签
-                    //   ——Task237 玻璃悬浮菜单的标题/正文、各处说明文案——
-                    //   本体按词换行铺满任意多行，而 Task236 只修了
-                    //   numberOfLines > 1 的分支：==0 的拷贝仍带
-                    //   lineBreakMode（默认 byTruncatingTail）→ NSAttributedString
-                    //   携带截断模式时【只画单行】——四份深色拷贝 + 不透明垫底
-                    //   全部拉成一条长线，横穿换行后的正文本体 =
-                    //   “字体与选项文本重叠”的直接来源。与 >1 分支同修：词换行。
-                    ame233_ps.lineBreakMode = NSLineBreakByWordWrapping;
-                }
+                // ★ Task242（用户："文字重叠问题在一些角落依旧出现，不能自适应吗，
+                //   非要手动适配"）：【镜像 UILabel 渲染】取代 Task233-241 九轮
+                //   手动几何镜像（233 对齐/234 垂直锚定/235 单行缩字/236 多行
+                //   缩字二分/238 ==0 词换行/239 段落继承/241 溢出跳过）。
+                //   结构性定案：深拷贝与垫底不再用 NSAttributedString drawInRect
+                //   手动复刻 UILabel 排版（每轮只修一个分歧点，用户实测仍有角落
+                //   漏网），而是构造【镜像 UILabel】——attributedText 同源 +
+                //   numberOfLines/lineBreakMode/textAlignment/adjustsFontSize
+                //   ToWidth/minimumScaleFactor 全属性镜像，由 UIKit 同一套
+                //   drawTextInRect 内核渲染（textRectForBounds 垂直居中、截断、
+                //   缩字、富文本段落优先全部与本体制画 100% 同源）——
+                //   分歧族从构造上不存在 = 自适应，无需再逐角手修。
+                //   叠序不变：四向 0.6pt 深拷贝 → 不透明原色垫底 → 正文本体
+                //   （orig 实现）。镜像 label 未打描边标记 → 不触发本 swizzle
+                //   递归；attributedText 驱动时 label 级对齐/断行属性被字符串
+                //   段落覆盖，与本体制画语义一致。
+                UIColor *ame242_dark = [UIColor colorWithWhite:0.0 alpha:0.82];
+                UIColor *ame242_opaque = ame233_opaqueColor(ame232_label.textColor);
 
-                // ★ Task234（反馈“文字重叠依旧有问题”）：Task233 修了水平
-                //   对齐，垂直锚定仍是错的——NSAttributedString drawInRect:
-                //   按【顶部锚定】排版，而 UILabel.drawTextInRect: 先经
-                //   textRectForBounds:limitedToNumberOfLines: 求出【垂直
-                //   居中】的紧致文本矩形再落笔。按钮 titleLabel（38/46pt
-                //   高 vs ~20pt 行高）两者相差 9~13pt：深色拷贝整体浮在
-                //   白字上方 = “双层、重叠不上”的残留根因。本轮：拷贝画
-                //   进 textRectForBounds 的同一矩形（与原实现同几何源，
-                //   逐像素对齐；单行居中/多行换行语义全部同源）。
-                CGRect ame234_textRect = [ame232_label textRectForBounds:rect
-                                                 limitedToNumberOfLines:ame232_label.numberOfLines];
-
-                // ★ Task235（反馈“字体还是重叠，比如版本下载列表等”，第六轮）：
-                //   adjustsFontSizeToFitWidth 的标签（版本下载列表
-                //   versionLabel minimumScaleFactor=0.75 / dateLabel=0.7 等）
-                //   本体由 UIKit 按【缩后字号】绘制，而描边拷贝/垫底用
-                //   attributedText 里的【原字号】—— 16pt 原字四份深边 + 大号
-                //   垫底盖在 12pt 缩后正文上，溢出到相邻行 = “字体重叠”的
-                //   残留根因（Task233 修对齐、Task234 修垂直锚定，都没碰缩字）。
-                //   本轮：镜像 UIKit 单行缩字算法（测自然宽 → scale =
-                //   钳制 [minimumScaleFactor, 1]），拷贝与垫底统一改用缩后
-                //   字号；紧致矩形以同中心重求高度（缩后行高），水平锚点
-                //   由段落对齐保持同源。
-                UIFont *ame235_baseFont = ame232_label.font;
-                UIFont *ame235_scaledFont = nil;
-                CGRect ame235_copyRect = ame234_textRect;
-                if (ame232_label.adjustsFontSizeToFitWidth && ame235_baseFont != nil &&
-                    ame232_label.numberOfLines == 1 && rect.size.width > 0.5) {
-                    CGFloat ame235_natural = [ame232_as boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
-                                                                    options:(NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading)
-                                                                    context:nil].size.width;
-                    if (ame235_natural > rect.size.width + 0.5 && ame235_natural > 0.5) {
-                        CGFloat ame235_scale = rect.size.width / ame235_natural;
-                        CGFloat ame235_minScale = (ame232_label.minimumScaleFactor > 0.01)
-                            ? ame232_label.minimumScaleFactor : 1.0;
-                        if (ame235_scale < ame235_minScale) ame235_scale = ame235_minScale;
-                        if (ame235_scale < 0.999) {
-                            ame235_scaledFont = [ame235_baseFont fontWithSize:ame235_baseFont.pointSize * ame235_scale];
-                            CGSize ame235_scaledSize = [[[NSAttributedString alloc] initWithString:ame232_as.string
-                                attributes:@{NSFontAttributeName: ame235_scaledFont}]
-                                boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
-                                                options:(NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading)
-                                                context:nil].size;
-                            ame235_copyRect = ame234_textRect;
-                            ame235_copyRect.origin.y = CGRectGetMidY(ame234_textRect) - ame235_scaledSize.height / 2.0;
-                            ame235_copyRect.size.height = ame235_scaledSize.height;
-                        }
-                    }
-                }
-                // ★ Task236（用户：“字体还是重叠”，第七轮，多行维度）：
-                //   numberOfLines > 1 且 adjustsFontSizeToFitWidth 的标签
-                //   （资源详情页标题 2 行 min0.75 等）本体由 UIKit 缩到“换行
-                //   后高度恰好装下 N 行”，而拷贝/垫底一直用原字号 = 多行场景
-                //   的双层/重叠残留。单行镜像（上方）不适用（单行按宽度、
-                //   多行按高度），这里用二分搜最大可用 scale：测【词换行后
-                //   的高度 ≤ rect 高度】，与 UIKit “缩到 N 行内装下”的语义
-                //   同源；12 次迭代精度 (1-min)/4096，仅对缩字中的多行标签
-                //   在绘制时求值（可见标签才走 drawTextInRect）。
-                // ★ Task239（第八轮“许多地方文字依旧有重叠”）：分支从 >1
-                //   扩到【!= 1】——numberOfLines == 0（不限行数）+ 缩字的
-                //   标签此前两个分支都进不去：单行镜像要求 ==1，多行镜像
-                //   要求 >1，==0 拷贝恒用原字号 = 外部约束压扁的不限行标签
-                //   （说明文案/详情副标题）拷贝溢出到相邻内容的残留重叠源。
-                if (ame232_label.adjustsFontSizeToFitWidth && ame235_baseFont != nil &&
-                    ame232_label.numberOfLines != 1 && ame235_scaledFont == nil &&
-                    rect.size.width > 0.5 && rect.size.height > 0.5) {
-                    CGFloat ame236_minScale = (ame232_label.minimumScaleFactor > 0.01)
-                        ? ame232_label.minimumScaleFactor : 1.0;
-                    if (ame236_minScale < 0.999) {
-                        // 注：无自引用（Task231 __block 雷类不适用），普通栈 block 即可。
-                        // Task239：测量段落样式用【继承后的 ame233_ps 拷贝】而非
-                        // 裸样式——本体自带 lineSpacing/lineHeight 时，测量与
-                        // 绘制必须同一套行距几何，二分结果才与拷贝实际高度一致。
-                        NSParagraphStyle *ame239_measurePS = [ame233_ps copy];
-                        CGFloat (^ame236_wrappedHeight)(CGFloat) = ^CGFloat(CGFloat ame236_s) {
-                            UIFont *ame236_f = [ame235_baseFont fontWithSize:ame235_baseFont.pointSize * ame236_s];
-                            NSMutableAttributedString *ame236_m =
-                                [[NSMutableAttributedString alloc] initWithString:ame232_as.string];
-                            NSRange ame236_full = NSMakeRange(0, ame236_m.length);
-                            [ame236_m addAttribute:NSFontAttributeName value:ame236_f range:ame236_full];
-                            [ame236_m addAttribute:NSParagraphStyleAttributeName value:ame239_measurePS range:ame236_full];
-                            return [ame236_m boundingRectWithSize:CGSizeMake(rect.size.width, CGFLOAT_MAX)
-                                                          options:(NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading)
-                                                          context:nil].size.height;
-                        };
-                        if (ame236_wrappedHeight(1.0) > rect.size.height + 0.5) {
-                            // 不变量：lo = 已知最大可容纳 scale，hi = 已知溢出 scale。
-                            // lo 从 minScale 起步（若连 minScale 都溢出，UIKit 语义
-                            // 也是钳到 minScale 后截断——拷贝跟随钳制值）。
-                            CGFloat ame236_lo = ame236_minScale;
-                            CGFloat ame236_hi = 1.0;
-                            if (ame236_wrappedHeight(ame236_lo) > rect.size.height + 0.5) {
-                                // minScale 也溢出：直接钳 minScale（与本体同钳制）
-                                ame236_lo = ame236_minScale;
-                            } else {
-                                for (int ame236_i = 0; ame236_i < 12; ame236_i++) {
-                                    CGFloat ame236_mid = (ame236_lo + ame236_hi) / 2.0;
-                                    if (ame236_wrappedHeight(ame236_mid) <= rect.size.height + 0.5) {
-                                        ame236_lo = ame236_mid;
-                                    } else {
-                                        ame236_hi = ame236_mid;
-                                    }
-                                }
-                            }
-                            if (ame236_lo < 0.999) {
-                                ame235_scaledFont = [ame235_baseFont fontWithSize:ame235_baseFont.pointSize * ame236_lo];
-                                CGFloat ame236_h = ame236_wrappedHeight(ame236_lo);
-                                ame235_copyRect = ame234_textRect;
-                                ame235_copyRect.origin.y = CGRectGetMidY(ame234_textRect) - ame236_h / 2.0;
-                                ame235_copyRect.size.height = ame236_h;
-                            }
-                        }
-                    }
-                }
-
-                // ★ Task241（第九轮：主页新闻磁贴“文字双层 + 日期压字”，即
-                //   IMG_0373）：几何同源假设的最后一块拼图——当标签 frame
-                //   被 Auto Layout 压得比文本自然高度小（固定 100pt 磁贴 ×
-                //   不限行长摘要的压缩/溢出态）时，textRectForBounds: 返回
-                //   【完整文本高度】的矩形（垂直居中语义附带负向 y 偏移），
-                //   而本体按溢出语义从 frame 顶部落笔——拷贝与本体整体错位
-                //   数行 = 深色拷贝脱离白色覆盖裸露为“第二层文字”。本轮：
-                //   拷贝矩形任一维度溢出绘制矩形时【整组跳过】（描边缺席
-                //   远劣于鬼影；溢出源头由 Task241 布局侧消灭——磁贴摘要
-                //   限 3 行 + 日期入栈，正常放得下的标签不受任何影响）。
-                if (ame235_copyRect.size.height > rect.size.height + 0.5 ||
-                    ame235_copyRect.size.width  > rect.size.width  + 0.5) {
-                    // 溢出态：拷贝/垫底不画，仅走原实现（原生截断渲染）
-                } else {
-                NSMutableAttributedString *ame233_dark =
+                NSMutableAttributedString *ame242_darkStr =
                     [[NSMutableAttributedString alloc] initWithAttributedString:ame232_as];
-                NSRange ame233_darkRange = NSMakeRange(0, ame233_dark.length);
-                [ame233_dark addAttribute:NSParagraphStyleAttributeName value:ame233_ps range:ame233_darkRange];
-                [ame233_dark addAttribute:NSForegroundColorAttributeName
-                                     value:[UIColor colorWithWhite:0.0 alpha:0.82]
-                                     range:ame233_darkRange];
-                if (ame235_scaledFont != nil) {
-                    [ame233_dark addAttribute:NSFontAttributeName value:ame235_scaledFont range:ame233_darkRange];
-                }
-                [ame233_dark drawInRect:CGRectOffset(ame235_copyRect,  0.6f,  0.0f)];
-                [ame233_dark drawInRect:CGRectOffset(ame235_copyRect, -0.6f,  0.0f)];
-                [ame233_dark drawInRect:CGRectOffset(ame235_copyRect,  0.0f,  0.6f)];
-                [ame233_dark drawInRect:CGRectOffset(ame235_copyRect,  0.0f, -0.6f)];
+                NSRange ame242_full = NSMakeRange(0, ame242_darkStr.length);
+                [ame242_darkStr addAttribute:NSForegroundColorAttributeName
+                                       value:ame242_dark
+                                       range:ame242_full];
 
-                NSMutableAttributedString *ame233_backing =
+                NSMutableAttributedString *ame242_backStr =
                     [[NSMutableAttributedString alloc] initWithAttributedString:ame232_as];
-                NSRange ame233_backRange = NSMakeRange(0, ame233_backing.length);
-                [ame233_backing addAttribute:NSParagraphStyleAttributeName value:ame233_ps range:ame233_backRange];
-                [ame233_backing addAttribute:NSForegroundColorAttributeName
-                                        value:ame233_opaqueColor(ame232_label.textColor)
-                                        range:ame233_backRange];
-                if (ame235_scaledFont != nil) {
-                    [ame233_backing addAttribute:NSFontAttributeName value:ame235_scaledFont range:ame233_backRange];
+                [ame242_backStr addAttribute:NSForegroundColorAttributeName
+                                       value:ame242_opaque
+                                       range:ame242_full];
+
+                CGContextRef ame242_ctx = UIGraphicsGetCurrentContext();
+                static const CGPoint ame242_offsets[4] = {
+                    {0.6f, 0.0f}, {-0.6f, 0.0f}, {0.0f, 0.6f}, {0.0f, -0.6f}
+                };
+                for (int ame242_i = 0; ame242_i < 4; ame242_i++) {
+                    UILabel *ame242_mirror = [[UILabel alloc] initWithFrame:
+                        CGRectOffset(rect, ame242_offsets[ame242_i].x, ame242_offsets[ame242_i].y)];
+                    ame242_mirror.attributedText = ame242_darkStr;
+                    ame242_mirror.numberOfLines = ame232_label.numberOfLines;
+                    ame242_mirror.lineBreakMode = ame232_label.lineBreakMode;
+                    ame242_mirror.textAlignment = ame232_label.textAlignment;
+                    ame242_mirror.adjustsFontSizeToFitWidth = ame232_label.adjustsFontSizeToFitWidth;
+                    ame242_mirror.minimumScaleFactor = ame232_label.minimumScaleFactor;
+                    ame242_mirror.baselineAdjustment = ame232_label.baselineAdjustment;
+                    ame242_mirror.userInteractionEnabled = NO;
+                    ame242_mirror.backgroundColor = nil;
+                    [ame242_mirror.layer renderInContext:ame242_ctx];
                 }
-                [ame233_backing drawInRect:ame235_copyRect];
-                } // Task241 溢出跳过护栏结束
+                UILabel *ame242_backing = [[UILabel alloc] initWithFrame:rect];
+                ame242_backing.attributedText = ame242_backStr;
+                ame242_backing.numberOfLines = ame232_label.numberOfLines;
+                ame242_backing.lineBreakMode = ame232_label.lineBreakMode;
+                ame242_backing.textAlignment = ame232_label.textAlignment;
+                ame242_backing.adjustsFontSizeToFitWidth = ame232_label.adjustsFontSizeToFitWidth;
+                ame242_backing.minimumScaleFactor = ame232_label.minimumScaleFactor;
+                ame242_backing.baselineAdjustment = ame232_label.baselineAdjustment;
+                ame242_backing.userInteractionEnabled = NO;
+                ame242_backing.backgroundColor = nil;
+                [ame242_backing.layer renderInContext:ame242_ctx];
             }
         }
     } @catch (NSException *ame232_e) {

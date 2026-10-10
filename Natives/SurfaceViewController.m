@@ -1990,11 +1990,33 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             //   "退游戏回启动器"行为一致；崩溃/强退路径不经此处，语义不变）。
             NSLog(@"[SurfaceViewController] Task238 JVM exited normally (user quit the game) -- returning to launcher home");
             dispatch_async(dispatch_get_main_queue(), ^{
-                UIWindow *ame238_win = UIWindow.mainWindow;
-                if ([ame238_win.rootViewController isKindOfClass:[SurfaceViewController class]]) {
+                // ★ Task242（用户："26.3推出游戏依旧启动器没有反应，还在挂着"）：
+                //   Task238 主路径单点依赖 UIWindow.mainWindow 静态指针——
+                //   iOS 26.3 scene 生命周期下该指针可能未跟随/已失效（nil 或
+                //   keyWindow 归属变化），主路径失效即静默跳过 = 用户看到的
+                //   "没反应"。本轮三级解析加固：mainWindow 静态 →
+                //   connectedScenes 的 foreground-active keyWindow 兜底 →
+                //   根判定换根；两级都失败打面包屑供 latestlog 分诊（若连本
+                //   日志都没有 = launchJVM 未返回，为另一类问题）。
+                UIWindow *ame242_win = UIWindow.mainWindow;
+                if (ame242_win == nil ||
+                    ![ame242_win.rootViewController isKindOfClass:[SurfaceViewController class]]) {
+                    for (UIScene *ame242_s in UIApplication.sharedApplication.connectedScenes) {
+                        if (ame242_s.activationState != UISceneActivationStateForegroundActive) continue;
+                        if (![ame242_s isKindOfClass:[UIWindowScene class]]) continue;
+                        UIWindowScene *ame242_ws = (UIWindowScene *)ame242_s;
+                        for (UIWindow *ame242_w in ame242_ws.windows) {
+                            if (ame242_w.isKeyWindow) { ame242_win = ame242_w; break; }
+                        }
+                        if (ame242_win != nil) break;
+                    }
+                }
+                UIViewController *ame242_root = ame242_win.rootViewController;
+                if ([ame242_root isKindOfClass:[SurfaceViewController class]]) {
+                    NSLog(@"[SurfaceViewController] Task242: returning to launcher home (window=%@)", ame242_win);
                     UIKit_returnToSplitView();
                 } else {
-                    NSLog(@"[SurfaceViewController] Task238 root already left the game surface -- skip return-to-launcher");
+                    NSLog(@"[SurfaceViewController] Task242: root=%@ is not game surface -- skip return-to-launcher (breadcrumb)", ame242_root);
                 }
             });
         }
@@ -2376,6 +2398,16 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             [self.launchCancelButton removeFromSuperview];
             self.launchCancelButton = nil;
             [[NSNotificationCenter defaultCenter] removeObserver:self name:@"PojavFirstFrameRendered" object:nil];
+            // ★ Task242（用户："游戏内的菜单在启动完成游戏后没有显示⚙️图标，
+            //   需要手动刷新状态"）：Task238 的 z 序提升只在遮罩【创建】时
+            //   执行一次——启动期间后续 addSubview（ctrlView 控件层等）
+            //   会把悬浮件重新压回遮罩之下，遮罩移除后齿轮球/"菜单"标签
+            //   被压在新层之下 = "启动完成后不显示、手动开关菜单才出现"
+            //   （toggleMenu 的 bringSubviewToFront 顺带拉前，即"手动刷新"
+            //   的真相）。遮罩移除完成时再提升一次，与创建时对偶。
+            if ([self respondsToSelector:@selector(ame238_raiseGameMenuAboveLaunchMask)]) {
+                [self performSelector:@selector(ame238_raiseGameMenuAboveLaunchMask)];
+            }
             NSLog(@"[SurfaceViewController] Launch overlay dismissed after %.1f seconds", elapsed);
         }];
     });
@@ -2398,6 +2430,11 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         self.launchGradientLayer = nil;
         [self.launchCancelButton removeFromSuperview];
         self.launchCancelButton = nil;
+        // ★ Task242：错误/取消路径同样补悬浮件 z 序提升（同 onFirstFrame
+        //   Rendered 路径的理由——遮罩移除后可能被后续 addSubview 压住）。
+        if ([self respondsToSelector:@selector(ame238_raiseGameMenuAboveLaunchMask)]) {
+            [self performSelector:@selector(ame238_raiseGameMenuAboveLaunchMask)];
+        }
         NSLog(@"[SurfaceViewController] Launch overlay dismissed due to launch error");
     });
 }

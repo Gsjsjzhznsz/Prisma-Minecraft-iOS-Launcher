@@ -3297,9 +3297,11 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
     NSMutableDictionary *profile = [NSMutableDictionary dictionary];
     profile[@"name"] = versionId;
     profile[@"lastVersionId"] = versionId;
-    // 改回原来的"游戏目录切换"机制：所有版本共享根目录（gameDir="."）
-    // 用户通过设置中的"游戏目录切换"功能手动切换不同的 gameDir
-    profile[@"gameDir"] = @".";
+    // ★ Task242：新下载版本自动开版本隔离（与模组端直装三处对齐，
+    //   PCL/FCL 行业惯例）——gameDir = versions/<id>/game（Task224 数据
+    //   分居新口径）。旧"共享根 + 手动切换"机制退役，用户仍可在版本
+    //   设置页三态选择器改回。
+    profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", versionId];
     profile[@"type"] = @"custom";
     profile[@"created"] = [NSDate date].description;
 

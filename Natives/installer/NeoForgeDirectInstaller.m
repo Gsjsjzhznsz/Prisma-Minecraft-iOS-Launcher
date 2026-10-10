@@ -616,9 +616,13 @@ NSString *const NeoForgeDirectInstallerErrorDomain = @"NeoForgeDirectInstallerEr
     NSMutableDictionary *profileDict = [NSMutableDictionary dictionary];
     profileDict[@"name"] = versionId;
     profileDict[@"lastVersionId"] = versionId;
-    // 改回原来的"游戏目录切换"机制：所有版本共享根目录（gameDir="."）
-    // 用户通过设置中的"游戏目录切换"功能手动切换不同的 gameDir
-    profileDict[@"gameDir"] = @".";
+    // ★ Task242（用户："安装模组端的时候为什么不会自动开启版本隔离"）：
+    //   新装模组端自动开版本隔离（PCL/FCL 行业惯例）——gameDir =
+    //   versions/<id>/game（Task224 数据分居新口径，ame217_isolationState
+    //   识别为"隔离此版本"；mods/saves/configs 由 ModService 隔离优先
+    //   解析自动落隔离目录）。旧"共享根 + 手动切换"机制退役，用户仍可
+    //   在版本设置页三态选择器改回。
+    profileDict[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", versionId];
     profileDict[@"type"] = @"custom";
     profileDict[@"created"] = [NSDate date].description;
     // 推断 Java 版本：NeoForge 1.20.5+ 需 Java 21，1.18+ 需 Java 17，1.17 需 Java 16
