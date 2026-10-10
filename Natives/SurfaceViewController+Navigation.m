@@ -39,6 +39,7 @@ static const void *kMenuDimViewKey = &kMenuDimViewKey;
 static const void *kAme237RowsScrollKey = &kAme237RowsScrollKey;
 static const void *kAme237RowsKey = &kAme237RowsKey;
 static const void *kAme237BlurKey = &kAme237BlurKey;
+static const void *kAme243SnapKey = &kAme243SnapKey;
 
 @interface SurfaceViewController(Navigation)
 // FCL 风格菜单的背景遮罩（半透明黑色，点击关闭菜单）
@@ -53,6 +54,37 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
 
 - (UIView *)menuDimView {
     return objc_getAssociatedObject(self, kMenuDimViewKey);
+}
+
+/// ★ Task243：keyWindow 重度降采样快照（自绘磨砂原料）。
+///   玻璃档的 UIVisualEffectView（UIGlassEffect/SystemMaterial）在本进程
+///   Metal 游戏层上不合成（Task228 黑面 / Task230 隐形 / Task236 无字
+///   三轮装机实锤），玻璃风格下游戏内菜单只剩深色防御底 = 用户看到的
+///   "黑面板、毛玻璃没生效"（IMG_0378）。修法：打开菜单瞬间对 keyWindow
+///   以 0.18x scale 抓一帧（重度降采样 = 天然高斯感模糊，抓帧即模糊），
+///   作为面板背景层的"自绘磨砂"——游戏画面透出 + 模糊 + 深色底叠加 =
+///   毛玻璃观感，零 CoreImage 依赖，一次抓帧零逐帧开销。
+///   afterScreenUpdates:NO：抓当前已呈现帧，不触发屏幕更新（Metal 帧安全）；
+///   抓帧失败/异常返回 nil，调用方保持深色底现状（护栏不降级观感）。
+static UIImage *ame243_blurredGameSnapshot(UIView *hostView) {
+    UIWindow *ame243_win = hostView.window;
+    if (ame243_win == nil || ame243_win.bounds.size.width < 40.0 ||
+        ame243_win.bounds.size.height < 40.0) return nil;
+    @try {
+        UIGraphicsImageRendererFormat *ame243_fmt =
+            [[UIGraphicsImageRendererFormat alloc] init];
+        ame243_fmt.scale = 0.18;
+        ame243_fmt.opaque = YES;
+        UIGraphicsImageRenderer *ame243_r =
+            [[UIGraphicsImageRenderer alloc] initWithSize:ame243_win.bounds.size
+                                                   format:ame243_fmt];
+        return [ame243_r imageWithActions:^(UIGraphicsImageRendererContext *ame243_rc) {
+            [ame243_win drawViewHierarchyInRect:ame243_win.bounds
+                             afterScreenUpdates:NO];
+        }];
+    } @catch (NSException *ame243_e) {
+        return nil;
+    }
 }
 
 - (void)initCategory_Navigation {
@@ -226,15 +258,40 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
         ame237_blur.layer.cornerRadius = 24.0;
         ame237_blur.layer.cornerCurve = kCACornerCurveContinuous;
         ame237_blur.layer.masksToBounds = YES;
-        [self.menuView insertSubview:ame237_blur atIndex:0];
+        // ★ Task243：自绘磨砂层（快照 UIImageView）——插在 blur 之下
+        //   （index 0），blur 重建时跟随重插保持次序：快照在下、系统磨砂
+        //   在上。Metal 游戏帧上系统磨砂不合成（透明）→ 快照层承载观感；
+        //   合成场景（若存在）两者叠加 = 层次更接近真玻璃。
+        UIImageView *ame243_snap = objc_getAssociatedObject(self, kAme243SnapKey);
+        if (ame243_snap == nil) {
+            ame243_snap = [[UIImageView alloc] initWithFrame:self.menuView.bounds];
+            ame243_snap.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            ame243_snap.contentMode = UIViewContentModeScaleAspectFill;
+            ame243_snap.clipsToBounds = YES;
+            ame243_snap.userInteractionEnabled = NO;
+            ame243_snap.hidden = YES;   // 首次 showMenu 抓帧后才显示
+            objc_setAssociatedObject(self, kAme243SnapKey, ame243_snap,
+                                     OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        } else {
+            [ame243_snap removeFromSuperview];   // 幂等：先拆再插（本函数是唯一写点）
+        }
+        ame243_snap.frame = self.menuView.bounds;
+        ame243_snap.layer.cornerRadius = 24.0;
+        ame243_snap.layer.cornerCurve = kCACornerCurveContinuous;
+        ame243_snap.layer.masksToBounds = YES;
+        [self.menuView insertSubview:ame243_snap atIndex:0];
+        [self.menuView insertSubview:ame237_blur aboveSubview:ame243_snap];
         objc_setAssociatedObject(self, kAme237BlurKey, ame237_blur, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         if (ame237_scroll != nil) [self.menuView bringSubviewToFront:ame237_scroll];
         // 防御性深色实底：磨砂在游戏帧上不合成时独立承载面板可见性
         //   （Task236 教训；此处底色只由本函数管理，永不清空）。
         //   Task239：原生玻璃用 0.50 通透档（真玻璃自带磨砂折光），
         //   材质回退保持 0.62 厚底（行文字为白色，两档均可读）。
+        //   Task243：底色减薄至 0.42——快照磨砂层已接管"游戏画面透出"，
+        //   底色只负责压暗保证可读，过厚会把模糊画面闷成黑面板
+        //   （IMG_0378 的观感主因之一）。
         self.menuView.backgroundColor = [UIColor colorWithWhite:0.0
-                                                          alpha:LGCNativeGlassEngaged() ? 0.50 : 0.62];
+                                                          alpha:LGCNativeGlassEngaged() ? 0.42 : 0.62];
         self.menuView.layer.cornerRadius = 24.0;
         self.menuView.layer.cornerCurve = kCACornerCurveContinuous;
         self.menuView.layer.borderWidth = 0.75;
@@ -247,6 +304,12 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
               LGCNativeGlassEngaged() ? @"native UIGlassEffect" : @"SystemMaterialDark fallback");
     } else {
         // 原生 = 旧版 FCL 面板（深色半透明、纯文本行）
+        // ★ Task243：风格切回原生时同步隐藏快照磨砂层（幂等清理）。
+        UIImageView *ame243_snap = objc_getAssociatedObject(self, kAme243SnapKey);
+        if (ame243_snap != nil) {
+            ame243_snap.hidden = YES;
+            ame243_snap.image = nil;
+        }
         self.menuView.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return [UIColor colorWithRed:28.0/255.0 green:28.0/255.0 blue:30.0/255.0 alpha:0.95];
         }];
@@ -340,6 +403,24 @@ static const void *kAme237BlurKey = &kAme237BlurKey;
         GameMenuOverlayView *ame227_ov = (GameMenuOverlayView *)self.gameMenuOverlay;
         ame227_sideDrawer = ame227_ov.isDocked;
         ame227_fromLeft = ame227_ov.dockedLeft;
+    }
+
+    // ★ Task243：打开菜单瞬间抓帧——【必须在 menuView.hidden = NO 之前】：
+    //   先抓帧（menuView 还不可见，抓到的是纯游戏画面）再显示面板；若
+    //   反序，快照里会包含面板自身的黑底 = 快照全黑（自噬）。
+    //   玻璃档才启用；抓帧失败（返回 nil）保持层隐藏，面板回退到深色底
+    //   现状（护栏）。
+    UIImageView *ame243_snap = objc_getAssociatedObject(self, kAme243SnapKey);
+    if (ame243_snap != nil && LGCIsGlassStyleActive()) {
+        UIImage *ame243_img = ame243_blurredGameSnapshot(self.view);
+        if (ame243_img != nil) {
+            ame243_snap.image = ame243_img;
+            ame243_snap.hidden = NO;
+        } else {
+            ame243_snap.hidden = YES;
+        }
+    } else if (ame243_snap != nil) {
+        ame243_snap.hidden = YES;
     }
 
     self.menuView.hidden = NO;

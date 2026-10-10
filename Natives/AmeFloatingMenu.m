@@ -71,6 +71,31 @@ static CGFloat Ame237TextHeight(NSString *text, UIFont *font, CGFloat width) {
     return ceil(r.size.height);
 }
 
+/// ★ Task243：keyWindow 重度降采样快照（自绘磨砂原料；与游戏内主菜单
+///   SurfaceViewController+Navigation 的同名机制同源）。0.18x scale 抓帧
+///   = 抓帧即模糊；afterScreenUpdates:NO 不触发屏幕更新；异常/参数缺失
+///   返回 nil（调用方回退深色底护栏）。
+static UIImage *Ame243BlurredKeyWindowSnapshot(UIView *hostView) {
+    UIWindow *ame243_win = hostView.window;
+    if (ame243_win == nil || ame243_win.bounds.size.width < 40.0 ||
+        ame243_win.bounds.size.height < 40.0) return nil;
+    @try {
+        UIGraphicsImageRendererFormat *ame243_fmt =
+            [[UIGraphicsImageRendererFormat alloc] init];
+        ame243_fmt.scale = 0.18;
+        ame243_fmt.opaque = YES;
+        UIGraphicsImageRenderer *ame243_r =
+            [[UIGraphicsImageRenderer alloc] initWithSize:ame243_win.bounds.size
+                                                   format:ame243_fmt];
+        return [ame243_r imageWithActions:^(UIGraphicsImageRendererContext *ame243_rc) {
+            [ame243_win drawViewHierarchyInRect:ame243_win.bounds
+                             afterScreenUpdates:NO];
+        }];
+    } @catch (NSException *ame243_e) {
+        return nil;
+    }
+}
+
 #pragma mark - 菜单行控件（图标 + 标题；自带按压反馈；头文件公开供游戏内菜单共用）
 
 @implementation Ame237MenuRow
@@ -152,6 +177,13 @@ static CGFloat Ame237TextHeight(NSString *text, UIFont *font, CGFloat width) {
 /// ★ Task242：未选中实质动作而关闭面板（dim 点按/cancel 项）时的回调
 ///   （统一菜单呈现器分轨呈现的取消语义接线，见 .h 变体注释）。
 @property (nonatomic, copy, nullable) void (^ame237_onDismiss)(void);
+/// ★ Task243：呈现前的 keyWindow 重度降采样快照（自绘磨砂原料）。
+///   Metal 游戏层上 UIVisualEffectView 不合成（Task228/230/236 三轮装机
+///   实锤），游戏内弹层（分辨率调整等）玻璃档只剩深色底 = 黑面板。
+///   呈现入口在 present 动画开始前抓帧传入，viewDidLoad 插入面板
+///   blurView 之下：Metal 上承载毛玻璃观感；启动器内 blur 合成时它
+///   参与下层采样，观感不劣化。
+@property (nonatomic, strong, nullable) UIImage *ame243_snapshotImage;
 
 @property (nonatomic, strong) UIView *dimView;
 @property (nonatomic, strong) UIView *panel;
@@ -223,6 +255,22 @@ static CGFloat Ame237TextHeight(NSString *text, UIFont *font, CGFloat width) {
     self.blurView.layer.cornerCurve = kCACornerCurveContinuous;
     self.blurView.layer.masksToBounds = YES;
     [self.panel addSubview:self.blurView];   // index 0：恒在全部内容之下
+    // ★ Task243：自绘磨砂层（呈现入口传入的 keyWindow 快照）——插在
+    //   blurView 之下（panel 的 index 0）。image 为 nil 时保持 hidden
+    //   （启动器外无快照可用时面板回退深色底，护栏不变）。
+    if (self.ame243_snapshotImage != nil) {
+        UIImageView *ame243_snap = [[UIImageView alloc] initWithFrame:self.panel.bounds];
+        ame243_snap.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        ame243_snap.image = self.ame243_snapshotImage;
+        ame243_snap.contentMode = UIViewContentModeScaleAspectFill;
+        ame243_snap.clipsToBounds = YES;
+        ame243_snap.userInteractionEnabled = NO;
+        ame243_snap.layer.cornerRadius = 26.0;
+        ame243_snap.layer.cornerCurve = kCACornerCurveContinuous;
+        ame243_snap.layer.masksToBounds = YES;
+        [self.panel insertSubview:ame243_snap belowSubview:self.blurView];
+        self.panel.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.42];
+    }
     NSLog(@"[AmeMenu] Task239 menu material: %@ (style=%@)",
           LGCNativeGlassEngaged() ? @"native UIGlassEffect (true liquid glass)"
                                   : @"SystemMaterial fallback",
@@ -720,6 +768,11 @@ static CGFloat Ame237TextHeight(NSString *text, UIFont *font, CGFloat width) {
     // ★ Task242：取消语义接线（未选实质动作关闭 → onDismiss，见 .h；
     //   调用方 = 统一菜单呈现器玻璃档分轨）。
     menu.ame237_onDismiss = onDismiss;
+    // ★ Task243：present 动画开始前抓帧（此时 presenter 的窗口内容仍是
+    //   呈现前的画面，无自噬风险）——重度降采样快照作为面板自绘磨砂。
+    //   抓帧失败（nil）保持面板深色底现状；桌面/普通窗口上系统磨砂
+    //   本就合成，快照叠加观感中性。
+    menu.ame243_snapshotImage = Ame243BlurredKeyWindowSnapshot(presenter.view ?: self.view);
     menu.modalPresentationStyle = UIModalPresentationOverFullScreen;
     menu.modalPresentationCapturesStatusBarAppearance = NO;
 

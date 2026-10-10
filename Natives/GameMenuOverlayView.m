@@ -220,37 +220,30 @@ static BOOL ame227_g_dockedLeft = NO;
     CGFloat ame236_gearRadius = self.menuButton.layer.cornerRadius > 0.5
         ? self.menuButton.layer.cornerRadius
         : kMenuButtonSize / 2.0;
+    // ★ Task243（用户装机反馈 IMG_0377：“有透明的边边没有处理好”/把手
+    //   黑条白边观感差）：本组件三件套【恒在本进程 Metal 游戏层之上】，
+    //   LGC 玻璃的磨砂层在游戏帧上不合成（Task228/230/236 三轮装机实锤）
+    //   = effectView 透明无贡献，而 _LGCSheenView 的高光/发丝描边却恒
+    //   可见 = 用户看到的“黑把手 + 粗白框”。定案：游戏内常驻件不再
+    //   安装 LGC 组合玻璃——纯深色半透明胶囊 + 0.5pt/0.20 减淡细边
+    //   （玻璃边缘语言保留但不再喧宾夺主）；真正需要玻璃质感的菜单
+    //   面板由 Task243 的快照自绘磨砂承担（SurfaceViewController+Navigation）。
     LGCRemoveGlassFromView(self.menuButton);
-    LGCApplyGlassToView(self.menuButton, ame236_gearRadius);
-    // ★ 底色重铺：LGC 接管时清空了宿主底色（clearColor）——磨砂层若在本进程
-    //   游戏画面上不合成，这就是“齿轮消失”的直接根因。半透明深色底永远
-    //   在磨砂层之下参与渲染：磨砂可用 = 加深的玻璃质感；磨砂失效 = 独立
-    //   可见的深色球，白色齿轮图标仍在最上层（imageView 是子视图，恒在玻璃层上）。
-    self.menuButton.backgroundColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:0.55];
-    // ★ Task239（用户指令：iOS 26 原生液态玻璃 API）：齿轮球的磨砂层升级——
-    //   玻璃风格下优先换成【系统原生 UIGlassEffect】（真液态玻璃）；取不到
-    //   （<iOS 26 / AME239_NO_SYSTEM_GLASS=1 诊断开关）保持 SystemMaterialDark
-    //   （Task230 游戏帧可读性教训的装机验证路径）。0.55 深色底 + 白色发丝
-    //   描边保留：玻璃在游戏帧上渲染异常时齿轮仍是可见的深色球。
-    UIVisualEffect *ame239_gearEffect = LGCNativeGlassEffect();
-    for (UIView *ame232_sub in self.menuButton.subviews) {
-        if ([ame232_sub isKindOfClass:UIVisualEffectView.class]) {
-            [(UIVisualEffectView *)ame232_sub setEffect:(ame239_gearEffect != nil)
-                ? ame239_gearEffect
-                : [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
-        }
-    }
-    // 两个文本件：实底半透明深色胶囊 + 发丝描边（绝不往标签内插磨砂层——
-    // UILabel 文字画在自己图层，子视图永远盖在文字上，见方法头注释 ②）。
     LGCRemoveGlassFromView(self.statsLabel);
     LGCRemoveGlassFromView(self.ame230_captionLabel);
+    self.menuButton.backgroundColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:0.55];
+    self.menuButton.layer.borderWidth = 0.5;
+    self.menuButton.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.20].CGColor;
+    self.menuButton.layer.cornerCurve = kCACornerCurveContinuous;
+    // 两个文本件：实底半透明深色胶囊 + 发丝描边（绝不往标签内插磨砂层——
+    // UILabel 文字画在自己图层，子视图永远盖在文字上，见方法头注释 ②）。
     self.statsLabel.backgroundColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0.55];
-    self.statsLabel.layer.borderWidth = 0.75;
-    self.statsLabel.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.32].CGColor;
+    self.statsLabel.layer.borderWidth = 0.5;
+    self.statsLabel.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.20].CGColor;
     self.statsLabel.layer.cornerCurve = kCACornerCurveContinuous;
     self.ame230_captionLabel.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.5];
-    self.ame230_captionLabel.layer.borderWidth = 0.75;
-    self.ame230_captionLabel.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.32].CGColor;
+    self.ame230_captionLabel.layer.borderWidth = 0.5;
+    self.ame230_captionLabel.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.20].CGColor;
     self.ame230_captionLabel.layer.cornerCurve = kCACornerCurveContinuous;
     // Task236 取证：下一轮装机日志直接读出三件套的帧/透明度/子视图构成
     NSLog(@"[GameMenu] Task236 floating bar hardened (gear %@ r=%.1f subs=%lu; stats %@; caption %@)",
@@ -258,7 +251,7 @@ static BOOL ame227_g_dockedLeft = NO;
           (unsigned long)self.menuButton.subviews.count,
           self.statsLabel != nil ? NSStringFromCGRect(self.statsLabel.frame) : @"nil",
           self.ame230_captionLabel != nil ? NSStringFromCGRect(self.ame230_captionLabel.frame) : @"nil");
-    NSLog(@"[GameMenu] Task232 floating bar glass applied (gear + stats + caption, heavy dark material)");
+    NSLog(@"[GameMenu] Task243 floating bar restyled (pure dark capsules + 0.5pt/0.20 hairline; LGC glass skipped on Metal)");
 }
 
 - (void)setupStatsLabel {

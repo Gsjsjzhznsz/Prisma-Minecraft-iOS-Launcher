@@ -1884,6 +1884,13 @@ static UIColor *ame233_opaqueColor(UIColor *ame233_c) {
     return [UIColor whiteColor];
 }
 
+// ★ Task243：镜像 label 渲染的声明前置（Task240 CI r3 类目自声明同款先例）
+//   —— UILabel drawTextInRect: 在 UIKit 公开头里无声明，但 IMP 恒在；
+//   自声明后可直接调用（见 swizzle 内 Task243 块注释）。
+@interface UILabel (Ame243DrawTextCompat)
+- (void)drawTextInRect:(CGRect)rect;
+@end
+
 static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
     @try {
         NSNumber *ame232_mark = objc_getAssociatedObject(self, &ame232_OutlineMarkKey);
@@ -1907,6 +1914,23 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                 //   （orig 实现）。镜像 label 未打描边标记 → 不触发本 swizzle
                 //   递归；attributedText 驱动时 label 级对齐/断行属性被字符串
                 //   段落覆盖，与本体制画语义一致。
+                // ★ Task243（用户装机反馈 IMG_0376：“魔改弹窗毛玻璃依旧没有。
+                //   为什么把液态玻璃改回去了。文字重叠自适应黑边。”）：Task242
+                //   的渲染出口 [mirror.layer renderInContext:] 在真机 iOS 26
+                //   上把满屏描边渲染成【实心黑条】——IMG_0373（Task241 旧
+                //   drawInRect 方案）无黑条、IMG_0376（Task242 唯一变量 =
+                //   renderInContext）满屏黑条，实证定案：新建 label 不在
+                //   window 层级、contentsScale=1，renderInContext 强制的 layer
+                //   display 嵌套在本体制画 ctx（UIKit flipped + 设备 3x scale）
+                //   里产生 contents 管线异常，黑色字形被放大/吞并成实心块。
+                //   修法：保留镜像 label 的【属性镜像】（自适应核心不变），
+                //   渲染出口改为【直接调用镜像 label 的 drawTextInRect:】——
+                //   当前 ctx 正是 UIKit 调用本 swizzle 的同一 flipped 上下文，
+                //   与系统调用 drawTextInRect 的语义约定完全一致；镜像的
+                //   drawTextInRect 经类级 swizzle 入口（mark=nil）落到原生
+                //   IMP = 纯文本绘制，彻底绕开 layer display/contents 管线。
+                //   文字排版同源性（垂直居中/截断/缩字/段落继承）由属性镜像
+                //   + 同一 UIKit 内核保证，与 Task242 设计一致。
                 UIColor *ame242_dark = [UIColor colorWithWhite:0.0 alpha:0.82];
                 UIColor *ame242_opaque = ame233_opaqueColor(ame232_label.textColor);
 
@@ -1927,31 +1951,36 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                 static const CGPoint ame242_offsets[4] = {
                     {0.6f, 0.0f}, {-0.6f, 0.0f}, {0.0f, 0.6f}, {0.0f, -0.6f}
                 };
+                // ★ Task243：属性镜像工厂（镜像 label 构造唯一入口，四拷贝
+                //   与垫底共用；未进 window 层级 → 不走 layer display）。
+                UILabel *(^ame243_mirrorWithStr)(NSAttributedString *) = ^UILabel *(NSAttributedString *ame243_str) {
+                    UILabel *ame243_m = [[UILabel alloc] initWithFrame:
+                        CGRectMake(0.0, 0.0, rect.size.width, rect.size.height)];
+                    ame243_m.attributedText = ame243_str;
+                    ame243_m.numberOfLines = ame232_label.numberOfLines;
+                    ame243_m.lineBreakMode = ame232_label.lineBreakMode;
+                    ame243_m.textAlignment = ame232_label.textAlignment;
+                    ame243_m.adjustsFontSizeToFitWidth = ame232_label.adjustsFontSizeToFitWidth;
+                    ame243_m.minimumScaleFactor = ame232_label.minimumScaleFactor;
+                    ame243_m.baselineAdjustment = ame232_label.baselineAdjustment;
+                    ame243_m.userInteractionEnabled = NO;
+                    ame243_m.backgroundColor = nil;
+                    return ame243_m;
+                };
                 for (int ame242_i = 0; ame242_i < 4; ame242_i++) {
-                    UILabel *ame242_mirror = [[UILabel alloc] initWithFrame:
-                        CGRectOffset(rect, ame242_offsets[ame242_i].x, ame242_offsets[ame242_i].y)];
-                    ame242_mirror.attributedText = ame242_darkStr;
-                    ame242_mirror.numberOfLines = ame232_label.numberOfLines;
-                    ame242_mirror.lineBreakMode = ame232_label.lineBreakMode;
-                    ame242_mirror.textAlignment = ame232_label.textAlignment;
-                    ame242_mirror.adjustsFontSizeToFitWidth = ame232_label.adjustsFontSizeToFitWidth;
-                    ame242_mirror.minimumScaleFactor = ame232_label.minimumScaleFactor;
-                    ame242_mirror.baselineAdjustment = ame232_label.baselineAdjustment;
-                    ame242_mirror.userInteractionEnabled = NO;
-                    ame242_mirror.backgroundColor = nil;
-                    [ame242_mirror.layer renderInContext:ame242_ctx];
+                    UILabel *ame242_mirror = ame243_mirrorWithStr(ame242_darkStr);
+                    CGContextSaveGState(ame242_ctx);
+                    CGContextTranslateCTM(ame242_ctx,
+                                          ame242_offsets[ame242_i].x,
+                                          ame242_offsets[ame242_i].y);
+                    // 直调 drawTextInRect:（类目自声明见文件上方）：经类级
+                    // swizzle（mark=nil）落原生 IMP = 纯文本绘制，无 layer
+                    // display 嵌套（Task242 黑条根因，IMG_0376）。
+                    [ame242_mirror drawTextInRect:rect];
+                    CGContextRestoreGState(ame242_ctx);
                 }
-                UILabel *ame242_backing = [[UILabel alloc] initWithFrame:rect];
-                ame242_backing.attributedText = ame242_backStr;
-                ame242_backing.numberOfLines = ame232_label.numberOfLines;
-                ame242_backing.lineBreakMode = ame232_label.lineBreakMode;
-                ame242_backing.textAlignment = ame232_label.textAlignment;
-                ame242_backing.adjustsFontSizeToFitWidth = ame232_label.adjustsFontSizeToFitWidth;
-                ame242_backing.minimumScaleFactor = ame232_label.minimumScaleFactor;
-                ame242_backing.baselineAdjustment = ame232_label.baselineAdjustment;
-                ame242_backing.userInteractionEnabled = NO;
-                ame242_backing.backgroundColor = nil;
-                [ame242_backing.layer renderInContext:ame242_ctx];
+                UILabel *ame242_backing = ame243_mirrorWithStr(ame242_backStr);
+                [ame242_backing drawTextInRect:rect];
             }
         }
     } @catch (NSException *ame232_e) {
