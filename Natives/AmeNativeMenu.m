@@ -17,6 +17,16 @@
 #import "AmeNativeMenu.h"
 #import <objc/runtime.h>
 
+// ★ Task240 CI r3 兼容性声明：CI iOS 26.2 SDK 实测（run 38049707856）
+// presentMenu 类目声明在本构建配置下不可见（主 @interface /
+// initWithDelegate 均正常编译；LauncherPrefManageJRE 旧实现退回私有
+// _presentMenuAtLocation 即同域先例）。此处自声明与系统同名的类目方法
+// ——纯声明、无定义（链接期不产生新 IMP），运行期仍由 UIKit 系统实现
+// 响应；iOS 14+ 全系可用，部署目标 14.0 无可用性窗口问题。
+@interface UIContextMenuInteraction (Ame240PresentMenuCompat)
+- (void)presentMenu;
+@end
+
 @interface AmeNativeMenu () <UIContextMenuInteractionDelegate>
 @end
 
