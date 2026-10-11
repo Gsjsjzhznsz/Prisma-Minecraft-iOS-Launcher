@@ -2181,8 +2181,11 @@ void ame251_armShutdownForceExitWatchdog(void) {
     static dispatch_once_t ame251_once;
     dispatch_once(&ame251_once, ^{
         // 线程甲：标记轮询（shutdown hook 写标记 → 当场 _exit）
-        NSThread *ame251_watcher = [NSThread detachNewThreadWithBlock:^{
+        // ★ Task251 CI r1：detachNewThreadWithBlock: 返回 void（不可接
+        //   NSThread*），线程名改 block 内 currentThread 自设。
+        [NSThread detachNewThreadWithBlock:^{
             @autoreleasepool {
+                [[NSThread currentThread] setName:@"Ame251-ShutdownWatchdog"];
                 while (YES) {
                     if (access(ame251_markerPath, F_OK) == 0) {
                         NSLog(@"[main_hook] Task251: shutdown marker detected -> immediate _exit(0) (JVM shutdown phase entered; no libc teardown window)");
@@ -2194,10 +2197,10 @@ void ame251_armShutdownForceExitWatchdog(void) {
                 }
             }
         }];
-        ame251_watcher.name = @"Ame251-ShutdownWatchdog";
         // 线程乙：libjvm 加载探测 → exit/abort 二次 rebind（路乙）
-        NSThread *ame251_rebinder = [NSThread detachNewThreadWithBlock:^{
+        [NSThread detachNewThreadWithBlock:^{
             @autoreleasepool {
+                [[NSThread currentThread] setName:@"Ame251-JvmExitRebinder"];
                 // libjvm 在 JLI_Launch 内部 CreateJavaVM 时 dlopen；每 100ms
                 // 探一次 dlsym(RTLD_DEFAULT, "DestroyJavaVM")，最长等 10 分钟
                 //（JVM 起得来就必然在 main 跑起来之前加载完 libjvm）。
@@ -2212,7 +2215,6 @@ void ame251_armShutdownForceExitWatchdog(void) {
                 NSLog(@"[main_hook] Task251: libjvm never appeared (10min), exit rebind retired");
             }
         }];
-        ame251_rebinder.name = @"Ame251-JvmExitRebinder";
         NSLog(@"[main_hook] Task251: shutdown force-exit watchdog armed (marker=%s) + jvm exit rebind watcher", ame251_markerPath);
     });
 }

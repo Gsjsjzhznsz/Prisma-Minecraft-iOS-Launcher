@@ -2840,3 +2840,16 @@ Work Log:
 Stage Summary:
 - 10 项全链修复：T2 = Java shutdown hook 写标记 + native 150ms 轮询 _exit 双保险 + libjvm 加载后 exit/abort 二次 rebind（hooks 挂死/os::exit 两路全覆盖）；T1 = warp 中心锚定+抓取跳过 + 后台几何冻结；T7 = 26.x 措辞正则 + 进页自动武装扫描 + 取消日志；T8 = 硬窗意图旁路；T9/T12 = 玻璃档 OverFullScreen+自铺轻 dim（磁贴/ZeroTier 双入口）+原生档 PageSheet 原状；T10 = 悬浮形态短下沉+微缩+淡出（transform 复位）；T5/T6 = 外观动态默认文字色 + 卡面文字恒自适应
 - 装机验证锚点：①26.3 退出游戏 → 进程 ≤1s 内终结（fatal_trace 应见 "Task251: shutdown marker -> _exit(0)" 或 "exit(1) called"，无滞留无崩溃报告）②MobileGL 切后台旋转往返回前台 → 首触点/视角零偏移（latestlog 应见 "Task251: transition resync deferred" + "resume warp -> window center/skipped (grabbing)"）③开世界后进联机页（磁贴）→ 无需点检测端口自动回填（"Task251: host form appearing … arming" + 命中日志）④游戏内收起键盘后 2.5s 内点聊天框 → 键盘立即弹（"hard-suppression window bypassed"）⑤伪玻璃档磁贴联机页/ZeroTier 页 = 透壁纸玻璃面板（非暗泥 sheet）；原生档 = PageSheet 原状 ⑥游戏菜单关闭 = 原位短下沉收缩淡出、屏幕零位移 ⑦浅色模式下壁纸文字黑字白边、右面板用户名随卡面亮度 ⑧界面无裸键名（i18n 审计可复跑）
+
+---
+Task ID: 251-ci
+Agent: main (Super Z)
+Task: Task 251 CI 闭环（r1 修复 + 轮询终绿）
+
+Work Log:
+- 推送 900c7ee → run 38128558222 failure：main_hook.m:2184/2199 编译雷——`[NSThread detachNewThreadWithBlock:]` 返回 void（该 API 声明即 void，无 NSThread* 返回值），`NSThread *t = [...]` 初始化类型不兼容 ×2
+- r1：线程名改 block 内 `[[NSThread currentThread] setName:]` 自设（语义等价，轮询/命名路径不变）；同族排查本轮触碰文件其余 NSThread 用法零命中；task240/175 门禁复跑 PASS
+- 轮询 run（见下条终态）
+
+Stage Summary:
+- Task 251 CI 闭环状态：r1 已推送待跑；失败 TU（main_hook.m）单文件编译雷，无掩蔽面（r2 全量重编译）
