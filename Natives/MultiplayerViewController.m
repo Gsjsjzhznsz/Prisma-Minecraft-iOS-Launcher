@@ -52,6 +52,7 @@
 #import "LanPortDetector.h"
 #import "ZeroTierBridge.h"
 #import "utils.h"
+#import <objc/runtime.h>   // ★ Task249（T7）：objc_get/setAssociatedObject（ frost 层挂载；CI r1 编译雷——本文件首次引入关联对象）
 
 /// 本地化辅助函数
 /// 优先通过 localize() 查找本地化文本；若未找到（返回值等于 key），则使用传入的 fallback。
