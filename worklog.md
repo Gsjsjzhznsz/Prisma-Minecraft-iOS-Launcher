@@ -3038,3 +3038,17 @@ Work Log:
 
 Stage Summary:
 - Task 256 全链闭环（7/7 项 + r1 语义雷排净 + CI 提速首桶落袋）：run#800 终绿，新 IPA（220.5MB）就绪待装机验证（锚点见 Task 256 条目 Stage Summary 6 条）
+
+---
+## Task 256 CI 补记 r2——VirGL prebuilt 契约修正（run 801 命中未触发根修 + run 802 新桶落袋）
+
+日期：2026-10-12　构建：726e647
+
+Work Log:
+- run 801 复盘：Cache hit（virgl-prebuilt-v1-daa95f3…）但 dep_virgl 仍全量（6.9min+4.9min）——staging 的 ls 实锤只存 2 件（libOSMesaVirgl 19MB + libvtestserver 2.1MB），libepoxy.dylib 在从源码路径【根本不产出】（meson 只出 libepoxy.a 静态链进 libvtestserver）→ 契约三件校验恒假回退
+- r2 修复 726e647：prebuilt 契约改两件套（与从源码产物一致；Frameworks 三件历史分支不动）+ workflow staging 循环同步；yaml 验证 OK
+- run 802（726e647）一轮绿：新桶 virgl-prebuilt-v1-85d96afb… 落袋（19MB+2.1MB 两件，正是分支校验集）；下轮起两遍均 "dep_virgl - cached" 直通，预期省 ~9.4min/run
+- 交付确认：ipa/tipa 220.5MB + dSYM 6.3MB（run 800/802 双轮产物在位）
+
+Stage Summary:
+- Task 256 全链闭环（7/7 项 + r1 语义雷 + r2 缓存契约雷排净）；CI 提速自 run 803 生效
