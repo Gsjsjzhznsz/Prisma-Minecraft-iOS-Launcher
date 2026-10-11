@@ -2876,3 +2876,17 @@ Work Log:
 
 Stage Summary:
 - 伪液态玻璃四档设置与全部选项原样，玻璃档面板/弹窗/游戏内菜单/联机页渲染材质整体升级为 Telegram 同款（实况 backdrop 采样 + 玻璃矩阵调色 + r=2 微模糊 + SDF 边缘折射网格 + TG panel 填充与描边）；旧快照磨砂/材质层管线完整保留为运行时回退；装机验证锚点：①启动器内任一玻璃档弹窗（如关于页确认弹窗）= 背景实况透视 + 边缘折射弯曲 + TG 质感（不再有 0.18x 糊贴图感）②游戏内开菜单/弹窗 = 边缘折射随画面 8Hz 活动③联机/陶瓦页磨砂 = 色彩饱和提亮的玻璃质感④降低透明度开启 = 自动回退原生档（既有硬闸门不变）⑤AME239_FORCE_SYSTEM_GLASS 诊断开关不受影响
+
+---
+Task ID: 252-ci
+Agent: main (Super Z)
+Task: Task 252 CI 闭环（r1/r2 两轮编译雷热修 + 终绿）
+
+Work Log:
+- 推送 e2d454a（run #785 failure）→ REST 匿名配额耗尽，actions/commit 页 React 壳化无 SSR → 首轮误诊走弯路（'ostView drawViewHierarchyInRect' 系显示层吞字+子串假阳性双重陷阱：b'[hostView drawViewHierarchyInRect' 自含 b'ostView...' 子串，字节计数法出现系统性假阳性；'irrors' 同族第三次上演——裁定文件真伪必须读"唯一存在模式"而非"缺失模式"）
+- r1（7f8337d5，run #786 failure）：配额重置后 check-runs API 恢复可用，24 条注解直读定位——AmeLiquidGlassView.m:563 ARC 编译雷，先修同文件 objc/runtime.h 缺失（Method/class_getClassMethod/method_getImplementation 未声明，Task248 同款）但真根因是下一行的 id→C 指针直转
+- r2（1377a25c，run #787）：模板缓存取值改 NSValue.pointerValue 的 void* 中转（纯 C 指针赋值无桥接面）；同族扫描剩余转换仅 IMP 强转/Class→id/malloc 三类合法形态；completed successfully（SSR 行 aria-label + badge passing 双证，run 103319711007）
+- 诊断工具链沉淀：REST 配额内最高效路径 = check-runs → annotations（24 条注解直出编译错误原文，无需日志）；annotations_url 是匿名可用的最短根因通道
+
+Stage Summary:
+- Task 252 全链闭环：TG LegacyGlassView 配方渲染引擎换血交付 + CI 两轮热修终绿；装机验证锚点见 Task 252 条目 Stage Summary（5 条）；新增教训：①ARC 下 id→C 指针直转必炸，NSValue.pointerValue 中转是模板缓存指针盒的标准解 ②CI 诊断优先打 annotations 端点 ③显示层吞字假阳性家族新增"子串包含"变体
