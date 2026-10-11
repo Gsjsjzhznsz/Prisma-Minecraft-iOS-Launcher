@@ -116,7 +116,15 @@
     NSString *fatal = [home stringByAppendingPathComponent:@"fatal_trace.txt"];
     if ([NSFileManager.defaultManager fileExistsAtPath:fatal]) [paths addObject:fatal];
     // Terracotta 运行日志（Documents/terracotta，与 TerracottaManager 初始化同源）
-    NSString *docs = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject ?: home];
+    // ★ Task255 r1 CI 修复（run 794 CleanupViewController.m:119:122 "expected
+    //   identifier"）：ObjC 消息发送方括号内不能放 `a ?: b` 三元省略形式——
+    //   方括号内期待 selector，`?:` 直接 expected identifier（上会话半成品
+    //   未过 CI 编译验证的笔误）。改先取数组再三元，语义不变。
+    NSArray<NSString *> *ame255_searchPaths =
+        NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *docs = (ame255_searchPaths.count > 0 && ame255_searchPaths.firstObject != nil)
+        ? ame255_searchPaths.firstObject
+        : home;
     NSString *tcLog = [docs stringByAppendingPathComponent:@"terracotta/terracotta.log"];
     if ([NSFileManager.defaultManager fileExistsAtPath:tcLog]) [paths addObject:tcLog];
     return paths;
