@@ -560,7 +560,11 @@ static NSObject * _Nullable AME252CreateGlassMesh(CGSize size, double cornerRadi
                      clampedRadius, edgeDistance, cornerResolution, outerEdgeDistance,
                      bz->x1, bz->y1, bz->x2, bz->y2];
     NSMutableDictionary *cache = AME252TemplateCache();
-    AME252MeshTemplate *tpl = (AME252MeshTemplate *)[cache objectForKey:key];
+    NSValue *boxed = [cache objectForKey:key];
+    // ★ Task252 CI r2：id → C 指针直转是 ARC 编译错误（"cast of Objective-C
+    //   pointer type to C pointer type"），经 NSValue.pointerValue 的 void*
+    //   中转（纯 C 指针赋值无桥接面）。
+    AME252MeshTemplate *tpl = boxed != nil ? (AME252MeshTemplate *)[boxed pointerValue] : NULL;
     if (tpl == nil) {
         tpl = AME252BuildTemplate(clampedRadius, edgeDistance, cornerResolution,
                                   outerEdgeDistance, bz);
