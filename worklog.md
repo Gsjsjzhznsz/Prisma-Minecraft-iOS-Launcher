@@ -2987,3 +2987,18 @@ Work Log:
 Stage Summary:
 - 15 项全链处置：T2 联机 = 启动器自扫描打崩 ScaffoldingServer 根修（四层闸）+ 备用线路预检；T1 = 真值对账自动纠正（drawable 反解 screenScale）；T9 = 磨砂层恒装（0.01 跳层分支退役）；T7 = toggle 账本会话重置三件；T5/T6 = 版本实体连带删除+扫描恢复+清理中心（GAME_DIR 根修正）；T3 = 皮肤 JSON 链；T10 = kw 头插；T11 = JVM 四档+custom 注入；T8 = index 修正+自动检查更新全链；T13 = 公告 43→6；T14 = 缺键清零；T15 = 22 表+日志+UA 品牌统一
 - 装机验证锚点：①联机开房建房后日志应见 "Task255: skip deep scan/sweep aborted -- Terracotta session active"（不再打崩 ScaffoldingServer），guest 应能入网 ②切后台回游戏首触 → "Task255: AUTO-CORRECT (…) drawable=… vs believed surface=…"（信念漂移时自动拉回）或 no-op 日志 ③设置→控件→"自动检查控件更新"开启后重启 → 可更新时 toast ④毛玻璃档主页卡片磨砂可见（blurIntensity=0 存档首启自愈 0.75）⑤JVM 预设选省内存/性能后启动 → "[JavaLauncher] Task255 JVM preset=…" ⑥右 SHIFT 按钮退游重进后首次轻点即生效；Task67 poll 出现 "RShift=" 位 ⑦版本删除后主页选择版本不再残留 + 大小回落；版本管理 FAB(放大镜)→扫描恢复/清理垃圾可用 ⑧日志前缀 [Prisma]、关于页/公告精简版
+
+---
+Task ID: 255-ci
+Agent: main (Super Z)
+Task: Task 255 CI 闭环（run 38156229988 failure → r1 run 38157349672 failure → r2 run 38158214004 一轮终绿）
+
+Work Log:
+- 推送 afcc90e（Task 255 主体 15 项）→ run 38156229988（run#794）Build for ios 失败：CleanupViewController.m:119:122 "expected identifier" —— ObjC 消息发送方括号内 `a ?: b` 三元省略形式非合法 selector（@[] 数组字面量内 ?: 合法，83 行无恙；上会话半成品未过 CI 编译验证的笔误）
+- r1 修复 1a13bd9：改先取 NSSearchPathForDirectoriesInDomains 数组再普通三元的语义等价写法 → run 38157349672（run#795）失败：TerracottaManager.m:211 incompatible block pointer types —— https 备用线路 HEAD 探测的 dataTaskWithRequest completionHandler 用了标准新顺序 (NSURLResponse, NSData, …)，本仓 category 声明为老顺序 (NSData, NSURLResponse, NSError)（AnnouncementService.m:199 / ControlRepoViewController 先例同款）
+- r2 修复 55456d9：block 签名改老顺序；同批自查 autoCheckControlUpdatesOnce 签名已为老顺序零改动 → run 38158214004（run#796）一轮 completed success
+- 产物三件全在位：ipa 220.4MB + tipa 220.4MB + dSYM 6.3MB（全量编译无掩蔽面）；日志核验 CleanupViewController.m.o/TerracottaManager.m.o/JavaLauncher.m.o 真实编译，error 计数 0
+- 门禁盲区补记：task240/139/175/158 全部为括号/平衡/导入类静态门，ObjC 语义合法性（selector 期待/block 签名）只能 CI 实证——半成品入库必须过 CI 轮次（本轮两雷均在 CI 抓获，静态门零命中）
+
+Stage Summary:
+- Task 255 全链闭环（15/15 项 + r1/r2 两轮 CI 语义雷排净）：run#796 终绿，新 IPA 就绪待装机验证（锚点见 Task 255 条目 Stage Summary 8 条）
