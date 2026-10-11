@@ -294,7 +294,7 @@ jobs:
           fi
           echo '== Task256: stage VirGL prebuilts for cache save ==' 2>/dev/null || true
           mkdir -p Natives/build/virgl-prebuilt
-          for ame256_f in libOSMesaVirgl.dylib libvtestserver.dylib libepoxy.dylib; do
+          for ame256_f in libOSMesaVirgl.dylib libvtestserver.dylib; do
             if [ -f "Natives/build/$ame256_f" ]; then cp "Natives/build/$ame256_f" Natives/build/virgl-prebuilt/; fi
           done
           ls -la Natives/build/virgl-prebuilt || true

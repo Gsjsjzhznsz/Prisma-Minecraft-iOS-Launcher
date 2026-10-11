@@ -669,11 +669,11 @@ dep_virgl_build:
 	@if [ -n "$(VIRGL_PREBUILT_DIR)" ] && \
 	    [ -f "$(VIRGL_PREBUILT_DIR)/libOSMesaVirgl.dylib" ] && \
 	    [ -f "$(VIRGL_PREBUILT_DIR)/libvtestserver.dylib" ] && \
-	    [ -f "$(VIRGL_PREBUILT_DIR)/libepoxy.dylib" ]; then \
-		echo '[Amethyst v$(VERSION)] dep_virgl - cached (VIRGL_PREBUILT_DIR prebuilts present -- Task256 CI speedup, skips Mesa 906-target rebuild)'; \
+	    [ -f "$(VIRGL_PREBUILT_DIR)/libvtestserver.dylib" ]; then \
+		echo '[Amethyst v$(VERSION)] dep_virgl - cached (VIRGL_PREBUILT_DIR prebuilts present -- Task256 CI speedup, skips Mesa 906-target rebuild; libepoxy is statically linked into libvtestserver, not shipped)'; \
 		cp $(VIRGL_PREBUILT_DIR)/libOSMesaVirgl.dylib \
 		   $(VIRGL_PREBUILT_DIR)/libvtestserver.dylib \
-		   $(VIRGL_PREBUILT_DIR)/libepoxy.dylib $(WORKINGDIR)/; \
+		   $(VIRGL_PREBUILT_DIR)/libvtestserver.dylib $(WORKINGDIR)/; \
 		exit 0; \
 	fi
 	@if [ -f "$(SOURCEDIR)/Natives/resources/Frameworks/libOSMesaVirgl.dylib" ] && \
