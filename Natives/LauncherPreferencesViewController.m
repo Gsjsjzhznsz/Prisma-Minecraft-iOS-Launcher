@@ -1648,8 +1648,12 @@ if ([section isEqualToString:@"general"]) {
             @{@"key": @"auto_keyboard_sdl",
               @"hasDetail": @YES,
               @"icon": @"keyboard.badge.ellipsis",
-              @"type": self.typeSwitch,
-              @"enableCondition": whenNotInGame
+              @"type": self.typeSwitch
+              // ★ Task250（反馈 8）：移除 enableCondition=whenNotInGame——
+              //   本开关的消费点（ame172_sdlStartTextInput）每次 StartTextInput
+              //   实时读键，游戏内切换立即生效；旧行为在游戏内禁用 = 用户唯一
+              //   能触达本开关的场景（游戏内设置）恰好被锁死 = "开关功能无效"
+              //   的直接体感之一。写键零重启面（无会话级缓存）。
             },
             // Task229 (feedback #2: sprint has no effect): vanilla's own
             // accessibility switch -- toggleSprint:true in options.txt makes

@@ -2380,6 +2380,69 @@ void CallbackBridge_nativeSendMouseButton(int button, int action, int mods) {
     }
 }
 
+// ★ Task250（反馈 1 补根）：后台期窗口推送门控 + 强制重申原语。
+//   病历链：Task249 的重宣告修复在装机上仍不达标——两个存活洞：
+//   ① Task83b 去重以【最后推送值】为判据：MC 侧（mg 上下文重建 / SDL 事件
+//      泵恢复）错过唯一一次有效推送后，后续同值重申全被去重吞掉 = 修复
+//      永远只打一发，竞态输一次就永失对齐；
+//   ② 后台旋转往返期间 updateSavedResolution 的过窗值（竖屏 1262x1814 →
+//      1814x1262）逐次推给 MC = 污染源本身还在工作。
+//   修法：
+//   - ame250_appActive 旗标（SurfaceVC WillResignActive/DidBecomeActive
+//     维护）：后台期非强制推送静默跳过（全局照写，MC 信念不再被过窗值
+//     改写；前台恢复时强制重申一次性对齐）；
+//   - CallbackBridge_nativeSendScreenSizeForced：绕过去重的显式入口
+//     （回前台三连重申 + 首触点兜底专用），保证修复推送必达。
+BOOL g_ame250_appActive = YES;
+
+void CallbackBridge_nativeSendScreenSizeForced(int width, int height) {
+    windowWidth = width;
+    windowHeight = height;
+
+    if (isInputReady) {
+        if (GLFW_invoke_FramebufferSize) {
+            if (isUseStackQueueCall) {
+                sendData(EVENT_TYPE_FRAMEBUFFER_SIZE, width, height, 0, 0);
+            } else {
+                GLFW_invoke_FramebufferSize((void*) showingWindow, width, height);
+            }
+        }
+        if (GLFW_invoke_WindowSize) {
+            if (isUseStackQueueCall) {
+                sendData(EVENT_TYPE_WINDOW_SIZE, width, height, 0, 0);
+            } else {
+                GLFW_invoke_WindowSize((void*) showingWindow, width, height);
+            }
+        }
+    }
+
+    if (!GLFW_invoke_WindowSize && !GLFW_invoke_FramebufferSize && g_sdlWindow) {
+        static int s_task250_forcedW = -1, s_task250_forcedH = -1;
+        if (width != s_task250_forcedW || height != s_task250_forcedH) {
+            s_task250_forcedW = width;
+            s_task250_forcedH = height;
+        }
+        /* 强制通道：无视 Task83b 去重（后台/前台恢复对齐专用），但与 83b
+         * 共享日志计数以便取证对账。 */
+        if (pSDL_PushEvent) {
+            SDL3_Event ev;
+            memset(&ev, 0, sizeof(ev));
+            SDL3_WindowEvent *we = (SDL3_WindowEvent *)&ev;
+            we->type = SDL3_EVENT_WINDOW_RESIZED;
+            we->windowID = getSDLWindowID();
+            we->data1 = width;
+            we->data2 = height;
+            pSDL_PushEvent((void *)&ev);
+            static int s_task250_pushed = 0;
+            s_task250_pushed++;
+            if (s_task250_pushed <= 10 || s_task250_pushed % 50 == 0) {
+                NSLog(@"[InputDiag] Task250 forced window size -> SDL 0x207 %dx%d #%d (dedup bypassed)",
+                      width, height, s_task250_pushed);
+            }
+        }
+    }
+}
+
 void CallbackBridge_nativeSendScreenSize(int width, int height) {
     windowWidth = width;
     windowHeight = height;
@@ -2422,6 +2485,18 @@ void CallbackBridge_nativeSendScreenSize(int width, int height) {
     // 相同尺寸的重推只会给 MC 塞无意义的重建风暴）。
     // ---------------------------------------------------------------
     if (!GLFW_invoke_WindowSize && !GLFW_invoke_FramebufferSize && g_sdlWindow) {
+        // ★ Task250：后台期推送门控——后台旋转往返的过窗值（竖屏往返各一次）
+        //   正是 MC 窗口信念被污染的源头；后台期只更新全局（无强制调用方），
+        //   SDL 事件不推，前台恢复由 nativeSendScreenSizeForced 一次性对齐。
+        if (!g_ame250_appActive) {
+            static int s_task250_gated = 0;
+            s_task250_gated++;
+            if (s_task250_gated <= 10 || s_task250_gated % 50 == 0) {
+                NSLog(@"[InputDiag] Task250 background window push gated (%dx%d, app inactive; global updated only)",
+                      width, height);
+            }
+            return;
+        }
         static int s_task83b_lastW = -1, s_task83b_lastH = -1;
         if (width != s_task83b_lastW || height != s_task83b_lastH) {
             s_task83b_lastW = width;

@@ -727,24 +727,14 @@ static UIColor *ame244_snapshotTint(void) {
     CGFloat screenWidth = [ScreenUtils screenSize].width;
     CGFloat screenHeight = [ScreenUtils screenSize].height;
 
-    // ★ Task249（用户反馈 8：菜单关闭时"屏幕会滑动"根修）：滑出瞬间摘掉
-    //   快照磨砂。病历：Task248（⑨）把面板内磨砂快照与面板正后方的游戏
-    //   画面 1:1 对位后，关闭动画期间快照（= 一幅与真画面完全相同的游戏
-    //   拷贝）随面板整体下滑 —— 用户看到"整个游戏屏幕在滑动"，而菜单明明
-    //   只是悬浮面板（没顶满屏）。修法：动画起步即切回 Task244 的回退组合
-    //   （快照隐藏 + 材质磨砂上岗 + tint 撤下）：滑出中的面板是清晰的
-    //   "菜单卡片"而非"屏幕拷贝"，滑动错觉消失；下一次 showMenu 重新抓帧
-    //   重建快照（幂等，零残留）。动画本身保留（用户要求"恢复关闭动画"）。
-    {
-        UIImageView *ame249_snap = objc_getAssociatedObject(self, kAme243SnapKey);
-        UIView *ame249_blur = objc_getAssociatedObject(self, kAme237BlurKey);
-        UIView *ame249_tint = objc_getAssociatedObject(self, kAme244TintKey);
-        if (ame249_snap != nil && !ame249_snap.hidden) {
-            ame249_snap.hidden = YES;
-            if (ame249_blur != nil) ame249_blur.hidden = NO;
-            if (ame249_tint != nil) ame249_tint.hidden = YES;
-        }
-    }
+    // ★ Task250（反馈 10：恢复关闭动画）：摘掉 Task249 的“起步即摘快照”——
+    //   快照瞬间消失 = 面板内容跳变（用户感知“动画没了”）。改为：磨砂快照
+    //   保持 + 面板整体下滑同步淡出（alpha→0）——滑出中的面板是“带折射
+    //   背景的菜单卡片”渐隐，既无“屏幕拷贝滑动”错觉（卡片在消失而非静止
+    //   背景在移动），也保留了完整的视觉过渡（不再裸跳）。
+    //   配合本轮状态栏/手势条恒定化（关闭期间零系统位移），关闭动画完整
+    //   可见且不再牵动游戏画面。
+    [self ame247_stopMenuSnapshotRefresh];   // 快照定格（滑出期间不再重抓）
 
     // ★ Task227：侧滑形态判定（showMenu 的侧边栏以 y=0 全高呈现）——
     // 收起时横向滑出吸边侧，而非下滑。
@@ -774,12 +764,14 @@ static UIColor *ame244_snapshotTint(void) {
                 self.menuView.frame.size.height
             );
         }
+        // ★ Task250：面板同步淡出（卡片化收场，不裸跳）
+        self.menuView.alpha = 0.0;
         // 背景遮罩淡出
         self.menuDimView.alpha = 0.0;
     } completion:^(BOOL finished) {
         self.menuView.hidden = YES;
         self.menuDimView.hidden = YES;
-        [self ame247_stopMenuSnapshotRefresh];   // Task247（T10）：菜单关闭即停重抓
+        self.menuView.alpha = 1.0;   // ★ Task250：复位透明度（下次 showMenu 零残留）
         [self setNeedsUpdateOfHomeIndicatorAutoHidden];
         [self setNeedsUpdateOfScreenEdgesDeferringSystemGestures];
         [self setNeedsStatusBarAppearanceUpdate];
@@ -1021,19 +1013,24 @@ static UIColor *ame244_snapshotTint(void) {
 }
 
 - (UIRectEdge)preferredScreenEdgesDeferringSystemGestures {
-    if (!self.menuView.hidden) {
-        return 0;
-    }
+    // ★ Task250（反馈 10：菜单明明悬浮在屏幕上方，关闭时屏幕却会滑动 根修）：
+    //   旧实现随菜单开合翻转（菜单开=0/关=底部+右）——翻转触发系统手势条
+    //   /安全区重评估，全屏内容随开合位移 = “屏幕滑动”。恒定后开合零位移，
+    //   关闭动画回归“面板卡片滑出”。
     return UIRectEdgeBottom | UIRectEdgeRight;
 }
 
 - (BOOL)prefersHomeIndicatorAutoHidden {
-    return self.menuView.hidden &&
-        getPrefBool(@"debug.debug_hide_home_indicator");
+    // ★ Task250：不再随菜单开合翻转（翻转 = 手势条显隐动画 + 安全区重评估
+    //   = 屏幕位移；恒定化后关闭动画期间零系统级位移）。
+    return getPrefBool(@"debug.debug_hide_home_indicator");
 }
 
 - (BOOL)prefersStatusBarHidden {
-    return self.menuView.hidden;
+    // ★ Task250：游戏内恒定隐藏（旧实现随菜单开合翻转——iPad 横屏下状态
+    //   栏显隐改写 safeAreaInsets，关闭菜单瞬间全屏内容位移 = “屏幕滑动”
+    //   的主源；恒定隐藏后开合零位移，且游戏沉浸性更佳）。
+    return YES;
 }
 
 // ★ Task237：UITableView 数据源/委托六方法（numberOfRows / cellForRow /

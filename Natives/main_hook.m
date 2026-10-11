@@ -360,28 +360,23 @@ void hooked_exit(int code) {
         ame_write_fatal_trace(exitMsg);
     }
     if (code == 0) {
-        // ★ Task248（② 26.3 退出游戏后启动器挂后台最后崩溃 根修）：
-        //   旧实现 dispatch_async(suspend) + usleep(100ms) + orig_exit(0)——
-        //   先把 app 送进后台再退，iOS 26.3 的后台进程冻结更激进：atexit/
-        //   dyld 终结收尾还没跑完，整个进程就被冻结在"退出中"状态 = 用户
-        //   看到"启动器挂在后台"，最终被 watchdog/jetsam 击杀（崩溃报告）。
-        //   新语义：
-        //   1) 去掉 suspend——exit 直出，进程当场终结（iOS 立即收回前台，
-        //      不给后台冻结任何窗口）；
-        //   2) 兜底看门狗线程——3s 内 orig_exit 因任何 atexit 死锁/清理
-        //      卡顿未完成时 _exit(0) 硬杀（raw syscall，不走 atexit，无
-        //      死锁面）。正常退出路径看门狗永远不会开火（进程已死）。
-        static atomic_int ame248_exitWatchdogStarted = 0;
-        int ame248_expected = 0;
-        if (atomic_compare_exchange_strong(&ame248_exitWatchdogStarted, &ame248_expected, 1)) {
-            dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
-                usleep(3000 * 1000);   // 3s：超过任何健康退出的收尾时长
-                NSLog(@"[main_hook] Task248: exit watchdog fired -- orig_exit(0) still alive after 3s, forcing _exit(0)");
-                _exit(0);
-            });
-        }
-        orig_exit(0);
-        return;
+        // ★ Task248（② 26.3 退出游戏后启动器挂后台最后崩溃）：旧实现
+        //   dispatch_async(suspend) + usleep——先把 app 送后台再退，iOS 26.3
+        //   后台进程冻结更激进 = "挂在后台"（Task248 去掉 suspend）。
+        // ★ Task250（反馈 2 复发根修）：Task248 保留的 orig_exit(0) 本身
+        //   就是残余竞态面——libc exit() 的 atexit/dyld 终结收尾要在
+        //   【其余几十条仍在运行的线程】（JVM GC/编译线程、MoltenVK、
+        //   mg 渲染）环伺下进行，任何一条在收尾窗口内崩溃/死锁 = 进程
+        //   停在"退出中"（用户看到启动器挂在后台），最终 watchdog/jetsam
+        //   击杀出崩溃报告。Task249 装机反馈证实该窗口真实存在。
+        //   终案： fflush 后 _exit(0) 直出——raw syscall 当场终结进程，
+        //   不进 atexit/dyld 收尾（无收尾窗口 = 无竞态面）。日志/trace
+        //   落盘全部走 raw write()（见 ame_write_fatal_trace）已即时落盘；
+        //   fflush 兜底 stdio 缓冲。3s 看门狗随之退役（_exit 永不返回，
+        //   无需兜底）。
+        NSLog(@"[main_hook] Task248/250: exit(0) -> immediate _exit(0) (no libc teardown window)");
+        fflush(NULL);
+        _exit(0);
     }
     handle_fatal_exit(code);
 

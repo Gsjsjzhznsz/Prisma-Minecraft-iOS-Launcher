@@ -55,6 +55,10 @@ static char ame232_OutlineMarkKey;
 
 @implementation BackgroundManager
 
+// ★ Task250：前置声明（定义在文件尾部描边 swizzle 区；ame224_applyAdaptiveTextToLabel
+//   提前引用）——填充色 = 自定义字体颜色（general.text_color）或白色。
+static UIColor *ame250_globalTextFillColor(void);
+
 + (instancetype)sharedManager {
     static BackgroundManager *shared = nil;
     static dispatch_once_t onceToken;
@@ -1161,7 +1165,9 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
     // 改为常开的白底黑边描边字体：白色填充 + 黑色描边（负 strokeWidth
     // = 描边 + 填充）+ 软阴影。任何壁纸上文字都可读，无需判定亮度。
     if ([[BackgroundManager sharedManager] hasBackground]) {
-        label.textColor = [UIColor whiteColor];
+        // ★ Task250：自定义字体颜色在场时用它作填充（与 setText: 交换同源；
+        //   未设置回白 = 现状）。描边颜色由 drawTextInRect: 按填充亮度自适应。
+        label.textColor = ame250_globalTextFillColor();
         // ★ Task232（反馈 #16）：同 setText: 交换的改道——CoreText stroke
         //   与大光晕都向字形内部渗黑（CJK 字腔黑线的构造性来源），
         //   本入口也改为：染白 + 打标记，描边交给 drawTextInRect: 的
@@ -1884,6 +1890,40 @@ static UIColor *ame233_opaqueColor(UIColor *ame233_c) {
     return [UIColor whiteColor];
 }
 
+/// ★ Task250（反馈 6：深色字体下应自动适配白边，浅色字体下保持现在的黑边）
+///   描边颜色按【实际填充色】的相对亮度自适应：深色填充（如用户自选
+///   general.text_color 深色）→ 白色外扩拷贝；浅色填充 → 黑色外扩拷贝
+///   （现状）。填充色解析失败时回落白色（= 黑边现状，零回归）。
+static UIColor *ame250_outlineColorForFill(UIColor *ame250_fill) {
+    CGFloat r = 0, g = 0, b = 0, a = 0;
+    if ([ame250_fill getRed:&r green:&g blue:&b alpha:&a]) {
+        CGFloat ame250_lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        if (ame250_lum < 0.5) {
+            return [UIColor colorWithWhite:1.0 alpha:0.90];   // 深字 → 白边
+        }
+    }
+    return [UIColor colorWithWhite:0.0 alpha:0.82];           // 浅字 → 黑边（现状）
+}
+
+/// ★ Task250（反馈 5/6）：全局染色的填充色取值——用户设置了
+///   general.text_color 时用它（自定义字体颜色全局生效，不再只覆盖
+///   少数几个手动接线点），未设置回白色（现状）。经 PLPreferences
+///   读值（与其它消费点同源）。
+static UIColor *ame250_globalTextFillColor(void) {
+    extern id getPrefObject(NSString *key);   // LauncherPreferences.h 同名声明（本 TU 未导入，局部外引）
+    NSString *ame250_hex = getPrefObject(@"general.text_color");
+    if (![ame250_hex isKindOfClass:[NSString class]] || ame250_hex.length == 0) return [UIColor whiteColor];
+    NSString *ame250_clean = [ame250_hex stringByReplacingOccurrencesOfString:@"#" withString:@""];
+    unsigned int ame250_rgb = 0;
+    if (ame250_clean.length >= 6 && [[NSScanner scannerWithString:ame250_clean] scanHexInt:&ame250_rgb]) {
+        return [UIColor colorWithRed:((ame250_rgb >> 16) & 0xFF) / 255.0
+                               green:((ame250_rgb >> 8) & 0xFF) / 255.0
+                                blue:(ame250_rgb & 0xFF) / 255.0
+                               alpha:1.0];
+    }
+    return [UIColor whiteColor];
+}
+
 // ★ Task243：镜像 label 渲染的声明前置（Task240 CI r3 类目自声明同款先例）
 //   —— UILabel drawTextInRect: 在 UIKit 公开头里无声明，但 IMP 恒在；
 //   自声明后可直接调用（见 swizzle 内 Task243 块注释）。
@@ -1931,7 +1971,7 @@ static void ame232_swizzledLabelDrawTextInRect(id self, SEL _cmd, CGRect rect) {
                 //   IMP = 纯文本绘制，彻底绕开 layer display/contents 管线。
                 //   文字排版同源性（垂直居中/截断/缩字/段落继承）由属性镜像
                 //   + 同一 UIKit 内核保证，与 Task242 设计一致。
-                UIColor *ame242_dark = [UIColor colorWithWhite:0.0 alpha:0.82];
+                UIColor *ame242_dark = ame250_outlineColorForFill(ame233_opaqueColor(ame232_label.textColor));   // ★ Task250：边色随填充亮度自适应
                 UIColor *ame242_opaque = ame233_opaqueColor(ame232_label.textColor);
 
                 NSMutableAttributedString *ame242_darkStr =
@@ -2024,7 +2064,7 @@ static void ame227_swizzledLabelSetText(id self, SEL _cmd, NSString *text) {
         //   文字染白 + 打描边标记；真正的描边由 drawTextInRect: 交换做
         //   【四方向 0.6pt 外扩深色拷贝 + 原色居中】——边只长在字形
         //   外侧，字腔保持纯白（详见 ame232_swizzledLabelDrawTextInRect）。
-        ame227_label.textColor = [UIColor whiteColor];
+        ame227_label.textColor = ame250_globalTextFillColor();   // ★ Task250：自定义字体颜色全局染色（未设回白）
         objc_setAssociatedObject(ame227_label, &ame232_OutlineMarkKey,
                                  @(YES), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         ame227_label.layer.shadowOpacity = 0.0;

@@ -25,6 +25,7 @@
 #import "AmeFloatingMenu.h"
 #import "LiquidGlassCompat.h"
 #import "BackgroundManager.h"   // ★ Task238：菜单树描边豁免（字体重叠根治）
+#import "LauncherPreferences.h" // ★ Task250：accentColor()（菜单行符号 tint 跟随主题强调色）
 
 #pragma mark - 前向声明与工具
 
@@ -491,9 +492,13 @@ static UIColor *Ame244SnapshotTint(void) {
         }
         UIImage *icon = [AmeFloatingMenu symbolImageForName:iconName];
         UIColor *textColor = (m.style == 2) ? [UIColor systemRedColor] : [UIColor labelColor];
+        // ★ Task250（反馈 5：恢复主题强调色适配）：符号 tint 从硬编码
+        //   systemBlueColor 改为主题强调色（accentColor()，与设置页/右栏
+        //   启动按钮同源）——伪玻璃档全接管后本面板是用户最高频的菜单面，
+        //   主题色必须跟随；destructive 红/取消灰语义不变。
         UIColor *symbolTint = (m.style == 2) ? [UIColor systemRedColor]
                             : (m.style == 1) ? [UIColor secondaryLabelColor]
-                            : [UIColor systemBlueColor];
+                            : accentColor();
         [row ame237_configureWithIcon:icon
                                 title:(m.title.length > 0 ? m.title : @"")
                             textColor:textColor

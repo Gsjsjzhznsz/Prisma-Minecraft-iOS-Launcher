@@ -431,6 +431,12 @@ void CallbackBridge_nativeSendCursorPos(char event, CGFloat x, CGFloat y);
 void CallbackBridge_nativeSendKey(int key, int scancode, int action, int mods);
 void CallbackBridge_nativeSendMouseButton(int button, int action, int mods);
 void CallbackBridge_nativeSendScreenSize(int width, int height);
+// ★ Task250（反馈 1）：强制重申通道——绕过 Task83b 去重的显式窗口推送
+//   （回前台三连重申 + 首触点兜底专用；竞态输一次后的修复推送必达）。
+void CallbackBridge_nativeSendScreenSizeForced(int width, int height);
+// ★ Task250：应用前台/后台旗标（SurfaceVC WillResignActive/DidBecomeActive
+//   维护）——后台期常规窗口推送被门控（过窗值不再污染 MC 窗口信念）。
+extern BOOL g_ame250_appActive;
 void CallbackBridge_nativeSendScroll(CGFloat xoffset, CGFloat yoffset);
 void CallbackBridge_sendKeycode(int keycode, jchar keychar, int scancode, int modifiers, BOOL isDown);
 void CallbackBridge_pauseGameIfNeed();

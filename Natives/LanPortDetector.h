@@ -89,6 +89,18 @@ extern NSString *const LanPortDetectorDidDetectPortNotification;
 /// @param progress 每轮调用（后台队列，可空；scanned/total 为本轮进度）。
 - (void)startLoopbackScanRepeatingWithProgress:(void (^ _Nullable)(NSUInteger scanned, NSUInteger total))progress;
 
+/// ★ Task250（用户反馈 7）：重启周期扫描——清陈旧 detectedPort（新开一局
+/// 世界端口必变）+ 换绑进度块。显式检测入口（开始检测/立即扫描）统一走
+/// 本方法，防上一局端口造成"快捷建房连死端口 / 同值去重吞通知"双病灶。
+- (void)restartLoopbackScanRepeatingWithProgress:(void (^ _Nullable)(NSUInteger scanned, NSUInteger total))progress;
+
+/// ★ Task250：端口验活——port 当前是否仍接受连接且应答像 MC 服务器。
+/// startHostTapped 快捷路径先用本方法验证 detectedPort 再建房。
+- (BOOL)isPortStillAlive:(uint16_t)port;
+
+/// ★ Task250：无条件重播当前已知端口通知（publishPort 同值去重的绕行口）。
+- (void)republishCurrentPort;
+
 /// Stop the repeating loopback scan.  Safe to call when not scanning;
 /// stopAutoDetection 也会一并停掉本扫描（一个开关同时控制两路）。
 - (void)stopLoopbackScanRepeating;

@@ -397,6 +397,8 @@
         }
 
         NSString *message = localize(([NSString stringWithFormat:@"preference.warn.%@", key]), nil);
+        // ★ Task250：动态键缺席回落键本身 → 不弹警告（宁缺不显键名）。
+        if ([message isEqualToString:[NSString stringWithFormat:@"preference.warn.%@", key]]) return;
         [self showAlertOnView:view title:localize(@"Warning", nil) message:message];
     }
 }
@@ -537,6 +539,12 @@
     NSString *message = nil;
     if ([item[@"hasDetail"] boolValue]) {
         message = localize(([NSString stringWithFormat:@"preference.detail.%@", item[@"key"]]), nil);
+        // ★ Task250（反馈 9 i18n：不要留键名）：动态拼键缺席时 localize 回落
+        //   返回键本身——结构上根除“键名上屏”：回落值 == 键 → 标题置 nil
+        // （UIMenu 无标题形态），宁缺标题不显键名。
+        if ([message isEqualToString:[NSString stringWithFormat:@"preference.detail.%@", item[@"key"]]]) {
+            message = nil;
+        }
     }
 
     NSArray *pickKeys = item[@"pickKeys"];

@@ -2986,3 +2986,10 @@
 "ame247.keyboard.dismiss" = "收起键盘";
 "folderbrowser.import.done" = "已导入 %lu 个文件到当前文件夹。";
 "folderbrowser.import.failed" = "导入完成：%lu 个成功，%lu 个失败。";
+
+// ★ Task250 (i18n audit): dynamic-key family coverage (preference.detail.* built at runtime)
+"preference.detail.safety_mode" = "AI 助手对高风险操作的防护严格程度";
+"preference.detail.defaultTouchCtrl" = "启动游戏时使用的触摸控制布局";
+"preference.detail.defaultGamepadCtrl" = "启动游戏时使用的手柄布局";
+"preference.detail.javaVersion" = "启动此实例使用的 Java 运行时";
+"preference.detail.lwjglVersion" = "此实例的 LWJGL 版本覆盖";

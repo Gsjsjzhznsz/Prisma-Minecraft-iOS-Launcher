@@ -103,6 +103,10 @@ typedef NS_ENUM(NSInteger, TCUIState) {
 
 @implementation TerracottaViewController
 
+// ★ Task250：动态磨砂刷新 display link 关联键（ame250_start/stopFrostRefresh
+//   在文件前部使用，定义置顶避免前向引用）。
+static const void *kAme250FrostLinkKey = &kAme250FrostLinkKey;
+
 #pragma mark - Lifecycle
 
 - (void)viewDidLoad {
@@ -135,6 +139,51 @@ typedef NS_ENUM(NSInteger, TCUIState) {
 
 - (void)dealloc {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+    // ★ Task250：动态磨砂刷新退场（防 display link 持脱脏 VC）。
+    [self ame250_stopFrostRefresh];
+}
+
+#pragma mark - Task250 动态磨砂刷新（反馈 9）
+
+// ★ Task250（反馈 9：一些位置仍用原生界面而非伪液态玻璃）：Task248 ⑧的
+//   磨砂快照是【一次性】抓帧——开服/世界加载/移动视角后背景永远停在开
+//   菜单那一刻的静帧，观感退回“静态贴图”而非魔改玻璃。移植
+//   Task246/247 同款 8Hz 重抓（快照源 surfaceView 纯游戏画面 + 全黑帧
+//   护栏；原生档/启动器呈现自动短路退场）。
+- (void)ame250_startFrostRefresh {
+    if (objc_getAssociatedObject(self, kAme250FrostLinkKey) != nil) return;
+    CADisplayLink *ame250_link = [CADisplayLink displayLinkWithTarget:self
+                                                             selector:@selector(ame250_frostTick)];
+    if (@available(iOS 10.0, *)) {
+        ame250_link.preferredFramesPerSecond = 8;   // Task246/247 同款 8Hz
+    }
+    [ame250_link addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+    objc_setAssociatedObject(self, kAme250FrostLinkKey, ame250_link,
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    NSLog(@"[TVC] Task250: dynamic frost refresh engaged (8Hz)");
+}
+
+- (void)ame250_stopFrostRefresh {
+    CADisplayLink *ame250_link = objc_getAssociatedObject(self, kAme250FrostLinkKey);
+    if (ame250_link != nil) {
+        [ame250_link invalidate];
+        objc_setAssociatedObject(self, kAme250FrostLinkKey, nil,
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+}
+
+- (void)ame250_frostTick {
+    if (!LGCIsGlassStyleActive()) {
+        [self ame250_stopFrostRefresh];
+        return;
+    }
+    UIView *ame250_surface = [SurfaceViewController surface];
+    if (ame250_surface == nil || ame250_surface.window == nil || self.view.window == nil) {
+        // 启动器呈现 / 会话退场：快照失效面，刷新自停（静态壁纸管线接管）。
+        [self ame250_stopFrostRefresh];
+        return;
+    }
+    [self ame248_applyGlassFrostBackground];   // 内部自抓新帧 + 全黑帧护栏
 }
 
 #pragma mark - Navigation chrome
@@ -1058,6 +1107,9 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
     ame248_iv.image = ame248_img;
     ame248_frost.hidden = NO;
     [self.view sendSubviewToBack:ame248_frost];
+    // ★ Task250：快照在位 → 启动 8Hz 动态重抓（磨砂背景随游戏画面持续跟随；
+    //   tick 内自检失效面自停，见 ame250_frostTick）。
+    [self ame250_startFrostRefresh];
 }
 
 - (void)applyBackgroundEffects {
@@ -1218,9 +1270,15 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
 - (void)startHostTapped:(id)sender {
     if (self.autoSwitch.on) {
         uint16_t known = [LanPortDetector sharedInstance].detectedPort;
-        if (known > 0) {
+        // ★ Task250：快捷路径验活——陈旧端口（上一局世界）直接建房必连不
+        //   上；验活失败 = 清口重扫（新世界新端口）。
+        if (known > 0 && [[LanPortDetector sharedInstance] isPortStillAlive:known]) {
             [self createRoomWithPort:known];
             return;
+        }
+        if (known > 0) {
+            NSLog(@"[TVC] Task250: stale detected port %u failed liveness check -- clearing and rescanning", known);
+            [[LanPortDetector sharedInstance] clearPort];
         }
         self.uiState = TCUIStateDetecting;
         [self updateForCurrentState];
@@ -1237,7 +1295,7 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
         //   命中/取消；命中经 publishPort → portDidDetect: →
         //   createRoomWithPort: 与日志路同一收口（进度仍实时回填 detectingHintLabel）。
         __weak typeof(self) ame249_wSelf = self;
-        [[LanPortDetector sharedInstance] startLoopbackScanRepeatingWithProgress:^(NSUInteger scanned, NSUInteger total) {
+        [[LanPortDetector sharedInstance] restartLoopbackScanRepeatingWithProgress:^(NSUInteger scanned, NSUInteger total) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 __strong typeof(ame249_wSelf) strongSelf = ame249_wSelf;
                 if (strongSelf == nil) return;
@@ -1259,15 +1317,23 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
 }
 
 - (void)scanPortsTapped:(id)sender {
+    // ★ Task250：立即扫描同样先验活已知端口（活的直接收口，死的清口重扫）
+    uint16_t ame250_known = [LanPortDetector sharedInstance].detectedPort;
+    if (ame250_known > 0 && [[LanPortDetector sharedInstance] isPortStillAlive:ame250_known]) {
+        [self createRoomWithPort:ame250_known];
+        return;
+    }
     self.detectingHintLabel.text = localize(@"i18n_str_2077", nil);
     self.uiState = TCUIStateDetecting;
     [self updateForCurrentState];
 
     /* ★ Task249：手动"立即扫描"同样走周期回环扫描（首轮自带全范围深扫）。
      * 旧行为"扫不到就回表单+提示"退役：世界可能尚未开服，留在检测页
-     * 持续轮询（每轮进度实时回填），命中即通知收口建房；用户可随时取消。 */
+     * 持续轮询（每轮进度实时回填），命中即通知收口建房；用户可随时取消。
+     * ★ Task250：换 restart 变体——陈旧端口清口 + 新监听方进度块换绑
+     * （旧版重复检测的进度块被静默丢弃 = 检测页永远等待的病根之一）。 */
     __weak typeof(self) ame249_wSelf2 = self;
-    [[LanPortDetector sharedInstance] startLoopbackScanRepeatingWithProgress:^(NSUInteger scanned, NSUInteger total) {
+    [[LanPortDetector sharedInstance] restartLoopbackScanRepeatingWithProgress:^(NSUInteger scanned, NSUInteger total) {
         dispatch_async(dispatch_get_main_queue(), ^{
             __strong typeof(ame249_wSelf2) strongSelf = ame249_wSelf2;
             if (strongSelf == nil) return;

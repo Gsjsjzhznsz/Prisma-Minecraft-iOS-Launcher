@@ -673,7 +673,24 @@ static BOOL ame227_g_dockedLeft = NO;
 
 - (void)layoutSubviews {
     [super layoutSubviews];
-    // 屏幕旋转后重新约束位置
+    // ★ Task250（反馈 4：切后台回去之后侧边栏跑到中间 根修）：后台竖屏往返
+    //   期间本视图以竖屏 bounds 走 layout —— 旧实现的 clampViewsToScreen 把
+    //   【吸边把手】按悬浮球半径钳进竖屏屏内（x=1171 → 798），回到横屏后
+    //   无人再贴边 = 把手滞留屏幕中部（docked 旗标还在但外观/位置已脱钩）。
+    //   修法：bounds 尺寸变化（旋转/分屏/窗口调整）时按【保存的百分比】
+    //   重走 restorePositions（吸边态重贴当前边、标签重取百分比位），静
+    //   止期维持 clamp 兜底。restorePositions 读盘重放，幂等零漂移。
+    static CGSize ame250_lastSize = CGSizeZero;
+    CGSize ame250_now = self.bounds.size;
+    if (!CGSizeEqualToSize(ame250_now, ame250_lastSize)) {
+        ame250_lastSize = ame250_now;
+        if (ame250_now.width > 40.0 && ame250_now.height > 40.0) {
+            [self restorePositions];
+            NSLog(@"[GameMenu] Task250: bounds changed to %@ -> gear handle re-docked / labels re-restored",
+                  NSStringFromCGSize(ame250_now));
+            return;
+        }
+    }
     [self clampViewsToScreen];
 }
 

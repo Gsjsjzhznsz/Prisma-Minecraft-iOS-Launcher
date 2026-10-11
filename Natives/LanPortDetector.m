@@ -416,10 +416,18 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
     }
 }
 
-#pragma mark - Repeating loopback scan (Task249)
+#pragma mark - Repeating loopback scan (Task249/250)
 
 - (BOOL)isLoopbackScanRepeating {
     return _scanRepeating;
+}
+
+/// ★ Task250（反馈 7）：端口验活——已知端口是否仍是活着的 MC 服务器。
+///   用于 startHostTapped 快捷路径防陈旧端口（上局世界端口已死，直接
+///   建房必连不上）。
+- (BOOL)isPortStillAlive:(uint16_t)port {
+    if (port == 0) return NO;
+    return AmePortAcceptsConnection(port) && AmePortAnswersLikeMinecraft(port);
 }
 
 - (void)stopLoopbackScanRepeating {
@@ -438,7 +446,20 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
 
 - (void)startLoopbackScanRepeatingWithProgress:(void (^)(NSUInteger, NSUInteger))progress {
     dispatch_async(_queue, ^{
-        if (self->_scanRepeating) return;   /* 幂等：已在扫 */
+        if (self->_scanRepeating) {
+            // ★ Task250（反馈 7 三号洞）：已在扫时不再静默丢弃新调用方——
+            //   病历：用户重启检测（新 TVC）→ 老周期扫仍在跑 → 新进度块被
+            //   丢弃 + 已知端口命中时 tick 静默收工不通知 = 新界面永远
+            //   停在检测中。改为：换绑新进度块 + 已知端口立即重播（新
+            //   调用方马上收口），扫描状态保持。
+            self->_scanProgress = [progress copy];
+            uint16_t ame250_known = self->_port;
+            if (ame250_known != 0) {
+                NSLog(@"[LanPortDetector] Task250: repeating scan already running, re-publish known port %u to new listener", ame250_known);
+                [self republishCurrentPort];
+            }
+            return;
+        }
         self->_scanRepeating = YES;
         self->_scanProgress = [progress copy];
         self->_scanSweepBusy = NO;
@@ -465,6 +486,11 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
             if (!strongSelf->_scanRepeating) return;
             if (strongSelf->_scanSweepBusy) return;          /* 上轮未完，本轮跳过 */
             if (strongSelf->_port != 0) {                    /* 已命中（日志路/深扫），收工 */
+                // ★ Task250：收工前重播通知（已知端口可能是本次检测开始前
+                //   命中的——publishPort 的同值去重不会再次发通知，当前
+                //   监听方永远收不到 = 检测页永远等待。重播后收工。）
+                NSLog(@"[LanPortDetector] Task250: tick hit known port %u -- re-publishing before stop", strongSelf->_port);
+                [strongSelf republishCurrentPort];
                 [strongSelf stopLoopbackScanRepeating];
                 return;
             }
@@ -534,6 +560,33 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
                                                            object:self
                                                          userInfo:@{ @"port": @(port), @"source": @(source) }];
     });
+}
+
+/// ★ Task250：无条件重播当前已知端口（startLoopback 重入换绑 + tick 收工
+///   前通知；publishPort 的同值去重需要绕开时用本入口）。
+- (void)republishCurrentPort {
+    uint16_t ame250_port = _port;
+    LanPortSource ame250_src = _source;
+    if (ame250_port == 0) return;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [[NSNotificationCenter defaultCenter] postNotificationName:LanPortDetectorDidDetectPortNotification
+                                                           object:self
+                                                         userInfo:@{ @"port": @(ame250_port), @"source": @(ame250_src) }];
+    });
+}
+
+/// ★ Task250：重启周期扫描（清陈旧端口 + 换绑进度块）——新开一局世界
+///   端口必变，上一局的 detectedPort 是毒数据（快捷路径误用/去重吞通知
+///   双病灶源头）。TVC/MVC 显式检测入口统一走本方法。
+- (void)restartLoopbackScanRepeatingWithProgress:(void (^)(NSUInteger, NSUInteger))progress {
+    dispatch_async(_queue, ^{
+        if (self->_port != 0) {
+            NSLog(@"[LanPortDetector] Task250: restart requested -- clearing stale port %u (new world, port will differ)", self->_port);
+            self->_port = 0;
+            self->_source = LanPortSourceUnknown;
+        }
+    });
+    [self startLoopbackScanRepeatingWithProgress:progress];
 }
 
 - (void)setManualPort:(uint16_t)port {

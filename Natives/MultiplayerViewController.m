@@ -298,6 +298,7 @@ static BOOL ame249_mpSnapshotLooksValid(UIImage *ame249_img) {
 }
 
 static const void *kAme249MpFrostKey = &kAme249MpFrostKey;
+static const void *kAme250FrostLinkKey = &kAme250FrostLinkKey;   // ★ Task250：动态磨砂刷新 display link
 
 /// ★ Task249（用户反馈 7：一些位置仍用原生界面而非伪液态玻璃——联机菜单）：
 ///   Task248（⑧）只给 TerracottaViewController（陶瓦联机页）加了玻璃档快照
@@ -310,6 +311,7 @@ static const void *kAme249MpFrostKey = &kAme249MpFrostKey;
     UIView *ame249_frost = objc_getAssociatedObject(self, kAme249MpFrostKey);
     if (!LGCIsGlassStyleActive()) {
         if (ame249_frost != nil) ame249_frost.hidden = YES;
+        [self ame250_stopFrostRefresh];
         return;
     }
     UIView *ame249_surface = [SurfaceViewController surface];
@@ -318,6 +320,7 @@ static const void *kAme249MpFrostKey = &kAme249MpFrostKey;
     if (ame249_img == nil) {
         // 启动器呈现（surface 不在窗口）或抓帧失败：壁纸/卡片管线接管。
         if (ame249_frost != nil) ame249_frost.hidden = YES;
+        [self ame250_stopFrostRefresh];
         return;
     }
     if (ame249_frost == nil) {
@@ -352,6 +355,46 @@ static const void *kAme249MpFrostKey = &kAme249MpFrostKey;
     ame249_iv.image = ame249_img;
     ame249_frost.hidden = NO;
     [self.view sendSubviewToBack:ame249_frost];
+    // ★ Task250：快照在位 → 8Hz 动态重抓（与 TVC 同款；静态帧观感退回原生
+    //   的观感成分之一即“背景不动”，动态后与游戏内菜单/伪玻璃面板一致）。
+    [self ame250_startFrostRefresh];
+}
+
+#pragma mark - Task250 动态磨砂刷新（与 TVC 同款）
+
+- (void)ame250_startFrostRefresh {
+    if (objc_getAssociatedObject(self, kAme250FrostLinkKey) != nil) return;
+    CADisplayLink *ame250_link = [CADisplayLink displayLinkWithTarget:self
+                                                             selector:@selector(ame250_frostTick)];
+    if (@available(iOS 10.0, *)) {
+        ame250_link.preferredFramesPerSecond = 8;
+    }
+    [ame250_link addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+    objc_setAssociatedObject(self, kAme250FrostLinkKey, ame250_link,
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    NSLog(@"[MVC] Task250: dynamic frost refresh engaged (8Hz)");
+}
+
+- (void)ame250_stopFrostRefresh {
+    CADisplayLink *ame250_link = objc_getAssociatedObject(self, kAme250FrostLinkKey);
+    if (ame250_link != nil) {
+        [ame250_link invalidate];
+        objc_setAssociatedObject(self, kAme250FrostLinkKey, nil,
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+}
+
+- (void)ame250_frostTick {
+    if (!LGCIsGlassStyleActive()) {
+        [self ame250_stopFrostRefresh];
+        return;
+    }
+    UIView *ame250_surface = [SurfaceViewController surface];
+    if (ame250_surface == nil || ame250_surface.window == nil || self.view.window == nil) {
+        [self ame250_stopFrostRefresh];
+        return;
+    }
+    [self ame249_applyGlassFrostBackground];
 }
 
 - (void)backgroundEffectChanged {
@@ -373,6 +416,8 @@ static const void *kAme249MpFrostKey = &kAme249MpFrostKey;
 - (void)dealloc {
     // 移除通知观察者，避免 dealloc 后收到通知导致崩溃
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+    // ★ Task250：动态磨砂刷新退场（tick 自停为主路，此为兑底）。
+    [self ame250_stopFrostRefresh];
     // 清除代理引用，避免悬空指针
     if ([MultiplayerManager sharedManager].delegate == self) {
         [MultiplayerManager sharedManager].delegate = nil;
@@ -1302,10 +1347,15 @@ static const void *kAme249MpFrostKey = &kAme249MpFrostKey;
         return;
     }
     uint16_t known = [LanPortDetector sharedInstance].detectedPort;
-    if (known > 0) {
-        NSLog(@"[MultiplayerVC] Task232: port %u already known from earlier detection", known);
+    if (known > 0 && [[LanPortDetector sharedInstance] isPortStillAlive:known]) {
+        // ★ Task250：快捷路径验活（与 TVC 同语义）——活端口才直接生成分享码。
+        NSLog(@"[MultiplayerVC] Task232/250: port %u known and still alive", known);
         [self generateShareCodeWithPort:[NSString stringWithFormat:@"%u", known]];
         return;
+    }
+    if (known > 0) {
+        NSLog(@"[MultiplayerVC] Task250: stale port %u failed liveness check -- clearing and rescanning", known);
+        [[LanPortDetector sharedInstance] clearPort];
     }
     // 进度提示 + 起检测 + 18s 兜底
     [self showSimpleAlertWithTitle:localize(@"ame232.mp.auto_title", nil)
@@ -1316,7 +1366,7 @@ static const void *kAme249MpFrostKey = &kAme249MpFrostKey;
     //   127.0.0.1 扫描 + Server-List-Ping 校验与日志格式无关；命中后经
     //   publishPort → 通知 → lanPortDidDetect:（本任务已改为无条件注册）
     //   同一主路径生成分享码。扫描只读探测，与 18s 兜底/手动输入互不干扰。
-    [[LanPortDetector sharedInstance] startLoopbackScanRepeatingWithProgress:nil];   // ★ Task249: one-shot -> repeating (world may not be open yet)
+    [[LanPortDetector sharedInstance] restartLoopbackScanRepeatingWithProgress:nil];   // ★ Task249: repeating；★ Task250: restart（清陈旧端口/换绑）
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(18 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{

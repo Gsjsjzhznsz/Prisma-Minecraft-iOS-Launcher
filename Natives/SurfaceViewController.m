@@ -251,6 +251,13 @@ static dispatch_block_t ame223_pendingStopResign = NULL;
 // 内把收起去抖扩到 1.2s，MC 的上下文重建循环不再穿透；真会话结束
 // （ESC/发送，无近期打字）仍用 250ms 快收。
 static CFAbsoluteTime ame230_lastCharForwardedAt = 0.0;
+// ★ Task250（反馈 3：联机菜单输入一次键盘就关闭一次）：Stop→Start 间隔
+//   自适应采样。装机实锤（Task230 39633e4：联机地址框的下一个 Start 迟到
+//   超过防抖窗）——MC 26.x 联机界面的每字符 Stop→Start 重建间隔随网络/
+//   帧率波动，固定窗（250ms→1.2s）只适合部分会话；动态采样上一轮实测
+//   间隔，收起窗 = max(1.2s, gap×1.4)（上限 8s），逐字符收敛后闪关消失。
+static CFAbsoluteTime ame250_lastStopTextInputAt = 0.0;
+static CFAbsoluteTime ame250_lastStartGap = 0.0;
 // ★ Task227（反馈 #7：无法关闭键盘，需手动点输入法按钮）：用户手动收起
 // 闩锁。ef1e3e2a 装机铁证：MC 26.3 会话里 SDL StartTextInput 在无文本
 // 上下文时反复到达（标题画面加载后/后台恢复后/画面切换时），
@@ -2322,6 +2329,12 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
                                              selector:@selector(ame247_didBecomeActive)
                                                  name:UIApplicationDidBecomeActiveNotification
                                                object:nil];
+    // ★ Task250（反馈 1）：后台窗口推送门控旗标——切后台即置 NO（后台旋转
+    //   往返的过窗值不再推给 MC），回前台在 ame247_didBecomeActive 置回 YES。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame250_willResignActive)
+                                                 name:UIApplicationWillResignActiveNotification
+                                               object:nil];
 }
 
 /// 取消启动：用户点击"取消启动"按钮时调用。
@@ -2644,7 +2657,12 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     if (ame248_geoResyncPending) {
         ame248_geoResyncPending = NO;
         [self updateSavedResolution];
-        NSLog(@"[SurfaceVC] Task248: first-touch geometry re-sync applied");
+        // ★ Task250：首触点兜底补宣告（Task248 引入本兜底时只修全局不修
+        //   MC 信念；强制通道保证竞态输掉后首个触点前必达）。
+        if (windowWidth > 0 && windowHeight > 0) {
+            CallbackBridge_nativeSendScreenSizeForced(windowWidth, windowHeight);
+        }
+        NSLog(@"[SurfaceVC] Task248/250: first-touch geometry re-sync applied + forced re-announce");
     }
     CGFloat screenScale = self.screenScale;
     // Task 78（FSR 输入口径）：输入像素空间必须等于 MC 窗口信念
@@ -2745,6 +2763,8 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 // 更】场景——本处重算永远使用同一偏好值，不引入新比例。
 - (void)ame247_didBecomeActive {
     if (self.surfaceView.superview == nil) return;   // 会话未启动
+    // ★ Task250：回前台 = 门控解除（后续常规推送恢复；本次重申走强制通道）。
+    g_ame250_appActive = YES;
     [self updateSavedResolution];
     // ★ Task249（用户反馈 1：MobileGL 切后台后输入错位——重宣告时序根修）：
     //   装机日志（bb32e00 latestlog.old 6255-6293 行）实锤：切后台期间 iOS
@@ -2765,8 +2785,12 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     //   （nativeSendScreenSize 幂等：Task83b 去重挡掉同值重推；三连重申
     //   各带一次宣告，覆盖后台旋转推送晚到的任何时序）。
     if (windowWidth > 0 && windowHeight > 0) {
-        CallbackBridge_nativeSendScreenSize(windowWidth, windowHeight);
-        NSLog(@"[SurfaceVC] Task249: didBecomeActive window size re-announced to MC (%dx%d)",
+        // ★ Task250：改走强制通道——Task249 的重宣告在装机上仍被吞（Task83b
+        //   去重以最后【推送】值为判据，MC 侧 mg 重建/SDL 泵恢复错过唯一
+        //   一发有效推送后，同值重申全部被去重吞掉）。强制通道绕过去重，
+        //   三连重申每次都真推（幂等面零回归：同值重推只多一次合成事件）。
+        CallbackBridge_nativeSendScreenSizeForced(windowWidth, windowHeight);
+        NSLog(@"[SurfaceVC] Task249/250: didBecomeActive window size re-announced to MC (%dx%d, forced)",
               (int)windowWidth, (int)windowHeight);
     }
     // ★ Task248（①）：MobileGL 路径跨后台的上下文重建时序不受我们控制
@@ -2784,7 +2808,7 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         if (strongSelf.surfaceView.superview != nil) {
             [strongSelf updateSavedResolution];
             if (windowWidth > 0 && windowHeight > 0) {
-                CallbackBridge_nativeSendScreenSize(windowWidth, windowHeight);
+                CallbackBridge_nativeSendScreenSizeForced(windowWidth, windowHeight);   // ★ Task250：强制通道
             }
         }
     });
@@ -2794,11 +2818,16 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         if (strongSelf.surfaceView.superview != nil) {
             [strongSelf updateSavedResolution];
             if (windowWidth > 0 && windowHeight > 0) {
-                CallbackBridge_nativeSendScreenSize(windowWidth, windowHeight);
+                CallbackBridge_nativeSendScreenSizeForced(windowWidth, windowHeight);   // ★ Task250：强制通道
             }
         }
     });
     NSLog(@"[SurfaceVC] Task247/248/249: didBecomeActive geometry re-synced x3 + size re-announced (screenScale=%.2f)", self.screenScale);
+}
+
+- (void)ame250_willResignActive {
+    g_ame250_appActive = NO;
+    NSLog(@"[SurfaceVC] Task250: app resigning active -- background window pushes gated");
 }
 
 - (void)ame171_armKeyboardRecheck:(int)depth {
@@ -2844,6 +2873,15 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 // 进行中的输入会话）。
 - (void)ame172_sdlStartTextInput:(NSNotification *)n {
     if (!self.inputTextField) return;
+    // ★ Task250（反馈 3）：采样本轮 Stop→Start 间隔（上一轮收起窗的自适应
+    //   原料）。上一轮 Stop 时间戳有效时才算间隔（首个 Start 无参照）。
+    if (ame250_lastStopTextInputAt > 0.0) {
+        CFAbsoluteTime ame250_gap = CFAbsoluteTimeGetCurrent() - ame250_lastStopTextInputAt;
+        if (ame250_gap > 0.0 && ame250_gap < 30.0) {
+            ame250_lastStartGap = ame250_gap;
+        }
+    }
+    ame250_lastStopTextInputAt = 0.0;   // 消费一次，避免陈旧值反复采样
     // ★ Task223（用户报“输入法在输入一部分之后再输入会关闭键盘”第二轮）：
     //   取消挂起的延迟收起。MC 26.x 的 EditBox 每个字符事件都可能
     //   Stop→Start 快速循环——收起去抖窗内 Start 到达 = 输入会话未真正
@@ -2961,7 +2999,17 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         //   迟到的 Start 有机会取消；无近期打字 = 真会话结束（ESC/发送），
         //   保持 250ms 快收不拖杏。
         CFAbsoluteTime ame230_sinceChar = CFAbsoluteTimeGetCurrent() - ame230_lastCharForwardedAt;
-        NSTimeInterval ame230_resignDelay = (ame230_sinceChar < 2.0) ? 1.2 : 0.25;
+        // ★ Task250（反馈 3）：收起窗自适应——打字活跃期窗长 =
+        //   max(1.2s, 上一轮实测 Stop→Start 间隔×1.4)（上限 8s，防异常
+        //   采样把窗撑到无限）。联机界面间隔长（服务器往返/帧率低）的
+        //   会话逐字符学到真实节奏后闪关消失；无历史间隔时维持 1.2s
+        //   下限（零回归）。
+        NSTimeInterval ame250_adaptiveWindow = 1.2;
+        if (ame250_lastStartGap > 0.0) {
+            ame250_adaptiveWindow = MAX(1.2, MIN(8.0, ame250_lastStartGap * 1.4));
+        }
+        NSTimeInterval ame230_resignDelay = (ame230_sinceChar < 2.0) ? ame250_adaptiveWindow : 0.25;
+        ame250_lastStopTextInputAt = CFAbsoluteTimeGetCurrent();
         __weak typeof(self) weakSelf = self;
         // Task223 CI 修复：Block_copy → dispatch_block_create（ARC 安全 + 唯一支持
         // dispatch_block_cancel 的创建方式；被取消的块提交到 dispatch_after 后不再执行）。
@@ -3978,7 +4026,11 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
     if (ame248_geoResyncPending) {
         ame248_geoResyncPending = NO;
         [self updateSavedResolution];
-        NSLog(@"[SurfaceVC] Task249: first-touch geometry re-sync applied (pre-hotbar)");
+        // ★ Task250：热栏路径首触点同补强制宣告（与 sendTouchPoint 同口径）。
+        if (windowWidth > 0 && windowHeight > 0) {
+            CallbackBridge_nativeSendScreenSizeForced(windowWidth, windowHeight);
+        }
+        NSLog(@"[SurfaceVC] Task249/250: first-touch geometry re-sync applied (pre-hotbar, forced re-announce)");
     }
 
     [super touchesBegan:touches withEvent:event];

@@ -2991,3 +2991,10 @@
 "ame247.keyboard.dismiss" = "Dismiss Keyboard";
 "folderbrowser.import.done" = "Imported %lu file(s) into this folder.";
 "folderbrowser.import.failed" = "Import finished: %lu succeeded, %lu failed.";
+
+// ★ Task250 (i18n audit): dynamic-key family coverage (preference.detail.* built at runtime)
+"preference.detail.safety_mode" = "How strictly the AI assistant guards risky operations";
+"preference.detail.defaultTouchCtrl" = "Touch control layout used when starting the game";
+"preference.detail.defaultGamepadCtrl" = "Controller layout used when starting the game";
+"preference.detail.javaVersion" = "Java runtime used to launch this instance";
+"preference.detail.lwjglVersion" = "LWJGL version override for this instance";

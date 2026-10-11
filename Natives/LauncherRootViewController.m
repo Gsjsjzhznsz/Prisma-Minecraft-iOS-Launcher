@@ -781,6 +781,35 @@ static CGFloat LauncherRootLayoutRightPanelWidth(UITraitCollection *trait) {
         [self.sidebarContainer ame_applyPanelSurfaceWithRadius:16];
         [self.rightPanelContainer ame_applyPanelSurfaceWithRadius:16];
     }
+    // ★ Task250（反馈 5：恢复卡片颜色适配）：与 Card 布局同语义——用户自选
+    //   general.card_color 时叠半透明纯色底（毛玻璃/平贴表面照常在下层）；
+    //   未设置时还原规格表面，零回归。随 uiEffect/背景/外观变化重铺。
+    [self ame250_applyCardColorTintToContainer:self.sidebarContainer];
+    [self ame250_applyCardColorTintToContainer:self.rightPanelContainer];
+}
+
+/// ★ Task250：VS 布局容器卡片色叠色（语义与 Card 布局 applyCustomCardColorToCard
+///   一致；分放本文件避免跨 VC 暴露私有方法）。
+- (void)ame250_applyCardColorTintToContainer:(UIView *)container {
+    NSString *ame250_hex = getPrefObject(@"general.card_color");
+    UIColor *ame250_tint = nil;
+    if (ame250_hex.length > 0) {
+        NSString *ame250_clean = [ame250_hex stringByReplacingOccurrencesOfString:@"#" withString:@""];
+        unsigned int ame250_rgb = 0;
+        if ([[NSScanner scannerWithString:ame250_clean] scanHexInt:&ame250_rgb] &&
+            ame250_clean.length >= 6) {
+            ame250_tint = [UIColor colorWithRed:((ame250_rgb >> 16) & 0xFF) / 255.0
+                                          green:((ame250_rgb >> 8) & 0xFF) / 255.0
+                                           blue:(ame250_rgb & 0xFF) / 255.0
+                                          alpha:1.0];
+        }
+    }
+    if (ame250_tint != nil) {
+        container.backgroundColor = [ame250_tint colorWithAlphaComponent:0.55];
+    } else {
+        container.backgroundColor = (container.layer.cornerRadius > 0)
+            ? AmeCardSurfaceColor() : [UIColor systemBackgroundColor];
+    }
 }
 
 - (void)uiEffectChanged:(NSNotification *)notification {

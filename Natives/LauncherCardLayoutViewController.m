@@ -10,6 +10,7 @@
 #import "LauncherPreferences.h"
 #import "PLMirrorCenter.h"   // Task218: version manifest candidate chain
 #import "BackgroundManager.h"
+#import "UIKit+NativeSurface.h"   // ★ Task250：AmeCardSurfaceColor（card_color 未设置时的规格表面还原）
 #import "LiquidGlassCompat.h"   // Task224（#4/#19）：界面风格 + 界面缩放
 #import "PLProfiles.h"
 #import "utils.h"
@@ -323,10 +324,21 @@ static CGFloat LauncherCardLayoutRightPanelWidth(UITraitCollection *trait) {
 
 /// Task89 起空操作；Task137 新拟态退役后保持空操作（卡片表面归
 /// UIKit+NativeSurface / BackgroundManager 管理）。
+/// ★ Task250（反馈 5：恢复卡片颜色适配）：用户在设置页选了
+/// general.card_color 后卡片长期无任何反馈（本方法自 Task89 起为空
+/// 壳）。恢复语义：有自定义卡片色时叠加半透明纯色底（毛玻璃/表面管
+/// 线照常在下层工作，色从半透明材质透出）；无色 = 现状零回归。
 - (void)applyCustomCardColorToCard:(UIView *)card {
-    // Task89 起空操作（Task137 延续）：general.card_color 不再叠加到卡片
-    // 表面——卡片底色由原生表面辅助统一管理。
-    // 原毛玻璃+半透明色叠加实现见 git 历史（1a135fe 之前版本）。
+    NSString *ame250_hex = getPrefObject(@"general.card_color");
+    UIColor *ame250_tint = [self colorFromHexString:ame250_hex];
+    if (ame250_tint != nil) {
+        card.backgroundColor = [ame250_tint colorWithAlphaComponent:0.55];
+    } else {
+        // 未设置：还原规格表面（与 applyEffectToView 平贴分支同源，
+        // AmeCardSurfaceColor 定义于 UIKit+NativeSurface.h）。
+        card.backgroundColor = (card.layer.cornerRadius > 0)
+            ? AmeCardSurfaceColor() : [UIColor systemBackgroundColor];
+    }
 }
 - (nullable UIColor *)colorFromHexString:(id)hex {
     if (![hex isKindOfClass:[NSString class]] || [(NSString *)hex length] == 0) return nil;

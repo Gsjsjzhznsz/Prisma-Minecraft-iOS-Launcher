@@ -2986,3 +2986,10 @@
 "ame247.keyboard.dismiss" = "收起鍵盤";
 "folderbrowser.import.done" = "已匯入 %lu 個檔案到目前資料夾。";
 "folderbrowser.import.failed" = "匯入完成：%lu 個成功，%lu 個失敗。";
+
+// ★ Task250 (i18n audit): dynamic-key family coverage (preference.detail.* built at runtime)
+"preference.detail.safety_mode" = "AI 助手對高風險操作的防護嚴格程度";
+"preference.detail.defaultTouchCtrl" = "啟動遊戲時使用的觸摸控制佈局";
+"preference.detail.defaultGamepadCtrl" = "啟動遊戲時使用的手柄佈局";
+"preference.detail.javaVersion" = "啟動此實例使用的 Java 執行環境";
+"preference.detail.lwjglVersion" = "此實例的 LWJGL 版本覆蓋";
