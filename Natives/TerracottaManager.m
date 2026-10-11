@@ -207,8 +207,12 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
                 NSURLSessionConfiguration.ephemeralSessionConfiguration];
             __block NSURLSession *ame255_hs = hs;   // 保活至回调完成
             dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+                // ★ Task255 r2 CI 修复（run 795 TerracottaManager.m:211 incompatible
+                //   block pointer types）：本仓 dataTaskWithRequest: completionHandler
+                //   签名为老顺序 (NSData, NSURLResponse, NSError)（AnnouncementService.m:199 /
+                //   ControlRepoViewController 先例同款），标准 (NSURLResponse, NSData, …) 顺序不兼容。
                 [[ame255_hs dataTaskWithRequest:hreq
-                    completionHandler:^(NSURLResponse *resp, NSData *data, NSError *err) {
+                    completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
                     NSHTTPURLResponse *hresp = (NSHTTPURLResponse *)resp;
                     if (err == nil && hresp.statusCode >= 200 && hresp.statusCode < 400) {
                         anyReachable = YES;
