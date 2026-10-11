@@ -3023,3 +3023,18 @@ Work Log:
 Stage Summary:
 - 七项全链交付：联机=探针确定性根修+访客自动重试；清理=主页一级磁贴；毛玻璃=最低档真全透明+意图标记；渲染器=1.8.9 kw 头插真正生效；CI=VirGL 缓存省 ~10min/run；i18n=派生键族全表清零；JVM 预设=实例级覆写
 - 装机验证锚点：①联机：开 TVC 后日志应见 "Task256: ... Terracotta initialized (scaffold protection)" 且不再出现 ScaffoldingServer FromUtf8Error；访客加入失败时 "Task256: guest PingHostFail -- auto-retry 1/2" 后自动重连 ②主页应有「清理垃圾」磁贴直达清理中心 ③UI 设置把模糊拖到 0%：壁纸全锐利、弹窗无白雾；重启后保持 0（不再自愈 0.75）④1.8.9（renderer=auto）启动日志 "[JavaLauncher] Task217/255: auto renderer decision: minVersion=8 ... -> nggl4es"，不再 ftransform 崩 ⑤版本设置→高级设置→JVM 预设可选四档+跟随全局，启动日志 "Task256: profile-level jvm_preset override active" ⑥任意语言表不再出现 preference.title.* 裸键名
+
+---
+## Task 256 CI 闭环（run 799 failure → r1 run 800 一轮终绿 + VirGL 缓存落桶验证）
+
+日期：2026-10-12　构建：45d83d9
+
+Work Log:
+- 推送 e17ea80（Task 256 主体）→ run 799 failure：LauncherNewsViewController.m:1606 "no known class method for selector 'ame256_scanVersionsForCleanup'"——类方法只在 .m 实现、VersionManagerViewController.h 未声明（跨文件调用静态盲区；task139/240 括号门不覆盖 ObjC 语义面，同 Task255 r1/r2 家族只能 CI 实证）
+- r1 修复 45d83d9：头文件补类方法声明 → run 800（run#800）一轮 completed success
+- 产物三件全在位：ipa 220.5MB + tipa 220.5MB + dSYM 6.3MB；error 计数 0
+- VirGL 缓存首轮存桶：dep_virgl 全量 8.2min（pass1）+ 2.5min（pass2）→ "Cache saved with key: virgl-prebuilt-v1-daa95f3…"；下轮起两遍均直通 prebuilt 分支，预期省 ~10.7min/run（本条目推送触发的 run 801 即首个命中轮，装机等待时间同步受益）
+- concurrency 取消链：e17ea80 的 run 798 被 1 分钟后的 worklog 提交（run 799）取消——同 ref 串行推送的预期行为，无需处理
+
+Stage Summary:
+- Task 256 全链闭环（7/7 项 + r1 语义雷排净 + CI 提速首桶落袋）：run#800 终绿，新 IPA（220.5MB）就绪待装机验证（锚点见 Task 256 条目 Stage Summary 6 条）
