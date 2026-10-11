@@ -29,6 +29,7 @@
 #import "MultiplayerViewController.h"
 #import "SurfaceViewController.h"   // ★ Task248（⑧）：+surface 取游戏呈现面做快照磨砂
 #import "LiquidGlassCompat.h"       // ★ Task248（⑧）：玻璃家族档位判定
+#import "AmeLiquidGlassView.h"  // ★ Task252：TG 玻璃材料升级整页磨砂（滤镜栈供料）
 #import <objc/runtime.h>            // ★ Task248（⑧）：objc_get/setAssociatedObject（CI r1 编译雷）
 
 typedef NS_ENUM(NSInteger, TCUIState) {
@@ -119,20 +120,20 @@ static const void *kAme250FrostLinkKey = &kAme250FrostLinkKey;
 
     [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
 
-    // ★ Task251（反馈 9/12）：玻璃家族档 + OverFullScreen 呈现（磁贴联机
+    // ★ Task252（反馈 9/12）：玻璃家族档 + OverFullScreen 呈现（磁贴联机
     //   入口在本轮改为玻璃条件分支）→ 无系统 dim，自铺轻遮罩（黑 0.18）
     //   保内容可读，壁纸经 ame160 玻璃底透出 = 伪玻璃面板观感；原生档
     //   （PageSheet）系统自带 dim，零改动（"用回原生"）。
     if (LGCIsGlassStyleActive() &&
         self.navigationController != nil &&
         self.navigationController.modalPresentationStyle == UIModalPresentationOverFullScreen) {
-        UIView *ame251_dim = [[UIView alloc] initWithFrame:self.view.bounds];
-        ame251_dim.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        ame251_dim.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.18];
-        ame251_dim.userInteractionEnabled = NO;
-        ame251_dim.tag = 25100;
-        [self.view insertSubview:ame251_dim atIndex:0];
-        NSLog(@"[TVC] Task251: glass-style OverFullScreen dim applied");
+        UIView *ame252_dim = [[UIView alloc] initWithFrame:self.view.bounds];
+        ame252_dim.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        ame252_dim.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.18];
+        ame252_dim.userInteractionEnabled = NO;
+        ame252_dim.tag = 25100;
+        [self.view insertSubview:ame252_dim atIndex:0];
+        NSLog(@"[TVC] Task252: glass-style OverFullScreen dim applied");
     }
 
     [self setupViews];
@@ -146,7 +147,7 @@ static const void *kAme250FrostLinkKey = &kAme250FrostLinkKey;
     [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
     [[BackgroundManager sharedManager] applyEffectToNavigationBar:self.navigationController.navigationBar];
     [self applyBackgroundEffects];
-    // ★ Task251（反馈 7 五修：进主机表单页自动武装扫描）：历轮修复都把
+    // ★ Task252（反馈 7 五修：进主机表单页自动武装扫描）：历轮修复都把
     //   扫描挂在用户点"开始检测/立即扫描"之后（gamelog 实锤：世界开服
     //   75s 后才点检测，随即取消——"自动扫描"从未真正自动）。装机实测
     //   用户流 = 先开世界 → 进联机页 → 期待端口已自动填好。修法：主机
@@ -157,7 +158,7 @@ static const void *kAme250FrostLinkKey = &kAme250FrostLinkKey;
     if (self.uiState == TCUIStateHostForm &&
         self.autoSwitch.on &&
         [LanPortDetector sharedInstance].detectedPort == 0) {
-        NSLog(@"[TVC] Task251: host form appearing with auto-switch ON and no port -- arming background auto-detection");
+        NSLog(@"[TVC] Task252: host form appearing with auto-switch ON and no port -- arming background auto-detection");
         [[LanPortDetector sharedInstance] startAutoDetection];
         [[LanPortDetector sharedInstance] restartLoopbackScanRepeatingWithProgress:nil];
     }
@@ -1050,7 +1051,9 @@ static UIImage *ame248_surfaceSnapshot(UIView *ame248_surface) {
     @try {
         UIGraphicsImageRendererFormat *ame248_fmt =
             [[UIGraphicsImageRendererFormat alloc] init];
-        ame248_fmt.scale = 0.18;
+        // ★ Task252：TG 材料在场（滤镜栈可用）时 0.5x 供料；滤镜缺失时
+        //   维持 0.18x 旧路（抓帧即模糊）。
+        ame248_fmt.scale = ([AmeLiquidGlassView ame252_isSupported] ? 0.5 : 0.18);
         ame248_fmt.opaque = YES;
         UIGraphicsImageRenderer *ame248_r =
             [[UIGraphicsImageRenderer alloc] initWithSize:ame248_surface.bounds.size
@@ -1116,6 +1119,11 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
         ame248_iv.contentMode = UIViewContentModeScaleToFill;
         ame248_iv.userInteractionEnabled = NO;
         ame248_iv.tag = 24801;
+        // ★ Task252：整页磨砂材料升级——TG 滤镜栈（colorMatrix +
+        //   gaussianBlur(2)）直接作用于快照图层自身内容（Metal 场景无合成
+        //   问题）；0.45 深色 tint 与可读性门禁原样保留。
+        NSArray *ame252_filters = [AmeLiquidGlassView ame252_glassFilters];
+        if (ame252_filters != nil) ame248_iv.layer.filters = ame252_filters;
         [ame248_container addSubview:ame248_iv];
         [NSLayoutConstraint activateConstraints:@[
             [ame248_iv.topAnchor constraintEqualToAnchor:ame248_container.topAnchor],
@@ -1376,10 +1384,10 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
 }
 
 - (void)cancelDetectingTapped:(id)sender {
-    // ★ Task251（反馈 7）：取消路径补日志——装机日志链里 stop 有、started
+    // ★ Task252（反馈 7）：取消路径补日志——装机日志链里 stop 有、started
     //   无的唯一无日志 stop 入口（历轮取证盲区），补齐后下轮 gamelog 可
     //   完整还原扫描生命周期。
-    NSLog(@"[TVC] Task251: auto detection cancelled by user (stale port was %u)",
+    NSLog(@"[TVC] Task252: auto detection cancelled by user (stale port was %u)",
           (unsigned)[LanPortDetector sharedInstance].detectedPort);
     [[LanPortDetector sharedInstance] stopAutoDetection];
     self.uiState = TCUIStateHostForm;
@@ -1478,11 +1486,11 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
 - (void)presentZeroTierVC {
     MultiplayerViewController *vc = [[MultiplayerViewController alloc] init];
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
-    // ★ Task251（反馈 9/12）：玻璃家族档 → OverFullScreen（MVC 自铺轻 dim
+    // ★ Task252（反馈 9/12）：玻璃家族档 → OverFullScreen（MVC 自铺轻 dim
     //   + 透壁纸，与磁贴联机页同语言）；原生档 → PageSheet 原状。
     if (LGCIsGlassStyleActive()) {
         nav.modalPresentationStyle = UIModalPresentationOverFullScreen;
-        NSLog(@"[TVC] Task251: ZeroTier page -> OverFullScreen (glass style)");
+        NSLog(@"[TVC] Task252: ZeroTier page -> OverFullScreen (glass style)");
     } else {
         nav.modalPresentationStyle = UIModalPresentationPageSheet;
     }

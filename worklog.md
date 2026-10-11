@@ -2858,3 +2858,21 @@ Stage Summary:
 Stage Summary:
 - Task 251 全链闭环：10 项装机反馈全修——26.3 退出挂死双保险（Java shutdown hook 标记 + native 轮询 _exit + libjvm exit 二次 rebind）+ MobileGL warp 中心锚定/后台几何冻结 + 端口扫描 26.x 正则/进页自动武装/取消日志 + SDL 硬窗意图旁路 + 玻璃档联机双入口 OverFullScreen（原生档 PageSheet）+ 悬浮菜单关闭短下沉微缩淡出 + 外观动态文字色/卡面文字恒自适应
 - 新 IPA 就绪待装机验证；装机验证锚点见 Task 251 条目 Stage Summary（8 条锚点）
+
+---
+Task ID: 252
+Agent: main (Super Z)
+Task: 伪液态玻璃渲染引擎换血——Telegram LegacyGlassView 配方 1:1 ObjC 移植（仅换材质，选项零改动）
+
+Work Log:
+- 移植源：TelegramMessenger/Telegram-iOS @ f1dd7a2d 的 LegacyGlassView.swift + GenerateMesh.swift + MeshTransformApi.h（研究快照与笔记见会话内 /home/z/my-project/research/tg-glass/）
+- 新组件 Natives/AmeLiquidGlassView.h/.m：CABackdropLayer（"CA"+"BackdropLayer" 字符串拼接 runtime 实例化 + 私有 setScale:1.0）+ CAFilter colorMatrix（TG 玻璃矩阵 2.6705/-1.1088/-0.1117… + inputBackdropAware）+ CAFilter gaussianBlur(inputRadius=2) + CAMutableMeshTransform 折射网格（圆角矩形 SDF + 梯度法线 + 边缘线性衰减 + TG 贝塞尔缓动 0.8161/0.2050/0.5807/0.8730 + 20pt 位移 + min(12,r) 带宽 + cornerResolution 12 + 2pt 外圈 edgeBoost；模板缓存 1108 点/937 面）+ TG .panel 填充（浅 white@0.70/深 11%white@0.85）+ 0.8pt 描边（浅 0.60/深 0.15）；mesh 门控 iOS 17+（TG 同款）
+- 双模设计（本仓库特有）：实况模式 = CABackdropLayer 直采（启动器域，零重抓）；快照供料模式 = 0.5x 抓帧喂图像层 + 窗口对位 sourceRect（游戏域——Metal 上系统 backdrop 不合成是 Task228/230/236 三轮实锤）；全部私有 API 运行时解析 + ame251_isSupported 门，缺失即回退旧管线（零回归面）
+- 接线四站点：①AmeFloatingMenu 弹窗面板（TG 玻璃 index0 接管，底色置 nil 防双采、shadowPath 定形、borderOverlay 退场、实况模式免 8Hz 重抓、游戏域 8Hz 持续 0.5x 供料、深浅 trait 跟随）②游戏内菜单面板 SurfaceViewController+Navigation（kAme251GlassKey 关联 + 24pt 深色面板 + showMenu 首帧供料 + 8Hz tick 供料 + ame248_alignMenuFrost 对位重写 + 原生档隐藏清理）③MVC ZeroTier 页整页磨砂（快照图层直挂 TG 滤镜栈[内容滤镜不采样 backdrop，Metal 无合成问题] + 条件 0.5x 供料，0.45 tint 门禁原样）④TVC 陶瓦页同款
+- CMakeLists 登记新源文件；选项零改动声明：prisma.interface_style 四档/透明度/模糊拉条/公告(43)/REVISION(22)/l10n 全未触碰
+- 验证：verify_task251 NEW 53/53 全绿（配方标记/四站点接线/括号平衡/CMake 登记/网格数学数值验证[SDF 中心/边缘/外部 + 左边缘折射向内 + 12pt 衰减归零 + 贝塞尔单调端点 + 模板规模/索引界]/公告 REVISION 选项锁/零 strings/零 CRLF）；task240_syntax_gate 全 balanced；task240_import_sweep 与 HEAD 基线逐字一致；task248/250_i18n_audit 零缺键；独立 C 数值测试 ALL MATH CHECKS PASSED（gcc 实跑）
+- 家族对拍定责：HEAD 基线 worktree 双跑 48 相关验证器——存量红族（82/83/89/96/100-111/119_124/125_128/129-135/137/138/151/166/168/173*部分/193/205/208/210/211/215/217-239 等）红项清单与本轮逐字一致 = 217-250 并行轮遗留的未重锚债，本轮零新增红；基线绿集（136/173/179/186/188/219/91/三生成器/两门禁/i18n 审计）本轮全绿
+- 教训：①家族验证器有运行时副作用（task205 重写 development.yml、task179 重编译二进制）——跑完家族需 git checkout 还原非本轮文件 ②脚本 REPO 路径三代并存（Amethyst-iOS-MyRemastered/repo-prisma/相对路径）且存在相对路径读取——对拍必须在仓库根 CWD 执行 ③家族红≠本轮红：以 HEAD 基线 worktree 双跑清单 diff 为准
+
+Stage Summary:
+- 伪液态玻璃四档设置与全部选项原样，玻璃档面板/弹窗/游戏内菜单/联机页渲染材质整体升级为 Telegram 同款（实况 backdrop 采样 + 玻璃矩阵调色 + r=2 微模糊 + SDF 边缘折射网格 + TG panel 填充与描边）；旧快照磨砂/材质层管线完整保留为运行时回退；装机验证锚点：①启动器内任一玻璃档弹窗（如关于页确认弹窗）= 背景实况透视 + 边缘折射弯曲 + TG 质感（不再有 0.18x 糊贴图感）②游戏内开菜单/弹窗 = 边缘折射随画面 8Hz 活动③联机/陶瓦页磨砂 = 色彩饱和提亮的玻璃质感④降低透明度开启 = 自动回退原生档（既有硬闸门不变）⑤AME239_FORCE_SYSTEM_GLASS 诊断开关不受影响

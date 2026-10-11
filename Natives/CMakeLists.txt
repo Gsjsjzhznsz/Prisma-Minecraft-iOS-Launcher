@@ -656,6 +656,10 @@ add_executable(AngelAuraAmethyst
   # (ported from ui/fcl-liquid-glass 23cd527e, extended for prisma.interface_style)
   LiquidGlassCompat.m
 
+  # Task252: Telegram LegacyGlassView recipe port (CABackdropLayer + CAFilter
+  # colorMatrix/gaussianBlur + SDF refraction meshTransform + panel fill/rim)
+  AmeLiquidGlassView.m
+
   # Task151: Bing daily wallpaper (HPImageArchive fetch/cache + gallery)
   BingWallpaperManager.m
   BingWallpaperGalleryViewController.m

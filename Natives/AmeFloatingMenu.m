@@ -26,6 +26,8 @@
 #import "LiquidGlassCompat.h"
 #import "BackgroundManager.h"   // ★ Task238：菜单树描边豁免（字体重叠根治）
 #import "LauncherPreferences.h" // ★ Task250：accentColor()（菜单行符号 tint 跟随主题强调色）
+#import "AmeLiquidGlassView.h"  // ★ Task252：TG LegacyGlassView 配方接管面板玻璃
+#import "SurfaceViewController.h" // ★ Task252：+surface 判定游戏域（快照供料 vs 实况采样）
 
 #pragma mark - 前向声明与工具
 
@@ -101,6 +103,30 @@ static UIImage *Ame243BlurredKeyWindowSnapshot(UIView *hostView) {
                              afterScreenUpdates:NO];
         }];
     } @catch (NSException *ame243_e) {
+        return nil;
+    }
+}
+
+/// ★ Task252：TG 玻璃供料快照（0.5x 抓帧——TG 滤镜栈自帶 r=2 微模糊与
+///   colorMatrix，原料需要保留真实细节供边缘网格折射；与 0.18x
+///   "抓帧即模糊"旧路不同源）。
+static UIImage *Ame252GlassFeedSnapshot(UIView *hostView) {
+    if (hostView == nil || hostView.window == nil ||
+        hostView.bounds.size.width < 40.0 ||
+        hostView.bounds.size.height < 40.0) return nil;
+    @try {
+        UIGraphicsImageRendererFormat *ame252_fmt =
+            [[UIGraphicsImageRendererFormat alloc] init];
+        ame252_fmt.scale = 0.5;
+        ame252_fmt.opaque = YES;
+        UIGraphicsImageRenderer *ame252_r =
+            [[UIGraphicsImageRenderer alloc] initWithSize:hostView.bounds.size
+                                                   format:ame252_fmt];
+        return [ame252_r imageWithActions:^(UIGraphicsImageRendererContext *ame252_rc) {
+            [hostView drawViewHierarchyInRect:hostView.bounds
+                           afterScreenUpdates:NO];
+        }];
+    } @catch (NSException *ame252_e) {
         return nil;
     }
 }
@@ -289,6 +315,13 @@ static UIColor *Ame244SnapshotTint(void) {
 ///   面板挪位/旋转/键盘避让后快照与窗口几何保持 1:1 对位）。
 @property (nonatomic, strong, nullable) UIView *ame245_frostClip;
 @property (nonatomic, strong, nullable) UIImageView *ame245_frostSnap;
+/// ★ Task252：TG LegacyGlassView 配方玻璃面板（玻璃家族档 + 支持时接管
+///   blurView/快照磨砂/描边三件套；游戏域 = 快照供料模式，启动器域 =
+///   实况 backdrop 采样）。选项零改动——仅换渲染材质。
+@property (nonatomic, strong, nullable) AmeLiquidGlassView *ame252_glass;
+/// ★ Task252：YES = 快照供料模式（游戏域，8Hz 持续供料）；NO = 实况模式
+///   （CABackdropLayer 直采窗口内容，无需重抓）。
+@property (nonatomic, assign) BOOL ame252_glassSnapshotMode;
 
 @property (nonatomic, strong) UIView *dimView;
 @property (nonatomic, strong) UIView *panel;
@@ -373,7 +406,38 @@ static UIColor *Ame244SnapshotTint(void) {
         NSLog(@"[AmeMenu] Task244: keyWindow snapshot blank (capture failure), fallback to material blur");
         ame244_snapImg = nil;
     }
-    if (ame244_snapImg != nil) {
+    // ★ Task252：TG LegacyGlassView 配方接管（玻璃家族档 + 运行时支持）。
+    //   启动器域 = 实况模式（CABackdropLayer 直采，零重抓开销）；游戏域 =
+    //   快照供料（首帧沿用既有快照，8Hz 内升级 0.5x）。选项零改动：
+    //   本分支只换面板渲染材质，呈现路由/命中/动画/动作链全不动。
+    GameSurfaceView *ame252_surface = [SurfaceViewController surface];
+    BOOL ame252_overGame = (ame252_surface != nil && ame252_surface.window != nil);
+    BOOL ame252_glassActive = LGCIsGlassStyleActive() &&
+                              [AmeLiquidGlassView ame252_isSupported];
+    if (ame252_glassActive) {
+        BOOL ame252_dark = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark);
+        self.ame252_glass = [AmeLiquidGlassView ame252_glassViewWithCornerRadius:26.0
+                                                                          isDark:ame252_dark];
+        if (self.ame252_glass != nil) {
+            self.ame252_glass.frame = self.panel.bounds;
+            self.ame252_glass.autoresizingMask =
+                UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            [self.panel insertSubview:self.ame252_glass atIndex:0];
+            self.ame252_glassSnapshotMode = ame252_overGame;
+            if (ame252_overGame) {
+                // 首帧供料（0.18x 旧快照即用；8Hz tick 以 0.5x 跟进升级）
+                self.ame252_glass.ame252_backdropSnapshot = ame244_snapImg;
+            }
+            // 面板底色退场：TG .panel 填充（玻璃内部）独立承载可读性；
+            //   底色若保留会被 backdrop 一并采样（双层叠加 = 过闷）。
+            //   防御面不丢：填充深色 0.85 / 浅色 0.70 即 TG 同款防御底。
+            self.panel.backgroundColor = nil;
+            self.blurView.hidden = YES;   // 系统材质层退场（TG 描边在玻璃内）
+        } else {
+            ame252_glassActive = NO;   // 构造失败（理论不可达）→ 旧管线
+        }
+    }
+    if (!ame252_glassActive && ame244_snapImg != nil) {
         // ★ Task245（IMG_0380 用户定案“透视有问题”）：旧摆法 AspectFill
         //   居中裁剪 = 显示的是整屏快照的中心放大裁切，弹窗背后根本不是
         //   这个内容，几何错位的“假透视”。改【窗口对位真透视】：快照按
@@ -412,9 +476,11 @@ static UIColor *Ame244SnapshotTint(void) {
         [self.panel insertSubview:ame245_clip belowSubview:self.blurView];
         self.blurView.hidden = YES;   // 快照成品磨砂上岗，系统材质层退场
     }
-    NSLog(@"[AmeMenu] Task239/244 menu material: %@ (style=%@, background=%@)",
-          LGCNativeGlassEngaged() ? @"native UIGlassEffect (force-enabled, diagnostic)"
-                                  : @"SystemMaterial fallback",
+    NSLog(@"[AmeMenu] Task252 menu material: %@ (style=%@, background=%@)",
+          ame252_glassActive ? (self.ame252_glassSnapshotMode ? @"TG liquid glass (snapshot feed)"
+                                                              : @"TG liquid glass (live backdrop)")
+          : (LGCNativeGlassEngaged() ? @"native UIGlassEffect (force-enabled, diagnostic)"
+                                     : @"SystemMaterial fallback"),
           LGCIsGlassStyleActive() ? @"glass" : @"native",
           ame244_snapImg != nil ? @"frost-snapshot+tint" : @"material-blur");
 
@@ -529,6 +595,8 @@ static UIColor *Ame244SnapshotTint(void) {
     self.borderOverlay.layer.borderWidth = 0.75;
     self.borderOverlay.layer.borderColor = Ame237Dyn(0.30, 0.10).CGColor;
     self.borderOverlay.userInteractionEnabled = NO;
+    // ★ Task252：TG 玻璃接管时自带 0.8pt 描边环，旧发丝环退场。
+    self.borderOverlay.hidden = (self.ame252_glass != nil);
     [self.panel addSubview:self.borderOverlay];
 
     // 入场初始态（viewDidAppear 前不可见——无动画路径在此直接摆正）
@@ -601,7 +669,20 @@ static UIColor *Ame244SnapshotTint(void) {
 
 #pragma mark - Task246 动态背景重抓
 
+/// ★ Task252：深浅色切换实时跟随（动态填充色自随系统；描边浓度手动重刷）。
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    [super traitCollectionDidChange:previousTraitCollection];
+    if (self.ame252_glass != nil && previousTraitCollection != nil &&
+        previousTraitCollection.userInterfaceStyle != self.traitCollection.userInterfaceStyle) {
+        BOOL ame252_dark = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark);
+        self.ame252_glass.ame252_dark = ame252_dark;
+    }
+}
+
 - (void)ame246_startBackgroundRefresh {
+    // ★ Task252：TG 玻璃实况模式下 CABackdropLayer 直采窗口内容，无需重抓；
+    //   快照供料模式（游戏域）仍需 8Hz 供料。
+    if (self.ame252_glass != nil && !self.ame252_glassSnapshotMode) return;
     if (self.ame246_refreshLink != nil) return;
     CADisplayLink *ame246_link = [CADisplayLink
         displayLinkWithTarget:self
@@ -621,6 +702,20 @@ static UIColor *Ame244SnapshotTint(void) {
 }
 
 - (void)ame246_refreshTick {
+    // ★ Task252：TG 玻璃分支——快照供料模式以 0.5x 原料持续喟 glass
+    //   （滤镜栈自带微模糊+colorMatrix，原料保留真实细节供边缘折射）；
+    //   实况模式无需重抓（链接在 start 处已短路，此为兑底）。
+    if (self.ame252_glass != nil) {
+        if (self.ame237_dismissing || !self.ame252_glassSnapshotMode) return;
+        UIView *ame252_bg = self.presentingViewController.view;
+        if (ame252_bg == nil || ame252_bg.window == nil) return;
+        UIImage *ame252_fresh = Ame252GlassFeedSnapshot(ame252_bg);
+        if (ame252_fresh != nil && !Ame244SnapshotLooksValid(ame252_fresh)) return;
+        if (ame252_fresh != nil) {
+            self.ame252_glass.ame252_backdropSnapshot = ame252_fresh;
+        }
+        return;
+    }
     if (self.ame237_dismissing || self.ame245_frostSnap == nil) return;
     UIView *ame246_bg = self.presentingViewController.view;
     UIWindow *ame246_win = self.view.window;
@@ -681,6 +776,17 @@ static UIColor *Ame244SnapshotTint(void) {
     self.panel.frame = CGRectMake((bw - W) / 2.0, (bh - panelH) / 2.0, W, panelH);
     if (self.ame237_kbShift > 0.0) {
         self.panel.frame = CGRectOffset(self.panel.frame, 0.0, -self.ame237_kbShift);
+    }
+    // ★ Task252：TG 玻璃供料对位（窗口对位真透视，与下方 frostSnap 同源几何）
+    //   + 确定性阴影路径（底色已置 nil，阴影由玻璃内容派生需显式定形）。
+    if (self.ame252_glass != nil) {
+        if (self.ame252_glassSnapshotMode) {
+            self.ame252_glass.ame252_backdropSourceRect =
+                CGRectMake(-self.panel.frame.origin.x, -self.panel.frame.origin.y, bw, bh);
+        }
+        self.panel.layer.shadowPath =
+            [UIBezierPath bezierPathWithRoundedRect:self.panel.bounds
+                                       cornerRadius:26.0].CGPath;
     }
     self.blurView.frame = self.panel.bounds;
     // ★ Task245：窗口对位磨砂帧刷新（面板挪位/旋转/键盘避让后，快照与

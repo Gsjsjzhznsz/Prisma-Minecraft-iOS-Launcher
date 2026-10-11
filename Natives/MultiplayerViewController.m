@@ -45,6 +45,7 @@
 #import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "AmeFloatingMenu.h"     // ★ Task247（T9）：玻璃镜像 alert 动态通路（进度文本/收尾）
 #import "LiquidGlassCompat.h"   // ★ Task249（T7）：玻璃家族档位判定
+#import "AmeLiquidGlassView.h"  // ★ Task252：TG 玻璃材料升级整页磨砂（滤镜栈供料）
 #import "SurfaceViewController.h"   // ★ Task249（T7）：+surface 取游戏呈现面做快照磨砂
 #import "BackgroundManager.h"
 #import "LauncherPreferences.h"
@@ -146,7 +147,7 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
     // 适配自定义启动器背景：透明化当前 VC，让全局背景图/毛玻璃透出
     [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
 
-    // ★ Task251（反馈 9/12）：玻璃家族档 + OverFullScreen 呈现（TVC 的
+    // ★ Task252（反馈 9/12）：玻璃家族档 + OverFullScreen 呈现（TVC 的
     //   ZeroTier 入口在本轮改为玻璃条件分支）→ 自铺轻遮罩。本类是
     //   UITableViewController（Task161：禁向 UITableView 直接插子视图）
     //   → 遮罩挂 navigationController.view（合法容器，位于表之下）。
@@ -154,13 +155,13 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
         self.navigationController != nil &&
         self.navigationController.presentingViewController != nil &&
         self.navigationController.modalPresentationStyle == UIModalPresentationOverFullScreen) {
-        UIView *ame251_dim = [[UIView alloc] initWithFrame:self.navigationController.view.bounds];
-        ame251_dim.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        ame251_dim.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.18];
-        ame251_dim.userInteractionEnabled = NO;
-        ame251_dim.tag = 25100;
-        [self.navigationController.view insertSubview:ame251_dim atIndex:0];
-        NSLog(@"[MVC] Task251: glass-style OverFullScreen dim applied (nav-level)");
+        UIView *ame252_dim = [[UIView alloc] initWithFrame:self.navigationController.view.bounds];
+        ame252_dim.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        ame252_dim.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.18];
+        ame252_dim.userInteractionEnabled = NO;
+        ame252_dim.tag = 25100;
+        [self.navigationController.view insertSubview:ame252_dim atIndex:0];
+        NSLog(@"[MVC] Task252: glass-style OverFullScreen dim applied (nav-level)");
     }
 
     // 彻底隐藏导航栏黑条（仅当作为根页面时；modal/pushed 仍保留导航栏）
@@ -280,9 +281,12 @@ static UIImage *ame249_mpSurfaceSnapshot(UIView *ame249_surface) {
         ame249_surface.bounds.size.width < 40.0 ||
         ame249_surface.bounds.size.height < 40.0) return nil;
     @try {
+        // ★ Task252：TG 材料在场（滤镜标可用）时 0.5x 供料——colorMatrix+
+        //   gaussianBlur(2) 自带柔化与饱和，原料保留真实细节；滤镜缺失时
+        //   维持 0.18x 旧路（抓帧即模糊，无滤镜下保持旧观感）。
         UIGraphicsImageRendererFormat *ame249_fmt =
             [[UIGraphicsImageRendererFormat alloc] init];
-        ame249_fmt.scale = 0.18;
+        ame249_fmt.scale = ([AmeLiquidGlassView ame252_isSupported] ? 0.5 : 0.18);
         ame249_fmt.opaque = YES;
         UIGraphicsImageRenderer *ame249_r =
             [[UIGraphicsImageRenderer alloc] initWithSize:ame249_surface.bounds.size
@@ -350,6 +354,11 @@ static const void *kAme250FrostLinkKey = &kAme250FrostLinkKey;   // ★ Task250�
         ame249_iv.contentMode = UIViewContentModeScaleToFill;
         ame249_iv.userInteractionEnabled = NO;
         ame249_iv.tag = 24901;
+        // ★ Task252：整页磨砂材料升级——TG 滤镜标（colorMatrix 玻璃矩阵 +
+        //   gaussianBlur(2)）直接作用于快照图层自身内容（内容滤镜不采样
+        //   backdrop，Metal 场景无合成问题）；0.45 深色 tint 与可读性门禁原样保留。
+        NSArray *ame252_filters = [AmeLiquidGlassView ame252_glassFilters];
+        if (ame252_filters != nil) ame249_iv.layer.filters = ame252_filters;
         [ame249_container addSubview:ame249_iv];
         [NSLayoutConstraint activateConstraints:@[
             [ame249_iv.topAnchor constraintEqualToAnchor:ame249_container.topAnchor],

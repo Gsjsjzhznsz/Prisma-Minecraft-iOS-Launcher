@@ -8,6 +8,7 @@
 #import "LiquidGlassCompat.h"   // Task229: floating menu composite glass
 #import "BackgroundManager.h"   // ★ Task238：菜单树描边豁免（字体重叠根治）
 #import "AmeFloatingMenu.h"     // ★ Task237：菜单行控件与统一悬浮菜单组件
+#import "AmeLiquidGlassView.h"   // ★ Task252：TG LegacyGlassView 配方接管游戏内菜单面板
 #import "TrackedTextField.h"
 #import "customcontrols/CustomControlsUtils.h"
 #import "ios_uikit_bridge.h"
@@ -45,6 +46,9 @@ static const void *kAme244TintKey = &kAme244TintKey;
 /// ★ Task247：菜单展示期动态重抓的 CADisplayLink（T10：游戏内菜单伪玻璃
 ///   背景不随背景变化）
 static const void *kAme247RefreshLinkKey = &kAme247RefreshLinkKey;
+/// ★ Task252：TG LegacyGlassView 配方玻璃面板（玻璃家族档 + 支持时接管
+///   快照磨砂/材质层/描边；快照供料模式由既有 8Hz 机制持续供料）。
+static const void *kAme252GlassKey = &kAme252GlassKey;
 
 @interface SurfaceViewController(Navigation)
 // FCL 风格菜单的背景遮罩（半透明黑色，点击关闭菜单）
@@ -75,6 +79,30 @@ static UIImage *ame247_surfaceSnapshot(UIView *ame247_surface) {
                                 afterScreenUpdates:NO];
         }];
     } @catch (NSException *ame247_e) {
+        return nil;
+    }
+}
+
+/// ★ Task252：TG 玻璃供料快照（0.5x——TG 滤镜栈自带 r=2 微模糊与
+///   colorMatrix，原料保留真实细节供边缘网格折射；与 0.18x “抓帧即
+///   模糊”旧路不同源）。
+static UIImage *ame252_surfaceSnapshot(UIView *ame252_surface) {
+    if (ame252_surface == nil || ame252_surface.window == nil ||
+        ame252_surface.bounds.size.width < 40.0 ||
+        ame252_surface.bounds.size.height < 40.0) return nil;
+    @try {
+        UIGraphicsImageRendererFormat *ame252_fmt =
+            [[UIGraphicsImageRendererFormat alloc] init];
+        ame252_fmt.scale = 0.5;
+        ame252_fmt.opaque = YES;
+        UIGraphicsImageRenderer *ame252_r =
+            [[UIGraphicsImageRenderer alloc] initWithSize:ame252_surface.bounds.size
+                                                   format:ame252_fmt];
+        return [ame252_r imageWithActions:^(UIGraphicsImageRendererContext *ame252_rc) {
+            [ame252_surface drawViewHierarchyInRect:ame252_surface.bounds
+                                 afterScreenUpdates:NO];
+        }];
+    } @catch (NSException *ame252_e) {
         return nil;
     }
 }
@@ -384,6 +412,34 @@ static UIColor *ame244_snapshotTint(void) {
         self.menuView.layer.cornerCurve = kCACornerCurveContinuous;
         self.menuView.layer.borderWidth = 0.75;
         self.menuView.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.28].CGColor;
+        // ★ Task252：TG LegacyGlassView 配方接管——运行时支持时，快照磨砂/
+        //   材质层/发丝描边三件套整体退场，TG 玻璃（backdrop 采样[快照供
+        //   料] + colorMatrix + gaussianBlur(2) + SDF 折射网格 + .panel 填充
+        //   + 0.8pt 描边）一次到位；供料由 showMenu/8Hz tick 持续执行。
+        if ([AmeLiquidGlassView ame252_isSupported]) {
+            AmeLiquidGlassView *ame252_glass = objc_getAssociatedObject(self, kAme252GlassKey);
+            if (ame252_glass == nil) {
+                ame252_glass = [AmeLiquidGlassView ame252_glassViewWithCornerRadius:24.0
+                                                                             isDark:YES];
+                objc_setAssociatedObject(self, kAme252GlassKey, ame252_glass,
+                                         OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            } else {
+                [ame252_glass removeFromSuperview];   // 幂等：先拆再插（本函数是唯一写点）
+                ame252_glass.hidden = NO;
+            }
+            if (ame252_glass != nil) {
+                ame252_glass.frame = self.menuView.bounds;
+                ame252_glass.autoresizingMask =
+                    UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                [self.menuView insertSubview:ame252_glass atIndex:0];
+                ame243_snap.hidden = YES;      // 旧快照磨砂退场（心跳关联保留）
+                ame244_tint.hidden = YES;      // 旧 tint 退场（填充承载可读性）
+                ame237_blur.hidden = YES;      // 材质层退场
+                self.menuView.backgroundColor = nil;   // 底色退场（防 backdrop 双采）
+                self.menuView.layer.borderWidth = 0.0; // 描边交 TG 0.8pt 环
+                self.menuView.layer.borderColor = nil;
+            }
+        }
         for (Ame237MenuRow *ame237_row in ame237_rows) {
             ame237_row.showsIcon = YES;
             [ame237_row setNeedsLayout];
@@ -398,6 +454,11 @@ static UIColor *ame244_snapshotTint(void) {
         if (ame243_snap != nil) {
             ame243_snap.hidden = YES;
             ame243_snap.image = nil;
+        }
+        // ★ Task252：原生档同步隐藏 TG 玻璃（风格切换幂等清理）。
+        {
+            AmeLiquidGlassView *ame252_glassOff = objc_getAssociatedObject(self, kAme252GlassKey);
+            if (ame252_glassOff != nil) ame252_glassOff.hidden = YES;
         }
         {
             UIView *ame244_blurBack = objc_getAssociatedObject(self, kAme237BlurKey);
@@ -510,14 +571,21 @@ static UIColor *ame244_snapshotTint(void) {
 ///   恰好铺在"面板正后方的游戏画面区域"上（1:1 真透视，与 Ame245
 ///   AmeFloatingMenu 定案同源）；ScaleToFill 1:1 映射无裁剪。
 - (void)ame248_alignMenuFrost {
+    // ★ Task252：TG 玻璃对位——同一几何映射改写玻璃快照源矩形。
+    AmeLiquidGlassView *ame252_glass = objc_getAssociatedObject(self, kAme252GlassKey);
     UIImageView *ame248_snap = objc_getAssociatedObject(self, kAme243SnapKey);
-    if (ame248_snap == nil || self.menuView == nil || self.surfaceView == nil) return;
+    if (ame252_glass == nil && ame248_snap == nil) return;
+    if (self.menuView == nil || self.surfaceView == nil) return;
     if (self.surfaceView.window == nil) return;
     CGRect ame248_rect = [self.surfaceView convertRect:self.surfaceView.bounds
                                                 toView:self.menuView];
     if (CGRectIsEmpty(ame248_rect)) return;
     if (!isfinite(ame248_rect.origin.x) || !isfinite(ame248_rect.origin.y) ||
         !isfinite(ame248_rect.size.width) || !isfinite(ame248_rect.size.height)) return;
+    if (ame252_glass != nil) {
+        ame252_glass.ame252_backdropSourceRect = ame248_rect;
+        return;
+    }
     ame248_snap.contentMode = UIViewContentModeScaleToFill;
     ame248_snap.frame = ame248_rect;
 }
@@ -526,6 +594,18 @@ static UIColor *ame244_snapshotTint(void) {
     if (self.menuView == nil || self.menuView.hidden ||
         !LGCIsGlassStyleActive()) {
         [self ame247_stopMenuSnapshotRefresh];
+        return;
+    }
+    // ★ Task252：TG 玻璃供料 tick（0.5x 原料持续喑玻璃；心跳依旧以
+    //   kAme243SnapKey 关联存在为前提）。
+    AmeLiquidGlassView *ame252_glass = objc_getAssociatedObject(self, kAme252GlassKey);
+    if (ame252_glass != nil && ame252_glass.superview != nil) {
+        UIImage *ame252_fresh = ame252_surfaceSnapshot(self.surfaceView);
+        if (ame252_fresh != nil && !ame244_snapshotLooksValid(ame252_fresh)) return;
+        if (ame252_fresh != nil) {
+            ame252_glass.ame252_backdropSnapshot = ame252_fresh;
+            [self ame248_alignMenuFrost];   // 每 tick 同步对位（面板挪位/旋转不脱钩）
+        }
         return;
     }
     UIImageView *ame247_snap = objc_getAssociatedObject(self, kAme243SnapKey);
@@ -582,6 +662,15 @@ static UIColor *ame244_snapshotTint(void) {
     //   现状（护栏）。
     UIImageView *ame243_snap = objc_getAssociatedObject(self, kAme243SnapKey);
     if (ame243_snap != nil && LGCIsGlassStyleActive()) {
+        // ★ Task252：TG 玻璃供料分支——0.5x 原料（滤镜栈自微模糊，保留细节）；
+        //   无效帧供 nil = 实况回退（填充承载）；旧快照/tint/材质层不在此路上屏。
+        AmeLiquidGlassView *ame252_glass = objc_getAssociatedObject(self, kAme252GlassKey);
+        if (ame252_glass != nil && ame252_glass.superview != nil) {
+            UIImage *ame252_img = ame252_surfaceSnapshot(self.surfaceView);
+            if (ame252_img != nil && !ame244_snapshotLooksValid(ame252_img)) ame252_img = nil;
+            ame252_glass.ame252_backdropSnapshot = ame252_img;
+            [self ame248_alignMenuFrost];   // 首帧即对位
+        } else {
         // ★ Task248（⑨）：首帧源与 8Hz tick 统一为 surfaceView 直抓——旧首帧
         //   用 ame243_blurredGameSnapshot(self.view)（整窗快照，含控制按钮层），
         //   tick 用 surfaceView（纯游戏画面）：两个源构图不同 = 开菜单瞬间
@@ -609,6 +698,7 @@ static UIColor *ame244_snapshotTint(void) {
             UIView *ame244_tintOff = objc_getAssociatedObject(self, kAme244TintKey);
             if (ame244_tintOff != nil) ame244_tintOff.hidden = YES;
         }
+        }   // ★ Task252：else（旧快照磨砂管线）收口
     } else if (ame243_snap != nil) {
         ame243_snap.hidden = YES;
         UIView *ame244_blurNat = objc_getAssociatedObject(self, kAme237BlurKey);
@@ -756,7 +846,7 @@ static UIColor *ame244_snapshotTint(void) {
                 CGRectGetHeight(self.menuView.frame)
             );
         } else {
-            // ★ Task251（反馈 10 三修：悬浮形态"屏幕滑动"错觉根除）：
+            // ★ Task252（反馈 10 三修：悬浮形态"屏幕滑动"错觉根除）：
             //   Task250 已修系统外观翻转位移，但装机仍报"屏幕滑动"——残余
             //   成分 = 磨砂快照是【窗口对位的游戏画面拷贝】（ame248 对位
             //   铺设），面板整体滑向屏幕底部时面板内的画面拷贝同步平移
@@ -768,9 +858,9 @@ static UIColor *ame244_snapshotTint(void) {
             //   （吸边抽屉）保持横向滑出——抽屉贴边语义下滑出屏幕边缘
             //   不产生"屏幕滑动"错觉（画面拷贝跟随抽屉滑离可视区，属
             //   用户预期的抽屉行为）。
-            CGRect ame251_target = self.menuView.frame;
-            ame251_target.origin.y += 28.0;
-            self.menuView.frame = ame251_target;
+            CGRect ame252_target = self.menuView.frame;
+            ame252_target.origin.y += 28.0;
+            self.menuView.frame = ame252_target;
             self.menuView.transform =
                 CGAffineTransformMakeScale(0.96, 0.96);
         }
@@ -782,7 +872,7 @@ static UIColor *ame244_snapshotTint(void) {
         self.menuView.hidden = YES;
         self.menuDimView.hidden = YES;
         self.menuView.alpha = 1.0;   // ★ Task250：复位透明度（下次 showMenu 零残留）
-        // ★ Task251：复位收缩变换（frame 复位靠 showMenu 重设 frame +
+        // ★ Task252：复位收缩变换（frame 复位靠 showMenu 重设 frame +
         //  transform 必须归零，否则下次出现时几何被 0.96 缩放污染）。
         self.menuView.transform = CGAffineTransformIdentity;
         [self setNeedsUpdateOfHomeIndicatorAutoHidden];
