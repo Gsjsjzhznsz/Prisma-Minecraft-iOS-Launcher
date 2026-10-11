@@ -222,10 +222,11 @@ static UIColor *ame250_globalTextFillColor(void);
     //   解释是系统级“降低透明度”开启（iOS 会把所有 UIBlurEffect 退化为平涂）。
     //   一次启动一行，与 effect 解析值同屏，下轮 gamelog 直接判档：
     //   reduceTransparency=1 → 整条磨砂链是系统行为，归位设置页而非改管线。
+    //   （C 函数形态：本文件无 UIKit 全量导入，UIAccessibility 点语法不可用。）
     NSLog(@"[BackgroundManager] Task254: accessibility archive reduceTransparency=%d reduceMotion=%d "
           @"(UIBlurEffect renders flat when reduceTransparency=1)",
-          UIAccessibility.isReduceTransparencyEnabled ? 1 : 0,
-          UIAccessibility.isReduceMotionEnabled ? 1 : 0);
+          UIAccessibilityIsReduceTransparencyEnabled() ? 1 : 0,
+          UIAccessibilityIsReduceMotionEnabled() ? 1 : 0);
 }
 
 - (void)saveUISettings {
