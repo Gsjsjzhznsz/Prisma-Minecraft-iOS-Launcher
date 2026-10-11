@@ -2767,3 +2767,17 @@ Work Log:
 Stage Summary:
 - 9 项闭环：T1 重宣告时序根修（MC 窗口信念对齐）+ T4 Metal 呈现停靠点（Vulkan/Metallum 后台零 GPU 提交）+ T5 周期回环扫描（时序竞态根修，双路同停）+ T3 OnDrag 退役+回填闸 + T7 MVC 玻璃补位 + T8 关闭动画摘快照 + T9 动态键闸/footer 补表；T2/T6 为 248 已修面（取证确认，待新构建装机验证）
 - 装机验证锚点：①MobileGL 切后台回前台后触点/热栏即准（latestlog 应见 Task249 didBecomeActive window size re-announced 行，且 probe window=与物理一致）②强制关闭 → 进程即时终结 ③Vulkan/Metallum 会话切后台 latestlog 出现 "PARKED at metal_nextDrawable" ④联机检测页每 3s 进度推进、开服后 ≤3s 自动命中（[LanPortDetector] quick sweep hit）⑤PageSheet 联机页打字不再随机丢键盘 ⑥ZeroTier 联机页（游戏内）呈磨砂背景、原生档不变 ⑦游戏菜单关闭 = 面板卡片滑出而非屏幕滑动 ⑧i18n 三闸可复跑
+
+---
+Task ID: 249-ci
+Agent: main (Super Z)
+Task: Task 249 CI 闭环（r1 修复 + 终绿）
+
+Work Log:
+- 推送 3cf1fe9（rebase 过远端用户新上传 d9b6baf 零冲突）→ run 38114643307 failure：MultiplayerViewController.m:309 objc_getAssociatedObject 未声明（⑦MVC 磨砂层用关联对象但本文件从未 #import <objc/runtime.h>——本仓第二个首次引入关联对象的 VC，与 Task248 CI r1 的 TVC 同款雷）
+- r1 e6f612a：补 1 行 #import <objc/runtime.h>；同族排查（本轮触碰的 SurfaceVC/Navigation/TVC 均已有 import，GameSurfaceView/LanPortDetector 零关联对象使用无需同补）；四道门禁 + i18n 三闸复跑全过
+- run 38115274201（e6f612a）：completed success 一轮终绿（r2）；未调度集审计不适用（单轮全绿，r1 失败 TU 已在 r2 全量编译通过）
+
+Stage Summary:
+- Task 249 全链闭环：9 项装机反馈全修——MobileGL 回前台窗口信念重宣告时序根修（后台旋转推送改写全局的 1.3x 输入错位）+ Metal 呈现边界停靠点（Vulkan/Metallum 切后台零 GPU 提交）+ 联机周期回环扫描（3s 轮询根治一次性扫描 vs 开服时序竞态）+ TVC OnDrag 退役/portField 回填闸 + MVC(ZeroTier 页) 玻璃档快照磨砂补位 + 关闭动画摘快照（屏幕滑动错觉根修）+ i18n 动态键闸/footer 补表（2779 键）
+- 新 IPA 就绪待装机验证；装机验证锚点见 Task 249 条目 Stage Summary（8 条锚点，重点：latestlog 应见 Task249 re-announced 行与 metal_nextDrawable PARKED 行）
