@@ -16,6 +16,7 @@
 
 #import "AmeLiquidGlassView.h"
 #import <QuartzCore/QuartzCore.h>
+#import <objc/runtime.h>   // ★ Task252 CI r1：Method/class_getClassMethod/method_getImplementation 未声明编译雷（Task248 同款陷阱；本文件私有 API imp 直调全家桶依赖它）
 
 #pragma mark - 私有类型（布局与 TG MeshTransformApi.h 逐字段一致）
 
