@@ -2814,3 +2814,8 @@ Task: Task 250 CI 闭环（r1 修复 + 轮询终绿）
 Work Log:
 - 推送 8ab8e9a（rebase 过远端用户新上传 0ae8763 零冲突）→ run 38119643123 failure：GameMenuOverlayView.m:683 编译雷——`static CGSize ame250_lastSize = CGSizeZero` 非编译期常量（C 静态初始化器不接受 CGSizeZero 全局 const 结构聚合）
 - r1：改字面量 `{0.0, 0.0}`（语义等价，一次赋值路径不变）；同族排查本轮触碰文件其余 static 聚合初始化零命中；task240 门禁复跑 PASS
+- run 38120425501（0912623）：completed success 一轮终绿（r2）；r1 失败 TU（GameMenuOverlayView.m）已在 r2 全量编译通过，未调度集审计不适用（单失败编译雷无掩蔽面）；产物 ipa/tipa 常规管线
+
+Stage Summary:
+- Task 250 全链闭环：11 项装机反馈全修——MobileGL 强制重申+后台门控（双洞根修）+ _exit 直出 + Stop→Start 自适应去抖 + 吸边把手重贴边 + 三色适配（accent/card/text）+ 描边亮度自适应边色 + 扫描 restart/republish/验活 + SDL 开关解锁 + TVC/MVC 动态磨砂 + 系统外观恒定化+滑出淡出关闭动画 + i18n 五键补表+结构性键名闸
+- 新 IPA 就绪待装机验证；装机验证锚点见 Task 250 条目 Stage Summary（10 条锚点）
