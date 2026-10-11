@@ -29,6 +29,7 @@
 #import "MultiplayerViewController.h"
 #import "SurfaceViewController.h"   // ★ Task248（⑧）：+surface 取游戏呈现面做快照磨砂
 #import "LiquidGlassCompat.h"       // ★ Task248（⑧）：玻璃家族档位判定
+#import <objc/runtime.h>            // ★ Task248（⑧）：objc_get/setAssociatedObject（CI r1 编译雷）
 
 typedef NS_ENUM(NSInteger, TCUIState) {
     TCUIStateMenu      = 0,  /* 两张大卡片：创建 / 加入 */
