@@ -2731,3 +2731,17 @@ Work Log:
 Stage Summary:
 - 11 项全链修复（9 项代码修复 + 1 项双路对齐 + 1 项审计维持绿）：④T4 短路回归根治（联机菜单恢复可点，③键盘保护随④闭环）+ ②26.3 退出挂死根修（去 suspend+看门狗）+ ⑤FPS 计数点移到 CAMetalLayer.nextDrawable（真实帧率）+ ①回前台三连重申+首触点兜底 + ⑦开关联动闩锁语义 + ⑨窗口对位真透视+首帧源统一 + ⑩跨源解析字典形态兼容 + ⑥TVC 回环扫描第二路 + ⑧TVC 玻璃档快照磨砂
 - 装机验证锚点：①联机菜单两卡片可点、表单可进出；打字期间后台事件不再关键盘 ②26.3 游戏内退出（MC 菜单 Quit/强关）→ 进程立即终结，无后台滞留/崩溃报告 ③Vulkan/MobileGL-Vulkan 会话 FPS 数字随游戏内真实帧率变化（不再恒 60；latestlog 可见 fpsSource=metalLayerNextDrawable）④MobileGL 切后台回前台后触点落点即准 ⑤开关键 ON：点画面收键盘后再点输入框，键盘照常自动弹；OFF：纯静默（残留键盘也被收起）⑥游戏内菜单磨砂背景与面板正后方游戏内容 1:1 对位（举物品栏/转动视角背景实时跟随且不错位）⑦模组页切源后版本列表正常拉取（Modrinth↔CF 双向）⑧TVC 自动检测期间 hint 显示"已扫描 x/y"进度 ⑨玻璃档游戏内联机页呈磨砂背景，原生档不变 ⑩全界面无裸键名/硬编码（审计脚本 task248_i18n_audit.py 可复跑）
+
+---
+Task ID: 248-ci
+Agent: main (Super Z)
+Task: Task 248 CI 闭环（r1 修复 + 终绿）
+
+Work Log:
+- 推送 16c96b2（fetch+rebase 过远端用户新上传 e1114e6 零冲突）→ run 38110270321 failure：TerracottaViewController.m:1009 objc_getAssociatedObject 未声明（⑧磨砂层用了关联对象但本文件从未 #import <objc/runtime.h>——本仓首个引入关联对象的 TVC；ARC 下隐式声明三连报）
+- r1 84940d7：补 1 行 #import <objc/runtime.h>；同族排查（GameSurfaceView/SurfaceVC/Nav/ModVersion/main_hook 五个触碰文件中另两处用关联对象的文件 import 齐备）；四道门禁复跑全过
+- run 38110926878（84940d7）：completed success 一轮终绿（r2）；产物 ipa/tipa 各 220.4MB + dSYM 6.2MB 常规管线；未调度集审计不适用（单轮全绿，r1 失败 TU 已在 r2 全量编译通过）
+
+Stage Summary:
+- Task 248 全链闭环：11 项装机反馈全修——联机舞台 builtStage 短路回归根治（菜单恢复可点，键盘保护语义保留）+ 26.3 退出去 suspend+看门狗硬杀 + Vulkan FPS 改 CAMetalLayer.nextDrawable 真计数 + MobileGL 回前台三连重申/首触点兜底 + SDL 自动输入法开关联动闩锁 + 游戏菜单快照窗口对位真透视/首帧源统一 + 模组跨源解析字典形态兼容（T11 首次真正生效）+ TVC 自动检测回环扫描第二路 + TVC 玻璃档快照磨砂背景（原生档零回归）+ i18n 三闸审计全绿（2167 引用键四表齐/零硬编码）
+- 新 IPA 就绪待装机验证；i18n 审计脚本 task248_i18n_audit.py 入库可复跑
