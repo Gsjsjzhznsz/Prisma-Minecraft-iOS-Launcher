@@ -186,17 +186,19 @@
 - (void)displayLinkTick:(CADisplayLink *)link {
     [GyroInput tick];
     [ControllerInput tick];
-    // 动态判定：仅当 MC 真实走 Vulkan 路径时才递增 FPS 计数器
-    BOOL actualVulkanPath = pojavIsActualVulkanPath();
-    if (actualVulkanPath) {
-        pojavIncrementFpsCounter();
-    }
+    // ★ Task248（⑤ Vulkan FPS 卡 60 根修）：display link 每帧递增计数器
+    //   的 fallback 退役——CADisplayLink 是屏幕刷新节奏（60Hz 设备恒 60），
+    //   与游戏真实帧率无关（游戏 20fps 显示 60 = 用户实测"FPS 识别卡在
+    //   60"）。真实计数点移至 Ame248FPSMetalLayer.nextDrawable（MoltenVK
+    //   present 必经的公开 API，pojavIsActualVulkanPath 闸门排除 GL 路径，
+    //   见 GameSurfaceView.m）。本 tick 保留 Gyro/Controller 时钟职责。
     _tickCount++;
     // 诊断日志：前 5 次回调 + 状态切换时输出，便于追踪 clientAPI 变化
     static BOOL s_lastActualVulkanPath = NO;
+    BOOL actualVulkanPath = pojavIsActualVulkanPath();
     BOOL stateChanged = (s_lastActualVulkanPath != actualVulkanPath);
     if (_tickCount <= 5 || stateChanged) {
-        NSLog(@"[PLDisplayLinkTarget] displayLinkTick #%lu (configuredVulkan=%d, actualVulkanPath=%d, stateChanged=%d)",
+        NSLog(@"[PLDisplayLinkTarget] displayLinkTick #%lu (configuredVulkan=%d, actualVulkanPath=%d, stateChanged=%d, fpsSource=metalLayerNextDrawable)",
               (unsigned long)_tickCount, _isVulkanMode, actualVulkanPath, stateChanged);
         s_lastActualVulkanPath = actualVulkanPath;
     }
@@ -366,6 +368,11 @@ static BOOL ame83_fsr_capable_renderer(NSString *renderer) {
     // updateSavedResolution 每次重算（旋转/分辨率变更安全）；sendTouchPoint
     // 等输入换算读取它保持与 MC 窗口信念（windowWidth）同口径。
     float mgFsrScale;
+    // ★ Task248（① MobileGL 切后台输入错位 补修）：回前台待重申标志。
+    //   didBecomeActive 的立即重申可能与 MobileGL 上下文重建赛跑（mg
+    //   重建晚于我们重申 = 最终态仍是旧值）；在首个触点换算前强制再重申
+    //   一次，保证输入口径与最终几何对齐（标志仅在首个触点消费）。
+    BOOL ame248_geoResyncPending;
 }
 // Task 139：FSR 兜底自愈后的输入缩放复位（C 入口
 // ame139_fsr_heal_reset_input_scale 经主线程转发到本方法；ivar 私有，
@@ -2631,6 +2638,14 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 
 - (void)sendTouchPoint:(CGPoint)location withEvent:(int)event
 {
+    // ★ Task248（①）：回前台后的首个触点换算前强制重申一次几何（didBecome
+    //   Active 立即重申可能与 MobileGL 上下文重建赛跑，见 ame247_didBecome
+    //   Active 注释）——输入换算读的 screenScale/windowWidth 与最终对齐。
+    if (ame248_geoResyncPending) {
+        ame248_geoResyncPending = NO;
+        [self updateSavedResolution];
+        NSLog(@"[SurfaceVC] Task248: first-touch geometry re-sync applied");
+    }
     CGFloat screenScale = self.screenScale;
     // Task 78（FSR 输入口径）：输入像素空间必须等于 MC 窗口信念
     // windowWidth×windowHeight（Task59 定案：MC 按告知窗口尺寸归一化）。
@@ -2731,7 +2746,24 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 - (void)ame247_didBecomeActive {
     if (self.surfaceView.superview == nil) return;   // 会话未启动
     [self updateSavedResolution];
-    NSLog(@"[SurfaceVC] Task247: didBecomeActive geometry re-synced (screenScale=%.2f)", self.screenScale);
+    // ★ Task248（①）：MobileGL 路径跨后台的上下文重建时序不受我们控制
+    //   （mg 重建可能晚于本回调），单次重申后仍可能被旧值覆盖 = 用户实测
+    //   "切后台后输入错位"存活面。三连重申（0s/0.8s/2.5s）覆盖重建完成
+    //   时刻 + 首触点强制重申兜底（ame248_geoResyncPending，见
+    //   sendTouchPoint 顶部）；重申幂等（同值 no-op），多跑零代价。
+    ame248_geoResyncPending = YES;
+    __weak typeof(self) weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.8 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (strongSelf.surfaceView.superview != nil) [strongSelf updateSavedResolution];
+    });
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.5 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (strongSelf.surfaceView.superview != nil) [strongSelf updateSavedResolution];
+    });
+    NSLog(@"[SurfaceVC] Task247/248: didBecomeActive geometry re-synced x3 (screenScale=%.2f)", self.screenScale);
 }
 
 - (void)ame171_armKeyboardRecheck:(int)depth {
@@ -2831,8 +2863,17 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
                   ame229_sinceDismiss);
         } else {
             ame227_suppressedStarts++;
+            // ★ Task248（⑦ OFF 档抑制面补漏）：抑制只拦"自动弹"，但若上一
+            //   个会话的键盘还挂着（SDL 真实调用已让字段/键盘在场），抑制
+            //   分支原样 return = 键盘残留（用户感知"关了开关键盘还弹"）。
+            //   抑制时把在场的启动器字段一并收起，OFF 档才真正"不弹"。
+            if (self.inputTextField.isFirstResponder) {
+                ame171_keyboardDismissGeneration++;
+                [self ame225_resignInputTextField];
+                self.inputTextField.alpha = 1.0f;
+            }
             if (ame227_suppressedStarts <= 5 || (ame227_suppressedStarts % 25) == 0) {
-                NSLog(@"[SurfaceVC] Task247 StartTextInput suppressed (auto-keyboard switch OFF; enable it or tap the input-method button to open keyboard manually)");
+                NSLog(@"[SurfaceVC] Task247/248 StartTextInput suppressed (auto-keyboard switch OFF; stale keyboard closed if any)");
             }
             return;
         }
@@ -3904,10 +3945,18 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
         if (ame247_touchOnGameArea) {
             ame171_keyboardDismissGeneration++;
             [self ame225_resignInputTextField];
-            ame227_kbUserDismissed = YES;
-            ame227_kbDismissedAt = CFAbsoluteTimeGetCurrent();
+            // ★ Task248（⑦ 自动打开输入法(SDL) 开关语义补全）：闩锁只在
+            //   OFF 档置位——ON 档语义是"每个 Start 都自动弹"，屏幕点触
+            //   是导航而非键盘关闭意图（关了就不再弹回 = 用户点输入框
+            //   键盘不弹，感知即"开关无效"）。ON 档仍照常收起，但下一个
+            //   Start 照常自动弹（✎/附属条收起的 2.5s 硬抑制窗保留）。
+            if (!getPrefBool(@"control.auto_keyboard_sdl")) {
+                ame227_kbUserDismissed = YES;
+                ame227_kbDismissedAt = CFAbsoluteTimeGetCurrent();
+            }
             self.inputTextField.alpha = 1.0f;
-            NSLog(@"[SurfaceVC] Task247: game-surface tap while keyboard open -> explicit dismiss (latch armed)");
+            NSLog(@"[SurfaceVC] Task247/248: game-surface tap while keyboard open -> explicit dismiss (latch=%d)",
+                  !getPrefBool(@"control.auto_keyboard_sdl"));
         }
     }
 

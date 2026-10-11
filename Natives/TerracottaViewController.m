@@ -27,6 +27,8 @@
 #import "utils.h"
 #import "BackgroundManager.h"
 #import "MultiplayerViewController.h"
+#import "SurfaceViewController.h"   // ★ Task248（⑧）：+surface 取游戏呈现面做快照磨砂
+#import "LiquidGlassCompat.h"       // ★ Task248（⑧）：玻璃家族档位判定
 
 typedef NS_ENUM(NSInteger, TCUIState) {
     TCUIStateMenu      = 0,  /* 两张大卡片：创建 / 加入 */
@@ -82,6 +84,17 @@ typedef NS_ENUM(NSInteger, TCUIState) {
 @property(nonatomic, strong) UIButton *leaveButton;
 
 @property(nonatomic, assign) TCUIState uiState;
+/// ★ Task248（④联机菜单完全无法点击 回归根修）：实际在位舞台类型。
+///   Task247 T4 的幂等短路用 `target == self.uiState` 判定，但本文件全部
+///   状态迁移处理器（createRoomTapped/joinRoomTapped/startHostTapped/
+///   scanPortsTapped/cancelDetectingTapped/confirmJoinTapped/
+///   createRoomWithPort/leaveTapped）都是【先直写 self.uiState = target
+///   再调 updateForCurrentState】——短路条件恒真，舞台永不切换 = 用户
+///   点任何卡片都无反应（"联机菜单完全无法点击"）。改用独立记录的
+///   builtStage 与 target 比较：处理器预写 uiState 不影响 builtStage，
+///   迁移照常拆装；TerracottaManager/LanPortDetector 回调（未预写）
+///   到来时 builtStage == target → 短路 = T4 的键盘保护语义保留。
+@property(nonatomic, assign) TCUIState ame248_builtStage;
 @property(nonatomic, assign) BOOL didAutoCopyCode;
 @property(nonatomic, strong) UILabel *toastLabel;
 
@@ -702,10 +715,14 @@ typedef NS_ENUM(NSInteger, TCUIState) {
     // 轮询在打字期间每次触发都走到这里 = 键盘随任意后台事件收起一次。
     // 目标态未变且舞台已在位时不再拆装，只做轻量内容刷新（端口回填）；
     // 状态真正迁移时才走拆除-重建。
-    if (target == self.uiState && self.stageView.subviews.count > 0) {
+    // ★ Task248（④）：幂等判定改用 ame248_builtStage（实际在位舞台），
+    //   不再比较被处理器预写过的 self.uiState——详见证性注释见类扩展。
+    if (target == self.ame248_builtStage && self.stageView.subviews.count > 0) {
         if (target == TCUIStateHostForm) {
             uint16_t ame247_known = [LanPortDetector sharedInstance].detectedPort;
-            if (ame247_known > 0) {
+            // Task248：回填只在自动模式生效——手动输入端口的用户在打字期间
+            // 后台回调触发短路刷新时，detectedPort 不得覆盖用户正在输入的值。
+            if (ame247_known > 0 && self.autoSwitch.on) {
                 self.portField.text = [NSString stringWithFormat:@"%u", ame247_known];
                 self.portHintLabel.text = [NSString stringWithFormat:localize(@"i18n_str_2074", nil), ame247_known];
             }
@@ -734,6 +751,7 @@ typedef NS_ENUM(NSInteger, TCUIState) {
         case TCUIStateSession:   stage = [self viewForSession]; break;
     }
     self.uiState = target;
+    self.ame248_builtStage = target;   // ★ Task248（④）：记录实际在位舞台
 
     if (stage == nil) return;
     [self.stageView addSubview:stage];
@@ -937,10 +955,113 @@ typedef NS_ENUM(NSInteger, TCUIState) {
 
 #pragma mark - Background adaptation
 
+// ★ Task248（⑧ 玻璃档联机菜单磨砂化）：游戏表面重度降采样快照（0.18x，
+//   与 Task243/246 同族的"抓帧即模糊"自绘磨砂原料）。
+static UIImage *ame248_surfaceSnapshot(UIView *ame248_surface) {
+    if (ame248_surface == nil || ame248_surface.window == nil ||
+        ame248_surface.bounds.size.width < 40.0 ||
+        ame248_surface.bounds.size.height < 40.0) return nil;
+    @try {
+        UIGraphicsImageRendererFormat *ame248_fmt =
+            [[UIGraphicsImageRendererFormat alloc] init];
+        ame248_fmt.scale = 0.18;
+        ame248_fmt.opaque = YES;
+        UIGraphicsImageRenderer *ame248_r =
+            [[UIGraphicsImageRenderer alloc] initWithSize:ame248_surface.bounds.size
+                                                   format:ame248_fmt];
+        return [ame248_r imageWithActions:^(UIGraphicsImageRendererContext *ame248_rc) {
+            [ame248_surface drawViewHierarchyInRect:ame248_surface.bounds
+                                afterScreenUpdates:NO];
+        }];
+    } @catch (NSException *ame248_e) {
+        return nil;
+    }
+}
+
+// ★ Task248（⑧）：全黑帧护栏（与 Task244 同判据：抓帧病态产物绝不降级黑面）。
+static BOOL ame248_snapshotLooksValid(UIImage *ame248_img) {
+    if (ame248_img == nil || ame248_img.size.width < 1.0 ||
+        ame248_img.size.height < 1.0) return NO;
+    CGImageRef ame248_cg = ame248_img.CGImage;
+    if (ame248_cg == NULL) return NO;
+    unsigned char ame248_px[4] = {0, 0, 0, 0};
+    CGColorSpaceRef ame248_cs = CGColorSpaceCreateDeviceRGB();
+    CGContextRef ame248_ctx = CGBitmapContextCreate(ame248_px, 1, 1, 8, 4,
+        ame248_cs, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(ame248_cs);
+    if (ame248_ctx == NULL) return NO;
+    CGContextDrawImage(ame248_ctx, CGRectMake(0, 0, 1, 1), ame248_cg);
+    CGContextRelease(ame248_ctx);
+    int ame248_sum = (int)ame248_px[0] + (int)ame248_px[1] + (int)ame248_px[2];
+    return ame248_sum > 19;
+}
+
+static const void *kAme248FrostKey = &kAme248FrostKey;
+
+/// ★ Task248（⑧ 一些位置仍用原生界面而非伪液态玻璃）：联机页（TVC）在
+///   【游戏内 PageSheet 呈现】时，其下的 Metal 游戏层让系统材质/毛玻璃
+///   一律不合成（Task228/230/236 三轮装机实锤的同款机理）——整页只剩
+///   系统原生 sheet 底 = 用户看到的"联机菜单还是原生界面"。玻璃家族
+///   档位（液态玻璃/伪液态玻璃）下：抓当前游戏表面快照铺进本页底层
+///   （快照即成品磨砂 + 深色 tint 压暗），页面立刻进入玻璃语言；原生
+///   档与启动器呈现（壁纸管线在场）零改动——"原生风格用回原生"。
+- (void)ame248_applyGlassFrostBackground {
+    UIView *ame248_frost = objc_getAssociatedObject(self, kAme248FrostKey);
+    if (!LGCIsGlassStyleActive()) {
+        if (ame248_frost != nil) ame248_frost.hidden = YES;
+        return;
+    }
+    UIView *ame248_surface = [SurfaceViewController surface];
+    UIImage *ame248_img = ame248_surfaceSnapshot(ame248_surface);
+    if (ame248_img != nil && !ame248_snapshotLooksValid(ame248_img)) ame248_img = nil;
+    if (ame248_img == nil) {
+        // 启动器呈现（surface 不在窗口）或抓帧失败：壁纸/卡片管线接管，
+        // 快照层退场——与"原生档零改动"同语义。
+        if (ame248_frost != nil) ame248_frost.hidden = YES;
+        return;
+    }
+    if (ame248_frost == nil) {
+        UIView *ame248_container = [[UIView alloc] init];
+        ame248_container.translatesAutoresizingMaskIntoConstraints = NO;
+        ame248_container.userInteractionEnabled = NO;
+        ame248_container.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.45];
+        UIImageView *ame248_iv = [[UIImageView alloc] init];
+        ame248_iv.translatesAutoresizingMaskIntoConstraints = NO;
+        ame248_iv.contentMode = UIViewContentModeScaleToFill;
+        ame248_iv.userInteractionEnabled = NO;
+        ame248_iv.tag = 24801;
+        [ame248_container addSubview:ame248_iv];
+        [NSLayoutConstraint activateConstraints:@[
+            [ame248_iv.topAnchor constraintEqualToAnchor:ame248_container.topAnchor],
+            [ame248_iv.bottomAnchor constraintEqualToAnchor:ame248_container.bottomAnchor],
+            [ame248_iv.leadingAnchor constraintEqualToAnchor:ame248_container.leadingAnchor],
+            [ame248_iv.trailingAnchor constraintEqualToAnchor:ame248_container.trailingAnchor],
+        ]];
+        [self.view insertSubview:ame248_container atIndex:0];
+        [NSLayoutConstraint activateConstraints:@[
+            [ame248_container.topAnchor constraintEqualToAnchor:self.view.topAnchor],
+            [ame248_container.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+            [ame248_container.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+            [ame248_container.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+        ]];
+        objc_setAssociatedObject(self, kAme248FrostKey, ame248_container,
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        ame248_frost = ame248_container;
+    }
+    UIImageView *ame248_iv = (UIImageView *)[ame248_frost viewWithTag:24801];
+    ame248_iv.image = ame248_img;
+    ame248_frost.hidden = NO;
+    [self.view sendSubviewToBack:ame248_frost];
+}
+
 - (void)applyBackgroundEffects {
     BOOL hasBg = [[BackgroundManager sharedManager] hasBackground];
     UIColor *primary = hasBg ? [UIColor whiteColor] : [UIColor labelColor];
     UIColor *secondary = hasBg ? [UIColor colorWithWhite:1.0 alpha:0.85] : [UIColor secondaryLabelColor];
+
+    // ★ Task248（⑧）：玻璃家族档位 + 游戏在场 → 快照自绘磨砂背景（原生档
+    //   /启动器呈现自动短路为零改动，见方法内护栏）。
+    [self ame248_applyGlassFrostBackground];
 
     self.statusTitle.textColor = primary;
     self.statusSubtitle.textColor = secondary;
@@ -1055,6 +1176,33 @@ typedef NS_ENUM(NSInteger, TCUIState) {
     });
 }
 
+/// ★ Task248（⑥）：回环 MC 协议扫描（startHostTapped 自动档与 scanPortsTapped
+///   共用）。进度文案实时回填；命中走 publishPort → 通知统一收口，本方法
+///   的 completion 不重复建房（publishPort 的通知通常已触发 portDidDetect:）。
+- (void)ame248_startLoopbackScan {
+    __weak typeof(self) weakSelf = self;
+    [[LanPortDetector sharedInstance] scanLocalPortsWithProgress:^(NSUInteger scanned, NSUInteger total) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf == nil) return;
+            if (strongSelf.uiState != TCUIStateDetecting) return;
+            strongSelf.detectingHintLabel.text =
+                [NSString stringWithFormat:localize(@"i18n_str_2078", nil),
+                 (unsigned long)scanned, (unsigned long)total];
+        });
+    } completion:^(NSArray<NSNumber *> *ports) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf == nil) return;
+            /* publishPort 的通知通常已经创建了房间；只有它没触发时才补一次 */
+            if (ports.count > 0 && strongSelf.uiState == TCUIStateDetecting) {
+                uint16_t port = (uint16_t)[ports.firstObject unsignedIntValue];
+                [strongSelf createRoomWithPort:port];
+            }
+        });
+    }];
+}
+
 - (void)startHostTapped:(id)sender {
     if (self.autoSwitch.on) {
         uint16_t known = [LanPortDetector sharedInstance].detectedPort;
@@ -1065,6 +1213,13 @@ typedef NS_ENUM(NSInteger, TCUIState) {
         self.uiState = TCUIStateDetecting;
         [self updateForCurrentState];
         [[LanPortDetector sharedInstance] startAutoDetection];
+        // ★ Task248（⑥ 联机自动扫描端口 双路对齐）：日志尾随之外并行起
+        //   127.0.0.1 回环 MC 协议扫描——Task247 T7 只给启动器联机页
+        //   （MVC）加了第二路，TVC 的自动检测路径（本分支）仍只有日志
+        //   尾随（正则随 MC 版本漂移 = 命中不稳定）。扫描命中经
+        //   publishPort → 通知 → portDidDetect: → createRoomWithPort:，
+        //   与日志路共享同一收口；进度文案实时回填 detectingHintLabel。
+        [self ame248_startLoopbackScan];
         [self scheduleDetectionHint];
         return;
     }

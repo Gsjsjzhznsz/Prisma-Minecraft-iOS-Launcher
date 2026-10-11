@@ -741,18 +741,37 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
             ame247_finish(nil);
             return;
         }
+        // ★ Task248（⑩ 切源仍报"未找到可下载的版本" 根修）：两个 API 的
+        //   异步 searchModWithFilters:completion: 返回的是【NSMutableDictionary
+        //   字典数组】（CurseForgeAPI projectFromCurseForgeProject: / ModrinthAPI
+        //   搜索解析，键 = apiSource/id/title/...）——Task247 的 pick 按
+        //   ModItem 对象遍历 + isKindOfClass 过滤，字典全部被 continue 跳过
+        //   = 解析恒失败 = 空列表报错文案（T11 等于从未生效）。双形态兼容：
+        //   字典读 id/title 键，ModItem 对象保留（防御未来改型）。
         NSString *ame247_best = nil;
-        for (ModItem *ame247_item in results) {
-            if (![ame247_item isKindOfClass:[ModItem class]]) continue;
-            if (ame247_item.onlineID.length == 0) continue;
-            NSString *ame247_dn = (ame247_item.displayName ?: @"").lowercaseString;
+        for (id ame247_entry in results) {
+            NSString *ame247_pid = nil;
+            NSString *ame247_pname = nil;
+            if ([ame247_entry isKindOfClass:[NSDictionary class]]) {
+                id ame247_rawID = [(NSDictionary *)ame247_entry objectForKey:@"id"];
+                ame247_pid = [ame247_rawID isKindOfClass:[NSString class]]
+                    ? ame247_rawID
+                    : ([ame247_rawID isKindOfClass:[NSNumber class]]
+                        ? [(NSNumber *)ame247_rawID stringValue] : nil);
+                ame247_pname = [(NSDictionary *)ame247_entry objectForKey:@"title"];
+            } else if ([ame247_entry isKindOfClass:[ModItem class]]) {
+                ame247_pid = [(ModItem *)ame247_entry onlineID];
+                ame247_pname = [(ModItem *)ame247_entry displayName];
+            }
+            if (ame247_pid.length == 0) continue;
+            NSString *ame247_dn = (ame247_pname ?: @"").lowercaseString;
             NSString *ame247_dsq = [ame247_dn stringByReplacingOccurrencesOfString:@" " withString:@""];
             // 完全等值优先（含 slug 形态：Modrinth slug 常为去空格连字串）
             if ([ame247_dsq isEqualToString:ame247_lower]) {
-                ame247_best = ame247_item.onlineID;
+                ame247_best = ame247_pid;
                 break;
             }
-            if (ame247_best == nil) ame247_best = ame247_item.onlineID;   // 兖底取首个
+            if (ame247_best == nil) ame247_best = ame247_pid;   // 兖底取首个
         }
         ame247_finish(ame247_best);
     };

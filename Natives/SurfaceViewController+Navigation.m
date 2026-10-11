@@ -329,7 +329,9 @@ static UIColor *ame244_snapshotTint(void) {
         if (ame243_snap == nil) {
             ame243_snap = [[UIImageView alloc] initWithFrame:self.menuView.bounds];
             ame243_snap.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            ame243_snap.contentMode = UIViewContentModeScaleAspectFill;
+            // ★ Task248（⑨）：ScaleToFill（窗口对位 1:1 映射，无裁剪）——
+            //   旧 ScaleAspectFill 居中裁剪 = 假透视（见 ame248_alignMenuFrost）。
+            ame243_snap.contentMode = UIViewContentModeScaleToFill;
             ame243_snap.clipsToBounds = YES;
             ame243_snap.userInteractionEnabled = NO;
             ame243_snap.hidden = YES;   // 首次 showMenu 抓帧后才显示
@@ -447,6 +449,8 @@ static UIColor *ame244_snapshotTint(void) {
     }
     ame237_scroll.contentSize = CGSizeMake(ame237_w, ame237_y);
     ame237_scroll.scrollEnabled = (ame237_y > ame237_scroll.bounds.size.height + 0.5);
+    // ★ Task248（⑨）：行区重排（旋转/形态切换）后快照对位几何同步刷新
+    [self ame248_alignMenuFrost];
 }
 
 /// Task237：菜单行点击（与旧 tableView:didSelectRowAtIndexPath: 同一动作链）。
@@ -498,6 +502,26 @@ static UIColor *ame244_snapshotTint(void) {
     }
 }
 
+/// ★ Task248（⑨ 折射有问题 根修）：快照磨砂【窗口对位真透视】。
+///   Task247 T10 移植 8Hz 重抓时没移植 Task245 的对位几何：快照
+///   ScaleAspectFill 居中放大裁切进 70% 宽面板 = 显示的是整幅游戏画面的
+///   中心裁切，而面板正后方实际是另一块内容（几何错位假透透）。修法：
+///   surfaceView.bounds 经 convertRect 映射到 menuView 坐标系，快照层
+///   恰好铺在"面板正后方的游戏画面区域"上（1:1 真透视，与 Ame245
+///   AmeFloatingMenu 定案同源）；ScaleToFill 1:1 映射无裁剪。
+- (void)ame248_alignMenuFrost {
+    UIImageView *ame248_snap = objc_getAssociatedObject(self, kAme243SnapKey);
+    if (ame248_snap == nil || self.menuView == nil || self.surfaceView == nil) return;
+    if (self.surfaceView.window == nil) return;
+    CGRect ame248_rect = [self.surfaceView convertRect:self.surfaceView.bounds
+                                                toView:self.menuView];
+    if (CGRectIsEmpty(ame248_rect)) return;
+    if (!isfinite(ame248_rect.origin.x) || !isfinite(ame248_rect.origin.y) ||
+        !isfinite(ame248_rect.size.width) || !isfinite(ame248_rect.size.height)) return;
+    ame248_snap.contentMode = UIViewContentModeScaleToFill;
+    ame248_snap.frame = ame248_rect;
+}
+
 - (void)ame247_menuSnapshotTick:(CADisplayLink *)ame247_sender {
     if (self.menuView == nil || self.menuView.hidden ||
         !LGCIsGlassStyleActive()) {
@@ -516,6 +540,8 @@ static UIColor *ame244_snapshotTint(void) {
     }
     if (ame247_fresh != nil) {
         ame247_snap.image = ame247_fresh;
+        // ★ Task248（⑨）：每 tick 同步对位几何（面板挪位/旋转后不脱钩）
+        [self ame248_alignMenuFrost];
         if (ame247_snap.hidden) {
             ame247_snap.hidden = NO;
             UIView *ame247_tint = objc_getAssociatedObject(self, kAme244TintKey);
@@ -556,13 +582,18 @@ static UIColor *ame244_snapshotTint(void) {
     //   现状（护栏）。
     UIImageView *ame243_snap = objc_getAssociatedObject(self, kAme243SnapKey);
     if (ame243_snap != nil && LGCIsGlassStyleActive()) {
-        UIImage *ame243_img = ame243_blurredGameSnapshot(self.view);
+        // ★ Task248（⑨）：首帧源与 8Hz tick 统一为 surfaceView 直抓——旧首帧
+        //   用 ame243_blurredGameSnapshot(self.view)（整窗快照，含控制按钮层），
+        //   tick 用 surfaceView（纯游戏画面）：两个源构图不同 = 开菜单瞬间
+        //   背景"跳变"（折射有问题的观感成分之一）。统一后零跳变。
+        UIImage *ame243_img = ame247_surfaceSnapshot(self.surfaceView);
         if (ame243_img != nil && !ame244_snapshotLooksValid(ame243_img)) {
             NSLog(@"[GameMenu] Task244: snapshot blank (capture failure), panel falls back to material blur");
             ame243_img = nil;
         }
         if (ame243_img != nil) {
             ame243_snap.image = ame243_img;
+            [self ame248_alignMenuFrost];   // ★ Task248（⑨）：首帧即对位
             ame243_snap.hidden = NO;
             // ★ Task244：快照成品磨砂到位——系统材质层退场、tint 上岗
             //   （快照不透明，磨砂/玻璃叠在其上只会引入黑块/过糊变量）。
@@ -631,8 +662,10 @@ static UIColor *ame244_snapshotTint(void) {
                             options:UIViewAnimationOptionCurveEaseOut
                          animations:^{
             self.menuView.frame = CGRectMake(ame227_targetX, 0, ame227_drawerW, ame227_drawerH);
+            [self ame248_alignMenuFrost];   // ★ Task248（⑨）：目标位对位随动画插值
             self.menuDimView.alpha = 1.0;
         } completion:^(BOOL finished) {
+            [self ame248_alignMenuFrost];   // ★ Task248（⑨）：落位后精确对位
             [self setNeedsUpdateOfHomeIndicatorAutoHidden];
             [self setNeedsUpdateOfScreenEdgesDeferringSystemGestures];
             [self setNeedsStatusBarAppearanceUpdate];
@@ -678,9 +711,11 @@ static UIColor *ame244_snapshotTint(void) {
             ame238_sheetW,
             ame238_sheetH
         );
+        [self ame248_alignMenuFrost];   // ★ Task248（⑨）：目标位对位随动画插值
         // 背景遮罩淡入
         self.menuDimView.alpha = 1.0;
     } completion:^(BOOL finished) {
+        [self ame248_alignMenuFrost];   // ★ Task248（⑨）：落位后精确对位
         [self setNeedsUpdateOfHomeIndicatorAutoHidden];
         [self setNeedsUpdateOfScreenEdgesDeferringSystemGestures];
         [self setNeedsStatusBarAppearanceUpdate];
