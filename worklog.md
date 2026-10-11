@@ -2853,3 +2853,8 @@ Work Log:
 
 Stage Summary:
 - Task 251 CI 闭环状态：r1 已推送待跑；失败 TU（main_hook.m）单文件编译雷，无掩蔽面（r2 全量重编译）
+- run 38129329146（d467f15）：completed success 一轮终绿（r2）；r1 失败 TU（main_hook.m）已在 r2 全量编译通过，未调度集审计不适用（单失败编译雷无掩蔽面，同 Task250-ci 判例）；产物 ipa/tipa 常规管线
+
+Stage Summary:
+- Task 251 全链闭环：10 项装机反馈全修——26.3 退出挂死双保险（Java shutdown hook 标记 + native 轮询 _exit + libjvm exit 二次 rebind）+ MobileGL warp 中心锚定/后台几何冻结 + 端口扫描 26.x 正则/进页自动武装/取消日志 + SDL 硬窗意图旁路 + 玻璃档联机双入口 OverFullScreen（原生档 PageSheet）+ 悬浮菜单关闭短下沉微缩淡出 + 外观动态文字色/卡面文字恒自适应
+- 新 IPA 就绪待装机验证；装机验证锚点见 Task 251 条目 Stage Summary（8 条锚点）
