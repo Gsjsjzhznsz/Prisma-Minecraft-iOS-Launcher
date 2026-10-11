@@ -30,6 +30,7 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import "utils.h"
+#import "LauncherPreferences.h"   // ★ Task252（T8）：getPrefBool(control.auto_keyboard_sdl)
 
 #include <dlfcn.h>
 #include <stdbool.h>
@@ -1821,8 +1822,20 @@ static bool ame_SDL_InitSubSystem(uint32_t flags) {
         if (ame_glBridgeEnabled()) {
             ame_real_SetHint("SDL_OPENGL_FORCE_SRGB_FRAMEBUFFER", "0");
         }
-        ame_real_SetHint("SDL_ENABLE_SCREEN_KEYBOARD", "1");
-        NSDebugLog(@"[SDLHook] Task114 SDL hint set (screenKeyboard=1, srgb=%s)",
+        // ★ Task252（反馈 8 六修：自动打开输入法(SDL) 开关终于全链生效）：
+        //   旧实现无条件 SDL_ENABLE_SCREEN_KEYBOARD=1——开关 OFF 档时启动器
+        //   字段侧（SurfaceViewController StartTextInput 路由）确实不弹，
+        //   但 SDL 自己的 iOS 后端仍按 hint 弹出自家 textField（其文本投
+        //   递链在本嵌入架构下不可靠，Task172 病历）= 用户看到键盘照弹
+        //   且击键石沉大海 = “开关无效”的直接病灶。现在 hint 跟随开关：
+        //   ON（默认）= 1（自动弹 + 启动器字段接管，现状不变）；OFF = 0
+        //   （SDL 不自动弹，键盘仅由 ✎ 按钮/点游戏画面手动唤起——即 OFF
+        //   档语义“不自动弹，仅 ✎/T 键唤起”的最后一公里）。hint 在 SDL_Init
+        //   时读取一次：游戏会话内改开关下一局生效（开关语义为会话级）。
+        BOOL ame252_autoKb = getPrefBool(@"control.auto_keyboard_sdl");
+        ame_real_SetHint("SDL_ENABLE_SCREEN_KEYBOARD", ame252_autoKb ? "1" : "0");
+        NSDebugLog(@"[SDLHook] Task252 SDL hint set (screenKeyboard=%d, srgb=%s)",
+                   ame252_autoKb ? 1 : 0,
                    ame_glBridgeEnabled() ? "off" : "default");
     }
     if (ame_real_InitSubSystem != NULL) {

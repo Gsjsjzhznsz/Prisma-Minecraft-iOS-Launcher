@@ -2264,17 +2264,46 @@ void gl_swap_interval(int swapInterval) {
 }
 
 void gl_terminate() {
-    // Task 50：GL 不再拥有呈现层（下次 updateSavedResolution 回到 2x 默认）。
+    // ★ Task252（反馈 2 五修：26.3 退出游戏后闪退根修）——本函数在终结线
+    //   程上被 glfwTerminate→pojavTerminate→br_terminate 调到，而：
+    //   ① ame_brCurrent 是 __thread 的，只在渲染线程非空（bridge_tbl.h 头
+    //     注释明言）——Vulkan 渲染器（libMoltenVK/MobileGL fallback）下
+    //     GL bridge 仅作 fallback 初始化，终结线程从未 make_current →
+    //     br_get_current()==NULL → NULL->gl.surface 解引用 = SIGSEGV
+    //     （fatal_trace 2026-10-11 19:30:27 实锤：gl_terminate+0x7c，
+    //     调用栈 JavaMain→pojavTerminate→gl_terminate；JVM user_handler
+    //     捕获后 VMError::report_and_die→os::abort = 用户看到的"退出游戏
+    //     后闪退"）。修法：线程束指针先取到局部再判空，NULL 时跳过
+    //     surface/context 销毁（进程即亡，泄漏面为零）。
+    //   ② handle 函数表若未加载（fallback bridge 未 init）同样按无资源
+    //     处理直接返回——不再对 NULL 函数指针做间接调用。
     atomic_store(&g_ame50_gl_owns_layer, 0);
     // Task 166：Metal 层 FSR 释放（私有交换层/管线/环形纹理）。
     ame166_metal_fsr_teardown();
+    if (!handle.eglMakeCurrent || !handle.eglDestroySurface ||
+        !handle.eglDestroyContext || !handle.eglTerminate ||
+        !handle.eglReleaseThread) {
+        // EGL 函数表未加载：无 EGL 资源可释放（清线程束指针后即回）。
+        if (br_get_current() != NULL) {
+            free(br_get_current());
+            br_set_current(NULL);
+        }
+        return;
+    }
+    basic_render_window_t *ame252_br = br_get_current();
     handle.eglMakeCurrent(g_EglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    handle.eglDestroySurface(g_EglDisplay, br_get_current()->gl.surface);
-    handle.eglDestroyContext(g_EglDisplay, br_get_current()->gl.context);
+    if (ame252_br != NULL) {
+        if (ame252_br->gl.surface != EGL_NO_SURFACE) {
+            handle.eglDestroySurface(g_EglDisplay, ame252_br->gl.surface);
+        }
+        if (ame252_br->gl.context != EGL_NO_CONTEXT) {
+            handle.eglDestroyContext(g_EglDisplay, ame252_br->gl.context);
+        }
+        free(ame252_br);
+        br_set_current(NULL);
+    }
     handle.eglTerminate(g_EglDisplay);
     handle.eglReleaseThread();
-    free(br_get_current());
-    br_set_current(NULL);
 }
 
 void set_gl_bridge_tbl() {

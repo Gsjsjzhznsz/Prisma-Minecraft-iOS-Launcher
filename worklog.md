@@ -2890,3 +2890,25 @@ Work Log:
 
 Stage Summary:
 - Task 252 全链闭环：TG LegacyGlassView 配方渲染引擎换血交付 + CI 两轮热修终绿；装机验证锚点见 Task 252 条目 Stage Summary（5 条）；新增教训：①ARC 下 id→C 指针直转必炸，NSValue.pointerValue 中转是模板缓存指针盒的标准解 ②CI 诊断优先打 annotations 端点 ③显示层吞字假阳性家族新增"子串包含"变体
+
+---
+Task ID: 253
+Agent: main (Super Z)
+Task: Task 253——装机反馈 8 项处置（gamelog/fatal_trace 取证驱动）：26.3 退游闪退根修（gl_terminate 空安全）+ SDL 输入法开关全链生效 + 端口扫描武装盲区根修 + 悬浮菜单开/关全零位移动画 + 伪玻璃档启动器呈现面板磨砂 + T1/T5 取证升级【与并行 Task 252（TG 玻璃引擎）变基合并，重编号 252→253】
+
+Work Log:
+- 【变基合并】本地 7e6f757（原 Task 252）与并行会话远端 Task 252（e2d454a TG LegacyGlassView 渲染引擎换血，四站点接线）同号冲突：rebase 双文件冲突（Navigation 关闭动画段/worklog 尾段）逐一解决——动画段取本侧"四修零位移"（涵并远端"三修 28pt 下沉"意图）；worklog 取远端条目后本条以 253 重录；TVC 双实现核查=互补不重复（远端 TG 滤镜栈升级的是 ame248 游戏内全屏 backdrop 容器，启动器 OverFullScreen 呈现的**面板级**磨砂仍是空档，本侧 ame252_* 面板快照磨砂补的正是这个面；ame248 快照源抓帧分辨率已随远端 0.5x 化）——符号零冲突（kAme252ArmedKey/ame252_pseudoSnapshotSource/ame252_cachedPseudoBase 均本侧独占）；合并态四道门禁+task248_i18n_audit 全绿复跑
+- 【取证先行】用户附 fatal_trace.txt + latestlog.txt/latestlog.old.txt + mobilegl.log + IMG_0399/0400。fatal_trace 终末三条 2026-10-11 记录：① Task251 看门狗 shutdown marker -> _exit(0) 正常开火（挂死已转干净退出）；② SIGSEGV @ gl_terminate+0x7c——latestlog 尾部完整崩溃链：MC Stopping! → MGLFSR teardown → gl_terminate SEGV → JVM user_handler → VMError::report_and_die → os::abort → Task208 直通终止 = 用户感知"退出游戏后闪退"
+- 【T2 根修】gl_terminate（gl_bridge.m）两处雷：① ame_brCurrent 是 __thread（bridge_tbl.h 头注"只在渲染线程非空"）——Vulkan 渲染器（libMoltenVK，MobileGL fallback）下 GL bridge 仅 fallback 初始化，终结线程从未 make_current → br_get_current()==NULL → NULL->gl.surface 解引用 = SEGV；② handle EGL 函数表未加载时 NULL 间接调用。修法：束指针取局部判空跳过销毁（进程即亡零泄漏面）+ 函数表判空直返；正常渲染线程路径行为逐字节不变
+- 【T8 根修】sdl3_hook.m ame_SDL_InitSubSystem 无条件 SDL_ENABLE_SCREEN_KEYBOARD=1——开关 OFF 档时启动器字段侧确实不弹，但 SDL 自己的 iOS 后端仍按 hint 弹自家 textField（投递链不可靠，Task172 病历）= 击键石沉大海 = "开关无效"病灶。hint 改读 getPrefBool(control.auto_keyboard_sdl)（LauncherPreferences.h 新导入）；OFF=0 仅 ✎/T 键唤起，ON=1 现状不变；hint 会话级（SDL_Init 时读取，改开关下一局生效）
+- 【T7 根修】latestlog.txt 全场零 "host form appearing … arming" 实锤：Task251 自动武装只挂 viewWillAppear 且条件含 uiState==HostForm——用户菜单态点「创建房间」是 VC 内部状态切换，viewWillAppear 不再触发 = 武装永不开火（"stale port was 0" 即链终点）。修法：createRoomTapped 进表单态当场武装 ame252_armAutoDetectionIfNeeded（幂等键 kAme252ArmedKey 提文件作用域——两方法内 static 局部是独立变量，键地址不同会导致卸武装清不到标记，自审自捕）+ autoSwitchChanged 拨回 ON 同口武装
+- 【T10 终除】SurfaceViewController+Navigation.m：Task251 的 28pt 短下沉仍有滑动感（任何位移都拖动面板内窗口对位画面拷贝）→ 悬浮形态关闭改【原位微收缩 0.96 + 淡出，零位移】；开启动画同步去平移（原从屏幕底外全行程上滑同病）→【原位微放大 1.08→1.0 + 淡入】；侧滑抽屉横向滑出保留（贴边语义）
+- 【T9/毛玻璃】TVC 伪玻璃面板接管（启动器呈现面）：ame252_pseudoSnapshotSource/Soften/LooksValid 三 static（0.18x 抓帧+0.5x 柔化+全黑帧护栏，AmeFloatingMenu Task243/245/246 同源配方；源=游戏表面或呈现方 view，OverFullScreen 下无自噬面）+ ame252_applyPseudoPanelFrost（面板内 index 0 窗口对位快照层 convertRect 对位+masksToBounds 裁剪+Ame239 同款动态深浅底，清管线 blur 层）+ ame252_realignPseudoPanelFrost（viewDidLayoutSubviews 重对位不重抓）+ 失效面自动回退原生管线面板不裸奔 + applyBackgroundEffects 伪玻璃档短路卡面重铺（文字色/表单适配全档照常）+ 离页清缓存；viewDidLoad 补 resolvedStyle/glass/pseudo/navPresentation/presenting 取证日志（IMG_0400 呈现路径历轮零记录 = 取证盲区）
+- 【T1 取证升级】历轮重申链（defer/resync/x3/首触点）日志全部正常开火用户仍报错位 → 首触点三方尺寸取证（touchesBegan 首触点块）：metal drawable（呈现面真值）vs surfaceView bounds×screenScale（触摸换算源）vs window 全局（重申值）——下轮 gamelog 三方不一致即当场定位；三连重申时序保留不拆（Task248/249/250 里程碑语义）
+- 【T5/毛玻璃取证】IMG_0399 卡片=锐利壁纸穿透暗色平涂、跨三构建零变化（IMG_0376→0389→0399）——与 Blur 分支预期观感不符、与 Translucent 分支逐像素一致 → BackgroundManager loadUISettings 尾补三键解析值日志（effect/opacity/blurIntensity/frostAlpha/hasBackground）：下轮日志 effect=1(Translucent) 即设备存档为半透明档（归位设置页而非改管线）；effect=2(Blur) 仍无磨砂则按链继续追
+- 【门禁】task240/139/158/175 四道全 PASS（变基合并后复跑）；task248_i18n_audit 三闸全 PASS（本轮零新 UI 字符串，全部改动为 NSLog 诊断与既有键消费）；task250_i18n_audit 键名直显闸 total:0（MISS 为 Task250 已定案不可达行假阳性族）
+- 【diff 自审】gl_terminate 正常路径行为不变；TVC 幂等键文件作用域化；SDL hint 会话级语义注释言明；伪玻璃快照源=呈现方 view 无自噬面（Ame246 装机验证机理）；零 .handler 反取/零类方法 self.view/静态 rebindings 防栈数组 UAF 面不变
+
+Stage Summary:
+- 8 项全链处置：T2 = gl_terminate 空安全（26.3 退游闪退根修，fatal_trace SEGV 实锤闭环）；T8 = SDL_ENABLE_SCREEN_KEYBOARD 跟随开关（OFF 档 SDL 自家键盘不再抢弹）；T7 = 表单态入场武装（viewWillAppear 盲区根修）；T10 = 悬浮菜单开/关全零位移动画（画面拷贝零平移，屏幕滑动错觉物理根除）；T9/毛玻璃 = 伪玻璃档 TVC 启动器呈现面板魔改磨砂接管（与并行 TG 引擎互补：远端=游戏内全屏 backdrop，本侧=启动器面板）+ 呈现路径取证；T1 = 首触点三方尺寸取证；T5 = 效果档位取证
+- 装机验证锚点：①26.3 退出游戏 → 无 SIGSEGV 无 abort，fatal_trace 仅 Task251 watchdog _exit(0) 或无新条目，app 干净离场（≤1s）②设置关"自动打开输入法(SDL)" → 新开局 EditBox 聚焦键盘不再自动弹，✎ 按钮正常唤起；开回 ON → 自动弹照旧 ③进联机页点「创建房间」→ 端口框自动进入检测（"Task252: host form ENTERED in-session … arming"），世界对局域网开放后端口自动回填 ④游戏内菜单开/关 → 菜单原位缩放淡入淡出，画面拷贝零位移 ⑤伪液态玻璃档启动器开联机页 → "Task252: viewDidLoad resolvedStyle=2 pseudo=1 navPresentation=0(OverFullScreen) presenting=1" + 面板=魔改磨砂透视壁纸 ⑥切后台返回首触 → "Task252: first-touch tri-size forensic drawable=… surface=… window=…" 三方值 ⑦启动 → "BackgroundManager Task252: ui settings resolved effect=…" 判档

@@ -788,20 +788,29 @@ static UIColor *ame244_snapshotTint(void) {
     CGFloat safeBottom = [ScreenUtils safeAreaBottom];
     CGFloat targetY = screenHeight - ame238_sheetH - safeBottom - 16;
 
+    // ★ Task252（反馈 10 配套：开启动画同步去平移）：开启时也不再从屏幕
+    //   底部外全行程上滑（同样会拖着画面拷贝滑大半屏 = 打开瞬间“屏幕
+    //   在滑”），改【原位微放大(1.08→1.0) + 淡入】——与关闭动画同语言，
+    //   画面拷贝零位移。
+    self.menuView.frame = CGRectMake(
+        (screenWidth - ame238_sheetW) / 2.0,
+        targetY,
+        ame238_sheetW,
+        ame238_sheetH
+    );
+    self.menuView.transform = CGAffineTransformMakeScale(1.08, 1.08);
+    self.menuView.alpha = 0.0;
+
     [UIView animateWithDuration:0.3
                           delay:0
          usingSpringWithDamping:0.85
           initialSpringVelocity:0.5
                         options:UIViewAnimationOptionCurveEaseOut
                      animations:^{
-        // 菜单上滑到目标位置
-        self.menuView.frame = CGRectMake(
-            (screenWidth - ame238_sheetW) / 2.0,
-            targetY,
-            ame238_sheetW,
-            ame238_sheetH
-        );
-        [self ame248_alignMenuFrost];   // ★ Task248（⑨）：目标位对位随动画插值
+        // 菜单原位浮现（零位移）
+        self.menuView.transform = CGAffineTransformIdentity;
+        self.menuView.alpha = 1.0;
+        [self ame248_alignMenuFrost];   // ★ Task248（⑨）：对位（位置已定，无插值）
         // 背景遮罩淡入
         self.menuDimView.alpha = 1.0;
     } completion:^(BOOL finished) {
@@ -846,21 +855,14 @@ static UIColor *ame244_snapshotTint(void) {
                 CGRectGetHeight(self.menuView.frame)
             );
         } else {
-            // ★ Task252（反馈 10 三修：悬浮形态"屏幕滑动"错觉根除）：
-            //   Task250 已修系统外观翻转位移，但装机仍报"屏幕滑动"——残余
-            //   成分 = 磨砂快照是【窗口对位的游戏画面拷贝】（ame248 对位
-            //   铺设），面板整体滑向屏幕底部时面板内的画面拷贝同步平移
-            //   大半屏 = 视觉上"屏幕内容在滑"（面板 1:1 背着屏幕走）。
-            //   终案：悬浮形态放弃全行程位移，改【原位短下沉(28pt) +
-            //   微收缩(0.96) + 淡出】——面板位移量小于快照对位误差感知
-            //   阈值，画面拷贝不再产生可感知平移；"菜单卡片收场"动画
-            //   完整保留（下沉+收缩+淡出三重过渡，非裸跳）。侧滑形态
-            //   （吸边抽屉）保持横向滑出——抽屉贴边语义下滑出屏幕边缘
-            //   不产生"屏幕滑动"错觉（画面拷贝跟随抽屉滑离可视区，属
-            //   用户预期的抽屉行为）。
-            CGRect ame252_target = self.menuView.frame;
-            ame252_target.origin.y += 28.0;
-            self.menuView.frame = ame252_target;
+            // ★ Task252（反馈 10 四修：悬浮形态“屏幕滑动”错觉终除）：
+            //   Task251 的 28pt 短下沉装机反馈仍有滑动感——根因是任何
+            //   位移都会带着面板内的窗口对位画面拷贝一起动（对位误差
+            //   在 1:1 拷贝上被感知为“屏幕在滑”）。终案：悬浮形态关闭
+            //   改【原位微收缩(0.96) + 淡出，零位移】——画面拷贝一个
+            //   像素都不挪，“屏幕滑动”物理上不可能产生；收场动画依然
+            //   完整（收缩+淡出双重过渡）。侧滑抽屉形态保持横向滑出
+            //   （贴边语义，属用户预期）。
             self.menuView.transform =
                 CGAffineTransformMakeScale(0.96, 0.96);
         }

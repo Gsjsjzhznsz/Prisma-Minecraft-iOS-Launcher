@@ -4072,6 +4072,34 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
         if (windowWidth > 0 && windowHeight > 0) {
             CallbackBridge_nativeSendScreenSizeForced(windowWidth, windowHeight);
         }
+        // ★ Task252（反馈 1 取证升级）：历轮重申链（defer/resync/x3/首触点）
+        //   日志全部正常开火，用户仍报错位 —— 剩余洞必在【重申目标值与
+        //   实际呈现面/触摸换算源】的三方一致性上。首触点当场把三方尺寸
+        //   打进 gamelog：layer drawable（呈现面真值）、surfaceView bounds
+        //   ×screenScale（触摸换算源）、window 全局（重申值）。下一轮
+        //   gamelog 若三方不一致，错位根因当场定位，不再盲修。
+        {
+            CGFloat ame252_drawableW = 0, ame252_drawableH = 0;
+            CALayer *ame252_layer = self.surfaceView.layer;
+            for (CALayer *ame252_sub in ame252_layer.sublayers) {
+                if ([NSStringFromClass([ame252_sub class]) containsString:@"CAMetalLayer"]) {
+                    ame252_drawableW = ame252_sub.bounds.size.width;
+                    ame252_drawableH = ame252_sub.bounds.size.height;
+                    break;
+                }
+            }
+            CGFloat ame252_sc = (self.screenScale > 0.0f) ? self.screenScale
+                                : [[UIScreen mainScreen] scale];
+            NSLog(@"[SurfaceVC] Task252: first-touch tri-size forensic drawable=%.0fx%.0f "
+                  @"surface=%.0fx%.0f(scale %.2f→%.0fx%.0f) window=%dx%d announcedScale=%.2f",
+                  ame252_drawableW, ame252_drawableH,
+                  self.surfaceView.bounds.size.width, self.surfaceView.bounds.size.height,
+                  ame252_sc,
+                  self.surfaceView.bounds.size.width * ame252_sc,
+                  self.surfaceView.bounds.size.height * ame252_sc,
+                  (int)windowWidth, (int)windowHeight,
+                  self.screenScale);
+        }
         NSLog(@"[SurfaceVC] Task249/250: first-touch geometry re-sync applied (pre-hotbar, forced re-announce)");
     }
 

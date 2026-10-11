@@ -205,6 +205,19 @@ static UIColor *ame250_globalTextFillColor(void);
             _blurIntensity = 0.75;
         }
     }
+    // ★ Task252（反馈"毛玻璃效果失效"取证）：装机截图（IMG_0399）卡片=
+    //   锐利壁纸穿透暗色平涂、零磨砂——与本文件 Blur 分支（SystemThin
+    //   Material frost）的预期观感不符，与 Translucent 分支（半透明平涂）
+    //   逐像素一致。历轮日志无设备侧效果档位记录 = 取证盲区。启动时把
+    //   三键解析值打进日志：下轮 gamelog 若 effect=1（Translucent）即证
+    //   明设备存档为半透明档（用户设置或历史写入），修法是设置页归位而
+    //   非管线改动；若 effect=2（Blur）仍无磨砂，则 blur 子视图链路有洞，
+    //   按日志继续追。
+    NSLog(@"[BackgroundManager] Task252: ui settings resolved effect=%ld (0=translucent 1=blur) "
+          @"opacity=%.2f blurIntensity=%.2f (frostAlpha=%.2f) hasBackground=%d",
+          (long)_uiEffect, _uiOpacity, _blurIntensity,
+          0.3 + (_blurIntensity * 0.7),
+          (int)[self hasBackground]);
 }
 
 - (void)saveUISettings {

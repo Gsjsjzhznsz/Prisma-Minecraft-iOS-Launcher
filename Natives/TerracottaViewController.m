@@ -107,6 +107,10 @@ typedef NS_ENUM(NSInteger, TCUIState) {
 // ★ Task250：动态磨砂刷新 display link 关联键（ame250_start/stopFrostRefresh
 //   在文件前部使用，定义置顶避免前向引用）。
 static const void *kAme250FrostLinkKey = &kAme250FrostLinkKey;
+// ★ Task252：表单态自动武装幂等键（createRoomTapped 路径与 autoSwitchChanged
+//   路径共用——必须在文件作用域；方法内 static 局部各自独立变量，两处键
+//   地址不同会导致卸武装清不到武装标记）。
+static const void *kAme252ArmedKey = &kAme252ArmedKey;
 
 #pragma mark - Lifecycle
 
@@ -135,6 +139,16 @@ static const void *kAme250FrostLinkKey = &kAme250FrostLinkKey;
         [self.view insertSubview:ame252_dim atIndex:0];
         NSLog(@"[TVC] Task252: glass-style OverFullScreen dim applied");
     }
+    // ★ Task252（反馈 9 二修取证）：历轮装机截图（IMG_0400）显示联机页仍
+    //   呈原生 sheet 观感，但历轮日志均无呈现路径记录（本轮之前此分支
+    //   零日志 = 取证盲区）。下一轮 gamelog 直接读出解析风格与呈现方式。
+    NSLog(@"[TVC] Task252: viewDidLoad resolvedStyle=%ld glass=%d pseudo=%d navPresentation=%ld presenting=%d",
+          (long)LGCResolvedInterfaceStyle(),
+          LGCIsGlassStyleActive() ? 1 : 0,
+          LGCIsPseudoGlassStyleActive() ? 1 : 0,
+          (long)(self.navigationController != nil
+                     ? self.navigationController.modalPresentationStyle : -1),
+          self.presentingViewController != nil ? 1 : 0);
 
     [self setupViews];
     [self registerNotifications];
@@ -167,6 +181,9 @@ static const void *kAme250FrostLinkKey = &kAme250FrostLinkKey;
 - (void)viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     [self applyNavigationBarVisibilityForDisappearance];
+    // ★ Task252：离页清伪玻璃快照缓存（源视图生命周期不越页持有）。
+    ame252_cachedPseudoBase = nil;
+    ame252_cachedPseudoSrc = nil;
 }
 
 - (void)dealloc {
@@ -1151,6 +1168,172 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
     [self ame250_startFrostRefresh];
 }
 
+#pragma mark - Task252 伪液态玻璃面板（反馈 9/毛玻璃回归）
+
+// 魔改磨砂原料（与 AmeFloatingMenu Task243/245/246 配方同源）：0.18x 抓帧
+// 即模糊 + 0.5x 二次柔化 + 全黑帧护栏。源 = 游戏表面（在场时）或呈现方
+// view（启动器 OverFullScreen 呈现下呈现方仍在窗口层级内且位于本页之下
+// = 纯背景内容，无自噬面——Ame246 同语义）。
+static UIImage *ame252_pseudoSnapshotSource(UIView *ame252_src) {
+    if (ame252_src == nil || ame252_src.window == nil ||
+        ame252_src.bounds.size.width < 40.0 ||
+        ame252_src.bounds.size.height < 40.0) return nil;
+    @try {
+        UIGraphicsImageRendererFormat *ame252_fmt =
+            [[UIGraphicsImageRendererFormat alloc] init];
+        ame252_fmt.scale = 0.18;
+        ame252_fmt.opaque = YES;
+        UIGraphicsImageRenderer *ame252_r =
+            [[UIGraphicsImageRenderer alloc] initWithSize:ame252_src.bounds.size
+                                                   format:ame252_fmt];
+        return [ame252_r imageWithActions:^(UIGraphicsImageRendererContext *ame252_rc) {
+            [ame252_src drawViewHierarchyInRect:ame252_src.bounds
+                             afterScreenUpdates:NO];
+        }];
+    } @catch (NSException *ame252_e) {
+        return nil;
+    }
+}
+
+static UIImage *ame252_pseudoSoften(UIImage *ame252_img) {
+    if (ame252_img == nil) return nil;
+    @try {
+        CGSize ame252_sz = ame252_img.size;
+        if (ame252_sz.width < 1.0 || ame252_sz.height < 1.0) return ame252_img;
+        UIGraphicsImageRendererFormat *ame252_fmt =
+            [[UIGraphicsImageRendererFormat alloc] init];
+        ame252_fmt.scale = 0.5;
+        ame252_fmt.opaque = YES;
+        UIGraphicsImageRenderer *ame252_r =
+            [[UIGraphicsImageRenderer alloc] initWithSize:ame252_sz format:ame252_fmt];
+        UIImage *ame252_soft =
+            [ame252_r imageWithActions:^(UIGraphicsImageRendererContext *ame252_rc) {
+                [ame252_img drawInRect:CGRectMake(0, 0, ame252_sz.width, ame252_sz.height)];
+            }];
+        return ame252_soft ?: ame252_img;
+    } @catch (NSException *ame252_e) {
+        return ame252_img;
+    }
+}
+
+static BOOL ame252_pseudoLooksValid(UIImage *ame252_img) {
+    if (ame252_img == nil || ame252_img.size.width < 1.0 ||
+        ame252_img.size.height < 1.0) return NO;
+    CGImageRef ame252_cg = ame252_img.CGImage;
+    if (ame252_cg == NULL) return NO;
+    unsigned char ame252_px[4] = {0, 0, 0, 0};
+    CGColorSpaceRef ame252_cs = CGColorSpaceCreateDeviceRGB();
+    CGContextRef ame252_ctx = CGBitmapContextCreate(ame252_px, 1, 1, 8, 4,
+        ame252_cs, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(ame252_cs);
+    if (ame252_ctx == NULL) return NO;
+    CGContextDrawImage(ame252_ctx, CGRectMake(0, 0, 1, 1), ame252_cg);
+    CGContextRelease(ame252_ctx);
+    return (ame252_px[0] + ame252_px[1] + ame252_px[2]) > 19;
+}
+
+static UIImage *ame252_cachedPseudoBase = nil;
+static UIView *ame252_cachedPseudoSrc = nil;
+
+- (void)ame252_refreshPseudoBase {
+    if (!LGCIsPseudoGlassStyleActive()) {
+        ame252_cachedPseudoBase = nil;
+        ame252_cachedPseudoSrc = nil;
+        return;
+    }
+    UIView *ame252_src = [SurfaceViewController surface];
+    if (ame252_src == nil || ame252_src.window == nil) {
+        UIViewController *ame252_p = self.presentingViewController;
+        ame252_src = (ame252_p != nil) ? ame252_p.view : nil;
+    }
+    UIImage *ame252_raw = ame252_pseudoSnapshotSource(ame252_src);
+    if (ame252_raw != nil && !ame252_pseudoLooksValid(ame252_raw)) ame252_raw = nil;
+    ame252_cachedPseudoBase = (ame252_raw != nil) ? ame252_pseudoSoften(ame252_raw) : nil;
+    ame252_cachedPseudoSrc = (ame252_cachedPseudoBase != nil) ? ame252_src : nil;
+    NSLog(@"[TVC] Task252: pseudo panel base refresh -> %@ (src=%@)",
+          ame252_cachedPseudoBase != nil ? @"ok" : @"nil",
+          ame252_src != nil ? NSStringFromClass([ame252_src class]) : @"none");
+}
+
+/// 魔改磨砂面板铺设：面板内 index 0 插窗口对位快照层（convertRect 对位
+/// 源视图坐标系，面板 masksToBounds 裁剪 = 真玻璃透视），上盖 Ame239 同款
+/// 动态深浅半透明底。幂等：旧 252 层先拆。失效面（无源/全黑帧）自动回退
+/// BackgroundManager 管线，面板绝不裸奔。
+- (void)ame252_applyPseudoPanelFrost {
+    if (!LGCIsPseudoGlassStyleActive()) return;
+    NSMutableArray<UIView *> *ame252_panels = [NSMutableArray array];
+    if (self.headerCard != nil && self.headerCard.layer.cornerRadius > 0) {
+        [ame252_panels addObject:self.headerCard];
+    }
+    if (self.stageView != nil && self.stageView.layer.cornerRadius > 0) {
+        [ame252_panels addObject:self.stageView];
+    }
+    for (UIView *ame252_sub in self.stageView.subviews) {
+        if ([ame252_sub isKindOfClass:[UIVisualEffectView class]]) continue;
+        if (ame252_sub.layer.cornerRadius > 0) [ame252_panels addObject:ame252_sub];
+    }
+    if (ame252_cachedPseudoBase == nil || ame252_cachedPseudoSrc == nil ||
+        ame252_cachedPseudoSrc.window == nil) {
+        // 失效面：回退原生卡面管线（面板不裸奔）。
+        [[BackgroundManager sharedManager] applyCardEffectToView:self.headerCard];
+        for (UIView *ame252_sub in self.stageView.subviews) {
+            [[BackgroundManager sharedManager] applyEffectToView:ame252_sub];
+        }
+        NSLog(@"[TVC] Task252: pseudo panels fallback to native pipeline (no valid source)");
+        return;
+    }
+    UIColor *ame252_tint = [UIColor colorWithDynamicProvider:
+        ^UIColor * _Nonnull(UITraitCollection * _Nonnull ame252_tc) {
+            return (ame252_tc.userInterfaceStyle == UIUserInterfaceStyleDark)
+                ? [UIColor colorWithWhite:0.02 alpha:0.30]
+                : [UIColor colorWithWhite:1.0 alpha:0.58];
+        }];
+    for (UIView *ame252_panel in ame252_panels) {
+        if (ame252_panel.window == nil) continue;
+        for (UIView *ame252_sub in [ame252_panel.subviews copy]) {
+            if (ame252_sub.tag == 25201) [ame252_sub removeFromSuperview];
+            if ([ame252_sub isKindOfClass:[UIVisualEffectView class]] &&
+                ame252_sub.tag != 25100) {
+                [ame252_sub removeFromSuperview];   // 清管线 blur 层（252 磨砂接管）
+            }
+        }
+        ame252_panel.layer.masksToBounds = YES;
+        ame252_panel.backgroundColor = ame252_tint;
+        UIImageView *ame252_iv =
+            [[UIImageView alloc] initWithImage:ame252_cachedPseudoBase];
+        ame252_iv.tag = 25201;
+        ame252_iv.userInteractionEnabled = NO;
+        ame252_iv.contentMode = UIViewContentModeScaleToFill;
+        ame252_iv.frame = [ame252_panel convertRect:ame252_panel.bounds
+                                             toView:ame252_cachedPseudoSrc];
+        [ame252_panel insertSubview:ame252_iv atIndex:0];
+    }
+    NSLog(@"[TVC] Task252: pseudo glass frost applied to %lu panel(s)",
+          (unsigned long)ame252_panels.count);
+}
+
+/// 布局后重对位（不重抓帧：复用缓存快照，仅重算 convertRect）。
+- (void)ame252_realignPseudoPanelFrost {
+    if (!LGCIsPseudoGlassStyleActive() || ame252_cachedPseudoBase == nil ||
+        ame252_cachedPseudoSrc == nil || ame252_cachedPseudoSrc.window == nil) return;
+    NSMutableArray<UIView *> *ame252_panels = [NSMutableArray array];
+    if (self.headerCard != nil) [ame252_panels addObject:self.headerCard];
+    for (UIView *ame252_sub in self.stageView.subviews) {
+        [ame252_panels addObject:ame252_sub];
+    }
+    for (UIView *ame252_panel in ame252_panels) {
+        UIImageView *ame252_iv = (UIImageView *)[ame252_panel viewWithTag:25201];
+        if (![ame252_iv isKindOfClass:[UIImageView class]]) continue;
+        ame252_iv.frame = [ame252_panel convertRect:ame252_panel.bounds
+                                             toView:ame252_cachedPseudoSrc];
+    }
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    [self ame252_realignPseudoPanelFrost];
+}
+
 - (void)applyBackgroundEffects {
     BOOL hasBg = [[BackgroundManager sharedManager] hasBackground];
     UIColor *primary = hasBg ? [UIColor whiteColor] : [UIColor labelColor];
@@ -1160,14 +1343,27 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
     //   /启动器呈现自动短路为零改动，见方法内护栏）。
     [self ame248_applyGlassFrostBackground];
 
+    // ★ Task252（反馈 9/毛玻璃回归）：伪液态玻璃档 → 面板改魔改快照磨砂
+    //   （伪玻璃面板语言），不再走 BackgroundManager 原生毛玻璃管线；
+    //   失效面（无源/全黑帧）ame252_applyPseudoPanelFrost 内自动回退管线，
+    //   面板不裸奔。文字颜色与表单可读性适配对全档照常执行（仅在卡片
+    //   表面重铺段短路——见下方 ame252_pseudo 判断）。
+    [self ame252_refreshPseudoBase];
+    BOOL ame252_pseudo = LGCIsPseudoGlassStyleActive();
+    if (ame252_pseudo) {
+        [self ame252_applyPseudoPanelFrost];
+    }
+
     self.statusTitle.textColor = primary;
     self.statusSubtitle.textColor = secondary;
 
-    /* 顶部状态卡：Task168 改走新拟态卡片管线（实底开关开=规格实底+双阴影；
-       动态=毛玻璃/半透明面+双阴影叠加）——与主页/下载页卡片形态统一 */
-    [[BackgroundManager sharedManager] applyCardEffectToView:self.headerCard];
-    for (UIView *sub in self.stageView.subviews) {
-        [[BackgroundManager sharedManager] applyEffectToView:sub];
+    if (!ame252_pseudo) {
+        /* 顶部状态卡：Task168 改走新拟态卡片管线（实底开关开=规格实底+双阴影；
+           动态=毛玻璃/半透明面+双阴影叠加）——与主页/下载页卡片形态统一 */
+        [[BackgroundManager sharedManager] applyCardEffectToView:self.headerCard];
+        for (UIView *sub in self.stageView.subviews) {
+            [[BackgroundManager sharedManager] applyEffectToView:sub];
+        }
     }
 
     if (self.hostFormView != nil) {
@@ -1247,6 +1443,28 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
 - (void)createRoomTapped:(id)sender {
     self.uiState = TCUIStateHostForm;
     [self updateForCurrentState];
+    // ★ Task252（反馈 7 五修：端口扫描“仍无法自动”根修）：Task251 的自动
+    //   武装只挂在 viewWillAppear，且条件含 uiState==HostForm——用户从菜单
+    //   态点「创建房间」进表单态是【 VC 内部状态切换】，viewWillAppear 不再
+    //   触发 = 武装永远不开火（本轮 gamelog 实锤：latestlog.txt 全场零
+    //   "host form appearing … arming"，用户只能手点扫描→扫不到→手动取消，
+    //   "stale port was 0" 即此链终点）。修法：进表单态当场武装，与
+    //   viewWillAppear 路径共用同一守卫（开关 ON + 无已检端口）。
+    [self ame252_armAutoDetectionIfNeeded];
+}
+
+/// ★ Task252：表单态自动武装（幂等：LanPortDetector start 端已在扫时
+///   静默换绑，不重复起线程；armedWithAutoSwitch 守卫防同态重复打日志）。
+- (void)ame252_armAutoDetectionIfNeeded {
+    if (self.uiState != TCUIStateHostForm) return;
+    if (!self.autoSwitch.on) return;
+    if ([LanPortDetector sharedInstance].detectedPort != 0) return;
+    if (objc_getAssociatedObject(self, kAme252ArmedKey) != nil) return;
+    objc_setAssociatedObject(self, kAme252ArmedKey, @YES,
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    NSLog(@"[TVC] Task252: host form ENTERED in-session (menu->form) -- arming auto-detection (viewWillAppear-gate blind spot fixed)");
+    [[LanPortDetector sharedInstance] startAutoDetection];
+    [[LanPortDetector sharedInstance] restartLoopbackScanRepeatingWithProgress:nil];
 }
 
 - (void)joinRoomTapped:(id)sender {
@@ -1265,6 +1483,13 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
     self.portField.text = autoOn ? @"" : self.portField.text;
     self.scanButton.hidden = !autoOn;
     self.portHintLabel.text = autoOn ? localize(@"i18n_str_2073", nil) : localize(@"i18n_str_1010", nil);
+    // ★ Task252（T7）：表单态把开关拨回 ON = 显式自动意图 → 当场武装
+    //   （与进表单态/viewWillAppear 同一收口，卸武装走 LanPortDetector 自停）。
+    if (autoOn) {
+        objc_setAssociatedObject(self, kAme252ArmedKey, nil,
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        [self ame252_armAutoDetectionIfNeeded];
+    }
 }
 
 /// 等待 30 秒仍没有端口时，提示用户改用手动输入（不至于一直干等）。
