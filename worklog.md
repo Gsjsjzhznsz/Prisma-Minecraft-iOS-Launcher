@@ -2946,3 +2946,17 @@ Work Log:
 Stage Summary:
 - 7 项全链处置：T2 = MC main 返回即写关机标记（16s DestroyJavaVM 挂死+watchdog 崩溃报告+闪退三体根修）；T6 = blurView 恒 alpha 1.0 + 卡面色覆写删除（毛玻璃双刀根修）；T4 = SDL 字段 FR 封锁（iPadOS 27 异步键盘会话绑对激活者）+ 文本事件两侧对账取证；T1 = 复屏三方取证三消费点 + SDL 视图 frame 漂移重assert + warp 真实点空间；T3/T5 = T2/T6 间接根治 + 既有取证就绪待联机 gamelog；T7 = i18n 三闸绿 + kxdw 署名（关于页+README 双语）
 - 装机验证锚点：①26.3 退出游戏 → "Task254: MC main returned (mc-main-returned) -> shutdown marker written" 后 ≤150ms 进程干净消失（无 16s 挂死、无 fatal_trace 新条目、无崩溃报告）②主页/设置页卡片 → 磨砂可见（壁纸经卡片呈毛玻璃态；若仍平涂看 "Task254: accessibility archive reduceTransparency=" 判档）③设置开"自动打开输入法(SDL)" → 单人游戏搜索框聚焦 → "Task254: SDL-internal textField becomeFirstResponder BLOCKED" + 打字出现 "Task254 text event consumed ... (MC-side)" 且搜索框收字 ④切后台回游戏 → "Task254: RESUME first-touch tri-size (didBecomeActive/…) drawable=… surface=… window=… sdlViewFrame=… sdlRealPts=…" 三方一致 ⑤恢复后 SDL 视图漂移 → "frame drift ... -> reassert" ⑥关于页 → 致谢卡 kxdw 行 + B 站按钮可跳 ⑦README 贡献者清单含 kxdw
+
+---
+Task ID: 254-ci
+Agent: main (Super Z)
+Task: Task 254 CI 闭环（run 38145338116 失败修复 + run 38146270255 轮询终绿）
+
+Work Log:
+- 推送 d27324b（Task 254 主体）→ run 38145338116（run#791）Build for ios 失败：BackgroundManager.m 2 errors —— "use of undeclared identifier 'UIAccessibility'"（227/228 行，点语法 UIAccessibility.isReduceTransparencyEnabled 类属性在本文件导入链下不可见）
+- r1 修复 7bacfd3：改 C 函数形态 UIAccessibilityIsReduceTransparencyEnabled()/UIAccessibilityIsReduceMotionEnabled()（LiquidGlassCompat.m:84 既有先例同款）；同族排查：本轮其余触碰文件零 UIAccessibility 点语法，零命中
+- 推送 7bacfd3 → run 38146270255（run#792）一轮 completed success；产物三件全尺寸在位（ipa 220.4MB + tipa 220.4MB + dSYM 6.2MB=全量编译无掩蔽面）；日志核验：Tools.java/sdl3_hook.m/SurfaceViewController.m/input_bridge_v3.m/AboutViewController.m/BackgroundManager.m 全部真实编译，REAL compile errors: 0
+- verify_task252 的 "i18n:零 .strings 触碰" 门在 254 提交后 git diff HEAD 清空自愈（既往轮次同款裁定先例）
+
+Stage Summary:
+- Task 254 全链闭环：T2 26.3 退游挂死闪退根修（main 返回即标记）+ T6 毛玻璃双刀根修 + T4 SDL 键盘 iPadOS 27 异步会话根修 + T1 复屏取证/防漂移/warp 真值 + T3/T5 间接根治与取证就绪 + T7 i18n 绿/kxdw 署名；新 IPA 就绪待装机验证（锚点见 Task 254 条目 Stage Summary 7 条）
