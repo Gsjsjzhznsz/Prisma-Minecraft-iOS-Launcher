@@ -2912,3 +2912,16 @@ Work Log:
 Stage Summary:
 - 8 项全链处置：T2 = gl_terminate 空安全（26.3 退游闪退根修，fatal_trace SEGV 实锤闭环）；T8 = SDL_ENABLE_SCREEN_KEYBOARD 跟随开关（OFF 档 SDL 自家键盘不再抢弹）；T7 = 表单态入场武装（viewWillAppear 盲区根修）；T10 = 悬浮菜单开/关全零位移动画（画面拷贝零平移，屏幕滑动错觉物理根除）；T9/毛玻璃 = 伪玻璃档 TVC 启动器呈现面板魔改磨砂接管（与并行 TG 引擎互补：远端=游戏内全屏 backdrop，本侧=启动器面板）+ 呈现路径取证；T1 = 首触点三方尺寸取证；T5 = 效果档位取证
 - 装机验证锚点：①26.3 退出游戏 → 无 SIGSEGV 无 abort，fatal_trace 仅 Task251 watchdog _exit(0) 或无新条目，app 干净离场（≤1s）②设置关"自动打开输入法(SDL)" → 新开局 EditBox 聚焦键盘不再自动弹，✎ 按钮正常唤起；开回 ON → 自动弹照旧 ③进联机页点「创建房间」→ 端口框自动进入检测（"Task252: host form ENTERED in-session … arming"），世界对局域网开放后端口自动回填 ④游戏内菜单开/关 → 菜单原位缩放淡入淡出，画面拷贝零位移 ⑤伪液态玻璃档启动器开联机页 → "Task252: viewDidLoad resolvedStyle=2 pseudo=1 navPresentation=0(OverFullScreen) presenting=1" + 面板=魔改磨砂透视壁纸 ⑥切后台返回首触 → "Task252: first-touch tri-size forensic drawable=… surface=… window=…" 三方值 ⑦启动 → "BackgroundManager Task252: ui settings resolved effect=…" 判档
+
+---
+Task ID: 253-ci
+Agent: main (Super Z)
+Task: Task 253 CI 闭环（run 38138372452 轮询终绿）
+
+Work Log:
+- 推送 3cebe23（Task 253，与并行 Task 252 变基合并重编号）→ run 38138372452（run#789）一轮 completed success
+- 产物三件全在位：ipa 220.4MB + tipa 220.4MB + dSYM 6.2MB（全量编译达成，无未调度集掩蔽面）
+- 变基合并复核：Navigation.m 动画冲突取"四修零位移"；worklog 冲突保留远端 252 条目；TVC 双玻璃实现定性为互补（远端 TG 滤镜栈=游戏内 ame248 全屏 backdrop 供料升级；本侧 ame252_* 面板快照磨砂=启动器 OverFullScreen 呈现的空档面）；合并态四道门禁 + task248_i18n_audit 全绿复跑
+
+Stage Summary:
+- Task 253 全链闭环：26.3 退游闪退根修（gl_terminate 空安全）+ SDL 输入法开关全链生效 + 端口扫描武装盲区根修 + 菜单开/关零位移动画 + 伪玻璃启动器面板磨砂 + T1/T5 取证升级；新 IPA 就绪待装机验证（锚点见 Task 253 条目 Stage Summary 7 条）
