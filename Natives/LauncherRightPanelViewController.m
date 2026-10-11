@@ -1178,21 +1178,16 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     self.executeJarBtn.backgroundColor = accentColor();
     self.manageVersionBtn.backgroundColor = accentColor();
 
-    NSString *hex = getPrefObject(@"general.text_color");
-    UIColor *customColor = [self colorFromHexString:hex];
-    if (customColor) {
-        self.usernameLabel.textColor = customColor;
-        self.progressLabel.textColor = [customColor colorWithAlphaComponent:0.75];
-    } else {
-        // 未设置自定义字体颜色时：
-        // Task224（#18）——用户名/进度文字直接压在（半透明）面板表面、
-        // 壁纸可透出的位置，改走壁纸亮度自适应色（深壁纸→白字 +
-        // 软阴影 / 亮壁纸→黑字）；无壁纸时 ame224_* 回落 Task160 规格
-        // 色——与今日外观逐字节一致（零回归）。
-        [BackgroundManager ame224_applyAdaptiveTextToLabel:self.usernameLabel secondary:NO];
-        [BackgroundManager ame224_applyAdaptiveTextToLabel:self.progressLabel secondary:YES];
-        // 信息卡正文颜色随深浅色自动切换（动态色），不参与自定义文字色
-    }
+    // ★ Task251（反馈 5/6 适配优化）：用户名/进度文字改【恒走卡面/壁纸
+    //   亮度自适应】——这两个 label 压在右面板卡面上（Task250 的
+    //   card_color 半透明叠色可把卡面染成任意色），自定义全局文字色
+    //   是"壁纸层文字"语义，强套到卡面文字上会在浅色卡面/浅色模式
+    //   下出现白字白面不可读（IMG_0391 装机截图实槽）。卡面文字跟随
+    //   卡面亮度自适应；自定义字体颜色仍全局作用于壁纸透出层文字
+    //   （BackgroundManager ame250 全局填充色，语义正确不回收）。
+    [BackgroundManager ame224_applyAdaptiveTextToLabel:self.usernameLabel secondary:NO];
+    [BackgroundManager ame224_applyAdaptiveTextToLabel:self.progressLabel secondary:YES];
+    // 信息卡正文颜色随深浅色自动切换（动态色），不参与自定义文字色
 }
 
 // Task224（#19）：界面缩放变化 → 右栏字号实时重排（usernameLabel /

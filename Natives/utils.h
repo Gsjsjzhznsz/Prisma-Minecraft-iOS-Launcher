@@ -335,6 +335,14 @@ void amethyst_task133_ensure_jvm_chain(void);
 // 检出 JVM 家族镜像时自动启动，也可外部主动调用提前启动。
 void amethyst_task134_jvm_watchdog_start(void);
 
+// ★ Task251（main_hook.m 实现）：26.3 退出挂死双保险。
+// 甲：轮询 $POJAV_HOME/ame251_shutdown.marker（PatchSVC premain 注册的
+//     Java shutdown hook 在 JVM shutdown 阶段写入）→ 命中即 _exit(0)——
+//     shutdown hooks / DestroyJavaVM 挂死时 libc exit 永不发生，此为唯一
+//     必达出口。乙随 arm 自动启动：libjvm 加载后二次 rebind exit/abort。
+// 仅游戏会话调用（launchJVM 内，pJLI_Launch 前）；headless 安装器不 arm。
+void ame251_armShutdownForceExitWatchdog(void);
+
 BOOL PLPatchMachOPlatformForFile(const char *path);
 
 UIViewController* currentVC();

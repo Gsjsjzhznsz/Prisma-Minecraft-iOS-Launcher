@@ -1909,10 +1909,27 @@ static UIColor *ame250_outlineColorForFill(UIColor *ame250_fill) {
 ///   general.text_color 时用它（自定义字体颜色全局生效，不再只覆盖
 ///   少数几个手动接线点），未设置回白色（现状）。经 PLPreferences
 ///   读值（与其它消费点同源）。
+///   ★ Task251（反馈 6 浅色模式优化）：未设置自定义色的默认值改
+///   【外观动态色】——深色外观 = 白色（现状零回归），浅色外观 =
+///   近黑（0x1C1C1E）：浅色模式下亮壁纸/亮卡面上白字不可读是本轮
+///   截图实槽（IMG_0391）。描边层（ame250_outlineColorForFill）按
+///   填充亮度自适应：近黑填充 → 白边，浅色模式下壁纸文字 = 黑字
+///   白边可读；深色模式维持白字黑边现状。动态 provider 让外观切换
+///   时已铺 label 自动换色，无需逐点刷新。
 static UIColor *ame250_globalTextFillColor(void) {
     extern id getPrefObject(NSString *key);   // LauncherPreferences.h 同名声明（本 TU 未导入，局部外引）
     NSString *ame250_hex = getPrefObject(@"general.text_color");
-    if (![ame250_hex isKindOfClass:[NSString class]] || ame250_hex.length == 0) return [UIColor whiteColor];
+    if (![ame250_hex isKindOfClass:[NSString class]] || ame250_hex.length == 0) {
+        if (@available(iOS 13.0, *)) {
+            return [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *ame250_traits) {
+                if (ame250_traits.userInterfaceStyle == UIUserInterfaceStyleDark) {
+                    return [UIColor whiteColor];
+                }
+                return [UIColor colorWithWhite:0.11 alpha:1.0];   // 0x1C1C1E ≈ 0.11
+            }];
+        }
+        return [UIColor whiteColor];
+    }
     NSString *ame250_clean = [ame250_hex stringByReplacingOccurrencesOfString:@"#" withString:@""];
     unsigned int ame250_rgb = 0;
     if (ame250_clean.length >= 6 && [[NSScanner scannerWithString:ame250_clean] scanHexInt:&ame250_rgb]) {

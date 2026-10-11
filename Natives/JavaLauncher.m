@@ -2843,6 +2843,16 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     if(getPrefBool(@"video.fix_simple_voice_chat_mod")) {
         PUSH_MARGV_FORMAT(@"-javaagent:%@/patchsvc.jar=", librariesPath);
     }
+    // ★ Task251（反馈 2 四修）：patchsvc agent 改为无条件注入——它的 premain
+    //   还承担游戏会话 Java shutdown hook 注册（写 _exit 标记，26.3 退出
+    //   挂死双保险的甲路；仅 -Dame.game.session=1 时注册，headless 零影响）。
+    //   语音修复 transformer 本身对无关会话零副作用（只拦 6 个音频类）。
+    if (!getPrefBool(@"video.fix_simple_voice_chat_mod")) {
+        PUSH_MARGV_FORMAT(@"-javaagent:%@/patchsvc.jar=", librariesPath);
+    }
+    // ★ Task251：游戏会话标记（premain 据此决定是否注册 shutdown hook；
+    //   headless JVM 不带此属性 = 安装器流程零回归）。
+    PUSH_MARGV_LITERAL("-Dame.game.session=1");
 
     // Workaround random stack guard allocation crashes
     PUSH_MARGV_LITERAL("-XX:+UnlockExperimentalVMOptions");
@@ -3289,6 +3299,12 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
 
     // 标记进程内 JVM 已创建（此后任何 JLI_Launch 都会崩溃，需重启 app）
     gJvmUsedInProcess = YES;
+
+    // ★ Task251（反馈 2 四修）：游戏会话专属——arm 退出挂死双保险（标记
+    //   轮询看门狗 + libjvm exit 二次 rebind 线程）。必须在 pJLI_Launch 前：
+    //   本调用会阻塞到 JVM 终结，之后无人能 arm。headless 安装器路径
+    //   （launchHeadlessJVM）不经过此处，Task144 抑制语义零回归。
+    ame251_armShutdownForceExitWatchdog();
 
     return pJLI_Launch(++margc, margv,
                    0, NULL, // sizeof(const_jargs) / sizeof(char *), const_jargs,

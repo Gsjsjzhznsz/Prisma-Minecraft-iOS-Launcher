@@ -2600,14 +2600,51 @@ void CallbackBridge_resumeGameIfNeed(void) {
     //   3. 嵌入视图 z 序 + 宿主 key window 重钉（sdl3_hook 公开包装；
     //      SDL 后台期窗口操作可能打乱 z 序，此前只有 ShowWindow 钩子修）。
     if (g_sdlWindow && pSDL_PushEvent) {
+        // ★ Task251（反馈 1 四修：warp 垃圾坐标根修）：
+        //   旧实现 ame51_px_to_pt 恒等直通（该 shim 名不副实，无缩放语义），
+        //   warp 坐标 = cursorX/cursorY —— 它们是【信念空间】（1814x1262）
+        //   的坐标，而 SDL_WarpMouseInWindow 吃的是【SDL 窗口点空间】
+        //   （1180x820）。两重病：
+        //   ① 非抓取态：信念坐标直打点窗口 = 偏大 1.537x，落到窗外被 SDL
+        //      钳到边缘 —— 焦点重建在错误位置；
+        //   ② 抓取态：cursorX 是【无界累积值】（latestlog 实锤 cursor=
+        //      (4623.1,535.4) grabbing=1），warp 之 = 钳位 + 相对模式生成
+        //      幻影位移 → 回前台瞬间视角/光标跳变（用户"输入错位"体感成分）。
+        //   终案：抓取态【跳过 warp】（mouse-enter/focus 事件照发，焦点重建
+        //   不依赖 warp；抓取态光标语义本来就是相对量，绝无绝对回锚理由）；
+        //   非抓取态 warp 到【SDL 真实窗口中心】（SDL3_GetWindowSize dlsym
+        //   解析，拿点空间真值，恒在窗内 = 钳位不可能发生）。
         static bool (*ame224_pWarpMouseInWindow)(void *window, float x, float y) = NULL;
         static bool ame224_warpResolved = false;
         if (!ame224_warpResolved) {
             ame224_warpResolved = true;
             ame224_pWarpMouseInWindow = (bool (*)(void *, float, float))dlsym(RTLD_DEFAULT, "SDL_WarpMouseInWindow");
         }
-        if (ame224_pWarpMouseInWindow) {
-            ame224_pWarpMouseInWindow(g_sdlWindow, ame51_px_to_pt((float)cursorX), ame51_px_to_pt((float)cursorY));
+        if (ame224_pWarpMouseInWindow && !isGrabbing) {
+            static void (*ame251_pGetWindowSize)(void *, int *, int *) = NULL;
+            static bool ame251_gwsResolved = false;
+            if (!ame251_gwsResolved) {
+                ame251_gwsResolved = true;
+                ame251_pGetWindowSize = (void (*)(void *, int *, int *))dlsym(RTLD_DEFAULT, "SDL_GetWindowSize");
+            }
+            if (ame251_pGetWindowSize) {
+                int ame251_ww = 0, ame251_wh = 0;
+                ame251_pGetWindowSize(g_sdlWindow, &ame251_ww, &ame251_wh);
+                if (ame251_ww > 0 && ame251_wh > 0) {
+                    ame224_pWarpMouseInWindow(g_sdlWindow, ame251_ww / 2.0f, ame251_wh / 2.0f);
+                    NSLog(@"[InputDiag] Task251: resume warp -> window center (sdl pts %dx%d, was belief-space cursor %ld,%ld grabbing=0)",
+                          ame251_ww, ame251_wh, (long)cursorX, (long)cursorY);
+                }
+            } else {
+                // SDL_GetWindowSize 不可解析（极端裁剪环境）：保持旧路径但钳进
+                // 信念窗口内（杜绝无界累积值直打）。
+                long ame251_clX = cursorX < 0 ? 0 : (cursorX > windowWidth ? windowWidth : cursorX);
+                long ame251_clY = cursorY < 0 ? 0 : (cursorY > windowHeight ? windowHeight : cursorY);
+                ame224_pWarpMouseInWindow(g_sdlWindow, (float)ame251_clX, (float)ame251_clY);
+            }
+        } else if (isGrabbing) {
+            NSLog(@"[InputDiag] Task251: resume warp skipped (grabbing; cursor %ld,%ld is relative accumulator, warp would phantom-move camera)",
+                  (long)cursorX, (long)cursorY);
         }
         SDL3_WindowEvent ame224_we;
         memset(&ame224_we, 0, sizeof(ame224_we));

@@ -63,5 +63,52 @@ public class PatchSVC implements ClassFileTransformer {
     public static void premain(String args, Instrumentation instrumentation) {
         System.out.println("PatchSVC: premain called");
         instrumentation.addTransformer(new PatchSVC());
+        ame251RegisterShutdownHook();
+    }
+
+    // ========================================================================
+    // ★ Task251（26.3 退出挂死双保险 · 甲路信号源）
+    //
+    // gamelog 定案：MC 26.3 退出 = ClientShutdownWatchdog 在 post-main 超时
+    // 抛 Error → System.exit(1) → JVM shutdown hooks 阶段挂死，libc exit()
+    // 永不发生（启动器侧 hooked_exit 日志零出现）。
+    //
+    // JVM shutdown hooks 并发起跑：本 hook 与挂死 hook 同时运行，第一时间
+    // 写标记文件 $POJAV_HOME/ame251_shutdown.marker；native 侧看门狗
+    // （ame251_armShutdownForceExitWatchdog，150ms 轮询）命中即 _exit(0)
+    // 当场终结进程 —— 覆盖 hooks/DestroyJavaVM 任何形态的 post-main 滞留。
+    //
+    // 门：仅 -Dame.game.session=1（launchJVM 注入）注册；headless 安装器
+    // JVM 不带该属性 = Task144 的 exit 抑制语义零回归。
+    // ========================================================================
+    private static void ame251RegisterShutdownHook() {
+        try {
+            if (!"1".equals(System.getProperty("ame.game.session"))) {
+                System.out.println("[Ame251] not a game session, shutdown hook skipped");
+                return;
+            }
+            Thread ame251_hook = new Thread(() -> {
+                try {
+                    String ame251_home = System.getenv("POJAV_HOME");
+                    if (ame251_home == null || ame251_home.length() == 0) {
+                        System.out.println("[Ame251] POJAV_HOME unset, marker skipped");
+                        return;
+                    }
+                    java.io.File ame251_marker =
+                        new java.io.File(ame251_home, "ame251_shutdown.marker");
+                    if (!ame251_marker.exists()) {
+                        ame251_marker.createNewFile();
+                    }
+                    System.out.println("[Ame251] shutdown phase entered, marker written (native watchdog will _exit)");
+                } catch (Throwable t) {
+                    System.out.println("[Ame251] marker write failed: " + t);
+                }
+            }, "Ame251-ShutdownMarker");
+            ame251_hook.setDaemon(true);
+            Runtime.getRuntime().addShutdownHook(ame251_hook);
+            System.out.println("[Ame251] game-session shutdown hook registered (force-exit marker -> native watchdog)");
+        } catch (Throwable t) {
+            System.out.println("[Ame251] shutdown hook registration failed: " + t);
+        }
     }
 }

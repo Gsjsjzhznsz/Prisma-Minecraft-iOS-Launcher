@@ -2133,3 +2133,98 @@ void init_hookFunctions() {
     };
     rebind_symbols(rebindings, sizeof(rebindings)/sizeof(struct rebinding));
 }
+
+// ============================================================================
+// ★ Task251（反馈 2 四修：26.3 退出游戏后启动器仍挂后台最后崩溃）
+//
+// gamelog 定案（latestlog.old.txt 9137 行）：26.3 退出 = MC 自带
+// ClientShutdownWatchdog 在 post-main 阶段超时主动崩溃
+// （java.lang.Error: Watchdog (Client shutdown from post-main)）→
+// System.exit(1) → JVM shutdown hooks 阶段【挂死】——hooked_exit 的
+// 日志标记（"exit(0) -> immediate _exit(0)"）整份日志零出现 = libc exit()
+// 从未被调用，Task250 的 _exit 终案根本没有触发机会。
+//
+// 挂点解剖：System.exit → Shutdown.runHooks（Java hook 并发起跑，其中
+// 一枚挂死）→ [永远到不了] halt0 → os::exit → ::exit。
+//
+// 双保险修复（两路互为兜底）：
+//   路甲（本函数）：Java shutdown hook 起跑即写标记文件
+//     $POJAV_HOME/ame251_shutdown.marker（PatchSVC premain 注册，仅游戏
+//     会话 -Dame.game.session=1；hook 线程与挂死 hook 并发运行，标记必达）
+//     → 本看门狗线程 150ms 轮询命中 → fflush + _exit(0) 当场终结。
+//     覆盖面：shutdown hooks 挂死、DestroyJavaVM 挂死、任何 post-main 滞留。
+//   路乙（ame251_rebindJvmExitOnce）：libjvm 是 init_hookFunctions 之后
+//     才 dlopen 的 image，启动期 fishhook 从未覆盖它（sdl3_hook.m:2106
+//     同款盲区实证）——libjvm 内部 os::exit → ::exit 的 GOT 引用逃过
+//     hooked_exit。libjvm 加载后（dlsym(RTLD_DEFAULT,"DestroyJavaVM")
+//     可解析为信号）二次 rebind {"exit","abort"}（静态 rebindings 防
+//     UAF，zinkStrideFixRebind 同款先例）→ System.exit → halt0 →
+//     os::exit 的出口也落进 hooked_exit（Task250 _exit 语义终于生效）。
+//
+// 时序边界：标记文件在 arm 时先 unlink（进程内只 launch 一次 JVM，
+// gJvmUsedInProcess 把关，无陈旧标记误杀面）；headless JVM 安装器
+// 不 arm 看门狗、不注册 hook（属性门 + arm 调用点都在 launchJVM 内），
+// Task144 的 exit 抑制语义零回归。
+// ============================================================================
+void ame251_rebindJvmExitOnce(void);
+void ame251_armShutdownForceExitWatchdog(void) {
+    const char *ame251_home = getenv("POJAV_HOME");
+    if (ame251_home == NULL) {
+        NSLog(@"[main_hook] Task251: POJAV_HOME unset, shutdown watchdog not armed");
+        return;
+    }
+    static char ame251_markerPath[1024];
+    snprintf(ame251_markerPath, sizeof(ame251_markerPath),
+             "%s/ame251_shutdown.marker", ame251_home);
+    unlink(ame251_markerPath);   // 清陈旧标记（上会话残留不误杀本会话）
+
+    static dispatch_once_t ame251_once;
+    dispatch_once(&ame251_once, ^{
+        // 线程甲：标记轮询（shutdown hook 写标记 → 当场 _exit）
+        NSThread *ame251_watcher = [NSThread detachNewThreadWithBlock:^{
+            @autoreleasepool {
+                while (YES) {
+                    if (access(ame251_markerPath, F_OK) == 0) {
+                        NSLog(@"[main_hook] Task251: shutdown marker detected -> immediate _exit(0) (JVM shutdown phase entered; no libc teardown window)");
+                        ame_write_fatal_trace("Task251: shutdown marker -> _exit(0) (post-main hang guard)");
+                        fflush(NULL);
+                        _exit(0);
+                    }
+                    usleep(150 * 1000);   // 150ms 轮询，成本 = 一次 stat
+                }
+            }
+        }];
+        ame251_watcher.name = @"Ame251-ShutdownWatchdog";
+        // 线程乙：libjvm 加载探测 → exit/abort 二次 rebind（路乙）
+        NSThread *ame251_rebinder = [NSThread detachNewThreadWithBlock:^{
+            @autoreleasepool {
+                // libjvm 在 JLI_Launch 内部 CreateJavaVM 时 dlopen；每 100ms
+                // 探一次 dlsym(RTLD_DEFAULT, "DestroyJavaVM")，最长等 10 分钟
+                //（JVM 起得来就必然在 main 跑起来之前加载完 libjvm）。
+                for (int ame251_i = 0; ame251_i < 6000; ame251_i++) {
+                    void *ame251_sym = dlsym(RTLD_DEFAULT, "DestroyJavaVM");
+                    if (ame251_sym != NULL) {
+                        ame251_rebindJvmExitOnce();
+                        return;
+                    }
+                    usleep(100 * 1000);
+                }
+                NSLog(@"[main_hook] Task251: libjvm never appeared (10min), exit rebind retired");
+            }
+        }];
+        ame251_rebinder.name = @"Ame251-JvmExitRebinder";
+        NSLog(@"[main_hook] Task251: shutdown force-exit watchdog armed (marker=%s) + jvm exit rebind watcher", ame251_markerPath);
+    });
+}
+
+void ame251_rebindJvmExitOnce(void) {
+    // 静态 rebindings（zinkStrideFixRebind 先例：fishhook 保留 rebindings
+    // 供后续 dlopen 的 image 复用，栈上数组会在 future-image 场景 UAF）。
+    static struct rebinding ame251_rebindings[] = {
+        {"exit", hooked_exit, (void *)&orig_exit},
+        {"abort", hooked_abort, (void *)&orig_abort},
+    };
+    rebind_symbols(ame251_rebindings,
+                   sizeof(ame251_rebindings)/sizeof(struct rebinding));
+    NSLog(@"[main_hook] Task251: libjvm detected -> exit/abort re-rebinded (libc teardown exits now land in hooked_exit)");
+}

@@ -146,6 +146,23 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
     // 适配自定义启动器背景：透明化当前 VC，让全局背景图/毛玻璃透出
     [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
 
+    // ★ Task251（反馈 9/12）：玻璃家族档 + OverFullScreen 呈现（TVC 的
+    //   ZeroTier 入口在本轮改为玻璃条件分支）→ 自铺轻遮罩。本类是
+    //   UITableViewController（Task161：禁向 UITableView 直接插子视图）
+    //   → 遮罩挂 navigationController.view（合法容器，位于表之下）。
+    if (LGCIsGlassStyleActive() &&
+        self.navigationController != nil &&
+        self.navigationController.presentingViewController != nil &&
+        self.navigationController.modalPresentationStyle == UIModalPresentationOverFullScreen) {
+        UIView *ame251_dim = [[UIView alloc] initWithFrame:self.navigationController.view.bounds];
+        ame251_dim.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        ame251_dim.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.18];
+        ame251_dim.userInteractionEnabled = NO;
+        ame251_dim.tag = 25100;
+        [self.navigationController.view insertSubview:ame251_dim atIndex:0];
+        NSLog(@"[MVC] Task251: glass-style OverFullScreen dim applied (nav-level)");
+    }
+
     // 彻底隐藏导航栏黑条（仅当作为根页面时；modal/pushed 仍保留导航栏）
     [self hideNavBarIfRoot];
 

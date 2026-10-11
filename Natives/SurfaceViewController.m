@@ -258,6 +258,9 @@ static CFAbsoluteTime ame230_lastCharForwardedAt = 0.0;
 //   间隔，收起窗 = max(1.2s, gap×1.4)（上限 8s），逐字符收敛后闪关消失。
 static CFAbsoluteTime ame250_lastStopTextInputAt = 0.0;
 static CFAbsoluteTime ame250_lastStartGap = 0.0;
+// ★ Task251（反馈 1 四修）：后台转场期被冻结的几何重算待办标志（主线程
+// 专用：viewWillTransitionToSize 置位，ame247_didBecomeActive 消费）。
+static BOOL ame251_transitionResyncPending = NO;
 // ★ Task227（反馈 #7：无法关闭键盘，需手动点输入法按钮）：用户手动收起
 // 闩锁。ef1e3e2a 装机铁证：MC 26.3 会话里 SDL StartTextInput 在无文本
 // 上下文时反复到达（标题画面加载后/后台恢复后/画面切换时），
@@ -2635,7 +2638,23 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         [self viewWillTransitionToSize_Navigation:frame];
         self.ctrlView.frame = getSafeArea(self.view.frame);
         [self.ctrlView.subviews makeObjectsPerformSelector:@selector(update)];
-        [self updateSavedResolution];
+        // ★ Task251（反馈 1 四修：后台过窗值污染全局根修）：
+        //   Task250 门控只拦"SDL 事件推送"，但【全局 windowWidth/Height、
+        //   ame_windowToPhysRatio、Task166 私有交换层尺寸】三者仍被后台
+        //   旋转转场的 updateSavedResolution 写成过窗值（gamelog 6839 行
+        //   实锤 1262x1814 写入）→ 回前台恢复序列初期"输入因子已横屏、
+        //   渲染派生几何仍竖屏"的瞬窗内触点即错位。终案：app 非活跃期
+        //   整体【冻结】本次重算（surface 尺寸转场由系统完成，几何重算
+        //   推迟到回前台 ame247_didBecomeActive 的 updateSavedResolution
+        //   + 强制通道重申，该路径本就必达）——过窗值从源头不再进任何
+        //   全局/派生面，Task250 门控降级为纵深防御第二层。
+        if (!g_ame250_appActive) {
+            ame251_transitionResyncPending = YES;
+            NSLog(@"[SurfaceVC] Task251: transition resync deferred (app inactive; global stays at last-foreground values %dx%d)",
+                  (int)windowWidth, (int)windowHeight);
+        } else {
+            [self updateSavedResolution];
+        }
         [GyroInput updateOrientation];
     } completion:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
         virtualMouseFrame = self.mousePointerView.frame;
@@ -2766,6 +2785,13 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     // ★ Task250：回前台 = 门控解除（后续常规推送恢复；本次重申走强制通道）。
     g_ame250_appActive = YES;
     [self updateSavedResolution];
+    // ★ Task251：后台转场期冻结的 updateSavedResolution 在此补跑（上方
+    //   已含本次；标志仅作观测/日志，冻结语义的正确性由本必达路径保证）。
+    if (ame251_transitionResyncPending) {
+        ame251_transitionResyncPending = NO;
+        NSLog(@"[SurfaceVC] Task251: deferred transition resync consumed on didBecomeActive (%dx%d)",
+              (int)windowWidth, (int)windowHeight);
+    }
     // ★ Task249（用户反馈 1：MobileGL 切后台后输入错位——重宣告时序根修）：
     //   装机日志（bb32e00 latestlog.old 6255-6293 行）实锤：切后台期间 iOS
     //   把场景转到竖屏再转回，两侧各触发一次 nativeSendScreenSize（Task83b
@@ -2905,12 +2931,28 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     if (ame227_kbUserDismissed) {
         CFAbsoluteTime ame232_sinceDismiss = CFAbsoluteTimeGetCurrent() - ame227_kbDismissedAt;
         if (ame232_sinceDismiss < 2.5) {
-            ame227_suppressedStarts++;
-            if (ame227_suppressedStarts <= 5 || (ame227_suppressedStarts % 25) == 0) {
-                NSLog(@"[SurfaceVC] Task229 hard suppression #%d (dismissed %.1fs ago < 2.5s window -- all Starts muted)",
-                      ame227_suppressedStarts, ame232_sinceDismiss);
+            // ★ Task251（反馈 8 五修：硬抑制窗补意图感知旁路）：旧硬窗
+            //   【不识别新鲜输入意图】——用户显式收起后 2.5s 内点聊天框/
+            //   牌子（触摸 = 明确意图，MC 同帧发 Start），Start 仍被静默
+            //   吞掉 = "开关开了但键盘不弹"的直接体感（Task247 历轮只修
+            //   闩锁清零，硬窗本身依旧盲吞意图）。修法：硬窗命中时若
+            //   ame227_lastTouchAt < 0.8s 或 chatOpener(3.0) 任一为真 →
+            //   真输入意图，旁路硬窗放行（闩锁一并清零）。游离 Start
+            //   （无触摸无开键）仍被拦截，#229-6 关不掉循环防线不变。
+            BOOL ame251_freshTouch = (CFAbsoluteTimeGetCurrent() - ame227_lastTouchAt) < 0.8;
+            BOOL ame251_freshChat = ame161_lastSentKeyWasChatOpener(3.0);
+            if (ame251_freshTouch || ame251_freshChat) {
+                ame227_kbUserDismissed = NO;
+                NSLog(@"[SurfaceVC] Task251: hard-suppression window bypassed by fresh input intent (touch=%.2fs ago chat=%d, dismissed %.1fs ago)",
+                      CFAbsoluteTimeGetCurrent() - ame227_lastTouchAt, ame251_freshChat ? 1 : 0, ame232_sinceDismiss);
+            } else {
+                ame227_suppressedStarts++;
+                if (ame227_suppressedStarts <= 5 || (ame227_suppressedStarts % 25) == 0) {
+                    NSLog(@"[SurfaceVC] Task229 hard suppression #%d (dismissed %.1fs ago < 2.5s window -- all Starts muted)",
+                          ame227_suppressedStarts, ame232_sinceDismiss);
+                }
+                return;
             }
-            return;
         }
     }
     // ★ Task247（T8 开关语义落地）：开关 OFF 旧实现漏了"非闩锁态"分支——

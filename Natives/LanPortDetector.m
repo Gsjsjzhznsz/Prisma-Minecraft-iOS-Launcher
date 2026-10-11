@@ -37,6 +37,15 @@ static NSArray<NSString *> *AmePortPatterns(void) {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         patterns = @[
+            /* ★ Task251（反馈 7 四修）：MC 26.x 实测措辞（latestlog.old.txt
+               5901/5902 行原样取证）——旧六条正则对 26.x 全盲（扫描活着也
+               零产出），这两条是本轮主修面。 */
+            /* en 26.x: "Published LAN server on port 65488" */
+            @"published\\s+LAN\\s+server\\s+on\\s+port\\s*[:：\\[\\(]?\\s*(\\d{2,5})",
+            /* zh-Hans 26.x 聊天行: "此世界现已对局域网开放。端口号为[65488]" */
+            @"端口号为\\s*[:：]?\\s*[\\[\\(]?\\s*(\\d{2,5})",
+            /* zh 26.x 变体: "现已对局域网开放" + 端口 数字族 */
+            @"现已对局域网开放[^\\d]{0,12}(\\d{2,5})",
             /* en: "Local game hosted on port 54321" / "... on port [54321]" */
             @"hosted\\s+on\\s+port\\s*[:：\\[\\(]?\\s*(\\d{2,5})",
             /* en variant: "Local game hosted on 0.0.0.0:54321" / "on *:54321" */

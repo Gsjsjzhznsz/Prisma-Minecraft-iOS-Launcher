@@ -1537,9 +1537,21 @@ static NSString *festivalGreeting(void) {
         }
         TerracottaViewController *ame235_mpVC = [[TerracottaViewController alloc] init];
         UINavigationController *ame235_mpNav = [[UINavigationController alloc] initWithRootViewController:ame235_mpVC];
-        ame235_mpNav.modalPresentationStyle = UIModalPresentationPageSheet;
-        [self presentViewController:ame235_mpNav animated:YES completion:nil];
-        NSLog(@"[HomeTile] Task235 multiplayer tile -> Terracotta (PageSheet)");
+        // ★ Task251（反馈 9/12：伪玻璃风格联动——联机菜单仍是原生暗面板）：
+        //   IMG_0390 实锤：玻璃家族档（伪液态玻璃）下磁贴联机页仍以 PageSheet
+        //   呈现 = 系统 dim + 不透明 sheet 底 = "毛玻璃失效/原生界面"。
+        //   修法：玻璃家族档 → OverFullScreen 呈现（无系统 dim，TVC 自铺
+        //   轻 dim + 透壁纸，观感与其余伪玻璃面板同语言）；原生档 → 维持
+        //   PageSheet（"原生风格用回原生"）。
+        if (LGCIsGlassStyleActive()) {
+            ame235_mpNav.modalPresentationStyle = UIModalPresentationOverFullScreen;
+            [self presentViewController:ame235_mpNav animated:YES completion:nil];
+            NSLog(@"[HomeTile] Task251 multiplayer tile -> Terracotta (OverFullScreen, glass style)");
+        } else {
+            ame235_mpNav.modalPresentationStyle = UIModalPresentationPageSheet;
+            [self presentViewController:ame235_mpNav animated:YES completion:nil];
+            NSLog(@"[HomeTile] Task235 multiplayer tile -> Terracotta (PageSheet, native style)");
+        }
     }
 }
 

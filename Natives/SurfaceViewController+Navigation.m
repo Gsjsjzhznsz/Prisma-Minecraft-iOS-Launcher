@@ -756,13 +756,23 @@ static UIColor *ame244_snapshotTint(void) {
                 CGRectGetHeight(self.menuView.frame)
             );
         } else {
-            // 菜单下滑到屏幕底部外
-            self.menuView.frame = CGRectMake(
-                self.menuView.frame.origin.x,
-                screenHeight,
-                self.menuView.frame.size.width,
-                self.menuView.frame.size.height
-            );
+            // ★ Task251（反馈 10 三修：悬浮形态"屏幕滑动"错觉根除）：
+            //   Task250 已修系统外观翻转位移，但装机仍报"屏幕滑动"——残余
+            //   成分 = 磨砂快照是【窗口对位的游戏画面拷贝】（ame248 对位
+            //   铺设），面板整体滑向屏幕底部时面板内的画面拷贝同步平移
+            //   大半屏 = 视觉上"屏幕内容在滑"（面板 1:1 背着屏幕走）。
+            //   终案：悬浮形态放弃全行程位移，改【原位短下沉(28pt) +
+            //   微收缩(0.96) + 淡出】——面板位移量小于快照对位误差感知
+            //   阈值，画面拷贝不再产生可感知平移；"菜单卡片收场"动画
+            //   完整保留（下沉+收缩+淡出三重过渡，非裸跳）。侧滑形态
+            //   （吸边抽屉）保持横向滑出——抽屉贴边语义下滑出屏幕边缘
+            //   不产生"屏幕滑动"错觉（画面拷贝跟随抽屉滑离可视区，属
+            //   用户预期的抽屉行为）。
+            CGRect ame251_target = self.menuView.frame;
+            ame251_target.origin.y += 28.0;
+            self.menuView.frame = ame251_target;
+            self.menuView.transform =
+                CGAffineTransformMakeScale(0.96, 0.96);
         }
         // ★ Task250：面板同步淡出（卡片化收场，不裸跳）
         self.menuView.alpha = 0.0;
@@ -772,6 +782,9 @@ static UIColor *ame244_snapshotTint(void) {
         self.menuView.hidden = YES;
         self.menuDimView.hidden = YES;
         self.menuView.alpha = 1.0;   // ★ Task250：复位透明度（下次 showMenu 零残留）
+        // ★ Task251：复位收缩变换（frame 复位靠 showMenu 重设 frame +
+        //  transform 必须归零，否则下次出现时几何被 0.96 缩放污染）。
+        self.menuView.transform = CGAffineTransformIdentity;
         [self setNeedsUpdateOfHomeIndicatorAutoHidden];
         [self setNeedsUpdateOfScreenEdgesDeferringSystemGestures];
         [self setNeedsStatusBarAppearanceUpdate];
