@@ -1686,6 +1686,37 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
     // 裸读 profile 会在“覆盖成 MobileGL”的会话里把窗口缩给一个不存在
     // 的升采样器（蜷缩根因），或反向漏掉 MobileGL 的 mgl_fsr 升采样。
     NSString *ame78_renderer = ame_effective_renderer();
+    // ★ Task257（清单 5："1.17 以下自动选 kw 后意外的与 FSR 联动"根修）：
+    //   FSR 联动消费的渲染器必须与最终 AMETHYST_RENDERER 同源。da21223
+    //   装机日志 latestlog.old.txt 实锤：1.8.9 会话 profile=auto，本处读到
+    //   ame_effective_renderer()=libMobileGL.dylib（家族覆盖来自版本无关的
+    //   legacy 档位键）→ ame83_fsr_capable_renderer=YES → mgFsrScale=2.00
+    //   （MC 窗口=surface/2.00）；而 JavaLauncher 的 Task256 门随后把渲染器
+    //   改写回 auto → kw 决策链 → nggl4es（无升采样器）→ 半分辨率渲染且无
+    //   FSR 放大 = 用户看到的"意外的与 FSR 联动"（画面发软）。
+    //   镜像口径：MC<1.17（javaVersion<=8，与 JavaLauncher Task256 门同源
+    //   ——metadata 即 launchJVM 的同一份）且 profile 未显式选择渲染器时，
+    //   联动按 kw 链对待（nggl4es 不在 ame83 能力表）→ mgFsrScale=1.0 全
+    //   分辨率。显式选 MobileGL 玩 1.8.9 不受影响（显式选择永远优先，与
+    //   Task256 哲学一致）；1.17+ 会话门不触发，FSR 联动行为零变化。
+    if (self.metadata != nil) {
+        int ame257_minJava = [self.metadata[@"javaVersion"][@"majorVersion"] intValue];
+        if (ame257_minJava <= 0) {
+            ame257_minJava = [self.metadata[@"javaVersion"][@"version"] intValue];
+        }
+        if (ame257_minJava <= 8 && ![ame78_renderer isEqualToString:@"auto"]) {
+            NSString *ame257_profileRenderer = [PLProfiles resolveKeyForCurrentProfile:@"renderer"];
+            BOOL ame257_explicit = [ame257_profileRenderer isKindOfClass:NSString.class] &&
+                ame257_profileRenderer.length > 0 &&
+                ![ame257_profileRenderer isEqualToString:@"auto"];
+            if (!ame257_explicit) {
+                NSLog(@"[SurfaceVC] Task257: legacy MC (minJava=%d) with non-explicit profile renderer "
+                      @"-- FSR linkage disengaged (decide chain will pick kw/NG-GL4ES: no renderer-side "
+                      @"upscaler, full-res render)", ame257_minJava);
+                ame78_renderer = @"auto";   // auto 同样不在 ame83 能力表 → mgFsrScale=1.0
+            }
+        }
+    }
     NSInteger ame78_fsr_preset = getPrefInt(@"mobileglues.fsr1_setting");
     // Task 83（FSR 独立化）：联动不再仅限 MG——zink（osm_bridge EASU）与
     // Vulkan 渲染器的 GL 路径（=MG）同样吃下窗口=表面/档位系数。能力表见

@@ -235,7 +235,26 @@ jobs:
           # MobileGL 上游 LFS 配额已用尽，其 LFS 文件（tools/trace_replay/fixtures）
           # 与 iOS 构建无关，跳过 smudge 避免 submodule checkout 失败 exit 128
           GIT_LFS_SKIP_SMUDGE: "1"
-        run: git submodule update --init --recursive
+        run: git submodule update --init --recursive --depth 1 --jobs 8
+
+      # ★ Task257（清单 6：CI 构建速度第二轮）——JRE 产物缓存：jre 目标每次
+      #   全量下载 4 个 iOS JRE（8/17/21/25，assets.angelauramc.dev）+ 解包 +
+      #   裁剪 + upcall-mirror 补丁（冷跑 3-5 分钟 = 当前最大网络单项）。
+      #   缓存裁剪+补丁后的 depends/java-*-openjdk 四目录，命中时 jre 目标按
+      #   release 标记文件直通（补丁脚本幂等，Task257 已核实）。键含补丁脚本
+      #   哈希（脚本变更自动换桶）；⚠ 故意不配 restore-keys（半旧 JRE 静默
+      #   复用 = 正确性风险，与 VirGL prebuilt 同一教条）；⚠ 上游 JRE zip
+      #   无版本钉——若更换 JRE 来源/版本，必须手动递增键中的 v1 令牌。
+
+      - name: Cache iOS JREs (Task257)
+        uses: actions/cache@v4
+        with:
+          path: |
+            depends/java-8-openjdk
+            depends/java-17-openjdk
+            depends/java-21-openjdk
+            depends/java-25-openjdk
+          key: jre-ios-aarch64-v1-${{ hashFiles('scripts/patch_jre_upcall_mirror.py') }}
 
       # ★ Task256（清单 6：CI 构建速度）——VirGL 产物缓存：dep_virgl_build 每次 rm -rf 重建
       #   + Mesa 906 目标全量编译（run 797 实测第一遍 ~8 分钟，双变体连跑共 ~10 分钟 = 最大单项）。
@@ -284,7 +303,10 @@ jobs:
           if [ "${{ matrix.platform_name }}" == "ios" ]; then
             gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=${{ matrix.platform }} 2>&1 | tee build_output.log
 
-            gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=${{ matrix.platform }} TROLLSTORE_JIT_ENT=1 2>&1 | tee -a build_output.log
+            # Task257：第二遍只做 package（同一二进制重复 dsymutil 是纯浪费，
+            # dSYM 已在第一遍产出且对应常规 ipa 的签名形态）；payload 依赖会
+            # 重新拷贝 .app 并按 TROLLSTORE_JIT_ENT=1 换 entitlements 重签。
+            gmake -j$(sysctl -n hw.ncpu) package PLATFORM=${{ matrix.platform }} TROLLSTORE_JIT_ENT=1 2>&1 | tee -a build_output.log
 
           elif [ "${{ matrix.platform_name }}" == "tvos" ]; then
             gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=${{ matrix.platform }} TROLLSTORE_JIT_ENT=1 2>&1 | tee build_output.log

@@ -418,18 +418,39 @@ static BOOL g_ame256_terraLibInitialized = NO;
                     }
                     NSLog(@"[TerracottaManager] Task256: retry %lu firing (room %@)", (unsigned long)ame256_seq, strongSelf.currentInviteCode);
                     strongSelf.status = TerracottaStatusConnecting;
-                    [[SilentAudioPlayer shared] startKeepingAlive];
-                    BOOL ok = [TerracottaBridge setGuestingWithRoom:strongSelf.currentInviteCode
-                                                         playerName:strongSelf->_guestRetryPlayerName];
-                    if (!ok) {
-                        strongSelf.status = TerracottaStatusError;
-                        strongSelf.lastError = localize(@"i18n_str_1001", nil);
-                        [[SilentAudioPlayer shared] stopKeepingAlive];
-                        [strongSelf notifyStateChanged];
-                        return;
-                    }
-                    [strongSelf startPolling];
-                    [strongSelf notifyStateChanged];
+                    /* ★ Task257（清单 2：自动重试在生产上从未生效的根修）：
+                       da21223 装机日志 latestlog.txt 实锤——retry 1 firing 后 26ms
+                       内 keeping-alive started→stopped = Exception 态直呼
+                       terracotta_ios_set_guesting 被 Rust 状态机拒绝（返回 0），
+                       随后 Core 才自行复位 Waiting。重试必须先显式复位 Waiting
+                       （与用户手动"停止→重连"同构，FCL/PCL2CE 重试语义），
+                       给 1.5s 沉降后再重入访客流程；轮询此时已停（Exception
+                       分支 stopPolling），复位态不会被误报上 UI。 */
+                    [TerracottaBridge setWaiting];
+                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)),
+                                   dispatch_get_main_queue(), ^{
+                        __strong typeof(weakSelf) strongSelf2 = weakSelf;
+                        if (strongSelf2 == nil) return;
+                        /* 沉降窗内用户停止/新会话 → 放弃本次重试 */
+                        if (strongSelf2.role != TerracottaRoleClient || strongSelf2.currentInviteCode.length == 0) {
+                            NSLog(@"[TerracottaManager] Task257: retry %lu dropped after Waiting reset (session reset)", (unsigned long)ame256_seq);
+                            return;
+                        }
+                        [[SilentAudioPlayer shared] startKeepingAlive];
+                        BOOL ok = [TerracottaBridge setGuestingWithRoom:strongSelf2.currentInviteCode
+                                                             playerName:strongSelf2->_guestRetryPlayerName];
+                        if (!ok) {
+                            NSLog(@"[TerracottaManager] Task257: retry %lu set_guesting failed after Waiting reset -- giving up with host-online guidance", (unsigned long)ame256_seq);
+                            strongSelf2.status = TerracottaStatusError;
+                            strongSelf2.lastError = localize(@"i18n_str_989", nil);
+                            [[SilentAudioPlayer shared] stopKeepingAlive];
+                            [strongSelf2 notifyStateChanged];
+                            return;
+                        }
+                        NSLog(@"[TerracottaManager] Task257: retry %lu re-entered guest flow", (unsigned long)ame256_seq);
+                        [strongSelf2 startPolling];
+                        [strongSelf2 notifyStateChanged];
+                    });
                 });
             }
             break;
