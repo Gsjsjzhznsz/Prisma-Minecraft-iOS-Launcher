@@ -23,6 +23,8 @@
 // Task235（联机快捷磁贴）：陶瓦联机页 + 可用性探测
 #import "TerracottaViewController.h"
 #import "TerracottaBridge.h"
+#import "CleanupViewController.h"          // ★ Task256（清单 3）：主页磁贴直通清理中心
+#import "VersionManagerViewController.h"   // ★ Task256：复用版本扫描（类方法）
 #import <SafariServices/SafariServices.h>
 #import <QuartzCore/QuartzCore.h>
 
@@ -58,6 +60,8 @@ NSString * const kShortcutActionBackground = @"background";
 NSString * const kShortcutActionVersions   = @"versions";
 // Task235：联机快捷磁贴（参照上游 MP-RESTORE）。
 NSString * const kShortcutActionMultiplayer = @"multiplayer";
+// ★ Task256（清单 3）：主页“清理垃圾”磁贴。
+NSString * const kShortcutActionCleanup = @"cleanup";
 
 // MARK: - Color Helpers
 
@@ -260,6 +264,21 @@ static UIColor *colorFromHex(NSString *hex) {
     mp.accentColorHex = @"#0EA5E9";
     [tiles addObject:mp];
 
+    // 10. 快捷入口: 清理垃圾 (半宽) —— ★ Task256（清单 3）：清理中心入口
+    //    从版本管理页 FAB→ActionSheet 三级路径提升为主页一级磁贴（用户：
+    //    “优化清理垃圾功能的位置摆放，当前太不明显”）。与版本管理页
+    //    既有入口并存；老用户布局由 loadSavedConfigs 的 Task256 注入补齐。
+    HomeTileConfig *cleanup = [[HomeTileConfig alloc] init];
+    cleanup.tileId = @"shortcut_cleanup";
+    cleanup.tileType = HomeTileTypeShortcut;
+    cleanup.tileSize = HomeTileSizeCompact;
+    cleanup.visible = YES;
+    cleanup.customTitle = localize(@"home.tile.cleanup", @"清理垃圾");
+    cleanup.iconName = @"trash.circle.fill";
+    cleanup.shortcutAction = kShortcutActionCleanup;
+    cleanup.accentColorHex = @"#EF4444";
+    [tiles addObject:cleanup];
+
     return tiles;
 }
 
@@ -305,6 +324,33 @@ static UIColor *colorFromHex(NSString *hex) {
         result = ame235_injected;
         [self saveConfigs:result];
         NSLog(@"[HomeTile] Task235 multiplayer shortcut injected into saved layout");
+    }
+
+    // ★ Task256（清单 3）：老用户布局一次性补“清理垃圾”磁贴（同 Task235
+    //    联机注入语义：缺失才加，不覆盖用户自定义；落盘后由用户自行增删）。
+    BOOL ame256_hasCleanup = NO;
+    for (HomeTileConfig *c in result) {
+        if (c.tileType == HomeTileTypeShortcut &&
+            [c.shortcutAction isEqualToString:kShortcutActionCleanup]) {
+            ame256_hasCleanup = YES;
+            break;
+        }
+    }
+    if (!ame256_hasCleanup) {
+        NSMutableArray<HomeTileConfig *> *ame256_injected = [result mutableCopy];
+        HomeTileConfig *ame256_cleanup = [[HomeTileConfig alloc] init];
+        ame256_cleanup.tileId = @"shortcut_cleanup";
+        ame256_cleanup.tileType = HomeTileTypeShortcut;
+        ame256_cleanup.tileSize = HomeTileSizeCompact;
+        ame256_cleanup.visible = YES;
+        ame256_cleanup.customTitle = localize(@"home.tile.cleanup", @"清理垃圾");
+        ame256_cleanup.iconName = @"trash.circle.fill";
+        ame256_cleanup.shortcutAction = kShortcutActionCleanup;
+        ame256_cleanup.accentColorHex = @"#EF4444";
+        [ame256_injected addObject:ame256_cleanup];
+        result = ame256_injected;
+        [self saveConfigs:result];
+        NSLog(@"[HomeTile] Task256 cleanup shortcut injected into saved layout");
     }
     return result;
 }
@@ -1552,6 +1598,18 @@ static NSString *festivalGreeting(void) {
             [self presentViewController:ame235_mpNav animated:YES completion:nil];
             NSLog(@"[HomeTile] Task235 multiplayer tile -> Terracotta (PageSheet, native style)");
         }
+    } else if ([action isEqualToString:kShortcutActionCleanup]) {
+        // ★ Task256（清单 3）：主页磁贴直通清理中心（版本扫描经类方法
+        //    ame256_scanVersionsForCleanup 复用，与版本管理页同一实现）。
+        CleanupViewController *ame256_cleanup = [[CleanupViewController alloc] init];
+        ame256_cleanup.ame255_versionScanner = ^NSArray<NSDictionary *> *(void) {
+            return [VersionManagerViewController ame256_scanVersionsForCleanup];
+        };
+        UINavigationController *ame256_nav = [[UINavigationController alloc]
+            initWithRootViewController:ame256_cleanup];
+        ame256_nav.modalPresentationStyle = UIModalPresentationPageSheet;
+        [self presentViewController:ame256_nav animated:YES completion:nil];
+        NSLog(@"[HomeTile] Task256 cleanup tile -> CleanupViewController");
     }
 }
 

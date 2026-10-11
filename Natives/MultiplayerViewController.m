@@ -154,7 +154,10 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
     if (LGCIsGlassStyleActive() &&
         self.navigationController != nil &&
         self.navigationController.presentingViewController != nil &&
-        self.navigationController.modalPresentationStyle == UIModalPresentationOverFullScreen) {
+        self.navigationController.modalPresentationStyle == UIModalPresentationOverFullScreen &&
+        [BackgroundManager sharedManager].blurIntensity > 0.01) {
+        /* ★ Task256：模糊程度最低档（≤1%）= 背景完全透明 —— 连轻 dim 也不铺
+           （与壁纸 frost/磨砂页同口径；清单 4）。 */
         UIView *ame252_dim = [[UIView alloc] initWithFrame:self.navigationController.view.bounds];
         ame252_dim.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         ame252_dim.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.18];
@@ -331,6 +334,14 @@ static const void *kAme250FrostLinkKey = &kAme250FrostLinkKey;   // ★ Task250�
 - (void)ame249_applyGlassFrostBackground {
     UIView *ame249_frost = objc_getAssociatedObject(self, kAme249MpFrostKey);
     if (!LGCIsGlassStyleActive()) {
+        if (ame249_frost != nil) ame249_frost.hidden = YES;
+        [self ame250_stopFrostRefresh];
+        return;
+    }
+    /* ★ Task256（清单 4）：模糊程度最低档 = 背景完全透明 —— 游戏面快照
+       磨砂整层退场（与壁纸 frost 同口径；拖回高档即自动恢复，本方法
+       在 viewDidAppear/Tick 重入）。 */
+    if ([BackgroundManager sharedManager].blurIntensity <= 0.01) {
         if (ame249_frost != nil) ame249_frost.hidden = YES;
         [self ame250_stopFrostRefresh];
         return;

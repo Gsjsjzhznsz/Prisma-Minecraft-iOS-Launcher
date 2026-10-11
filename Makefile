@@ -666,6 +666,16 @@ dep_virgl:
 # 剥除该依赖——zstd 仅用于磁盘缓存压缩，进程内渲染零功能损失。
 
 dep_virgl_build:
+	@if [ -n "$(VIRGL_PREBUILT_DIR)" ] && \
+	    [ -f "$(VIRGL_PREBUILT_DIR)/libOSMesaVirgl.dylib" ] && \
+	    [ -f "$(VIRGL_PREBUILT_DIR)/libvtestserver.dylib" ] && \
+	    [ -f "$(VIRGL_PREBUILT_DIR)/libepoxy.dylib" ]; then \
+		echo '[Amethyst v$(VERSION)] dep_virgl - cached (VIRGL_PREBUILT_DIR prebuilts present -- Task256 CI speedup, skips Mesa 906-target rebuild)'; \
+		cp $(VIRGL_PREBUILT_DIR)/libOSMesaVirgl.dylib \
+		   $(VIRGL_PREBUILT_DIR)/libvtestserver.dylib \
+		   $(VIRGL_PREBUILT_DIR)/libepoxy.dylib $(WORKINGDIR)/; \
+		exit 0; \
+	fi
 	@if [ -f "$(SOURCEDIR)/Natives/resources/Frameworks/libOSMesaVirgl.dylib" ] && \
 	    [ -f "$(SOURCEDIR)/Natives/resources/Frameworks/libvtestserver.dylib" ] && \
 	    [ -f "$(SOURCEDIR)/Natives/resources/Frameworks/libepoxy.dylib" ]; then \

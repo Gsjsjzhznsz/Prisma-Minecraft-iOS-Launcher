@@ -216,13 +216,18 @@ static UIColor *ame250_globalTextFillColor(void);
     //   主动设 0 照常尊重（设置页语义不变）。effect=Translucent 时不自
     //   愈（半透明档与模糊强度无观感关联，0 无自相矛盾）。
     if (_blurIntensity <= 0.001 && _uiEffect == BackgroundUIEffectBlur &&
-        ![defaults boolForKey:@"ame255.blurHealDone"]) {
+        ![defaults boolForKey:@"ame255.blurHealDone"] &&
+        ![defaults boolForKey:@"ame256.blurUserSet"]) {
         NSLog(@"[BackgroundManager] Task255: stored blurIntensity=0 with effect=Blur (legacy-damaged archive) -- healing to 0.75 (one-time)");
         _blurIntensity = 0.75;
         [defaults setFloat:_blurIntensity forKey:kBackgroundBlurIntensityKey];
         [defaults setBool:YES forKey:@"ame255.blurHealDone"];
         [defaults synchronize];
     }
+    /* ★ Task256：自愈闸新增 ame256.blurUserSet 条件——用户在设置页主动拖过
+       模糊滑杆（任意档位）即落此标志；此后存档 0 = 用户真实意图（清单 4
+       “最低档=完全透明”），自愈永不覆盖。无标志的 0 仍是历史写坏档案，
+       照旧一次性治回 0.75（Task255 病历不回退）。 */
     // ★ Task252（反馈"毛玻璃效果失效"取证）：装机截图（IMG_0399）卡片=
     //   锐利壁纸穿透暗色平涂、零磨砂——与本文件 Blur 分支（SystemThin
     //   Material frost）的预期观感不符，与 Translucent 分支（半透明平涂）
@@ -267,6 +272,10 @@ static UIColor *ame250_globalTextFillColor(void);
 
 - (void)setBlurIntensity:(CGFloat)blurIntensity {
     _blurIntensity = MAX(0.0, MIN(1.0, blurIntensity));
+    /* ★ Task256（清单 4）：滑杆是唯一调用方（加载路径直读 defaults 不经
+       setter）——拖过即落“用户显式设过”标志，blur=0 存档此后是真实意图，
+       Task255 的 legacy 自愈闸永不覆盖。 */
+    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"ame256.blurUserSet"];
     [self saveUISettings];
 }
 
@@ -552,6 +561,19 @@ static UIColor *ame250_globalTextFillColor(void);
 
     UIView *existingDim = [container viewWithTag:kBackgroundDimTag];
     if (existingDim) [existingDim removeFromSuperview];
+
+    /* ★ Task256（清单 4：模糊程度调到最低 = 背景完全透明）：
+       Task255 的“磨砂层恒装”语义被用户指令推翻——强度最低档（≤1%）的
+       用户预期是【壁纸全锐利直出、无磨砂无压暗】（IMG_0400 装机实锤：
+       最低档时全屏白雾）。Task254 的 alpha<1 不渲染定律不变，所以中间
+       档位仍是“全磨砂 + dim 随强度递增”（二档语义，OS 限制如此）；
+       最低档从“恒装磨砂”改为“整层不装”。历史 blur=0 存档（非用户意图）
+       已由加载路径 Task255 自愈 + Task256 blurUserSet 标记双闸挡住，
+       不会再踩回 IMG_0399 全锐利平涂的旧病灶。 */
+    if (self.uiEffect == BackgroundUIEffectBlur && self.blurIntensity <= 0.01) {
+        NSLog(@"[BackgroundManager] Task256: blur intensity at minimum -- frost+dim layers skipped (fully transparent background)");
+        return;
+    }
 
     // 修复：使用 SystemThinMaterial（自适应浅色/深色，且较通透）替代硬编码 Dark。
     // 之前使用 UIBlurEffectStyleDark + 黑色 dim view 叠加，导致：

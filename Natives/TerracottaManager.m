@@ -2,6 +2,7 @@
 #import "TerracottaManager.h"
 #import "TerracottaBridge.h"
 #import "SilentAudioPlayer.h"
+#import "LanPortDetector.h"   // ★ Task256：init 后叫停在飞回环扫描（防探针打崩刚孵出的 ScaffoldingServer）
 // Task223：公共 EasyTier peer 预检（BSD socket 探测）
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -12,6 +13,13 @@
 #include <string.h>
 
 NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaManagerStateDidChange";
+
+/// ★ Task256：库初始化静态标志。用静态而非实例属性承载，是为了让
+///   +hasInitializedLibrary 能在不创建单例的前提下读到——LanPortDetector
+///   的探针闸高频轮询本标志，若经由 [TerracottaManager shared] 访问，
+///   探测器自己就会把 Terracotta（连同 ScaffoldingServer）孵化出来。
+///   写入点唯一（initializeTerracotta 成功路径），BOOL 平坦读写无需锁。
+static BOOL g_ame256_terraLibInitialized = NO;
 
 @interface TerracottaManager ()
 @property(nonatomic, assign) TerracottaStatus status;
@@ -30,6 +38,18 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
     NSInteger _lastStateKind;
     NSInteger _lastStateIndex;
     dispatch_queue_t _pollQueue;
+    /* ★ Task256：访客 PingHostFail 自动重试账本。
+       _guestRetryCount：已自动重试次数（上限 2）。
+       _guestRetryArmed：待执行重试的在飞标志（stopSession 撤闸用）。
+       _guestRetryPlayerName：重试时原样回传的玩家名（Rust 侧用于向房主
+       标识访客；nil 会让房主玩家列表少名字）。 */
+    NSInteger _guestRetryCount;
+    BOOL _guestRetryArmed;
+    NSString *_guestRetryPlayerName;
+}
+
++ (BOOL)hasInitializedLibrary {
+    return g_ame256_terraLibInitialized;
 }
 
 #pragma mark - Singleton
@@ -85,6 +105,10 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
     }
     NSLog(@"[TerracottaManager] Terracotta initialized at %@", workDir);
     self.initialized = YES;
+    g_ame256_terraLibInitialized = YES;
+    /* ★ Task256：库初始化 = ScaffoldingServer 已在本机监听。若 LanPortDetector
+       的周期扫描还在跑，立刻叫停（防打崩；与探测闸双保险）。 */
+    [[LanPortDetector sharedInstance] stopAutoDetection];
 }
 
 #pragma mark - Session Control
@@ -123,6 +147,11 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
         return NO;
     }
     [self resetSessionState];
+    /* ★ Task256：新一次加入重置重试账本（上次加入的重试计数不清零会让
+       本次加入只剩残余次数）。 */
+    _guestRetryCount = 0;
+    _guestRetryArmed = NO;
+    _guestRetryPlayerName = [playerName copy];
     self.role = TerracottaRoleClient;
     self.currentInviteCode = inviteCode;
     self.status = TerracottaStatusConnecting;
@@ -251,6 +280,9 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
 }
 
 - (void)stopSession {
+    /* ★ Task256：用户主动停会话 = 撤销在飞的自动重试（4s 延迟窗内
+       点停止的竞态面）。 */
+    _guestRetryArmed = NO;
     [TerracottaBridge setWaiting];
     [self stopPolling];
     [[SilentAudioPlayer shared] stopKeepingAlive];
@@ -351,6 +383,55 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
             /* 异常时停止轮询和保活 */
             [self stopPolling];
             [[SilentAudioPlayer shared] stopKeepingAlive];
+            /* ★ Task256（用户清单 2：联机参考 FCL/PCL2CE 的重试语义）：
+               访客 PingHostFail（type 0，55456d9 装机日志 01:30:39→01:30:56
+               实锤：GuestStarting 后 ~17s RoomExperiment 找不到房主即判死）
+               自动重试至多 2 次（间隔 4s）——首次组网时 EasyTier 发现/打洞
+               慢于 17s 窗口是常态，房主稍后出现在网络里即可被第二/三次
+               捕获。用户点停止（stopSession）即撤闸；重试耗尽后照旧报错
+               （i18n_str_989 文案已含“确认房主仍在线”指引）。 */
+            if (self.role == TerracottaRoleClient &&
+                state.exceptionType == 0 &&
+                _guestRetryCount < 2) {
+                _guestRetryCount++;
+                _guestRetryArmed = YES;
+                NSInteger ame256_seq = _guestRetryCount;
+                NSString *ame256_stage = [NSString stringWithFormat:
+                    localize(@"terracotta.stage.retry", @"正在重试连接房主（第 %lu/2 次）…"),
+                    (unsigned long)ame256_seq];
+                self.stageDescription = ame256_stage;
+                NSLog(@"[TerracottaManager] Task256: guest PingHostFail -- auto-retry %lu/2 in 4s", (unsigned long)ame256_seq);
+                __weak typeof(self) weakSelf = self;
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(4.0 * NSEC_PER_SEC)),
+                               dispatch_get_main_queue(), ^{
+                    __strong typeof(weakSelf) strongSelf = weakSelf;
+                    if (strongSelf == nil) return;
+                    if (!strongSelf->_guestRetryArmed) {
+                        NSLog(@"[TerracottaManager] Task256: retry %lu cancelled (user stop)", (unsigned long)ame256_seq);
+                        return;
+                    }
+                    strongSelf->_guestRetryArmed = NO;
+                    /* 用户在延迟窗内点了停止/新会话 → role 已被 reset */
+                    if (strongSelf.role != TerracottaRoleClient || strongSelf.currentInviteCode.length == 0) {
+                        NSLog(@"[TerracottaManager] Task256: retry %lu dropped (session reset)", (unsigned long)ame256_seq);
+                        return;
+                    }
+                    NSLog(@"[TerracottaManager] Task256: retry %lu firing (room %@)", (unsigned long)ame256_seq, strongSelf.currentInviteCode);
+                    strongSelf.status = TerracottaStatusConnecting;
+                    [[SilentAudioPlayer shared] startKeepingAlive];
+                    BOOL ok = [TerracottaBridge setGuestingWithRoom:strongSelf.currentInviteCode
+                                                         playerName:strongSelf->_guestRetryPlayerName];
+                    if (!ok) {
+                        strongSelf.status = TerracottaStatusError;
+                        strongSelf.lastError = localize(@"i18n_str_1001", nil);
+                        [[SilentAudioPlayer shared] stopKeepingAlive];
+                        [strongSelf notifyStateChanged];
+                        return;
+                    }
+                    [strongSelf startPolling];
+                    [strongSelf notifyStateChanged];
+                });
+            }
             break;
     }
 

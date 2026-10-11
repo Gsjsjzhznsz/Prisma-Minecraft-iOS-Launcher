@@ -1529,6 +1529,10 @@ static const CGFloat kVMCardCornerRadius = 16.0;
 
 /// 简易目录大小计算（递归）
 - (void)calculateFolderSizeAtPath:(NSString *)path size:(unsigned long long *)size {
+    [VersionManagerViewController ame256_calculateFolderSizeAtPath:path size:size];
+}
+
++ (void)ame256_calculateFolderSizeAtPath:(NSString *)path size:(unsigned long long *)size {
     NSFileManager *fm = [NSFileManager defaultManager];
     NSDirectoryEnumerator *enumerator = [fm enumeratorAtPath:path];
     NSString *relativePath;
@@ -1978,6 +1982,15 @@ static const CGFloat kVMCardCornerRadius = 16.0;
 ///   版本定义) / referenced(BOOL：任一实例的 lastVersionId 引用) /
 ///   sizeBytes(NSNumber：目录递归大小)。
 - (NSArray<NSDictionary *> *)ame255_scanInstalledVersions {
+    /* ★ Task256（清单 3）：扫描逻辑下沉到类方法 ame256_scanVersionsForCleanup
+       ——主页“清理垃圾”磁贴无实例也能复用同一实现（版本管理页入口与主页
+       磁贴入口永不漂移）。本实例方法保留为薄壳，原有调用点零改动。 */
+    return [VersionManagerViewController ame256_scanVersionsForCleanup];
+}
+
+/// ★ Task256（清单 3）：扫描 GAME_DIR/versions 全量版本（含引用状态与体积），
+///   供清理中心/恢复对话框/主页磁贴共用。无实例依赖。
++ (NSArray<NSDictionary *> *)ame256_scanVersionsForCleanup {
     // ★ Task255 r2 路径根修正：扫描 GAME_DIR/versions（真机实体；同 deleteProfile 处注释）。
     NSString *versionsDir = [NSString stringWithFormat:@"%s/versions",
         getenv("POJAV_GAME_DIR") ? getenv("POJAV_GAME_DIR") : getenv("POJAV_HOME")];
@@ -2001,7 +2014,7 @@ static const CGFloat kVMCardCornerRadius = 16.0;
             [NSString stringWithFormat:@"%@.json", entry]];
         BOOL jsonOK = [NSFileManager.defaultManager fileExistsAtPath:jsonPath];
         unsigned long long folderSize = 0;
-        [self calculateFolderSizeAtPath:vdir size:&folderSize];
+        [VersionManagerViewController ame256_calculateFolderSizeAtPath:vdir size:&folderSize];
         [result addObject:@{
             @"id": entry,
             @"path": vdir,

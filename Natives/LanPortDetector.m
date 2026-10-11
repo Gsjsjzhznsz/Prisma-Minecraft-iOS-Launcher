@@ -20,7 +20,7 @@
 
 NSString *const LanPortDetectorDidDetectPortNotification = @"LanPortDetectorDidDetectPort";
 
-#pragma mark - Terracotta session guard (Task255)
+#pragma mark - Terracotta probe guard (Task255/256)
 
 /// ★ Task255（联机又不可用根修）：Terracotta 会话活跃时禁止一切回环
 ///   探测。装机 latestlog（7bacfd3 构建）实锤链：Task249/250 的周期
@@ -31,12 +31,19 @@ NSString *const LanPortDetectorDidDetectPortNotification = @"LanPortDetectorDidD
 ///   97, 108, 104, 111, 115, 116, 52, 136, 1] }" 逐字节吻合）→ 合成
 ///   握手包把 ScaffoldingServer 打崩（其后 UnexpectedEof = 配对的
 ///   AmePortAcceptsConnection 裸 connect 探针）→ 访客侧 PingHostFail
-///   =「联机又无法使用」。修法三层：①探测入口全部加会话门控（本
-///   函数）；②TVC createRoomWithPort 建房即停扫（任务已完成）；③
-///   周期 tick 自愈（发现会话活跃即自停）。
-static BOOL AmeTerracottaSessionActive(void) {
-    TerracottaStatus status = [TerracottaManager shared].status;
-    return status != TerracottaStatusDisconnected;
+///   =「联机又无法使用」。
+/// ★ Task256（第二刀，55456d9 装机 latestlog.old.txt 补实锤）：会话闸有
+///   洞——01:27:05 Terracotta 懒初始化（任意首次访问 shared，包括
+///   Task255 会话闸自己），01:27:10 ScaffoldingServer 就被打崩，而此时
+///   会话尚未建立（status == Disconnected）→ 闸门放行。修法改确定性：
+///   库一旦初始化（= ScaffoldingServer 已在本机监听）⇒ 一切主动探测
+///   （裸 connect + 合成握手）停用，检测回归日志尾随（Task251 的
+///   26.x "Published LAN server on port" 正则）+ 手动端口。读取用类
+///   方法 +hasInitializedLibrary（静态标志）——绝不能碰 [TerracottaManager
+///   shared]，否则探测器自己会把 Terracotta 孵化出来。
+static BOOL AmeTerracottaProbeSuspended(void) {
+    if (![TerracottaBridge isAvailable]) return NO;
+    return [TerracottaManager hasInitializedLibrary];
 }
 
 #pragma mark - Log location
@@ -466,8 +473,8 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
     // ★ Task255：联机会话活跃时禁止探针（探针字节会打崩 Terracotta
     //   ScaffoldingServer，见文件头 Task255 注释）——直接答「活着」让
     //   快捷路径自然收口（真死口由建房 API 自身的状态机拒绝兜底）。
-    if (AmeTerracottaSessionActive()) {
-        NSLog(@"[LanPortDetector] Task255: skip liveness probe for port %u -- Terracotta session active", port);
+    if (AmeTerracottaProbeSuspended()) {
+        NSLog(@"[LanPortDetector] Task256: skip liveness probe for port %u -- Terracotta initialized (scaffold protection)", port);
         return YES;
     }
     return AmePortAcceptsConnection(port) && AmePortAnswersLikeMinecraft(port);
@@ -531,8 +538,8 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
             if (!strongSelf->_scanRepeating) return;
             // ★ Task255：会话活跃自愈停扫（房间已建/已加入后扫描既无意义
             //   又会打崩 ScaffoldingServer——根修的第一道闸）。
-            if (AmeTerracottaSessionActive()) {
-                NSLog(@"[LanPortDetector] Task255: Terracotta session active -- self-stopping repeating loopback scan");
+            if (AmeTerracottaProbeSuspended()) {
+                NSLog(@"[LanPortDetector] Task256: Terracotta initialized -- self-stopping repeating loopback scan (scaffold protection)");
                 [strongSelf stopLoopbackScanRepeating];
                 return;
             }
@@ -566,8 +573,8 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
 /// 命中即 publishPort 并返回 YES。在全局队列上调用（不占 _queue）。
 - (BOOL)ame249_quickSweepWithProgress:(void (^)(NSUInteger, NSUInteger))progress {
     // ★ Task255：会话活跃禁扫（第三道闸；tick/入口两道闸的兜底）。
-    if (AmeTerracottaSessionActive()) {
-        NSLog(@"[LanPortDetector] Task255: skip quick sweep -- Terracotta session active");
+    if (AmeTerracottaProbeSuspended()) {
+        NSLog(@"[LanPortDetector] Task256: skip quick sweep -- Terracotta initialized (scaffold protection)");
         return NO;
     }
     static const uint16_t kFastPorts[] = { 25565, 25575, 25576, 25577, 25578 };
@@ -577,8 +584,8 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
 
     for (NSUInteger i = 0; i < fastCount; i++) {
         /* ★ Task255：逐端口中止检查 */
-        if (AmeTerracottaSessionActive()) {
-            NSLog(@"[LanPortDetector] Task255: quick sweep aborted at stage 1 -- Terracotta session active");
+        if (AmeTerracottaProbeSuspended()) {
+            NSLog(@"[LanPortDetector] Task256: quick sweep aborted at stage 1 -- Terracotta initialized");
             return NO;
         }
         uint16_t port = kFastPorts[i];
@@ -594,8 +601,8 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
     }
     for (uint32_t port = 49152; port <= 65535; port++) {
         /* ★ Task255：逐端口中止检查 */
-        if (AmeTerracottaSessionActive()) {
-            NSLog(@"[LanPortDetector] Task255: quick sweep aborted at stage 2 -- Terracotta session active");
+        if (AmeTerracottaProbeSuspended()) {
+            NSLog(@"[LanPortDetector] Task256: quick sweep aborted at stage 2 -- Terracotta initialized");
             return NO;
         }
         if (AmePortAcceptsConnection((uint16_t)port) &&
@@ -677,8 +684,8 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
                         completion:(void (^)(NSArray<NSNumber *> *ports))completion {
     // ★ Task255：会话活跃禁深扫（深扫全范围含 Terracotta ScaffoldingServer
     //   监听口——装机 latestlog 的 FromUtf8Error 崩溃来源，见文件头注释）。
-    if (AmeTerracottaSessionActive()) {
-        NSLog(@"[LanPortDetector] Task255: skip deep scan -- Terracotta session active");
+    if (AmeTerracottaProbeSuspended()) {
+        NSLog(@"[LanPortDetector] Task256: skip deep scan -- Terracotta initialized (scaffold protection)");
         if (completion != nil) completion(@[]);
         return;
     }
@@ -693,8 +700,8 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
 
         for (NSUInteger i = 0; i < fastCount; i++) {
             /* ★ Task255：逐端口中止检查（建房停扫/会话活跃即退出，不再探测） */
-            if (self->_sweepAbort || AmeTerracottaSessionActive()) {
-                NSLog(@"[LanPortDetector] Task255: deep scan aborted at stage 1 (port %u)", kFastPorts[i]);
+            if (self->_sweepAbort || AmeTerracottaProbeSuspended()) {
+                NSLog(@"[LanPortDetector] Task256: deep scan aborted at stage 1 (port %u)", kFastPorts[i]);
                 return;
             }
             uint16_t port = kFastPorts[i];
@@ -709,8 +716,8 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
         if (found.count == 0) {
             for (uint32_t port = 49152; port <= 65535; port++) {
                 /* ★ Task255：逐端口中止检查 */
-                if (self->_sweepAbort || AmeTerracottaSessionActive()) {
-                    NSLog(@"[LanPortDetector] Task255: deep scan aborted at stage 2 (port %u)", (unsigned)port);
+                if (self->_sweepAbort || AmeTerracottaProbeSuspended()) {
+                    NSLog(@"[LanPortDetector] Task256: deep scan aborted at stage 2 (port %u)", (unsigned)port);
                     return;
                 }
                 if (AmePortAcceptsConnection((uint16_t)port) &&
@@ -729,7 +736,7 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
             for (uint32_t port = 1024; port <= 49151; port++) {
                 /* ★ Task255：逐端口中止检查（装机实锤：ScaffoldingServer
                    监听口在低位段，建房后深扫探中即崩 = 联机根因） */
-                if (self->_sweepAbort || AmeTerracottaSessionActive()) {
+                if (self->_sweepAbort || AmeTerracottaProbeSuspended()) {
                     NSLog(@"[LanPortDetector] Task255: deep scan aborted at stage 3 (port %u)", (unsigned)port);
                     return;
                 }

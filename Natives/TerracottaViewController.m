@@ -130,7 +130,10 @@ static const void *kAme252ArmedKey = &kAme252ArmedKey;
     //   （PageSheet）系统自带 dim，零改动（"用回原生"）。
     if (LGCIsGlassStyleActive() &&
         self.navigationController != nil &&
-        self.navigationController.modalPresentationStyle == UIModalPresentationOverFullScreen) {
+        self.navigationController.modalPresentationStyle == UIModalPresentationOverFullScreen &&
+        [BackgroundManager sharedManager].blurIntensity > 0.01) {
+        /* ★ Task256：模糊程度最低档（≤1%）= 背景完全透明 —— 连轻 dim 也不铺
+           （与壁纸 frost/磨砂页同口径；清单 4）。 */
         UIView *ame252_dim = [[UIView alloc] initWithFrame:self.view.bounds];
         ame252_dim.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         ame252_dim.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.18];
@@ -1115,6 +1118,14 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
     UIView *ame248_frost = objc_getAssociatedObject(self, kAme248FrostKey);
     if (!LGCIsGlassStyleActive()) {
         if (ame248_frost != nil) ame248_frost.hidden = YES;
+        return;
+    }
+    /* ★ Task256（清单 4）：模糊程度最低档 = 背景完全透明 —— 游戏面快照
+       磨砂整层退场（与壁纸 frost 同口径；拖回高档即自动恢复，本方法
+       在 viewDidAppear/Tick 重入）。 */
+    if ([BackgroundManager sharedManager].blurIntensity <= 0.01) {
+        if (ame248_frost != nil) ame248_frost.hidden = YES;
+        [self ame250_stopFrostRefresh];
         return;
     }
     UIView *ame248_surface = [SurfaceViewController surface];

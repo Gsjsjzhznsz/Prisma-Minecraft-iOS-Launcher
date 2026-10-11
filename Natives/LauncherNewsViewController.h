@@ -48,6 +48,9 @@ extern NSString * const kShortcutActionVersions;
 // Task235（用户：“参考上游把联机功能添加到自定义主页那里”）：
 // 主页“联机”快捷磁贴（陶瓦联机 Terracotta，页内右上角可切 ZeroTier）。
 extern NSString * const kShortcutActionMultiplayer;
+// ★ Task256（清单 3：清理垃圾入口太不明显）：主页“清理垃圾”快捷磁贴——
+// 清理中心从版本管理页二级 FAB→ActionSheet 三级路径提升为主页一级入口。
+extern NSString * const kShortcutActionCleanup;
 
 // MARK: - LauncherNewsViewController
 

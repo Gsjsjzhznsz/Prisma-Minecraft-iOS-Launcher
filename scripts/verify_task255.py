@@ -34,7 +34,8 @@ check("Cleanup:latestlog.crash 前缀", '"latestlog.crash"' in cl)
 
 # ─── 2. 毛玻璃第二刀（blurIntensity<=0.01 整层不装分支退役） ───
 bm = read("Natives/BackgroundManager.m")
-check("BG:0.01 跳层分支退役", "blurIntensity <= 0.01" not in bm)
+check("BG:0.01 跳层分支（Task256 定向复活：最低档=完全透明，须带自愈护栏）",
+      "blurIntensity <= 0.01" in bm and "ame256.blurUserSet" in bm)
 check("BG:自愈第一刀在位", "ame255.blurHealDone" in bm)
 check("BG:blurView 恒 alpha 1.0", "blurView.alpha = 1.0" in bm)
 
@@ -65,7 +66,8 @@ check("Shift:Task67 RShift 采样", "vRS = r[229]" in sh and "RShift=%d" in sh)
 
 # ─── 6. 联机：扫描闸 + 预检 4 peer ───
 lp = read("Natives/LanPortDetector.m")
-check("MP:会话门控函数", "AmeTerracottaSessionActive" in lp)
+check("MP:确定性探针闸（Task256：初始化即停探，含旧会话闸语义）",
+      "AmeTerracottaProbeSuspended" in lp and "hasInitializedLibrary" in lp)
 check("MP:在飞扫描 abort", "_sweepAbort" in lp)
 tm = read("Natives/TerracottaManager.m")
 check("MP:预检 TCP 2 peer", "public.easytier.top:11010" in tm and "public2.easytier.cn:54321" in tm)

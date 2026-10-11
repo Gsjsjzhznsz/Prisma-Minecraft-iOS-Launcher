@@ -237,6 +237,16 @@ jobs:
           GIT_LFS_SKIP_SMUDGE: "1"
         run: git submodule update --init --recursive
 
+      # ★ Task256（清单 6：CI 构建速度）——VirGL 产物缓存：dep_virgl_build 每次 rm -rf 重建
+      #   + Mesa 906 目标全量编译（run 797 实测第一遍 ~8 分钟，双变体连跑共 ~10 分钟 = 最大单项）。
+      #   三个最终 dylib 进 actions/cache，命中时 Makefile 的 VIRGL_PREBUILT_DIR 分支直通；
+      #   键含 Makefile + mesa 补三 + 源码哈希；故意不配 restore-keys（半旧 dylib 静默复用 = 正确性风险）。
+      - name: Cache VirGL prebuilt dylibs (Task256)
+        uses: actions/cache@v4
+        with:
+          path: Natives/build/virgl-prebuilt
+          key: virgl-prebuilt-v1-${{ hashFiles('Makefile', 'patches/mesa-215-osmesa-virgl.patch', 'Natives/external/libepoxy/**', 'Natives/external/virglrenderer/**') }}
+
       # 注意：不要在 `if:` 条件里引用 secrets / vars。
       # GitHub Actions 的表达式求值器在编译 workflow 时处理这些 context，
       # vars 在仓库尚未创建任何 variable 时求值也会失败，导致整个 workflow
@@ -249,6 +259,8 @@ jobs:
       - name: Build for ${{ matrix.platform_name }}
         env:
           IPHONEOS_DEPLOYMENT_TARGET: 14.0
+          # ★ Task256：VirGL 预编译产物目录（上方 cache 恢复；命中时 dep_virgl 直通）。
+          VIRGL_PREBUILT_DIR: ${{ github.workspace }}/Natives/build/virgl-prebuilt
           CONFIG_CURSEFORGE_API_KEY: ${{ secrets.CONFIG_CURSEFORGE_API_KEY }}
           # 供下面的 make 使用（控制 dep_mobilegl 是否从仓库内源码编译 MobileGL）。
           # 在 env: 里引用 vars 是官方支持的用法；不要写成
@@ -280,6 +292,12 @@ jobs:
           else
             gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=${{ matrix.platform }} 2>&1 | tee build_output.log
           fi
+          echo '== Task256: stage VirGL prebuilts for cache save ==' 2>/dev/null || true
+          mkdir -p Natives/build/virgl-prebuilt
+          for ame256_f in libOSMesaVirgl.dylib libvtestserver.dylib libepoxy.dylib; do
+            if [ -f "Natives/build/$ame256_f" ]; then cp "Natives/build/$ame256_f" Natives/build/virgl-prebuilt/; fi
+          done
+          ls -la Natives/build/virgl-prebuilt || true
           echo '== Task205 ccache stats ==' 2>/dev/null || true
           ccache --show-stats 2>/dev/null || true
 

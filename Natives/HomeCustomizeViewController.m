@@ -16,6 +16,8 @@ static NSDictionary *availableShortcuts(void) {
         kShortcutActionVersions:   @{@"title": localize(@"i18n_str_279", nil),    @"icon": @"square.stack.3d.up.fill",    @"color": @"#6366F1"},
         // Task235：联机快捷磁贴进自定义主页的可选清单（与默认磁贴同配色）。
         kShortcutActionMultiplayer:@{@"title": localize(@"game.menu.multiplayer", @"联机"), @"icon": @"antenna.radiowaves.left.and.right", @"color": @"#0EA5E9"},
+        // ★ Task256（清单 3）：清理垃圾磁贴进可选清单（默认开启 + 老布局注入）。
+        kShortcutActionCleanup:   @{@"title": localize(@"home.tile.cleanup", @"清理垃圾"),    @"icon": @"trash.circle.fill",             @"color": @"#EF4444"},
     };
 }
 

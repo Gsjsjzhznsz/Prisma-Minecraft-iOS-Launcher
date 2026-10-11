@@ -30,6 +30,7 @@
 // 屏蔽启动器控件；关闭 = 仅移除本键，不碰全局设置）
 @property (nonatomic, assign) BOOL touchControllerEnabled;
 @property (nonatomic, strong) NSString *selectedGraphicsApi;  // MC 26.2+ 图形 API: default/prefer_vulkan/prefer_opengl
+@property (nonatomic, strong) NSString *selectedJVM;          // ★ Task256（清单 8）实例级 JVM 预设：memory/normal/performance/custom，nil=跟随全局
 @property (nonatomic, strong) NSString *selectedJavaVersion;
 @property (nonatomic, assign) NSInteger allocatedMemory;
 @property (nonatomic, assign) NSInteger maxMemory;
@@ -89,6 +90,8 @@ static NSString * localizeProfileTitle(NSString *title) {
             @"图形 API": @"i18n_str_2057",
             @"Java版本": @"i18n_str_2036",
             @"内存分配": @"i18n_str_2037",
+            // ★ Task256（清单 8）：实例级 JVM 预设行（全局设置同款标题键）
+            @"JVM 预设": @"preference.title.jvm_preset",
             @"JVM 启动参数": @"preference.title.java_args",
             @"清除JVM参数": @"i18n_str_2038",
             // Task172：TouchController 行标题语言中立，无需翻译键（回退标题本身）
@@ -590,6 +593,10 @@ static NSString * localizeProfileTitle(NSString *title) {
 
     // 图形 API（MC 26.2+ 游戏内 OpenGL/Vulkan 切换）
     self.selectedGraphicsApi = self.profile[@"graphicsApi"] ?: @"default";
+    // ★ Task256（清单 8）：实例级 JVM 预设——无键 = 跟随全局（启动链回退
+    //    java.jvm_preset）；有键 = 本实例覆写。
+    self.selectedJVM = [self.profile[@"jvm_preset"] isKindOfClass:[NSString class]]
+        ? self.profile[@"jvm_preset"] : nil;
 
     // Task172：版本级 TouchController（无键 = 关闭）
     self.touchControllerEnabled = [self.profile[@"touchController"] boolValue];
@@ -656,7 +663,7 @@ static NSString * localizeProfileTitle(NSString *title) {
     if ([self isCurrentProfileModernVersion]) {
         [advancedRows addObject:@"图形 API"];
     }
-    [advancedRows addObjectsFromArray:@[@"Java版本", @"内存分配", @"JVM 启动参数", @"清除JVM参数"]];
+    [advancedRows addObjectsFromArray:@[@"Java版本", @"内存分配", @"JVM 预设", @"JVM 启动参数", @"清除JVM参数"]];
     // Task173：TouchController 从高级设置区退役（Task172 的开关式 picker 一并
     // 退役），改为组件安装区的 Sodium 同款样式（用户指令"TouchController 选项
     // 是跟 sodium 一样的样式，点击自动安装加自动配置，而不是只有自动配置"）。
@@ -788,6 +795,14 @@ static NSString * localizeProfileTitle(NSString *title) {
               ame162_targetKey, self.selectedRenderer);
     }
     existing[@"graphicsApi"] = self.selectedGraphicsApi;
+    // ★ Task256（清单 8）：实例级 JVM 预设写 profile 层；nil（跟随全局）删键
+    //    ——与渲染器的“无键缺省”语义同构（启动链 profile 优先、全局兑底）。
+    if (self.selectedJVM.length > 0) {
+        existing[@"jvm_preset"] = self.selectedJVM;
+        NSLog(@"[ProfileSettings] Task256: jvm_preset written to PROFILE '%@' = %@", ame162_targetKey, self.selectedJVM);
+    } else {
+        [existing removeObjectForKey:@"jvm_preset"];
+    }
     // Task172：版本级 TouchController——开启落 YES，关闭删键（无键 = 关闭，
     // 启动链 ame172_applyProfileTouchController 同口径；关闭不碰全局设置）
     if (self.touchControllerEnabled) {
@@ -1020,6 +1035,11 @@ static NSString * localizeProfileTitle(NSString *title) {
                 cell.detailTextLabel.text = self.memoryAutoEnabled
                     ? localize(@"memory.auto_row", nil)
                     : [NSString stringWithFormat:@"%ld MB", (long)self.allocatedMemory];
+            } else if ([title isEqualToString:@"JVM 预设"]) {
+                // ★ Task256（清单 8）：实例级 JVM 预设行（渲染器/图形 API 同款箭头样式）
+                cell.imageView.image = [UIImage systemImageNamed:@"gauge"];
+                cell.accessoryView = [self ame163_disclosureChevron];
+                cell.detailTextLabel.text = [self jvmPresetDisplayName:self.selectedJVM];
             } else if ([title isEqualToString:@"JVM 启动参数"]) {
                 cell.imageView.image = [UIImage systemImageNamed:@"slider.vertical.3"];
                 cell.accessoryView = [self buildJavaArgsTextField];
@@ -1511,6 +1531,9 @@ static NSString * localizeProfileTitle(NSString *title) {
                 [self showJavaVersionSelector];
             } else if ([title isEqualToString:@"内存分配"]) {
                 [self showMemoryAllocator];
+            } else if ([title isEqualToString:@"JVM 预设"]) {
+                // ★ Task256（清单 8）：实例级 JVM 预设选择器
+                [self showJVMSelector];
             } else if ([title isEqualToString:@"JVM 启动参数"]) {
                 if (self.javaArgsTextField) [self.javaArgsTextField becomeFirstResponder];
             } else if ([title isEqualToString:@"清除JVM参数"]) {
@@ -3075,6 +3098,67 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
     [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"i18n_str_944", nil)
                                      dictItems:ame240_items
                                     sourceView:ame240_cell ?: self.view];
+}
+
+/// ★ Task256（清单 8）：实例级 JVM 预设展示名（nil = 跟随全局）。
+- (NSString *)jvmPresetDisplayName:(NSString *)preset {
+    if (preset.length == 0) return localize(@"preference.profile.jvm_follow_global", @"跟随全局设置");
+    NSDictionary *names = @{
+        @"memory":      localize(@"jvm.preset.memory", @"省内存"),
+        @"normal":      localize(@"jvm.preset.normal", @"正常（默认）"),
+        @"performance": localize(@"jvm.preset.performance", @"性能优先"),
+        @"custom":      localize(@"jvm.preset.custom", @"自定义"),
+    };
+    NSString *ame256_name = names[preset];
+    return ame256_name ?: preset;
+}
+
+/// ★ Task256（清单 8）：实例级 JVM 预设选择器（图形 API 同款 AmeNativeMenu）。
+///   覆写链：profile.jvm_preset 优先，无键回退全局 java.jvm_preset（消费端
+///   JavaLauncher.m 两处注入点同步，见 ame256 段）。自定义档使用全局的
+///   jvm_preset_custom_args（与全局页语义一致，不在实例页重复提供）。
+- (void)showJVMSelector {
+    NSMutableArray<NSDictionary *> *ame256_items = [NSMutableArray array];
+
+    [ame256_items addObject:@{
+        @"title": localize(@"preference.profile.jvm_follow_global", @"跟随全局设置"),
+        @"handler": ^{
+            self.selectedJVM = nil;
+            [self saveSettings];
+            [self reloadAllTableViews];
+        },
+    }];
+    NSArray *ame256_keys = @[@"memory", @"normal", @"performance", @"custom"];
+    NSArray *ame256_names = @[
+        localize(@"jvm.preset.memory", @"省内存"),
+        localize(@"jvm.preset.normal", @"正常（默认）"),
+        localize(@"jvm.preset.performance", @"性能优先"),
+        localize(@"jvm.preset.custom", @"自定义"),
+    ];
+    for (NSInteger i = 0; i < ame256_keys.count; i++) {
+        NSString *ame256_key = ame256_keys[i];
+        NSString *ame256_name = ame256_names[i];
+        [ame256_items addObject:@{
+            @"title": ame256_name,
+            @"handler": ^{
+                self.selectedJVM = ame256_key;
+                [self saveSettings];
+                [self reloadAllTableViews];
+            },
+        }];
+    }
+
+    /* 行定位：JVM 预设位于高级设置区（section 3），图形 API 行有条件存在
+       → 行下标动态扫描（不硬编码；cellForGlobalSection 内部处理双表映射） */
+    UITableViewCell *ame256_cell = nil;
+    NSArray *ame256_advanced = (self.sections.count > 3) ? self.sections[3] : nil;
+    NSUInteger ame256_rowIdx = [ame256_advanced indexOfObject:@"JVM 预设"];
+    if (ame256_advanced && ame256_rowIdx != NSNotFound) {
+        ame256_cell = [self cellForGlobalSection:3 row:ame256_rowIdx];
+    }
+    [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"preference.title.jvm_preset", @"JVM 预设")
+                                     dictItems:ame256_items
+                                    sourceView:ame256_cell ?: self.view];
 }
 
 /// Task173：TouchController 一键安装 + 自动配置（Sodium 同款流程，取代

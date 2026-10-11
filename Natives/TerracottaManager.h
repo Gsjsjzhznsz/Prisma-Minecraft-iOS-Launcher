@@ -29,6 +29,12 @@ extern NSNotificationName TerracottaManagerStateDidChangeNotification;
 
 + (instancetype)shared;
 
+/// ★ Task256（联机探针确定性闸）：库是否已完成初始化——读静态标志，
+///   【不触发】单例创建（[TerracottaManager shared] 首次访问即会懒初始化
+///   Terracotta 并孵出 ScaffoldingServer；LanPortDetector 的探测闸用本方法
+///   轮询，绝不能自己把 Terracotta 孵化出来）。
++ (BOOL)hasInitializedLibrary;
+
 @property(nonatomic, readonly) TerracottaStatus status;
 @property(nonatomic, readonly) TerracottaRole role;
 @property(nonatomic, readonly, nullable) NSString *currentInviteCode;  /* 房主的邀请码 */

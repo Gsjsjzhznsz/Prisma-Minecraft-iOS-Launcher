@@ -435,6 +435,26 @@ void init_loadMobileGluesConfig() {
     }
 }
 
+/// ★ Task256（清单 8）：JVM 预设单一事实源解析——profile.jvm_preset（版本
+///   设置页"JVM 预设"行，实例级覆写）→ java.jvm_preset（全局设置页）→
+///   @"normal"。init_loadCustomJvmFlags 的 custom 参数注入与 launchJVM 的
+///   GC 段注入两处共用，解析永不漂移。
+static NSString *ame256_effectiveJvmPreset(void) {
+    NSString *ame256_profile = [PLProfiles resolveKeyForCurrentProfile:@"jvm_preset"];
+    if ([ame256_profile isKindOfClass:[NSString class]] && ame256_profile.length > 0) {
+        static dispatch_once_t ame256_once;
+        dispatch_once(&ame256_once, ^{
+            NSLog(@"[JavaLauncher] Task256: profile-level jvm_preset override active: %@", ame256_profile);
+        });
+        return ame256_profile;
+    }
+    NSString *ame256_global = getPrefObject(@"java.jvm_preset");
+    if ([ame256_global isKindOfClass:[NSString class]] && ame256_global.length > 0) {
+        return ame256_global;
+    }
+    return @"normal";
+}
+
 void init_loadCustomJvmFlags(int* argc, const char** argv) {
     // ★ Task255（清单 11）：JVM 预设 custom 档的自定义参数注入。
     //   java.jvm_preset=custom 时，java.jvm_preset_custom_args 的内容与
@@ -467,7 +487,11 @@ void init_loadCustomJvmFlags(int* argc, const char** argv) {
         NSLog(@"[JavaLauncher] Added custom JVM flag: %s", argv[*argc]);
     };
 
-    NSString *ame255_preset = getPrefObject(@"java.jvm_preset");
+    /* ★ Task256（清单 8）：实例级覆写优先——profile.jvm_preset（版本设置
+       页"JVM 预设"行）有值时盖过全局 java.jvm_preset；无键回退全局
+       （行为与 Task255 全量一致）。ame256_effectiveJvmPreset 同时供 GC
+       注入点复用，两处解析永不漂移。 */
+    NSString *ame255_preset = ame256_effectiveJvmPreset();
     BOOL ame255_custom = [ame255_preset isKindOfClass:[NSString class]] &&
                          [ame255_preset isEqualToString:@"custom"];
     if (ame255_custom) {
@@ -2093,6 +2117,33 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         // 解析逻辑与 LauncherPreferences.m 的 ame_effective_renderer() 逐字一致
         // （单一事实源；此处内联展开仅为保留原日志点）。
         NSString *renderer = ame_effective_renderer();
+        // ★ Task256（清单 5：自动选择器 1.8.9 崩溃根修）：55456d9 装机
+        //   latestlog.txt 实锤——1.8.9-forge 会话 profile renderer=(null)，
+        //   ame_effective_renderer 的 auto 分支按 legacy 档位键
+        //   mobileglues.mobilegl_backend（版本无关！）返回 libMobileGL.dylib
+        //   （日志 "[Prisma] Task120: MobileGL backend override active
+        //   (profile renderer was (null) -> libMobileGL.dylib)"）→ 非常量
+        //   "auto" → 下方 ame217 版本感知候选链（Task255 已头插 kw）根本
+        //   不跑 → MobileGL Vulkan 后端的 glslang 不认 GL1.x 兼容内建
+        //   ftransform → "Vertex shader compile error: 'ftransform' : no
+        //   matching overloaded function found" → 1.8.9 启动即崩。
+        //   修法：MC ≤1.16（minVersion<=8 谱系，与 defaultJRETag 分界同源）
+        //   且 profile 未【显式】选择渲染器（nil/空/auto）时，家族覆盖
+        //   一律让位 auto → 下方决策链按版本选 kw(NG-GL4ES)→gl4es(ZL2)
+        //   →ANGLE→MobileGL。显式选择（profile 键是具体渲染器名）永远
+        //   优先，老用户手动选的 MobileGL 玩 1.8.9 也不被绑架。
+        if (minVersion <= 8) {
+            BOOL ame256_profileExplicit = [profileRenderer isKindOfClass:NSString.class] &&
+                profileRenderer.length > 0 &&
+                ![profileRenderer isEqualToString:@"auto"];
+            if (!ame256_profileExplicit && ![renderer isEqualToString:@"auto"]) {
+                NSLog(@"[Prisma] Task256: legacy MC (<=1.16) with non-explicit profile renderer "
+                      @"(profile=%@, resolved=%@) -- restoring 'auto' so the version-aware "
+                      @"kw-first decide chain runs (MobileGL glslang lacks ftransform on legacy GLSL)",
+                      profileRenderer, renderer);
+                renderer = @"auto";
+            }
+        }
         if (![renderer isEqualToString:profileRenderer]) {
             NSLog(@"[Prisma] Task120: MobileGL backend override active (profile renderer was %@ -> %@)",
                   profileRenderer, renderer);
@@ -2964,7 +3015,10 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     // 不添加 -XX:+AlwaysPreTouch（延长启动时间）、-XX:TieredStopAtLevel=1（降低 JIT 性能）、
     // -XX:CICompilerCount=1（减少编译线程）等可能影响游戏体验的参数。
     // -XX:+UnlockExperimentalVMOptions 已在上方添加，UseStringDeduplication 需要实验模式。
-    NSString *ame255_preset = getPrefObject(@"java.jvm_preset");
+    /* ★ Task256（清单 8）：解析链 profile.jvm_preset → java.jvm_preset → normal
+       （ame256_effectiveJvmPreset 单一事实源，与 init_loadCustomJvmFlags 的
+       custom 注入点同源）。 */
+    NSString *ame255_preset = ame256_effectiveJvmPreset();
     if (![ame255_preset isKindOfClass:[NSString class]] || ame255_preset.length == 0) ame255_preset = @"normal";
     BOOL ame255_isCustom = [ame255_preset isEqualToString:@"custom"];
     if (!isJava8) {
