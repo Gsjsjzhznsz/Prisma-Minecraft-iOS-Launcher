@@ -218,6 +218,14 @@ static UIColor *ame250_globalTextFillColor(void);
           (long)_uiEffect, _uiOpacity, _blurIntensity,
           0.3 + (_blurIntensity * 0.7),
           (int)[self hasBackground]);
+    // ★ Task254（毛玻璃失效取证）：UIVisualEffectView 全家不渲染的另一个候选
+    //   解释是系统级“降低透明度”开启（iOS 会把所有 UIBlurEffect 退化为平涂）。
+    //   一次启动一行，与 effect 解析值同屏，下轮 gamelog 直接判档：
+    //   reduceTransparency=1 → 整条磨砂链是系统行为，归位设置页而非改管线。
+    NSLog(@"[BackgroundManager] Task254: accessibility archive reduceTransparency=%d reduceMotion=%d "
+          @"(UIBlurEffect renders flat when reduceTransparency=1)",
+          UIAccessibility.isReduceTransparencyEnabled ? 1 : 0,
+          UIAccessibility.isReduceMotionEnabled ? 1 : 0);
 }
 
 - (void)saveUISettings {
@@ -532,6 +540,17 @@ static UIColor *ame250_globalTextFillColor(void);
     // 2. 左右侧栏完全不透明，背景图透不出来
     // SystemThinMaterial 会在浅色模式呈浅色毛玻璃、深色模式呈深色毛玻璃，
     // 且透明度适中，背景图可见。
+    // ★ Task254（毛玻璃失效根修）：iPadOS 27 真机实锤（IMG_0389/0399 装机截图
+    //   + BackgroundManager Task252 日志 effect=1(Blur) 同屏矛盾）——alpha<1.0
+    //   的 UIVisualEffectView 在本机系统上【整体不渲染 blur 材质】（非衰减）:
+    //   全局 0.35 / 卡面 0.79 全部退化为不可见，壁纸全锐利穿透 = 用户
+    //   “毛玻璃失效，以前是这样的”。alpha=1.0 是唯一可靠档（applyEffect
+    //   ToCell 的 backgroundView 路径从未设 alpha，同机同代一直正常，反向实
+    //   证）。模糊强度改由上覆 dim 层承担（既有层，照旧工作）；blur
+    //   Intensity<=0 时整层不装（与旧 alpha=0 不可见语义等价）。
+    if (self.blurIntensity <= 0.01) {
+        return;   // Task254：强度 0 = 无磨砂（旧 alpha=0 同效，不装省一层）
+    }
     UIBlurEffect *blurEffect;
     if (@available(iOS 13.0, *)) {
         blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterial];
@@ -540,7 +559,7 @@ static UIColor *ame250_globalTextFillColor(void);
     }
     UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
     blurView.tag = kBackgroundBlurTag;
-    blurView.alpha = self.blurIntensity * 0.5; // max 0.5 for readability
+    blurView.alpha = 1.0;   // ★ Task254：恒 1.0（alpha<1 全视图不渲染，见上）
     blurView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     blurView.frame = container.bounds;
     // Task161：纯装饰层显式关闭触摸——容器层在任何层级形态下都不得拦截
@@ -1272,12 +1291,10 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
             blurView.layer.cornerRadius = view.layer.cornerRadius;
             blurView.layer.masksToBounds = YES;
 
-            // 模糊强度→透明度（0.3~1.0），无背景时再提高不透明度使 UI 更清晰
-            CGFloat effectiveAlpha = 0.3 + (self.blurIntensity * 0.7);
-            if (![self hasBackground]) {
-                effectiveAlpha = MIN(effectiveAlpha + 0.2, 1.0);
-            }
-            blurView.alpha = effectiveAlpha;
+            // ★ Task254：恒 1.0 —— iPadOS 27 实锤 alpha<1.0 的效果视图整体不渲染
+            //   blur（非衰减）；旧的 0.3+blurIntensity*0.7 折算在本机全部退化为
+            //   无磨砂。强度语义由上覆卡面色/半透明管线承担。
+            blurView.alpha = 1.0;
 
             // 毛玻璃本身不响应触摸，让事件穿透到宿主视图（如 UIControl 卡片）
             blurView.userInteractionEnabled = NO;
@@ -1446,7 +1463,7 @@ NSNotificationName const Ame223WallpaperChangedNotification = @"Ame223WallpaperC
             blurView.layer.cornerRadius = cardRadius;
             blurView.layer.cornerCurve = cardTarget.layer.cornerCurve;
             blurView.layer.masksToBounds = YES;
-            blurView.alpha = 0.3 + (self.blurIntensity * 0.7);
+            blurView.alpha = 1.0;   // ★ Task254：恒 1.0（alpha<1 全视图不渲染，见 applyEffectToView 同注）
             blurView.userInteractionEnabled = NO;
 
             [cardTarget insertSubview:blurView atIndex:0];

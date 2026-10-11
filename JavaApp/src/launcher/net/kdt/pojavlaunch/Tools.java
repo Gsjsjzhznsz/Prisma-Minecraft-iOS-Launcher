@@ -132,6 +132,58 @@ public final class Tools {
         // Task 86: 启动看门狗——在调用 Minecraft main 之前布防（见 startLaunchWatchdog javadoc 病历）
         startLaunchWatchdog(Thread.currentThread());
         method.invoke(null, new Object[]{launchArgs});
+        // ★ Task254（反馈 2 根修：26.3 退游后启动器挂后台 16s+ 最后闪退）：
+        //   MC main 返回 = 客户端完全停止 + 世界已落盘的【最早安全点】。
+        //   病历（2026-10-11 latestlog 8138 行 + MC 崩溃报告全量线程转储实锤）：
+        //   20:48:55 "Stopping!" → 20:49:11 MC 自带 ClientShutdownWatchdog
+        //   超 时抛 java.lang.Error（"Watchdog (Client shutdown from post-main)"）
+        //   → 崩溃报告落盘 → System.exit → shutdown hooks → ame251 标记 →
+        //   native 看门狗 _exit(0)。整整 16s 的挂死窗口 = DestroyJavaVM 在
+        //   等一枚永不退出的非 daemon 线程：崩溃报告线程转储仅剩两个非
+        //   daemon 线程——"DestroyJavaVM"（等待者本体）与 "Thread-6"
+        //   （Id=57，早会期创建的无名线程，RUNNABLE (in native) 无 Java 帧
+        //   = 卡死在 JNI 原生调用里，身份无关紧要）。Task251 的标记链路
+        //   只在 System.exit（hooks 阶段）才写标记，而这 16s 发生在
+        //   System.exit 之前——看门狗完全够不着。
+        //   修法：main 返回当场写 ame251_shutdown.marker（与 PatchSVC
+        //   shutdown hook 同一标记文件、同一消费端：native 150ms 轮询
+        //   _exit(0)）。退出路径整体前移到"世界已保存、纯 JVM 内部清理"
+        //   阶段——DestroyJavaVM 等线程、MC watchdog 崩溃报告、hooks 阶段
+        //   的 pojavTerminate/gl_terminate 脆弱链（Task253 已加固的另一
+        //   SEGV 面）全部被绕开。iOS 上 _exit(0) 即进程干净消失（Task250
+        //   起既定语义），用户体感 = 退出游戏秒退回桌面，无挂死无闪退。
+        //   门控与兜底：仅 -Dame.game.session=1（游戏会话）生效；写失败
+        //   仅记日志（PatchSVC shutdown hook 路径原样保留为兜底）；MC
+        //   main 若异常退出（崩溃），invoke 直接抛异常不经过此处，原
+        //   崩溃 → System.exit → hooks 兜底链零回归。
+        ame251_writeShutdownMarkerNow("mc-main-returned");
+    }
+
+    /**
+     * Task254：立刻写 ame251 关机标记（native 看门狗 150ms 内 _exit(0)）。
+     * 与 PatchSVC.ame251RegisterShutdownHook 的 hook 写入完全同文件同语义，
+     * 只是时机提前到 MC main 返回瞬间（hook 只在 System.exit 后才跑）。
+     * 全程 try/catch：任何 IO 失败都不得影响正常返回路径（hook 兜底仍在）。
+     */
+    private static void ame251_writeShutdownMarkerNow(String reason) {
+        try {
+            if (!"1".equals(System.getProperty("ame.game.session"))) {
+                return;
+            }
+            String home = System.getenv("POJAV_HOME");
+            if (home == null || home.length() == 0) {
+                return;
+            }
+            java.io.File marker = new java.io.File(home, "ame251_shutdown.marker");
+            if (!marker.exists()) {
+                marker.createNewFile();
+            }
+            System.out.println("[Ame251/Task254] MC main returned (" + reason
+                    + ") -> shutdown marker written; native watchdog will _exit(0) within 150ms"
+                    + " (skips DestroyJavaVM non-daemon-thread wait + MC ClientShutdownWatchdog crash report)");
+        } catch (Throwable t) {
+            System.out.println("[Ame251/Task254] shutdown marker write failed (hook fallback remains): " + t);
+        }
     }
 
     /**

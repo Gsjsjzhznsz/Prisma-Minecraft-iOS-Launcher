@@ -3427,13 +3427,10 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
             UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blur];
             blurView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
             blurView.frame = tv.bounds;
-            // 按 uiEffect 调整透明度：毛玻璃模式保持默认 0.7 通透，半透明模式按 uiOpacity
-            BackgroundUIEffect effect = [BackgroundManager sharedManager].uiEffect;
-            if (effect == BackgroundUIEffectBlur) {
-                blurView.alpha = 0.85;
-            } else {
-                blurView.alpha = MAX(0.5, [BackgroundManager sharedManager].uiOpacity);
-            }
+            // ★ Task254：恒 1.0 —— iPadOS 27 实锤 alpha<1.0 的效果视图整体不渲染
+            //   blur（见 BackgroundManager addBlurEffectToContainer Task254 注）。
+            //   旧 0.85/0.5 折算在本机退化为无磨砂平涂。
+            blurView.alpha = 1.0;
             tv.backgroundView = blurView;
         } else {
             // 无自定义背景：使用系统默认色，保持原 UI 风格

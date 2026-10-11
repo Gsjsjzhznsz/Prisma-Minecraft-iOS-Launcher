@@ -261,6 +261,12 @@ static CFAbsoluteTime ame250_lastStartGap = 0.0;
 // ★ Task251（反馈 1 四修）：后台转场期被冻结的几何重算待办标志（主线程
 // 专用：viewWillTransitionToSize 置位，ame247_didBecomeActive 消费）。
 static BOOL ame251_transitionResyncPending = NO;
+// ★ Task254（反馈 1 取证补齐）：Task252 的三方尺寸取证只在【会话首触点】
+//   触发（ame248 标志装机日志仅在启动期开火一次），复屏后首触点从未取到
+//   ——而“切后台后输入错位”恰恰只发生在复屏后。本标志每次
+//   ame247_didBecomeActive 置位，touchesBegan/sendTouchPoint 任一触摸
+//   入口首个到达者消费一次，复屏后的触摸几何当场落日志。
+static BOOL ame254_resumeForensicPending = NO;
 // ★ Task227（反馈 #7：无法关闭键盘，需手动点输入法按钮）：用户手动收起
 // 闩锁。ef1e3e2a 装机铁证：MC 26.3 会话里 SDL StartTextInput 在无文本
 // 上下文时反复到达（标题画面加载后/后台恢复后/画面切换时），
@@ -509,6 +515,13 @@ void ame139_fsr_heal_reset_input_scale(void) {
         }
     });
 }
+
+// ★ Task254：SDL 钩子侧取证/修复原语（实现见 sdl3_hook.m）。
+//   ame_hook_getEmbeddedSDLView：嵌入的 SDL_uikitview（只读比较用）；
+//   ame_hook_realSDLGetWindowSize：Task61 钉扎层下的 SDL 真实窗口点尺寸
+//   （恢复 warp 目标与复屏取证的真实值来源——dlsym 路由会拿到钉扎钩子）。
+extern void *ame_hook_getEmbeddedSDLView(void);
+extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
 
 @implementation SurfaceViewController
 
@@ -2668,6 +2681,52 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     return touch == nil || touch.phase == UITouchPhaseEnded || touch.phase == UITouchPhaseCancelled;
 }
 
+// ★ Task254（反馈 1 取证补齐）：复屏后首触点三方尺寸取证 + SDL 视图几何。
+//   Task252 的取证块只在会话首触点开火（装机日志仅启动期一次），复屏后
+//   零采样。本方法由 touchesBegan / sendTouchPoint 的 ame248 消费块调用
+//   （ame254_resumeForensicPending 门控，每次复屏只打一行），除 Task252
+//   的 drawable/surface/window 三方外，追加：
+//   ④ 嵌入的 SDL_uikitview frame（SDL 原生触摸→鼠标坐标的换算源；
+//      后台往返 UIKit 自行重排 = 错位头号嫌疑），比对宿主容器 bounds；
+//   ⑤ SDL 真实窗口点尺寸（ame_hook_realSDLGetWindowSize，Task61 钉扎层
+//      下的真值）——与 windowWidth/Height（钉扎值）同屏对账。
+- (void)ame254_logResumeTriSizeForensicAtSite:(NSString *)site {
+    CGFloat ame254_drawableW = 0, ame254_drawableH = 0;
+    CALayer *ame254_layer = self.surfaceView.layer;
+    for (CALayer *ame254_sub in ame254_layer.sublayers) {
+        if ([NSStringFromClass([ame254_sub class]) containsString:@"CAMetalLayer"]) {
+            ame254_drawableW = ame254_sub.bounds.size.width;
+            ame254_drawableH = ame254_sub.bounds.size.height;
+            break;
+        }
+    }
+    CGFloat ame254_sc = (self.screenScale > 0.0f) ? self.screenScale
+                        : [[UIScreen mainScreen] scale];
+    int ame254_sdlW = 0, ame254_sdlH = 0;
+    ame_hook_realSDLGetWindowSize(&ame254_sdlW, &ame254_sdlH);
+    NSString *ame254_sdlFrame = @"(nil)";
+    CGRect ame254_containerBounds = CGRectZero;
+    UIView *ame254_sdlView = (__bridge UIView *)ame_hook_getEmbeddedSDLView();
+    if (ame254_sdlView) {
+        ame254_sdlFrame = NSStringFromCGRect(ame254_sdlView.frame);
+        UIView *ame254_c = ame254_sdlView.superview;
+        if (ame254_c) ame254_containerBounds = ame254_c.bounds;
+    }
+    NSLog(@"[SurfaceVC] Task254: RESUME first-touch tri-size (%@) drawable=%.0fx%.0f "
+          @"surface=%.0fx%.0f(scale %.2f→%.0fx%.0f) window=%dx%d announcedScale=%.2f "
+          @"sdlViewFrame=%@ containerBounds=%@ sdlRealPts=%dx%d",
+          site,
+          ame254_drawableW, ame254_drawableH,
+          self.surfaceView.bounds.size.width, self.surfaceView.bounds.size.height,
+          ame254_sc,
+          self.surfaceView.bounds.size.width * ame254_sc,
+          self.surfaceView.bounds.size.height * ame254_sc,
+          (int)windowWidth, (int)windowHeight,
+          self.screenScale,
+          ame254_sdlFrame, NSStringFromCGRect(ame254_containerBounds),
+          ame254_sdlW, ame254_sdlH);
+}
+
 - (void)sendTouchPoint:(CGPoint)location withEvent:(int)event
 {
     // ★ Task248（①）：回前台后的首个触点换算前强制重申一次几何（didBecome
@@ -2680,6 +2739,11 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         //   MC 信念；强制通道保证竞态输掉后首个触点前必达）。
         if (windowWidth > 0 && windowHeight > 0) {
             CallbackBridge_nativeSendScreenSizeForced(windowWidth, windowHeight);
+        }
+        // ★ Task254：复屏后首触点取证（sendTouchPoint 路径）。
+        if (ame254_resumeForensicPending) {
+            ame254_resumeForensicPending = NO;
+            [self ame254_logResumeTriSizeForensicAtSite:@"sendTouchPoint"];
         }
         NSLog(@"[SurfaceVC] Task248/250: first-touch geometry re-sync applied + forced re-announce");
     }
@@ -2785,6 +2849,21 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     // ★ Task250：回前台 = 门控解除（后续常规推送恢复；本次重申走强制通道）。
     g_ame250_appActive = YES;
     [self updateSavedResolution];
+    // ★ Task254（反馈 1）：复屏侧立即打一行三方取证 + SDL 视图几何（不等
+    //   首触点——装机实锤复屏后触摸可能根本不进 SurfaceVC 触摸链）。
+    //   SDL 视图 frame 与容器 bounds 不一致时当场重assert（后台往返 UIKit
+    //   自行重排 = 错位头号嫌疑，另见 sdl3_hook ame_refrontEmbeddedViewOnMain）。
+    ame254_resumeForensicPending = YES;
+    {
+        UIView *ame254_sv = (__bridge UIView *)ame_hook_getEmbeddedSDLView();
+        if (ame254_sv && ame254_sv.superview &&
+            !CGRectEqualToRect(ame254_sv.frame, ame254_sv.superview.bounds)) {
+            NSLog(@"[SurfaceVC] Task254: RESUME sdlView frame drift detected %@ vs container %@ -> reassert",
+                  NSStringFromCGRect(ame254_sv.frame), NSStringFromCGRect(ame254_sv.superview.bounds));
+            ame254_sv.frame = ame254_sv.superview.bounds;
+        }
+        [self ame254_logResumeTriSizeForensicAtSite:@"didBecomeActive"];
+    }
     // ★ Task251：后台转场期冻结的 updateSavedResolution 在此补跑（上方
     //   已含本次；标志仅作观测/日志，冻结语义的正确性由本必达路径保证）。
     if (ame251_transitionResyncPending) {
@@ -4071,6 +4150,11 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
         // ★ Task250：热栏路径首触点同补强制宣告（与 sendTouchPoint 同口径）。
         if (windowWidth > 0 && windowHeight > 0) {
             CallbackBridge_nativeSendScreenSizeForced(windowWidth, windowHeight);
+        }
+        // ★ Task254：复屏后首触点取证（touchesBegan 路径，Task249 前移块）。
+        if (ame254_resumeForensicPending) {
+            ame254_resumeForensicPending = NO;
+            [self ame254_logResumeTriSizeForensicAtSite:@"touchesBegan-prehotbar"];
         }
         // ★ Task252（反馈 1 取证升级）：历轮重申链（defer/resync/x3/首触点）
         //   日志全部正常开火，用户仍报错位 —— 剩余洞必在【重申目标值与

@@ -317,7 +317,42 @@ static NSString *const ame217_qqGroup = @"1126547426";
         font:[UIFont systemFontOfSize:12]
         color:[UIColor secondaryLabelColor]]];
 
+    // ★ Task254（反馈 7）：贡献者署名——kxdw（B站 @KX_dw，用户指令：
+    //   关于页与 README 都要列出另一位贡献者）。文案走四语言表新键
+    //   about.credits.kxdw（en/zh-Hans/zh-CN/zh-Hant 齐备，键名兜底守卫
+    //   齐上：值缺失时不渲染该行——"不留键名"红线）；按钮标题纯 ASCII
+    //   （task248 闸2 UI 写入点 CJK 硬编码零容忍），跳转 B 站个人空间。
+    NSString *ame254_kxdwBody = localize(@"about.credits.kxdw", nil);
+    if (ame254_kxdwBody.length > 0 &&
+        ![ame254_kxdwBody isEqualToString:@"about.credits.kxdw"]) {
+        [inner addArrangedSubview:[self ame217_labelText:ame254_kxdwBody
+            font:[UIFont systemFontOfSize:12]
+            color:[UIColor secondaryLabelColor]]];
+    }
+    UIButton *ame254_biliButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [ame254_biliButton setTitle:@"@KX_dw - bilibili"
+                   forState:UIControlStateNormal];
+    [ame254_biliButton setTitleColor:[UIColor systemPinkColor]
+                            forState:UIControlStateNormal];
+    ame254_biliButton.titleLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightMedium];
+    ame254_biliButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+    [ame254_biliButton addTarget:self
+                          action:@selector(ame254_openKxdwBilibili)
+                forControlEvents:UIControlEventTouchUpInside];
+    [inner addArrangedSubview:ame254_biliButton];
+
     [self ame217_addCard:card inner:inner];
+}
+
+/// ★ Task254：贡献者 kxdw 的 B 站个人空间（用户提供的短链）。
+- (void)ame254_openKxdwBilibili {
+    NSURL *ame254_url = [NSURL URLWithString:@"https://b23.tv/RQQt3Uk"];
+    if (!ame254_url) return;
+    if (@available(iOS 10.0, *)) {
+        [[UIApplication sharedApplication] openURL:ame254_url options:@{} completionHandler:nil];
+    } else {
+        [[UIApplication sharedApplication] openURL:ame254_url];
+    }
 }
 
 /// ★ Task222（清单第 18 项）：贡献专区卡——底部「支持我们」。

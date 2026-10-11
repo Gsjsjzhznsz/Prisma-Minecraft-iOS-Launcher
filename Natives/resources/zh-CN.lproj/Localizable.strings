@@ -2637,6 +2637,7 @@
 "about.license.body" = "本启动器以 GNU Affero General Public License v3.0（AGPL-3.0）授权。完整许可证内容见仓库根目录的 LICENSE 文件；第三方组件遵循各自许可证（ThirdParty/ 与 Natives/external/ 目录：PojavLauncher 为 GPLv3、MobileGlues 为 LGPL-3.0 等，详见对应目录）。源代码：https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher";
 "about.credits.title" = "致谢";
 "about.credits.body" = "Prisma 派生自 Amethyst-iOS-MyRemastered（herbrine8403），后者基于 PojavLauncher 官方 iOS 移植（PojavLauncherTeam）。SDL3 嵌入方案移植自 ZalithLauncher2。渲染器谱系包含 gl4es、Zink/Mesa、MobileGlues、ANGLE 与 virglrenderer。感谢所有上游作者与贡献者。";
+"about.credits.kxdw" = "贡献者：kxdw（哔哩哔哩 @KX_dw）——社区贡献者，感谢支持！";
 
 /* Task218: welcome wizard + crash diagnosis */
 "welcome.hero.subtitle" = "iOS 上的 Minecraft Java 版启动器";

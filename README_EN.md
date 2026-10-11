@@ -215,6 +215,7 @@ JIT (Just-In-Time compilation) is essential for smooth gameplay. Choose the appr
 - [@LanRhyme](https://github.com/LanRhyme) -- iOS 26 compatibility and logging improvements
 - [@WeiErLiTeo](https://github.com/WeiErLiTeo) -- Mod download integration, TouchController optimizations
 - [@Li2548](https://github.com/Li2548) -- Upstream synchronization
+- [kxdw (@KX_dw)](https://b23.tv/RQQt3Uk) -- Community contributor ([Bilibili space](https://b23.tv/RQQt3Uk))
 
 ## Community
 

@@ -2621,26 +2621,43 @@ void CallbackBridge_resumeGameIfNeed(void) {
             ame224_pWarpMouseInWindow = (bool (*)(void *, float, float))dlsym(RTLD_DEFAULT, "SDL_WarpMouseInWindow");
         }
         if (ame224_pWarpMouseInWindow && !isGrabbing) {
-            static void (*ame251_pGetWindowSize)(void *, int *, int *) = NULL;
-            static bool ame251_gwsResolved = false;
-            if (!ame251_gwsResolved) {
-                ame251_gwsResolved = true;
-                ame251_pGetWindowSize = (void (*)(void *, int *, int *))dlsym(RTLD_DEFAULT, "SDL_GetWindowSize");
-            }
-            if (ame251_pGetWindowSize) {
-                int ame251_ww = 0, ame251_wh = 0;
-                ame251_pGetWindowSize(g_sdlWindow, &ame251_ww, &ame251_wh);
-                if (ame251_ww > 0 && ame251_wh > 0) {
-                    ame224_pWarpMouseInWindow(g_sdlWindow, ame251_ww / 2.0f, ame251_wh / 2.0f);
-                    NSLog(@"[InputDiag] Task251: resume warp -> window center (sdl pts %dx%d, was belief-space cursor %ld,%ld grabbing=0)",
-                          ame251_ww, ame251_wh, (long)cursorX, (long)cursorY);
-                }
+            // ★ Task254：warp 目标改用 SDL 真实窗口点尺寸（ame_hook_realSDL
+            //   GetWindowSize = 钩子安装时 dlsym 到的原始实现）。旧路径 dlsym
+            //   (RTLD_DEFAULT,"SDL_GetWindowSize") 拿到的是本启动器 Task61 的
+            //   钉扎钩子（返回 windowWidth/Height=1388x964），而 SDL_WarpMouse
+            //   InWindow 吃的是【真实窗口点空间】（SDL_uikitview 1180x820）—
+            //   warp 目标 1388/2=694 > 真实中心 590，落点偏离中心 9%+（错误
+            //   空间的"中心"）。真值 warp 恒在窗内且恒为真中心。
+            extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
+            int ame254_rw = 0, ame254_rh = 0;
+            ame_hook_realSDLGetWindowSize(&ame254_rw, &ame254_rh);
+            if (ame254_rw > 0 && ame254_rh > 0) {
+                ame224_pWarpMouseInWindow(g_sdlWindow, ame254_rw / 2.0f, ame254_rh / 2.0f);
+                NSLog(@"[InputDiag] Task254: resume warp -> real SDL window center (sdl pts %dx%d, pinned window %dx%d, was belief-space cursor %ld,%ld grabbing=0)",
+                      ame254_rw, ame254_rh, (int)windowWidth, (int)windowHeight,
+                      (long)cursorX, (long)cursorY);
             } else {
-                // SDL_GetWindowSize 不可解析（极端裁剪环境）：保持旧路径但钳进
-                // 信念窗口内（杜绝无界累积值直打）。
-                long ame251_clX = cursorX < 0 ? 0 : (cursorX > windowWidth ? windowWidth : cursorX);
-                long ame251_clY = cursorY < 0 ? 0 : (cursorY > windowHeight ? windowHeight : cursorY);
-                ame224_pWarpMouseInWindow(g_sdlWindow, (float)ame251_clX, (float)ame251_clY);
+                static void (*ame251_pGetWindowSize)(void *, int *, int *) = NULL;
+                static bool ame251_gwsResolved = false;
+                if (!ame251_gwsResolved) {
+                    ame251_gwsResolved = true;
+                    ame251_pGetWindowSize = (void (*)(void *, int *, int *))dlsym(RTLD_DEFAULT, "SDL_GetWindowSize");
+                }
+                if (ame251_pGetWindowSize) {
+                    int ame251_ww = 0, ame251_wh = 0;
+                    ame251_pGetWindowSize(g_sdlWindow, &ame251_ww, &ame251_wh);
+                    if (ame251_ww > 0 && ame251_wh > 0) {
+                        ame224_pWarpMouseInWindow(g_sdlWindow, ame251_ww / 2.0f, ame251_wh / 2.0f);
+                        NSLog(@"[InputDiag] Task251: resume warp -> window center (sdl pts %dx%d, was belief-space cursor %ld,%ld grabbing=0)",
+                              ame251_ww, ame251_wh, (long)cursorX, (long)cursorY);
+                    }
+                } else {
+                    // SDL_GetWindowSize 不可解析（极端裁剪环境）：保持旧路径但钳进
+                    // 信念窗口内（杜绝无界累积值直打）。
+                    long ame251_clX = cursorX < 0 ? 0 : (cursorX > windowWidth ? windowWidth : cursorX);
+                    long ame251_clY = cursorY < 0 ? 0 : (cursorY > windowHeight ? windowHeight : cursorY);
+                    ame224_pWarpMouseInWindow(g_sdlWindow, (float)ame251_clX, (float)ame251_clY);
+                }
             }
         } else if (isGrabbing) {
             NSLog(@"[InputDiag] Task251: resume warp skipped (grabbing; cursor %ld,%ld is relative accumulator, warp would phantom-move camera)",

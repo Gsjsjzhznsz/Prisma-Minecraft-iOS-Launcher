@@ -215,6 +215,7 @@ JIT（即时编译）是流畅运行游戏的关键。请根据自身环境选�
 - [@LanRhyme](https://github.com/LanRhyme) -- iOS 26 兼容性适配及日志改进
 - [@WeiErLiTeo](https://github.com/WeiErLiTeo) -- Mod 下载功能集成、TouchController 优化
 - [@Li2548](https://github.com/Li2548) -- 上游同步维护
+- [kxdw（@KX_dw）](https://b23.tv/RQQt3Uk) -- 社区贡献者（[哔哩哔哩个人空间](https://b23.tv/RQQt3Uk)）
 
 ## 社区
 

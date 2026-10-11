@@ -2642,6 +2642,7 @@
 "about.license.body" = "This launcher is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). The full license text is the LICENSE file at the repository root; third-party components are covered by their own licenses under ThirdParty/ and Natives/external/ (PojavLauncher: GPLv3, MobileGlues: LGPL-3.0, and others as noted there). Source code: https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher";
 "about.credits.title" = "Credits";
 "about.credits.body" = "Prisma is a fork of Amethyst-iOS-MyRemastered (herbrine8403), which builds on the official PojavLauncher iOS port (PojavLauncherTeam). SDL3 embedding ported from ZalithLauncher2. Renderer lineage includes gl4es, Zink/Mesa, MobileGlues, ANGLE and virglrenderer. Thanks to every upstream author and contributor.";
+"about.credits.kxdw" = "Contributor: kxdw (Bilibili @KX_dw) -- community contributor, thanks for the support!";
 
 /* Task218: welcome wizard + crash diagnosis */
 "welcome.hero.subtitle" = "A Minecraft: Java Edition launcher for iOS";

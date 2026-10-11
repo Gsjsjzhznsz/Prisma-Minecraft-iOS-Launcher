@@ -806,10 +806,14 @@ static CGFloat LauncherRootLayoutRightPanelWidth(UITraitCollection *trait) {
     }
     if (ame250_tint != nil) {
         container.backgroundColor = [ame250_tint colorWithAlphaComponent:0.55];
-    } else {
-        container.backgroundColor = (container.layer.cornerRadius > 0)
-            ? AmeCardSurfaceColor() : [UIColor systemBackgroundColor];
     }
+    // ★ Task254（毛玻璃失效第二刀，与 LauncherCardLayoutViewController
+    //   applyCustomCardColorToCard 同批）：未设置 card_color 时不再覆写背景。
+    //   旧 else 分支写 AmeCardSurfaceColor()/systemBackgroundColor，会把
+    //   updateChromeSurfaces 刚经 applyEffectToView 铺好的磨砂面宿主背景
+    //   改回不透明平涂——壁纸→不透明卡底→磨砂层的层序把磨砂与壁纸物理
+    //   隔断（IMG_0389/0399 锐利壁纸穿透平涂实锤）。各档表面由
+    //   applyEffectToView 全分支负责，此处零覆写。
 }
 
 - (void)uiEffectChanged:(NSNotification *)notification {

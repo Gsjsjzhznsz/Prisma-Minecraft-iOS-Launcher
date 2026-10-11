@@ -333,12 +333,17 @@ static CGFloat LauncherCardLayoutRightPanelWidth(UITraitCollection *trait) {
     UIColor *ame250_tint = [self colorFromHexString:ame250_hex];
     if (ame250_tint != nil) {
         card.backgroundColor = [ame250_tint colorWithAlphaComponent:0.55];
-    } else {
-        // 未设置：还原规格表面（与 applyEffectToView 平贴分支同源，
-        // AmeCardSurfaceColor 定义于 UIKit+NativeSurface.h）。
-        card.backgroundColor = (card.layer.cornerRadius > 0)
-            ? AmeCardSurfaceColor() : [UIColor systemBackgroundColor];
     }
+    // ★ Task254（毛玻璃失效第二刀）：未设置 card_color 时不再覆写背景。
+    //   旧 else 分支无条件写 AmeCardSurfaceColor()/systemBackgroundColor——
+    //   在 createCardContainer 的调用序里【后于】applyEffectToView 执行，
+    //   把 Blur 管线刚铺好的磨砂面（backgroundColor=clearColor + 底层
+    //   UIVisualEffectView）的宿主背景改回不透明平涂：壁纸→不透明卡底→
+    //   磨砂层，磨砂层只能看到不透明卡底而看不到壁纸 = 磨砂被物理隔断，
+    //   卡面呈锐利壁纸穿透暗色平涂（IMG_0389/0399 实锤观感）。
+    //   各档表面本就由 applyEffectToView 全分支负责设置（平贴灰面/半透明/
+    //   磨砂 clearColor），此处保持零覆写即可；appearance 重刷路径
+    //   （applyCustomAppearance）同样受益：不再把重刷后的磨砂面打回平涂。
 }
 - (nullable UIColor *)colorFromHexString:(id)hex {
     if (![hex isKindOfClass:[NSString class]] || [(NSString *)hex length] == 0) return nil;

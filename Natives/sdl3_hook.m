@@ -1440,7 +1440,26 @@ static bool ame_SDL_PollEvent(void *event) {
                     NSDebugLog(@"[SDLHook] Task64 key consumed #%lu type=0x%x scancode=%d key=%u down=%d windowID=%u (MC-side)",
                                (unsigned long)kn, type, ksc, kkey, kdown, (unsigned)kwid);
                 }
-            } else if (n <= 30 || n % 500 == 0) {
+            }
+            // ★ Task254（反馈 4 取证）：文本类事件 MC 侧消费全量落日志——
+            //   Task82 推送侧计数只能证明"推了"，MC 是否真的从队列取走
+            //   （SDL_EVENT_TEXT_INPUT 0x303 / TEXT_EDITING 0x306）此前完全
+            //   不可见。"键盘完全没用"的下一轮裁定就靠这一行：推送侧有
+            //   #N 而这里没有对应条目 = 事件没进 MC 队列/被丢弃（windowID
+            //   /类型问题）；两边都齐 = MC 消费了但 EditBox 不收（MC 侧问
+            //   题）。SDL3_TextInputEvent 布局：windowID@16, text 指针@24。
+            else if (type == 0x303 || type == 0x306) {
+                static _Atomic unsigned long s_task254TextCount = 0;
+                unsigned long tn = atomic_fetch_add(&s_task254TextCount, 1) + 1;
+                if (tn <= 50 || tn % 100 == 0) {
+                    uint32_t twid = *(const uint32_t *)((const char *)event + 16);
+                    const char *ttext = *(const char **)((const char *)event + 24);
+                    NSLog(@"[SDLHook] Task254 text event consumed #%lu type=0x%lx windowID=%u text=%s (MC-side)",
+                          (unsigned long)tn, (unsigned long)type, (unsigned)twid,
+                          ttext ? ttext : "(null)");
+                }
+            }
+            else if (n <= 30 || n % 500 == 0) {
                 // Task59：鼠标类事件附带坐标——0x400 motion / 0x401 button down /
                 // 0x402 button up 的 x/y 同在偏移 28/32（与 input_bridge_v3.m 推送
                 // 用的 SDL3 结构体布局一致）。直接观测“MC 实际消费的鼠标坐标”，
@@ -1630,6 +1649,15 @@ static void ame_refrontEmbeddedViewOnMain(void) {
     // 2. 在宿主容器里 re-front 嵌入视图，并把容器内其它子视图（虚拟鼠标指针等）压在上面
     UIView *container = v.superview;
     if (container == nil) return;
+    // ★ Task254（反馈 1：MobileGL 切后台后输入错位）：后台往返期间 UIKit/SDL
+    //   可自行重排嵌入视图 frame（SDL 原生触摸→鼠标坐标的换算源）——frame
+    //   与容器 bounds 漂移 = 触点换算整体偏移（错位头号嫌疑）。re-front 时
+    //   同步重assert为容器 bounds（嵌入架构的设计帧），漂移时记日志。
+    if (!CGRectEqualToRect(v.frame, container.bounds)) {
+        NSLog(@"[AmethystEmbed] Task254: re-front frame drift %@ -> reassert container bounds %@",
+              NSStringFromCGRect(v.frame), NSStringFromCGRect(container.bounds));
+        v.frame = container.bounds;
+    }
     [v removeFromSuperview];
     [container addSubview:v];
     // Task 52：GameSurfaceView 不参与 re-front（画面层必须保持在触摸层之下）
@@ -1674,6 +1702,21 @@ void *ame_hook_getEmbeddedSDLView(void) {
     return (__bridge void *)ame_embeddedSDLView;
 }
 
+/// ★ Task254：SDL 真实窗口点尺寸（Task61 钉扎层下的真值）。
+///   ame_real_GetWindowSize 是钩子安装时 dlsym 到的原始 SDL 实现；主窗口
+///   未知/未解析时写 0 返回。供恢复 warp 目标（input_bridge Task251 warp
+///   需要点空间真值而非钉扎值）与复屏取证（SurfaceVC Task254）使用。
+void ame_hook_realSDLGetWindowSize(int *w, int *h) {
+    if (w) *w = 0;
+    if (h) *h = 0;
+    void *ame254_win = ame_primaryWindow;
+    if (ame254_win == NULL || ame_real_GetWindowSize == NULL) return;
+    int ame254_w = 0, ame254_h = 0;
+    if (!ame_real_GetWindowSize(ame254_win, &ame254_w, &ame254_h)) return;
+    if (w) *w = ame254_w;
+    if (h) *h = ame254_h;
+}
+
 #pragma mark - Task 114：文本输入主线程化 + 启动器 hint（键盘自动弹出修复）
 
 // Task172 病历（760c07c 装机 latestlog.old.txt，26.3 多人会话键盘段）：
@@ -1716,8 +1759,77 @@ static bool ame_dispatchTextInputToMain(void (^work)(void)) {
     return true;
 }
 
+// ============================================================================
+// ★ Task254（反馈 4：自动打开输入法（SDL）开关——键盘弹了但打字完全无效根修）
+//
+// 病历（2026-10-11 latestlog 6270-6272 行）：
+//   单人游戏世界选择页搜索框聚焦 → MC SDL_StartTextInput → Task172 路由
+//   启动器字段 becomeFR=1（成功）→ 用户打字 → Task82 文本推送【零条】→
+//   键盘对搜索框完全无效（用户原话"那个键盘完全没用"）。同窗口期内
+//   Task171/224 heal 零触发 = 启动器字段 FR 从未丢——键不是被别的字段
+//   中途抢走，而是【键盘会话本身没绑定到启动器字段】。
+//
+//   机理（iPadOS 27 异步键盘会话）：SDL_StartTextInput(WithProperties) 的
+//   UIKit 后端把【SDL 自己的 textField】（位于被 Task32 隐藏的 SDL
+//   UIWindow 内）立为 first responder 并触发键盘——iPadOS 26 时代
+//   Task172 的"事后重夺 FR"能把键盘会话拽回启动器字段；iPadOS 27 的
+//   键盘会话在首个 responder 激活时【异步绑死】，事后 becomeFirstResponder
+//   只换 FR 标志、不换键盘投递目标 → 击键进 SDL 字段（隐藏窗口，投递链
+//   死）→ 石沉大海。
+//
+//   修法：釜底抽薪——拦截 UITextField.becomeFirstResponder，凡调用方视图
+//   层级位于 SDL_uikitview*（SDL 自己的字段）一律返回 NO：SDL 字段从未
+//   成为键盘会话的激活者，启动器字段（AME172 通知路由的 becomeFR）成为
+//   键盘的第一个也是唯一激活者，iPadOS 27 的异步绑定从一开始就落对。
+//   击键 → 启动器字段 → sendChar → Task82 SDL_TEXT_INPUT 推送 → MC。
+//   作用域：仅类名前缀 SDL_uikitview 层级内的 UITextField（启动器自身
+//   字段/弹窗/其它 UI 全部不受影响）；SDL 字段永不 FR 后，SDL 后端的
+//   键盘 show/hide 观察者不再由它触发——键盘生命周期完全由启动器字段
+//   驱动，与 MC 的 Start/StopTextInput 通知链（AME172）语义一致。
+// ============================================================================
+static BOOL (*ame254_origUITextFieldBecomeFirstResponder)(id, SEL) = NULL;
+static BOOL ame254_textFieldBecomeFRHook(id self, SEL _cmd) {
+    @try {
+        UIView *ame254_v = self;
+        while (ame254_v) {
+            NSString *ame254_cls = NSStringFromClass(ame254_v.class);
+            if ([ame254_cls hasPrefix:@"SDL_uikitview"]) {
+                static int ame254_blockCount = 0;
+                ame254_blockCount++;
+                if (ame254_blockCount <= 10 || ame254_blockCount % 50 == 0) {
+                    NSLog(@"[SDLHook] Task254: SDL-internal textField becomeFirstResponder BLOCKED #%d "
+                          @"(iPadOS 27 async keyboard session must bind to launcher field, not the hidden-window SDL field)",
+                          ame254_blockCount);
+                }
+                return NO;
+            }
+            ame254_v = ame254_v.superview;
+        }
+    } @catch (NSException *ame254_e) {
+        NSLog(@"[SDLHook] Task254: textField FR hook exception: %@", ame254_e);
+    }
+    return ame254_origUITextFieldBecomeFirstResponder ? ame254_origUITextFieldBecomeFirstResponder(self, _cmd) : NO;
+}
+
+static void ame254_installTextFieldFRGuard(void) {
+    static dispatch_once_t ame254_once;
+    dispatch_once(&ame254_once, ^{
+        Method ame254_m = class_getInstanceMethod([UITextField class], @selector(becomeFirstResponder));
+        if (!ame254_m) return;
+        ame254_origUITextFieldBecomeFirstResponder =
+            (BOOL (*)(id, SEL))method_setImplementation(ame254_m,
+                (IMP)ame254_textFieldBecomeFRHook);
+        NSLog(@"[SDLHook] Task254: UITextField.becomeFirstResponder guard installed "
+              @"(SDL_uikitview* hierarchy fields can no longer steal the keyboard session)");
+    });
+}
+
 static bool ame_SDL_StartTextInput(void *window) {
     return ame_dispatchTextInputToMain(^{
+        // ★ Task254：FR 守卫必须在真实调用【前】安装——SDL UIKit 后端在
+        //   StartTextInput 内部就把自己的 textField 立为 first responder
+        //   （iPadOS 27 异步键盘会话随之绑死），守卫晚装一拍就输。
+        ame254_installTextFieldFRGuard();
         if (ame_real_StartTextInput != NULL) ame_real_StartTextInput(window);
         // Task172：路由到启动器输入框（见下方 Task172 病历注释）
         [[NSNotificationCenter defaultCenter] postNotificationName:@"AME172_SDLStartTextInput" object:nil];
@@ -1727,6 +1839,9 @@ static bool ame_SDL_StartTextInput(void *window) {
 static bool ame_SDL_StartTextInputWithProperties(void *window,
                                                  unsigned long long props) {
     return ame_dispatchTextInputToMain(^{
+        // ★ Task254：同 StartTextInput——守卫先行，SDL 字段不再能成为
+        //   键盘会话激活者（iPadOS 27 异步绑定语义，见 Task254 注释块）。
+        ame254_installTextFieldFRGuard();
         if (ame_real_StartTextInputWithProperties != NULL) {
             ame_real_StartTextInputWithProperties(window, props);
         }
