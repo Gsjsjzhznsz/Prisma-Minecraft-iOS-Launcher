@@ -160,22 +160,21 @@ jobs:
         run: |
           brew install --cask temurin@8 || true
 
-      - name: Install ldid
-        run: |
-          brew install ldid || true
-
-      # Task 214：VirGLRenderer(≤26.2) 构建链依赖
-      # - meson/ninja：libepoxy + virglrenderer + Mesa(virgl guest) 的构建系统
-      # - bison > 2.3：Mesa 25.0 程序解析器生成（macOS CLT 自带 2.3
-      #   过不了 meson 的 version: '> 2.3' 门槛，byacc 也不存在）；
-      #   bison 是 keg-only，必须显式注入 PATH 才能被 meson 找到
-      # - mako：Mesa 构建期代码生成（python3 模块）
-      - name: Install virgl build deps (meson/ninja/bison/mako)
+      - name: Install brew toolchain (ldid/meson/ninja/bison/pkg-config in one pass)
+        # ★ Task255（清单 12：CI 构建提速）：brew install 合并为一次调用——
+        #   brew 每次安装都要重跑依赖解析与安装核对（实测每次 10-30s，
+        #   合并后只付一次）。|| true 容错语义保留。
+        # Task 214：VirGLRenderer(≤26.2) 构建链依赖
+        # - meson/ninja：libepoxy + virglrenderer + Mesa(virgl guest) 的构建系统
+        # - bison > 2.3：Mesa 25.0 程序解析器生成（macOS CLT 自带 2.3
+        #   过不了 meson 的 version: '> 2.3' 门槛，byacc 也不存在）；
+        #   bison 是 keg-only，必须显式注入 PATH 才能被 meson 找到
+        # - mako：Mesa 构建期代码生成（python3 模块）
         run: |
           # Task217：+pkg-config——meson 交叉构建的 host 机 pkg-config 探测
           #（run 602/603 实锤 "pkg-config for host machine not found"；
           #  cross 文件 [binaries] 已同步补 pkg-config 声明）
-          brew install meson ninja bison pkg-config || true
+          brew install ldid meson ninja bison pkg-config || true
           echo "$(brew --prefix bison)/bin" >> "$GITHUB_PATH"
           # mako 必须装进 brew python3（Mesa 的 find_installation 用 PATH 里的 python3
           # = brew python；PEP 668 externally-managed 会拒绝 --user 安装，
@@ -185,6 +184,13 @@ jobs:
           python3 -m pip install --break-system-packages --user mako pyyaml packaging 2>/dev/null \
             || python3 -m pip install --user mako pyyaml packaging 2>/dev/null \
             || pip3 install --user mako pyyaml packaging || true
+
+      - name: Cache pip downloads
+        # ★ Task255：pip 下载缓存（三包 ~2MB；冷装 20-40s → 命中后秒级）。
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-mako-pyyaml-packaging
 
       - name: Remove work folders
         run: |

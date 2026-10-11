@@ -205,6 +205,24 @@ static UIColor *ame250_globalTextFillColor(void);
             _blurIntensity = 0.75;
         }
     }
+    // ★ Task255（毛玻璃失效根修第二刀）：装机 latestlog（7bacfd3 构建）
+    //   实锤 effect=1(Blur) + blurIntensity=0.00（frostAlpha=0.30）+
+    //   Task254 的 "blurIntensity<=0.01 整层不装" = 毛玻璃层根本不装 =
+    //   IMG_0391 设置页壁纸全锐利。同屏 opacity/effect 均为默认值（用户
+    //   未动过背景设置）唯独 blur=0 → 存档被历史路径写坏（0 是范围内
+    //   合法值，2023 时代的 "范围检查抓不住 0.0" 注释正是这一病灶的自
+    //   白）。修法：一次性自愈——存档恰为 0.0 且效果档=毛玻璃且自愈标
+    //   志未写时，恢复用户定稿默认 0.75 并落标志；标志已写后用户再次
+    //   主动设 0 照常尊重（设置页语义不变）。effect=Translucent 时不自
+    //   愈（半透明档与模糊强度无观感关联，0 无自相矛盾）。
+    if (_blurIntensity <= 0.001 && _uiEffect == BackgroundUIEffectBlur &&
+        ![defaults boolForKey:@"ame255.blurHealDone"]) {
+        NSLog(@"[BackgroundManager] Task255: stored blurIntensity=0 with effect=Blur (legacy-damaged archive) -- healing to 0.75 (one-time)");
+        _blurIntensity = 0.75;
+        [defaults setFloat:_blurIntensity forKey:kBackgroundBlurIntensityKey];
+        [defaults setBool:YES forKey:@"ame255.blurHealDone"];
+        [defaults synchronize];
+    }
     // ★ Task252（反馈"毛玻璃效果失效"取证）：装机截图（IMG_0399）卡片=
     //   锐利壁纸穿透暗色平涂、零磨砂——与本文件 Blur 分支（SystemThin
     //   Material frost）的预期观感不符，与 Translucent 分支（半透明平涂）
@@ -547,11 +565,13 @@ static UIColor *ame250_globalTextFillColor(void);
     //   全局 0.35 / 卡面 0.79 全部退化为不可见，壁纸全锐利穿透 = 用户
     //   “毛玻璃失效，以前是这样的”。alpha=1.0 是唯一可靠档（applyEffect
     //   ToCell 的 backgroundView 路径从未设 alpha，同机同代一直正常，反向实
-    //   证）。模糊强度改由上覆 dim 层承担（既有层，照旧工作）；blur
-    //   Intensity<=0 时整层不装（与旧 alpha=0 不可见语义等价）。
-    if (self.blurIntensity <= 0.01) {
-        return;   // Task254：强度 0 = 无磨砂（旧 alpha=0 同效，不装省一层）
-    }
+    //   证）。模糊强度改由上覆 dim 层承担（既有层，照旧工作）。
+    // ★ Task255（毛玻璃失效根修第二刀，装机 7bacfd3 latestlog 复盘实锤）：
+    //   Task254 的 "blurIntensity<=0.01 整层不装" 分支反而成了新病灶——
+    //   用户存档 blurIntensity=0.00（历史路径写坏；自愈第一刀已一次性治回
+    //   0.75）期间磨砂层整个不装 = IMG_0399 全锐利平涂。语义修正：毛玻璃
+    //   档的磨砂层【恒装】（观感本体，等同 applyEffectToCell 路径），强度
+    //   0 只意味着 dim 压暗为 0——磨砂仍在，与“无磨砂”彻底解耦。
     UIBlurEffect *blurEffect;
     if (@available(iOS 13.0, *)) {
         blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterial];

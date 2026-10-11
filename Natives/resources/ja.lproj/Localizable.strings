@@ -78,7 +78,7 @@
 "custom_controls.error.incompatible" = "この制御バージョン(コード %d) はこのランチャービルドでは実装されていません。";
 "custom_controls.hint" = "画面上の任意の場所を長押ししてオプションを追加";
 
-"init.migrateDir" = "Amethystのディレクトリが %@になりました。既存のすべてのデータが新しい場所に移動されました。";
+"init.migrateDir" = "Prismaのディレクトリが %@になりました。既存のすべてのデータが新しい場所に移動されました。";
 
 "java.error.missing_main_class" = "%@ is missing main class attribute. If this is a mod, put it into the “mods” folder of your selected instance.";
 "java.error.missing_runtime" = "%@ requires Java %d or later to run. Please install it first and specify it in Manage Runtimes.";
@@ -92,7 +92,7 @@
 "launcher.menu.import_modpack" = "Import modpack";
 
 "launcher.wait_jit.title" = "JITを待っています";
-"launcher.wait_jit.message" = "Amethystは、Javaが最大限のパフォーマンスで動作するようにJust-in-timeコンパイルに依存しています。";
+"launcher.wait_jit.message" = "Prismaは、Javaが最大限のパフォーマンスで動作するようにJust-in-timeコンパイルに依存しています。";
 "launcher.wait_jit_trollstore.message" = "If you still see this message, please enable URL Scheme in TrollStore.";
 
 "login.error.username.outOfRange" = "ユーザー名は最低3文字、最大16文字でなければなりません。";
@@ -123,9 +123,9 @@
 "login.option.local" = "ローカルアカウント";
 "login.option.3rdparty" = "Third-party account";
 
-"login.warn.title.legacy_device" = "The next release of Amethyst will not be compatible with this device.";
+"login.warn.title.legacy_device" = "The next release of Prisma will not be compatible with this device.";
 "login.warn.message.legacy_device" = "To run the next major release, a device capable of running iOS 14 is required.";
-"login.warn.title.legacy_ios" = "The next release of Amethyst will require a system update.";
+"login.warn.title.legacy_ios" = "The next release of Prisma will require a system update.";
 "login.warn.message.legacy_ios" = "To run the next major release, this device needs to be running iOS 14 or later.";
 "login.warn.title.limited_ram" = "This device has a limited amount of memory available.";
 "login.warn.message.limited_ram" = "We recommend leaving auto RAM enabled to prevent instability and performance issues.";
@@ -166,7 +166,7 @@
 "preference.section.general" = "一般設定";
 "preference.section.ai" = "AI Agent";
 "preference.section.video" = "Video and Audio Settings";
-"preference.section.footer.video" = "Auto renderer allows Amethyst to choose the best option based on Minecraft version. Decreasing resolution reduces GPU workload for better performance.";
+"preference.section.footer.video" = "Auto renderer allows Prisma to choose the best option based on Minecraft version. Decreasing resolution reduces GPU workload for better performance.";
 "preference.section.mobileglues" = "MobileGlues Renderer";
 "preference.section.footer.mobileglues" = "These settings take effect when the renderer is set to MobileGlues or Vulkan. The Vulkan renderer's OpenGL fallback uses MobileGlues, so config.json is read. The Auto renderer resolves to ANGLE and does not load MobileGlues, so settings do not apply. The config is written to <POJAV_HOME>/MG/config.json at game launch.";
 "preference.section.control" = "制御のカスタマイズ";
@@ -212,9 +212,9 @@
 "preference.title.enable_altkit" = "Enable JIT using AltKit";
 "preference.detail.enable_altkit" = "When enabled, Prisma will try to connect to local AltServers to enable JIT.";
 "preference.title.appicon" = "アプリアイコンを設定";
-"preference.detail.appicon" = "Amethystの異なるホーム画面アイコンから選択できます。";
-"preference.title.appicon-default" = "おなじみのAmethyst ライトテーマ";
-"preference.title.appicon-dark" = "おなじみのAmethystダークテーマ";
+"preference.detail.appicon" = "Prismaの異なるホーム画面アイコンから選択できます。";
+"preference.title.appicon-default" = "おなじみのPrisma ライトテーマ";
+"preference.title.appicon-dark" = "おなじみのPrismaダークテーマ";
 "preference.title.appicon-development" = "Penciled Development";
 "preference.title.hidden_sidebar" = "デフォルトでメインメニューサイドバーを非表示にする";
 "preference.detail.hidden_sidebar" = "Allows you to hide the sidebar on the main menu by default and when rotating.";
@@ -259,7 +259,7 @@
 "preference.title.fullscreen_airplay" = "全画面AirPlay";
 "preference.detail.fullscreen_airplay" = "画面上のすべてをミラーリングするのではなく、外部ディスプレイにフルスクリーンのゲームウィンドウを表示できます。";
 "preference.title.silence_other_audio" = "Pause audio when game opens";
-"preference.detail.silence_other_audio" = "Enable to allow Amethyst to pause audio from other apps, such as Music, when launching the game.";
+"preference.detail.silence_other_audio" = "Enable to allow Prisma to pause audio from other apps, such as Music, when launching the game.";
 "preference.title.silence_with_switch" = "Disable audio with silent switch";
 "preference.detail.silence_with_switch" = "Enable to disable audio when Silent Mode is on. Headphones and external speakers are not affected.";
 "preference.title.allow_microphone" = "Allow microphone input";
@@ -533,8 +533,8 @@
 
 "提示" = "Notice";
 
-"announcement.preview_version" = "Welcome to Amethyst iOS Remastered Preview Version!";
-"announcement.latest_version" = "Welcome to Amethyst iOS Remastered! This is the latest stable version.";
+"announcement.preview_version" = "Welcome to Prisma Launcher Preview Version!";
+"announcement.latest_version" = "Welcome to Prisma Launcher! This is the latest stable version.";
 "announcement.new_version_available" = "New version available: %@";
 "announcement.download_button" = "Download Now";
 
@@ -696,7 +696,7 @@
 "preference.title.memory_limit_help" = "Memory Limit Info";
 "preference.detail.memory_limit_help" = "Learn why iOS memory limits cause modpack crashes and how to fix it";
 "preference.title.check_update" = "Check for Updates";
-"preference.detail.check_update" = "Check GitHub Releases for the latest stable version of Amethyst iOS";
+"preference.detail.check_update" = "Check GitHub Releases for the latest stable version of Prisma iOS";
 
 // 检查更新
 "check_update" = "Check for Updates";
@@ -1208,10 +1208,10 @@
 "i18n_str_356" = "Tap to enter ✨";
 "i18n_str_357" = "Not Logged In";
 "i18n_str_358" = "Detection failed";
-"i18n_str_359" = "Welcome to the Amethyst iOS Remastered beta!";
-"i18n_str_360" = "Welcome to Amethyst iOS Remastered!";
+"i18n_str_359" = "Welcome to the Prisma Launcher beta!";
+"i18n_str_360" = "Welcome to Prisma Launcher!";
 "i18n_str_361" = "New version found: v%@";
-"i18n_str_362" = "Welcome to Amethyst iOS Remastered! You are up to date.";
+"i18n_str_362" = "Welcome to Prisma Launcher! You are up to date.";
 "i18n_str_363" = "Failed to switch game directory: unable to create symbolic link\\n\\n%@";
 "i18n_str_364" = "Java Runtime %@";
 "i18n_str_365" = "Extracting runtime";

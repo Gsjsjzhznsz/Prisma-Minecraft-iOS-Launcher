@@ -436,6 +436,54 @@ void init_loadMobileGluesConfig() {
 }
 
 void init_loadCustomJvmFlags(int* argc, const char** argv) {
+    // ★ Task255（清单 11）：JVM 预设 custom 档的自定义参数注入。
+    //   java.jvm_preset=custom 时，java.jvm_preset_custom_args 的内容与
+    //   javaArgs 同链注入（同 purge 规则：Xms/Xmx/d32/d64 由启动器内存
+    //   分配体系独占，用户侧重复指定会被忽略并记日志）。
+    static NSMutableArray<NSString *> *retainedCustomFlags = nil;
+    if (retainedCustomFlags == nil) {
+        retainedCustomFlags = [NSMutableArray array];
+    }
+    // 注意：不清空 retainedCustomFlags，因为 launchJava 在进程生命周期内只调用一次。
+    // 如果未来变为可多次调用，需要在调用前清空。
+
+    void (^ame255_pushFlag)(NSString *) = ^(NSString *jvmarg) {
+        if (jvmarg.length == 0) return;
+        NSArray *argsToPurge = @[@"Xms", @"Xmx", @"d32", @"d64"];
+        for (NSString *argToPurge in argsToPurge) {
+            if ([jvmarg hasPrefix:argToPurge]) {
+                NSLog(@"[JavaLauncher] Ignored JVM flag: -%@", jvmarg);
+                return;
+            }
+        }
+        if (*argc + 1 >= 1000) {
+            NSLog(@"[JavaLauncher] Warning: margv reached limit (1000), discarding custom JVM flag: -%@", jvmarg);
+            return;
+        }
+        NSString *flagStr = [@"-" stringByAppendingString:jvmarg];
+        [retainedCustomFlags addObject:flagStr];
+        ++*argc;
+        argv[*argc] = flagStr.UTF8String;
+        NSLog(@"[JavaLauncher] Added custom JVM flag: %s", argv[*argc]);
+    };
+
+    NSString *ame255_preset = getPrefObject(@"java.jvm_preset");
+    BOOL ame255_custom = [ame255_preset isKindOfClass:[NSString class]] &&
+                         [ame255_preset isEqualToString:@"custom"];
+    if (ame255_custom) {
+        NSString *ame255_customArgs = getPrefObject(@"java.jvm_preset_custom_args");
+        if ([ame255_customArgs isKindOfClass:[NSString class]] &&
+            ame255_customArgs.length > 0) {
+            ame255_customArgs = [ame255_customArgs stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+            NSLog(@"[JavaLauncher] Task255: JVM preset=custom -- injecting jvm_preset_custom_args");
+            for (NSString *arg in [ame255_customArgs componentsSeparatedByString:@" "]) {
+                ame255_pushFlag([arg stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet]);
+            }
+        } else {
+            NSLog(@"[JavaLauncher] Task255: JVM preset=custom but jvm_preset_custom_args empty (GC tuning skipped, JVM defaults apply)");
+        }
+    }
+
     NSString *jvmargs = [PLProfiles resolveKeyForCurrentProfile:@"javaArgs"];
     if (jvmargs == nil) return;
     // Make the separator happy
@@ -450,39 +498,12 @@ void init_loadCustomJvmFlags(int* argc, const char** argv) {
     // 导致 argv 中的指针悬垂。虽然 launchJava 通常在 JVM 启动前不会 drain autoreleasepool，
     // 但这是脆弱的隐式依赖。retainedCustomFlags 作为静态变量，生命周期覆盖整个进程，
     // 保证字符串在 pJLI_Launch 调用期间有效。
-    static NSMutableArray<NSString *> *retainedCustomFlags = nil;
-    if (retainedCustomFlags == nil) {
-        retainedCustomFlags = [NSMutableArray array];
-    }
-    // 注意：不清空 retainedCustomFlags，因为 launchJava 在进程生命周期内只调用一次。
-    // 如果未来变为可多次调用，需要在调用前清空。
 
     NSLog(@"[JavaLauncher] Reading custom JVM flags");
-    NSArray *argsToPurge = @[@"Xms", @"Xmx", @"d32", @"d64"];
     for (NSString *arg in [jvmargs componentsSeparatedByString:@" -"]) {
         NSString *jvmarg = [arg stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
         if (jvmarg.length == 0) continue;
-        BOOL ignore = NO;
-        for (NSString *argToPurge in argsToPurge) {
-            if ([jvmarg hasPrefix:argToPurge]) {
-                NSLog(@"[JavaLauncher] Ignored JVM flag: -%@", jvmarg);
-                ignore = YES;
-                break;
-            }
-        }
-        if (ignore) continue;
-
-        // N3 边界检查：argv 数组大小由调用方决定（margv[1000]），这里做防御性检查
-        if (*argc + 1 >= 1000) {
-            NSLog(@"[JavaLauncher] Warning: margv reached limit (1000), discarding custom JVM flag: -%@", jvmarg);
-            continue;
-        }
-        NSString *flagStr = [@"-" stringByAppendingString:jvmarg];
-        [retainedCustomFlags addObject:flagStr];
-        ++*argc;
-        argv[*argc] = flagStr.UTF8String;
-
-        NSLog(@"[JavaLauncher] Added custom JVM flag: %s", argv[*argc]);
+        ame255_pushFlag(jvmarg);
     }
 }
 
@@ -1776,9 +1797,14 @@ static void ame218_showCrashDiagnosis(NSDictionary *diag, NSString *hsErrPath, B
 /// Task217：auto 候选链决策。版本基线（Task144/173/212）+ dylib 存在性 +
 /// 拉黑过滤；全部候选不可用时回落链首（保留可用性兜底，不让拉黑把路堵死）。
 static NSString *ame217_autoRendererDecide(NSInteger minVersion) {
+    // ★ Task255（清单 8：自动渲染器优化）：≤1.16（minVersion<=8 谱系）候选
+    //   链头插 kw（NG-GL4ES，Task206 "Krypton Wrapper"——glslang+SPIRV-Cross
+    //   着色器管线，官方口径几乎全版本可跑，老版本 MC 生态的现役首选；
+    //   用户指令"1.17 版本以下应使用 kw（nogl4se）渲染器"）。原 ZL2 经典
+    //   gl4es 降为第二顺位兜底，dylib 缺失/拉黑过滤链不变。
     NSArray<NSString *> *chain = (minVersion > 8)
         ? @[@ RENDERER_NAME_MOBILEGL, @ RENDERER_NAME_GL4ESZL2, @ RENDERER_NAME_MTL_ANGLE]
-        : @[@ RENDERER_NAME_GL4ESZL2, @ RENDERER_NAME_MTL_ANGLE, @ RENDERER_NAME_MOBILEGL];
+        : @[@ RENDERER_NAME_NGGL4ES, @ RENDERER_NAME_GL4ESZL2, @ RENDERER_NAME_MTL_ANGLE, @ RENDERER_NAME_MOBILEGL];
     NSString *blacklist = getPrefObject(@"ame217.autoRendererBlacklist");
     BOOL hasBlacklist = [blacklist isKindOfClass:[NSString class]] && blacklist.length > 0;
 
@@ -1796,14 +1822,14 @@ static NSString *ame217_autoRendererDecide(NSInteger minVersion) {
         picked = candidate;
         reason = (minVersion > 8)
             ? @"modern MC baseline (Task144: 1.17+ MobileGL Vulkan direct)"
-            : @"legacy MC baseline (Task173/212: ZL2 classic gl4es)";
+            : @"legacy MC baseline (Task255: 1.17- kw/NG-GL4ES first, ZL2 classic gl4es fallback)";
         break;
     }
     if (!picked) {
         picked = chain.firstObject;
         reason = @"all candidates unavailable/blacklisted -- availability fallback to chain head";
     }
-    NSLog(@"[JavaLauncher] Task217: auto renderer decision: minVersion=%ld chain=%@ blacklist=%@ -> %@ (%@)",
+    NSLog(@"[JavaLauncher] Task217/255: auto renderer decision: minVersion=%ld chain=%@ blacklist=%@ -> %@ (%@)",
           (long)minVersion, chain, hasBlacklist ? blacklist : @"(none)", picked, reason);
     return picked;
 }
@@ -2068,7 +2094,7 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         // （单一事实源；此处内联展开仅为保留原日志点）。
         NSString *renderer = ame_effective_renderer();
         if (![renderer isEqualToString:profileRenderer]) {
-            NSLog(@"[Amethyst] Task120: MobileGL backend override active (profile renderer was %@ -> %@)",
+            NSLog(@"[Prisma] Task120: MobileGL backend override active (profile renderer was %@ -> %@)",
                   profileRenderer, renderer);
             // ★ Task233（反馈 #3 纠偏，Task232 steer 退役）：Task232 曾把
             //   "家族覆盖解析出 MobileGL 且 MC >= 26" 强制改道 tinygl4angle
@@ -2500,9 +2526,9 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     NSString *task112OpenalPin = [frameworksPath stringByAppendingPathComponent:@"libopenal.dylib"];
     if ([[NSFileManager defaultManager] fileExistsAtPath:task112OpenalPin]) {
         PUSH_MARGV_FORMAT(@"-Dorg.lwjgl.openal.libname=%@", task112OpenalPin);
-        NSLog(@"[Amethyst] Task112: OpenAL pinned to %@", task112OpenalPin);
+        NSLog(@"[Prisma] Task112: OpenAL pinned to %@", task112OpenalPin);
     } else {
-        NSLog(@"[Amethyst] Task112: libopenal.dylib not found, OpenAL left to LWJGL default resolution");
+        NSLog(@"[Prisma] Task112: libopenal.dylib not found, OpenAL left to LWJGL default resolution");
     }
 
     PUSH_MARGV_FORMAT(@"-Duser.dir=%@", gameDir);
@@ -2924,25 +2950,70 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     // ============================================================================
     // JVM 性能优化（保守参数，不影响启动稳定性）
     // ============================================================================
-    // 仅对 Java 17+ 启用 G1GC 调优。Java 8 的 G1GC 不够成熟，保持默认 SerialGC。
+    // ★ Task255（清单 11：JVM 预设）：按 java.jvm_preset 四档注入 GC 策略。
+    //   memory（省内存）：G1 激进收缩——小年轻代 + 高归还比率，堆占用峰值
+    //     显著下降（代价：GC 更频繁，帧生成时间波动略大）；
+    //   normal（默认）：既有定稿（G1GC + 50ms + StringDeduplication，历轮
+    //     装机验证基线，零回归面）；
+    //   performance（性能优先）：大年轻代 + 20ms 停顿目标——减少 GC 触发
+    //     频率，吞吐优先（代价：单次 GC 略长、堆占用更高）；
+    //   custom：不注入任何 GC 段（用户经 java.jvm_preset_custom_args /
+    //     java_args 自管，见 init_loadCustomJvmFlags 的 custom 注入链）。
+    // 仅对 Java 17+ 启用 G1GC 调优。Java 8 的 G1GC 不够成熟：memory 档给
+    // SerialGC（足迹最小），performance 档给 ParallelGC（吞吐最大）。
     // 不添加 -XX:+AlwaysPreTouch（延长启动时间）、-XX:TieredStopAtLevel=1（降低 JIT 性能）、
     // -XX:CICompilerCount=1（减少编译线程）等可能影响游戏体验的参数。
     // -XX:+UnlockExperimentalVMOptions 已在上方添加，UseStringDeduplication 需要实验模式。
+    NSString *ame255_preset = getPrefObject(@"java.jvm_preset");
+    if (![ame255_preset isKindOfClass:[NSString class]] || ame255_preset.length == 0) ame255_preset = @"normal";
+    BOOL ame255_isCustom = [ame255_preset isEqualToString:@"custom"];
     if (!isJava8) {
-        // G1GC：Java 9+ 默认 GC，显式启用确保一致性。
-        // 适合大堆内存（MC 通常分配 2-4GB），减少 Full GC 停顿。
-        PUSH_MARGV_LITERAL("-XX:+UseG1GC");
-        // 目标 GC 停顿 50ms（默认 200ms）。
-        // 这是一个软目标，JVM 会尽量满足但不强制，不会导致 OOM。
-        // 对 MC 的实时渲染有益，减少 GC 引起的卡顿。
-        PUSH_MARGV_LITERAL("-XX:MaxGCPauseMillis=50");
-        // 字符串去重：G1GC 特性，自动去重老年代中相同值的 String 对象。
-        // MC 有大量重复字符串（方块名、物品名、I18N key 等），可节省 5-10% 堆内存。
-        // 仅在 G1GC 下生效，开销极小。
-        PUSH_MARGV_LITERAL("-XX:+UseStringDeduplication");
-        NSLog(@"[JavaLauncher] JVM GC optimization: G1GC + MaxGCPauseMillis=50 + StringDeduplication (Java 17+)");
+        if (ame255_isCustom) {
+            NSLog(@"[JavaLauncher] Task255 JVM preset=custom: GC tuning skipped (user-managed via jvm_preset_custom_args/java_args)");
+        } else if ([ame255_preset isEqualToString:@"memory"]) {
+            // 省内存档：G1 激进收缩。G1NewSizePercent 5%（默认 5）→ 保持，
+            // MaxNewSizePercent 40%（默认 60）压小年轻代；MinHeapFreeRatio 5 /
+            // MaxHeapFreeRatio 15（默认 40/70）→ 并发周期后激进归还内存给系统。
+            PUSH_MARGV_LITERAL("-XX:+UseG1GC");
+            PUSH_MARGV_LITERAL("-XX:MaxGCPauseMillis=200");
+            PUSH_MARGV_LITERAL("-XX:+UseStringDeduplication");
+            PUSH_MARGV_LITERAL("-XX:G1MaxNewSizePercent=40");
+            PUSH_MARGV_LITERAL("-XX:MinHeapFreeRatio=5");
+            PUSH_MARGV_LITERAL("-XX:MaxHeapFreeRatio=15");
+            NSLog(@"[JavaLauncher] Task255 JVM preset=memory: G1GC shrink-to-heap (pause=200, MaxNew=40%%, free 5..15)");
+        } else if ([ame255_preset isEqualToString:@"performance"]) {
+            // 性能优先档：大年轻代（30..50）拉长 GC 间隔 + 20ms 停顿软目标。
+            PUSH_MARGV_LITERAL("-XX:+UseG1GC");
+            PUSH_MARGV_LITERAL("-XX:MaxGCPauseMillis=20");
+            PUSH_MARGV_LITERAL("-XX:+UseStringDeduplication");
+            PUSH_MARGV_LITERAL("-XX:G1NewSizePercent=30");
+            PUSH_MARGV_LITERAL("-XX:G1MaxNewSizePercent=50");
+            NSLog(@"[JavaLauncher] Task255 JVM preset=performance: G1GC throughput (pause=20, young 30..50)");
+        } else {
+            // G1GC：Java 9+ 默认 GC，显式启用确保一致性。
+            // 适合大堆内存（MC 通常分配 2-4GB），减少 Full GC 停顿。
+            PUSH_MARGV_LITERAL("-XX:+UseG1GC");
+            // 目标 GC 停顿 50ms（默认 200ms）。
+            // 这是一个软目标，JVM 会尽量满足但不强制，不会导致 OOM。
+            // 对 MC 的实时渲染有益，减少 GC 引起的卡顿。
+            PUSH_MARGV_LITERAL("-XX:MaxGCPauseMillis=50");
+            // 字符串去重：G1GC 特性，自动去重老年代中相同值的 String 对象。
+            // MC 有大量重复字符串（方块名、物品名、I18N key 等），可节省 5-10% 堆内存。
+            // 仅在 G1GC 下生效，开销极小。
+            PUSH_MARGV_LITERAL("-XX:+UseStringDeduplication");
+            NSLog(@"[JavaLauncher] JVM GC optimization: G1GC + MaxGCPauseMillis=50 + StringDeduplication (Java 17+; preset=%@)", ame255_preset);
+        }
     } else {
-        NSLog(@"[JavaLauncher] Java 8 detected, skipping G1GC tuning (using default GC)");
+        // ★ Task255：Java 8 预设分流（G1 不可用档）。
+        if ([ame255_preset isEqualToString:@"memory"]) {
+            PUSH_MARGV_LITERAL("-XX:+UseSerialGC");
+            NSLog(@"[JavaLauncher] Task255 JVM preset=memory (Java 8): SerialGC (smallest footprint)");
+        } else if ([ame255_preset isEqualToString:@"performance"]) {
+            PUSH_MARGV_LITERAL("-XX:+UseParallelGC");
+            NSLog(@"[JavaLauncher] Task255 JVM preset=performance (Java 8): ParallelGC (max throughput)");
+        } else {
+            NSLog(@"[JavaLauncher] Java 8 detected, skipping G1GC tuning (using default GC; preset=%@)", ame255_preset);
+        }
     }
 
     // Task223 上游同步（upstream 455c3f5a0 / Flux 同款，仅取 SoftRef 一项）：

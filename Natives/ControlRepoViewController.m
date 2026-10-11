@@ -487,6 +487,94 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
     }];
 }
 
+#pragma mark - Task255：自动检查控件更新（启动链静默检查）
+
+// ★ Task255（清单 8）：开关 control.auto_control_update_check=ON 时启动后
+//   静默拉仓库 index.json（复用 Task189 六源镜像链，顺序尝试），与本地
+//   controlmap/<id>.json 顶层 version 字段对比；发现可更新布局 → toast
+//   提示（不自动下载——下载属用户显式动作，在控件仓库页自取）。静态一次
+//   性守卫（ame125 启动器更新检查同款），失败静默（不打扰）。
++ (void)autoCheckControlUpdatesOnce {
+    static BOOL ame255_checked = NO;
+    if (ame255_checked) return;
+    ame255_checked = YES;
+    if (!getPrefBool(@"auto_control_update_check")) return;
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(4.0 * NSEC_PER_SEC)),
+                   dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        // 本地版本表（scanLocalVersions 同口径）
+        NSMutableDictionary<NSString *, NSString *> *local = [NSMutableDictionary dictionary];
+        NSString *dir = [NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")];
+        for (NSString *f in [NSFileManager.defaultManager contentsOfDirectoryAtPath:dir error:nil]) {
+            if (![f.pathExtension.lowercaseString isEqualToString:@"json"]) continue;
+            NSData *d = [NSData dataWithContentsOfFile:[dir stringByAppendingPathComponent:f]];
+            if (!d) continue;
+            id obj = [NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
+            if (![obj isKindOfClass:[NSDictionary class]]) continue;
+            id v = obj[@"version"];
+            local[[f stringByDeletingPathExtension]] =
+                [v isKindOfClass:[NSString class]] ? v :
+                ([v respondsToSelector:@selector(stringValue)] ? [v stringValue] : @"?");
+        }
+        // 六源镜像链顺序拉 index（无粘性状态，从 0 试起）
+        __block NSData *ame255_index = nil;
+        for (NSInteger ame255_i = 0; ame255_i < kTask189MirrorCount && ame255_index == nil; ame255_i++) {
+            NSURL *ame255_url = [NSURL URLWithString:task189_mirrorURL(ame255_i, @"index.json")];
+            if (ame255_url == nil) continue;
+            NSMutableURLRequest *ame255_req = [NSMutableURLRequest requestWithURL:ame255_url];
+            ame255_req.timeoutInterval = 10.0;
+            ame255_req.HTTPMethod = @"GET";
+            dispatch_semaphore_t ame255_sem = dispatch_semaphore_create(0);
+            [[[NSURLSession sharedSession] dataTaskWithRequest:ame255_req
+                completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+                NSHTTPURLResponse *hresp = (NSHTTPURLResponse *)resp;
+                if (err == nil && data.length > 0 &&
+                    hresp.statusCode >= 200 && hresp.statusCode < 300) {
+                    ame255_index = data;
+                }
+                dispatch_semaphore_signal(ame255_sem);
+            }] resume];
+            dispatch_semaphore_wait(ame255_sem, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(12 * NSEC_PER_SEC)));
+        }
+        if (ame255_index == nil) {
+            NSLog(@"[ControlRepo] Task255: auto update check skipped (index unreachable on all mirrors)");
+            return;
+        }
+        id ame255_obj = [NSJSONSerialization JSONObjectWithData:ame255_index options:0 error:nil];
+        NSArray *ame255_arr = ([ame255_obj isKindOfClass:[NSDictionary class]]) ? ame255_obj[@"layouts"] : nil;
+        if (![ame255_arr isKindOfClass:[NSArray class]]) return;
+        NSMutableArray<NSString *> *ame255_updatable = [NSMutableArray array];
+        for (NSDictionary *e in ame255_arr) {
+            if (![e isKindOfClass:[NSDictionary class]]) continue;
+            NSString *ame255_id = e[@"id"];
+            NSString *ame255_repoVer = [e[@"version"] isKindOfClass:[NSString class]] ? e[@"version"] :
+                ([e[@"version"] respondsToSelector:@selector(stringValue)] ? [e[@"version"] stringValue] : nil);
+            if (ame255_id.length == 0 || ame255_repoVer.length == 0) continue;
+            NSString *ame255_localVer = local[ame255_id];
+            if (ame255_localVer == nil) continue;                       // 未下载：非"更新"语义
+            if ([ame255_localVer isEqualToString:ame255_repoVer]) continue;
+            if ([ame255_localVer isEqualToString:@"?"]) {               // 旧文件无版本字段：无法判代
+                NSLog(@"[ControlRepo] Task255: layout '%@' local version unknown (legacy file) -- skipped", ame255_id);
+                continue;
+            }
+            [ame255_updatable addObject:ame255_id];
+        }
+        if (ame255_updatable.count == 0) {
+            NSLog(@"[ControlRepo] Task255: auto update check done -- all local layouts up to date");
+            return;
+        }
+        NSString *ame255_msg = [NSString stringWithFormat:
+            localize(@"custom_controls.repo.auto_update_found", @"检测到 %lu 个控件布局有更新（%@），可在控件仓库页下载"),
+            (unsigned long)ame255_updatable.count,
+            [ame255_updatable componentsJoinedByString:@", "]];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [NMToast showMessage:ame255_msg];
+        });
+        NSLog(@"[ControlRepo] Task255: auto update check found %lu updatable: %@",
+              (unsigned long)ame255_updatable.count, ame255_updatable);
+    });
+}
+
 #pragma mark - Task230：上传流程（反馈 #13）
 
 /// Task230：已安装布局清单（controlmap/ 下全部 .json，排除 gamepads 子目录）。

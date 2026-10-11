@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-29",
+  "updated": "2026-10-11",
   "layouts": [
     {
       "id": "classic",
@@ -9,7 +9,7 @@
       "description": "随启动器内建的经典控件布局：左摇杆 + 16 个核心按钮 + 右侧抽屉，适合绝大多数玩法。",
       "file": "layouts/classic.json",
       "version": "7",
-      "size": 99219
+      "size": 112523
     },
     {
       "id": "minimal-fps",
@@ -27,7 +27,7 @@
       "description": "所有按钮与摇杆放大 30%，大手与横屏大屏设备友好。",
       "file": "layouts/large-buttons.json",
       "version": "7",
-      "size": 98634
+      "size": 111938
     }
   ]
 }

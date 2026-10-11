@@ -209,18 +209,16 @@ print("== J. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"J-{lang} 唯一键 2784（Task250 i18n 动态键补表 +5 后）", len(keys) == 2784, f"got {len(keys)}")
-check("J-公告 42 条 + task219 尾锚 + 家族顺延（Task223 追加后：220@-2 / 219@-3 / 218@-4 / 217@-5 / 216@-6 / 206@-7）",
-      len(ann) == 43
-      and ann[-3]["id"] == "task219-virgl-angle-welcome-rebuild-2026-10-04"
-      and ann[-4]["id"] == "task218-air-interim-welcome-crash-diagnosis-2026-10-04"
-      and ann[-5]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
-      and ann[-6]["id"] == "task216-ui-2026-10-03"
-      and ann[-7]["id"] == "task206-nggl4es-2026-10-01")
-check("J-公告内容覆盖本轮主题（VirGL/ANGLE/向导/导出/隔离）",
-      "VirGL" in ann[-3]["content"] and "ANGLE" in ann[-3]["content"]
-      and "欢迎向导" in ann[-3]["content"] and "压缩等级" in ann[-3]["content"]
-      and "隔离" in ann[-3]["content"])
+    check(f"J-{lang} 唯一键 2810（Task255 四表补键后）", len(keys) == 2810, f"got {len(keys)}")
+check("J-公告 6 条（Task255 清单 13 精简：pin 2 + 版本史 3 + 最新总攻 1）",
+      len(ann) == 6
+      and ann[0]["id"] == "server-recommend-2026-09-24"
+      and ann[1]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+      and any(a["id"] == "v6-0-0-release-2026-09-21" for a in ann))
+check("J-公告内容覆盖本轮主题（推荐服务器/6.5.0 修复/版本发布）",
+      len(ann) >= 5 and "mysv.dpdns.org" in ann[0]["content"]
+      and "6.5.0" in ann[1]["title"]
+      and any("v6.0.0" in a["title"] for a in ann))
 check("J-JSON 可解析 + id 唯一",
       len(set(a["id"] for a in ann)) == len(ann))
 

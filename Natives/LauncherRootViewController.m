@@ -19,6 +19,7 @@
 #import "ModpackImportViewController.h"
 #import "LauncherPrefGameDirViewController.h"
 #import "CustomControlsViewController.h"
+#import "ControlRepoViewController.h"   // ★ Task255：自动检查控件更新挂载
 // ★ [MP-RESTORE] Task222：ZeroTier/Terracotta 联机恢复（上游同日恢复）
 #import "MultiplayerViewController.h"
 #import "TerracottaViewController.h"
@@ -225,6 +226,7 @@ static CGFloat LauncherRootLayoutRightPanelWidth(UITraitCollection *trait) {
     }
     [[BackgroundManager sharedManager] resumeVideo];
     [self ame125_autoUpdateCheckOnce];
+    [ControlRepoViewController autoCheckControlUpdatesOnce];   // ★ Task255（清单 8）：自动检查控件更新（开关门控+静态一次性守卫在实现内）
 }
 
 // Task 125：启动器启动时自动检测更新（非侵入式）。

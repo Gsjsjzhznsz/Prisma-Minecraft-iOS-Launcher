@@ -616,7 +616,7 @@ NSString *ame_effective_renderer(void) {
         // 守卫回落：所选后端 dylib 缺失（现实命中 = Mithril 需另外下载）
         // → 默认 Vulkan 直连（libMobileGL.dylib 随包）→ 仍缺才 auto。
         static BOOL ame142_warned = NO;
-        NSLog(@"[Amethyst] Task142: mg backend %@ unavailable (%@ missing from bundle) -- falling back",
+        NSLog(@"[Prisma] Task142: mg backend %@ unavailable (%@ missing from bundle) -- falling back",
               ame142_backend, ame142_physical);
         if (!ame142_warned) {
             ame142_warned = YES;
@@ -660,7 +660,7 @@ NSString *ame_effective_renderer(void) {
         NSString *ame138_physical = @(ame_physical_renderer_dylib(renderer.UTF8String));
         if ([ame138_physical hasSuffix:@".dylib"] && !rendererLibraryExists(ame138_physical)) {
             static BOOL ame138_warned = NO;
-            NSLog(@"[Amethyst] Task138: renderer %@ selected but %@ is missing from the app "
+            NSLog(@"[Prisma] Task138: renderer %@ selected but %@ is missing from the app "
                   @"bundle -- falling back to auto (ANGLE). Install the dylib into Frameworks "
                   @"to use this renderer.", renderer, ame138_physical);
             if (!ame138_warned) {
@@ -693,7 +693,7 @@ NSString *ame_effective_renderer(void) {
                 setPrefObject(@"ame217.autoRendererBlacklist",
                     [ame217_parts componentsJoinedByString:@","]);
                 setPrefObject([NSString stringWithFormat:@"ame217.autoRendererFails.%@", renderer], @0);
-                NSLog(@"[Amethyst] Task217: explicit selection '%@' un-blacklisted (user intent wins; auto crash-learning state cleared)", renderer);
+                NSLog(@"[Prisma] Task217: explicit selection '%@' un-blacklisted (user intent wins; auto crash-learning state cleared)", renderer);
             }
         }
         return renderer;
@@ -945,7 +945,7 @@ void ame142_migrateRendererStorage(void) {
         }
         setPrefObject(@"video.renderer", @ RENDERER_KEY_MG);
         setPrefInt(@"mobileglues.mobilegl_backend", 0);
-        NSLog(@"[Amethyst] Task142: global renderer %@ migrated to 'mg' (backend key set, legacy tier retired)",
+        NSLog(@"[Prisma] Task142: global renderer %@ migrated to 'mg' (backend key set, legacy tier retired)",
               ame142_vr);
     }
     // (2) profile 层：逐个把家族键替换为 "mg"。
@@ -966,7 +966,7 @@ void ame142_migrateRendererStorage(void) {
                     ame142_prof[@"renderer"] = @ RENDERER_KEY_MG;
                     ame142_profiles[ame142_name] = ame142_prof;
                     ame142_dirty = YES;
-                    NSLog(@"[Amethyst] Task142: profile '%@' renderer %@ migrated to 'mg' (backend now follows mg settings)",
+                    NSLog(@"[Prisma] Task142: profile '%@' renderer %@ migrated to 'mg' (backend now follows mg settings)",
                           ame142_name, ame142_pr);
                 }
             }
@@ -976,7 +976,7 @@ void ame142_migrateRendererStorage(void) {
         }
     } @catch (NSException *ame142_e) {
         // profiles 文件异常时静默跳过（resolution 层仍兼容家族键原样返回）
-        NSLog(@"[Amethyst] Task142: profile migration skipped (%@)", ame142_e);
+        NSLog(@"[Prisma] Task142: profile migration skipped (%@)", ame142_e);
     }
 }
 

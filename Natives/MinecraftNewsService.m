@@ -79,7 +79,7 @@ static NSString * const MCNewsBaseAPIURL = @"https://net-secondary.web.minecraft
                                                         timeoutInterval:30.0];
     [request setHTTPMethod:@"GET"];
     // 参考 PCL-CE HttpSenderExtension：自定义 UA 提升稳定性，避免被识别为爬虫拦截
-    [request setValue:@"AngelAuraAmethyst/1.0 (iOS; Minecraft Launcher)" forHTTPHeaderField:@"User-Agent"];
+    [request setValue:@"PrismaLauncher/1.0 (iOS; Minecraft Launcher)" forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
     [request setValue:@"gzip, deflate" forHTTPHeaderField:@"Accept-Encoding"];
 

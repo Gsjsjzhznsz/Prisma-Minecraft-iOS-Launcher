@@ -45,7 +45,7 @@ static void ame107_log_ok3(const char *msg, const char *path) {
     static int s_ok = 0;
     if (s_ok < 3) {
         s_ok++;
-        NSLog(@"[Amethyst] Task107: %s (%s)", msg, path);
+        NSLog(@"[Prisma] Task107: %s (%s)", msg, path);
     }
 }
 
@@ -53,7 +53,7 @@ static void ame107_log_warn3(const char *msg, const char *path) {
     static int s_warn = 0;
     if (s_warn < 3) {
         s_warn++;
-        NSLog(@"[Amethyst] Task107: %s (%s)", msg, path);
+        NSLog(@"[Prisma] Task107: %s (%s)", msg, path);
     }
 }
 
@@ -248,7 +248,7 @@ BOOL PLPatchMachOPlatformForFile(const char *path) {
         struct fat_arch *arch = (struct fat_arch *)(buf + sizeof(struct fat_header));
         for (int i = 0; i < OSSwapInt32(header->nfat_arch); i++) {
             if (OSSwapInt32(arch->cputype) == CPU_TYPE_ARM64) {
-                NSLog(@"[Amethyst] Patching %s", path);
+                NSLog(@"[Prisma] Patching %s", path);
                 uint32_t off = OSSwapInt32(arch->offset);
                 uint32_t sz = OSSwapInt32(arch->size);
                 if (off + sz <= fileSize) {
@@ -268,7 +268,7 @@ BOOL PLPatchMachOPlatformForFile(const char *path) {
         if (pwrite(fd, ctx.data, ctx.size, 0) == (ssize_t)ctx.size) {
             if (ctx.size != fileSize) (void)ftruncate(fd, (off_t)ctx.size);
         } else {
-            NSLog(@"[Amethyst] Task107: write-back failed for %s", path);
+            NSLog(@"[Prisma] Task107: write-back failed for %s", path);
         }
     }
     free(ctx.data);

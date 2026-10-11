@@ -18,4 +18,9 @@
 /// （名称/作者/描述）→ 结构安全检查 → 系统分享提交文件 或 GitHub 网页
 /// 建文件深链（预填路径+内容，一键提 PR）。
 + (void)ame230_presentUploadFlowFrom:(UIViewController *)presenter preselect:(NSString *)preselect;
+
+/// ★ Task255（清单 8）：自动检查控件更新（启动链调用；开关
+/// control.auto_control_update_check=ON 时静默拉仓库 index 与本地版本
+/// 对比，可更新 toast 提示；静态一次性守卫，失败静默）。
++ (void)autoCheckControlUpdatesOnce;
 @end

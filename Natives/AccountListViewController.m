@@ -793,18 +793,24 @@ static NSMutableSet *ame128_validatedSet(void) {
     NSString *profileId = ame224_isAlex
         ? @"00000000-0000-0000-0000-000000000001"
         : @"00000000-0000-0000-0000-000000000000";
-    NSString *accountsDir = [@(getenv("POJAV_HOME")) ?: NSHomeDirectory()
-        stringByAppendingPathComponent:@"accounts"];
-    NSString *jsonPath = [accountsDir stringByAppendingPathComponent:
-        [NSString stringWithFormat:@"%@.json", loadKey]];
-    NSMutableDictionary *acct = [NSMutableDictionary dictionaryWithContentsOfFile:jsonPath];
-    if (![acct isKindOfClass:NSDictionary.class]) {
+    // ★ Task255（离线默认皮肤失败根修）：读写统一走 JSON 序列化链。
+    //   病灶（Task224 原实现）：dictionaryWithContentsOfFile（plist 解析
+    //   器）读 JSON——账号 JSON 带 null 值/科学计数浮点即解析失败 =
+    //   「账号文件不可读」；writeToFile:atomically:（无 format 参）把文
+    //   件写成 XML PLIST——后续 parseJSONFromFile（NSJSONSerialization）
+    //   与 Java 侧 Gson 双双解析失败 = 应用一次皮肤后账号加载失败（
+    //   「恢复默认皮肤功能，修复失败问题」实锤）。现改走
+    //   ame224_updateAccountFileForLoadKey:mutate:（parseJSONFromFile 读
+    //   + NSJSONSerialization 写，JSON 格式保持），未知键全量保留。
+    BOOL ame255_ok = [self ame224_updateAccountFileForLoadKey:loadKey
+                                                       mutate:^(NSMutableDictionary *acct) {
+        acct[@"profilePicURL"] = skinURL;
+        acct[@"profileId"] = profileId;
+    }];
+    if (!ame255_ok) {
         [NMToast showMessage:localize(@"account.default_skin.failed", @"设置失败：账号文件不可读")];
         return;
     }
-    acct[@"profilePicURL"] = skinURL;
-    acct[@"profileId"] = profileId;
-    [acct writeToFile:jsonPath atomically:YES];
     // 内存态同步（该账号若为当前选中实例，避免旧 authData 残留至下次重载）
     BaseAuthenticator *ame224_current = [BaseAuthenticator current];
     if (ame224_current != nil) {
@@ -822,7 +828,7 @@ static NSMutableSet *ame128_validatedSet(void) {
                                                       userInfo:nil];
     [NMToast showMessage:[NSString stringWithFormat:
         localize(@"account.default_skin.applied", @"默认皮肤已设定：%@（启动器头像已同步）"), skinName]];
-    NSLog(@"[AccountOps] Task224 offline default skin set for %@ -> %@ (auth_uuid parity via %@)",
+    NSLog(@"[AccountOps] Task224/255 offline default skin set for %@ -> %@ (auth_uuid parity via %@)",
           loadKey, skinName, profileId);
 }
 
@@ -1266,6 +1272,12 @@ static NSMutableSet *ame128_validatedSet(void) {
 }
 
 /// Task224：就地改写账号 json（读-改-写；离线默认皮肤 / 改名共用）。
+/// ★ Task255（失败根修）：读改用 parseJSONFromFile（NSJSONSerialization，
+///   与 authenticator/Java Gson 同口径），写改用 NSJSONSerialization
+///   dataWithJSONObject 落盘——原 dictionaryWithContentsOfFile（plist
+///   解析器）读 JSON 遇 null/科学计数浮点即失败，writeToFile:atomically:
+///   把文件写成 XML PLIST 后 parseJSONFromFile/Gson 全线解析失败（应用
+///   一次即坏）。JSON 格式保持，未知键全量保留。
 - (BOOL)ame224_updateAccountFileForLoadKey:(NSString *)loadKey
                                      mutate:(void (^)(NSMutableDictionary *acct))mutateBlock {
     if (![loadKey isKindOfClass:[NSString class]] || loadKey.length == 0) return NO;
@@ -1273,10 +1285,15 @@ static NSMutableSet *ame128_validatedSet(void) {
         stringByAppendingPathComponent:@"accounts"];
     NSString *jsonPath = [accountsDir stringByAppendingPathComponent:
         [NSString stringWithFormat:@"%@.json", loadKey]];
-    NSMutableDictionary *acct = [NSMutableDictionary dictionaryWithContentsOfFile:jsonPath];
+    NSMutableDictionary *acct = parseJSONFromFile(jsonPath);
     if (![acct isKindOfClass:[NSDictionary class]]) return NO;
     if (mutateBlock) mutateBlock(acct);
-    return [acct writeToFile:jsonPath atomically:YES];
+    if (![NSJSONSerialization isValidJSONObject:acct]) return NO;
+    NSData *ame255_json = [NSJSONSerialization dataWithJSONObject:acct
+                                                          options:NSJSONWritingPrettyPrinted
+                                                            error:nil];
+    if (ame255_json.length == 0) return NO;
+    return [ame255_json writeToFile:jsonPath atomically:YES];
 }
 
 /// Task224：回调 status（NSError / NSString）转可读文案。

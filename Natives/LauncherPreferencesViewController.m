@@ -1655,6 +1655,16 @@ if ([section isEqualToString:@"general"]) {
               //   能触达本开关的场景（游戏内设置）恰好被锁死 = "开关功能无效"
               //   的直接体感之一。写键零重启面（无会话级缓存）。
             },
+            // ★ Task255（清单 8）：自动检查控件更新——ON=启动后静默拉控件仓库
+            //   index.json，与本地 controlmap/<id>.json 的 version 字段对比，
+            //   可更新时 toast 提示（入口=控件仓库页，不自动下载）。消费端
+            //   ControlRepoViewController.autoCheckControlUpdatesOnce（启动链
+            //   LauncherRootViewController.ame125 同款静态一次性守卫）。
+            @{@"key": @"auto_control_update_check",
+              @"hasDetail": @YES,
+              @"icon": @"arrow.triangle.2.circlepath.circle",
+              @"type": self.typeSwitch
+            },
             // Task229 (feedback #2: sprint has no effect): vanilla's own
             // accessibility switch -- toggleSprint:true in options.txt makes
             // the sprint key latch (press once = keep running). The button
@@ -1815,6 +1825,32 @@ if ([section isEqualToString:@"general"]) {
                 @"type": self.typeChildPane,
                 @"canDismissWithSwipe": @YES,
                 @"class": LauncherPrefManageJREViewController.class,
+                @"enableCondition": whenNotInGame
+            },
+            @{@"key": @"jvm_preset",
+                @"hasDetail": @YES,
+                @"title": localize(@"preference.title.jvm_preset", @"JVM 预设"),
+                @"icon": @"gauge",
+                @"type": self.typePickField,
+                @"enableCondition": whenNotInGame,
+                @"pickKeys": @[
+                    @"memory",
+                    @"normal",
+                    @"performance",
+                    @"custom"
+                ],
+                @"pickList": @[
+                    localize(@"jvm.preset.memory", @"省内存"),
+                    localize(@"jvm.preset.normal", @"正常（默认）"),
+                    localize(@"jvm.preset.performance", @"性能优先"),
+                    localize(@"jvm.preset.custom", @"自定义")
+                ]
+            },
+            @{@"key": @"jvm_preset_custom_args",
+                @"hasDetail": @YES,
+                @"title": localize(@"preference.title.jvm_preset_custom_args", @"自定义 JVM 参数"),
+                @"icon": @"slider.horizontal.3",
+                @"type": self.typeTextField,
                 @"enableCondition": whenNotInGame
             },
             @{@"key": @"java_args",

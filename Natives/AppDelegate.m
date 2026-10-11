@@ -51,11 +51,11 @@ extern dispatch_group_t fatalExitGroup;
                     BOOL ame144_old = (BOOL)[ame144_ws performSelector:ame144_sel
                                                             withObject:@"org.angelauramcremastered.amethyst"];
                     if (ame144_old) {
-                        NSLog(@"[Amethyst] Task144: legacy bundle 'org.angelauramcremastered.amethyst' (pre-rename AngelAuraAmethyst) still installed alongside this app -- two identical-looking home-screen icons; the OLD icon can be deleted (its container is separate from this app's data)");
+                        NSLog(@"[Prisma] Task144: legacy bundle 'org.angelauramcremastered.amethyst' (pre-rename AngelAuraAmethyst) still installed alongside this app -- two identical-looking home-screen icons; the OLD icon can be deleted (its container is separate from this app's data)");
                     }
                 }
             } @catch (NSException *ame144_e) {
-                NSLog(@"[Amethyst] Task144: legacy bundle detection unavailable (%@)", ame144_e.name);
+                NSLog(@"[Prisma] Task144: legacy bundle detection unavailable (%@)", ame144_e.name);
             }
         }
     }

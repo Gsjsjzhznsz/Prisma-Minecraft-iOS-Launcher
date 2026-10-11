@@ -527,6 +527,8 @@ add_executable(AngelAuraAmethyst
   MultiplayerManager.m
   MultiplayerViewController.m
   LanPortDetector.m
+  # ★ Task255：清理垃圾中心（清单 6）
+  CleanupViewController.m
   ZeroTierBridge.m
   SOCKS5Proxy.m
   PortForwarder.m

@@ -50,7 +50,7 @@
                                                         timeoutInterval:15.0];
     [request setHTTPMethod:@"GET"];
     /* GitHub API 要求 User-Agent 头，否则可能被拒绝 */
-    [request setValue:@"Amethyst-iOS-UpdateChecker" forHTTPHeaderField:@"User-Agent"];
+    [request setValue:@"Prisma-iOS-UpdateChecker" forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/vnd.github+json" forHTTPHeaderField:@"Accept"];
 
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request

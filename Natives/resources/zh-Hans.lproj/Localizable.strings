@@ -79,7 +79,7 @@
 "custom_controls.error.incompatible" = "此控件版本（代码 %d）在当前启动器版本中尚未实现。";
 "custom_controls.hint" = "长按屏幕上的任意位置以获取更多选项";
 
-"init.migrateDir" = "目前 Amethyst 数据目录为%@。所有的游戏资源已移动到最新目录。";
+"init.migrateDir" = "目前 Prisma 数据目录为%@。所有的游戏资源已移动到最新目录。";
 
 "java.error.missing_main_class" = "%@ 缺少 main class 属性。如果这是一个 mod，请将其放入所选实例的 “mods” 文件夹。";
 "java.error.missing_runtime" = "%@ 需要 Java %d 或更高版本才能运行。请先安装并在 管理运行时 中指定。";
@@ -93,7 +93,7 @@
 "launcher.menu.import_modpack" = "导入整合包";
 
 "launcher.wait_jit.title" = "请等待应用获取到JIT(Just-in-time)";
-"launcher.wait_jit.message" = "Amethyst启动器必须要JIT (Just-in-time) 权限才能启动游戏";
+"launcher.wait_jit.message" = "Prisma启动器必须要JIT (Just-in-time) 权限才能启动游戏";
 "launcher.wait_jit_trollstore.message" = "如果仍然看到此消息，请在 TrollStore 中启用 URL Scheme。";
 "launcher.jit.stikjit_unhandled" = "stikjit:// 无响应（未安装 StikDebug？）。请安装 StikDebug 后重试，或换用其它 JIT 开启方式。";
 
@@ -140,9 +140,9 @@
 "account.menu.delete" = "删除账号";
 "account.switch_role.relogin_required" = "该服务器不允许在当前访问令牌上切换角色，且本机尚未保存该账户的登录凭据。请重新登录一次该账户，之后即可免密切换。";
 
-"login.warn.title.legacy_device" = "Amethyst 的下一个版本将与此设备不兼容。";
+"login.warn.title.legacy_device" = "Prisma 的下一个版本将与此设备不兼容。";
 "login.warn.message.legacy_device" = "运行下一个主要版本，需要一台能够运行 iOS 14 的设备。";
-"login.warn.title.legacy_ios" = "Amethyst 的下一个版本将需要系统更新。";
+"login.warn.title.legacy_ios" = "Prisma 的下一个版本将需要系统更新。";
 "login.warn.message.legacy_ios" = "运行下一个主要版本，需要一台能够运行 iOS 14 或更高版本的设备。";
 "login.warn.title.limited_ram" = "该设备的可用内存有限。";
 "login.warn.message.limited_ram" = "我们建议启用自动分配内存大小，以防止不稳定和性能问题。";
@@ -183,7 +183,7 @@
 "preference.section.general" = "启动器设置";
 "preference.section.ai" = "AI 助手";
 "preference.section.video" = "视频设置";
-"preference.section.footer.video" = "自动渲染器允许 Amethyst 选择基于 Minecraft 版本的最佳选项。减少分辨率降低 GPU 工作量以提高性能。";
+"preference.section.footer.video" = "自动渲染器允许 Prisma 选择基于 Minecraft 版本的最佳选项。减少分辨率降低 GPU 工作量以提高性能。";
 "preference.section.mobileglues" = "MobileGlues 渲染器";
 "preference.section.footer.mobileglues" = "这些设置在渲染器选择为 MobileGlues 或 Vulkan 时生效。Vulkan 渲染器的 OpenGL 回退使用 MobileGlues（对齐 Ynnyny 仓库），config.json 会被读取。Auto 渲染器会被解析为 ANGLE，不会加载 MobileGlues，设置不生效。配置将在游戏启动时写入 <POJAV_HOME>/MG/config.json。";
 "preference.section.control" = "自定义控制键";
@@ -228,11 +228,11 @@
 "preference.title.jitstreamer_server" = "JitStreamer的服务器地址";
 "preference.detail.jitstreamer_server" = "该选项将自定义获取 JIT 权限地址的 JitStreamer 服务器。能用就别动！";
 "preference.title.enable_altkit" = "使用 AltKit 启用 JIT";
-"preference.detail.enable_altkit" = "启用时，Amethyst 将尝试连接到本地 AltServers 以启用 JIT。";
+"preference.detail.enable_altkit" = "启用时，Prisma 将尝试连接到本地 AltServers 以启用 JIT。";
 "preference.title.appicon" = "设置应用图标";
 "preference.detail.appicon" = "自定义图标目前不可用,会在接下来的版本中恢复此功能。";
-"preference.title.appicon-default" = "设置 Amethyst 图标为浅色";
-"preference.title.appicon-dark" = "设置 Amethyst 图标为深色";
+"preference.title.appicon-default" = "设置 Prisma 图标为浅色";
+"preference.title.appicon-dark" = "设置 Prisma 图标为深色";
 "preference.title.appicon-development" = "已封装开发";
 "preference.title.hidden_sidebar" = "默认隐藏主菜单侧边栏";
 "preference.detail.hidden_sidebar" = "允许您在 iOS 14 及更高版本中默认或旋转中隐藏主菜单上的侧边栏。";
@@ -283,7 +283,7 @@
 "preference.title.fullscreen_airplay" = "全屏 AirPlay";
 "preference.detail.fullscreen_airplay" = "允许在外部显示器上全屏显示游戏，而不是直接镜像显示。";
 "preference.title.silence_other_audio" = "游戏打开时暂停音频";
-"preference.detail.silence_other_audio" = "启用后将允许 Amethyst 在启动游戏时暂停其他应用的音频。";
+"preference.detail.silence_other_audio" = "启用后将允许 Prisma 在启动游戏时暂停其他应用的音频。";
 "preference.title.silence_with_switch" = "使用静音开关禁用音频";
 "preference.detail.silence_with_switch" = "启用时，可以使用静音模式禁用音频，耳机和外部扬声器不受此影响。";
 "preference.title.allow_microphone" = "允许麦克风输入";
@@ -570,8 +570,8 @@
 
 "提示" = "提示";
 
-"announcement.preview_version" = "欢迎使用Amethyst iOS Remastered测试版！";
-"announcement.latest_version" = "欢迎使用Amethyst iOS Remastered！当前已是最新正式版。";
+"announcement.preview_version" = "欢迎使用Prisma Launcher测试版！";
+"announcement.latest_version" = "欢迎使用Prisma Launcher！当前已是最新正式版。";
 "announcement.new_version_available" = "发现新版本：%@";
 "announcement.download_button" = "前往下载";
 
@@ -1258,10 +1258,10 @@
 "i18n_str_356" = "点击进入 ✨";
 "i18n_str_357" = "未登录";
 "i18n_str_358" = "检测失败";
-"i18n_str_359" = "欢迎使用 Amethyst iOS Remastered 测试版！";
-"i18n_str_360" = "欢迎使用 Amethyst iOS Remastered！";
+"i18n_str_359" = "欢迎使用 Prisma Launcher 测试版！";
+"i18n_str_360" = "欢迎使用 Prisma Launcher！";
 "i18n_str_361" = "发现新版本：v%@";
-"i18n_str_362" = "欢迎使用 Amethyst iOS Remastered！当前已是最新版本。";
+"i18n_str_362" = "欢迎使用 Prisma Launcher！当前已是最新版本。";
 "i18n_str_363" = "切换游戏目录失败：无法创建符号链接\n\n%@";
 "i18n_str_364" = "Java 运行时 %@";
 "i18n_str_365" = "正在解压运行时";
@@ -2145,6 +2145,7 @@
 "custom_controls.repo.author" = "作者 %@";
 "custom_controls.repo.installed" = "已安装 v%@";
 "custom_controls.repo.update_available" = "可更新到 v%@";
+"custom_controls.repo.auto_update_found" = "检测到 %lu 个控件布局有更新（%@），可在控件仓库页下载";
 "custom_controls.repo.download.failed" = "布局下载失败";
 "custom_controls.repo.download.invalid" = "布局文件无效（不是有效的控件布局）";
 "custom_controls.repo.download.done" = "已下载“%@”，可在“加载”菜单中选择";
@@ -2997,3 +2998,31 @@
 "preference.detail.defaultGamepadCtrl" = "启动游戏时使用的手柄布局";
 "preference.detail.javaVersion" = "启动此实例使用的 Java 运行时";
 "preference.detail.lwjglVersion" = "此实例的 LWJGL 版本覆盖";
+
+// ★ Task255：版本扫描/恢复 + 清理垃圾 + JVM 预设（清单 5/6/9）
+
+"vm.scan.title" = "扫描版本";
+"vm.scan.restore" = "扫描并恢复版本";
+"vm.scan.cleanup" = "清理垃圾";
+"vm.scan.no_orphan" = "未发现可恢复的版本：目录中的版本均已被实例引用。";
+"vm.scan.orphan_msg" = "发现 %lu 个未被实例引用的版本，选择要恢复的：";
+"cleanup.title" = "清理垃圾";
+"cleanup.close" = "关闭";
+"cleanup.launcher_logs" = "启动器日志";
+"cleanup.launcher_logs.confirm" = "删除全部历史日志？正在使用的 latestlog.txt 不受影响。";
+"cleanup.mc_logs" = "MC 日志与崩溃报告";
+"cleanup.mc_logs.confirm" = "删除全部 MC 日志与崩溃报告？（仅删日志类文件，不影响存档与资源）";
+"cleanup.row_detail" = "%lu 个文件 · %@";
+"cleanup.orphan_row" = "无引用版本：%@";
+"cleanup.orphan_confirm" = "删除无引用版本「%@」及其隔离数据目录？（Task242 隔离的 game 目录一并删除，存档不保留）";
+"jvm.preset.title" = "JVM 预设";
+"jvm.preset.memory" = "省内存";
+"jvm.preset.normal" = "正常（默认）";
+"jvm.preset.performance" = "性能优先";
+"jvm.preset.custom" = "自定义";
+"preference.title.jvm_preset" = "JVM 预设";
+"preference.detail.jvm_preset" = "JVM 参数预设：省内存（激进堆收缩）、正常（当前默认）、性能优先（G1 分代调优）、自定义";
+"jvm.preset.custom_args" = "自定义 JVM 参数";
+"preference.detail.jvm_preset_custom_args" = "JVM 预设为「自定义」时使用的附加 JVM 参数";
+
+"preference.title.jvm_preset_custom_args" = "自定义 JVM 参数";

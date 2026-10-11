@@ -2101,6 +2101,32 @@ void ame229_inputResumeReassert(void) {
           (int)guiScale, cursorX, cursorY, isGrabbing);
 }
 
+// ★ Task255（右 Shift"又失效"根修第三件）：会话级虚拟修饰位/键盘态全量重置。
+//   病灶结构：Task179 的 toggle 账本（SurfaceViewController s_ame179_toggledMods）
+//   与 Task66 的 ame66_virtualMods / SDL kbState 数组都是进程级存活——toggle ON
+//   期间退出游戏（VC 销毁）后重进，账本残留 keycode=344：
+//     a) 首次轻点被判"toggle OFF"（DOWN 静默 + 幽灵 UP）= 右 Shift 第一次
+//        永远无效（"又失效"的装机表现，不需要新病灶即复现）；
+//     b) kbState[229]=1 残留则反向锁死（MC 永远认为右 Shift 按着 = 潜行
+//        无法解除）。
+//   修法：SurfaceViewController dealloc（= 每次游戏会话终结的确定性钩子）
+//   调用本函数，把托管位面归零；账本清理由 VC 侧同步执行。防御式判空：
+//   游戏退出后 SDL 句柄可能已卸载。
+void CallbackBridge_resetVirtualModifierState(void) {
+    unsigned short ame255_released = ame66_virtualMods;
+    ame66_virtualMods = 0;
+    if (ame66_kbState != NULL && ame66_kbNumKeys > 231) {
+        for (int ame255_sc = 224; ame255_sc <= 231; ame255_sc++) {
+            ame66_kbState[ame255_sc] = false;
+        }
+    }
+    if (pSDL_SetModState != NULL && pSDL_GetModState != NULL) {
+        unsigned short real = pSDL_GetModState();
+        pSDL_SetModState((unsigned short)(real & ~AME66_KMOD_MANAGED_MASK));
+    }
+    NSLog(@"[InputDiag] Task255: virtual modifier state reset (released bits=0x%x)", ame255_released);
+}
+
 void CallbackBridge_nativeSendCursorPos(char event, CGFloat x, CGFloat y) {
     static int cursorSendCount = 0;
     cursorSendCount++;

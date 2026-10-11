@@ -79,7 +79,7 @@
 "custom_controls.error.incompatible" = "This control version (code %d) is not implemented in this launcher build.";
 "custom_controls.hint" = "Long-press anywhere on screen for more options";
 
-"init.migrateDir" = "The Amethyst data directory is now %@. All of your existing data has been moved to the new location.";
+"init.migrateDir" = "The Prisma data directory is now %@. All of your existing data has been moved to the new location.";
 
 "java.error.missing_main_class" = "%@ is missing main class attribute. If this is a mod, put it into the “mods” folder of your selected instance.";
 "java.error.missing_runtime" = "%@ requires Java %d or later to run. Please install it first and specify it in Manage Runtimes.";
@@ -93,7 +93,7 @@
 "launcher.menu.import_modpack" = "Import modpack";
 
 "launcher.wait_jit.title" = "Waiting for JIT(Just-in-time)";
-"launcher.wait_jit.message" = "Amethyst relies on JIT(Just-in-time) compilation for Java to work at maximum performance";
+"launcher.wait_jit.message" = "Prisma relies on JIT(Just-in-time) compilation for Java to work at maximum performance";
 "launcher.wait_jit_trollstore.message" = "If you still see this message, please enable URL Scheme in TrollStore.";
 "launcher.jit.stikjit_unhandled" = "stikjit:// was not handled (StikDebug not installed?). Install StikDebug and retry, or switch to another JIT enabler.";
 
@@ -140,9 +140,9 @@
 "account.menu.delete" = "Delete account";
 "account.switch_role.relogin_required" = "This server does not allow switching profiles on the current access token, and no login credentials are saved on this device yet. Please log in to this account once more; after that, switching becomes password-free.";
 
-"login.warn.title.legacy_device" = "The next release of Amethyst will not be compatible with this device.";
+"login.warn.title.legacy_device" = "The next release of Prisma will not be compatible with this device.";
 "login.warn.message.legacy_device" = "To run the next major release, a device capable of running iOS 14 is required.";
-"login.warn.title.legacy_ios" = "The next release of Amethyst will require a system update.";
+"login.warn.title.legacy_ios" = "The next release of Prisma will require a system update.";
 "login.warn.message.legacy_ios" = "To run the next major release, this device needs to be running iOS 14 or later.";
 "login.warn.title.limited_ram" = "This device has a limited amount of memory available.";
 "login.warn.message.limited_ram" = "We recommend leaving auto RAM enabled to prevent instability and performance issues.";
@@ -183,7 +183,7 @@
 "preference.section.general" = "General Settings";
 "preference.section.ai" = "AI Agent";
 "preference.section.video" = "Video and Audio Settings";
-"preference.section.footer.video" = "Auto renderer allows Amethyst to choose the best option based on Minecraft version. Decreasing resolution reduces GPU workload for better performance.";
+"preference.section.footer.video" = "Auto renderer allows Prisma to choose the best option based on Minecraft version. Decreasing resolution reduces GPU workload for better performance.";
 "preference.section.mobileglues" = "MobileGlues Renderer";
 "preference.section.footer.mobileglues" = "These settings take effect when the renderer is set to MobileGlues or Vulkan. The Vulkan renderer's OpenGL fallback uses MobileGlues, so config.json is read. The Auto renderer resolves to ANGLE and does not load MobileGlues, so settings do not apply. The config is written to <POJAV_HOME>/MG/config.json at game launch.";
 "preference.section.control" = "Control customization";
@@ -230,9 +230,9 @@
 "preference.title.enable_altkit" = "Enable JIT using AltKit";
 "preference.detail.enable_altkit" = "When enabled, Prisma will try to connect to local AltServers to enable JIT.";
 "preference.title.appicon" = "Set app icon";
-"preference.detail.appicon" = "Allows you to choose between different Home Screen icons for Amethyst.";
-"preference.title.appicon-default" = "Familiar Amethyst light";
-"preference.title.appicon-dark" = "Familiar Amethyst dark";
+"preference.detail.appicon" = "Allows you to choose between different Home Screen icons for Prisma.";
+"preference.title.appicon-default" = "Familiar Prisma light";
+"preference.title.appicon-dark" = "Familiar Prisma dark";
 "preference.title.appicon-development" = "Penciled Development";
 "preference.title.hidden_sidebar" = "Hide main menu sidebar by default";
 "preference.detail.hidden_sidebar" = "Allows you to hide the sidebar on the main menu by default and when rotating.";
@@ -283,7 +283,7 @@
 "preference.title.fullscreen_airplay" = "Fullscreen AirPlay";
 "preference.detail.fullscreen_airplay" = "Allows presenting fullscreen game window on the external display rather than mirroring everything on screen.";
 "preference.title.silence_other_audio" = "Pause audio when game opens";
-"preference.detail.silence_other_audio" = "Enable to allow Amethyst to pause audio from other apps, such as Music, when launching the game.";
+"preference.detail.silence_other_audio" = "Enable to allow Prisma to pause audio from other apps, such as Music, when launching the game.";
 "preference.title.silence_with_switch" = "Disable audio with silent switch";
 "preference.detail.silence_with_switch" = "Enable to disable audio when Silent Mode is on. Headphones and external speakers are not affected.";
 "preference.title.allow_microphone" = "Allow microphone input";
@@ -571,8 +571,8 @@
 
 "提示" = "Notice";
 
-"announcement.preview_version" = "Welcome to Amethyst iOS Remastered Preview Version!";
-"announcement.latest_version" = "Welcome to Amethyst iOS Remastered! This is the latest stable version.";
+"announcement.preview_version" = "Welcome to Prisma Launcher Preview Version!";
+"announcement.latest_version" = "Welcome to Prisma Launcher! This is the latest stable version.";
 "announcement.new_version_available" = "New version available: %@";
 "announcement.download_button" = "Download Now";
 
@@ -747,7 +747,7 @@
 "preference.title.memory_limit_help" = "Memory Limit Info";
 "preference.detail.memory_limit_help" = "Learn why iOS memory limits cause modpack crashes and how to fix it";
 "preference.title.check_update" = "Check for Updates";
-"preference.detail.check_update" = "Check GitHub Releases for the latest stable version of Amethyst iOS";
+"preference.detail.check_update" = "Check GitHub Releases for the latest stable version of Prisma iOS";
 
 // 检查更新
 "check_update" = "Check for Updates";
@@ -1259,10 +1259,10 @@
 "i18n_str_356" = "Tap to enter ✨";
 "i18n_str_357" = "Not Logged In";
 "i18n_str_358" = "Detection failed";
-"i18n_str_359" = "Welcome to the Amethyst iOS Remastered beta!";
-"i18n_str_360" = "Welcome to Amethyst iOS Remastered!";
+"i18n_str_359" = "Welcome to the Prisma Launcher beta!";
+"i18n_str_360" = "Welcome to Prisma Launcher!";
 "i18n_str_361" = "New version found: v%@";
-"i18n_str_362" = "Welcome to Amethyst iOS Remastered! You are up to date.";
+"i18n_str_362" = "Welcome to Prisma Launcher! You are up to date.";
 "i18n_str_363" = "Failed to switch game directory: unable to create symbolic link\n\n%@";
 "i18n_str_364" = "Java Runtime %@";
 "i18n_str_365" = "Extracting runtime";
@@ -2147,6 +2147,7 @@
 "custom_controls.repo.author" = "By %@";
 "custom_controls.repo.installed" = "Installed v%@";
 "custom_controls.repo.update_available" = "Update to v%@";
+"custom_controls.repo.auto_update_found" = "%lu control layout(s) have updates (%@). Open the Control Repo page to download";
 "custom_controls.repo.download.failed" = "Layout download failed";
 "custom_controls.repo.download.invalid" = "Invalid layout file (not a control layout)";
 "custom_controls.repo.download.done" = "Downloaded \"%@\" — pick it in the Load menu";
@@ -2999,3 +3000,31 @@
 "preference.detail.defaultGamepadCtrl" = "Controller layout used when starting the game";
 "preference.detail.javaVersion" = "Java runtime used to launch this instance";
 "preference.detail.lwjglVersion" = "LWJGL version override for this instance";
+
+// ★ Task255：版本扫描/恢复 + 清理垃圾 + JVM 预设（清单 5/6/9）
+
+"vm.scan.title" = "Scan versions";
+"vm.scan.restore" = "Scan & restore versions";
+"vm.scan.cleanup" = "Clean up junk";
+"vm.scan.no_orphan" = "No restorable versions: every version in the folder is referenced by an instance.";
+"vm.scan.orphan_msg" = "Found %lu version(s) not referenced by any instance. Pick one to restore:";
+"cleanup.title" = "Clean up junk";
+"cleanup.close" = "Close";
+"cleanup.launcher_logs" = "Launcher logs";
+"cleanup.launcher_logs.confirm" = "Delete all historical logs? The active latestlog.txt is untouched.";
+"cleanup.mc_logs" = "MC logs & crash reports";
+"cleanup.mc_logs.confirm" = "Delete all MC logs and crash reports? (log files only; saves and resources are untouched)";
+"cleanup.row_detail" = "%lu file(s) · %@";
+"cleanup.orphan_row" = "Unreferenced version: %@";
+"cleanup.orphan_confirm" = "Delete unreferenced version \"%@\" and its isolated data folder? (the Task242-isolated game folder goes with it; saves are not kept)";
+"jvm.preset.title" = "JVM preset";
+"jvm.preset.memory" = "Memory saver";
+"jvm.preset.normal" = "Normal (default)";
+"jvm.preset.performance" = "Performance first";
+"jvm.preset.custom" = "Custom";
+"preference.title.jvm_preset" = "JVM preset";
+"preference.detail.jvm_preset" = "Preset JVM argument profile: memory saver (aggressive heap shrink), normal (current defaults), performance first (G1 region tuning), or custom";
+"jvm.preset.custom_args" = "Custom JVM arguments";
+"preference.detail.jvm_preset_custom_args" = "Extra JVM arguments used when the preset is set to Custom";
+
+"preference.title.jvm_preset_custom_args" = "Custom JVM arguments";

@@ -337,7 +337,7 @@ void hooked_exit(int code) {
     if (atomic_load(&g_ame_suppressJvmExit) && !pthread_main_np()) {
         char supMsg[96];
         snprintf(supMsg, sizeof(supMsg), "Task144: exit(%d) suppressed during headless JVM (thread exits, process lives)", code);
-        NSLog(@"[Amethyst] %s", supMsg);
+        NSLog(@"[Prisma] %s", supMsg);
         ame_write_fatal_trace(supMsg);
         // Task 146：exit 被拦截 = 安装器 JVM 已跑完（libjli 的 exit(0) 就是
         // 它的"正常收尾"）。先置终结信号再 pthread_exit，等待方据此继续
@@ -395,7 +395,7 @@ void* hooked_dlopen(const char* path, int mode) {
     // 走进 PLPatchMachOPlatformForFile 重标签路径的库（此前所有会话 0 次）。
     // 平台重标签改写了 mach header → 签名哈希不再匹配 → dyld 代码签名校验
     // 失败 → 进程被杀（SIGKILL，无 hs_err 无 fatal trace——日志最后一行
-    // 正是 "[Amethyst] Patching ...libasyncProfiler.so.tmp"）。
+    // 正是 "[Prisma] Patching ...libasyncProfiler.so.tmp"）。
     // 未签名库（本设备其余全部 home 目录库）重标签无害；已签名库重标签
     // 必死。spark 的 Java 侧对 UnsatisfiedLinkError 有完整降级（1.10.53
     // 字节码实证：AsyncProfilerAccess.load catch UnsatisfiedLinkError →
@@ -413,7 +413,7 @@ void* hooked_dlopen(const char* path, int mode) {
         static int s_ame106_blocked = 0;
         if (s_ame106_blocked < 3) {
             ++s_ame106_blocked;
-            NSLog(@"[Amethyst] Task106: blocked dlopen of signed macOS profiler lib (%s) -- platform retag would invalidate its code signature and dyld would kill the process; spark falls back to its Java sampler (world creation proceeds)", path);
+            NSLog(@"[Prisma] Task106: blocked dlopen of signed macOS profiler lib (%s) -- platform retag would invalidate its code signature and dyld would kill the process; spark falls back to its Java sampler (world creation proceeds)", path);
         }
         return NULL;
     }
@@ -426,7 +426,7 @@ void* hooked_dlopen(const char* path, int mode) {
     // libnetty_transport_native_kqueue_aarch_64<rand>.dylib 并 System.load
     // —— hooked_dlopen 走 PLPatchMachOPlatformForFile 重标签 + in-place
     // ad-hoc 重签，日志最后一行正是
-    //   "[Amethyst] Task107: re-signed ad-hoc after platform retag (in place)
+    //   "[Prisma] Task107: re-signed ad-hoc after platform retag (in place)
     //    (...netty/libnetty_transport_native_kqueue...)"
     // 随后进程无任何 exit 标记、无崩溃报告、连每秒的 RenderDiag 都戛然而
     // 止 = SIGKILL 形状（重签产物首载被 AMFI/dyld 击杀）。第二次会话
@@ -441,7 +441,7 @@ void* hooked_dlopen(const char* path, int mode) {
         static int s_ame230_blocked = 0;
         if (s_ame230_blocked < 3) {
             ++s_ame230_blocked;
-            NSLog(@"[Amethyst] Task230: blocked dlopen of netty native transport (%s) -- first LAN open crashed the process at the re-sign/dlopen window (39633e4 latestlog.old tail); netty falls back to pure-Java NIO (proven by the second session publishing LAN fine)", path);
+            NSLog(@"[Prisma] Task230: blocked dlopen of netty native transport (%s) -- first LAN open crashed the process at the re-sign/dlopen window (39633e4 latestlog.old tail); netty falls back to pure-Java NIO (proven by the second session publishing LAN fine)", path);
         }
         return NULL;
     }

@@ -13,6 +13,7 @@
 #import "utils.h"
 #import "ModLoaderIconHelper.h"
 #import "ModpackExportService.h" // for parseVersionId:
+#import "CleanupViewController.h"
 #import <QuartzCore/QuartzCore.h>
 
 // Section 索引：2 个 section（游戏目录 / 已安装版本）
@@ -922,6 +923,33 @@ static const CGFloat kVMCardCornerRadius = 16.0;
                      animations:^{
         fab.transform = CGAffineTransformIdentity;
     } completion:nil];
+
+    // ★ Task255：第二颗 FAB（扫描/恢复/清理入口）——T5"扫描目录中存在的
+    //   版本供用户恢复" + T6"清理垃圾"的统一入口。同 FAB 几何，叠放其下。
+    UIButton *scan = [UIButton buttonWithType:UIButtonTypeSystem];
+    UIImageSymbolConfiguration *scanConfig = [UIImageSymbolConfiguration configurationWithPointSize:17 weight:UIFontWeightBold];
+    UIImage *scanImg = [UIImage systemImageNamed:@"magnifyingglass" withConfiguration:scanConfig];
+    [scan setImage:scanImg forState:UIControlStateNormal];
+    scan.tintColor = [UIColor whiteColor];
+    scan.backgroundColor = accentColor();
+    scan.layer.cornerRadius = 22;
+    scan.layer.cornerCurve = kCACornerCurveContinuous;
+    scan.layer.shadowColor = [UIColor blackColor].CGColor;
+    scan.layer.shadowOffset = CGSizeMake(0, 4);
+    scan.layer.shadowOpacity = 0.20;
+    scan.layer.shadowRadius = 8;
+    scan.layer.masksToBounds = NO;
+    scan.translatesAutoresizingMaskIntoConstraints = NO;
+    scan.accessibilityLabel = localize(@"vm.scan.title", @"扫描版本");
+    [scan addTarget:self action:@selector(ame255_showScanActionSheet) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:scan];
+    [self.view bringSubviewToFront:fab];
+    [NSLayoutConstraint activateConstraints:@[
+        [scan.widthAnchor constraintEqualToConstant:44],
+        [scan.heightAnchor constraintEqualToConstant:44],
+        [scan.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:62],
+        [scan.trailingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.trailingAnchor constant:-16],
+    ]];
 }
 
 /// FAB 按下：缩放反馈（规范 9.3）
@@ -1869,14 +1897,69 @@ static const CGFloat kVMCardCornerRadius = 16.0;
 
     [confirm addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
     [confirm addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_306", nil) style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+        // ★ Task255（删除版本后数据大小未变化/版本仍存在 根修）：旧实现只
+        //   删 PLProfiles 注册表条目，从不碰 versions/<id> 实体——游戏
+        //   jar/json/隔离 game 目录全部留在盘上 = 数据大小不变 + 版本仍
+        //   在（扫描/下载页仍能看见）。修复：删除注册表条目后，若同一
+        //   lastVersionId 不再被任何其他实例引用 → 连带删除
+        //   versions/<id> 实体目录（含 Task242 隔离的 versions/<id>/game）。
+        NSDictionary *ame255_profile = PLProfiles.current.profiles[profileName];
+        NSString *ame255_versionId = [ame255_profile isKindOfClass:NSDictionary.class]
+            ? ame255_profile[@"lastVersionId"] : nil;
         [PLProfiles.current.profiles removeObjectForKey:profileName];
         if ([PLProfiles.current.selectedProfileName isEqualToString:profileName]) {
             PLProfiles.current.selectedProfileName = PLProfiles.current.profiles.allKeys.firstObject;
         }
         [PLProfiles.current save];
+        // ★ Task255：实体目录连带删除（引用计数守卫：仍被其他实例引用
+        //   的版本只退出注册表，文件保留）。
+        if ([ame255_versionId isKindOfClass:[NSString class]] && ame255_versionId.length > 0) {
+            BOOL ame255_stillReferenced = NO;
+            for (NSString *ame255_key in PLProfiles.current.profiles) {
+                NSDictionary *ame255_p = PLProfiles.current.profiles[ame255_key];
+                if ([ame255_p isKindOfClass:NSDictionary.class] &&
+                    [ame255_p[@"lastVersionId"] isKindOfClass:[NSString class]] &&
+                    [ame255_p[@"lastVersionId"] isEqualToString:ame255_versionId]) {
+                    ame255_stillReferenced = YES;
+                    break;
+                }
+            }
+            if (!ame255_stillReferenced) {
+                // ★ Task255 r2 路径根修正：版本实体在 POJAV_GAME_DIR/versions
+                //   （= instances/<当前实例>/versions；注册表 launcher_profiles.json
+                //   亦在 GAME_DIR，PLProfiles.m:98 同源）。POJAV_HOME/versions 仅
+                //   旧版布局存在，作降序兜底。装机 latestlog 实锤 instances/default。
+                NSString *ame255_vdir = [NSString stringWithFormat:@"%s/versions/%@",
+                    getenv("POJAV_GAME_DIR") ? getenv("POJAV_GAME_DIR") : getenv("POJAV_HOME"), ame255_versionId];
+                if (![NSFileManager.defaultManager fileExistsAtPath:ame255_vdir]) {
+                    const char *ame255_home = getenv("POJAV_HOME");
+                    if (ame255_home != NULL) {
+                        NSString *ame255_legacy = [NSString stringWithFormat:@"%s/versions/%@",
+                            ame255_home, ame255_versionId];
+                        if ([NSFileManager.defaultManager fileExistsAtPath:ame255_legacy]) ame255_vdir = ame255_legacy;
+                    }
+                }
+                if ([NSFileManager.defaultManager fileExistsAtPath:ame255_vdir]) {
+                    NSError *ame255_err = nil;
+                    if ([NSFileManager.defaultManager removeItemAtPath:ame255_vdir error:&ame255_err]) {
+                        NSLog(@"[VersionMgr] Task255: removed version folder for deleted profile '%@' -> %@", profileName, ame255_vdir);
+                    } else {
+                        NSLog(@"[VersionMgr] Task255: failed to remove version folder %@: %@", ame255_vdir, ame255_err.localizedDescription);
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            [self showAlert:[NSString stringWithFormat:localize(@"i18n_str_1088", nil), ame255_err.localizedDescription]];
+                        });
+                    }
+                }
+            } else {
+                NSLog(@"[VersionMgr] Task255: version %@ still referenced by other profile(s), folder kept", ame255_versionId);
+            }
+        }
         [self loadProfiles];
         [self.collectionView reloadData];
         [self updateEmptyState];
+        // ★ Task255：主页 localVersionList 全局快照同步刷新（删除后主页“选择版本”
+        //   不再残留已删版本；对齐下载完成同款通知链，行 1641 先例）。
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"ReloadProfileList" object:nil];
     }]];
 
     [self presentViewController:confirm animated:YES completion:nil];
@@ -1886,6 +1969,137 @@ static const CGFloat kVMCardCornerRadius = 16.0;
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_388", nil) message:message preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_44", nil) style:UIAlertActionStyleDefault handler:nil]];
     [self presentViewController:alert animated:YES completion:nil];
+}
+
+#pragma mark - Task255: 版本扫描 / 恢复 / 清理入口
+
+/// 扫描 versions/ 目录全部本机版本。返回字典数组：
+///   id(NSString) / path(NSString) / jsonOK(BOOL：存在 <id>/<id>.json 正式
+///   版本定义) / referenced(BOOL：任一实例的 lastVersionId 引用) /
+///   sizeBytes(NSNumber：目录递归大小)。
+- (NSArray<NSDictionary *> *)ame255_scanInstalledVersions {
+    // ★ Task255 r2 路径根修正：扫描 GAME_DIR/versions（真机实体；同 deleteProfile 处注释）。
+    NSString *versionsDir = [NSString stringWithFormat:@"%s/versions",
+        getenv("POJAV_GAME_DIR") ? getenv("POJAV_GAME_DIR") : getenv("POJAV_HOME")];
+    NSMutableArray<NSDictionary *> *result = [NSMutableArray array];
+    NSArray<NSString *> *entries = [NSFileManager.defaultManager
+        contentsOfDirectoryAtPath:versionsDir error:nil];
+    if (entries.count == 0) return result;
+    NSMutableSet<NSString *> *referenced = [NSMutableSet set];
+    for (NSString *key in PLProfiles.current.profiles) {
+        NSDictionary *p = PLProfiles.current.profiles[key];
+        if ([p isKindOfClass:NSDictionary.class] &&
+            [p[@"lastVersionId"] isKindOfClass:[NSString class]]) {
+            [referenced addObject:p[@"lastVersionId"]];
+        }
+    }
+    for (NSString *entry in entries) {
+        NSString *vdir = [versionsDir stringByAppendingPathComponent:entry];
+        BOOL isDir = NO;
+        if (![NSFileManager.defaultManager fileExistsAtPath:vdir isDirectory:&isDir] || !isDir) continue;
+        NSString *jsonPath = [vdir stringByAppendingPathComponent:
+            [NSString stringWithFormat:@"%@.json", entry]];
+        BOOL jsonOK = [NSFileManager.defaultManager fileExistsAtPath:jsonPath];
+        unsigned long long folderSize = 0;
+        [self calculateFolderSizeAtPath:vdir size:&folderSize];
+        [result addObject:@{
+            @"id": entry,
+            @"path": vdir,
+            @"jsonOK": @(jsonOK),
+            @"referenced": @([referenced containsObject:entry]),
+            @"sizeBytes": @(folderSize),
+        }];
+    }
+    [result sortUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
+        return [a[@"id"] compare:b[@"id"]];
+    }];
+    return result;
+}
+
+/// 扫描 FAB 动作：恢复版本 / 清理垃圾 双入口。
+- (void)ame255_showScanActionSheet {
+    UIAlertController *sheet = [UIAlertController
+        alertControllerWithTitle:localize(@"vm.scan.title", @"扫描版本")
+                         message:nil
+                  preferredStyle:UIAlertControllerStyleActionSheet];
+    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"vm.scan.restore", @"扫描并恢复版本")
+                                              style:UIAlertActionStyleDefault
+                                            handler:^(__unused UIAlertAction *a) {
+        [self ame255_showRestoreDialog];
+    }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"vm.scan.cleanup", @"清理垃圾")
+                                              style:UIAlertActionStyleDefault
+                                            handler:^(__unused UIAlertAction *a) {
+        [self ame255_showCleanup];
+    }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+                                              style:UIAlertActionStyleCancel handler:nil]];
+    sheet.popoverPresentationController.sourceView = self.view;
+    sheet.popoverPresentationController.sourceRect =
+        CGRectMake(self.view.bounds.size.width - 70, 60, 1, 1);
+    [self presentViewController:sheet animated:YES completion:nil];
+}
+
+/// T5：无引用版本恢复对话框——versions/ 里存在、但没有任何实例引用的
+/// 版本，逐个可一键重建实例（Task242 模板：gameDir = versions/<id>/game）。
+- (void)ame255_showRestoreDialog {
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSArray<NSDictionary *> *all = [self ame255_scanInstalledVersions];
+        NSMutableArray<NSDictionary *> *orphans = [NSMutableArray array];
+        for (NSDictionary *v in all) {
+            if ([v[@"jsonOK"] boolValue] && ![v[@"referenced"] boolValue]) {
+                [orphans addObject:v];
+            }
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (orphans.count == 0) {
+                [self showAlert:localize(@"vm.scan.no_orphan", @"未发现可恢复的版本：目录中的版本均已被实例引用。")];
+                return;
+            }
+            UIAlertController *alert = [UIAlertController
+                alertControllerWithTitle:localize(@"vm.scan.title", @"扫描版本")
+                                 message:[NSString stringWithFormat:
+                                     localize(@"vm.scan.orphan_msg", @"发现 %lu 个未被实例引用的版本，选择要恢复的："),
+                                     (unsigned long)orphans.count]
+                          preferredStyle:UIAlertControllerStyleAlert];
+            NSUInteger ame255_limit = MIN(orphans.count, (NSUInteger)8);
+            for (NSUInteger i = 0; i < ame255_limit; i++) {
+                NSDictionary *v = orphans[i];
+                NSString *vid = v[@"id"];
+                [alert addAction:[UIAlertAction actionWithTitle:vid
+                                                          style:UIAlertActionStyleDefault
+                                                        handler:^(__unused UIAlertAction *a) {
+                    NSMutableDictionary *profile = [NSMutableDictionary dictionary];
+                    profile[@"name"] = vid;
+                    profile[@"lastVersionId"] = vid;
+                    // Task242 口径：新实例自动版本隔离（与下载完成创建一致）
+                    profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", vid];
+                    profile[@"type"] = @"custom";
+                    profile[@"created"] = [NSDate date].description;
+                    [PLProfiles.current saveProfile:profile withName:vid];
+                    NSLog(@"[VersionMgr] Task255: restored orphan version '%@' as a new profile", vid);
+                    [self loadProfiles];
+                    [self.collectionView reloadData];
+                    [self updateEmptyState];
+                }]];
+            }
+            [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+                                                      style:UIAlertActionStyleCancel handler:nil]];
+            [self presentViewController:alert animated:YES completion:nil];
+        });
+    });
+}
+
+/// T6：清理中心呈现。
+- (void)ame255_showCleanup {
+    CleanupViewController *cleanup = [[CleanupViewController alloc] init];
+    cleanup.ame255_versionScanner = ^NSArray<NSDictionary *> *(void) {
+        return [self ame255_scanInstalledVersions];
+    };
+    UINavigationController *nav = [[UINavigationController alloc]
+        initWithRootViewController:cleanup];
+    nav.modalPresentationStyle = UIModalPresentationPageSheet;
+    [self presentViewController:nav animated:YES completion:nil];
 }
 
 #pragma mark - Orientation

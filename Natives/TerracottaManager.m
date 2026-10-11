@@ -137,9 +137,20 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
     //   公共 peer 全部不可达（断网/防火墙）。预检把 ② 提前到加入前给出明确
     //   报错（不再让用户看三轮 15s 的 PingHostFail）；①保持原有自动重试。
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        // ★ Task255（清单 2：联机备用线路参考 FCL/PCL2CE）：预检 peer 与
+        //   libterracotta 内嵌端点对齐（strings libterracotta.a 实证 4 个）。
+        //   Task223 旧列表只探前 2 个 TCP——若它们宕/被墙而 etnode 两个
+        //   https 端点活着，旧预检会误拦 join（用户被迫干等），与"备用线
+        //   路"语义相悖。现 4 端点全部纳入：TCP 2 个走原非阻塞 connect，
+        //   https 2 个走轻量 HEAD（2s 超时）；任一可达即放行（库内 EasyTier
+        //   自带 peer 轮换，预检只负责"全网全断"的早退拦截）。
         NSArray<NSString *> *peers = @[
             @"public.easytier.top:11010",
             @"public2.easytier.cn:54321",
+        ];
+        NSArray<NSString *> *httpsPeers = @[
+            @"https://etnode.zkitefly.eu.org/node1",
+            @"https://etnode.zkitefly.eu.org/node2",
         ];
         // Task223 CI 修复：异步探测块内赋值 → 必须 __block（同 DataTransferService lastUi 病例）。
         __block BOOL anyReachable = NO;
@@ -181,6 +192,31 @@ NSNotificationName TerracottaManagerStateDidChangeNotification = @"TerracottaMan
                     }
                 }
                 dispatch_group_leave(g);
+            });
+        }
+        // ★ Task255：https 端点探测（etnode 两个备用线路；轻量 HEAD + 2s 超时，
+        //   任一 2xx/3xx 即算可达——EasyTier 对 https peer 只需 HTTP(S) 层连通）。
+        for (NSString *hpeer in httpsPeers) {
+            dispatch_group_enter(g);
+            NSMutableURLRequest *hreq = [NSMutableURLRequest
+                requestWithURL:[NSURL URLWithString:hpeer]
+                cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                timeoutInterval:2.0];
+            hreq.HTTPMethod = @"HEAD";
+            NSURLSession *hs = [NSURLSession sessionWithConfiguration:
+                NSURLSessionConfiguration.ephemeralSessionConfiguration];
+            __block NSURLSession *ame255_hs = hs;   // 保活至回调完成
+            dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+                [[ame255_hs dataTaskWithRequest:hreq
+                    completionHandler:^(NSURLResponse *resp, NSData *data, NSError *err) {
+                    NSHTTPURLResponse *hresp = (NSHTTPURLResponse *)resp;
+                    if (err == nil && hresp.statusCode >= 200 && hresp.statusCode < 400) {
+                        anyReachable = YES;
+                        NSLog(@"[Terracotta] Task255: https peer reachable: %@", hpeer);
+                    }
+                    dispatch_group_leave(g);
+                    [ame255_hs finishTasksAndInvalidate];
+                }] resume];
             });
         }
         dispatch_group_wait(g, DISPATCH_TIME_FOREVER);

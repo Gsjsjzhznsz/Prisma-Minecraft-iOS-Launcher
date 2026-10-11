@@ -521,6 +521,8 @@ void ame139_fsr_heal_reset_input_scale(void) {
 //   ame_hook_realSDLGetWindowSize：Task61 钉扎层下的 SDL 真实窗口点尺寸
 //   （恢复 warp 目标与复屏取证的真实值来源——dlsym 路由会拿到钉扎钩子）。
 extern void *ame_hook_getEmbeddedSDLView(void);
+// ★ Task255：SDL 键盘态/虚拟修饰位会话重置（input_bridge_v3 同名实现）
+extern void CallbackBridge_resetVirtualModifierState(void);
 extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
 
 @implementation SurfaceViewController
@@ -2727,6 +2729,76 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
           ame254_sdlW, ame254_sdlH);
 }
 
+// ★ Task255（用户反馈 1"不能搞自动纠正吗"）：复屏几何真值对账自动纠正。
+//   历轮链（247 全量重申 / 248 首触点 / 249 强制宣告 / 250 门控+三连 /
+//   251 冻结补跑 / 252 三方取证 / 254 SDL 视图重assert）共同盲区：全部
+//   只把【启动器信念】重算+重申，从不读【呈现面真值】对账——若 MobileGL
+//   跨后台的上下文/交换链重建把 layer contentsScale/drawableSize 写成
+//   另一口径（真值漂移），重算后的信念与真值继续失配 = 重申的仍是错
+//   值，输入错位无解。本方法把真值（CAMetalLayer.drawableSize，Metal
+//   呈现的物理像素唯一权威）与信念（updateSavedResolution 刚重算的
+//   ame_surfaceWidth）对账：失配超容差 → 以真值反解 screenScale
+//   （drawable = frame点 × screenScale × resolutionScale）→ 重算信念 →
+//   由调用方强制宣告。SDL 视图 frame 漂移同点重assert（254 的复屏版
+//   在 didBecomeActive 只跑一次，触点时刻可能已再漂）。
+//   幂等：真值与信念一致时零动作（除一行 no-op 日志外零开销）。
+- (void)ame255_autoCorrectGeometryFromGroundTruthAtSite:(NSString *)site {
+    if (self.surfaceView.superview == nil) return;
+    // ---- 真值一：CAMetalLayer drawableSize（本层或子层链）----
+    CAMetalLayer *ame255_metal = nil;
+    if ([self.surfaceView.layer isKindOfClass:CAMetalLayer.class]) {
+        ame255_metal = (CAMetalLayer *)self.surfaceView.layer;
+    } else {
+        for (CALayer *ame255_sub in self.surfaceView.layer.sublayers) {
+            if ([NSStringFromClass([ame255_sub class]) containsString:@"CAMetalLayer"]) {
+                ame255_metal = (CAMetalLayer *)ame255_sub;
+                break;
+            }
+        }
+    }
+    CGFloat ame255_dw = 0, ame255_dh = 0;
+    if (ame255_metal != nil) {
+        CGSize ame255_ds = ame255_metal.drawableSize;
+        ame255_dw = ame255_ds.width;
+        ame255_dh = ame255_ds.height;
+    }
+    CGFloat ame255_expW = (CGFloat)ame_surfaceWidth;
+    CGFloat ame255_expH = (CGFloat)ame_surfaceHeight;
+    BOOL ame255_drift = NO;
+    if (ame255_dw > 0 && ame255_expW > 0 &&
+        (fabs(ame255_dw - ame255_expW) > 2.0 || fabs(ame255_dh - ame255_expH) > 2.0)) {
+        ame255_drift = YES;
+    }
+    if (ame255_drift) {
+        CGFloat ame255_frameW = self.surfaceView.frame.size.width;
+        CGFloat ame255_res = (resolutionScale > 0.01f) ? resolutionScale : 1.0f;
+        if (ame255_frameW > 0.5) {
+            CGFloat ame255_newScale = (ame255_dw / ame255_res) / ame255_frameW;
+            if (ame255_newScale >= 0.25 && ame255_newScale <= 8.0 &&
+                fabs(ame255_newScale - self.screenScale) > 0.01) {
+                NSLog(@"[SurfaceVC] Task255: AUTO-CORRECT (%@) drawable=%.0fx%.0f vs believed surface=%.0fx%.0f "
+                      @"-> screenScale %.3f -> %.3f (re-deriving beliefs)",
+                      site, ame255_dw, ame255_dh, ame255_expW, ame255_expH,
+                      self.screenScale, ame255_newScale);
+                self.screenScale = ame255_newScale;
+                [self updateSavedResolution];   // 信念全链重算（surface/window/drawable/announce）
+            } else {
+                NSLog(@"[SurfaceVC] Task255: auto-correct (%@) drawable=%.0fx%.0f vs surface=%.0fx%.0f "
+                      @"(scale %.3f within band, no rewrite)",
+                      site, ame255_dw, ame255_dh, ame255_expW, ame255_expH, self.screenScale);
+            }
+        }
+    }
+    // ---- 真值二：SDL 视图 frame（SDL 触摸换算源；254 只在复屏点跑一次）----
+    UIView *ame255_sv = (__bridge UIView *)ame_hook_getEmbeddedSDLView();
+    if (ame255_sv && ame255_sv.superview &&
+        !CGRectEqualToRect(ame255_sv.frame, ame255_sv.superview.bounds)) {
+        NSLog(@"[SurfaceVC] Task255: AUTO-CORRECT (%@) sdlView frame %@ vs container %@ -> reassert",
+              site, NSStringFromCGRect(ame255_sv.frame), NSStringFromCGRect(ame255_sv.superview.bounds));
+        ame255_sv.frame = ame255_sv.superview.bounds;
+    }
+}
+
 - (void)sendTouchPoint:(CGPoint)location withEvent:(int)event
 {
     // ★ Task248（①）：回前台后的首个触点换算前强制重申一次几何（didBecome
@@ -2735,6 +2807,12 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     if (ame248_geoResyncPending) {
         ame248_geoResyncPending = NO;
         [self updateSavedResolution];
+        // ★ Task255（"不能搞自动纠正吗"）：首触点真值对账自动纠正——
+        //   在飞换算基准（screenScale/全局窗口）与呈现面真值（drawable）
+        //   失配时当场把基准拉回真值，随后同一行的强制宣告推的就是
+        //   纠正后的值（历史链只"重申信念"，从不"对账真值" = 信念漂移
+        //   时重申的仍是漂移值，错位存活面）。
+        [self ame255_autoCorrectGeometryFromGroundTruthAtSite:@"sendTouchPoint"];
         // ★ Task250：首触点兜底补宣告（Task248 引入本兜底时只修全局不修
         //   MC 信念；强制通道保证竞态输掉后首个触点前必达）。
         if (windowWidth > 0 && windowHeight > 0) {
@@ -2912,6 +2990,9 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (strongSelf.surfaceView.superview != nil) {
             [strongSelf updateSavedResolution];
+            // ★ Task255：节拍点真值对账自动纠正（mg 上下文重建可能落在任一
+            //   节拍之后——每个节拍都把信念与 drawable 真值对一次账）。
+            [strongSelf ame255_autoCorrectGeometryFromGroundTruthAtSite:@"resume-beat"];
             if (windowWidth > 0 && windowHeight > 0) {
                 CallbackBridge_nativeSendScreenSizeForced(windowWidth, windowHeight);   // ★ Task250：强制通道
             }
@@ -2922,6 +3003,9 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (strongSelf.surfaceView.superview != nil) {
             [strongSelf updateSavedResolution];
+            // ★ Task255：节拍点真值对账自动纠正（mg 上下文重建可能落在任一
+            //   节拍之后——每个节拍都把信念与 drawable 真值对一次账）。
+            [strongSelf ame255_autoCorrectGeometryFromGroundTruthAtSite:@"resume-beat"];
             if (windowWidth > 0 && windowHeight > 0) {
                 CallbackBridge_nativeSendScreenSizeForced(windowWidth, windowHeight);   // ★ Task250：强制通道
             }
@@ -3977,7 +4061,7 @@ static void ame_dumpPresentationState(const char *reason) {
     budget--;
 
     NSMutableString *m = [NSMutableString string];
-    [m appendFormat:@"[Amethyst][diag] presentation dump (%s)\n", reason];
+    [m appendFormat:@"[Prisma][diag] presentation dump (%s)\n", reason];
 
     NSArray *wins = [UIApplication sharedApplication].windows;
     [m appendFormat:@"  windows=%lu\n", (unsigned long)wins.count];
@@ -4082,7 +4166,7 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
             w.hidden = YES;
             [hostWin makeKeyWindow];
             fixed = YES;
-            NSLog(@"[Amethyst] Task32: SDL UIWindow re-hidden (empty key+visible window "
+            NSLog(@"[Prisma] Task32: SDL UIWindow re-hidden (empty key+visible window "
                   @"covers GameSurfaceView = black screen); host key window restored");
             ame_dumpPresentationState("SDL own UIWindow was visible (black cover)");
         }
@@ -4092,7 +4176,7 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
             gs.hidden = NO;
             gs.layer.hidden = NO;
             fixed = YES;
-            NSLog(@"[Amethyst] Task52: GameSurfaceView was HIDDEN by SDL provider embed "
+            NSLog(@"[Prisma] Task52: GameSurfaceView was HIDDEN by SDL provider embed "
                   @"patch -- UN-HIDDEN (it is our render target)");
             ame_dumpPresentationState("GameSurfaceView was hidden");
         }
@@ -4121,14 +4205,14 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
             NSUInteger si = [subs indexOfObjectIdenticalTo:sdlView];
             if (gi != NSNotFound && si != NSNotFound && gi > si) {
                 [container insertSubview:gs belowSubview:sdlView];
-                NSLog(@"[Amethyst] Task52: GameSurfaceView pinned BELOW SDL touch view "
+                NSLog(@"[Prisma] Task52: GameSurfaceView pinned BELOW SDL touch view "
                       @"(Air Task52: SDL view transparent, frame shows through)");
             }
         }
 
         return fixed;
     } @catch (NSException *e) {
-        NSLog(@"[Amethyst] Task32/52 enforcement exception: %@", e);
+        NSLog(@"[Prisma] Task32/52 enforcement exception: %@", e);
         return NO;
     }
 }
@@ -4147,6 +4231,9 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
     if (ame248_geoResyncPending) {
         ame248_geoResyncPending = NO;
         [self updateSavedResolution];
+        // ★ Task255：首触点真值对账自动纠正（热栏路径与主触点链同口径，
+        //   见 ame255_autoCorrectGeometryFromGroundTruthAtSite 注释）。
+        [self ame255_autoCorrectGeometryFromGroundTruthAtSite:@"touchesBegan-prehotbar"];
         // ★ Task250：热栏路径首触点同补强制宣告（与 sendTouchPoint 同口径）。
         if (windowWidth > 0 && windowHeight > 0) {
             CallbackBridge_nativeSendScreenSizeForced(windowWidth, windowHeight);
@@ -4566,10 +4653,21 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
     // [[MultiplayerManager sharedManager] stopAllMultiplayerServices];
 
     //æ¸ç TouchController èµæº
+    // 源级损坏修复区（Task254 hex 定案：显示层吞字节，勿手抄本行上下文）
     if (self.touchControllerTransportHandle >= 0) {
         [TouchControllerBridge destroyTransport:self.touchControllerTransportHandle];
         self.touchControllerTransportHandle = -1;
     }
+
+    // ★ Task255（右 Shift"又失效"根修）：会话终结清虚拟修饰键三状态面——
+    //   ① Task179 toggle 账本（文件级 static，跨 VC 生命周期；残留则重进
+    //   游戏后首次轻点被误判 toggle OFF：DOWN 静默+幽灵 UP = 第一次无效）
+    //   ② Task66 ame66_virtualMods + SDL kbState[224..231]（残留则反向
+    //   锁死：MC 永远认为修饰键按着，潜行无法解除）。dealloc = 每次游戏
+    //   会话终结的确定性钩子（历轮 UI 累积异常修复同款锚点）。
+    [s_ame179_toggledMods removeAllObjects];
+    [s_ame176_modDownTime removeAllObjects];
+    CallbackBridge_resetVirtualModifierState();
 }
 
 @end

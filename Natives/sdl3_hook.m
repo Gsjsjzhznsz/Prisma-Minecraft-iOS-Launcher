@@ -819,18 +819,19 @@ static const bool *ame_SDL_GetKeyboardState(int *numkeys) {
     if (n <= 10 || n % 2000 == 0) {
         const bool *ours = Ame66GetKbState();
         int nk = (numkeys != NULL) ? *numkeys : 0;
-        int vA = 0, vD = 0, vS = 0, vW = 0, vSpc = 0, vF3 = 0, vF4 = 0, vLC = 0, vLS = 0;
+        int vA = 0, vD = 0, vS = 0, vW = 0, vSpc = 0, vF3 = 0, vF4 = 0, vLC = 0, vLS = 0, vRS = 0;
         if (r != NULL && nk >= 256) {
             vA = r[4] ? 1 : 0;      vD = r[7] ? 1 : 0;
             vS = r[22] ? 1 : 0;     vW = r[26] ? 1 : 0;
             vSpc = r[44] ? 1 : 0;   vF3 = r[60] ? 1 : 0;
             vF4 = r[61] ? 1 : 0;    vLC = r[224] ? 1 : 0;
             vLS = r[225] ? 1 : 0;
+            vRS = r[229] ? 1 : 0;   // ★ Task255：右 Shift 采样位（历轮取证盲区：poll 只看 LShift，右 Shift 失效时无法判定 kbState[229] 是否置位）
         }
-        NSDebugLog(@"[SDLHook] Task67 MC kb-state poll #%lu: ptr=%p ours=%p match=%d numkeys=%d | A=%d S=%d D=%d W=%d Spc=%d F3=%d F4=%d LCtrl=%d LShift=%d",
+        NSDebugLog(@"[SDLHook] Task67 MC kb-state poll #%lu: ptr=%p ours=%p match=%d numkeys=%d | A=%d S=%d D=%d W=%d Spc=%d F3=%d F4=%d LCtrl=%d LShift=%d RShift=%d",
                    (unsigned long)n, (const void *)r, (const void *)ours,
                    (r == ours) ? 1 : 0, nk,
-                   vA, vS, vD, vW, vSpc, vF3, vF4, vLC, vLS);
+                   vA, vS, vD, vW, vSpc, vF3, vF4, vLC, vLS, vRS);
     }
     return r;
 }
