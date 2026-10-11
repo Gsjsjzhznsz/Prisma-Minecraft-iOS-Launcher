@@ -74,6 +74,28 @@ extern NSString *const LanPortDetectorDidDetectPortNotification;
 - (void)scanLocalPortsWithProgress:(void (^ _Nullable)(NSUInteger scanned, NSUInteger total))progress
                         completion:(void (^)(NSArray<NSNumber *> *ports))completion;
 
+/// ★ Task249（用户反馈 5：联机自动扫描端口仍失败 根修）：周期回环扫描。
+///
+/// 病历：scanLocalPortsWithProgress: 是一次性扫描——而房主流程里用户先点
+/// "创建房间/开始检测"，【之后】才回游戏开世界（世界加载 5~30s），扫描在
+/// 服务器尚未 bind 时早已空跑结束 = 永远扫不到（日志尾随的正则又随 MC
+/// 版本漂移，两路同时落空 = "仍无法自动扫描端口"）。
+///
+/// 新语义：每 ~3s 一轮（快端口 + 临时端口段），直到扫到 MC 监听或显式
+/// stopAutoDetection/stopLoopbackScanRepeating；首次启动时额外同步跑一轮
+/// 全范围深扫（含低位段）兼作旧行为兼容。命中即 publishPort（通知同一主
+/// 路径收口）并自动停止。重复调用幂等（已在扫则忽略）。
+///
+/// @param progress 每轮调用（后台队列，可空；scanned/total 为本轮进度）。
+- (void)startLoopbackScanRepeatingWithProgress:(void (^ _Nullable)(NSUInteger scanned, NSUInteger total))progress;
+
+/// Stop the repeating loopback scan.  Safe to call when not scanning;
+/// stopAutoDetection 也会一并停掉本扫描（一个开关同时控制两路）。
+- (void)stopLoopbackScanRepeating;
+
+/// YES while the repeating loopback scan is active.
+@property(nonatomic, assign, readonly, getter=isLoopbackScanRepeating) BOOL loopbackScanRepeating;
+
 /// Parse a single log line.  Returns 0 when the line carries no port.
 /// Exposed so callers (and tests) can feed arbitrary text.
 + (uint16_t)parsePortFromLogLine:(NSString *)line;

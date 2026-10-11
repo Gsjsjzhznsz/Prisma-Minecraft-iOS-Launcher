@@ -212,6 +212,11 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
     uint16_t _port;
     LanPortSource _source;
     BOOL _detecting;
+    /* ★ Task249: repeating loopback scan state */
+    dispatch_source_t _scanTimer;
+    void (^_scanProgress)(NSUInteger scanned, NSUInteger total);
+    BOOL _scanRepeating;
+    BOOL _scanSweepBusy;
 }
 @end
 
@@ -299,9 +304,14 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
 
 - (void)stopAutoDetection {
     dispatch_async(_queue, ^{
-        if (!self->_detecting) return;
-        [self stopTimerOnQueue];
-        NSLog(@"[LanPortDetector] auto detection stopped");
+        if (self->_detecting) {
+            [self stopTimerOnQueue];
+            NSLog(@"[LanPortDetector] auto detection stopped");
+        }
+        /* ★ Task249：一个开关同时控制两路——日志尾随与周期回环扫描同停。 */
+        if (self->_scanRepeating) {
+            [self stopLoopbackScanRepeating];
+        }
     });
 }
 
@@ -404,6 +414,110 @@ static BOOL AmePortAnswersLikeMinecraft(uint16_t port) {
         [self stopTimerOnQueue];
         return;
     }
+}
+
+#pragma mark - Repeating loopback scan (Task249)
+
+- (BOOL)isLoopbackScanRepeating {
+    return _scanRepeating;
+}
+
+- (void)stopLoopbackScanRepeating {
+    dispatch_async(_queue, ^{
+        if (!self->_scanRepeating && self->_scanTimer == nil) return;
+        if (self->_scanTimer != nil) {
+            dispatch_source_cancel(self->_scanTimer);
+            self->_scanTimer = nil;
+        }
+        self->_scanRepeating = NO;
+        self->_scanProgress = nil;
+        self->_scanSweepBusy = NO;
+        NSLog(@"[LanPortDetector] repeating loopback scan stopped");
+    });
+}
+
+- (void)startLoopbackScanRepeatingWithProgress:(void (^)(NSUInteger, NSUInteger))progress {
+    dispatch_async(_queue, ^{
+        if (self->_scanRepeating) return;   /* 幂等：已在扫 */
+        self->_scanRepeating = YES;
+        self->_scanProgress = [progress copy];
+        self->_scanSweepBusy = NO;
+        NSLog(@"[LanPortDetector] repeating loopback scan started (tick 3s: fast + ephemeral)");
+
+        /* 首轮立即深扫（快端口 + 临时段 + 低位段全范围），兼作旧
+         * scanLocalPortsWithProgress 的一次性行为兼容。 */
+        [self scanLocalPortsWithProgress:progress completion:nil];
+
+        /* 周期哨兵：世界加载完成后（服务器 bind 端口）的下一轮即命中。
+         * 3s 周期 × 每轮仅快端口+临时段（闭端口回环即时 RST，一轮
+         * 万余次 connect 总耗时 <1s），CPU/电量可忽略。 */
+        if (self->_scanTimer != nil) dispatch_source_cancel(self->_scanTimer);
+        dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, self->_queue);
+        self->_scanTimer = timer;
+        dispatch_source_set_timer(timer,
+                                  dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)),
+                                  (uint64_t)(3.0 * NSEC_PER_SEC),
+                                  (uint64_t)(0.5 * NSEC_PER_SEC));
+        __weak typeof(self) weakSelf = self;
+        dispatch_source_set_event_handler(timer, ^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf == nil) return;
+            if (!strongSelf->_scanRepeating) return;
+            if (strongSelf->_scanSweepBusy) return;          /* 上轮未完，本轮跳过 */
+            if (strongSelf->_port != 0) {                    /* 已命中（日志路/深扫），收工 */
+                [strongSelf stopLoopbackScanRepeating];
+                return;
+            }
+            strongSelf->_scanSweepBusy = YES;
+            void (^prog)(NSUInteger, NSUInteger) = strongSelf->_scanProgress;
+            dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+                BOOL found = [strongSelf ame249_quickSweepWithProgress:prog];
+                dispatch_async(strongSelf->_queue, ^{
+                    strongSelf->_scanSweepBusy = NO;
+                    if (found || !strongSelf->_scanRepeating) {
+                        if (found) [strongSelf stopLoopbackScanRepeating];
+                    }
+                });
+            });
+        });
+        dispatch_resume(timer);
+    });
+}
+
+/// 快扫一轮：快端口表 + 临时端口段（MC "对局域网开放" 自动端口的家）。
+/// 命中即 publishPort 并返回 YES。在全局队列上调用（不占 _queue）。
+- (BOOL)ame249_quickSweepWithProgress:(void (^)(NSUInteger, NSUInteger))progress {
+    static const uint16_t kFastPorts[] = { 25565, 25575, 25576, 25577, 25578 };
+    NSUInteger fastCount = sizeof(kFastPorts) / sizeof(kFastPorts[0]);
+    NSUInteger total = fastCount + (65535 - 49152 + 1);
+    NSUInteger scanned = 0;
+
+    for (NSUInteger i = 0; i < fastCount; i++) {
+        uint16_t port = kFastPorts[i];
+        if (AmePortAcceptsConnection(port) && AmePortAnswersLikeMinecraft(port)) {
+            NSLog(@"[LanPortDetector] Task249 quick sweep hit: %u", port);
+            dispatch_async(_queue, ^{
+                [self publishPort:port source:LanPortSourceAuto];
+            });
+            return YES;
+        }
+        scanned++;
+        if (progress != nil) progress(scanned, total);
+    }
+    for (uint32_t port = 49152; port <= 65535; port++) {
+        if (AmePortAcceptsConnection((uint16_t)port) &&
+            AmePortAnswersLikeMinecraft((uint16_t)port)) {
+            NSLog(@"[LanPortDetector] Task249 quick sweep hit: %u", (uint16_t)port);
+            uint16_t ame249_hit = (uint16_t)port;
+            dispatch_async(_queue, ^{
+                [self publishPort:ame249_hit source:LanPortSourceAuto];
+            });
+            return YES;
+        }
+        scanned++;
+        if ((scanned & 0x3FF) == 0 && progress != nil) progress(scanned, total);
+    }
+    return NO;
 }
 
 #pragma mark - Port bookkeeping

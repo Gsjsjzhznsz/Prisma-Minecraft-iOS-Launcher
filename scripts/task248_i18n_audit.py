@@ -127,10 +127,44 @@ def main():
         for rel, lineno, snippet in hits:
             print(f"HARDCODED {rel}:{lineno}  {snippet}")
 
+    # ★ Task249 闸3：动态拼键枚举校验——静态 localize("...") 引用扫描抓不到
+    #   localize([NSString stringWithFormat:...]) 的动态键；动态键在四表缺席
+    #   时同样键名上屏（本轮装机实测面：controller_configurator 家族）。
+    #   模式 = (键前缀, 前缀下可能的取值集合)；取值来源 = 代码内常量数组/
+    #   枚举，逐一比对四表。新增动态键时在此登记即可纳入守护。
+    dynamic_patterns = {
+        "dataexport.section.": [
+            "worlds", "resourcepacks", "mods", "screenshots",
+            "servers", "instance", "launcher", "gamefiles",
+        ],
+        "controller_configurator.title.type.": ["xbox", "playstation"],
+        "controller_configurator.section.": [
+            "config_files", "game_mappings", "menu_mappings", "controller_style",
+        ],
+        "controller_configurator.section.footer.": [
+            "config_files", "game_mappings", "menu_mappings", "controller_style",
+        ],
+    }
+    dyn_missing = []
+    for prefix, values in dynamic_patterns.items():
+        for v in values:
+            k = prefix + v
+            absent = [t for t in ("en", "zh-Hans", "zh-CN", "zh-Hant") if k not in tables[t]]
+            if absent:
+                dyn_missing.append((k, absent))
+
+    print("\n=== 闸3 动态拼键四表校验（Task249）===")
+    if not dyn_missing:
+        print("PASS：全部动态键前缀的枚举取值在四表齐备")
+    else:
+        for k, absent in dyn_missing:
+            print(f"DYNAMIC-MISSING {k}  缺表: {','.join(absent)}")
+
     hard_fail = len(hits)
     missing_fail = len(missing)
-    print(f"\n[i18n] 结论: 缺键 {missing_fail} 项, 硬编码 {hard_fail} 处")
-    sys.exit(0 if (missing_fail == 0 and hard_fail == 0) else 1)
+    dyn_fail = len(dyn_missing)
+    print(f"\n[i18n] 结论: 缺键 {missing_fail} 项, 硬编码 {hard_fail} 处, 动态键缺表 {dyn_fail} 项")
+    sys.exit(0 if (missing_fail == 0 and hard_fail == 0 and dyn_fail == 0) else 1)
 
 if __name__ == "__main__":
     main()

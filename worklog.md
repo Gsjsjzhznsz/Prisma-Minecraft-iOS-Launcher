@@ -2745,3 +2745,25 @@ Work Log:
 Stage Summary:
 - Task 248 全链闭环：11 项装机反馈全修——联机舞台 builtStage 短路回归根治（菜单恢复可点，键盘保护语义保留）+ 26.3 退出去 suspend+看门狗硬杀 + Vulkan FPS 改 CAMetalLayer.nextDrawable 真计数 + MobileGL 回前台三连重申/首触点兜底 + SDL 自动输入法开关联动闩锁 + 游戏菜单快照窗口对位真透视/首帧源统一 + 模组跨源解析字典形态兼容（T11 首次真正生效）+ TVC 自动检测回环扫描第二路 + TVC 玻璃档快照磨砂背景（原生档零回归）+ i18n 三闸审计全绿（2167 引用键四表齐/零硬编码）
 - 新 IPA 就绪待装机验证；i18n 审计脚本 task248_i18n_audit.py 入库可复跑
+
+---
+Task ID: 249
+Agent: main (Super Z)
+Task: 用户装机反馈 9 项——①MobileGL 切后台输入错位 ②26.3 退出游戏后启动器挂后台崩溃 ③联机菜单输入一次键盘关闭一次 ④Vulkan 渲染切后台卡死（新） ⑤联机自动扫描端口仍失败 ⑥自动打开输入法(SDL)开关 ⑦伪玻璃联动：联机菜单等仍原生 ⑧游戏菜单关闭动画屏幕滑动（新） ⑨国际化审计；附用户 latestlog.txt/latestlog.old.txt 取证
+
+Work Log:
+- 【取证先行】用户上传 bb32e00（Task 247 构建）双 latestlog：①退出路径实锤 = 游戏内玻璃菜单 ForceClose → actionForceClose → exit(0)（非 MC 内部退出）；②old 日志恢复序列实锤 T1 真根因——后台期 iOS 竖屏往返各触发一次 nativeSendScreenSize（Task83b 合成 0x207 1262x1814→1814x1262），MC 窗口信念被钉在 1814x1262（启动器点数像素）而物理表面 2360x1640，恢复序列 resumeGameIfNeed 的重宣告用的是【已被旋转推送改写的陈旧全局】= 错值原样喂回 MC，随后 ame247 重申只修全局不对 MC 重宣告 = 恒定 ~1.3x 输入错位（越靠边越偏）；③T4 实锤：GL 会话有 "PARKED at gl_swap" 而 Vulkan/Metallum 会话（configuredVulkan=1 actualVulkanPath=0）无任何 PARKED 行 = Task223 停靠点只挂 gl_bridge，Metal 呈现路径缺席；④T9 实锤：静态审计全绿但动态拼键（localize([NSString stringWithFormat:...])）逃逸三闸，controller_configurator.section.footer.config_files 四表缺席（有优雅回退）。⑤关键澄清：用户设备跑 bb32e00，Task 248 的 ④联机可点/②退出去 suspend+看门狗/⑤FPS nextDrawable/⑦开关联动闩锁/⑧TVC 磨砂 等修复尚未装机。
+- 【T1 MobileGL 输入错位三线根修】SurfaceVC：①ame247_didBecomeActive 每次 updateSavedResolution 后把【修正后的】windowWidth/Height 经 nativeSendScreenSize 重宣告给 MC（Task83b 去重幂等；三连重申 0s/0.8s/2.5s 各带宣告）= MC 窗口信念与输入口径强制对齐；②ame248_geoResyncPending 首触点消费从 sendTouchPoint 前移到 touchesBegan 顶部（热栏命中测试先于 sendTouchPoint，Task248 兜底对热栏路径不生效）；③surfaceOnDoubleClick/surfaceOnLongpress 两处漏改的 UIScreen.mainScreen.scale 统一为 self.screenScale（Task247 T2 只改了两处）。
+- 【T2 26.3 退出挂后台】Task 248 修复（去 suspend + 3s 看门狗 _exit 硬杀）已在树内且 CI 绿——本轮取证确认 ForceClose 是唯一退出入口且 exit(0) 路径健康（日志止于 exit(0) called + fatal trace，无 watchdog 开火 = orig_exit 正常完成），无需追加改动；装机验证以 84940d7 构建为准。
+- 【T3 联机菜单键盘】两处残存根因：①TVC scrollView 是全仓唯一 keyboardDismissModeOnDrag——PageSheet 内键盘弹起 sheet 收缩，手指微动即判拖拽 = 键盘意外收起（"输入一次键盘就关闭一次"的体验成分）→ 改 None；②portDidDetect: 无条件覆盖 portField.text——手动模式打字期间后台回调吞输入 → 加 autoSwitch.on || !isFirstResponder 闸（与短路分支同语义）。
+- 【T4 Vulkan 切后台卡死根修】GameSurfaceView Ame248FPSMetalLayer.nextDrawable 入口挂 ame223_bg_park_wait("metal_nextDrawable")（utils.h 公开 API，mutex+cond 多等待者安全）——Vulkan/Metallum/Mithril 等 Metal 呈现路径在获取下一帧之前冻结 = 后台零 GPU 提交，与 gl_swap 停靠语义完全对齐；前台快路径 = 一次锁检查；GL 会话 gl_swap 先行停靠时 nextDrawable 永不到达，零双重。
+- 【T5 联机自动扫描端口根修】LanPortDetector 新增周期回环扫描：startLoopbackScanRepeatingWithProgress:（3s 一轮快端口+临时段 + 首轮全范围深扫，命中 publishPort 自动收工，_scanSweepBusy 重入护栏）+ stopLoopbackScanRepeating；stopAutoDetection 升级两路同停。病根 = 一次性扫描 vs 世界加载 5~30s 的时序竞态（扫描空跑结束时服务器尚未 bind）。接线：MVC ame232_startAutoPortDetection 换周期扫描 + 18s 兜底不再 stopAutoDetection（晚开服仍自动命中）+ generateShareCodeWithPort 收工即停双路；TVC startHostTapped/scanPortsTapped 换周期扫描（进度仍回填 detectingHintLabel，命中经 portDidDetect: → createRoomWithPort 同一收口），"扫不到回表单"退役（留在检测页持续轮询）。
+- 【T6 自动打开输入法(SDL)开关】Task 247 T8 + Task 248 ⑦ 两轮语义补全已在树内（ON=每 Start 自动弹清闩锁/OFF=静默+残留键盘收起），无需追加；装机验证以新构建为准。
+- 【T7 伪玻璃联动补位】Task 248 ⑧ 只盖了 TVC——TVC 内 presentZeroTierVC 以 PageSheet 呈现的 MultiplayerViewController（ZeroTier 联机页）同样盖在 Metal 游戏层上 = "联机菜单仍原生"的残存面。MVC 移植同款三件套（ame249_mpSurfaceSnapshot/ame249_mpSnapshotLooksValid/ame249_applyGlassFrostBackground，0.18x 快照 + 全黑帧护栏 + 0.45 tint），挂 viewWillAppear + backgroundEffectChanged 两点；LGCIsGlassStyleActive 闸门 = 原生档/启动器呈现自动短路零改动。
+- 【T8 菜单关闭动画屏幕滑动根修】dismissMenu 动画起步即摘快照磨砂（切回 Task244 回退组合：快照隐藏+材质磨砂上岗+tint 撤下）——Task248 ⑨ 的 1:1 对位后，关闭动画期间快照（= 与真画面完全相同的游戏拷贝）随面板下滑 = "整个屏幕在滑动"错觉（菜单明明是悬浮面板）；滑出中的面板回归"菜单卡片"，滑动错觉消失；动画本身保留（用户要求恢复动画），下次 showMenu 重新抓帧零残留。
+- 【T9 国际化】三闸复跑全绿（2167 引用键四表齐/零 CJK 硬编码）+ 新增闸3动态拼键四表校验（dataexport.section.* 8 值/controller_configurator.title.type.* 2 值/section.* 与 footer.* 各 4 值逐一比对）+ 补表 controller_configurator.section.footer.config_files 四表（唯一键 2778→2779）；动态键其余族（dataexport.section/controller_configurator.*.title.*）实测四表齐备；verify_task219 J-* 期望值重锚 2778→2779 后 81/81 全绿。
+- 【门禁】task240/139/158/175 四道全 PASS + task191 四表 2813 条目 OK + verify_task219 81/81 全绿 + task248_i18n_audit 三闸（含新闸3）全 PASS；diff 自审：零 .handler 反取/零类方法 self.view/新 C 调用（ame223_bg_park_wait/nativeSendScreenSize）裸写合法/消息表达式括号齐备/新增 block 全部 weakSelf（检测器长期持有 progress block，防 TVC 泄漏）。
+
+Stage Summary:
+- 9 项闭环：T1 重宣告时序根修（MC 窗口信念对齐）+ T4 Metal 呈现停靠点（Vulkan/Metallum 后台零 GPU 提交）+ T5 周期回环扫描（时序竞态根修，双路同停）+ T3 OnDrag 退役+回填闸 + T7 MVC 玻璃补位 + T8 关闭动画摘快照 + T9 动态键闸/footer 补表；T2/T6 为 248 已修面（取证确认，待新构建装机验证）
+- 装机验证锚点：①MobileGL 切后台回前台后触点/热栏即准（latestlog 应见 Task249 didBecomeActive window size re-announced 行，且 probe window=与物理一致）②强制关闭 → 进程即时终结 ③Vulkan/Metallum 会话切后台 latestlog 出现 "PARKED at metal_nextDrawable" ④联机检测页每 3s 进度推进、开服后 ≤3s 自动命中（[LanPortDetector] quick sweep hit）⑤PageSheet 联机页打字不再随机丢键盘 ⑥ZeroTier 联机页（游戏内）呈磨砂背景、原生档不变 ⑦游戏菜单关闭 = 面板卡片滑出而非屏幕滑动 ⑧i18n 三闸可复跑

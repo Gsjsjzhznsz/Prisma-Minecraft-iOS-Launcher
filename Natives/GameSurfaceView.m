@@ -26,6 +26,18 @@
 @implementation Ame248FPSMetalLayer
 
 - (nullable id<CAMetalDrawable>)nextDrawable {
+    // ★ Task249（用户反馈 4：Vulkan 渲染下切后台卡死 根修）：Metal 呈现边界
+    //   停靠点。病历：Task223 的后台驻车点只有 gl_swap 一处（gl_bridge.m）
+    //   ——Vulkan（MoltenVK）/Metallum 原生 Metal 会话不经过 gl_swap，
+    //   resign 后渲染线程继续向 Metal 提交命令缓冲：iOS 26/27 后台 GPU
+    //   提交被禁，挂起的提交在恢复时超时 = 回前台整链楔死（"切后台卡死"，
+    //   装机日志 latestlog.old 的 GL 会话有 "PARKED at gl_swap"，Vulkan 会
+    //   话则无任何 PARKED 行 = 停靠点缺席实锤）。修法：在 nextDrawable 入口
+    //   挂同一 ame223 停车闸（utils.h 公开 API，mutex+cond 多等待者安全），
+    //   驻车时渲染线程在【获取下一帧之前】冻结 = 后台零 GPU 提交，与
+    //   gl_swap 停靠语义完全对齐；前台态快路径 = 一次锁检查立即返回。
+    //   GL 会话同样无害：gl_swap 先行停靠时 nextDrawable 永远不会到达。
+    ame223_bg_park_wait("metal_nextDrawable");
     // 每帧 swapchain 图像获取 = Vulkan 真实帧事件（MoltenVK present 内部
     // 必经点）。非 Vulkan 路径不计数（pojavSwapBuffers 独占）。
     if (pojavIsActualVulkanPath()) {

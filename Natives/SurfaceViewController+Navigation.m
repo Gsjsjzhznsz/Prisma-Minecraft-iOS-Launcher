@@ -727,6 +727,25 @@ static UIColor *ame244_snapshotTint(void) {
     CGFloat screenWidth = [ScreenUtils screenSize].width;
     CGFloat screenHeight = [ScreenUtils screenSize].height;
 
+    // ★ Task249（用户反馈 8：菜单关闭时"屏幕会滑动"根修）：滑出瞬间摘掉
+    //   快照磨砂。病历：Task248（⑨）把面板内磨砂快照与面板正后方的游戏
+    //   画面 1:1 对位后，关闭动画期间快照（= 一幅与真画面完全相同的游戏
+    //   拷贝）随面板整体下滑 —— 用户看到"整个游戏屏幕在滑动"，而菜单明明
+    //   只是悬浮面板（没顶满屏）。修法：动画起步即切回 Task244 的回退组合
+    //   （快照隐藏 + 材质磨砂上岗 + tint 撤下）：滑出中的面板是清晰的
+    //   "菜单卡片"而非"屏幕拷贝"，滑动错觉消失；下一次 showMenu 重新抓帧
+    //   重建快照（幂等，零残留）。动画本身保留（用户要求"恢复关闭动画"）。
+    {
+        UIImageView *ame249_snap = objc_getAssociatedObject(self, kAme243SnapKey);
+        UIView *ame249_blur = objc_getAssociatedObject(self, kAme237BlurKey);
+        UIView *ame249_tint = objc_getAssociatedObject(self, kAme244TintKey);
+        if (ame249_snap != nil && !ame249_snap.hidden) {
+            ame249_snap.hidden = YES;
+            if (ame249_blur != nil) ame249_blur.hidden = NO;
+            if (ame249_tint != nil) ame249_tint.hidden = YES;
+        }
+    }
+
     // ★ Task227：侧滑形态判定（showMenu 的侧边栏以 y=0 全高呈现）——
     // 收起时横向滑出吸边侧，而非下滑。
     BOOL ame227_sideDrawer = (CGRectGetMinY(self.menuView.frame) == 0.0 &&

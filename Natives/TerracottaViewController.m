@@ -242,7 +242,12 @@ typedef NS_ENUM(NSInteger, TCUIState) {
     self.scrollView = [[UIScrollView alloc] init];
     self.scrollView.translatesAutoresizingMaskIntoConstraints = NO;
     self.scrollView.alwaysBounceVertical = YES;
-    self.scrollView.keyboardDismissMode = UIScrollViewKeyboardDismissModeOnDrag;
+    // ★ Task249（用户反馈 3：联机菜单输入一次键盘就关闭一次——残存根因）：
+    //   OnDrag = 滚动视图一旦开始拖拽就收起键盘。本页在 PageSheet 里，键盘
+    //   弹起时 sheet 收缩/内容自动滚动，手指微动即被判定为拖拽 = 键盘随
+    //   意外收起（全仓唯一一处 OnDrag，其余滚动视图均为 Interactive/无）。
+    //   改 None：收起走回车键/扫码按钮等显式路径，表单页内容短，不拖拽收。
+    self.scrollView.keyboardDismissMode = UIScrollViewKeyboardDismissModeNone;
     self.scrollView.backgroundColor = [UIColor clearColor];
     [self.view addSubview:self.scrollView];
 
@@ -1123,7 +1128,13 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
     uint16_t port = (uint16_t)[notification.userInfo[@"port"] unsignedIntValue];
     if (port == 0) return;
     dispatch_async(dispatch_get_main_queue(), ^{
-        self.portField.text = [NSString stringWithFormat:@"%u", port];
+        // ★ Task249（用户反馈 3 伴随修复）：回填加输入闸——手动模式
+        // （autoSwitch OFF）下用户正在输入时不覆盖 portField（与
+        // updateForCurrentState 短路分支的 autoSwitch 闸同语义）；自动模式
+        // 字段本就禁用，回填无冲突。
+        if (self.autoSwitch.on || !self.portField.isFirstResponder) {
+            self.portField.text = [NSString stringWithFormat:@"%u", port];
+        }
         if (self.uiState == TCUIStateDetecting) {
             [self createRoomWithPort:port];
         } else if (self.uiState == TCUIStateHostForm) {
@@ -1220,7 +1231,22 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
         //   尾随（正则随 MC 版本漂移 = 命中不稳定）。扫描命中经
         //   publishPort → 通知 → portDidDetect: → createRoomWithPort:，
         //   与日志路共享同一收口；进度文案实时回填 detectingHintLabel。
-        [self ame248_startLoopbackScan];
+        // ★ Task249（用户反馈 5 根修）：一次性回环扫描升级为周期回环扫描——
+        //   用户先点"开始检测"再回游戏开世界（加载 5~30s），一次性扫描在
+        //   服务器 bind 前早已空跑结束 = 永远扫不到。周期扫描每 3s 一轮直到
+        //   命中/取消；命中经 publishPort → portDidDetect: →
+        //   createRoomWithPort: 与日志路同一收口（进度仍实时回填 detectingHintLabel）。
+        __weak typeof(self) ame249_wSelf = self;
+        [[LanPortDetector sharedInstance] startLoopbackScanRepeatingWithProgress:^(NSUInteger scanned, NSUInteger total) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                __strong typeof(ame249_wSelf) strongSelf = ame249_wSelf;
+                if (strongSelf == nil) return;
+                if (strongSelf.uiState != TCUIStateDetecting) return;
+                strongSelf.detectingHintLabel.text =
+                    [NSString stringWithFormat:localize(@"i18n_str_2078", nil),
+                     (unsigned long)scanned, (unsigned long)total];
+            });
+        }];
         [self scheduleDetectionHint];
         return;
     }
@@ -1237,29 +1263,18 @@ static const void *kAme248FrostKey = &kAme248FrostKey;
     self.uiState = TCUIStateDetecting;
     [self updateForCurrentState];
 
-    __weak typeof(self) weakSelf = self;
-    [[LanPortDetector sharedInstance] scanLocalPortsWithProgress:^(NSUInteger scanned, NSUInteger total) {
+    /* ★ Task249：手动"立即扫描"同样走周期回环扫描（首轮自带全范围深扫）。
+     * 旧行为"扫不到就回表单+提示"退役：世界可能尚未开服，留在检测页
+     * 持续轮询（每轮进度实时回填），命中即通知收口建房；用户可随时取消。 */
+    __weak typeof(self) ame249_wSelf2 = self;
+    [[LanPortDetector sharedInstance] startLoopbackScanRepeatingWithProgress:^(NSUInteger scanned, NSUInteger total) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            __strong typeof(weakSelf) strongSelf = weakSelf;
+            __strong typeof(ame249_wSelf2) strongSelf = ame249_wSelf2;
             if (strongSelf == nil) return;
+            if (strongSelf.uiState != TCUIStateDetecting) return;
             strongSelf.detectingHintLabel.text = [NSString stringWithFormat:localize(@"i18n_str_2078", nil),
                                                   (unsigned long)scanned, (unsigned long)total];
         });
-    } completion:^(NSArray<NSNumber *> *ports) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (strongSelf == nil) return;
-        if (ports.count > 0) {
-            uint16_t port = (uint16_t)[ports.firstObject unsignedIntValue];
-            strongSelf.portField.text = [NSString stringWithFormat:@"%u", port];
-            /* publishPort 的通知通常已经创建了房间；只有它没触发时才补一次 */
-            if (strongSelf.uiState == TCUIStateDetecting) {
-                [strongSelf createRoomWithPort:port];
-            }
-        } else {
-            strongSelf.uiState = TCUIStateHostForm;
-            [strongSelf updateForCurrentState];
-            [strongSelf showToast:localize(@"i18n_str_2079", nil)];
-        }
     }];
 }
 

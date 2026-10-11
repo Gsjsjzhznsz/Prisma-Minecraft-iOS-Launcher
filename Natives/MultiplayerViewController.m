@@ -44,6 +44,8 @@
 #import "MultiplayerManager.h"
 #import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "AmeFloatingMenu.h"     // ★ Task247（T9）：玻璃镜像 alert 动态通路（进度文本/收尾）
+#import "LiquidGlassCompat.h"   // ★ Task249（T7）：玻璃家族档位判定
+#import "SurfaceViewController.h"   // ★ Task249（T7）：+surface 取游戏呈现面做快照磨砂
 #import "BackgroundManager.h"
 #import "LauncherPreferences.h"
 #import "PLProfiles.h"
@@ -183,6 +185,8 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
     [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
     self.tableView.backgroundColor = [UIColor clearColor];
     self.tableView.backgroundView = nil;
+    // ★ Task249（T7）：进入页面即应用玻璃档快照磨砂（游戏在场时）。
+    [self ame249_applyGlassFrostBackground];
 
     // 重新应用导航栏毛玻璃效果
     [[BackgroundManager sharedManager] applyEffectToNavigationBar:self.navigationController.navigationBar];
@@ -248,12 +252,116 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
     }
 }
 
+#pragma mark - Task249（用户反馈 7）：玻璃档联机页快照磨砂
+
+// 游戏表面重度降采样快照（0.18x，Task243/246/248 同族"抓帧即模糊"原料）。
+// 与 TerracottaViewController 的 ame248_surfaceSnapshot 同语义（该实现为
+// 文件级 static，跨文件复用需经公共头，本处按仓内既有惯例同形镜像一份）。
+static UIImage *ame249_mpSurfaceSnapshot(UIView *ame249_surface) {
+    if (ame249_surface == nil || ame249_surface.window == nil ||
+        ame249_surface.bounds.size.width < 40.0 ||
+        ame249_surface.bounds.size.height < 40.0) return nil;
+    @try {
+        UIGraphicsImageRendererFormat *ame249_fmt =
+            [[UIGraphicsImageRendererFormat alloc] init];
+        ame249_fmt.scale = 0.18;
+        ame249_fmt.opaque = YES;
+        UIGraphicsImageRenderer *ame249_r =
+            [[UIGraphicsImageRenderer alloc] initWithSize:ame249_surface.bounds.size
+                                                   format:ame249_fmt];
+        return [ame249_r imageWithActions:^(UIGraphicsImageRendererContext *ame249_rc) {
+            [ame249_surface drawViewHierarchyInRect:ame249_surface.bounds
+                                afterScreenUpdates:NO];
+        }];
+    } @catch (NSException *ame249_e) {
+        return nil;
+    }
+}
+
+// 全黑帧护栏（与 Task244 同判据）。
+static BOOL ame249_mpSnapshotLooksValid(UIImage *ame249_img) {
+    if (ame249_img == nil || ame249_img.size.width < 1.0 ||
+        ame249_img.size.height < 1.0) return NO;
+    CGImageRef ame249_cg = ame249_img.CGImage;
+    if (ame249_cg == NULL) return NO;
+    unsigned char ame249_px[4] = {0, 0, 0, 0};
+    CGColorSpaceRef ame249_cs = CGColorSpaceCreateDeviceRGB();
+    CGContextRef ame249_ctx = CGBitmapContextCreate(ame249_px, 1, 1, 8, 4,
+        ame249_cs, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(ame249_cs);
+    if (ame249_ctx == NULL) return NO;
+    CGContextDrawImage(ame249_ctx, CGRectMake(0, 0, 1, 1), ame249_cg);
+    CGContextRelease(ame249_ctx);
+    int ame249_sum = (int)ame249_px[0] + (int)ame249_px[1] + (int)ame249_px[2];
+    return ame249_sum > 19;
+}
+
+static const void *kAme249MpFrostKey = &kAme249MpFrostKey;
+
+/// ★ Task249（用户反馈 7：一些位置仍用原生界面而非伪液态玻璃——联机菜单）：
+///   Task248（⑧）只给 TerracottaViewController（陶瓦联机页）加了玻璃档快照
+///   磨砂，但 TVC 内的 ZeroTier 页（presentZeroTierVC 以 PageSheet 呈现的
+///   本类实例）及其下的游戏内联机内容同样盖在 Metal 游戏层上——系统材质
+///   一律不合成（Task228/230/236 实锤机理），整页原生观感。本方法与 TVC
+///   同款：玻璃家族档 + 游戏在场 → 抓游戏表面快照铺底（原生档/启动器呈现
+///   自动短路 = "原生风格用回原生"）。
+- (void)ame249_applyGlassFrostBackground {
+    UIView *ame249_frost = objc_getAssociatedObject(self, kAme249MpFrostKey);
+    if (!LGCIsGlassStyleActive()) {
+        if (ame249_frost != nil) ame249_frost.hidden = YES;
+        return;
+    }
+    UIView *ame249_surface = [SurfaceViewController surface];
+    UIImage *ame249_img = ame249_mpSurfaceSnapshot(ame249_surface);
+    if (ame249_img != nil && !ame249_mpSnapshotLooksValid(ame249_img)) ame249_img = nil;
+    if (ame249_img == nil) {
+        // 启动器呈现（surface 不在窗口）或抓帧失败：壁纸/卡片管线接管。
+        if (ame249_frost != nil) ame249_frost.hidden = YES;
+        return;
+    }
+    if (ame249_frost == nil) {
+        UIView *ame249_container = [[UIView alloc] init];
+        ame249_container.translatesAutoresizingMaskIntoConstraints = NO;
+        ame249_container.userInteractionEnabled = NO;
+        ame249_container.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.45];
+        UIImageView *ame249_iv = [[UIImageView alloc] init];
+        ame249_iv.translatesAutoresizingMaskIntoConstraints = NO;
+        ame249_iv.contentMode = UIViewContentModeScaleToFill;
+        ame249_iv.userInteractionEnabled = NO;
+        ame249_iv.tag = 24901;
+        [ame249_container addSubview:ame249_iv];
+        [NSLayoutConstraint activateConstraints:@[
+            [ame249_iv.topAnchor constraintEqualToAnchor:ame249_container.topAnchor],
+            [ame249_iv.bottomAnchor constraintEqualToAnchor:ame249_container.bottomAnchor],
+            [ame249_iv.leadingAnchor constraintEqualToAnchor:ame249_container.leadingAnchor],
+            [ame249_iv.trailingAnchor constraintEqualToAnchor:ame249_container.trailingAnchor],
+        ]];
+        [self.view insertSubview:ame249_container atIndex:0];
+        [NSLayoutConstraint activateConstraints:@[
+            [ame249_container.topAnchor constraintEqualToAnchor:self.view.topAnchor],
+            [ame249_container.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+            [ame249_container.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+            [ame249_container.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+        ]];
+        objc_setAssociatedObject(self, kAme249MpFrostKey, ame249_container,
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        ame249_frost = ame249_container;
+    }
+    UIImageView *ame249_iv = (UIImageView *)[ame249_frost viewWithTag:24901];
+    ame249_iv.image = ame249_img;
+    ame249_frost.hidden = NO;
+    [self.view sendSubviewToBack:ame249_frost];
+}
+
 - (void)backgroundEffectChanged {
     // 背景效果改变时重新透明化当前 VC 并刷新表格，让所有 cell 重新适配文字颜色
     dispatch_async(dispatch_get_main_queue(), ^{
         [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
         self.tableView.backgroundColor = [UIColor clearColor];
         self.tableView.backgroundView = nil;
+        // ★ Task249（T7）：玻璃家族档 + 游戏在场 → 快照自绘磨砂背景
+        //   （原生档/启动器呈现方法内自动短路为零改动）。
+        [self ame249_applyGlassFrostBackground];
         // 重新应用导航栏毛玻璃效果
         [[BackgroundManager sharedManager] applyEffectToNavigationBar:self.navigationController.navigationBar];
         // 刷新表格，让所有 cell 重新读取背景状态并适配颜色
@@ -1207,7 +1315,7 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
     //   127.0.0.1 扫描 + Server-List-Ping 校验与日志格式无关；命中后经
     //   publishPort → 通知 → lanPortDidDetect:（本任务已改为无条件注册）
     //   同一主路径生成分享码。扫描只读探测，与 18s 兜底/手动输入互不干扰。
-    [[LanPortDetector sharedInstance] scanLocalPortsWithProgress:nil completion:nil];
+    [[LanPortDetector sharedInstance] startLoopbackScanRepeatingWithProgress:nil];   // ★ Task249: one-shot -> repeating (world may not be open yet)
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(18 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
@@ -1216,7 +1324,8 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
         if (!strongSelf.isHostFlowActive) return;
         if (strongSelf.lastShareCode.length > 0) return;   // 自动路径已成功
         NSLog(@"[MultiplayerVC] Task232: auto detection window elapsed without a port -- falling back to manual input");
-        [[LanPortDetector sharedInstance] stopAutoDetection];
+        /* Task249: keep log-tailing + repeating scan alive (world may still be loading);
+           manual path stops detection itself via setManualPort. */
         [strongSelf showManualPortInputAlert];
     });
 }
@@ -1236,6 +1345,10 @@ NS_INLINE NSString *MPLocalized(NSString *key, NSString *fallback) {
     if (!room) {
         return;
     }
+    /* ★ Task249: host flow complete -- stop log-tailing + repeating scan together
+       (no background burn after share code exists; publishPort dedupe keeps late
+       hits from re-entering lanPortDidDetect). */
+    [[LanPortDetector sharedInstance] stopAutoDetection];
 
     // 更新房间的端口和本机 IP
     room.hostPort = port;

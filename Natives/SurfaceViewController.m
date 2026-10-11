@@ -2746,24 +2746,59 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 - (void)ame247_didBecomeActive {
     if (self.surfaceView.superview == nil) return;   // 会话未启动
     [self updateSavedResolution];
+    // ★ Task249（用户反馈 1：MobileGL 切后台后输入错位——重宣告时序根修）：
+    //   装机日志（bb32e00 latestlog.old 6255-6293 行）实锤：切后台期间 iOS
+    //   把场景转到竖屏再转回，两侧各触发一次 nativeSendScreenSize（Task83b
+    //   合成 SDL_WINDOW_RESIZED 1262x1814 → 1814x1262）——
+    //   ① MC 的窗口信念被钉在 1814x1262（启动器点数像素），而游戏表面物理
+    //      尺寸是 2360x1640 → 触点像素（按物理口径发送）被 MC 按 1814x1262
+    //      归一化 = 恒定 ~1.3x 错位（越靠屏幕边缘偏得越多，"输入错位"）；
+    //   ② 恢复序列里 resumeGameIfNeed 的尺寸重宣告（SceneDelegate
+    //      didBecomeActive 先跑）用的是【当时的 windowWidth/Height 全局】
+    //      ——而后台旋转推送已把它们改写成 1814x1262（Task175 注释：
+    //      "windowWidth 还会被 nativeSendScreenSize（Java 侧回报）改写"）
+    //      = 重宣告把错值原样喂回 MC；
+    //   ③ 本方法（DidBecomeActive 通知观察者）随后 updateSavedResolution
+    //      把全局修正回 2360x1640 —— 但【不再对 MC 重宣告】= MC 永远停在
+    //      错值上（Task248 三连重申只修全局，没修 MC 信念，故用户侧无感）。
+    //   修复：每次重申几何后，把【修正后的】窗口尺寸同步重宣告给 MC
+    //   （nativeSendScreenSize 幂等：Task83b 去重挡掉同值重推；三连重申
+    //   各带一次宣告，覆盖后台旋转推送晚到的任何时序）。
+    if (windowWidth > 0 && windowHeight > 0) {
+        CallbackBridge_nativeSendScreenSize(windowWidth, windowHeight);
+        NSLog(@"[SurfaceVC] Task249: didBecomeActive window size re-announced to MC (%dx%d)",
+              (int)windowWidth, (int)windowHeight);
+    }
     // ★ Task248（①）：MobileGL 路径跨后台的上下文重建时序不受我们控制
     //   （mg 重建可能晚于本回调），单次重申后仍可能被旧值覆盖 = 用户实测
     //   "切后台后输入错位"存活面。三连重申（0s/0.8s/2.5s）覆盖重建完成
     //   时刻 + 首触点强制重申兜底（ame248_geoResyncPending，见
     //   sendTouchPoint 顶部）；重申幂等（同值 no-op），多跑零代价。
+    //   ★ Task249：每次延迟重申同样补宣告（全局可能被后台期的旋转推送
+    //   二次改写，见上方时序分析）。
     ame248_geoResyncPending = YES;
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.8 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
         __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (strongSelf.surfaceView.superview != nil) [strongSelf updateSavedResolution];
+        if (strongSelf.surfaceView.superview != nil) {
+            [strongSelf updateSavedResolution];
+            if (windowWidth > 0 && windowHeight > 0) {
+                CallbackBridge_nativeSendScreenSize(windowWidth, windowHeight);
+            }
+        }
     });
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.5 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
         __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (strongSelf.surfaceView.superview != nil) [strongSelf updateSavedResolution];
+        if (strongSelf.surfaceView.superview != nil) {
+            [strongSelf updateSavedResolution];
+            if (windowWidth > 0 && windowHeight > 0) {
+                CallbackBridge_nativeSendScreenSize(windowWidth, windowHeight);
+            }
+        }
     });
-    NSLog(@"[SurfaceVC] Task247/248: didBecomeActive geometry re-synced x3 (screenScale=%.2f)", self.screenScale);
+    NSLog(@"[SurfaceVC] Task247/248/249: didBecomeActive geometry re-synced x3 + size re-announced (screenScale=%.2f)", self.screenScale);
 }
 
 - (void)ame171_armKeyboardRecheck:(int)depth {
@@ -3139,7 +3174,10 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         }
     }
     if (sender.state == UIGestureRecognizerStateRecognized && isGrabbing) {
-        CGFloat screenScale = [[UIScreen mainScreen] scale];
+        // ★ Task249：口径统一收尾——surfaceOnDoubleClick 漏改的
+        // UIScreen.mainScreen.scale（Task247 T2 统一时只改了 touchesBegan/
+        // sendTouchEvent 两处，这里和 surfaceOnLongpress 同病）。
+        CGFloat screenScale = (self.screenScale > 0.0f) ? self.screenScale : [[UIScreen mainScreen] scale];
         CGPoint point = [sender locationInView:self.rootView];
         int hotbarSlot = self.enableHotbarGestures ?
             callback_SurfaceViewController_touchHotbar(point.x * screenScale, point.y * screenScale) : -1;
@@ -3179,7 +3217,8 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 
     if (!self.slideableHotbar) {
         CGPoint location = [sender locationInView:self.rootView];
-        CGFloat screenScale = UIScreen.mainScreen.scale;
+        // ★ Task249：口径统一（同 surfaceOnDoubleClick，见彼处注释）。
+        CGFloat screenScale = (self.screenScale > 0.0f) ? self.screenScale : UIScreen.mainScreen.scale;
         currentHotbarSlot = self.enableHotbarGestures ?
             callback_SurfaceViewController_touchHotbar(location.x * screenScale, location.y * screenScale) : -1;
     }
@@ -3929,6 +3968,18 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
 {
 
     ame227_lastTouchAt = CFAbsoluteTimeGetCurrent();   // Task227：键盘闩锁的"真输入意图"触摸信号
+
+    // ★ Task249（用户反馈 1）：回前台首触点的几何重申从 sendTouchPoint 顶部
+    //   前移到 touchesBegan 顶部——热栏命中测试（本方法下方的
+    //   callback_SurfaceViewController_touchHotbar）先于 sendTouchPoint 执行，
+    //   旧序下首触点的热栏判定仍用重申前的旧几何（screenScale/物理尺寸），
+    //   Task248 的"首触点兜底"对热栏路径不生效。提前消费一次，热栏与主触
+    //   点链同帧拿到同一份重申后几何（标志只消费一次，幂等）。
+    if (ame248_geoResyncPending) {
+        ame248_geoResyncPending = NO;
+        [self updateSavedResolution];
+        NSLog(@"[SurfaceVC] Task249: first-touch geometry re-sync applied (pre-hotbar)");
+    }
 
     [super touchesBegan:touches withEvent:event];
 

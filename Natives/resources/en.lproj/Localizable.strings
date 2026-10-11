@@ -549,6 +549,7 @@
 "controller_configurator.section.footer.menu_mappings" = "Bindings when the mouse is not locked, such as on the title screen or in the pause menu.";
 "controller_configurator.section.controller_style" = "Controller type";
 "controller_configurator.section.footer.controller_style" = "Show different controller button names in this configurator.";
+"controller_configurator.section.footer.config_files" = "Config files: control layout XMLs (default.json / custom.json). Edits here take effect on next keyboard-open.";
 
 "preference.title.appicon-custom" = "Custom";
 "preference.title.custom_appicon" = "Custom App Icon";

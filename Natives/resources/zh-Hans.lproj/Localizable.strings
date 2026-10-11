@@ -548,6 +548,7 @@
 "controller_configurator.section.footer.menu_mappings" = "当鼠标未被锁定时，如在标题屏幕或暂停菜单中时绑定。";
 "controller_configurator.section.controller_style" = "手柄类型";
 "controller_configurator.section.footer.controller_style" = "在此配置器中显示不同的手柄按钮名称。";
+"controller_configurator.section.footer.config_files" = "配置文件：控件布局 XML（default.json / custom.json）。修改后下次打开键盘即生效。";
 
 "preference.title.appicon-custom" = "自定义";
 "preference.title.custom_appicon" = "自定义应用图标";
