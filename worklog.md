@@ -3002,3 +3002,24 @@ Work Log:
 
 Stage Summary:
 - Task 255 全链闭环（15/15 项 + r1/r2 两轮 CI 语义雷排净）：run#796 终绿，新 IPA 就绪待装机验证（锚点见 Task 255 条目 Stage Summary 8 条）
+
+---
+## Task 256 —— 七项清单（gamelog 先行诊断）：联机双刀/清理磁贴/毛玻璃最低档/渲染器劫持根修/CI VirGL 缓存/i18n 派生键清零/JVM 预设进版本设置
+
+日期：2026-10-12　构建：e17ea80（main）
+
+Work Log:
+- 【取证】latestlog.txt（55456d9，1.8.9-forge 会话）838 行 "Vertex shader compile error: [glslang] 'ftransform' : no matching overloaded function found" = MobileGL 渲染 1.8.9 即崩实锤；latestlog.old（同构建，26.3 会话）01:27:05 Terracotta 懒初始化 → 01:27:10 ScaffoldingServer FromUtf8Error（bytes=[00 2F 09 "localhost" 34 88 01] = 协议47 合成握手逐字节吻合，会话闸未覆盖 Disconnected 期）→ 01:31 房主 HostOk（59671）→ 01:32 访客加入朋友房 "Cannot find scaffolding server" PingHostFail；IMG_0400=弹窗最低模糊仍白雾；verify审计=派生键 30 缺口全表裸键名
+- 【清单2 联机】双刀：①TerracottaManager +hasInitializedLibrary 静态标志类方法（不触发单例——旧 AmeTerracottaSessionActive 经 shared 访问会把 Terracotta 自己孵化）+ LanPortDetector AmeTerracottaProbeSuspended 确定性闸替换 9 处会话闸（初始化即停一切裸 connect/合成握手，检测回归日志尾随 Task251 26.x 正则 + 手动端口）；init 成功即 stopAutoDetection 双保险 ②访客 PingHostFail(type0) 自动重试 2 次/4s（_guestRetryArmed 撤闸 + 保留玩家名 + 重试耗尽仍报 989 原文案）
+- 【清单3 清理】主页磁贴 kShortcutActionCleanup（trash.circle.fill/#EF4444，默认开启 + loadSavedConfigs 老布局一次性注入，Task235 同款）；ame255_scanInstalledVersions 下沉类方法 ame256_scanVersionsForCleanup（calculateFolderSize 同步类化），主页磁贴与版本管理页共用单一实现
+- 【清单4 毛玻璃】最低档（≤0.01）=背景完全透明：addBlurEffectToContainer 守卫整层不装（壁纸 frost+dim）；TVC ame248/MVC ame249 游戏面快照磨砂 + 两处 Task252 0.18 轻 dim 同口径退场（重入自动恢复）；Task255 自愈闸加 ame256.blurUserSet 意图标记（setBlurIntensity 落标，历史 blur=0 存档仍一次性自愈 0.75）
+- 【清单5 渲染器】根因=ame_effective_renderer auto 分支 legacy 档位键 mobileglues.mobilegl_backend 版本无关返回 libMobileGL（1.8.9 profile=(null) 被劫持→ame217 kw 链不跑）。JavaLauncher 渲染解析点：minVersion<=8 且 profile 未显式选择（nil/空/auto）→ 家族覆盖让位 auto→决策链 kw(NG-GL4ES)→gl4es(ZL2)→ANGLE→MobileGL；显式选择零影响
+- 【清单6 CI】run797 复盘：dep_virgl 每次 rm -rf 重建 + Mesa 906 目标全量编译（第一遍 ~8min，双变体 ~10min=最大单项）→ Makefile dep_virgl_build 头插 VIRGL_PREBUILT_DIR 分支（TAB 基线 662→672）+ workflow actions/cache virgl-prebuilt-v1（键=Makefile+mesa215补丁+libepoxy/virglrenderer 源码哈希；无 restore-keys 防半旧 dylib 静默复用）+ 构建尾 staging；development.yml 全程 CRLF（K4 门 PASS）
+- 【清单7 i18n】新审计脚本 task256_i18n_audit.py：PLPrefTableViewController 键名派生族（title/detail/confirm.<key>/done.<key>）静态盲区——30 键缺口；task256_i18n_fill.py 一次性补 2263 键入 54 表（auto_control_update_check 全族/jvm_preset 族 4→54/auto_update_found 4→54/terracotta.stage.retry/home.tile.cleanup/jvm_follow_global；主 12 语种真译文+其余 en 兜底，零裸键名）；task191 54 表全 OK
+- 【清单8 JVM】ProfileSettings 高级区插「JVM 预设」行（advancedRows 动态定位 + AmeNativeMenu 选择器：跟随全局/省内存/正常/性能优先/自定义）→ profile.jvm_preset；JavaLauncher ame256_effectiveJvmPreset 单一事实源（profile 覆写→java.jvm_preset→normal），custom 注入链与 GC 段注入两处共用
+- 【事故与修复】①Edit 工具把 Makefile TAB 展开为空格（整文件级！非仅编辑块）——git checkout 回滚后改 python 字节级 splice（TAB 保持，diff 恰 10 行）；教训入档：**TAB 敏感文件（Makefile 类）禁用 Edit/MultiEdit 工具** ②workflow 编辑插入行未继承 run-block 缩进炸 YAML——回滚重做带 10 空格缩进，yaml.safe_load 25 步验证 ③verify_task219 6 失败=键数 2810→2843/Makefile TAB 662→672 重锚 + announcements.json 工作区漂移（7 条未提交态）checkout 恢复交付态；verify_task255 2 失败=BG 恒装锚/MP 会话闸名重锚（断言语义随用户指令升级：0.01 分支复活须带 blurUserSet 护栏/探针闸须含 hasInitializedLibrary）
+- 【门禁】task139 all balanced；task240 双门（retired refs=0 + all balanced）+ import sweep PASS；task191 54 表 OK；task248 缺键0/硬编码0/动态键0；task250 直显 0；verify_task255 51/51；verify_task219 81/81 ALL GREEN；task158 属环境依赖门（需上游克隆，本环境缺；历史误报已定案不阻塞）
+
+Stage Summary:
+- 七项全链交付：联机=探针确定性根修+访客自动重试；清理=主页一级磁贴；毛玻璃=最低档真全透明+意图标记；渲染器=1.8.9 kw 头插真正生效；CI=VirGL 缓存省 ~10min/run；i18n=派生键族全表清零；JVM 预设=实例级覆写
+- 装机验证锚点：①联机：开 TVC 后日志应见 "Task256: ... Terracotta initialized (scaffold protection)" 且不再出现 ScaffoldingServer FromUtf8Error；访客加入失败时 "Task256: guest PingHostFail -- auto-retry 1/2" 后自动重连 ②主页应有「清理垃圾」磁贴直达清理中心 ③UI 设置把模糊拖到 0%：壁纸全锐利、弹窗无白雾；重启后保持 0（不再自愈 0.75）④1.8.9（renderer=auto）启动日志 "[JavaLauncher] Task217/255: auto renderer decision: minVersion=8 ... -> nggl4es"，不再 ftransform 崩 ⑤版本设置→高级设置→JVM 预设可选四档+跟随全局，启动日志 "Task256: profile-level jvm_preset override active" ⑥任意语言表不再出现 preference.title.* 裸键名
