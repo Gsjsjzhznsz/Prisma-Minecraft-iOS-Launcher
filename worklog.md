@@ -2805,3 +2805,12 @@ Work Log:
 Stage Summary:
 - 11 项全链修复：T1 强制重申通道+后台推送门控（去重吞重申/过窗值污染双洞根修）+ T2 _exit 直出（收尾竞态面清零）+ T3 Stop→Start 间隔自适应去抖 + T4 吸边把手 bounds 变化重贴边 + T5 accentColor 接管菜单行/card_color 双布局复活/text_color 全局化 + T6 描边亮度自适应白边/黑边 + T7 扫描 restart+republish+验活三件套 + T8 开关行游戏内解锁 + T9 TVC/MVC 8Hz 动态磨砂 + T10 系统外观恒定化+滑出淡出动画 + T11 动态键五键补表+结构性键名闸
 - 装机验证锚点：①MobileGL 切后台回前台触点/热栏即准（latestlog 应见 Task250 forced window size 行）②强制关闭 → 进程瞬时终结无滞留无崩溃报告 ③联机地址框逐字符输入键盘不再闪关（第 2-3 字符起收敛）④切后台回来齿轮把手贴边如初 ⑤设置页选主题强调色→菜单行图标随色；选卡片颜色→主界面三卡/双容器着色；选深色字体→白边可读 ⑥房主检测：上局陈旧端口被验活拦截自动重扫；检测页 3s 进度推进；命中即收口 ⑦游戏内设置页可实时切换自动输入法开关并立即生效 ⑧游戏内联机页磨砂背景随游戏画面 8Hz 跟随（不再静态贴图）⑨游戏菜单关闭 = 面板卡片下滑淡出、屏幕零位移 ⑩全界面无裸键名（task250_i18n_audit 可复跑）
+
+---
+Task ID: 250-ci
+Agent: main (Super Z)
+Task: Task 250 CI 闭环（r1 修复 + 轮询终绿）
+
+Work Log:
+- 推送 8ab8e9a（rebase 过远端用户新上传 0ae8763 零冲突）→ run 38119643123 failure：GameMenuOverlayView.m:683 编译雷——`static CGSize ame250_lastSize = CGSizeZero` 非编译期常量（C 静态初始化器不接受 CGSizeZero 全局 const 结构聚合）
+- r1：改字面量 `{0.0, 0.0}`（语义等价，一次赋值路径不变）；同族排查本轮触碰文件其余 static 聚合初始化零命中；task240 门禁复跑 PASS

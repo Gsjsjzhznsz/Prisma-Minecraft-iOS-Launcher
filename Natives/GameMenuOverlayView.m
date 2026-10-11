@@ -680,7 +680,7 @@ static BOOL ame227_g_dockedLeft = NO;
     //   修法：bounds 尺寸变化（旋转/分屏/窗口调整）时按【保存的百分比】
     //   重走 restorePositions（吸边态重贴当前边、标签重取百分比位），静
     //   止期维持 clamp 兜底。restorePositions 读盘重放，幂等零漂移。
-    static CGSize ame250_lastSize = CGSizeZero;
+    static CGSize ame250_lastSize = {0.0, 0.0};   // ★ Task250 r1：CGSizeZero 非编译期常量，静态初始化用字面量
     CGSize ame250_now = self.bounds.size;
     if (!CGSizeEqualToSize(ame250_now, ame250_lastSize)) {
         ame250_lastSize = ame250_now;
