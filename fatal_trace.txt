@@ -1,1213 +1,162 @@
 
-===== [Amethyst fatal trace] 2026-10-05 20:41:55.869 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10e0dd054  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69716
-  #01 0x10e0dd9e4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 72164
-  #02 0x12754a5a8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib  dummyTimer + 58792
+===== [Amethyst fatal trace] 2026-10-12 01:42:55.050 =====
+reason: Task251: shutdown marker -> _exit(0) (post-main hang guard)
+thread: Ame251-ShutdownWatchdog
+  #00 0x10b0a7174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10b0aa88c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __ame251_armShutdownForceExitWatchdog_block_invoke_2 + 92300
+  #02 0x18f760878  /System/Library/Frameworks/Foundation.framework/Foundation  <redacted> + 4843640
   #03 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
   #04 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-===== [Amethyst fatal trace] 2026-10-05 20:43:20.554 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x1098dd054  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69716
-  #01 0x1098dd9e4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 72164
-  #02 0x109bb6220  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __53-[SurfaceViewController(Navigation) actionForceClose]_block_invoke + 3056160
-  #03 0x19392e2b4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 9372340
-  #04 0x19392eafc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 9374460
-  #05 0x1931e3bc0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1727424
-  #06 0x193b809c0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 11807168
-  #07 0x1931ba3a8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1557416
-  #08 0x1930f91a4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  __UIVIEW_IS_EXECUTING_ANIMATION_COMPLETION_BLOCK__ + 766372
-  #09 0x19306db00  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 195328
-  #10 0x19306dc40  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 195648
-  #11 0x1930f8cf4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 765172
-  #12 0x1930f8d64  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 765284
-  #13 0x192ce9a84  /System/Library/Frameworks/QuartzCore.framework/QuartzCore  <redacted> + 1174148
-  #14 0x1bd2f0fb4  /usr/lib/system/libdispatch.dylib  <redacted> + 114612
-  #15 0x1bd2e6374  /usr/lib/system/libdispatch.dylib  <redacted> + 70516
-  #16 0x1bd2e6044  /usr/lib/system/libdispatch.dylib  _dispatch_main_queue_callback_4CF + 69700
-  #17 0x18ee287a0  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 300960
-  #18 0x18ee1988c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239756
-  #19 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #20 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #21 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #22 0x1098dcd08  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68872
-  #23 0x1009b70f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #24 0x1009b4b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #25 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-05 20:54:06.052 =====
-reason: exit(1) called
-thread: (unnamed)
-  #00 0x10b8dd054  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69716
-  #01 0x10b8dda34  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 72244
-  #02 0x12f0a02a4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5_exitEi + 9044644
-  #03 0x12f0a0298  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN25permit_forbidden_function4exitEi + 9044632
-  #04 0x12ece8e38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _Z18notify_vm_shutdownv + 5148216
-  #05 0x12f37bcd4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 12041428
-  #06 0x12f37af74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 12038004
-  #07 0x12f383100  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 12071168
-  #08 0x12f383854  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 12073044
-  #09 0x12f382dd8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 12070360
-  #10 0x12f2f43d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
-  #11 0x12f098dcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
-  #12 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #13 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-05 20:56:42.187 =====
-reason: exit(1) called
-thread: (unnamed)
-  #00 0x10d8dd054  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69716
-  #01 0x10d8dda34  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 72244
-  #02 0x139ca02a4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5_exitEi + 9044644
-  #03 0x139ca0298  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN25permit_forbidden_function4exitEi + 9044632
-  #04 0x1398e8e38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _Z18notify_vm_shutdownv + 5148216
-  #05 0x139f7bcd4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 12041428
-  #06 0x139f7af74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 12038004
-  #07 0x139f83100  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 12071168
-  #08 0x139f83854  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 12073044
-  #09 0x139f82dd8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 12070360
-  #10 0x139ef43d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
-  #11 0x139c98dcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
-  #12 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #13 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-05 20:57:04.402 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10d8dd054  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69716
-  #01 0x10d8dd9e4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 72164
-  #02 0x10db899f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  -[PLCrashView dismissAndReturnToLauncher] + 2873848
-  #03 0x1935b20c4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5718212
-  #04 0x1935b1ef4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5717748
-  #05 0x1935b17f8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5715960
-  #06 0x19370fe94  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7151252
-  #07 0x193757374  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7443316
-  #08 0x193123bfc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 941052
-  #09 0x193e43a90  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 14703248
-  #10 0x193128648  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 960072
-  #11 0x19312a298  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 967320
-  #12 0x193623874  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 6183028
-  #13 0x193120bdc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 928732
-  #14 0x1930a8d78  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 437624
-  #15 0x1930a7b88  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 433032
-  #16 0x1930a7928  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 432424
-  #17 0x2c1755bc0  /System/Library/PrivateFrameworks/UpdateCycle.framework/UpdateCycle  <redacted> + 3008
-  #18 0x18ee38c20  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367648
-  #19 0x18ee38b94  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367508
-  #20 0x18ee1a268  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 242280
-  #21 0x18ee19384  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 238468
-  #22 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #23 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #24 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #25 0x10d8dcd08  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68872
-  #26 0x1044ff0f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #27 0x1044fcb50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #28 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-06 07:40:02.046 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10a0dd054  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69716
-  #01 0x10a0dd9e4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 72164
-  #02 0x10a3b6220  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __53-[SurfaceViewController(Navigation) actionForceClose]_block_invoke + 3056160
-  #03 0x19392e2b4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 9372340
-  #04 0x19392eafc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 9374460
-  #05 0x1931e3bc0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1727424
-  #06 0x193b809c0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 11807168
-  #07 0x1931ba3a8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1557416
-  #08 0x1930f91a4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  __UIVIEW_IS_EXECUTING_ANIMATION_COMPLETION_BLOCK__ + 766372
-  #09 0x19306db00  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 195328
-  #10 0x19306dc40  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 195648
-  #11 0x1930f8cf4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 765172
-  #12 0x1930f8d64  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 765284
-  #13 0x192ce9a84  /System/Library/Frameworks/QuartzCore.framework/QuartzCore  <redacted> + 1174148
-  #14 0x1bd2f0fb4  /usr/lib/system/libdispatch.dylib  <redacted> + 114612
-  #15 0x1bd2e6374  /usr/lib/system/libdispatch.dylib  <redacted> + 70516
-  #16 0x1bd2e6044  /usr/lib/system/libdispatch.dylib  _dispatch_main_queue_callback_4CF + 69700
-  #17 0x18ee287a0  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 300960
-  #18 0x18ee1988c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239756
-  #19 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #20 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #21 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #22 0x10a0dcd08  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68872
-  #23 0x100bd70f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #24 0x100bd4b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #25 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-06 20:23:43.956 =====
-reason: exit(-1) called
-thread: (unnamed)
-  #00 0x10dd54f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10dd5588c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71820
-  #02 0x1367bc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x136a1ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x136a1e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x136a203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x136a20ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x136a200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x1369ad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x1367b4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-06 20:23:52.747 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10dd54f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10dd55848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x10e04103c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  -[PLCrashView dismissAndReturnToLauncher] + 3133500
-  #03 0x1935b20c4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5718212
-  #04 0x1935b1ef4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5717748
-  #05 0x1935b17f8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5715960
-  #06 0x19370fe94  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7151252
-  #07 0x193757374  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7443316
-  #08 0x193123bfc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 941052
-  #09 0x193e43a90  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 14703248
-  #10 0x193128648  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 960072
-  #11 0x19312a298  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 967320
-  #12 0x193623874  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 6183028
-  #13 0x193120bdc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 928732
-  #14 0x1930a8d78  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 437624
-  #15 0x1930a7b88  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 433032
-  #16 0x1930a7928  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 432424
-  #17 0x2c1755bc0  /System/Library/PrivateFrameworks/UpdateCycle.framework/UpdateCycle  <redacted> + 3008
-  #18 0x18ee38c20  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367648
-  #19 0x18ee38b94  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367508
-  #20 0x18ee1a268  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 242280
-  #21 0x18ee19384  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 238468
-  #22 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #23 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #24 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #25 0x10dd54c40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68672
-  #26 0x104b3b0f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #27 0x104b38b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #28 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-06 20:38:33.074 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10d284f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10d285848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x13fbbc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x13fe1ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x13fe1e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x13fe203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x13fe20ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x13fe200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x13fdad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x13fbb4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-06 20:49:25.368 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10d954f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10d955848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x10dc70044  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __53-[SurfaceViewController(Navigation) actionForceClose]_block_invoke + 3326020
-  #03 0x19392e2b4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 9372340
-  #04 0x19392eafc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 9374460
-  #05 0x1931e3bc0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1727424
-  #06 0x193b809c0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 11807168
-  #07 0x1931ba3a8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1557416
-  #08 0x1930f91a4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  __UIVIEW_IS_EXECUTING_ANIMATION_COMPLETION_BLOCK__ + 766372
-  #09 0x19306db00  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 195328
-  #10 0x19306dc40  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 195648
-  #11 0x1930f8cf4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 765172
-  #12 0x1930f8d64  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 765284
-  #13 0x192ce9a84  /System/Library/Frameworks/QuartzCore.framework/QuartzCore  <redacted> + 1174148
-  #14 0x1bd2f0fb4  /usr/lib/system/libdispatch.dylib  <redacted> + 114612
-  #15 0x1bd2e6374  /usr/lib/system/libdispatch.dylib  <redacted> + 70516
-  #16 0x1bd2e6044  /usr/lib/system/libdispatch.dylib  _dispatch_main_queue_callback_4CF + 69700
-  #17 0x18ee287a0  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 300960
-  #18 0x18ee1988c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239756
-  #19 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #20 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #21 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #22 0x10d954c40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68672
-  #23 0x1043830f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #24 0x104380b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #25 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-06 21:07:54.859 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10a154f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10a155848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x1333bc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x13361ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x13361e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x1336203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x133620ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x1336200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x1335ad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x1333b4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-06 21:10:44.442 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10856cf74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10856d848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x108888044  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __53-[SurfaceViewController(Navigation) actionForceClose]_block_invoke + 3326020
-  #03 0x19392e2b4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 9372340
-  #04 0x19392eafc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 9374460
-  #05 0x1931e3bc0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1727424
-  #06 0x193b809c0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 11807168
-  #07 0x1931ba3a8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1557416
-  #08 0x1930f91a4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  __UIVIEW_IS_EXECUTING_ANIMATION_COMPLETION_BLOCK__ + 766372
-  #09 0x19306db00  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 195328
-  #10 0x19306dc40  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 195648
-  #11 0x1930f8cf4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 765172
-  #12 0x1930f8d64  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 765284
-  #13 0x192ce9a84  /System/Library/Frameworks/QuartzCore.framework/QuartzCore  <redacted> + 1174148
-  #14 0x1bd2f0fb4  /usr/lib/system/libdispatch.dylib  <redacted> + 114612
-  #15 0x1bd2e6374  /usr/lib/system/libdispatch.dylib  <redacted> + 70516
-  #16 0x1bd2e6044  /usr/lib/system/libdispatch.dylib  _dispatch_main_queue_callback_4CF + 69700
-  #17 0x18ee287a0  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 300960
-  #18 0x18ee1988c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239756
-  #19 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #20 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #21 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #22 0x10856cc40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68672
-  #23 0x10016f0f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #24 0x10016cb50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #25 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-06 21:11:30.366 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10c554f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10c555848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x1403bc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x14061ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x14061e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x1406203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x140620ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x1406200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x1405ad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x1403b4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-06 21:14:16.622 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10bd54f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10bd55848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x1403bc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x14061ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x14061e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x1406203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x140620ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x1406200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x1405ad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x1403b4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-07 01:08:47.894 =====
-reason: exit(1) called
-thread: (unnamed)
-  #00 0x10a18cf74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10a18d88c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71820
-  #02 0x11b4b79c4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/libvtestserver.dylib  vtest_main.cold.10 + 752068
-  #03 0x11b404f98  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/libvtestserver.dylib  vtest_main + 20376
-  #04 0x10a1eb604  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_vs_server_thread + 456196
-  #05 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #06 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-07 01:08:50.174 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10a18cf74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10a18d848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x10a497cf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  -[PLCrashView dismissAndReturnToLauncher] + 3259632
-  #03 0x1935b20c4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5718212
-  #04 0x1935b1ef4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5717748
-  #05 0x1935b17f8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5715960
-  #06 0x19370fe94  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7151252
-  #07 0x193757374  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7443316
-  #08 0x193123bfc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 941052
-  #09 0x193e43a90  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 14703248
-  #10 0x193128648  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 960072
-  #11 0x19312a298  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 967320
-  #12 0x193623874  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 6183028
-  #13 0x193120bdc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 928732
-  #14 0x1930a8d78  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 437624
-  #15 0x1930a7b88  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 433032
-  #16 0x1930a7928  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 432424
-  #17 0x2c1755bc0  /System/Library/PrivateFrameworks/UpdateCycle.framework/UpdateCycle  <redacted> + 3008
-  #18 0x18ee38c20  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367648
-  #19 0x18ee38b94  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367508
-  #20 0x18ee1a268  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 242280
-  #21 0x18ee19384  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 238468
-  #22 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #23 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #24 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #25 0x10a18cc40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68672
-  #26 0x100d0b0f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #27 0x100d08b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #28 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-07 01:09:24.317 =====
-reason: exit(-1) called
-thread: (unnamed)
-  #00 0x10dd8cf74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10dd8d88c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71820
-  #02 0x142fbc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x14321ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x14321e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x1432203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x143220ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x1432200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x1431ad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x142fb4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-07 01:09:26.204 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10dd8cf74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10dd8d848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x10e097cf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  -[PLCrashView dismissAndReturnToLauncher] + 3259632
-  #03 0x1935b20c4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5718212
-  #04 0x1935b1ef4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5717748
-  #05 0x1935b17f8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5715960
-  #06 0x19370fe94  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7151252
-  #07 0x193757374  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7443316
-  #08 0x193123bfc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 941052
-  #09 0x193e43a90  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 14703248
-  #10 0x193128648  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 960072
-  #11 0x19312a298  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 967320
-  #12 0x193623874  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 6183028
-  #13 0x193120bdc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 928732
-  #14 0x1930a8d78  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 437624
-  #15 0x1930a7b88  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 433032
-  #16 0x1930a7928  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 432424
-  #17 0x2c1755bc0  /System/Library/PrivateFrameworks/UpdateCycle.framework/UpdateCycle  <redacted> + 3008
-  #18 0x18ee38c20  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367648
-  #19 0x18ee38b94  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367508
-  #20 0x18ee1a268  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 242280
-  #21 0x18ee19384  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 238468
-  #22 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #23 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #24 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #25 0x10dd8cc40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68672
-  #26 0x1048cf0f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #27 0x1048ccb50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #28 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-07 01:15:11.515 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10bd8cf74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10bd8d848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x10c0c6ec0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __53-[SurfaceViewController(Navigation) actionForceClose]_block_invoke + 3452608
-  #03 0x19392e2b4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 9372340
-  #04 0x19392eafc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 9374460
-  #05 0x1931e3bc0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1727424
-  #06 0x193b809c0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 11807168
-  #07 0x1931ba3a8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1557416
-  #08 0x1930f91a4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  __UIVIEW_IS_EXECUTING_ANIMATION_COMPLETION_BLOCK__ + 766372
-  #09 0x19306db00  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 195328
-  #10 0x19306dc40  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 195648
-  #11 0x1930f8cf4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 765172
-  #12 0x1930f8d64  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 765284
-  #13 0x192ce9a84  /System/Library/Frameworks/QuartzCore.framework/QuartzCore  <redacted> + 1174148
-  #14 0x1bd2f0fb4  /usr/lib/system/libdispatch.dylib  <redacted> + 114612
-  #15 0x1bd2e6374  /usr/lib/system/libdispatch.dylib  <redacted> + 70516
-  #16 0x1bd2e6044  /usr/lib/system/libdispatch.dylib  _dispatch_main_queue_callback_4CF + 69700
-  #17 0x18ee287a0  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 300960
-  #18 0x18ee1988c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239756
-  #19 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #20 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #21 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #22 0x10bd8cc40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68672
-  #23 0x102d1f0f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #24 0x102d1cb50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #25 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-07 01:19:57.728 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10dd8cf74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10dd8d848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x10e0d9184  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  Java_net_kdt_pojavlaunch_uikit_UIKit_showError + 3527044
-  #03 0x1bd2f0fb4  /usr/lib/system/libdispatch.dylib  <redacted> + 114612
-  #04 0x1bd2db700  /usr/lib/system/libdispatch.dylib  <redacted> + 26368
-  #05 0x1bd2eebb0  /usr/lib/system/libdispatch.dylib  <redacted> + 105392
-  #06 0x1bd2eda74  /usr/lib/system/libdispatch.dylib  <redacted> + 100980
-  #07 0x1bd2e6278  /usr/lib/system/libdispatch.dylib  <redacted> + 70264
-  #08 0x1bd2e6044  /usr/lib/system/libdispatch.dylib  _dispatch_main_queue_callback_4CF + 69700
-  #09 0x18ee287a0  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 300960
-  #10 0x18ee1988c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239756
-  #11 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #12 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #13 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #14 0x10dd8cc40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68672
-  #15 0x10483b0f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #16 0x104838b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #17 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-07 01:20:39.307 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10bd8cf74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10bd8d848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x10c0d9184  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  Java_net_kdt_pojavlaunch_uikit_UIKit_showError + 3527044
-  #03 0x1bd2f0fb4  /usr/lib/system/libdispatch.dylib  <redacted> + 114612
-  #04 0x1bd2db700  /usr/lib/system/libdispatch.dylib  <redacted> + 26368
-  #05 0x1bd2eebb0  /usr/lib/system/libdispatch.dylib  <redacted> + 105392
-  #06 0x1bd2eda74  /usr/lib/system/libdispatch.dylib  <redacted> + 100980
-  #07 0x1bd2e6278  /usr/lib/system/libdispatch.dylib  <redacted> + 70264
-  #08 0x1bd2e6044  /usr/lib/system/libdispatch.dylib  _dispatch_main_queue_callback_4CF + 69700
-  #09 0x18ee287a0  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 300960
-  #10 0x18ee1988c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239756
-  #11 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #12 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #13 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #14 0x10bd8cc40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68672
-  #15 0x10274f0f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #16 0x10274cb50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #17 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-07 19:05:49.773 =====
-reason: exit(1) called
-thread: (unnamed)
-  #00 0x109d90f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x109d9188c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71820
-  #02 0x114c8cfec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/libjli.dylib  CheckJvmType.cold.1 + 69612
-  #03 0x114c86fd0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/libjli.dylib  PrintUsage + 45008
-  #04 0x114c899b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/libjli.dylib  ThreadJavaMain + 55736
-  #05 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #06 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-07 19:08:57.462 =====
-reason: exit(-1) called
-thread: (unnamed)
-  #00 0x10d590f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10d59188c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71820
-  #02 0x135bbc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x135e1ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x135e1e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x135e203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x135e20ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x135e200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x135dad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x135bb4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-07 19:10:04.491 =====
-reason: exit(1) called
-thread: (unnamed)
-  #00 0x108cf8f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x108cf988c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71820
-  #02 0x1327fd034  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/libvtestserver.dylib  OUTLINED_FUNCTION_0 + 20532
-  #03 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
-  #04 0x16222de5c
-  #05 0x16222de5c
-  #06 0x16238e900
-
-===== [Amethyst fatal trace] 2026-10-07 19:10:06.769 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x108cf8f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x108cf9848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x1090044b4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  -[PLCrashView dismissAndReturnToLauncher] + 3261620
-  #03 0x1935b20c4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5718212
-  #04 0x1935b1ef4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5717748
-  #05 0x1935b17f8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5715960
-  #06 0x19370fe94  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7151252
-  #07 0x193757374  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7443316
-  #08 0x193123bfc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 941052
-  #09 0x193e43a90  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 14703248
-  #10 0x193128648  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 960072
-  #11 0x19312a298  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 967320
-  #12 0x193623874  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 6183028
-  #13 0x193120bdc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 928732
-  #14 0x1930a8d78  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 437624
-  #15 0x1930a7b88  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 433032
-  #16 0x1930a7928  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 432424
-  #17 0x2c1755bc0  /System/Library/PrivateFrameworks/UpdateCycle.framework/UpdateCycle  <redacted> + 3008
-  #18 0x18ee057cc  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 157644
-  #19 0x18ee2924c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 303692
-  #20 0x18ee2945c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 304220
-  #21 0x18ee19634  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239156
-  #22 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #23 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #24 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #25 0x108cf8c40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 68672
-  #26 0x100ab30f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #27 0x100ab0b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #28 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-07 19:27:52.290 =====
-reason: exit(1) called
-thread: (unnamed)
-  #00 0x109d90f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x109d9188c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71820
-  #02 0x12b5fd518  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib  CheckJvmType.cold.1 + 70936
-  #03 0x12b5f7168  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib  JavaMain + 45416
-  #04 0x12b5f9d08  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib  ThreadJavaMain + 56584
-  #05 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #06 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-07 19:34:29.583 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10ca0cf74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x10ca0d848  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 71752
-  #02 0x115ee65a8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib  dummyTimer + 58792
+===== [Amethyst fatal trace] 2026-10-12 07:22:07.056 =====
+reason: Task251: shutdown marker -> _exit(0) (post-main hang guard)
+thread: Ame251-ShutdownWatchdog
+  #00 0x10cef7174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10cefa88c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __ame251_armShutdownForceExitWatchdog_block_invoke_2 + 92300
+  #02 0x18f760878  /System/Library/Frameworks/Foundation.framework/Foundation  <redacted> + 4843640
   #03 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
   #04 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-===== [Amethyst fatal trace] 2026-10-07 19:36:48.228 =====
-reason: abort() called
-thread: (unnamed)
-  #00 0x109d90f74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 69492
-  #01 0x109d91390  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_abort + 70544
-  #02 0x13efbe264  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os5abortEbPvPKv + 8118884
-  #03 0x13f2185f0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPvS6_S1_im + 10585584
-  #04 0x13f2179fc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadjPhPvS3_PKcz + 10582524
-  #05 0x13f218654  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadjPhPvS3_ + 10585684
-  #06 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
-  #07 0x13ec0af9c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZNK8CodeHeap16find_blob_unsafeEPv + 4239260
-  #08 0x13efb1858  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os14print_locationEP12outputStreamlb + 8067160
-  #09 0x13efb91ac  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os19print_register_infoEP12outputStreamPKv + 8098220
-  #10 0x13f215b7c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VMError6reportEP12outputStreamb + 10574716
-  #11 0x13f217f7c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPvS6_S1_im + 10583932
-  #12 0x13f2179fc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadjPhPvS3_PKcz + 10582524
-  #13 0x13f218654  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadjPhPvS3_ + 10585684
-  #14 0x13f0e002c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  JVM_handle_bsd_signal + 9306156
-  #15 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
-  #16 0x13eccdbd0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  jni_CallStaticVoidMethod + 5037008
-  #17 0x10a0d65e0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  handleFramebufferSizeJava + 3499488
-  #18 0x10a0d6c9c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  pojavPumpEvents + 3501212
-  #19 0x165110c40
-  #20 0x165153700
-  #21 0x163e2dfbc
-  #22 0x163e28140
-  #23 0x13ec61fe0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 4595680
-  #24 0x13f02b450  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL6invokeP13InstanceKlassRK12methodHandle6Handleb14objArrayHandle9BasicTypeS5_bP10JavaThread + 8565840
-  #25 0x13f02a9d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN10Reflection13invoke_methodEP7oopDesc6Handle14objArrayHandleP10JavaThread + 8563156
-  #26 0x13ed1edc8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  JVM_InvokeMethod + 5369288
-  #27 0x163e318ec
-  #28 0x163e2dd78
-  #29 0x163e2dd78
-  #30 0x163e2e2b0
-  #31 0x163e2dd78
-  #32 0x163e2dfbc
-  #33 0x163e2dfbc
-  #34 0x163e28140
-  #35 0x13ec61fe0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 4595680
-  #36 0x13ecca724  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL17jni_invoke_staticP7JNIEnv_P9JavaValueP8_jobject11JNICallTypeP10_jmethodIDP18JNI_ArgumentPusherP10JavaThread + 5023524
-  #37 0x13eccdc2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  jni_CallStaticVoidMethod + 5037100
-  #38 0x113fc6da8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/libjli.dylib  JavaMain + 44456
-  #39 0x113fc99b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/libjli.dylib  ThreadJavaMain + 55736
-  #40 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #41 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-07 22:58:37.872 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10dd959f4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 72180
-  #01 0x10dd962c8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 74440
-  #02 0x13f72007c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x13f982cf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x13f982070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x13f9843f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x13f984ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x13f9840e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x13f9117ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x13f718f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-07 22:59:34.417 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10c8c59f4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 72180
-  #01 0x10c8c62c8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 74440
-  #02 0x13eb2007c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x13ed82cf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x13ed82070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x13ed843f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x13ed84ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x13ed840e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x13ed117ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x13eb18f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-07 23:00:05.705 =====
-reason: exit(-1) called
-thread: (unnamed)
-  #00 0x10b9959f4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 72180
-  #01 0x10b99630c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 74508
-  #02 0x133fbc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x13421ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x13421e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x1342203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x134220ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x1342200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x1341ad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x133fb4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-07 23:01:44.965 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10d9959f4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 72180
-  #01 0x10d9962c8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 74440
-  #02 0x128e7a5a8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib  dummyTimer + 58792
+===== [Amethyst fatal trace] 2026-10-12 07:22:37.514 =====
+reason: Task251: shutdown marker -> _exit(0) (post-main hang guard)
+thread: Ame251-ShutdownWatchdog
+  #00 0x10989b174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10989e88c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __ame251_armShutdownForceExitWatchdog_block_invoke_2 + 92300
+  #02 0x18f760878  /System/Library/Frameworks/Foundation.framework/Foundation  <redacted> + 4843640
   #03 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
   #04 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-===== [Amethyst fatal trace] 2026-10-07 23:03:06.539 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10d5959f4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 72180
-  #01 0x10d5962c8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 74440
-  #02 0x13060a5a8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib  dummyTimer + 58792
+===== [Amethyst fatal trace] 2026-10-12 07:23:15.345 =====
+reason: Task251: shutdown marker -> _exit(0) (post-main hang guard)
+thread: Ame251-ShutdownWatchdog
+  #00 0x10aedf174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10aee288c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __ame251_armShutdownForceExitWatchdog_block_invoke_2 + 92300
+  #02 0x18f760878  /System/Library/Frameworks/Foundation.framework/Foundation  <redacted> + 4843640
   #03 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
   #04 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-===== [Amethyst fatal trace] 2026-10-07 23:20:37.276 =====
-reason: exit(-1) called
-thread: (unnamed)
-  #00 0x10abbd9f4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 72180
-  #01 0x10abbe30c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 74508
-  #02 0x136fc007c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x137222cf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x137222070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x1372243f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x137224ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x1372240e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x1371b17ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x136fb8f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-07 23:23:24.164 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10d46d9f4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 72180
-  #01 0x10d46e2c8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 74440
-  #02 0x1305825a8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib  dummyTimer + 58792
+===== [Amethyst fatal trace] 2026-10-12 19:06:42.343 =====
+reason: Task251: shutdown marker -> _exit(0) (post-main hang guard)
+thread: Ame251-ShutdownWatchdog
+  #00 0x10989b174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10989e88c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __ame251_armShutdownForceExitWatchdog_block_invoke_2 + 92300
+  #02 0x18f760878  /System/Library/Frameworks/Foundation.framework/Foundation  <redacted> + 4843640
   #03 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
   #04 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-===== [Amethyst fatal trace] 2026-10-08 19:40:09.294 =====
-reason: exit(-1) called
-thread: (unnamed)
-  #00 0x108a9d9f4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 72180
-  #01 0x108a9e30c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 74508
-  #02 0x13cbbc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x13ce1ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x13ce1e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x13ce203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x13ce20ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x13ce200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x13cdad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x13cbb4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
+===== [Amethyst fatal trace] 2026-10-12 19:08:32.912 =====
+reason: Task251: shutdown marker -> _exit(0) (post-main hang guard)
+thread: Ame251-ShutdownWatchdog
+  #00 0x109c9b174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x109c9e88c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __ame251_armShutdownForceExitWatchdog_block_invoke_2 + 92300
+  #02 0x18f760878  /System/Library/Frameworks/Foundation.framework/Foundation  <redacted> + 4843640
+  #03 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
+  #04 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-===== [Amethyst fatal trace] 2026-10-08 19:47:36.984 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
+===== [Amethyst fatal trace] 2026-10-12 19:08:57.705 =====
+reason: exit(1) called
 thread: (unnamed)
-  #00 0x10c1a59f4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 72180
-  #01 0x10c1a62c8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 74440
-  #02 0x10c4e87b0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __53-[SurfaceViewController(Navigation) actionForceClose]_block_invoke + 3491760
-  #03 0x19392e2b4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 9372340
-  #04 0x19392eafc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 9374460
-  #05 0x1931e3bc0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1727424
-  #06 0x193b809c0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 11807168
-  #07 0x1931ba3a8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1557416
-  #08 0x1930f91a4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  __UIVIEW_IS_EXECUTING_ANIMATION_COMPLETION_BLOCK__ + 766372
-  #09 0x19306db00  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 195328
-  #10 0x19306dc40  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 195648
-  #11 0x1930f8cf4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 765172
-  #12 0x1930f8d64  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 765284
-  #13 0x192ce9a84  /System/Library/Frameworks/QuartzCore.framework/QuartzCore  <redacted> + 1174148
-  #14 0x1bd2f0fb4  /usr/lib/system/libdispatch.dylib  <redacted> + 114612
-  #15 0x1bd2e6374  /usr/lib/system/libdispatch.dylib  <redacted> + 70516
-  #16 0x1bd2e6044  /usr/lib/system/libdispatch.dylib  _dispatch_main_queue_callback_4CF + 69700
-  #17 0x18ee287a0  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 300960
-  #18 0x18ee1988c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239756
-  #19 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #20 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #21 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #22 0x10c1a56c0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 71360
-  #23 0x102d6f0f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #24 0x102d6cb50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #25 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-09 00:07:23.741 =====
-reason: exit(-1) called
-thread: (unnamed)
-  #00 0x10c1b19f4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 72180
-  #01 0x10c1b230c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 74508
-  #02 0x13f7bc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x13fa1ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x13fa1e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x13fa203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x13fa20ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x13fa200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x13f9ad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x13f7b4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-09 00:07:26.041 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10c1b19f4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 72180
-  #01 0x10c1b22c8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 74440
-  #02 0x10c4c803c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  -[PLCrashView dismissAndReturnToLauncher] + 3309628
-  #03 0x1935b20c4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5718212
-  #04 0x1935b1ef4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5717748
-  #05 0x1935b17f8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5715960
-  #06 0x19370fe94  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7151252
-  #07 0x193757374  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7443316
-  #08 0x193123bfc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 941052
-  #09 0x193e43a90  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 14703248
-  #10 0x193128648  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 960072
-  #11 0x19312a298  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 967320
-  #12 0x193623874  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 6183028
-  #13 0x193120bdc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 928732
-  #14 0x1930a8d78  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 437624
-  #15 0x1930a7b88  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 433032
-  #16 0x1930a7928  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 432424
-  #17 0x2c1755bc0  /System/Library/PrivateFrameworks/UpdateCycle.framework/UpdateCycle  <redacted> + 3008
-  #18 0x18ee38c20  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367648
-  #19 0x18ee38b94  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 367508
-  #20 0x18ee1a268  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 242280
-  #21 0x18ee19384  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 238468
-  #22 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #23 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #24 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #25 0x10c1b16c0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 71360
-  #26 0x102f2b0f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #27 0x102f28b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #28 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-09 19:16:30.632 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x108f42758  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 75608
-  #01 0x108f4302c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 77868
-  #02 0x1393bc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x13961ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x13961e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x1396203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x139620ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x1396200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x1395ad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x1393b4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-09 19:43:57.424 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x1099ba758  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 75608
-  #01 0x1099bb02c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 77868
-  #02 0x1433bc07c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN2os25build_agent_function_nameEPKcS1_b + 8110204
-  #03 0x14361ecf0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 10611952
-  #04 0x14361e070  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 10608752
-  #05 0x1436203f8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 10617848
-  #06 0x143620ad4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 10619604
-  #07 0x1436200e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 10617064
-  #08 0x1435ad7ec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 10147820
-  #09 0x1433b4f2c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-17-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 8081196
-  #10 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #11 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-10 23:08:32.941 =====
-reason: abort() called
-thread: (unnamed)
-  #00 0x10a9c6aec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 76524
-  #01 0x10a9c6f08  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_abort + 77576
-  #02 0x14cca2224  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5abortEbPKvS1_ + 9052708
-  #03 0x14cf74078  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12009592
-  #04 0x14cf736b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12007096
-  #05 0x14cf743b4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadPKcim11VMErrorTypeS3_Pc + 12010420
-  #06 0x14cf74b48  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError32install_secondary_signal_handlerEv + 12012360
-  #07 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
-  #08 0x14c7e0a8c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN20BlockLocationPrinterI15G1CollectedHeapE16base_oop_or_nullEPv + 4065932
-  #09 0x14c7e0a8c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN20BlockLocationPrinterI15G1CollectedHeapE16base_oop_or_nullEPv + 4065932
-  #10 0x14c7dd1e0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN20BlockLocationPrinterI15G1CollectedHeapE14print_locationEP12outputStreamPv + 4051424
-  #11 0x14cc93f00  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os14print_locationEP12outputStreamlb + 8994560
-  #12 0x14cc9d11c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os19print_register_infoEP12outputStreamPKvRi + 9031964
-  #13 0x14cf707d0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError6reportEP12outputStreamb + 11995088
-  #14 0x14cf73bf8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12008440
-  #15 0x14cf736b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12007096
-  #16 0x14cf743b4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadPKcim11VMErrorTypeS3_Pc + 12010420
-  #17 0x14ce27678  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12PosixSignals12user_handlerEv + 10647160
-  #18 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
-  #19 0x10dd36568  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl.dylib  ? + 222568
-  #20 0x1615bac68
-  #21 0x160dc5308
-  #22 0x16083ca84
-  #23 0x16083ca84
-  #24 0x16083d01c
-  #25 0x16083ca84
-  #26 0x16083ca84
-  #27 0x16083ca84
-  #28 0x16083ca84
-  #29 0x16083ca84
-  #30 0x16083ca84
-  #31 0x16083ca84
-  #32 0x161fc7670
-  #33 0x16175c1e0
-
-===== [Amethyst fatal trace] 2026-10-10 23:09:56.586 =====
-reason: abort() called
-thread: (unnamed)
-  #00 0x10856eaec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 76524
-  #01 0x10856ef08  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_abort + 77576
-  #02 0x143ca2224  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5abortEbPKvS1_ + 9052708
-  #03 0x143f74078  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12009592
-  #04 0x143f736b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12007096
-  #05 0x143f743b4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadPKcim11VMErrorTypeS3_Pc + 12010420
-  #06 0x143e27678  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12PosixSignals12user_handlerEv + 10647160
-  #07 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
-  #08 0x122b16568  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl.dylib  ? + 222568
-  #09 0x158bee1e8
-  #10 0x159072c74
-  #11 0x15843ca84
-  #12 0x15843ca84
-  #13 0x15843d01c
-  #14 0x15843ca84
-  #15 0x15843ca84
-  #16 0x15843ca84
-  #17 0x15843ca84
-  #18 0x15843ca84
-  #19 0x15843ca84
-  #20 0x15843ca84
-  #21 0x159d78e78
-  #22 0x15a018de0
-
-===== [Amethyst fatal trace] 2026-10-10 23:14:39.082 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10b5e6aec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 76524
-  #01 0x10b5e73c0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 78784
-  #02 0x10b9433e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __53-[SurfaceViewController(Navigation) actionForceClose]_block_invoke + 3601384
-  #03 0x10b6fe744  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __58-[Ame237GlassMenuViewController ame237_dismissWithAction:]_block_invoke_2 + 1222468
-  #04 0x1931e3bc0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1727424
-  #05 0x193b8323c  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 11817532
-  #06 0x193b809c0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 11807168
-  #07 0x1931ba3a8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1557416
-  #08 0x19309e568  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 394600
-  #09 0x19316a090  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1228944
-  #10 0x1bd2d6ccc  /usr/lib/system/libdispatch.dylib  <redacted> + 7372
-  #11 0x1bd2f0fb4  /usr/lib/system/libdispatch.dylib  <redacted> + 114612
-  #12 0x1bd2e6374  /usr/lib/system/libdispatch.dylib  <redacted> + 70516
-  #13 0x1bd2e6044  /usr/lib/system/libdispatch.dylib  _dispatch_main_queue_callback_4CF + 69700
-  #14 0x18ee287a0  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 300960
-  #15 0x18ee1988c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239756
-  #16 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #17 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #18 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #19 0x10b5e67b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 75704
-  #20 0x1022b70f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #21 0x1022b4b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #22 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-11 00:29:35.750 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10bde6aec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 76524
-  #01 0x10bde73c0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 78784
-  #02 0x10c1438a0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __53-[SurfaceViewController(Navigation) actionForceClose]_block_invoke + 3602592
-  #03 0x10befe88c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __58-[Ame237GlassMenuViewController ame237_dismissWithAction:]_block_invoke_2 + 1222796
-  #04 0x1931e3bc0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1727424
-  #05 0x193b8323c  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 11817532
-  #06 0x193b809c0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 11807168
-  #07 0x1931ba3a8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1557416
-  #08 0x19309e568  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 394600
-  #09 0x19316a090  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1228944
-  #10 0x1bd2d6ccc  /usr/lib/system/libdispatch.dylib  <redacted> + 7372
-  #11 0x1bd2f0fb4  /usr/lib/system/libdispatch.dylib  <redacted> + 114612
-  #12 0x1bd2e6374  /usr/lib/system/libdispatch.dylib  <redacted> + 70516
-  #13 0x1bd2e6044  /usr/lib/system/libdispatch.dylib  _dispatch_main_queue_callback_4CF + 69700
-  #14 0x18ee287a0  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 300960
-  #15 0x18ee1988c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239756
-  #16 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #17 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #18 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #19 0x10bde67b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 75704
-  #20 0x1029370f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #21 0x102934b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #22 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
-
-===== [Amethyst fatal trace] 2026-10-11 01:46:41.069 =====
-reason: abort() called
-thread: (unnamed)
-  #00 0x10c506aec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 76524
-  #01 0x10c506f08  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_abort + 77576
-  #02 0x13b0a2224  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5abortEbPKvS1_ + 9052708
-  #03 0x13b374078  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12009592
-  #04 0x13b3736b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12007096
-  #05 0x13b3743b4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadPKcim11VMErrorTypeS3_Pc + 12010420
-  #06 0x13b227678  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12PosixSignals12user_handlerEv + 10647160
-  #07 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
-  #08 0x11789a568  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/Frameworks/liblwjgl.dylib  ? + 222568
-  #09 0x15fc4b168
-  #10 0x15f6b17b4
-  #11 0x15f03ca84
-  #12 0x15f03ca84
-  #13 0x15f03d01c
-  #14 0x15f03ca84
-  #15 0x15f03ca84
-  #16 0x15f03ca84
-  #17 0x15f03ca84
-  #18 0x15f03ca84
-  #19 0x15f03ca84
-  #20 0x15f03ca84
-  #21 0x15f19ef38
-  #22 0x160f54e64
-
-===== [Amethyst fatal trace] 2026-10-11 03:18:30.574 =====
-reason: exit(-1) called
-thread: (unnamed)
-  #00 0x10b9eeaec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 76524
-  #01 0x10b9ef404  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 78852
-  #02 0x13dca02a4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5_exitEi + 9044644
-  #03 0x13dca0298  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN25permit_forbidden_function4exitEi + 9044632
-  #04 0x13d8e8e38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _Z18notify_vm_shutdownv + 5148216
-  #05 0x13df7bcd4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 12041428
-  #06 0x13df7af74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 12038004
-  #07 0x13df83100  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 12071168
-  #08 0x13df83854  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 12073044
-  #09 0x13df82dd8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 12070360
-  #10 0x13def43d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
-  #11 0x13dc98dcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
+  #00 0x10b49b174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10b49ba8c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 80524
+  #02 0x13b0a02a4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5_exitEi + 9044644
+  #03 0x13b0a0298  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN25permit_forbidden_function4exitEi + 9044632
+  #04 0x13ace8e38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _Z18notify_vm_shutdownv + 5148216
+  #05 0x13b37bcd4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 12041428
+  #06 0x13b37af74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 12038004
+  #07 0x13b383100  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 12071168
+  #08 0x13b383854  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 12073044
+  #09 0x13b382dd8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 12070360
+  #10 0x13b2f43d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
+  #11 0x13b098dcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
   #12 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
   #13 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-===== [Amethyst fatal trace] 2026-10-11 04:03:04.561 =====
-reason: abort() called
-thread: (unnamed)
-  #00 0x1099eeaec  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 76524
-  #01 0x1099eef08  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_abort + 77576
-  #02 0x137ca2224  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5abortEbPKvS1_ + 9052708
-  #03 0x137f74078  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12009592
-  #04 0x137f736b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12007096
-  #05 0x137f743b4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadPKcim11VMErrorTypeS3_Pc + 12010420
-  #06 0x137e27678  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12PosixSignals12user_handlerEv + 10647160
-  #07 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
-  #08 0x109a3ee14  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  gl_terminate + 405012
-  #09 0x109d5527c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  pojavTerminate + 3641980
-  #10 0x15c0406b8
-  #11 0x15c03ca84
-  #12 0x15c03ca84
-  #13 0x15c03ca84
-  #14 0x15c03ca84
-  #15 0x15c03ca84
-  #16 0x15c03ca84
-  #17 0x15c03ca84
-  #18 0x15c03ca84
-  #19 0x15c03d01c
-  #20 0x15c03ca84
-  #21 0x15c03ca84
-  #22 0x15c03ca84
-  #23 0x15c03c818
-  #24 0x15c03c818
-  #25 0x15c03c818
-  #26 0x15c03cdb0
-  #27 0x15c03c818
-  #28 0x15c03ca84
-  #29 0x15c03ca84
-  #30 0x15c038154
-  #31 0x1378ebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
-  #32 0x137977f40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL17jni_invoke_staticP7JNIEnv_P9JavaValueP8_jobject11JNICallTypeP10_jmethodIDP18JNI_ArgumentPusherP10JavaThread + 5734208
-  #33 0x13797b468  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  jni_CallStaticVoidMethod + 5747816
-  #34 0x129ef71b0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib  JavaMain + 45488
-  #35 0x129ef9d08  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib  ThreadJavaMain + 56584
-  #36 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #37 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
+===== [Amethyst fatal trace] 2026-10-12 19:08:57.837 =====
+reason: Task251: shutdown marker -> _exit(0) (post-main hang guard)
+thread: Ame251-ShutdownWatchdog
+  #00 0x10b49b174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10b49e88c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __ame251_armShutdownForceExitWatchdog_block_invoke_2 + 92300
+  #02 0x18f760878  /System/Library/Frameworks/Foundation.framework/Foundation  <redacted> + 4843640
+  #03 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
+  #04 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-===== [Amethyst fatal trace] 2026-10-11 11:25:17.587 =====
-reason: exit(-8) called
+===== [Amethyst fatal trace] 2026-10-12 19:09:16.408 =====
+reason: exit(1) called
 thread: (unnamed)
-  #00 0x10a443174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
-  #01 0x10a443a8c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 80524
-  #02 0x1364702a4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5_exitEi + 9044644
-  #03 0x136470298  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN25permit_forbidden_function4exitEi + 9044632
-  #04 0x1360b8e38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _Z18notify_vm_shutdownv + 5148216
-  #05 0x13674bcd4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 12041428
-  #06 0x13674af74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 12038004
-  #07 0x136753100  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 12071168
-  #08 0x136753854  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 12073044
-  #09 0x136752dd8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 12070360
-  #10 0x1366c43d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
-  #11 0x136468dcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
+  #00 0x10bc9b174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10bc9ba8c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 80524
+  #02 0x1338942a4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5_exitEi + 9044644
+  #03 0x133894298  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN25permit_forbidden_function4exitEi + 9044632
+  #04 0x1334dce38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _Z18notify_vm_shutdownv + 5148216
+  #05 0x133b6fcd4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 12041428
+  #06 0x133b6ef74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 12038004
+  #07 0x133b77100  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 12071168
+  #08 0x133b77854  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 12073044
+  #09 0x133b76dd8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 12070360
+  #10 0x133ae83d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
+  #11 0x13388cdcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
   #12 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
   #13 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-===== [Amethyst fatal trace] 2026-10-11 11:29:20.594 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x1095f7174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
-  #01 0x1095f7a48  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 80456
-  #02 0x10995df30  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __53-[SurfaceViewController(Navigation) actionForceClose]_block_invoke + 3645232
-  #03 0x109710ec4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __58-[Ame237GlassMenuViewController ame237_dismissWithAction:]_block_invoke_2 + 1232580
-  #04 0x1931e3bc0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1727424
-  #05 0x193b8323c  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 11817532
-  #06 0x193b809c0  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 11807168
-  #07 0x1931ba3a8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1557416
-  #08 0x19309e568  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 394600
-  #09 0x19316a090  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 1228944
-  #10 0x1bd2d6ccc  /usr/lib/system/libdispatch.dylib  <redacted> + 7372
-  #11 0x1bd2f0fb4  /usr/lib/system/libdispatch.dylib  <redacted> + 114612
-  #12 0x1bd2e6374  /usr/lib/system/libdispatch.dylib  <redacted> + 70516
-  #13 0x1bd2e6044  /usr/lib/system/libdispatch.dylib  _dispatch_main_queue_callback_4CF + 69700
-  #14 0x18ee287a0  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 300960
-  #15 0x18ee1988c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239756
-  #16 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #17 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #18 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #19 0x1095f6e40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 77376
-  #20 0x1004f30f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #21 0x1004f0b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #22 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
+===== [Amethyst fatal trace] 2026-10-12 19:09:16.505 =====
+reason: Task251: shutdown marker -> _exit(0) (post-main hang guard)
+thread: Ame251-ShutdownWatchdog
+  #00 0x10bc9b174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10bc9e88c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __ame251_armShutdownForceExitWatchdog_block_invoke_2 + 92300
+  #02 0x18f760878  /System/Library/Frameworks/Foundation.framework/Foundation  <redacted> + 4843640
+  #03 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
+  #04 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-===== [Amethyst fatal trace] 2026-10-11 12:43:18.309 =====
-reason: exit(-8) called
+===== [Amethyst fatal trace] 2026-10-12 19:09:34.311 =====
+reason: exit(1) called
 thread: (unnamed)
-  #00 0x109df7174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
-  #01 0x109df7a8c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 80524
-  #02 0x1384a02a4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5_exitEi + 9044644
-  #03 0x1384a0298  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN25permit_forbidden_function4exitEi + 9044632
-  #04 0x1380e8e38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _Z18notify_vm_shutdownv + 5148216
-  #05 0x13877bcd4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 12041428
-  #06 0x13877af74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 12038004
-  #07 0x138783100  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 12071168
-  #08 0x138783854  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 12073044
-  #09 0x138782dd8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 12070360
-  #10 0x1386f43d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
-  #11 0x138498dcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
+  #00 0x10b49b174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10b49ba8c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 80524
+  #02 0x134c942a4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5_exitEi + 9044644
+  #03 0x134c94298  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN25permit_forbidden_function4exitEi + 9044632
+  #04 0x1348dce38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _Z18notify_vm_shutdownv + 5148216
+  #05 0x134f6fcd4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 12041428
+  #06 0x134f6ef74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 12038004
+  #07 0x134f77100  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 12071168
+  #08 0x134f77854  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 12073044
+  #09 0x134f76dd8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 12070360
+  #10 0x134ee83d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
+  #11 0x134c8cdcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
   #12 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
   #13 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-===== [Amethyst fatal trace] 2026-10-11 12:45:01.566 =====
-reason: exit(-1) called
+===== [Amethyst fatal trace] 2026-10-12 19:09:34.445 =====
+reason: Task251: shutdown marker -> _exit(0) (post-main hang guard)
+thread: Ame251-ShutdownWatchdog
+  #00 0x10b49b174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10b49e88c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __ame251_armShutdownForceExitWatchdog_block_invoke_2 + 92300
+  #02 0x18f760878  /System/Library/Frameworks/Foundation.framework/Foundation  <redacted> + 4843640
+  #03 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
+  #04 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
+
+===== [Amethyst fatal trace] 2026-10-12 19:11:58.006 =====
+reason: exit(1) called
 thread: (unnamed)
-  #00 0x10c5f7174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
-  #01 0x10c5f7a8c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 80524
-  #02 0x1364a02a4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5_exitEi + 9044644
-  #03 0x1364a0298  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN25permit_forbidden_function4exitEi + 9044632
-  #04 0x1360e8e38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _Z18notify_vm_shutdownv + 5148216
-  #05 0x13677bcd4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 12041428
-  #06 0x13677af74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 12038004
-  #07 0x136783100  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 12071168
-  #08 0x136783854  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 12073044
-  #09 0x136782dd8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 12070360
-  #10 0x1366f43d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
-  #11 0x136498dcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
+  #00 0x109153174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x109153a8c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 80524
+  #02 0x15e3242a4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5_exitEi + 9044644
+  #03 0x15e324298  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN25permit_forbidden_function4exitEi + 9044632
+  #04 0x15df6ce38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _Z18notify_vm_shutdownv + 5148216
+  #05 0x15e5ffcd4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 12041428
+  #06 0x15e5fef74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 12038004
+  #07 0x15e607100  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 12071168
+  #08 0x15e607854  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 12073044
+  #09 0x15e606dd8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 12070360
+  #10 0x15e5783d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
+  #11 0x15e31cdcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
   #12 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
   #13 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
 
-===== [Amethyst fatal trace] 2026-10-11 14:07:14.042 =====
-reason: abort() called
-thread: (unnamed)
-  #00 0x1095ff174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
-  #01 0x1095ff590  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_abort + 79248
-  #02 0x1540a2224  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5abortEbPKvS1_ + 9052708
-  #03 0x154374078  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12009592
-  #04 0x1543736b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12007096
-  #05 0x1543743b4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadPKcim11VMErrorTypeS3_Pc + 12010420
-  #06 0x154227678  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12PosixSignals12user_handlerEv + 10647160
-  #07 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
-  #08 0x10964f4e8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  gl_terminate + 406760
-  #09 0x10996c15c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  pojavTerminate + 3670364
-  #10 0x15a7546b8
-  #11 0x15a750a84
-  #12 0x15a750a84
-  #13 0x15a750a84
-  #14 0x15a750a84
-  #15 0x15a750a84
-  #16 0x15a750a84
-  #17 0x15a750a84
-  #18 0x15a750a84
-  #19 0x15a75101c
-  #20 0x15a750a84
-  #21 0x15a750a84
-  #22 0x15a750a84
-  #23 0x15a750818
-  #24 0x15a750818
-  #25 0x15a750818
-  #26 0x15a750db0
-  #27 0x15a750818
-  #28 0x15a750a84
-  #29 0x15a750a84
-  #30 0x15a74c154
-  #31 0x153cebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
-  #32 0x153d77f40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL17jni_invoke_staticP7JNIEnv_P9JavaValueP8_jobject11JNICallTypeP10_jmethodIDP18JNI_ArgumentPusherP10JavaThread + 5734208
-  #33 0x153d7b468  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  jni_CallStaticVoidMethod + 5747816
-  #34 0x122b931b0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib  JavaMain + 45488
-  #35 0x122b95d08  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjli.dylib  ThreadJavaMain + 56584
-  #36 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #37 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-11 14:10:26.776 =====
-reason: exit(-8) called
-thread: (unnamed)
-  #00 0x10cb07174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
-  #01 0x10cb07a8c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 80524
-  #02 0x14a8a02a4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5_exitEi + 9044644
-  #03 0x14a8a0298  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN25permit_forbidden_function4exitEi + 9044632
-  #04 0x14a4e8e38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _Z18notify_vm_shutdownv + 5148216
-  #05 0x14ab7bcd4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VM_Exit4doitEv + 12041428
-  #06 0x14ab7af74  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12VM_Operation8evaluateEv + 12038004
-  #07 0x14ab83100  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread18evaluate_operationEP12VM_Operation + 12071168
-  #08 0x14ab83854  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread13inner_executeEP12VM_Operation + 12073044
-  #09 0x14ab82dd8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN8VMThread3runEv + 12070360
-  #10 0x14aaf43d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
-  #11 0x14a898dcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
-  #12 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
-  #13 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
-
-===== [Amethyst fatal trace] 2026-10-11 14:10:28.018 =====
-reason: exit(0) backtrace (Task 48, black-screen-era silent exit)
-thread: (unnamed)
-  #00 0x10cb07174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
-  #01 0x10cb07a48  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_exit + 80456
-  #02 0x10ce39134  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  -[PLCrashView dismissAndReturnToLauncher] + 3428660
-  #03 0x1935b20c4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5718212
-  #04 0x1935b1ef4  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5717748
-  #05 0x1935b17f8  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 5715960
-  #06 0x19370fe94  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7151252
-  #07 0x193757374  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 7443316
-  #08 0x193123bfc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 941052
-  #09 0x193e43a90  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 14703248
-  #10 0x193128648  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 960072
-  #11 0x19312a298  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 967320
-  #12 0x193623874  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 6183028
-  #13 0x193120bdc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 928732
-  #14 0x1930a8d78  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 437624
-  #15 0x1930a7b88  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 433032
-  #16 0x1930a7928  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  <redacted> + 432424
-  #17 0x2c1755bc0  /System/Library/PrivateFrameworks/UpdateCycle.framework/UpdateCycle  <redacted> + 3008
-  #18 0x18ee057cc  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 157644
-  #19 0x18ee2924c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 303692
-  #20 0x18ee2945c  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 304220
-  #21 0x18ee19634  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 239156
-  #22 0x18ee1a7f4  /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  <redacted> + 243700
-  #23 0x23922ff24  /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices  GSEventRunModal + 3876
-  #24 0x1930f81cc  /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore  UIApplicationMain + 762316
-  #25 0x10cb06e40  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  main + 77376
-  #26 0x1047b30f8  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  invokeAppMain + 45304
-  #27 0x1047b0b50  /private/var/containers/Bundle/Application/769DD6D4-36A1-454F-AB99-B7929A82224C/App.app/Frameworks/LiveContainerShared.framework/LiveContainerShared  LiveContainerMain + 35664
-  #28 0x18ec6b5b8  /usr/lib/dyld  <redacted> + 21944
+===== [Amethyst fatal trace] 2026-10-12 19:11:58.100 =====
+reason: Task251: shutdown marker -> _exit(0) (post-main hang guard)
+thread: Ame251-ShutdownWatchdog
+  #00 0x109153174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10915688c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  __ame251_armShutdownForceExitWatchdog_block_invoke_2 + 92300
+  #02 0x18f760878  /System/Library/Frameworks/Foundation.framework/Foundation  <redacted> + 4843640
+  #03 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
+  #04 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
