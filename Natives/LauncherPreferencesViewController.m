@@ -302,6 +302,49 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
     return out;
 }
 
+/// ★ Task261：设置页 air 旧数据（LC 兄弟目录）一键迁移入口——与欢迎向导
+/// Task260 卡同 API 同语义：扫描 → 无兄弟目录给提示 → 有则覆盖确认 →
+/// 迁移（进度/重启提示由 DataTransferService 自管）→ 结果弹窗。源选择与
+/// 向导一致（数组已按修改时间排序取首位）。文案复用 welcome.data.sibling
+/// 键族（54 表齐备），本页新增仅 none 提示一键。
+- (void)ame261_siblingImportTapped {
+    NSArray<NSDictionary *> *ame261_siblings = [DataTransferService ame260_scanSiblingLauncherHomes];
+    if (ame261_siblings.count == 0) {
+        [self showSuccessMessage:localize(@"prefs.data_sibling.none", nil)];
+        return;
+    }
+    NSDictionary *ame261_best = ame261_siblings.firstObject;
+    NSString *ame261_src = ame261_best[@"path"];
+    unsigned long long ame261_bytes = [ame261_best[@"bytes"] unsignedLongLongValue];
+    NSString *ame261_sizeText = ame261_bytes >= (1ULL << 30)
+        ? [NSString stringWithFormat:@"%.1f GB", (double)ame261_bytes / (double)(1ULL << 30)]
+        : [NSString stringWithFormat:@"%llu MB", ame261_bytes / (1ULL << 20)];
+    NSString *ame261_msg = [NSString stringWithFormat:
+        localize(@"welcome.data.sibling.desc", nil), ame261_sizeText];
+    UIAlertController *ame261_confirm = [UIAlertController
+        alertControllerWithTitle:localize(@"welcome.data.sibling.title", nil)
+                         message:ame261_msg
+                  preferredStyle:UIAlertControllerStyleAlert];
+    [ame261_confirm addAction:[UIAlertAction actionWithTitle
+        :localize(@"welcome.data.sibling.action", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+        [DataTransferService.sharedService
+            ame260_migrateFromSiblingHome:ame261_src presenter:self
+                               completion:^(BOOL ok, NSString *message) {
+            UIAlertController *ame261_done = [UIAlertController
+                alertControllerWithTitle:(ok ? localize(@"welcome.data.sibling.title", nil)
+                                              : localize(@"i18n_str_108", nil))
+                                 message:message
+                          preferredStyle:UIAlertControllerStyleAlert];
+            [ame261_done addAction:[UIAlertAction actionWithTitle
+                :localize(@"i18n_str_44", @"OK") style:UIAlertActionStyleCancel handler:nil]];
+            [self presentViewController:ame261_done animated:YES completion:nil];
+        }];
+    }]];
+    [ame261_confirm addAction:[UIAlertAction actionWithTitle
+        :localize(@"resman.common.cancel", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:ame261_confirm animated:YES completion:nil];
+}
+
 
 - (id)init {
     self = [super init];
@@ -1205,6 +1248,20 @@ if ([section isEqualToString:@"general"]) {
               @"enableCondition": whenNotInGame,
               @"action": ^void(){
                   [[DataTransferService sharedService] importDataFromViewController:self];
+              }
+            },
+            // ★ Task261（用户："导入air旧数据能不能在启动器设置里面也搞个入口"）：
+            // Task260 的 LC 兄弟数据一键迁移此前只在欢迎向导数据步出现；
+            // 向导时跳过或事后想迁移就无处可找。设置 → 通用补常驻入口，
+            // 与向导同一套扫描/迁移 API（scanSiblingLauncherHomes /
+            // migrateFromSiblingHome），随时可用。
+            @{@"key": @"data_sibling_import",
+              @"hasDetail": @YES,
+              @"icon": @"arrow.triangle.branch",
+              @"type": self.typeButton,
+              @"enableCondition": whenNotInGame,
+              @"action": ^void(){
+                  [self ame261_siblingImportTapped];
               }
             },
             // Task217：关于页入口（二级菜单）。启动器更新的两个选项

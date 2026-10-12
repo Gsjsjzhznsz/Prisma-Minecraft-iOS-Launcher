@@ -2636,6 +2636,9 @@
 "preference.detail.data_export" = "把启动器全部数据（实例、存档、模组、账户、设置）打包为 zip 备份。更换应用包名前，先保存到文件 App 任意位置。";
 "preference.title.data_import" = "从备份导入数据";
 "preference.detail.data_import" = "将先前导出的备份 zip 恢复到本启动器，重启后生效。";
+"preference.title.data_sibling_import" = "导入旧版启动器数据（air 构建）";
+"preference.detail.data_sibling_import" = "检测与本体并排的旧版 App（air 构建）数据目录（LiveContainer 兄弟布局），一键合并迁入。与欢迎向导同款迁移，此处随时可用。";
+"prefs.data_sibling.none" = "未在本体旁发现旧版启动器数据";
 "preference.title.about" = "关于";
 "preference.detail.about" = "版本信息、QQ 群、启动器更新、许可证与致谢";
 "ame217.export.progress" = "正在导出数据备份…";
@@ -3087,3 +3090,4 @@
 "preference.title.done.reset_appearance_colors" = "外观颜色已恢复默认";
 "preference.title.done.session_list" = "会话列表已打开";
 "preference.title.done.system_prompt" = "系统提示词已打开";
+"preference.title.done.data_sibling_import" = "已打开导入入口";

@@ -838,8 +838,15 @@ void* pojavCreateContext(basic_render_window_t* contextSrc) {
     // 用全局幂等标志而非局部 static：SDL3 路径下 SDL_GL_LoadLibrary 已通过
     // pojavInitOpenGLForSDL3() 完成初始化，此处若用局部 static 判定为"未初始化"，
     // 会再调一次完整的 pojavInitOpenGL()，在 SDL 的原生线程上触发 JNI 调用。
+    // ★ Task261（⑧大型整合包"无输出"取证）：入口探针必须在 pojavInitOpenGL
+    // 之前——pojavInitOpenGL 内部做渲染器 dlopen 预加载（可能耗时/挂死），
+    // 原日志序里本函数首条 NSLog 在其后，挂死时零输出无法定位卡点区间。
+    NSLog(@"[egl_bridge] Task261: pojavCreateContext ENTERED (renderer=%s, api=%s) -- pre-init probe",
+          getenv("AMETHYST_RENDERER") ?: "<unset>", getenv("AMETHYST_GRAPHICS_API") ?: "<unset>");
     if (!pojavIsOpenGLInited()) {
+        NSLog(@"[egl_bridge] Task261: pojavInitOpenGL starting (uninit path)");
         pojavInitOpenGL();
+        NSLog(@"[egl_bridge] Task261: pojavInitOpenGL returned (inited=%d)", pojavIsOpenGLInited() ? 1 : 0);
     }
 
     const char *renderer = getenv("AMETHYST_RENDERER");

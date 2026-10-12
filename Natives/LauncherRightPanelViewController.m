@@ -1453,6 +1453,16 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
 
     // 正常启动，清除待启动标记
     self.pendingLaunchAfterLogin = NO;
+    // ★ Task261（⑨用户："在版本设置启动游戏容易jit卡死，一点启动游戏就立马跳回主页"）：
+    // 版本设置/版本编辑页是卡片布局的【中间内容区】（setContentViewController
+    // 挂载），不是 presented VC —— Task224 的 presented 链 dismiss 根本盖不
+    // 到它：用户停在版本设置页点启动，JIT 等待（stikjit:// 后台化往返 + 等
+    // 待弹窗）全程叠在设置页上，后台化转场卡顿全被感知为"设置页卡死"。
+    // 修法：启动入口处立即发 ShowHomePage 让内容区回主页（cachedHomeVC
+    // 复用，Task173 同款；setContentViewController 对同实例幂等跳过——
+    // 已在主页时本通知零副作用），JIT 等待与启动链全部发生在主页语境下，
+    // "点启动 → 秒回主页"成为确定性体验。
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"ShowHomePage" object:nil];
     // Task226：新一轮用户发起的启动——重置 JIT 自动重拉标记（本轮内
     // 超时可静默重拉一次，下一轮重新计数）
     self.ame226_jitAutoRetried = NO;

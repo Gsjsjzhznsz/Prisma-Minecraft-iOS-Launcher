@@ -389,6 +389,14 @@ static BOOL ame83_fsr_capable_renderer(NSString *renderer) {
     //   重建晚于我们重申 = 最终态仍是旧值）；在首个触点换算前强制再重申
     //   一次，保证输入口径与最终几何对齐（标志仅在首个触点消费）。
     BOOL ame248_geoResyncPending;
+    // ★ Task261（小窗→放大输入错位自适应恢复）：
+    //   ame261_lastSyncedViewSize = updateSavedResolution 最近一次重算时的
+    //   view 点尺寸（信念链的"已同步锚点"）；布局尺寸与之失配 = 窗口被
+    //   iPadOS 26 自由窗口缩放过而信念链未跟随 → 触发合并去抖重算。
+    //   ame261_geoResyncTimer = 0.3s 合并定时器（实时拖拽缩放每帧 layout，
+    //   只在流停 0.3s 后跑一次全链重算，避免每帧重算 drawableSize）。
+    CGSize ame261_lastSyncedViewSize;
+    NSTimer *ame261_geoResyncTimer;
 }
 // Task 139：FSR 兜底自愈后的输入缩放复位（C 入口
 // ame139_fsr_heal_reset_input_scale 经主线程转发到本方法；ivar 私有，
@@ -1209,6 +1217,18 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
     isControlModifiable = NO;
     // Task229: per-game-session auto-keyboard state.
     ame229_autoKbShownThisSession = NO;
+    // ★ Task261（右 Shift"又出问题了"防线 2）：会话起始确定性清账。
+    // Task255 依赖 dealloc 清 Task179 账本——若旧 VC 因持有链延迟释放，
+    // 文件级账本跨会话残留 = 重进游戏首次轻点被误判 toggle OFF（DOWN
+    // 静默）= "第一次永远无效"复发。新会话开始 = 旧锁存语义必然作废，
+    // 此处主动清账（含 SDL 托管位面归零防反向锁死），不再依赖 dealloc
+    // 时机。nil 兜底与 executebtn 的惰性初始化同口径。
+    if (s_ame179_toggledMods == nil) { s_ame179_toggledMods = [NSMutableSet set]; }
+    if (s_ame176_modDownTime == nil) { s_ame176_modDownTime = [NSMutableDictionary dictionary]; }
+    [s_ame179_toggledMods removeAllObjects];
+    [s_ame176_modDownTime removeAllObjects];
+    CallbackBridge_resetVirtualModifierState();
+    NSLog(@"[InputDiag] Task261: session-start input state reset (Task179 ledger + virtual mods)");
     self.isMacCatalystApp = NSProcessInfo.processInfo.isMacCatalystApp;
     // Load MetalHUD library
     dlopen("/usr/lib/libMTLHud.dylib", 0);
@@ -1577,6 +1597,70 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
     if (self.launchGradientLayer && self.launchOverlayView) {
         self.launchGradientLayer.frame = self.launchOverlayView.bounds;
     }
+    // ★ Task261（用户："切小窗再重新放大回去，输入会错误"自适应恢复）：
+    //   iPadOS 26 自由窗口缩放【不】走 viewWillTransitionToSize（旋转专属），
+    //   信念链（screenScale/surface/windowWidth/drawableSize）在小窗期间与
+    //   放大回全屏后全部维持旧值；Task255 首触对账比较 drawable vs 信念，
+    //   双方同旧 = 永无失配 = 永不自愈 → 触点换算基准与真实窗口错位。
+    //   布局尺寸与上次重算锚点失配 → 合并去抖 0.3s 后全链重算+重宣告。
+    CGSize ame261_now = self.view.bounds.size;
+    if (ame261_now.width > 0 && !CGSizeEqualToSize(ame261_now, ame261_lastSyncedViewSize)) {
+        [self ame261_scheduleAdaptiveGeometryResync];
+    }
+}
+
+// ★ Task261：自适应几何恢复——合并去抖调度（实时拖拽缩放每帧 layout，
+// 流停 0.3s 才跑一次全链；非活跃期沿用 Task251 冻结语义，回前台必达补跑）。
+- (void)ame261_scheduleAdaptiveGeometryResync {
+    if (!g_ame250_appActive) {
+        ame251_transitionResyncPending = YES;
+        return;
+    }
+    [self.ame261_geoResyncTimer invalidate];
+    self.ame261_geoResyncTimer = nil;
+    __weak typeof(self) weakSelf = self;
+    self.ame261_geoResyncTimer = [NSTimer timerWithTimeInterval:0.3
+                                                         repeats:NO
+                                                           block:^(NSTimer *t) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        strongSelf.ame261_geoResyncTimer = nil;
+        [strongSelf ame261_runAdaptiveGeometryResync];
+    }];
+    [[NSRunLoop mainRunLoop] addTimer:self.ame261_geoResyncTimer
+                              forMode:NSRunLoopCommonModes];
+}
+
+// ★ Task261：全链重算+重宣告（ame247_didBecomeActive 复屏链的尺寸变化版）：
+//   SDL 嵌入视图 frame 重 assert（Task254 同款）→ updateSavedResolution
+//   （screenScale/surface/drawable/窗口信念全链重算+内建宣告）→
+//   Task255 真值对账 → Task250 强制通道重宣告（绕过 Task83b 同值去重）→
+//   ame248 首触点重申兜底。幂等：尺寸已同步时零副作用。
+- (void)ame261_runAdaptiveGeometryResync {
+    if (self.surfaceView.superview == nil) return;   // 会话未启动
+    CGSize ame261_now = self.view.bounds.size;
+    if (CGSizeEqualToSize(ame261_now, ame261_lastSyncedViewSize)) return;   // 已同步
+    if (!g_ame250_appActive) {
+        ame251_transitionResyncPending = YES;
+        return;
+    }
+    NSLog(@"[SurfaceVC] Task261: adaptive geometry resync (view %.0fx%.0f, last-synced %.0fx%.0f)",
+          ame261_now.width, ame261_now.height,
+          ame261_lastSyncedViewSize.width, ame261_lastSyncedViewSize.height);
+    UIView *ame261_sv = (__bridge UIView *)ame_hook_getEmbeddedSDLView();
+    if (ame261_sv && ame261_sv.superview &&
+        !CGRectEqualToRect(ame261_sv.frame, ame261_sv.superview.bounds)) {
+        NSLog(@"[SurfaceVC] Task261: sdlView frame drift %@ vs container %@ -> reassert",
+              NSStringFromCGRect(ame261_sv.frame), NSStringFromCGRect(ame261_sv.superview.bounds));
+        ame261_sv.frame = ame261_sv.superview.bounds;
+    }
+    [self updateSavedResolution];
+    [self ame255_autoCorrectGeometryFromGroundTruthAtSite:@"ame261-window-resize"];
+    if (windowWidth > 0 && windowHeight > 0) {
+        CallbackBridge_nativeSendScreenSizeForced(windowWidth, windowHeight);
+    }
+    ame248_geoResyncPending = YES;
+    NSLog(@"[SurfaceVC] Task261: adaptive resync done (window %dx%d force-announced)",
+          (int)windowWidth, (int)windowHeight);
 }
 
 - (void)updateAudioSettings {
@@ -1846,6 +1930,9 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
                   metalLayer.contentsScale);
         }
     }
+    // ★ Task261：信念链重算完成 → 同步"已同步锚点"（viewDidLayoutSubviews
+    //   的尺寸失配检测以此为准；单一写者纪律）。
+    ame261_lastSyncedViewSize = self.view.bounds.size;
     CallbackBridge_nativeSendScreenSize(windowWidth, windowHeight);
 }
 
@@ -3587,6 +3674,10 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 // 状态而提升到文件级）。
 static NSMutableDictionary<NSNumber *, NSNumber *> *s_ame176_modDownTime = nil;
 static NSMutableSet<NSNumber *> *s_ame179_toggledMods = nil;
+// ★ Task261：修饰键锁存可视同步的"常规色"存档表（按钮 → 首次锁存前的
+// backgroundColor）。常规按钮（savedBackgroundColor==nil）没有自带的
+// 还原基准，锁存着色前在此留档，解除锁存时按档还原。
+static NSMapTable<ControlButton *, UIColor *> *s_ame261_modLatchColors = nil;
 
 - (void)executebtn:(ControlButton *)sender withAction:(int)action {
     // Task 83b：入口取证——⌨ 面板问题的日志闭环。此前 sendKey（nativeSendKey）
@@ -3645,6 +3736,9 @@ static NSMutableSet<NSNumber *> *s_ame179_toggledMods = nil;
     if (s_ame176_modDownTime == nil) {
         s_ame176_modDownTime = [NSMutableDictionary dictionary];
         s_ame179_toggledMods = [NSMutableSet set];
+    }
+    if (s_ame261_modLatchColors == nil) {
+        s_ame261_modLatchColors = [NSMapTable strongToStrongObjectsMapTable];
     }
 // Task247（T3 "Ctrl 像持续奔跑"根修）：LEFT/RIGHT_CONTROL 移出 Task179
 // 轻点锁定集。旧语义下轻点 CTRL 按钮即把 Ctrl 钉在按下态（MC 侧等价于
@@ -3756,16 +3850,22 @@ static NSMutableSet<NSNumber *> *s_ame179_toggledMods = nil;
                             // 轻点在 toggle 态上：关闭（补发 UP），流程继续到
                             // 下方的 nativeSendKey(..., 0, ...) 把 UP 发出去。
                             [s_ame179_toggledMods removeObject:@(keycode)];
+                            // ★ Task261：锁存解除 → 按钮可视还原（对齐持续奔跑）
+                            [self ame261_syncModLatchVisualForKeycode:keycode latched:NO];
                             NSLog(@"[InputDiag] Task179 mod toggle OFF: keycode=%d (tap on toggled state)", keycode);
                         } else {
                             // 轻点在常态上：开启（扣住 UP，保持按下态）。
                             [s_ame179_toggledMods addObject:@(keycode)];
+                            // ★ Task261：锁存生效 → 按钮高亮（"摁下去有显示是否持久"）
+                            [self ame261_syncModLatchVisualForKeycode:keycode latched:YES];
                             NSLog(@"[InputDiag] Task179 mod toggle ON: keycode=%d (tap; stays down until next tap)", keycode);
                             continue;
                         }
                     } else {
                         // 长按释放：常规 UP，同时清除 toggle 态（按住玩法优先）。
                         [s_ame179_toggledMods removeObject:@(keycode)];
+                        // ★ Task261：长按释放同样还原锁存可视（若有残留）
+                        [self ame261_syncModLatchVisualForKeycode:keycode latched:NO];
                     }
                 }
             }
@@ -3783,6 +3883,57 @@ static NSMutableSet<NSNumber *> *s_ame179_toggledMods = nil;
     // Task179："非修饰输入自动释放锁定修饰键"机制退役——正是它让
     // "点 shift 再移动"的潜行用法失效（任何输入都把 shift 弹起）。
     // toggle 态只由再次轻点或长按释放，语义自洽。
+}
+
+// ★ Task261（用户："能不能像持续奔跑那样摁下去有显示是否持久"）：修饰键
+// 轻点锁存的可视同步。Task179 语义下轻点右 Shift = 锁存（潜行持续）、再点
+// 解除——但锁存态此前零可视反馈，用户无法判断是否生效（"又出问题了"的
+// 感知放大器：明明锁上了以为没锁上，或者反过来）。对齐"持续 奔跑"按钮的
+// isToggleOn 高亮语义（Task226 翻转块的着色样式）：锁存 ON = tint 着色，
+// OFF = 还原。同步范围 = ctrlView 树内所有绑定该键码的【常规】按钮
+// （savedBackgroundColor==nil 才走 Task179 路径；保持型按钮的 isToggle
+// 高亮由 ame247 直发路径自管，此处不越权改写）。主按钮与抽屉子按钮
+// （classic.json 两处右SHIFT）经递归遍历一并同步。
+- (void)ame261_syncModLatchVisualForKeycode:(int)keycode latched:(BOOL)latched {
+    if (s_ame261_modLatchColors == nil) {
+        s_ame261_modLatchColors = [NSMapTable strongToStrongObjectsMapTable];
+    }
+    NSMutableArray<UIView *> *ame261_stack = [NSMutableArray arrayWithObject:self.ctrlView];
+    while (ame261_stack.count > 0) {
+        UIView *ame261_node = ame261_stack.lastObject;
+        [ame261_stack removeLastObject];
+        for (UIView *ame261_child in ame261_node.subviews) {
+            if ([ame261_child isKindOfClass:[ControlButton class]]) {
+                ControlButton *ame261_btn = (ControlButton *)ame261_child;
+                BOOL ame261_match = NO;
+                for (NSNumber *ame261_kc in ame261_btn.properties[@"keycodes"]) {
+                    if (ame261_kc.intValue == keycode) { ame261_match = YES; break; }
+                }
+                if (ame261_match && ame261_btn.savedBackgroundColor == nil) {
+                    if (latched) {
+                        if ([s_ame261_modLatchColors objectForKey:ame261_btn] == nil &&
+                            ame261_btn.backgroundColor != nil) {
+                            [s_ame261_modLatchColors setObject:ame261_btn.backgroundColor
+                                                        forKey:ame261_btn];
+                        }
+                        CGFloat ame261_alpha = ame261_btn.backgroundColor != nil
+                            ? CGColorGetAlpha(ame261_btn.backgroundColor.CGColor) : 1.0;
+                        ame261_btn.isToggleOn = YES;
+                        ame261_btn.backgroundColor =
+                            [self.view.tintColor colorWithAlphaComponent:ame261_alpha];
+                    } else {
+                        UIColor *ame261_saved = [s_ame261_modLatchColors objectForKey:ame261_btn];
+                        if (ame261_saved != nil) {
+                            ame261_btn.backgroundColor = ame261_saved;
+                            [s_ame261_modLatchColors removeObjectForKey:ame261_btn];
+                        }
+                        ame261_btn.isToggleOn = NO;
+                    }
+                }
+            }
+            if (ame261_child.subviews.count > 0) { [ame261_stack addObject:ame261_child]; }
+        }
+    }
 }
 
 - (void)executebtn_down:(ControlButton *)sender
@@ -4706,6 +4857,10 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
     [s_ame179_toggledMods removeAllObjects];
     [s_ame176_modDownTime removeAllObjects];
     CallbackBridge_resetVirtualModifierState();
+    // ★ Task261：自适应几何恢复定时器随会话终结退役（防 VC 退役后 timer
+    //   block 持 weakSelf 空转）。
+    [self.ame261_geoResyncTimer invalidate];
+    self.ame261_geoResyncTimer = nil;
 }
 
 @end

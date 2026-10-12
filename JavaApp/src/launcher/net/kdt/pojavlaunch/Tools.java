@@ -255,12 +255,25 @@ public final class Tools {
         int dumps = 0;
         try {
             // 20 次 x 30s = 10 分钟
+            // ★ Task261（⑧大型整合包"无输出"取证）：前 3 个样本提速到 8s——
+            // Task261 取证（latestlog.old 00:48 会话）实证：用户在窗口初始化
+            // 样本 #1 之后平均 13-40s 就手杀/切后台，30s 节奏的相位 2 样本
+            // 从未有机会落栈，卡点（Setting user → Backend library 之间）
+            // 永远无栈可查。前 3 快样本保证 30s 内必有至少一份窗口期栈，
+            // 之后回到 30s 长节奏不刷屏。
             for (int i = 1; i <= 20 && dumps < 5; i++) {
-                Thread.sleep(30000L);
+                Thread.sleep(i <= 3 ? 8000L : 30000L);
                 if (gameThread.getState() == Thread.State.TERMINATED) {
                     return;
                 }
                 StackTraceElement[] st = gameThread.getStackTrace();
+                if (i == 1) {
+                    // ★ Task261（⑧取证）：窗口期首样本无条件落栈——冻结检测
+                    // 需两个连续同签名（8s 节奏下最早 ~16s），用户 13-40s 手杀
+                    // 仍可能抢在前头；无条件首样本把"窗口创建后 8s 游戏线程
+                    // 在哪"变成每次启动必达的证据（24 帧，健康启动仅此一份）。
+                    dumpStack("post-window-first", i, gameThread.getState(), st);
+                }
                 String signature = stackSignature(st, 6);
                 if (signature != null && signature.equals(frozenSignature)) {
                     frozenCount++;

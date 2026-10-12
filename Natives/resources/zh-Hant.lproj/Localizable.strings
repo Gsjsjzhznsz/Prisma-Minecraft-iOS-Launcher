@@ -2633,6 +2633,9 @@
 "preference.detail.data_export" = "把啟動器全部資料（實例、存檔、模組、帳戶、設定）打包為 zip 備份。更換應用包名前，先儲存到檔案 App 任意位置。";
 "preference.title.data_import" = "從備份匯入資料";
 "preference.detail.data_import" = "將先前匯出的備份 zip 還原到本啟動器，重啟後生效。";
+"preference.title.data_sibling_import" = "匯入舊版啟動器資料（air 建置）";
+"preference.detail.data_sibling_import" = "偵測與本體並排的舊版 App（air 建置）資料目錄（LiveContainer 相鄰版面），一鍵合併遷入。與歡迎精靈同款遷移，此處隨時可用。";
+"prefs.data_sibling.none" = "未在本體旁發現舊版啟動器資料";
 "preference.title.about" = "關於";
 "preference.detail.about" = "版本資訊、QQ 群、啟動器更新、授權條款與致謝";
 "ame217.export.progress" = "正在匯出資料備份…";
@@ -3084,3 +3087,4 @@
 "preference.title.done.reset_appearance_colors" = "外觀顏色已恢復預設";
 "preference.title.done.session_list" = "會話清單已開啟";
 "preference.title.done.system_prompt" = "系統提示詞已開啟";
+"preference.title.done.data_sibling_import" = "已開啟匯入入口";

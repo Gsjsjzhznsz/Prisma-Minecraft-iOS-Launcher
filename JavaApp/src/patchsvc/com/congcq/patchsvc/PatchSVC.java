@@ -94,6 +94,42 @@ public class PatchSVC implements ClassFileTransformer {
                         System.out.println("[Ame251] POJAV_HOME unset, marker skipped");
                         return;
                     }
+                    // ★ Task261（⑧大型整合包"无输出"取证闭环）：JVM 退出路径
+                    // （System.exit / main 返回，无论正常 quit 还是静默早退）
+                    // 必然经过 shutdown hooks——在写标记前把当前 latestlog 快照
+                    // 为 latestlog.selfexit-<时间戳>.txt。此前的死因证据链随
+                    // latestlog 轮转（两次新启动后丢失），Task261 取证时三次
+                    // 静默自灭（Task251 marker 三连）因日志轮转永久失考。
+                    // 快照只增不覆盖同时间戳；保留最近 3 份，更旧的清理。
+                    try {
+                        java.io.File ame261_cur =
+                            new java.io.File(ame251_home, "latestlog.txt");
+                        if (ame261_cur.exists() && ame261_cur.length() > 0) {
+                            String ame261_ts = new java.text.SimpleDateFormat(
+                                "MMdd-HHmmss").format(new java.util.Date());
+                            java.io.File ame261_snap = new java.io.File(ame251_home,
+                                "latestlog.selfexit-" + ame261_ts + ".txt");
+                            java.nio.file.Files.copy(ame261_cur.toPath(),
+                                ame261_snap.toPath(),
+                                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                            java.io.File ame261_homeDir = new java.io.File(ame251_home);
+                            java.io.File[] ame261_old = ame261_homeDir.listFiles(
+                                (d, n) -> n.startsWith("latestlog.selfexit-"));
+                            if (ame261_old != null && ame261_old.length > 3) {
+                                java.util.Arrays.sort(ame261_old,
+                                    (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
+                                for (int ame261_i = 0;
+                                     ame261_i < ame261_old.length - 3; ame261_i++) {
+                                    ame261_old[ame261_i].delete();
+                                }
+                            }
+                            System.out.println("[Task261] selfexit snapshot saved: "
+                                + ame261_snap.getName() + " (" + ame261_cur.length() + "B)"
+                                + " -- silent-exit log preserved against rotation");
+                        }
+                    } catch (Throwable ame261_t) {
+                        System.out.println("[Task261] selfexit snapshot failed: " + ame261_t);
+                    }
                     java.io.File ame251_marker =
                         new java.io.File(ame251_home, "ame251_shutdown.marker");
                     if (!ame251_marker.exists()) {

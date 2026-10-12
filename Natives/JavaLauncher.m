@@ -1342,6 +1342,116 @@ static BOOL ame138_writeJSON(id obj, NSString *path) {
 //     空布局 uuid（Task134-139 污染），恢复备份或直接移除指针（mod 回落
 //     内置默认预设 = 完整虚拟按钮）；用户手动在 mod 界面选的其它预设
 //     一律不动。空布局预设文件保留（用户仍可在 mod 配置界面选用）。
+// ★ Task261（右 Shift"又出问题了"根修——新实例默认键位家族）：
+// 历轮病例链：Task181 净化器洗键（v1 标记止血）/ Task224 隔离目录换代重洗
+// （v2 恢复）/ Task225 恢复只覆盖 v2 cohort（v3）。结构性盲区 = 【全新
+// 实例】（新装实例、隔离新档、迁移后新建 instance）：options.txt 由 MC
+// 生成默认 key_key.sneak=key.keyboard.left.shift，而用户布局里的潜行按钮
+// 是右SHIFT(344) —— 按键事件链全绿但 MC 的潜行键位根本不在右 Shift =
+// "右 SHIFT 按钮打空"（Task229 根因 (c) 同族）。Task229 的跨实例键位
+// 同步只补【缺失】键行，默认行已存在 → 永不修复。
+// 修法（JVM 启动前、MC 读 options.txt 之前）：活动控件布局含 344 按钮
+// && 当前 options.txt 的 sneak 处于原版默认态 && v4 标记缺席 → 改绑
+// key.keyboard.right.shift（旧数字格式 42→54）+ 写 v4 标记（一次性：
+// 用户此后在游戏内主动改回左 Shift 不再被翻转，尊重用户后续选择）。
+static void ame261_repairSneakBindingForRightShiftLayout(NSString *gameDir) {
+    if (gameDir.length == 0) return;
+    // 1. 活动布局是否含 344（profile 的 defaultTouchCtrl → controlmap/<名>）
+    NSString *ame261_ctrlName = [PLProfiles resolveKeyForCurrentProfile:@"defaultTouchCtrl"];
+    if (![ame261_ctrlName isKindOfClass:[NSString class]] || ame261_ctrlName.length == 0) return;
+    NSString *ame261_ctrlPath = [NSString stringWithFormat:@"%s/controlmap/%@",
+        getenv("POJAV_HOME"), ame261_ctrlName];
+    NSData *ame261_ctrlData = [NSData dataWithContentsOfFile:ame261_ctrlPath];
+    if (ame261_ctrlData.length == 0) return;
+    id ame261_ctrlJson = [NSJSONSerialization JSONObjectWithData:ame261_ctrlData
+                                                         options:0 error:nil];
+    BOOL ame261_hasRShift = NO;
+    NSMutableArray<id> *ame261_stack = [NSMutableArray array];
+    if (ame261_ctrlJson != nil) [ame261_stack addObject:ame261_ctrlJson];
+    while (ame261_stack.count > 0 && !ame261_hasRShift) {
+        id ame261_node = ame261_stack.lastObject;
+        [ame261_stack removeLastObject];
+        if ([ame261_node isKindOfClass:[NSArray class]]) {
+            for (id ame261_sub in (NSArray *)ame261_node) [ame261_stack addObject:ame261_sub];
+        } else if ([ame261_node isKindOfClass:[NSDictionary class]]) {
+            NSDictionary *ame261_dict = (NSDictionary *)ame261_node;
+            for (id ame261_sub in ame261_dict.allValues) [ame261_stack addObject:ame261_sub];
+            id ame261_kcs = ame261_dict[@"keycodes"];
+            if ([ame261_kcs isKindOfClass:[NSArray class]]) {
+                for (id ame261_kc in (NSArray *)ame261_kcs) {
+                    if ([ame261_kc isKindOfClass:[NSNumber class]] && [ame261_kc intValue] == 344) {
+                        ame261_hasRShift = YES;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if (!ame261_hasRShift) {
+        NSLog(@"[Task261] sneak rebind repair: no RIGHT_SHIFT(344) button in active layout (%@), skip",
+              ame261_ctrlName);
+        return;
+    }
+
+    // 2. 当前实例 options.txt 的 sneak 现状
+    NSString *ame261_optPath = [gameDir stringByAppendingPathComponent:@"options.txt"];
+    NSString *ame261_content = [NSString stringWithContentsOfFile:ame261_optPath
+                                                         encoding:NSUTF8StringEncoding
+                                                            error:nil];
+    if (ame261_content.length == 0) return;
+    NSString *ame261_target = nil;
+    for (NSString *ame261_ln in [ame261_content componentsSeparatedByString:@"\n"]) {
+        if ([ame261_ln hasPrefix:@"key_key.sneak:"]) {
+            NSString *ame261_val = [[ame261_ln substringFromIndex:@"key_key.sneak:".length]
+                stringByTrimmingCharactersInSet:
+                [NSCharacterSet characterSetWithCharactersInString:@"\r "]];
+            // 仅在原版默认态修复（新键名/旧数字格式双形态，与 Task225 v3 同口径）
+            if ([ame261_val isEqualToString:@"key.keyboard.left.shift"]) {
+                ame261_target = @"key.keyboard.right.shift";
+            } else if ([ame261_val isEqualToString:@"42"]) {
+                ame261_target = @"54";
+            }
+            break;
+        }
+    }
+    if (ame261_target == nil) {
+        NSLog(@"[Task261] sneak rebind repair: sneak not in vanilla-default state, keep as-is");
+        return;
+    }
+
+    // 3. v4 一次性标记（同目录，与 v1/v2/v3 同族）
+    NSString *ame261_marker = [ame261_optPath stringByAppendingString:@".amethyst-keybinds-v4"];
+    if ([NSFileManager.defaultManager fileExistsAtPath:ame261_marker]) {
+        NSLog(@"[Task261] sneak rebind repair: v4 marker present, skip (one-shot)");
+        return;
+    }
+
+    // 4. 备份 + 原子重写 + 写标记
+    NSString *ame261_bak = [ame261_optPath stringByAppendingString:@".amethyst-bak"];
+    [NSFileManager.defaultManager removeItemAtPath:ame261_bak error:nil];
+    if (![NSFileManager.defaultManager copyItemAtPath:ame261_optPath
+                                              toPath:ame261_bak
+                                               error:nil]) {
+        NSLog(@"[Task261] sneak rebind repair: backup failed, abort to avoid data loss");
+        return;
+    }
+    NSMutableArray<NSString *> *ame261_out = [NSMutableArray array];
+    for (NSString *ame261_ln in [ame261_content componentsSeparatedByString:@"\n"]) {
+        if ([ame261_ln hasPrefix:@"key_key.sneak:"]) {
+            [ame261_out addObject:[NSString stringWithFormat:@"key_key.sneak:%@", ame261_target]];
+        } else {
+            [ame261_out addObject:ame261_ln];
+        }
+    }
+    NSString *ame261_new = [ame261_out componentsJoinedByString:@"\n"];
+    BOOL ame261_ok = [ame261_new writeToFile:ame261_optPath atomically:YES
+                                    encoding:NSUTF8StringEncoding error:nil];
+    [@"" writeToFile:ame261_marker atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    NSLog(@"[Task261] sneak rebind repair: layout has RIGHT_SHIFT(344), sneak was vanilla-default "
+          @"-> %@ (write=%@, marker=v4, options=%@)",
+          ame261_target, ame261_ok ? @"OK" : @"FAILED", ame261_optPath);
+}
+
 static void ame140_remediateTouchControllerConfig(NSString *gameDir) {
     if (gameDir.length == 0) {
         return;
@@ -2402,6 +2512,10 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         // 仍在 JLI_Launch 前（MC 的 Options.load 在 JVM 启动早期执行）。
         setenv("AME67_INSTANCE_GAME_DIR", gameDir.UTF8String, 1);
         ame67_sanitizeOptionsKeybinds();
+        // ★ Task261（右 Shift"又出问题了"根修——新实例默认键位家族）：
+        // 活动布局含右SHIFT(344) 按钮而当前实例 options.txt 的 sneak 仍是
+        // 原版默认（左 Shift）时，启动前改绑 right.shift（详见函数头病历）。
+        ame261_repairSneakBindingForRightShiftLayout(gameDir);
 
         // Task181：老 Forge（1.x）SplashProgress 线程禁用——splash 线程与主线程
         // 在共享 GL 上下文上互相踩踏是 1.8.9 会话 FBO status:0 崩溃的根因

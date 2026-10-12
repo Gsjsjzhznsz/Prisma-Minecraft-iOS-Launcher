@@ -2638,6 +2638,9 @@
 "preference.detail.data_export" = "Pack the entire launcher data (instances, saves, mods, accounts, settings) into a zip backup. Save it anywhere via the Files app before migrating to a new app identity.";
 "preference.title.data_import" = "Import from backup";
 "preference.detail.data_import" = "Restore a previously exported backup zip into this launcher. Takes effect after a restart.";
+"preference.title.data_sibling_import" = "Import old launcher data (air build)";
+"preference.detail.data_sibling_import" = "Detect an old air-build app's data folder sitting next to this app (LiveContainer sibling layout) and merge it in with one tap. Same migration as the welcome wizard, always available here.";
+"prefs.data_sibling.none" = "No old launcher data found next to this app";
 "preference.title.about" = "About";
 "preference.detail.about" = "Version info, QQ group, launcher updates, license and credits";
 "ame217.export.progress" = "Exporting data backup…";
@@ -3089,3 +3092,4 @@
 "preference.title.done.reset_appearance_colors" = "Appearance colors reset";
 "preference.title.done.session_list" = "Session list opened";
 "preference.title.done.system_prompt" = "System prompt editor opened";
+"preference.title.done.data_sibling_import" = "Import entry opened";

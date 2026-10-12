@@ -1,16 +1,32 @@
 ---
-// Prisma 6.5.0 启动器介绍站 —— iOS 27 液态玻璃（Task260 二轮：真启动器图标
-// favicon/hero、与上游的区别对比区、信息扩容：JIT 指南/系统要求/社区）。
-// 公告数据：构建期 scripts/sync-announcements.mjs 从仓库 main 同步
-// （单一事实源与启动器一致），此快照为离线构建回退。
+// Prisma 启动器介绍站 v2 —— Task261：①中英双语（client 端 lang 切换，
+// localStorage 持久化 + head 内联预应用防 FOUC）②交流社区 + 捐赠区块
+// （渠道取自 README 单一事实源：QQ 群 / Discord / 爱发电 / 微信赞赏码）
+// ③下载区自动识别最新版（GitHub Releases API + 1h 本地缓存 + 构建期
+// 兜底常量）+ 国内 gh 加速源前缀组 + GitHub 发行版直达。
+// 公告数据：构建期 scripts/sync-announcements.mjs 从仓库 main 同步。
 import '../styles/global.css';
 import announcements from '../data/announcements.json';
 
 const REPO = 'https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher';
-const RELEASE_URL = REPO + '/releases/tag/v6.5.0';
-const IPA_URL = RELEASE_URL + '/download/com.prisma-devs.prisma-6.5.0-ios.ipa';
-const TIPA_URL = RELEASE_URL + '/download/com.prisma-devs.prisma-6.5.0-ios-trollstore.tipa';
+const FALLBACK_TAG = 'v6.5.0';
+const releaseUrl = (tag) => `${REPO}/releases/tag/${tag}`;
+const assetUrl = (tag, name) => `${REPO}/releases/download/${tag}/${name}`;
+const IPA = (tag) => assetUrl(tag, `com.prisma-devs.prisma-${tag.replace(/^v/, '')}-ios.ipa`);
+const TIPA = (tag) => assetUrl(tag, `com.prisma-devs.prisma-${tag.replace(/^v/, '')}-ios-trollstore.tipa`);
+const LEGACY_AIR = assetUrl(FALLBACK_TAG, 'com.air-devs.air-legacy-EXPORT-ONLY.ipa');
+const DONATE_WECHAT = `${REPO}/raw/main/donate.png`;
+const AFDIAN = 'https://afdian.com/a/yiqiu4178';
+const DISCORD = 'https://discord.gg/HqcmswrEy';
 const BASE = '/Prisma-Minecraft-iOS-Launcher';
+
+// 国内 GitHub 下载加速源（前缀拼接型；可用性随网络环境波动，页面同时
+// 保留 GitHub 直达与多个镜像，用户可自行选用）。
+const GH_MIRRORS = [
+  { name: 'ghfast.top', prefix: 'https://ghfast.top/' },
+  { name: 'gh-proxy.com', prefix: 'https://gh-proxy.com/' },
+  { name: 'ghproxy.net', prefix: 'https://ghproxy.net/' },
+];
 
 const pinned = [...announcements.announcements].sort(
   (a, b) => (b.pin === true ? 1 : 0) - (a.pin === true ? 1 : 0) || b.date.localeCompare(a.date)
@@ -19,62 +35,70 @@ const pinned = [...announcements.announcements].sort(
 const features = [
   {
     icon: '🫧',
-    title: 'iOS 27 液态玻璃',
-    body: 'Telegram 同款实况 backdrop 采样 + SDF 边缘折射，面板、弹窗、游戏内菜单整族玻璃质感；四档可选、最低档全透明；降低透明度自动回退原生，老版本会话自动安全降级。',
+    zh: { title: 'iOS 27 液态玻璃', body: 'Telegram 同款实况 backdrop 采样 + SDF 边缘折射，面板、弹窗、游戏内菜单整族玻璃质感；四档可选、最低档全透明；降低透明度自动回退原生，老版本会话自动安全降级。' },
+    en: { title: 'iOS 27 Liquid Glass', body: 'Telegram-style live backdrop sampling with SDF edge refraction across panels, dialogs and in-game menus. Four intensity tiers, fully transparent at the lowest; gracefully falls back to native styling when Reduce Transparency is on or on legacy sessions.' },
   },
   {
     icon: '🎮',
-    title: '渲染矩阵 + FSR 超分',
-    body: 'MobileGL（Vulkan 直连 / GLES / GL 4.0）、ANGLE、VirGL、kw/gl4es 全后端矩阵；FSR 1.0 低分辨率渲染 + 放大锐化；自动渲染器按版本基线选择 + 崩溃自学降档。',
+    zh: { title: '渲染矩阵 + FSR 超分', body: 'MobileGL（Vulkan 直连 / GLES / GL 4.0）、ANGLE、VirGL、kw/gl4es 全后端矩阵；FSR 1.0 低分辨率渲染 + 放大锐化；自动渲染器按版本基线选择 + 崩溃自学降档。' },
+    en: { title: 'Render Matrix + FSR', body: 'Full backend matrix: MobileGL (Vulkan / GLES / GL 4.0), ANGLE, VirGL and kw/gl4es. FSR 1.0 renders low-res then upscales with sharpening. The auto renderer picks by version baseline and learns from crashes to step down safely.' },
   },
   {
     icon: '🌐',
-    title: '内置联机（Terracotta）',
-    body: 'EasyTier 内核：房间码 / 玩家列表 / 对局端口状态面板；访客掉线自动重试、主机端口周期扫描；游戏内玻璃菜单按会话版本自动安全降级。',
+    zh: { title: '内置联机（Terracotta）', body: 'EasyTier 内核：房间码 / 玩家列表 / 对局端口状态面板；访客掉线自动重试、主机端口周期扫描；游戏内玻璃菜单按会话版本自动安全降级。' },
+    en: { title: 'Built-in Multiplayer', body: 'EasyTier-powered Terracotta: room codes, player lists and live match port panels. Guests auto-retry on disconnect, hosts get periodic port scanning; the in-game glass menu degrades safely per session version.' },
   },
   {
     icon: '⬇️',
-    title: '国内下载提速',
-    body: 'BMCLAPI / MCIM 镜像矩阵 + 延迟×吞吐量双维度测速选路（128KB 实测持续速率，不再被低延迟官方源误导）；统一进度页实时显示当前文件、速率、双维度计数与 ETA。',
+    zh: { title: '国内下载提速', body: 'BMCLAPI / MCIM 镜像矩阵 + 延迟×吞吐量双维度测速选路（128KB 实测持续速率，不再被低延迟官方源误导）；统一进度页实时显示当前文件、速率、双维度计数与 ETA。' },
+    en: { title: 'Fast CN Downloads', body: 'BMCLAPI / MCIM mirror matrix with dual-dimension routing (latency × sustained 128KB throughput — no more misleading low-latency probes). A unified progress page shows the current file, speed and ETA in real time.' },
   },
   {
     icon: '🧩',
-    title: '整合包一站式',
-    body: 'Modrinth / CurseForge 整合包在线安装，Fabric / Forge / NeoForge / Quilt 加载器直装；FCL 风格版本隔离三态选择 + 数据自动迁移；26.x 组件下载全线根治。',
+    zh: { title: '整合包一站式', body: 'Modrinth / CurseForge 整合包在线安装，Fabric / Forge / NeoForge / Quilt 加载器直装；FCL 风格版本隔离三态选择 + 数据自动迁移；26.x 组件下载全线根治。' },
+    en: { title: 'One-stop Modpacks', body: 'Install Modrinth / CurseForge modpacks online; Fabric / Forge / NeoForge / Quilt loaders out of the box; FCL-style instance isolation (three-state) with automatic data migration; 26.x component downloads fully fixed.' },
   },
   {
     icon: '🤖',
-    title: 'AI 助手',
-    body: '内置 AI 对话（提供商可配置 / 会话列表 / 系统提示词编辑），启动器问题随问随答；全部本地偏好，不强绑任何账号体系。',
+    zh: { title: 'AI 助手', body: '内置 AI 对话（提供商可配置 / 会话列表 / 系统提示词编辑），启动器问题随问随答；全部本地偏好，不强绑任何账号体系。' },
+    en: { title: 'AI Assistant', body: 'Built-in AI chat with configurable providers, session history and system-prompt editing. Ask anything about the launcher; everything stays in local preferences with no account binding.' },
   },
   {
     icon: '🛟',
-    title: '数据安全与迁移',
-    body: '全量数据一键导出 / 导入（zip 分区可选）；LiveContainer 同宿主检测到旧包名数据时一键迁移；跨包名升级不丢档。',
+    zh: { title: '数据安全与迁移', body: '全量数据一键导出 / 导入（zip 分区可选）；LiveContainer 同宿主检测到旧包名数据时一键迁移；跨包名升级不丢档。' },
+    en: { title: 'Data Safety & Migration', body: 'One-tap full export / import (optional zip split). LiveContainer sibling detection migrates legacy-bundle data automatically; switching app bundle IDs never loses your worlds.' },
   },
   {
     icon: '🔬',
-    title: '深度诊断',
-    body: 'fatal trace / hs_err / JVM 日志三件套自动留存；主线程看门狗；带日志的问题一轮定位，社区反馈闭环快。',
+    zh: { title: '深度诊断', body: 'fatal trace / hs_err / JVM 日志三件套自动留存；主线程看门狗；带日志的问题一轮定位，社区反馈闭环快。' },
+    en: { title: 'Deep Diagnostics', body: 'fatal trace / hs_err / JVM logs are captured automatically on every launch; a main-thread watchdog samples stalls. Attach the logs and community reports converge in one round.' },
   },
 ];
 
 const diffs = [
-  ['界面语言', '上游为原生化flat风格', 'iOS 27 液态玻璃全家桶：TG 同款实况折射引擎、四档风格、界面/文字双缩放、动态反色'],
-  ['渲染', '单渲染器全局选择', '每游戏渲染器 + mg 三后端 FSR 1.0 + 崩溃自学降档 + 版本基线自动选择'],
-  ['联机', '依赖外部局域网工具', '内置 Terracotta/EasyTier：房间码、状态面板、自动重试、周期端口扫描全自动化'],
-  ['下载', '官方源为主', 'BMCLAPI/MCIM 镜像矩阵 + 延迟×吞吐量双维测速 + 断点续传 + 文件级进度明细'],
-  ['整合包', '基础安装', 'Modrinth/CurseForge 在线装 + 版本隔离三态 + 26.x 全线兼容 + 组件下载根治'],
-  ['数据', '无迁移能力', '全量导出/导入（分区可选）+ LiveContainer 兄弟目录一键迁移 + 实例感知收尾'],
-  ['可诊断性', '基础日志', 'fatal trace/hs_err/JVM 三件套 + 主线程看门狗 + 渲染/输入探针矩阵'],
+  ['界面语言', '上游为原生化flat风格', 'iOS 27 液态玻璃全家桶：TG 同款实况折射引擎、四档风格、界面/文字双缩放、动态反色', 'Visuals', 'Native flat style', 'Full iOS 27 liquid-glass suite: TG-style live refraction engine, four style tiers, dual UI/text scaling, dynamic contrast'],
+  ['渲染', '单渲染器全局选择', '每游戏渲染器 + mg 三后端 FSR 1.0 + 崩溃自学降档 + 版本基线自动选择', 'Rendering', 'Single global renderer', 'Per-game renderer + MobileGL 3-backend FSR 1.0 + crash-learning downgrade + version-baseline auto selection'],
+  ['联机', '依赖外部局域网工具', '内置 Terracotta/EasyTier：房间码、状态面板、自动重试、周期端口扫描全自动化', 'Multiplayer', 'External LAN tools', 'Built-in Terracotta/EasyTier: room codes, status panels, auto-retry, periodic port scanning — all automated'],
+  ['下载', '官方源为主', 'BMCLAPI/MCIM 镜像矩阵 + 延迟×吞吐量双维测速 + 断点续传 + 文件级进度明细', 'Downloads', 'Official sources', 'BMCLAPI/MCIM mirror matrix + latency×throughput probing + resumable transfers + per-file progress'],
+  ['整合包', '基础安装', 'Modrinth/CurseForge 在线装 + 版本隔离三态 + 26.x 全线兼容 + 组件下载根治', 'Modpacks', 'Basic install', 'Modrinth/CurseForge online install + three-state isolation + full 26.x compatibility + component fixes'],
+  ['数据', '无迁移能力', '全量导出/导入（分区可选）+ LiveContainer 兄弟目录一键迁移 + 实例感知收尾', 'Data', 'No migration', 'Full export/import (optional split) + one-tap LiveContainer sibling migration + instance-aware finalization'],
+  ['可诊断性', '基础日志', 'fatal trace/hs_err/JVM 三件套 + 主线程看门狗 + 渲染/输入探针矩阵', 'Diagnostics', 'Basic logs', 'fatal trace/hs_err/JVM trio + main-thread watchdog + render/input probe matrix'],
 ];
 
-const quickstart = [
-  '下载 IPA 并侧载（AltStore / SideStore / 爱思助手 / TrollStore 装 TIPA）',
-  '首次启动走欢迎向导：语言 → 下载源 → 数据迁移（检测到旧版数据可一键迁移）→ 界面风格',
-  '开启 JIT（设置 > JIT：StikDebug / SideStore / TrollStore Magnifier 均可）',
-  '下载一个 Minecraft 版本（或导入整合包），点击启动',
-];
+const quickstart = {
+  zh: [
+    '下载 IPA 并侧载（AltStore / SideStore / 爱思助手 / TrollStore 装 TIPA）',
+    '首次启动走欢迎向导：语言 → 下载源 → 数据迁移（检测到旧版数据可一键迁移）→ 界面风格',
+    '开启 JIT（设置 > JIT：StikDebug / SideStore / TrollStore Magnifier 均可）',
+    '下载一个 Minecraft 版本（或导入整合包），点击启动',
+  ],
+  en: [
+    'Download the IPA and sideload it (AltStore / SideStore / i4 Tools; use the TIPA with TrollStore)',
+    'First launch runs the welcome wizard: language → download source → data migration (one-tap if legacy data is detected) → appearance',
+    'Enable JIT (Settings > JIT: StikDebug / SideStore / TrollStore Magnifier all work)',
+    'Download a Minecraft version (or import a modpack) and hit Play',
+  ],
+};
 ---
 
 <!doctype html>
@@ -82,11 +106,18 @@ const quickstart = [
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prisma —— iOS Minecraft 启动器</title>
-    <meta name="description" content="Prisma：iOS 平台 Minecraft Java 版启动器。iOS 27 液态玻璃界面、每游戏渲染器 + FSR 超分、内置联机、国内镜像加速下载、AI 助手、数据一键迁移。" />
+    <title>Prisma —— iOS Minecraft 启动器 · Prisma — Minecraft Launcher for iOS</title>
+    <meta name="description" content="Prisma：iOS 平台 Minecraft Java 版启动器。iOS 27 液态玻璃界面、每游戏渲染器 + FSR 超分、内置联机、国内镜像加速下载、AI 助手、数据一键迁移。Prisma: a Minecraft Java Edition launcher for iOS with liquid-glass UI, per-game renderers, FSR upscaling, built-in multiplayer and CN mirror downloads." />
     <link rel="icon" type="image/png" sizes="32x32" href={`${BASE}/favicon.png`} />
     <link rel="icon" type="image/png" sizes="16x16" href={`${BASE}/icon-16.png`} />
     <link rel="apple-touch-icon" sizes="180x180" href={`${BASE}/icon-180.png`} />
+    <script is:inline>
+      // Task261：语言偏好预应用（防 FOUC）。默认中文。
+      try {
+        var ameLang = localStorage.getItem('prisma-lang');
+        if (ameLang === 'en') document.documentElement.dataset.lang = 'en';
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div class="aurora"></div>
@@ -96,63 +127,91 @@ const quickstart = [
       <div class="glass">
         <div class="brand"><img class="logo" src={`${BASE}/icon-32.png`} alt="Prisma icon" />Prisma</div>
         <nav class="topnav">
-          <a href="#features">特性</a>
-          <a href="#upstream">与上游的区别</a>
-          <a href="#announcements">公告</a>
+          <a href="#features"><span class="lang-zh">特性</span><span class="lang-en">Features</span></a>
+          <a href="#upstream"><span class="lang-zh">与上游的区别</span><span class="lang-en">vs Upstream</span></a>
+          <a href="#community"><span class="lang-zh">交流与支持</span><span class="lang-en">Community</span></a>
+          <a href="#announcements"><span class="lang-zh">公告</span><span class="lang-en">News</span></a>
           <a href={REPO} target="_blank" rel="noopener">GitHub</a>
-          <a class="cta" href="#download">下载 6.5.0</a>
+          <a class="cta" href="#download"><span class="lang-zh">下载 6.5.0</span><span class="lang-en">Download</span></a>
+          <button id="langToggle" class="lang-btn" type="button" aria-label="切换语言 / Switch language">EN</button>
         </nav>
       </div>
     </header>
 
     <section class="hero wrap">
       <img class="hero-icon" src={`${BASE}/icon-192.png`} alt="Prisma launcher icon" width="128" height="128" />
-      <span class="chip"><span class="dot"></span>v6.5.0 正式版 · 包名迁移至 com.prisma-devs.prisma</span>
+      <span class="chip"><span class="dot"></span><span class="lang-zh">v6.5.0 正式版 · 包名迁移至 com.prisma-devs.prisma</span><span class="lang-en">v6.5.0 stable · bundle id moved to com.prisma-devs.prisma</span></span>
       <h1>Prisma</h1>
       <p class="lead">
-        iOS 平台 Minecraft Java 版启动器。从渲染矩阵、输入链路到联机与下载全链自研调优，
-        为 iPhone 与 iPad 打造独一无二的 iOS 27 液态玻璃体验。
+        <span class="lang-zh">
+          iOS 平台 Minecraft Java 版启动器。从渲染矩阵、输入链路到联机与下载全链自研调优，
+          为 iPhone 与 iPad 打造独一无二的 iOS 27 液态玻璃体验。
+        </span>
+        <span class="lang-en">
+          A Minecraft: Java Edition launcher for iOS. Fully in-house tuning across the render
+          matrix, input pipeline, multiplayer and downloads — a one-of-a-kind iOS 27 liquid-glass
+          experience for iPhone and iPad.
+        </span>
       </p>
       <div class="actions">
-        <a class="btn primary" href={IPA_URL}>⬇ 下载 IPA（侧载）</a>
-        <a class="btn ghost" href={TIPA_URL}>TrollStore TIPA</a>
-        <a class="btn ghost" href={RELEASE_URL}>发行说明</a>
+        <a class="btn primary" id="hero-ipa-btn" href={IPA(FALLBACK_TAG)}>⬇ <span class="lang-zh">下载 IPA（侧载）</span><span class="lang-en">Download IPA (sideload)</span></a>
+        <a class="btn ghost" id="hero-tipa-btn" href={TIPA(FALLBACK_TAG)}><span class="lang-zh">TrollStore TIPA</span><span class="lang-en">TrollStore TIPA</span></a>
+        <a class="btn ghost" id="hero-release-btn" href={releaseUrl(FALLBACK_TAG)}><span class="lang-zh">发行说明</span><span class="lang-en">Release notes</span></a>
       </div>
-      <p class="meta-note">iOS 15+ · iPadOS 支持 · 首次启动游戏需开启 JIT · 旧版数据一键迁移</p>
+      <p class="meta-note">
+        <span class="lang-zh">iOS 15+ · iPadOS 支持 · 首次启动游戏需开启 JIT · 旧版数据一键迁移</span>
+        <span class="lang-en">iOS 15+ · iPadOS supported · JIT required for first game launch · one-tap legacy data migration</span>
+      </p>
     </section>
 
     <section id="features" class="wrap">
-      <h2 class="sec">功能全景</h2>
-      <p class="sec-sub">八个方向，全部来自真实装机的逐项反馈闭环（190+ 次提交、11 轮装机迭代）。</p>
-      <div class="grid">
+      <h2 class="sec"><span class="lang-zh">功能全景</span><span class="lang-en">Feature Overview</span></h2>
+      <p class="sec-sub">
+        <span class="lang-zh">八个方向，全部来自真实装机的逐项反馈闭环（190+ 次提交、11 轮装机迭代）。</span>
+        <span class="lang-en">Eight directions, every one closed-loop from real device feedback (190+ commits, 11 device-testing iterations).</span>
+      </p>
+      <div class="grid lang-zh">
         {features.map((f) => (
           <div class="glass card">
             <div class="icon">{f.icon}</div>
-            <h3>{f.title}</h3>
-            <p>{f.body}</p>
+            <h3>{f.zh.title}</h3>
+            <p>{f.zh.body}</p>
+          </div>
+        ))}
+      </div>
+      <div class="grid lang-en">
+        {features.map((f) => (
+          <div class="glass card">
+            <div class="icon">{f.icon}</div>
+            <h3>{f.en.title}</h3>
+            <p>{f.en.body}</p>
           </div>
         ))}
       </div>
     </section>
 
     <section id="upstream" class="wrap">
-      <h2 class="sec">我们与上游的区别</h2>
+      <h2 class="sec"><span class="lang-zh">我们与上游的区别</span><span class="lang-en">How We Differ from Upstream</span></h2>
       <p class="sec-sub">
-        Prisma 基于 PojavLauncher（iOS）与 Amethyst 社区成果构建，但远不止换皮——
-        每一项差异都对应一条真实装机反馈的根修闭环。
+        <span class="lang-zh">Prisma 基于 PojavLauncher（iOS）与 Amethyst 社区成果构建，但远不止换皮——每一项差异都对应一条真实装机反馈的根修闭环。</span>
+        <span class="lang-en">Prisma builds on PojavLauncher (iOS) and Amethyst community work — far beyond a reskin. Every difference below traces back to a real device-report fix.</span>
       </p>
-      <div class="glass diff-card">
+      <div class="glass diff-card lang-zh">
         <table class="diff-table">
-          <thead>
-            <tr><th>维度</th><th>上游（PojavLauncher / Amethyst）</th><th>Prisma</th></tr>
-          </thead>
+          <thead><tr><th>维度</th><th>上游（PojavLauncher / Amethyst）</th><th>Prisma</th></tr></thead>
           <tbody>
             {diffs.map((d) => (
-              <tr>
-                <td class="dim-k">{d[0]}</td>
-                <td class="dim-up">{d[1]}</td>
-                <td class="dim-pr">{d[2]}</td>
-              </tr>
+              <tr><td class="dim-k">{d[0]}</td><td class="dim-up">{d[1]}</td><td class="dim-pr">{d[2]}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="glass diff-card lang-en">
+        <table class="diff-table">
+          <thead><tr><th>Dimension</th><th>Upstream (PojavLauncher / Amethyst)</th><th>Prisma</th></tr></thead>
+          <tbody>
+            {diffs.map((d) => (
+              <tr><td class="dim-k">{d[3]}</td><td class="dim-up">{d[4]}</td><td class="dim-pr">{d[5]}</td></tr>
             ))}
           </tbody>
         </table>
@@ -160,26 +219,80 @@ const quickstart = [
     </section>
 
     <section id="quickstart" class="wrap">
-      <h2 class="sec">四步上手</h2>
-      <p class="sec-sub">从下载到进入世界的最短路径。</p>
+      <h2 class="sec"><span class="lang-zh">四步上手</span><span class="lang-en">Quick Start</span></h2>
+      <p class="sec-sub">
+        <span class="lang-zh">从下载到进入世界的最短路径。</span>
+        <span class="lang-en">The shortest path from download to your first world.</span>
+      </p>
       <div class="glass qs-card">
-        <ol class="qs">
-          {quickstart.map((s) => <li>{s}</li>)}
+        <ol class="qs lang-zh">
+          {quickstart.zh.map((s) => <li>{s}</li>)}
+        </ol>
+        <ol class="qs lang-en">
+          {quickstart.en.map((s) => <li>{s}</li>)}
         </ol>
         <p class="qs-note">
-          系统要求：iOS 15+（液态玻璃视觉需 iOS 26+，低版本自动回退原生观感）；
-          设备需支持 Metal；联机功能无需额外账号。
+          <span class="lang-zh">系统要求：iOS 15+（液态玻璃视觉需 iOS 26+，低版本自动回退原生观感）；设备需支持 Metal；联机功能无需额外账号。</span>
+          <span class="lang-en">Requirements: iOS 15+ (liquid-glass visuals need iOS 26+, older versions fall back to native styling); Metal-capable device; multiplayer needs no extra accounts.</span>
         </p>
       </div>
     </section>
 
+    <!-- ★ Task261 ⑦：交流与支持区块（渠道取自 README 单一事实源） -->
+    <section id="community" class="wrap">
+      <h2 class="sec"><span class="lang-zh">交流与支持</span><span class="lang-en">Community &amp; Support</span></h2>
+      <p class="sec-sub">
+        <span class="lang-zh">加入社区获取构建通知、装机帮助与反馈闭环；如果 Prisma 对你有帮助，欢迎支持开发。</span>
+        <span class="lang-en">Join the community for build announcements, setup help and fast feedback loops — or support development if Prisma helps you.</span>
+      </p>
+      <div class="grid community-grid">
+        <div class="glass card comm-card">
+          <div class="icon">💬</div>
+          <h3><span class="lang-zh">QQ 群</span><span class="lang-en">QQ Group</span></h3>
+          <p><span class="lang-zh">用户交流 · 装机反馈 · 构建发布通知。启动器「关于」页可一键复制群号。</span>
+          <span class="lang-en">User chat, device setup help and build announcements. The launcher's About page can copy the group number.</span></p>
+          <div class="comm-num">1126547426</div>
+        </div>
+        <div class="glass card comm-card">
+          <div class="icon">🌐</div>
+          <h3><span class="lang-zh">Discord 社区</span><span class="lang-en">Discord Community</span></h3>
+          <p><span class="lang-zh">国际用户交流 · 实时反馈 · 多语言互助。</span>
+          <span class="lang-en">International users, real-time discussion and multi-language help.</span></p>
+          <a class="btn ghost comm-btn" href={DISCORD} target="_blank" rel="noopener">
+            <span class="lang-zh">加入 Discord</span><span class="lang-en">Join Discord</span>
+          </a>
+        </div>
+        <div class="glass card comm-card">
+          <div class="icon">❤️</div>
+          <h3><span class="lang-zh">支持开发</span><span class="lang-en">Support Development</span></h3>
+          <p><span class="lang-zh">Prisma 持续免费开源。你的支持直接覆盖构建机与签名成本。</span>
+          <span class="lang-en">Prisma stays free and open source. Donations directly cover build and signing costs.</span></p>
+          <div class="comm-btns">
+            <a class="btn ghost comm-btn" href={AFDIAN} target="_blank" rel="noopener">
+              <span class="lang-zh">爱发电</span><span class="lang-en">Afdian</span>
+            </a>
+            <a class="btn ghost comm-btn" href={DONATE_WECHAT} target="_blank" rel="noopener">
+              <span class="lang-zh">微信赞赏码</span><span class="lang-en">WeChat Reward</span>
+            </a>
+          </div>
+          <p class="comm-star">
+            <span class="lang-zh">不方便捐赠？一个 ⭐️ Star 同样是对开发者最大的鼓励。</span>
+            <span class="lang-en">Can't donate? A ⭐️ star helps just as much.</span>
+          </p>
+        </div>
+      </div>
+    </section>
+
     <section id="announcements" class="wrap">
-      <h2 class="sec">公告</h2>
-      <p class="sec-sub">与启动器内公告同源（仓库 announcements.json 单一事实源），构建时自动同步。</p>
+      <h2 class="sec"><span class="lang-zh">公告</span><span class="lang-en">Announcements</span></h2>
+      <p class="sec-sub">
+        <span class="lang-zh">与启动器内公告同源（仓库 announcements.json 单一事实源），构建时自动同步。</span>
+        <span class="lang-en">Same source as the in-launcher announcements (repo announcements.json), synced at build time. Chinese only — see GitHub releases for English notes.</span>
+      </p>
       <div class="ann-list">
         {pinned.slice(0, 6).map((a) => (
           <div class="glass ann">
-            {a.pin === true && <span class="pin">置顶</span>}
+            {a.pin === true && <span class="pin"><span class="lang-zh">置顶</span><span class="lang-en">Pinned</span></span>}
             <div style="min-width:0">
               <h4>{a.title}</h4>
               <p>{a.summary}</p>
@@ -190,22 +303,57 @@ const quickstart = [
       </div>
     </section>
 
+    <!-- ★ Task261 ⑩：下载区 —— 自动识别最新版 + 国内加速源 + GitHub 发行版直达 -->
     <section id="download" class="wrap">
       <div class="glass dl-card">
-        <h2 class="sec">下载 Prisma 6.5.0</h2>
-        <p class="sec-sub">正式版 · 三种安装形态 · 旧包名数据迁移专用包一并提供</p>
+        <h2 class="sec"><span class="lang-zh">下载 Prisma</span><span class="lang-en">Download Prisma</span></h2>
+        <p class="sec-sub">
+          <span class="lang-zh">当前展示：<b id="dl-tag">v6.5.0</b>（页面自动识别最新发行版，识别失败时回退此构建期版本）</span>
+          <span class="lang-en">Showing: <b id="dl-tag-en">v6.5.0</b> (auto-detected latest release; falls back to this build-time version offline)</span>
+        </p>
         <div class="row">
-          <a class="btn primary" href={IPA_URL}>⬇ IPA（AltStore / SideStore / 爱思）</a>
-          <a class="btn ghost" href={TIPA_URL}>TIPA（TrollStore）</a>
-          <a class="btn ghost" href={RELEASE_URL + '/download/com.air-devs.air-legacy-EXPORT-ONLY.ipa'}>air 旧包名（仅导出数据）</a>
+          <a class="btn primary" id="dl-ipa-btn" href={IPA(FALLBACK_TAG)}>⬇ <span class="lang-zh">IPA（AltStore / SideStore / 爱思）</span><span class="lang-en">IPA (AltStore / SideStore / i4)</span></a>
+          <a class="btn ghost" id="dl-tipa-btn" href={TIPA(FALLBACK_TAG)}><span class="lang-zh">TIPA（TrollStore）</span><span class="lang-en">TIPA (TrollStore)</span></a>
+          <a class="btn ghost" id="dl-release-btn" href={releaseUrl(FALLBACK_TAG)}><span class="lang-zh">GitHub 发行版</span><span class="lang-en">GitHub Releases</span></a>
+          <a class="btn ghost" href={LEGACY_AIR}><span class="lang-zh">air 旧包名（仅导出数据）</span><span class="lang-en">Legacy air bundle (data export only)</span></a>
+        </div>
+        <div class="mirror-box" id="mirror-box">
+          <div class="mirror-title">
+            <span class="lang-zh">国内下载加速（GitHub 资产镜像前缀）</span>
+            <span class="lang-en">CN download accelerators (GitHub asset mirror prefixes)</span>
+          </div>
+          <div class="mirror-row" id="mirror-row">
+            {GH_MIRRORS.map((m) => (
+              <a class="mirror-chip" data-mirror={m.prefix} href={m.prefix + IPA(FALLBACK_TAG)}>
+                <span class="mirror-name">{m.name}</span>
+                <span class="mirror-file">IPA</span>
+              </a>
+            ))}
+            {GH_MIRRORS.map((m) => (
+              <a class="mirror-chip" data-mirror={m.prefix} data-mirror-asset="tipa" href={m.prefix + TIPA(FALLBACK_TAG)}>
+                <span class="mirror-name">{m.name}</span>
+                <span class="mirror-file">TIPA</span>
+              </a>
+            ))}
+          </div>
+          <p class="mirror-note">
+            <span class="lang-zh">镜像为第三方公共加速服务，可用性随网络环境波动；无法访问时请改用 GitHub 直达或更换网络。</span>
+            <span class="lang-en">Mirrors are third-party public accelerators; availability varies by network. If unreachable, use the GitHub direct links above.</span>
+          </p>
         </div>
         <div class="warn">
-          ⚠️ 包名迁移：新 App（com.prisma-devs.prisma）不自动继承旧 App 数据。
+          <span class="lang-zh">⚠️ 包名迁移：新 App（com.prisma-devs.prisma）不自动继承旧 App 数据。</span>
+          <span class="lang-en">⚠️ Bundle-id migration: the new app (com.prisma-devs.prisma) does not inherit old app data automatically.</span>
         </div>
-        <ol class="steps">
-          <li>LiveContainer 用户：新版本首次启动的欢迎向导会自动检测旧包名数据，点「一键迁移」即可（推荐）。</li>
+        <ol class="steps lang-zh">
+          <li>LiveContainer 用户：新版本首次启动的欢迎向导会自动检测旧包名数据，点「一键迁移」即可（推荐）。设置 → 通用也提供常驻「导入旧版启动器数据」入口。</li>
           <li>其他安装：在<b>旧版</b>（air 包名）中导出全量备份 → 新版中导入 → 重启生效。</li>
           <li>数据确认无误后删除旧图标。air 旧包名今后不再发布。</li>
+        </ol>
+        <ol class="steps lang-en">
+          <li>LiveContainer users: the welcome wizard auto-detects legacy-bundle data on first launch — tap "one-tap migrate" (recommended). A permanent "Import old launcher data" entry also lives in Settings → General.</li>
+          <li>Other installs: export a full backup from the <b>old</b> (air bundle id) app → import in the new app → restart.</li>
+          <li>Remove the old icon once data is verified. The legacy air bundle id will no longer receive releases.</li>
         </ol>
       </div>
     </section>
@@ -213,13 +361,83 @@ const quickstart = [
     <footer>
       <div class="wrap">
         <p>
-          <a href={REPO} target="_blank" rel="noopener">GitHub 仓库</a> ·
-          <a href={RELEASE_URL} target="_blank" rel="noopener">发行说明</a> ·
-          QQ 群 1126547426 ·
-          基于 PojavLauncher / Amethyst 社区成果构建，感谢所有上游贡献者
+          <a href={REPO} target="_blank" rel="noopener">GitHub 仓库 / Repo</a> ·
+          <a href={DISCORD} target="_blank" rel="noopener">Discord</a> ·
+          <a href={AFDIAN} target="_blank" rel="noopener">爱发电 / Afdian</a> ·
+          <span class="lang-zh">QQ 群 1126547426 · </span><span class="lang-en">QQ group 1126547426 · </span>
+          <span class="lang-zh">基于 PojavLauncher / Amethyst 社区成果构建，感谢所有上游贡献者</span>
+          <span class="lang-en">Built on PojavLauncher / Amethyst community work — thanks to all upstream contributors</span>
         </p>
-        <p style="margin-top:10px">© 2026 Prisma Devs · 本页面由 Astro 构建，公告与仓库同步</p>
+        <p style="margin-top:10px">© 2026 Prisma Devs · <span class="lang-zh">本页面由 Astro 构建，公告与仓库同步</span><span class="lang-en">Built with Astro; announcements synced from the repo</span></p>
       </div>
     </footer>
+
+    <script>
+      // ★ Task261 ①：语言切换（localStorage 持久化；head 内联脚本已预应用）。
+      (function () {
+        var btn = document.getElementById('langToggle');
+        function current() { return document.documentElement.dataset.lang === 'en' ? 'en' : 'zh'; }
+        function render() {
+          btn.textContent = current() === 'zh' ? 'EN' : '中文';
+          btn.title = current() === 'zh' ? 'Switch to English' : '切换到中文';
+        }
+        btn.addEventListener('click', function () {
+          var next = current() === 'zh' ? 'en' : 'zh';
+          if (next === 'en') document.documentElement.dataset.lang = 'en';
+          else delete document.documentElement.dataset.lang;
+          try { localStorage.setItem('prisma-lang', next); } catch (e) {}
+          render();
+        });
+        render();
+      })();
+
+      // ★ Task261 ⑩：自动识别最新发行版（GitHub Releases API；1h localStorage
+      // 缓存；失败静默回退构建期 v6.5.0 —— 国内网络无代理时 API 常不可达，
+      // 页面主体此时仍展示构建期版本与加速源链接，零阻断）。
+      (function () {
+        var REPO_API = 'https://api.github.com/repos/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/latest';
+        var KEY = 'prisma-latest-release';
+        var TAG_RE = /^v?\d+(\.\d+)*(-\S+)?$/;
+        function tag(v) { return v && typeof v === 'string' && TAG_RE.test(v) ? (v.charAt(0) === 'v' ? v : 'v' + v) : null; }
+        function ipa(t) { return 'https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/download/' + t + '/com.prisma-devs.prisma-' + t.slice(1) + '-ios.ipa'; }
+        function tipa(t) { return 'https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/download/' + t + '/com.prisma-devs.prisma-' + t.slice(1) + '-ios-trollstore.tipa'; }
+        function rel(t) { return 'https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/tag/' + t; }
+        function apply(t) {
+          ['dl-tag'].forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = t; });
+          ['dl-tag-en'].forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = t; });
+          var map = { 'hero-ipa-btn': ipa(t), 'hero-tipa-btn': tipa(t), 'hero-release-btn': rel(t),
+                      'dl-ipa-btn': ipa(t), 'dl-tipa-btn': tipa(t), 'dl-release-btn': rel(t) };
+          Object.keys(map).forEach(function (id) {
+            var el = document.getElementById(id); if (el) el.href = map[id];
+          });
+          var row = document.getElementById('mirror-row');
+          if (row) {
+            row.querySelectorAll('[data-mirror]').forEach(function (chip) {
+              var asset = chip.getAttribute('data-mirror-asset') === 'tipa' ? tipa(t) : ipa(t);
+              chip.href = chip.getAttribute('data-mirror') + asset;
+            });
+          }
+          var chip = document.querySelector('.hero .chip .dot');
+          if (chip) { /* 保持原视觉，不做动作 */ }
+        }
+        var cached = null;
+        try {
+          cached = JSON.parse(localStorage.getItem(KEY) || 'null');
+          if (cached && cached.ts && (Date.now() - cached.ts < 3600 * 1000) && tag(cached.tag)) {
+            apply(tag(cached.tag));
+            return;
+          }
+        } catch (e) {}
+        fetch(REPO_API, { headers: { Accept: 'application/vnd.github+json' } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) {
+            var t = j && tag(j.tag_name);
+            if (!t) return;
+            try { localStorage.setItem(KEY, JSON.stringify({ ts: Date.now(), tag: t })); } catch (e) {}
+            apply(t);
+          })
+          .catch(function () { /* 回退构建期版本 */ });
+      })();
+    </script>
   </body>
 </html>

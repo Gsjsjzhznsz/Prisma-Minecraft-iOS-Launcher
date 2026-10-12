@@ -524,6 +524,12 @@ public class GLFW
     public static long mainContext = 0;
 
     static {
+        // ★ Task261（⑧大型整合包"无输出"取证）：GLFW 桥探针 1/3 —— 类初始化
+        // 起/止打点。MC 窗口创建期首次触碰 GLFW 类即跑本块：此前卡死时
+        // "Backend library: LWJGL" 之前零输出，无法区分卡在类初始化还是
+        // glfwInit 还是首窗口创建；三探针把窗口创建期切成四段可观测区间。
+        System.out.println("[GLFWBridge] Task261: class init START (BUNDLE_PATH="
+            + System.getenv("BUNDLE_PATH") + ")");
         try {
             System.load(System.getenv("BUNDLE_PATH") + "/AngelAuraAmethyst");
         } catch (UnsatisfiedLinkError e) {
@@ -565,6 +571,8 @@ public class GLFW
         } catch (IllegalAccessException e) {
             // This will never happen since this is accessing itself
         }
+        System.out.println("[GLFWBridge] Task261: class init DONE (window "
+            + mGLFWWindowWidth + "x" + mGLFWWindowHeight + ")");
     }
 
     private static native long nglfwSetCharCallback(long window, long ptr);
@@ -801,10 +809,16 @@ public class GLFW
     static boolean isGLFWReady;
     public static boolean glfwInit() {
         if (!isGLFWReady) {
+            // ★ Task261（⑧取证）GLFW 桥探针 2/3：glfwInit 起/止（MC 窗口
+            // 创建期第一个 GLFW 调用；返回即成功，永不返回 = 卡在 native）。
+            long ame261_t0 = System.nanoTime();
+            System.out.println("[GLFWBridge] Task261: glfwInit() entered");
             mGLFWInitialTime = (double) System.nanoTime();
             long __functionAddress = Functions.Init;
             boolean isCalledFromLWJGLX = new Throwable().getStackTrace()[1].getClassName().equals("org.lwjgl.Sys");
             isGLFWReady = invokeI(!isCalledFromLWJGLX, __functionAddress) != 0;
+            System.out.println("[GLFWBridge] Task261: glfwInit() returned " + isGLFWReady
+                + " (" + (System.nanoTime() - ame261_t0) / 1000000 + "ms)");
         }
         return isGLFWReady;
     }
@@ -1023,8 +1037,14 @@ public class GLFW
         return invokePP(share, Functions.CreateContext);
     }
     public static long glfwCreateWindow(int width, int height, CharSequence title, long monitor, long share) {
+        // ★ Task261（⑧取证）GLFW 桥探针 3/3：首窗口创建起/止（成功后立即
+        // 转入 egl 上下文链，卡点在此与 egl_bridge 日志之间即可定位）。
+        System.out.println("[GLFWBridge] Task261: glfwCreateWindow(" + width + "x" + height
+            + ", title=" + title + ") entered");
         // Create an ACTUAL EGL context
         long ptr = nglfwCreateContext(share);
+        System.out.println("[GLFWBridge] Task261: glfwCreateWindow returned ptr=0x"
+            + Long.toHexString(ptr));
         //nativeEglMakeCurrent(ptr);
         GLFWWindowProperties win = new GLFWWindowProperties();
         // win.width = width;
