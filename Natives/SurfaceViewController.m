@@ -1623,7 +1623,7 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
                                                          repeats:NO
                                                            block:^(NSTimer *t) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
-        strongSelf->_ame261_geoResyncTimer = nil;
+        strongSelf->ame261_geoResyncTimer = nil;
         [strongSelf ame261_runAdaptiveGeometryResync];
     }];
     [[NSRunLoop mainRunLoop] addTimer:ame261_geoResyncTimer
