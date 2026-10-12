@@ -104,7 +104,7 @@ def disasm(data, name):
     nf = r.u2()
     print("----- fields -----")
     for _ in range(nf):
-        r.u2(); r.u2(); fname = r.u2(); r.u2(); print("  field:", desc(fname))
+        r.u2(); fname = r.u2(); r.u2(); print("  field:", desc(fname))  # access, name, desc; attrcount 由 disasm_attrs 读
         disasm_attrs(r, cp, desc, indent="    ")
     nm = r.u2()
     print("----- methods -----")
@@ -122,7 +122,11 @@ def disasm_attrs(r, cp, desc, indent="    "):
             r.u2(); r.u2()
             clen = r.u4()
             code = r.read(clen)
-            r.u2(); r.u2()
+            nexc = r.u2()  # exception_table_length
+            for _ in range(nexc): r.read(8)  # start/end/handler/catch_type 各 u2
+            nia = r.u2()  # code 内层 attributes_count
+            for _ in range(nia):
+                r.u2(); ialen = r.u4(); r.read(ialen)  # LineNumberTable/StackMapTable 跳过
             print(f"{indent}Code ({clen} bytes):")
             p = 0
             while p < len(code):

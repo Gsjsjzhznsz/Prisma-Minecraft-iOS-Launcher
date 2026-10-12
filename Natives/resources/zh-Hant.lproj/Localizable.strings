@@ -2285,6 +2285,12 @@
 "mp.ingame.status.network_id" = "網路 ID";
 "mp.ingame.status.server_address" = "服務器地址";
 "mp.ingame.status.share_code" = "分享代碼";
+"mp.ingame.status.tc_stage" = "連線階段";
+"mp.ingame.status.tc_room_code" = "房間碼";
+"mp.ingame.status.tc_role_host" = "房主";
+"mp.ingame.status.tc_role_local" = "本機";
+"mp.ingame.status.tc_players" = "玩家";
+"mp.ingame.status.tc_port" = "對局連接埠";
 "mp.network_id.adhoc_failed_msg" = "無法生成快速模式 Network ID，請改用標準模式";
 "mp.network_id.adhoc_failed_title" = "生成失敗";
 "mp.network_id.adhoc_success_msg" = "已自動生成 Network ID，無需注冊賬號即可聯機。注意：快速模式穩定性不如標準模式，IP 可能變化。";
@@ -2560,6 +2566,12 @@
 "ame193.mp.148" = "分享代碼";
 "ame193.mp.149" = "暫無房間";
 "ame193.mp.150" = "請先在 Section 0 設置 Network ID，然後在遊戲內模式中選擇當房主或房客";
+"ame193.mp.151" = "連線階段";
+"ame193.mp.152" = "房間碼";
+"ame193.mp.153" = "房主";
+"ame193.mp.154" = "本機";
+"ame193.mp.155" = "玩家";
+"ame193.mp.156" = "對局連接埠";
 "ame193.crash.1" = "刪除該實例並重新導入整合包（建議換個下載源重試）%@";
 "ame193.crash.2" = "——重點確認：%@";
 "ame193.crash.3" = "FTB 組件";

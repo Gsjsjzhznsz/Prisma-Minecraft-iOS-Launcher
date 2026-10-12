@@ -665,26 +665,33 @@ dep_virgl:
 # /opt/homebrew；其余 -lexpat -lz 均来自 iPhoneOS SDK）。-Dzstd=disabled
 # 剥除该依赖——zstd 仅用于磁盘缓存压缩，进程内渲染零功能损失。
 
+# Task258 (CI round 3): the old dep_virgl_build had the "cached" early-exit
+# branches as separate recipe LINES -- each line is its own shell, so their
+# "exit 0" only ended that line and make marched straight into the full Mesa
+# 906-target build TWICE (~8min/run wasted on every cached run since Task256
+# r2). The guard now lives in ONE shell line (single if/else/fi) that either
+# copies the prebuilts or recursively invokes the real build target below.
 dep_virgl_build:
 	@if [ -n "$(VIRGL_PREBUILT_DIR)" ] && \
 	    [ -f "$(VIRGL_PREBUILT_DIR)/libOSMesaVirgl.dylib" ] && \
-	    [ -f "$(VIRGL_PREBUILT_DIR)/libvtestserver.dylib" ] && \
 	    [ -f "$(VIRGL_PREBUILT_DIR)/libvtestserver.dylib" ]; then \
-		echo '[Amethyst v$(VERSION)] dep_virgl - cached (VIRGL_PREBUILT_DIR prebuilts present -- Task256 CI speedup, skips Mesa 906-target rebuild; libepoxy is statically linked into libvtestserver, not shipped)'; \
+		echo '[Amethyst v$(VERSION)] dep_virgl - cached (VIRGL_PREBUILT_DIR prebuilts present -- Task256/258 CI speedup, skips Mesa 906-target rebuild; libepoxy is statically linked into libvtestserver, not shipped)'; \
 		cp $(VIRGL_PREBUILT_DIR)/libOSMesaVirgl.dylib \
-		   $(VIRGL_PREBUILT_DIR)/libvtestserver.dylib \
 		   $(VIRGL_PREBUILT_DIR)/libvtestserver.dylib $(WORKINGDIR)/; \
-		exit 0; \
+	else \
+		if [ -f "$(SOURCEDIR)/Natives/resources/Frameworks/libOSMesaVirgl.dylib" ] && \
+		    [ -f "$(SOURCEDIR)/Natives/resources/Frameworks/libvtestserver.dylib" ] && \
+		    [ -f "$(SOURCEDIR)/Natives/resources/Frameworks/libepoxy.dylib" ]; then \
+			echo '[Amethyst v$(VERSION)] dep_virgl - cached (Frameworks prebuilts present)'; \
+			cp $(SOURCEDIR)/Natives/resources/Frameworks/libOSMesaVirgl.dylib \
+			   $(SOURCEDIR)/Natives/resources/Frameworks/libvtestserver.dylib \
+			   $(SOURCEDIR)/Natives/resources/Frameworks/libepoxy.dylib $(WORKINGDIR)/; \
+		else \
+			$(MAKE) --no-print-directory dep_virgl_compile || exit 1; \
+		fi; \
 	fi
-	@if [ -f "$(SOURCEDIR)/Natives/resources/Frameworks/libOSMesaVirgl.dylib" ] && \
-	    [ -f "$(SOURCEDIR)/Natives/resources/Frameworks/libvtestserver.dylib" ] && \
-	    [ -f "$(SOURCEDIR)/Natives/resources/Frameworks/libepoxy.dylib" ]; then \
-		echo '[Amethyst v$(VERSION)] dep_virgl - cached (Frameworks prebuilts present)'; \
-		cp $(SOURCEDIR)/Natives/resources/Frameworks/libOSMesaVirgl.dylib \
-		   $(SOURCEDIR)/Natives/resources/Frameworks/libvtestserver.dylib \
-		   $(SOURCEDIR)/Natives/resources/Frameworks/libepoxy.dylib $(WORKINGDIR)/; \
-		exit 0; \
-	fi
+
+dep_virgl_compile:
 	echo '[Amethyst v$(VERSION)] dep_virgl - start'
 	# ---- 0. meson 交叉文件（本地生成，SDK 路径随机器变化）----
 	printf '%s\n' \

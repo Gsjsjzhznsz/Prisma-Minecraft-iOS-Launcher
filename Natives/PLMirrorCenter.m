@@ -285,9 +285,7 @@ static BOOL ame138_probeInFlight[2] = {NO, NO};
 
     NSString *urlString = originalURL.absoluteString;
 
-    // 资产资源文件数量巨大：即使镜像优先也保持官方在前，减轻镜像源压力（参考 ZL2）
-    BOOL isAssetsFile = ([urlString hasPrefix:@"http://resources.download.minecraft.net/"] ||
-                         [urlString hasPrefix:@"https://resources.download.minecraft.net/"]);
+    // Task258（清单 6）：资产特判退役——镜像优先档不再强制官方在前（见下方 policy 段注释）
 
     NSString *mirrorURLString = nil;
     switch (type) {
@@ -311,12 +309,12 @@ static BOOL ame138_probeInFlight[2] = {NO, NO};
     NSURL *mirrorURL = [NSURL URLWithString:mirrorURLString];
     if (!mirrorURL) return @[originalURL];
 
+    // Task258（清单 6）：镜像优先档对齐 PCL2CE——资产资源同样镜像在前。
+    // 旧口径"mirror_first 仍官方在前以减轻镜像压力（参考 ZL2）"在国内实测
+    // 慢（resources.download.minecraft.net 无 CDN 加速，数千小文件是最大痛点）；
+    // PCL2CE/FCL 的国内档对资产也直接走 BMCLAPI。speed_first 仍按测速赢家，
+    // official_first 完全不动。
     PLMirrorPolicy policy = [self policyForType:type];
-    if (isAssetsFile && policy != PLMirrorPolicySpeedFirst) {
-        // 资产资源数量巨大：镜像优先档保持官方在前以减轻镜像源压力
-        // （参考 ZL2）；speed_first 档按用户明确意图跟随测速结果。
-        policy = PLMirrorPolicyOfficialFirst;
-    }
 
     if (policy == PLMirrorPolicySpeedFirst) {
         // Task 138：按测速赢家排序；结果未落地前临时镜像在前（CN 用户

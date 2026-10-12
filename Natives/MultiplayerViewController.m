@@ -52,6 +52,7 @@
 #import "PLProfiles.h"
 #import "LanPortDetector.h"
 #import "ZeroTierBridge.h"
+#import "TerracottaManager.h"   // ★ Task258（清单 1）：状态行接入陶瓦数据层（阶段/房间码/玩家列表/端口）
 #import "utils.h"
 #import <objc/runtime.h>   // ★ Task249（T7）：objc_get/setAssociatedObject（ frost 层挂载；CI r1 编译雷——本文件首次引入关联对象）
 
@@ -2607,6 +2608,55 @@ static const void *kAme250FrostLinkKey = &kAme250FrostLinkKey;   // ★ Task250�
         [detail appendFormat:@"\n%@: %@",
             MPLocalized(@"mp.ingame.status.server_address", localize(@"ame193.mp.89", @"服务器地址")),
             self.lastServerAddress];
+    }
+
+    // ★ Task258（清单 1）：陶瓦（Terracotta）联机数据层信息——参考 FCL/PCL2CE 的
+    // 房间信息面板：连接阶段、房间码、玩家列表（名字+角色）、对局端口。旧状态行
+    // 只有 ZeroTier 视角（Network ID/本地 IP），联机核心真实状态用户看不到，
+    // PingHostFail 重试（Task256/257）发生了什么也无从感知。
+    TerracottaManager *ame258_tc = [TerracottaManager shared];
+    if (ame258_tc.initialized) {
+        // 连接阶段（含重试中/等待房主等过程文字，TerracottaManager 内部已本地化）
+        NSString *ame258_stage = ame258_tc.stageDescription;
+        if (ame258_stage.length) {
+            [detail appendFormat:@"\n%@: %@",
+                MPLocalized(@"mp.ingame.status.tc_stage", localize(@"ame193.mp.151", @"联机阶段")),
+                ame258_stage];
+        }
+        // 房间码（房主邀请码/访客加入码，与分享代码互补）
+        NSString *ame258_code = ame258_tc.currentInviteCode;
+        if (ame258_code.length && ![ame258_code isEqualToString:self.lastShareCode]) {
+            [detail appendFormat:@"\n%@: %@",
+                MPLocalized(@"mp.ingame.status.tc_room_code", localize(@"ame193.mp.152", @"房间码")),
+                ame258_code];
+        }
+        // 玩家列表（名字 + 角色），参考 PCL2CE 联机成员面板
+        NSArray<TerracottaPlayerProfile *> *ame258_players = ame258_tc.players;
+        NSUInteger ame258_count = ame258_players.count;
+        if (ame258_count > 0) {
+            NSMutableString *ame258_names = [NSMutableString string];
+            [ame258_players enumerateObjectsUsingBlock:^(TerracottaPlayerProfile *ame258_p, NSUInteger ame258_i, BOOL *ame258_stop) {
+                if (ame258_i > 0) [ame258_names appendString:@", "];
+                [ame258_names appendString:ame258_p.name.length ? ame258_p.name : @"?"];
+                NSString *ame258_kind = ame258_p.kind;
+                if ([ame258_kind isEqualToString:@"HOST"]) {
+                    [ame258_names appendFormat:@"(%@)", MPLocalized(@"mp.ingame.status.tc_role_host", localize(@"ame193.mp.153", @"房主"))];
+                } else if ([ame258_kind isEqualToString:@"LOCAL"]) {
+                    [ame258_names appendFormat:@"(%@)", MPLocalized(@"mp.ingame.status.tc_role_local", localize(@"ame193.mp.154", @"本机"))];
+                }
+            }];
+            [detail appendFormat:@"\n%@ (%lu): %@",
+                MPLocalized(@"mp.ingame.status.tc_players", localize(@"ame193.mp.155", @"玩家")),
+                (unsigned long)ame258_count,
+                ame258_names];
+        }
+        // 对局端口（房主 MC LAN / 访客直连目标）
+        uint16_t ame258_port = ame258_tc.currentPort;
+        if (ame258_port > 0) {
+            [detail appendFormat:@"\n%@: %u",
+                MPLocalized(@"mp.ingame.status.tc_port", localize(@"ame193.mp.156", @"对局端口")),
+                (unsigned)ame258_port];
+        }
     }
 
     cell.detailTextLabel.text = detail;

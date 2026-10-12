@@ -209,7 +209,7 @@ print("== J. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"J-{lang} 唯一键 2843（Task256 派生/新键全表补齐后）", len(keys) == 2843, f"got {len(keys)}")
+    check(f"J-{lang} 唯一键 2855（Task258 联机状态行 12 键后）", len(keys) == 2855, f"got {len(keys)}")
 check("J-公告 6 条（Task255 清单 13 精简：pin 2 + 版本史 3 + 最新总攻 1）",
       len(ann) == 6
       and ann[0]["id"] == "server-recommend-2026-09-24"
@@ -229,8 +229,8 @@ check("K1 身份不变（com.air-devs.air——本轮零包名改动）",
 check("K2 REVISION 保持 22 + Task219 附录在位（无 identity 变更不 bump）",
       "#define REVISION 22" in vh and "Task 219, no bump" in vh)
 mk = open("Makefile", "rb").read()
-check("K3 Makefile TAB 基线 672（Task256 dep_virgl prebuilt 分支 +10 行）",
-      sum(1 for line in mk.split(b"\n") if line.startswith(b"\t")) == 672)
+check("K3 Makefile TAB 基线 671（Task258 dep_virgl 单行 guard 重构）",
+      sum(1 for line in mk.split(b"\n") if line.startswith(b"\t")) == 671)
 yml = open(".github/workflows/development.yml", "rb").read()
 check("K4 工作流 CRLF 完整", yml.count(b"\r\n") == yml.count(b"\n"))
 

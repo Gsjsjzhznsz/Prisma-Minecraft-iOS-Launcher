@@ -63,6 +63,15 @@ public class PojavLauncher {
         System.setProperty("glfw.windowSize", sizeStr);
         String[] size = sizeStr.split("x");
         MCOptionUtils.load();
+        // Task258（清单 4）：首次启动按所选语言设置游戏语言（FCL/PCL2CE 语义）。
+        // ObjC 侧把启动器语言（general.app_language，system 时已解析为系统首选语言）
+        // 经 -Dame.launcher.lang 传入；options.txt 无 lang 键（首启/新实例）时写入，
+        // 用户已有的语言选择永远优先，不做覆盖。
+        String ame258Lang = System.getProperty("ame.launcher.lang", "");
+        if (ame258Lang.length() > 0 && MCOptionUtils.get("lang") == null) {
+            MCOptionUtils.set("lang", ame258Lang);
+            System.out.println("[PojavLauncher] Task258: first-launch game lang set from launcher pref: " + ame258Lang);
+        }
         MCOptionUtils.set("fullscreen", "false");
         MCOptionUtils.set("overrideWidth", size[0]);
         MCOptionUtils.set("overrideHeight", size[1]);

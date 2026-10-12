@@ -281,8 +281,9 @@ static NSString * localizeProfileTitle(NSString *title) {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
     // 横竖屏切换时，重新计算 tableHeaderView（Hero 卡片）的高度，并切换双列布局
     [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
-        // 切换 rightTableView 的显示状态（横屏时显示）
-        BOOL landscape = size.width > size.height;
+        // 切换 rightTableView 的显示状态（横屏且宽度充足时显示；Task258 清单 7
+        // 与 isLandscape 同口径：iPhone 横屏窄半列重叠，回退单列）
+        BOOL landscape = size.width > size.height && size.width >= 760.0;
         self.rightTableView.hidden = !landscape;
 
         // 重新计算 Hero 卡片高度（仅 leftTableView 显示 Hero 卡片）
@@ -692,7 +693,10 @@ static NSString * localizeProfileTitle(NSString *title) {
 /// 是否处于横屏（宽度 > 高度）
 - (BOOL)isLandscape {
     CGSize size = self.view.bounds.size;
-    return size.width > size.height;
+    // Task258（清单 7）：双列门控加宽度阈值——iPhone 横屏 width>height 但半宽仅
+    // ~180-460pt，行内图标/标题/值互相挤压重叠（用户截图实锤：标签压图标、
+    // 值截断成“683…”“分…”）。宽度过不了 760pt 门槛的一律回退单列整宽。
+    return size.width > size.height && size.width >= 760.0;
 }
 
 /// 返回指定 tableView 显示的全局 section 索引数组

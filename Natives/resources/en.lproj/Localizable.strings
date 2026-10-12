@@ -2289,6 +2289,12 @@
 "mp.ingame.status.network_id" = "Network ID";
 "mp.ingame.status.server_address" = "Server Address";
 "mp.ingame.status.share_code" = "Share Code";
+"mp.ingame.status.tc_stage" = "Connection stage";
+"mp.ingame.status.tc_room_code" = "Room code";
+"mp.ingame.status.tc_role_host" = "host";
+"mp.ingame.status.tc_role_local" = "this device";
+"mp.ingame.status.tc_players" = "Players";
+"mp.ingame.status.tc_port" = "Game port";
 "mp.network_id.adhoc_failed_msg" = "Could not generate a Quick Mode Network ID. Use Standard mode instead";
 "mp.network_id.adhoc_failed_title" = "Generation Failed";
 "mp.network_id.adhoc_success_msg" = "A Network ID was generated automatically — no account needed. Note: Quick Mode is less stable than Standard Mode and the IP may change.";
@@ -2564,6 +2570,12 @@
 "ame193.mp.148" = "Share code";
 "ame193.mp.149" = "No rooms yet";
 "ame193.mp.150" = "First set the Network ID in Section 0, then choose host or guest mode in the in-game screen";
+"ame193.mp.151" = "Connection stage";
+"ame193.mp.152" = "Room code";
+"ame193.mp.153" = "host";
+"ame193.mp.154" = "this device";
+"ame193.mp.155" = "Players";
+"ame193.mp.156" = "Game port";
 "ame193.crash.1" = "Delete this instance and re-import the modpack (consider retrying with a different download source) %@";
 "ame193.crash.2" = "— Double-check: %@";
 "ame193.crash.3" = "FTB component";

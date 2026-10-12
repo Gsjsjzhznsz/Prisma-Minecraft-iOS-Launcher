@@ -2605,6 +2605,90 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         NSLog(@"[JavaLauncher] Warning: SurfaceViewController class unavailable, Metallum will fall back to ObjC runtime lookup");
     }
 
+    // ★ Task258（清单 4）：首次启动按所选语言设置游戏语言（参考 FCL/PCL2CE：
+    // 首启把启动器语言写进 MC 的 options.txt lang 键）。把启动器语言码传给
+    // Java 侧，由 Java 在 options.txt 无 lang 键时写入（不覆盖用户已有选择）。
+    {
+        NSString *ame258_langPref = getPrefObject(@"general.app_language");
+        if (![ame258_langPref isKindOfClass:[NSString class]] || ame258_langPref.length == 0) {
+            ame258_langPref = @"system";
+        }
+        NSString *ame258_mcLang = nil;
+        if ([ame258_langPref isEqualToString:@"system"]) {
+            // 跟随系统：取首选语言，确定性最长前缀匹配到 MC 语言码
+            NSString *ame258_sys = [NSLocale.preferredLanguages firstObject] ?: @"en";
+            // 有序表：前缀越具体越靠前（zh-Hant 先于 zh），首个命中即用
+            NSArray<NSArray<NSString *> *> *ame258_pairs = @[
+                @[@"zh-Hant", @"zh_tw"], @[@"zh-HK", @"zh_tw"], @[@"zh-TW", @"zh_tw"],
+                @[@"zh-Hans", @"zh_cn"], @[@"zh-CN", @"zh_cn"], @[@"zh", @"zh_cn"],
+                @[@"en-GB", @"en_gb"], @[@"en", @"en_us"],
+                @[@"pt-BR", @"pt_br"], @[@"pt", @"pt_br"],
+                @[@"nb", @"nb_no"], @[@"no", @"nb_no"],
+                @[@"ja", @"ja_jp"], @[@"ko", @"ko_kr"], @[@"ru", @"ru_ru"],
+                @[@"fr", @"fr_fr"], @[@"de", @"de_de"], @[@"es", @"es_es"],
+                @[@"it", @"it_it"], @[@"pl", @"pl_pl"], @[@"nl", @"nl_nl"],
+                @[@"tr", @"tr_tr"], @[@"uk", @"uk_ua"], @[@"cs", @"cs_cz"],
+                @[@"hu", @"hu_hu"], @[@"fi", @"fi_fi"], @[@"sv", @"sv_se"],
+                @[@"da", @"da_dk"], @[@"el", @"el_gr"], @[@"ro", @"ro_ro"],
+                @[@"th", @"th_th"], @[@"vi", @"vi_vn"], @[@"id", @"id_id"],
+                @[@"ms", @"ms_my"], @[@"he", @"he_il"], @[@"ar", @"ar_sa"],
+                @[@"fa", @"fa_ir"], @[@"hi", @"hi_in"],
+            ];
+            for (NSArray *ame258_pair in ame258_pairs) {
+                if ([ame258_sys hasPrefix:ame258_pair[0]]) {
+                    ame258_mcLang = ame258_pair[1];
+                    break;
+                }
+            }
+            if (ame258_mcLang.length == 0) {
+                // 未命中（如小众语言）：主语言段同段晳合（如 "pt-XX" → pt_br），否则 en_us
+                NSString *ame258_base = [[ame258_sys componentsSeparatedByString:@"-"] firstObject] ?: @"";
+                NSString *ame258_lower = [ame258_base lowercaseString];
+                if ([ame258_lower isEqualToString:@"pt"]) ame258_mcLang = @"pt_br";
+                else if ([ame258_lower isEqualToString:@"zh"]) ame258_mcLang = @"zh_cn";
+                else if ([ame258_lower isEqualToString:@"en"]) ame258_mcLang = @"en_us";
+                else if ([ame258_lower isEqualToString:@"nb"]) ame258_mcLang = @"nb_no";
+                else if ([ame258_lower isEqualToString:@"no"]) ame258_mcLang = @"nb_no";
+                else ame258_mcLang = @"en_us";
+            }
+        } else {
+            // 显式选择的启动器语言码（lproj 目录名）→ MC 语言码
+            NSDictionary<NSString *, NSString *> *ame258_map2 = @{
+                @"zh-Hans": @"zh_cn", @"zh-CN": @"zh_cn", @"zh-Hant": @"zh_tw",
+                @"en": @"en_us", @"en-GB": @"en_gb", @"en-PT": @"en_pt", @"en-UD": @"en_ud",
+                @"ja": @"ja_jp", @"ko": @"ko_kr", @"ru": @"ru_ru", @"fr": @"fr_fr",
+                @"de": @"de_de", @"es": @"es_es", @"es-AR": @"es_ar", @"es-CL": @"es_cl",
+                @"es-EC": @"es_ec", @"es-MX": @"es_mx", @"es-UY": @"es_uy", @"es-VE": @"es_ve",
+                @"pt": @"pt_br", @"pt-BR": @"pt_br", @"it": @"it_it", @"pl": @"pl_pl",
+                @"nl": @"nl_nl", @"tr": @"tr_tr", @"uk": @"uk_ua", @"cs": @"cs_cz",
+                @"hu": @"hu_hu", @"fi": @"fi_fi", @"sv": @"sv_se", @"da": @"da_dk",
+                @"no": @"nb_no", @"nb": @"nb_no", @"el": @"el_gr", @"ro": @"ro_ro",
+                @"th": @"th_th", @"vi": @"vi_vn", @"id": @"id_id", @"ms": @"ms_my",
+                @"he": @"he_il", @"ar": @"ar_sa", @"fa": @"fa_ir", @"hi": @"hi_in",
+                @"af": @"af_za", @"sq": @"sq_al", @"az": @"az_az", @"ba": @"ba_ba",
+                @"bn": @"bn_in", @"ca": @"ca_es", @"et": @"et_ee", @"fil": @"fil_ph",
+                @"kk": @"kk_kz", @"km": @"km_kh", @"lt": @"lt_lt", @"sk": @"sk_sk",
+                @"sr": @"sr_sp", @"sr-Latn": @"sr_sp", @"tt": @"tt_ru",
+            };
+            NSString *ame258_hit = ame258_map2[ame258_langPref];
+            if (ame258_hit.length) {
+                ame258_mcLang = ame258_hit;
+            } else {
+                // 未知码：小写 + 下划线兜底（如 "xx-YY" → "xx_yy"），MC 不识别则忽略
+                NSArray *ame258_parts = [ame258_langPref componentsSeparatedByString:@"-"];
+                if (ame258_parts.count == 2) {
+                    ame258_mcLang = [NSString stringWithFormat:@"%@_%@", [ame258_parts[0] lowercaseString], [ame258_parts[1] lowercaseString]];
+                } else {
+                    ame258_mcLang = [ame258_langPref lowercaseString];
+                }
+            }
+        }
+        if (ame258_mcLang.length) {
+            PUSH_MARGV_FORMAT(@"-Dame.launcher.lang=%@", ame258_mcLang);
+            NSLog(@"[JavaLauncher] Task258: launcher lang pref=%@ -> MC lang=%@", ame258_langPref, ame258_mcLang);
+        }
+    }
+
     PUSH_MARGV_LITERAL("-Dorg.lwjgl.glfw.checkThread0=false");
     PUSH_MARGV_LITERAL("-Dorg.lwjgl.system.allocator=system");
     //PUSH_MARGV_LITERAL("-Dorg.lwjgl.util.NoChecks=true");
