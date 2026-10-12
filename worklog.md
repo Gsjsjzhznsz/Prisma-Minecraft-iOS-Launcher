@@ -3052,3 +3052,19 @@ Work Log:
 
 Stage Summary:
 - Task 256 全链闭环（7/7 项 + r1 语义雷 + r2 缓存契约雷排净）；CI 提速自 run 803 生效
+
+---
+Task ID: 257
+Agent: main (Super Z)
+Task: Prisma-Minecraft-iOS-Launcher Task 257 四项清单（gamelog 先行诊断）：联机自动重试根修 / 渲染器 FSR 联动误入根修 / CI 提速第二轮 / i18n 中文补全
+
+Work Log:
+- gamelog 取证（da21223 双日志）：①联机——房主两次 HostOk 正常（用户手动停），访客 GuestStarting 后 ~15s "Cannot find scaffolding server"→PingHostFail；Task256 重试 1 firing 后 26ms 内 keeping-alive started→stopped = Exception 态直呼 terracotta_ios_set_guesting 被 Rust 状态机拒绝（返回 0），自动重试在生产上从未生效，随后 Core 才自行复位 Waiting ②渲染器——1.8.9 会话 Task256 kw 链已生效（libnggl4es），但 SurfaceVC 的 Task83 FSR 联动在修正前读 ame_effective_renderer()=libMobileGL（版本无关的 legacy 档位键家族覆盖）→ mgFsrScale=2.00 缩窗先行锁死 → kw 会话半分辨率渲染且无升采样 = 用户所见"意外的与 FSR 联动"（画面发软）
+- 四项修复：TerracottaManager 重试链改"setWaiting 复位 + 1.5s 沉降 + 重入访客流程"（FCL/PCL2CE 停止→重连语义；giveup 文案从 i18n_str_1001 改 i18n_str_989 房主在线引导；沉降窗内二次会话竞态守卫）+ SurfaceVC 镜像 Task256 ≤1.16 门（javaVersion.majorVersion 同源判定，非显式渲染器时 FSR 联动按 kw 链对待=mgFsrScale 1.0 全分辨率；显式选择永远优先）+ CI 第二轮（JRE 四目录产物缓存[键含补丁脚本哈希、无 restore-keys，裁剪+补丁后目录按 release 标记直通]/iOS 第二遍去 dsymutil（同一二进制重复 dsymutil 纯浪费）/submodule --depth 1 --jobs 8 浅克隆并行）+ i18n 中文三表 36 键英文残留清零（terracotta.stage.retry/home.tile.cleanup/jvm_follow_global/auto_control_update_check 族/keybind_sync 族/mc_toggle_sprint 族/confirm-done 派生族等）
+- 新工具：scripts/task257_zh_l10n_sweep.py（扫描 zh-Hans/zh-CN/zh-Hant 三表"值==en 原文"键；语言中立白名单 35 项=渲染器/手柄品牌名/JIT 工具名/格式占位）+ task257_zh_translations.py（36 键简繁译表，zh-Hant 用语对齐表内主流：網路/資料/記憶體/佈局/滑鼠/實例/連線/套用/匯出匯入/金鑰）
+- 事故两件：MultiEdit 在 CRLF workflow 内插入 22 个纯 LF 行（verify219 K4 破防 → python 字节级归一全 CRLF 复绿，教训同 Task256 run-block 缩进家族：CRLF 文件禁用普通编辑工具直插）；sweep 首版 fix 自斥 bug（candidates 循环把待修键 continue 掉 → 0 重写，重构候选集后 108 处落盘）
+- 门禁：task139/240 双门 + import sweep PASS；task191 语法 OK（2877 键/表）；task248 缺键0/硬编码0/动态键0；task250 裸键名0（warn.* 动态族缺口经 PLPrefTableViewController:401 裸键回退守卫证实为良性）；verify_task255 51/51；verify_task219 81/81 ALL GREEN；workflow yaml.safe_load 26 steps
+- 提交 25385c1 推送 main；run 804 一轮终绿 18.6min（JRE 缓存首桶落袋，提速自 run 805 生效，预期省 3-5min/run）；产物 ipa/tipa 220.5MB + dSYM 6.3MB 全在位
+
+Stage Summary:
+- Task 257 四项全闭环；装机锚点：①访客 PingHostFail 后日志应见 "Task257: retry N re-entered guest flow"（旧构建 firing 后静默死）②1.8.9（renderer=auto）启动日志 "[SurfaceVC] Task257: legacy MC ... FSR linkage disengaged" + 画面全分辨率不再发软 ③run 805 起 JRE 缓存命中 + 第二遍 package 直通 ④中文界面 36 处不再显示英文（清理磁贴/JVM 跟随全局/自动检查控件更新等）
