@@ -18,6 +18,7 @@
 #import "AnnouncementService.h"
 #import "AnnouncementItem.h"
 #import "AnnouncementListViewController.h"
+#import "DownloadTasksViewController.h"   // ★ Task259（清单 6）：下载中心磁贴呈现路径
 #import "IconLoader.h"
 #import "AvatarManager.h"
 // Task235（联机快捷磁贴）：陶瓦联机页 + 可用性探测
@@ -62,6 +63,10 @@ NSString * const kShortcutActionVersions   = @"versions";
 NSString * const kShortcutActionMultiplayer = @"multiplayer";
 // ★ Task256（清单 3）：主页“清理垃圾”磁贴。
 NSString * const kShortcutActionCleanup = @"cleanup";
+// ★ Task259（清单 6）：主页“下载中心”磁贴——版本安装/统一下载进度页关闭
+// 后的重新打开入口（用户：版本安装界面关闭之后没有地方再打开）。与右
+// 面板下载中心按钮同一呈现路径（FormSheet 任务列表，行点按回统一进度页）。
+NSString * const kShortcutActionDownloadCenter = @"download_center";
 
 // MARK: - Color Helpers
 
@@ -279,6 +284,20 @@ static UIColor *colorFromHex(NSString *hex) {
     cleanup.accentColorHex = @"#EF4444";
     [tiles addObject:cleanup];
 
+    // 11. 快捷入口: 下载中心 (半宽) —— ★ Task259（清单 6）：版本安装/统一下
+    //    载进度页（自动弹出、可最小化）关闭后的重新打开入口，与右面板下载
+    //    中心按钮并存；老用户布局由 loadSavedConfigs 的 Task259 注入补齐。
+    HomeTileConfig *ame259_dl = [[HomeTileConfig alloc] init];
+    ame259_dl.tileId = @"shortcut_download_center";
+    ame259_dl.tileType = HomeTileTypeShortcut;
+    ame259_dl.tileSize = HomeTileSizeCompact;
+    ame259_dl.visible = YES;
+    ame259_dl.customTitle = localize(@"home.tile.download_center", @"下载中心");
+    ame259_dl.iconName = @"arrow.down.circle.fill";
+    ame259_dl.shortcutAction = kShortcutActionDownloadCenter;
+    ame259_dl.accentColorHex = @"#3B82F6";
+    [tiles addObject:ame259_dl];
+
     return tiles;
 }
 
@@ -351,6 +370,33 @@ static UIColor *colorFromHex(NSString *hex) {
         result = ame256_injected;
         [self saveConfigs:result];
         NSLog(@"[HomeTile] Task256 cleanup shortcut injected into saved layout");
+    }
+
+    // ★ Task259（清单 6）：老用户布局一次性补“下载中心”磁贴（同 Task235/
+    //    Task256 注入语义：缺失才加，不覆盖用户自定义；落盘后由用户自行增删）。
+    BOOL ame259_hasDlCenter = NO;
+    for (HomeTileConfig *c in result) {
+        if (c.tileType == HomeTileTypeShortcut &&
+            [c.shortcutAction isEqualToString:kShortcutActionDownloadCenter]) {
+            ame259_hasDlCenter = YES;
+            break;
+        }
+    }
+    if (!ame259_hasDlCenter) {
+        NSMutableArray<HomeTileConfig *> *ame259_injected = [result mutableCopy];
+        HomeTileConfig *ame259_dl = [[HomeTileConfig alloc] init];
+        ame259_dl.tileId = @"shortcut_download_center";
+        ame259_dl.tileType = HomeTileTypeShortcut;
+        ame259_dl.tileSize = HomeTileSizeCompact;
+        ame259_dl.visible = YES;
+        ame259_dl.customTitle = localize(@"home.tile.download_center", @"下载中心");
+        ame259_dl.iconName = @"arrow.down.circle.fill";
+        ame259_dl.shortcutAction = kShortcutActionDownloadCenter;
+        ame259_dl.accentColorHex = @"#3B82F6";
+        [ame259_injected addObject:ame259_dl];
+        result = ame259_injected;
+        [self saveConfigs:result];
+        NSLog(@"[HomeTile] Task259 download-center shortcut injected into saved layout");
     }
     return result;
 }
@@ -1610,6 +1656,19 @@ static NSString *festivalGreeting(void) {
         ame256_nav.modalPresentationStyle = UIModalPresentationPageSheet;
         [self presentViewController:ame256_nav animated:YES completion:nil];
         NSLog(@"[HomeTile] Task256 cleanup tile -> CleanupViewController");
+    } else if ([action isEqualToString:kShortcutActionDownloadCenter]) {
+        // ★ Task259（清单 6）：主页磁贴直通下载中心（与右面板 openDownloadCenter
+        //    同一呈现路径：FormSheet 任务列表，行点按回统一进度页——版本安装
+        //    进度页最小化/关闭后的重新打开入口）。
+        DownloadTasksViewController *ame259_dlVC = [[DownloadTasksViewController alloc] init];
+        ame259_dlVC.modalPresentationStyle = UIModalPresentationFormSheet;
+        ame259_dlVC.preferredContentSize = CGSizeMake(500, 600);
+        UIViewController *ame259_top = self;
+        while (ame259_top.presentedViewController) {
+            ame259_top = ame259_top.presentedViewController;
+        }
+        [ame259_top presentViewController:ame259_dlVC animated:YES completion:nil];
+        NSLog(@"[HomeTile] Task259 download-center tile -> DownloadTasksViewController");
     }
 }
 

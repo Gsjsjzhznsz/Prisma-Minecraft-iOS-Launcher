@@ -59,6 +59,7 @@
 "custom_controls.repo.auto_update_found" = "Found %lu control layout update(s) (%@). Download them from the control repository page.";
 "terracotta.stage.retry" = "Retrying host connection (attempt %lu/2)…";
 "home.tile.cleanup" = "Clean up junk";
+"home.tile.download_center" = "Download center";
 "preference.profile.jvm_follow_global" = "Follow global setting";
 "preference.detail.auto_keyboard_sdl" = "Automatically enables the SDL software keyboard when a text field needs input in game";
 "preference.detail.mc_toggle_sprint" = "Toggles the sprint latch in every instance's options.txt (press once, keep sprinting)";
@@ -89,3 +90,10 @@
 "preference.title.done.reset_mouse_pointer" = "Pointer reset";
 "preference.title.confirm.two_finger_keyboard" = "Toggle the two-finger keyboard gesture?";
 "preference.title.done.two_finger_keyboard" = "Gesture updated";
+"preference.title.done.custom_accent_color" = "Accent color updated";
+"preference.title.done.custom_card_color" = "Card color updated";
+"preference.title.done.custom_text_color" = "Text color updated";
+"preference.title.done.provider_config" = "Provider config opened";
+"preference.title.done.reset_appearance_colors" = "Appearance colors reset";
+"preference.title.done.session_list" = "Session list opened";
+"preference.title.done.system_prompt" = "System prompt editor opened";

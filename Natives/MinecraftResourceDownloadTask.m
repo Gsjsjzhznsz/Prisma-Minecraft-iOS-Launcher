@@ -17,7 +17,10 @@
 #import "ios_uikit_bridge.h"
 #import "utils.h"
 
-NSString * const kMinecraftResourceDownloadBackgroundSessionIdentifier = @"com.air-devs.air.MinecraftResourceDownloadTask";
+// Task259：随包名迁移 com.air-devs.air → com.prisma-devs.prisma。
+// 后台会话标识改名的代价：跨版本升级时旧标识的进行中后台下载无法重接
+// （后台 attachment 一次性），仅影响"升级瞬间恰好在后台下载"的极小场景。
+NSString * const kMinecraftResourceDownloadBackgroundSessionIdentifier = @"com.prisma-devs.prisma.MinecraftResourceDownloadTask";
 
 // 原版安装 6 步的阶段下标（与 PLTaskStagesVanilla() 一致，redesign-download-ui Phase 3 Task 3.1）
 static const NSUInteger kMCStageIndexFetchManifest = 0;
@@ -207,6 +210,8 @@ static const NSUInteger kMCStageIndexVerify = 5;
     __block NSURLSessionDownloadTask *task = [self.manager downloadTaskWithRequest:request progress:nil
     destination:^NSURL * _Nonnull(NSURL * _Nonnull targetPath, NSURLResponse * _Nonnull response) {
         NSLog(@"[MCDL] Downloading %@", name);
+        // ★ Task259（清单 6）：文件级明细（统一进度页详情区 + 下载中心 cell）
+        [weakSelf mc_reportCurrentFileAtPath:path altName:altName];
         if (!weakSelf) {
             [NSFileManager.defaultManager createDirectoryAtPath:path.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:nil];
             [NSFileManager.defaultManager removeItemAtPath:path error:nil];
@@ -837,6 +842,35 @@ static const NSUInteger kMCStageIndexVerify = 5;
         return; // versions/ 下的 version JSON、asset index 归属阶段1/4 的 JSON 下载，不计双维度
     }
     [self mc_reportStageFileCounts];
+}
+
+/// ★ Task259（清单 6）：文件级明细喂送（在实际开始下载的时机调用，
+///   即 AFNetworking destination 回调——任务创建是同步批量预创建的，
+///   创建时机 ≠ 下载时机，喂错时机所有文件名会瞬间刷成队尾文件）。
+///   病历：统一进度页详情区渲染 stage.message，而本任务所有阶段上报
+///   都传 message:nil；下载中心 cell 只读聚合百分比——"安装页没有
+///   显示详细进度的地方 / 下载页只显示百分比，没有显示文件详细"。
+- (void)mc_reportCurrentFileAtPath:(NSString *)path altName:(NSString *)altName {
+    if (!self.stageReportingEnabled || !self.currentDownloadTaskItem) return;
+    NSString *ame259_fileName = altName.length > 0 ? altName : path.lastPathComponent;
+    self.currentDownloadTaskItem.currentFile = ame259_fileName;
+    DownloadTaskManager *ame259_manager = [DownloadTaskManager sharedManager];
+    NSString *ame259_taskId = self.currentDownloadTaskItem.taskId;
+    NSUInteger ame259_stageIndex;
+    if ([path containsString:@"/libraries/"]) {
+        ame259_stageIndex = kMCStageIndexLibraries;
+    } else if ([path containsString:@"/assets/"] || [path containsString:@"/resources/"]) {
+        ame259_stageIndex = kMCStageIndexAssets;
+    } else if ([path containsString:@".json"]) {
+        // version JSON / asset index：归属阶段1（版本 JSON）
+        ame259_stageIndex = kMCStageIndexVersionJSON;
+    } else {
+        return;
+    }
+    [ame259_manager updateTaskWithId:ame259_taskId
+                        stageAtIndex:ame259_stageIndex
+                            progress:-1
+                             message:ame259_fileName];
 }
 
 /// 文件到达终态（跳过/成功/最终失败）时计入阶段文件完成数

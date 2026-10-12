@@ -3015,6 +3015,32 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     //   headless JVM 不带此属性 = 安装器流程零回归）。
     PUSH_MARGV_LITERAL("-Dame.game.session=1");
 
+    // ★ Task259（清单 10）：FO 整合包 26.3 局域网游戏闪退根修。
+    //   病历（456d65e hs_err_pid28441.log，21:08:24，elapsed 35.9s + fatal_trace
+    //   21:02:56 三连 abort()）：FO 自带 e4mc 模组，"对局域网开放"时其
+    //   e4mc_minecraft-init 线程初始化 netty-incubator-codec-quic（0.0.74.Final
+    //   .e4mc.1，fork 版），Quiche.loadNativeLibrary() 从 natives.e4mc.link 下载
+    //   libnetty_quiche_osx_aarch_64_74.dylib 落盘后 System.load —— 运行时解包的
+    //   dylib 无有效代码签名，iOS 内核在 JNI_OnLoad+0x0 首条指令 SIGBUS，
+    //   整个 JVM 当场死亡（用户视角：一开局域网就闪退，三次复现）。
+    //   修法（零字节码手术，e4mc fork 自带的发行版打包者接口）：
+    //   -Dlink.e4mc.native_path=<不存在路径> 使 loadNativeLibrary 直达
+    //   System.load 分支（跳过缓存目录探测/SHA-256/下载），对不存在文件
+    //   抛 UnsatisfiedLinkError（无映射无 SIGBUS）→ 其 catch 原样 rethrow →
+    //   Quiche.<clinit> 的 afInet 等 JNI 常量调用同样 ULE → EIEE →
+    //   e4mc QuiclimeSession.start() 的 try/catch 接住 → fail(t) 记日志 →
+    //   init 线程优雅死亡。e4mc 公网中继在 iOS 不可用（原生 quic 无法加载，
+    //   设计使然），游戏本体/原版局域网/内置陶瓦联机全部不受影响。
+    //   关闭开关：偏好 debug 段设 ame259.quic_guard=false（无此键 = 开启）。
+    if (getPrefBool(@"debug.ame259_quic_guard") == NO) {
+        PUSH_MARGV_LITERAL("-Dlink.e4mc.native_path=/nonexistent.ame259.quic-disabled");
+        NSLog(@"[JavaLauncher] Task259: link.e4mc.native_path stubbed "
+              @"(netty-quic native SIGBUS guard; e4mc relay degrades gracefully)");
+    } else {
+        NSLog(@"[JavaLauncher] Task259: quic guard disabled by preference "
+              @"debug.ame259_quic_guard -- e4mc will attempt native quic load");
+    }
+
     // Workaround random stack guard allocation crashes
     PUSH_MARGV_LITERAL("-XX:+UnlockExperimentalVMOptions");
     PUSH_MARGV_LITERAL("-XX:+DisablePrimordialThreadGuardPages");

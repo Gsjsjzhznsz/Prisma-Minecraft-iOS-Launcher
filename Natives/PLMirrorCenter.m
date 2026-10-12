@@ -115,6 +115,13 @@ typedef NS_ENUM(NSInteger, PLMirrorSpeedFamily) {
 static const NSTimeInterval kAme138ProbeTTL = 24 * 3600.0;
 /// 测速请求超时：4 秒（超时即负，对手直接获胜）
 static const NSTimeInterval kAme138ProbeTimeout = 4.0;
+/// ★ Task259：吞吐量补测参数（Range GET 128KB，10 秒上限）
+static const long long kAme259ThroughputBytes = 128 * 1024;
+static const NSTimeInterval kAme259ThroughputTimeout = 10.0;
+/// 吞吐量胜负判定阈值：双方均 ≥ 32KB/s 且快方 ≥ 1.5× 慢方才以吞吐量定
+/// 胜负（低于阈值视为噪声区，回退 RTT 语义）
+static const double kAme259ThroughputFloorKBps = 32.0;
+static const double kAme259ThroughputDecisiveRatio = 1.5;
 
 /// 内存缓存：family -> @{@"winner": ..., @"ts": ...}
 static NSMutableDictionary<NSNumber *, NSDictionary *> *ame138_probeMemo = nil;
@@ -153,6 +160,27 @@ static BOOL ame138_probeInFlight[2] = {NO, NO};
     return @[
         [NSURL URLWithString:@"https://api.modrinth.com/"],
         [NSURL URLWithString:@"https://mod.mcimirror.top/"]
+    ];
+}
+
+/// ★ Task259（清单 7）：体系 -> 吞吐量探测端点（官方 / 镜像各一份真实
+/// 大文件路径）。RTT 探针的病历（用户："优化国内下载速度，看看 log 有
+/// 多慢"，装机日志实锤 "official won (official=201ms mirror=411ms)"）：
+/// 延迟探针按首包 RTT 选赢家，但国内环境官方源延迟低、吞吐量被国际出
+/// 口带宽摝死（数 KB/s 级），BMCLAPI/MCIM 延迟高一个量级却持续满速——
+/// 大文件下载（数千资产/库文件）按 RTT 选出的官方源就是慢车道。
+/// 吞吐量补测：Range GET 128KB 测持续速率，双方均有效且差距明显时
+/// 以吞吐量定胜负，否则回退 RTT（端点不可达时旧语义零回归）。
++ (NSArray<NSURL *> *)ame259_throughputEndpointsForFamily:(PLMirrorSpeedFamily)family {
+    if (family == PLMirrorSpeedFamilyBMCLAPI) {
+        return @[
+            [NSURL URLWithString:@"https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"],
+            [NSURL URLWithString:@"https://bmclapi2.bangbang93.com/mc/game/version_manifest_v2.json"]
+        ];
+    }
+    return @[
+        [NSURL URLWithString:@"https://api.modrinth.com/v2/project/sodium/version"],
+        [NSURL URLWithString:@"https://mod.mcimirror.top/modrinth/v2/project/sodium/version"]
     ];
 }
 
@@ -228,26 +256,109 @@ static BOOL ame138_probeInFlight[2] = {NO, NO};
     __block double ame138_officialMs = -1;
     __block double ame138_mirrorMs = -1;
 
+    /// 单端吞吐量补测：Range GET 128KB，回调实际速率（KB/s；失败 -1）
+    void (^ame259_throughputRace)(NSURL *, void (^)(double)) = ^(NSURL *url, void (^done)(double)) {
+        NSURLSessionConfiguration *ame259_cfg = [NSURLSessionConfiguration ephemeralSessionConfiguration];
+        ame259_cfg.timeoutIntervalForRequest = kAme259ThroughputTimeout;
+        ame259_cfg.timeoutIntervalForResource = kAme259ThroughputTimeout + 1.0;
+        ame259_cfg.requestCachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
+        NSURLSession *ame259_session = [NSURLSession sessionWithConfiguration:ame259_cfg];
+        NSMutableURLRequest *ame259_req = [NSMutableURLRequest requestWithURL:url];
+        [ame259_req setValue:[NSString stringWithFormat:@"bytes=0-%lld", kAme259ThroughputBytes - 1]
+                          forHTTPHeaderField:@"Range"];
+        CFAbsoluteTime ame259_t0 = CFAbsoluteTimeGetCurrent();
+        NSURLSessionDataTask *ame259_task = [ame259_session dataTaskWithRequest:ame259_req
+            completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            if (error != nil || data.length == 0) {
+                done(-1.0);
+            } else {
+                double ame259_sec = CFAbsoluteTimeGetCurrent() - ame259_t0;
+                done(ame259_sec > 0.05 ? ((double)data.length / 1024.0) / ame259_sec : -1.0);
+            }
+            [ame259_session finishTasksAndInvalidate];
+        }];
+        [ame259_task resume];
+    };
+
+    // 落库 + 日志（RTT 与吞吐量双侧数字同一条锚点，"看看 log 有多慢"从此可量化）
+    void (^ame259_persist)(NSString *, double, double, double, double) =
+        ^(NSString *winner, double oMs, double mMs, double oKbps, double mKbps) {
+        NSDictionary *ame138_entry = @{
+            @"winner": winner,
+            @"ts": @([[NSDate date] timeIntervalSince1970]),
+            @"official_ms": oMs < 1e8 ? @(oMs * 1000) : @(-1),
+            @"mirror_ms": mMs < 1e8 ? @(mMs * 1000) : @(-1),
+            @"official_kbps": @(oKbps),
+            @"mirror_kbps": @(mKbps),
+            @"throughput_decided": @(oKbps >= 0 && mKbps >= 0)
+        };
+        ame138_probeMemo[@(family)] = ame138_entry;
+        setPrefObject([self ame138_probePrefKeyForFamily:family], ame138_entry);
+        NSLog(@"[PLMirrorCenter] Task259 speed probe (family=%ld): %@ won "
+              @"(rtt official=%.0fms mirror=%.0fms; throughput official=%.0fKB/s mirror=%.0fKB/s%@)",
+              (long)family, winner,
+              oMs < 1e8 ? oMs * 1000 : -1, mMs < 1e8 ? mMs * 1000 : -1,
+              oKbps, mKbps,
+              (oKbps >= 0 && mKbps >= 0) ? @"; decided by throughput" : @"; decided by rtt (throughput unavailable)");
+    };
+
     void (^ame138_settle)(void) = ^{
         if (ame138_officialMs < 0 || ame138_mirrorMs < 0) return;
-        NSString *ame138_winner = nil;
-        if (ame138_officialMs < ame138_mirrorMs) {
-            ame138_winner = @"official";
-        } else if (ame138_mirrorMs < ame138_officialMs) {
-            ame138_winner = @"mirror";
-        } // 双失败（均为 DBL_MAX）不落库，下次再测
-        if (ame138_winner != nil) {
-            NSDictionary *ame138_entry = @{
-                @"winner": ame138_winner,
-                @"ts": @([[NSDate date] timeIntervalSince1970])
-            };
-            ame138_probeMemo[@(family)] = ame138_entry;
-            setPrefObject([self ame138_probePrefKeyForFamily:family], ame138_entry);
-            NSLog(@"[PLMirrorCenter] Task138 speed probe (family=%ld): %@ won "
-                  @"(official=%.0fms mirror=%.0fms)",
-                  (long)family, ame138_winner, ame138_officialMs * 1000, ame138_mirrorMs * 1000);
+        // 任一侧 RTT 失败：维持旧语义按 RTT 定胜负（失败方 DBL_MAX 自然落败）
+        if (ame138_officialMs >= 1e8 || ame138_mirrorMs >= 1e8) {
+            NSString *ame138_winner = nil;
+            if (ame138_officialMs < ame138_mirrorMs) {
+                ame138_winner = @"official";
+            } else if (ame138_mirrorMs < ame138_officialMs) {
+                ame138_winner = @"mirror";
+            } // 双失败（均为 DBL_MAX）不落库，下次再测
+            if (ame138_winner != nil) {
+                ame259_persist(ame138_winner, ame138_officialMs, ame138_mirrorMs, -1.0, -1.0);
+            }
+            ame138_probeInFlight[family] = NO;
+            return;
         }
-        ame138_probeInFlight[family] = NO;
+        // ★ Task259：双侧 RTT 有效 → 吞吐量补测阶段（同一串行队列结算）
+        __block double ame259_officialKbps = -2; // -2 = 未回，-1 = 失败
+        __block double ame259_mirrorKbps = -2;
+        NSArray<NSURL *> *ame259_tpEndpoints = [self ame259_throughputEndpointsForFamily:family];
+        void (^ame259_tpSettle)(void) = ^{
+            if (ame259_officialKbps == -2 || ame259_mirrorKbps == -2) return;
+            NSString *ame138_winner = nil;
+            if (ame259_officialKbps >= 0 && ame259_mirrorKbps >= 0) {
+                double ame259_fast = MAX(ame259_officialKbps, ame259_mirrorKbps);
+                double ame259_slow = MIN(ame259_officialKbps, ame259_mirrorKbps);
+                if (ame259_slow >= kAme259ThroughputFloorKBps &&
+                    ame259_fast >= ame259_slow * kAme259ThroughputDecisiveRatio) {
+                    ame138_winner = (ame259_officialKbps > ame259_mirrorKbps) ? @"official" : @"mirror";
+                }
+            }
+            // 吞吐量不可测/噪声区：回退 RTT 旧语义
+            if (ame138_winner == nil) {
+                if (ame138_officialMs < ame138_mirrorMs) {
+                    ame138_winner = @"official";
+                } else if (ame138_mirrorMs < ame138_officialMs) {
+                    ame138_winner = @"mirror";
+                }
+            }
+            if (ame138_winner != nil) {
+                ame259_persist(ame138_winner, ame138_officialMs, ame138_mirrorMs,
+                               ame259_officialKbps, ame259_mirrorKbps);
+            }
+            ame138_probeInFlight[family] = NO;
+        };
+        ame259_throughputRace(ame259_tpEndpoints.firstObject, ^(double kbps) {
+            dispatch_async(ame138_settleQueue, ^{
+                ame259_officialKbps = kbps;
+                ame259_tpSettle();
+            });
+        });
+        ame259_throughputRace(ame259_tpEndpoints.lastObject, ^(double kbps) {
+            dispatch_async(ame138_settleQueue, ^{
+                ame259_mirrorKbps = kbps;
+                ame259_tpSettle();
+            });
+        });
     };
 
     ame138_race(ame138_official, ^(double ms) {

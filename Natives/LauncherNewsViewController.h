@@ -51,6 +51,9 @@ extern NSString * const kShortcutActionMultiplayer;
 // ★ Task256（清单 3：清理垃圾入口太不明显）：主页“清理垃圾”快捷磁贴——
 // 清理中心从版本管理页二级 FAB→ActionSheet 三级路径提升为主页一级入口。
 extern NSString * const kShortcutActionCleanup;
+// ★ Task259（清单 6：版本安装界面关闭之后没有地方再打开）：主页“下载中心”
+// 快捷磁贴——统一下载进度页最小化/关闭后的重新打开入口（任务列表 FormSheet）。
+extern NSString * const kShortcutActionDownloadCenter;
 
 // MARK: - LauncherNewsViewController
 

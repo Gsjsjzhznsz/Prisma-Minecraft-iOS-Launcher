@@ -286,12 +286,21 @@ static const CGFloat kSectionInset = 16.0;
     // 用 detectLoaderFromVersionId 解析；解析不到则用通用占位符。
     [self configureIconForTask:task];
 
-    // 阶段信息行：当前阶段名（经 PLTaskStageTitleDisplay 本地化渲染）+ 阶段计数（如 "3/6"）。
+    // 阶段信息行：左侧当前阶段名（经 PLTaskStageTitleDisplay 本地化渲染）+ 阶段计数（如 "3/6"）。
     // stages 非空且 currentStageIndex 有效（currentStage 非 nil）时展示，否则整行收起回退原布局。
     PLTaskStage *currentStage = task.currentStage;
     BOOL hasStageInfo = (currentStage != nil);
     if (hasStageInfo) {
-        self.stageTitleLabel.text = PLTaskStageTitleDisplay(currentStage.title);
+        NSString *ame259_stageTitle = PLTaskStageTitleDisplay(currentStage.title);
+        // ★ Task259（清单 6）：文件明细——"下载页只显示百分比，没有显示文件
+        //   详细"。下载中且有文件级信息时，阶段名后缀当前文件名（单行截断，
+        //   尾部省略号保留阶段名可见性）。
+        if (task.state == DownloadTaskStateDownloading &&
+            task.currentFile.length > 0) {
+            ame259_stageTitle = [NSString stringWithFormat:@"%@ · %@",
+                                 ame259_stageTitle, task.currentFile];
+        }
+        self.stageTitleLabel.text = ame259_stageTitle;
         self.stageCountLabel.text = [NSString stringWithFormat:@"%ld/%lu",
                                      (long)task.currentStageIndex + 1, (unsigned long)task.stages.count];
     } else {

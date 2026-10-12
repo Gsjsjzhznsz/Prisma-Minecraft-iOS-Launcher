@@ -46,7 +46,8 @@ static os_log_t touchControllerLog = NULL;
 @implementation TouchControllerBridge
 
 + (void)load {
-    touchControllerLog = os_log_create("com.air-devs.air", "TouchController");
+    // Task259：os_log 子系统随包名迁移（仅日志归类语义，无行为影响）
+    touchControllerLog = os_log_create("com.prisma-devs.prisma", "TouchController");
     [self initializeTouchController];
 }
 

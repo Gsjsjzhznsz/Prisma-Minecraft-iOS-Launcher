@@ -53,6 +53,15 @@ extern dispatch_group_t fatalExitGroup;
                     if (ame144_old) {
                         NSLog(@"[Prisma] Task144: legacy bundle 'org.angelauramcremastered.amethyst' (pre-rename AngelAuraAmethyst) still installed alongside this app -- two identical-looking home-screen icons; the OLD icon can be deleted (its container is separate from this app's data)");
                     }
+                    // ★ Task259（清单 4）：包名迁移 com.air-devs.air →
+                    //   com.prisma-devs.prisma 的并存取证（log-only，同 Task144
+                    //   语义）。检测到旧包时提示数据导出/导入迁移链路：
+                    //   旧 App（air 包名）导出 → 新 App（prisma 包名）导入。
+                    BOOL ame259_air = (BOOL)[ame144_ws performSelector:ame144_sel
+                                                           withObject:@"com.air-devs.air"];
+                    if (ame259_air) {
+                        NSLog(@"[Prisma] Task259: legacy bundle 'com.air-devs.air' still installed alongside this app -- data does NOT carry over (iOS containers are per-bundle-id); export from the OLD app via its data-export, import into THIS app, then delete the old icon");
+                    }
                 }
             } @catch (NSException *ame144_e) {
                 NSLog(@"[Prisma] Task144: legacy bundle detection unavailable (%@)", ame144_e.name);

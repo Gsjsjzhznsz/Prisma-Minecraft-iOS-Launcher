@@ -3041,6 +3041,7 @@
 "preference.detail.auto_control_update_check" = "啟動後靜默檢查控件倉庫，已安裝的控件佈局有更新時通知你";
 "terracotta.stage.retry" = "正在重試連線房主（第 %lu/2 次）…";
 "home.tile.cleanup" = "清理垃圾";
+"home.tile.download_center" = "下載中心";
 "preference.profile.jvm_follow_global" = "跟隨全局設定";
 "preference.detail.auto_keyboard_sdl" = "遊戲中文本框需要輸入時自動啟用 SDL 軟鍵盤";
 "preference.detail.mc_toggle_sprint" = "在每個實例的 options.txt 中切換疾跑鎖存（按一次，持續疾跑）";
@@ -3070,3 +3071,10 @@
 "preference.title.done.reset_mouse_pointer" = "滑鼠指標已重設";
 "preference.title.confirm.two_finger_keyboard" = "啟用雙指鍵盤手勢？";
 "preference.title.done.two_finger_keyboard" = "手勢已更新";
+"preference.title.done.custom_accent_color" = "主題色已更新";
+"preference.title.done.custom_card_color" = "卡片顏色已更新";
+"preference.title.done.custom_text_color" = "文字顏色已更新";
+"preference.title.done.provider_config" = "提供方設定頁已開啟";
+"preference.title.done.reset_appearance_colors" = "外觀顏色已恢復預設";
+"preference.title.done.session_list" = "會話清單已開啟";
+"preference.title.done.system_prompt" = "系統提示詞已開啟";

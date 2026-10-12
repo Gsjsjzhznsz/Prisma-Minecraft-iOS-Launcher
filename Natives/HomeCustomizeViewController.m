@@ -18,6 +18,8 @@ static NSDictionary *availableShortcuts(void) {
         kShortcutActionMultiplayer:@{@"title": localize(@"game.menu.multiplayer", @"联机"), @"icon": @"antenna.radiowaves.left.and.right", @"color": @"#0EA5E9"},
         // ★ Task256（清单 3）：清理垃圾磁贴进可选清单（默认开启 + 老布局注入）。
         kShortcutActionCleanup:   @{@"title": localize(@"home.tile.cleanup", @"清理垃圾"),    @"icon": @"trash.circle.fill",             @"color": @"#EF4444"},
+        // ★ Task259（清单 6）：下载中心磁贴进可选清单（默认开启 + 老布局注入）。
+        kShortcutActionDownloadCenter: @{@"title": localize(@"home.tile.download_center", @"下载中心"), @"icon": @"arrow.down.circle.fill", @"color": @"#3B82F6"},
     };
 }
 

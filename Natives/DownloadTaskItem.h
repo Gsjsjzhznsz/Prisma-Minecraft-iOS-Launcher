@@ -116,6 +116,12 @@ typedef id _Nullable (^DownloadRetryHandler)(DownloadTaskItem *item);
 /// 当前阶段（stages 为空或 currentStageIndex 越界时返回 nil，UI 可安全调用）
 - (nullable PLTaskStage *)currentStage;
 
+/// ★ Task259（清单 6）：当前正在下载的文件名（仅文件名，不含路径）。
+/// 多文件任务（MC 版本安装的库/资源阶段等）由业务方在单文件开始时更新，
+/// 下载中心 cell 与统一进度页据此展示"文件详细"（用户：下载页只显示
+/// 百分比，没有显示文件详细）。nil 表示无文件级信息。
+@property (nonatomic, copy, nullable) NSString *currentFile;
+
 /// 安装类任务自动弹出统一进度页标记（redesign-download-ui Phase 2）：
 /// 业务方注册任务后置 YES，DownloadTaskManager 在该任务首次状态更新时
 /// 自动弹出 PLTaskProgressViewController（同屏仅一个，新任务替换内容）。

@@ -2,9 +2,9 @@
 <plist version="1.0">
 <dict>
         <key>application-identifier</key>
-        <string>com.air-devs.air</string>
+        <string>com.prisma-devs.prisma</string>
 <key>com.apple.private.security.container-required</key>
-        <string>com.air-devs.air</string>
+        <string>com.prisma-devs.prisma</string>
     <key>get-task-allow</key>
     <true/>
 
