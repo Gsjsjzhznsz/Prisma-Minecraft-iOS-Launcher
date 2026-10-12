@@ -1,0 +1,16 @@
+{
+  "name": "prisma-launcher-site",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Prisma Minecraft iOS Launcher introduction site (Astro, iOS 27 liquid glass)",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "node scripts/sync-announcements.mjs && astro build",
+    "preview": "astro preview",
+    "sync": "node scripts/sync-announcements.mjs"
+  },
+  "dependencies": {
+    "astro": "^4.16.0"
+  }
+}

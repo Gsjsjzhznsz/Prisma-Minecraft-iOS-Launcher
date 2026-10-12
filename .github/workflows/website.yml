@@ -1,0 +1,49 @@
+# ★ Task259（清单 9）：启动器介绍站（Astro）发布到 GitHub Pages。
+# 触发：website/** 变更或手动；公告在构建期经 scripts/sync-announcements.mjs
+# 与仓库 main 的 announcements.json 单一事实源同步。
+name: Deploy website (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+    paths: ['website/**', 'announcements.json', '.github/workflows/website.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - name: Install & build
+        working-directory: website
+        run: |
+          npm ci || npm install --no-fund --no-audit
+          npm run build
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

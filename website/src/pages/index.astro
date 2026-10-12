@@ -1,0 +1,152 @@
+---
+// Prisma 6.5.0 启动器介绍站 —— iOS 27 液态玻璃
+// 公告数据：构建期 scripts/sync-announcements.mjs 从仓库 main 同步
+// （单一事实源与启动器一致），此快照为离线构建回退。
+import '../styles/global.css';
+import announcements from '../data/announcements.json';
+
+const REPO = 'https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher';
+const RELEASE_URL = REPO + '/releases/tag/v6.5.0';
+const IPA_URL = RELEASE_URL + '/download/com.prisma-devs.prisma-6.5.0-ios.ipa';
+const TIPA_URL = RELEASE_URL + '/download/com.prisma-devs.prisma-6.5.0-ios-trollstore.tipa';
+
+const pinned = [...announcements.announcements].sort(
+  (a, b) => (b.pin === true ? 1 : 0) - (a.pin === true ? 1 : 0) || b.date.localeCompare(a.date)
+);
+
+const features = [
+  {
+    icon: '🫧',
+    title: 'iOS 27 液态玻璃',
+    body: 'Telegram 同款实况 backdrop 采样 + SDF 边缘折射，面板、弹窗、游戏内菜单整族玻璃质感；降低透明度自动回退原生。',
+  },
+  {
+    icon: '🎮',
+    title: '每游戏渲染器 + FSR',
+    body: 'MobileGL（Vulkan 直连 / GLES / GL 4.0）、ANGLE、VirGL 全后端矩阵；FSR 1.0 超分低分辨率渲染放大锐化，帧率红利即开即得。',
+  },
+  {
+    icon: '🌐',
+    title: '内置联机',
+    body: 'Terracotta / EasyTier 内核：房间码、玩家列表、对局端口状态面板；访客掉线自动重试，主机端口周期扫描免手动。',
+  },
+  {
+    icon: '⬇️',
+    title: '国内下载提速',
+    body: 'BMCLAPI / MCIM 镜像矩阵 + 延迟×吞吐量双维度测速选路；统一进度页实时显示当前文件、速率、双维度计数与 ETA。',
+  },
+  {
+    icon: '🧩',
+    title: '整合包一站式',
+    body: 'Modrinth / CurseForge 整合包在线安装，Fabric / Forge / NeoForge 加载器直装，版本隔离三态选择 + 数据自动迁移。',
+  },
+  {
+    icon: '🛟',
+    title: '数据安全',
+    body: '全量数据一键导出 / 导入（zip），包名迁移无忧；崩溃自学降档 + 深度诊断日志，问题带日志一轮定位。',
+  },
+];
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prisma —— iOS Minecraft 启动器</title>
+    <meta name="description" content="Prisma：iOS 平台 Minecraft Java 版启动器。iOS 27 液态玻璃界面、每游戏渲染器 + FSR 超分、内置联机、国内镜像加速下载。" />
+  </head>
+  <body>
+    <div class="aurora"></div>
+    <div class="grain"></div>
+
+    <header class="topbar wrap">
+      <div class="glass">
+        <div class="brand"><span class="logo"></span>Prisma</div>
+        <nav class="topnav">
+          <a href="#features">特性</a>
+          <a href="#announcements">公告</a>
+          <a href={REPO} target="_blank" rel="noopener">GitHub</a>
+          <a class="cta" href="#download">下载 6.5.0</a>
+        </nav>
+      </div>
+    </header>
+
+    <section class="hero wrap">
+      <span class="chip"><span class="dot"></span>v6.5.0 正式版 · 包名迁移至 com.prisma-devs.prisma</span>
+      <h1>Prisma</h1>
+      <p class="lead">
+        iOS 平台 Minecraft Java 版启动器。从渲染矩阵、输入链路到联机与下载全链自研调优，
+        为 iPhone 与 iPad 打造独一无二的 iOS 27 液态玻璃体验。
+      </p>
+      <div class="actions">
+        <a class="btn primary" href={IPA_URL}>⬇ 下载 IPA（侧载）</a>
+        <a class="btn ghost" href={TIPA_URL}>TrollStore TIPA</a>
+        <a class="btn ghost" href={RELEASE_URL}>发行说明</a>
+      </div>
+      <p class="meta-note">iOS 15+ · 首次启动游戏需开启 JIT · 数据迁移见发行说明</p>
+    </section>
+
+    <section id="features" class="wrap">
+      <h2 class="sec">为什么是 Prisma</h2>
+      <p class="sec-sub">六个独有方向，全部来自真实装机的逐项反馈闭环。</p>
+      <div class="grid">
+        {features.map((f) => (
+          <div class="glass card">
+            <div class="icon">{f.icon}</div>
+            <h3>{f.title}</h3>
+            <p>{f.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section id="announcements" class="wrap">
+      <h2 class="sec">公告</h2>
+      <p class="sec-sub">与启动器内公告同源（仓库 announcements.json 单一事实源），构建时自动同步。</p>
+      <div class="ann-list">
+        {pinned.slice(0, 6).map((a) => (
+          <div class="glass ann">
+            {a.pin === true && <span class="pin">置顶</span>}
+            <div style="min-width:0">
+              <h4>{a.title}</h4>
+              <p>{a.summary}</p>
+            </div>
+            <span class="date">{a.date}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section id="download" class="wrap">
+      <div class="glass dl-card">
+        <h2 class="sec">下载 Prisma 6.5.0</h2>
+        <p class="sec-sub">正式版 · 三种安装形态 · 旧包名数据迁移专用包一并提供</p>
+        <div class="row">
+          <a class="btn primary" href={IPA_URL}>⬇ IPA（AltStore / SideStore / 爱思）</a>
+          <a class="btn ghost" href={TIPA_URL}>TIPA（TrollStore）</a>
+          <a class="btn ghost" href={RELEASE_URL + '/download/com.air-devs.air-legacy-EXPORT-ONLY.ipa'}>air 旧包名（仅导出数据）</a>
+        </div>
+        <div class="warn">
+          ⚠️ 包名迁移：新 App（com.prisma-devs.prisma）不自动继承旧 App 数据。
+        </div>
+        <ol class="steps">
+          <li>在<b>旧版</b>（air 包名）中：设置 → 数据传输 → 导出全量备份 zip</li>
+          <li>安装 6.5.0（新包名），首次向导选择「从备份导入」或稍后在 设置 → 数据传输 中导入</li>
+          <li>数据确认无误后删除旧图标。air 旧包名今后不再发布。</li>
+        </ol>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        <p>
+          <a href={REPO} target="_blank" rel="noopener">GitHub 仓库</a> ·
+          QQ 群 1126547426 ·
+          基于 PojavLauncher / Amethyst 社区成果构建，感谢所有上游贡献者
+        </p>
+        <p style="margin-top:10px">© 2026 Prisma Devs · 本页面由 Astro 构建，公告与仓库同步</p>
+      </div>
+    </footer>
+  </body>
+</html>
