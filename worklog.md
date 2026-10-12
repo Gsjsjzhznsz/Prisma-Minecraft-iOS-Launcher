@@ -3088,3 +3088,15 @@ Work Log:
 
 Stage Summary:
 - 七项全链交付（7/7）；装机锚点：①26.3 FO 启动日志应见 "[MetallumAgent] Task258: Knot loader detected -- eager define deferred" + Main 信号 "Knot-safe deferred define done"，不再 "A mod crashed on startup!" ②联机状态行出现 联机阶段/房间码/玩家/对局端口 行 ③首启 options.txt 出现 lang=zh_cn（按启动器语言）④镜像优先档资产走 BMCLAPI ⑤iPhone 横屏版本设置单列不重叠 ⑥run 808 起 CI 预期 ~9-10min 提速
+
+## Task 260——五项清单全链（同版本静默替换轮：air 数据一键迁移 / 玻璃会话闸 / i18n / 网站二轮 / 发行版静默替换）
+
+日期：2026-10-12　构建：ec83366（run 38272741775 一轮终绿 r1；发布资产已静默替换）
+
+Work Log:
+- 五项处置：①LiveContainer 兄弟数据自动迁移（DataTransferService ame260_scanSiblingLauncherHomes 布局判据 + ame260_migrateFromSiblingHome copy 合并 + Welcome 向导数据步检测卡置顶/覆盖确认/重启提示）②游戏会话玻璃安全闸（LGCSetGameSessionMCMajor/LGCGameSessionGlassAllowed；SurfaceVC init 上报 MC 主版本/dealloc 复位；ame237 面板 + 8Hz tick/start 三点同闸，<26 会话 auto 与手动 liquid_glass 同回退原生面板）③i18n 6 新键 54 表齐备（锚点降级链兼容缺 welcome 族表）④网站二轮（真启动器图标 favicon 16/32/180/192/512 + hero、与上游的区别七维对比表、功能八卡、四步上手、Pages 首轮 404 根修=API POST /pages build_type=workflow）⑤v6.5.0 发行版静默替换（同 tag：删旧 prisma 资产→传 ec83366 新资产→说明补"二轮更新"节；air 旧包 EXPORT-ONLY 不动）
+- 事故两件：①Makefile MultiEdit TAB 整文件展开（Task256 同款事故复发——git checkout HEAD -- + python 字节级 splice 重做，671 前导 TAB 完好；教训升级：TAB 敏感文件 git add 后 checkout -- 无效（恢复自索引），必须 checkout HEAD --）②CI run 812 WelcomeViewController 缺 #import <objc/runtime.h>（本地 syntax/import 门禁不查符号声明域，跨文件盲区家族）→ r1 补 import 一行
+- 门禁：task139/240 双门 all balanced；task191 四表 2903 entries OK；task248 缺键0/硬编码0/动态键0；task250 动态族零漏键；YAML×2 校验过；Info.plist plistlib OK；website npm build 715ms 一页全绿
+
+Stage Summary:
+- 五项全闭环：装机锚点 ①新版本首启向导数据步见"检测到旧版数据"卡（LC 宿主）→一键迁移后日志 "Task260: sibling migration copied N files (ok)" + 偏好/实例即时刷新 ②MC <26 会话开游戏菜单：日志 "[LGC] Task260: game session MC major -> N (in-game glass allowed: NO...)" + "[GameMenu] Task260: glass panel blocked by session gate"，面板为原生深色不再崩；26+ 会话玻璃照常 ③https://gsjsjzhznsz.github.io/Prisma-Minecraft-iOS-Launcher/ 图标/对比区/上手指南上线 ④发行说明含"二轮更新"节，资产 updated_at=16:08（ec83366 构建，文件名 com.prisma-devs.prisma-6.5.0-*）
