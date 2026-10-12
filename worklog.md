@@ -3100,3 +3100,18 @@ Work Log:
 
 Stage Summary:
 - 五项全闭环：装机锚点 ①新版本首启向导数据步见"检测到旧版数据"卡（LC 宿主）→一键迁移后日志 "Task260: sibling migration copied N files (ok)" + 偏好/实例即时刷新 ②MC <26 会话开游戏菜单：日志 "[LGC] Task260: game session MC major -> N (in-game glass allowed: NO...)" + "[GameMenu] Task260: glass panel blocked by session gate"，面板为原生深色不再崩；26+ 会话玻璃照常 ③https://gsjsjzhznsz.github.io/Prisma-Minecraft-iOS-Launcher/ 图标/对比区/上手指南上线 ④发行说明含"二轮更新"节，资产 updated_at=16:08（ec83366 构建，文件名 com.prisma-devs.prisma-6.5.0-*）
+
+## Task 261——十项清单全链（右Shift第8次根修/持久可视/小窗自适应/设置导入入口/JIT跳主页/整合包自诊断/网站三轮双语+社区捐赠+版本识别下载；v6.5.0 静默替换第三轮）
+
+日期：2026-10-13　构建：0c5a6dc（run 38291384591 一轮绿 r2；发行资产已静默替换）
+
+Work Log:
+- 十项处置：①右Shift根修双防线（ame261_repairSneakBindingForRightShiftLayout：JVM 启动前活动布局含 344 且 sneak 原版默认态（新键名/旧数字双形）→改绑 right.shift+v4 一次性标记，堵死 v3 恢复只覆盖 v2 cohort 的结构盲区=新实例/隔离新档/迁移新建实例默认 left.shift 永不修复即 classic.json 344 死键家族；防线2=会话起始 Task179 账本+ame176 downTime+resetVirtualModifierState 确定性清账）②锁存可视 ame261_syncModLatchVisualForKeycode（isToggleOn 着色对齐持续奔跑，常规色存档表，主+抽屉递归同步，Task179 三路径全覆盖）④小窗→放大自适应恢复（viewDidLayoutSubviews 尺寸失配锚 ame261_lastSyncedViewSize+0.3s 去抖+SDL frame re-assert+updateSavedResolution+Task255 对账+Task250 强制宣告全链）⑤设置→通用 data_sibling_import 行（ame260 同 API，向导外常驻入口）⑨launchGame 即发 ShowHomePage（版本设置=卡片布局中间内容区非 presented VC，Task224 盖不到；同实例幂等）⑧自诊断三件套（PatchSVC shutdown hook 快照 latestlog→latestlog.selfexit-*.txt×3 / GLFW.java 三探针+egl_bridge 入口探针前置到 pojavInitOpenGL 之前 / Task86 相位2 前3样本 8s+首样本无条件落栈）⑥⑦⑩网站三轮（index.astro 双语重构 localStorage+head 预应用防 FOUC；交流与支持三卡=QQ 1126547426/Discord HqcmswrEy/爱发电 yiqiu4178+微信赞赏码 donate.png+Star CTA；下载区 GitHub Releases API 自动识别最新版+1h 缓存+构建期兜底+gh 加速三前缀芯片+发行版直达）
+- ⑧取證定案（6f846f4 gamelog）：Cobblemon 1.8.2/Fabric 1.21.1 GLFW 时代包两会话卡 Setting user→Backend library 之间=窗口创建期（egl_bridge 零活动实锤，卡点在 GLFW 类 init/glfwInit/nglfwCreateContext/渲染器预加载区间）；三次 Task251 marker 自灭死因随轮转失考——本轮交付自诊断闭环不以盲修交差，下一轮复现三证齐发（selfexit 快照+GLFWBridge 探针+窗口期栈）一轮定位
+- 事故三件（CI r1/r2）：①i18n 键名双引号语法雷（上一窗口遗留 data_sibling 3 键 "key"" = 格式，4 表 12 行 sed 批修）②run 38288334255 ame261_geoResyncTimer 类扩展花括号 ivar 被 self. 属性语法访问 7 处（260 r1 同族第二例——门禁不查属性声明域）→直连 ivar ③run 38290262568 strongSelf->_ame261 多写 _ 前缀（ivar 实际声明无前缀，-> 访问须与声明逐字节一致）
+- 门禁：task139 all balanced；task191 54 表 OK；task248 缺键0/硬编码0；task250 动态族零漏键（补 preference.title.done.data_sibling_import）；Makefile TAB 671 保形；website npm build 869ms 全绿
+- 静默替换：run 38291384591 产物（ipa 234914903B/tipa 234915157B）删旧传新 201×2，发行说明补「三轮更新」节，air legacy EXPORT-ONLY 不动；Deploy website 38288334245 success
+- 仓库 log 清理：fatal_trace.txt/latestlog.txt/latestlog.old.txt 按 259 惯例取证完毕后移出（活证在用户设备 POJAV_HOME）
+
+Stage Summary:
+- 十项全交付；装机锚点：①新实例首启 "[Task261] sneak rebind repair: ... -> key.keyboard.right.shift (marker=v4)" ②轻点右Shift高亮/再点还原 ④缩放后 0.3s "[SurfaceVC] Task261: adaptive resync done" ⑤设置→通用新入口 ⑨点启动秒回主页 ⑧静默退出后 POJAV_HOME 出现 latestlog.selfexit-*.txt + 日志含 [GLFWBridge]/[Task261] 探针链；网站右上角 EN 一键切换、交流支持区上线、下载区自动识别版本+国内加速源
