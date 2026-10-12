@@ -3068,3 +3068,23 @@ Work Log:
 
 Stage Summary:
 - Task 257 四项全闭环；装机锚点：①访客 PingHostFail 后日志应见 "Task257: retry N re-entered guest flow"（旧构建 firing 后静默死）②1.8.9（renderer=auto）启动日志 "[SurfaceVC] Task257: legacy MC ... FSR linkage disengaged" + 画面全分辨率不再发软 ③run 805 起 JRE 缓存命中 + 第二遍 package 直通 ④中文界面 36 处不再显示英文（清理磁贴/JVM 跟随全局/自动检查控件更新等）
+
+---
+## Task 258——七项清单全链（gamelog 先行诊断：FO 崩溃根修 / 联机信息 / CI 第三轮 / 首启语言 / i18n / 国内下载 / iPhone 文字）
+
+日期：2026-10-12　构建：fdc5635（run 807 终绿，ipa/tipa 220.5MB + dSYM 6.3MB）
+
+Work Log:
+- gamelog 取证（8dc60b9 四件套）：26.3 FO（Fabulously Optimized, fabric-loader-0.19.5）崩溃全链还原——MetallumAgent 对 KnotClassLoader eager defineClass classes263 全集（MetalGpuTexture implements com.mojang.renderpearl.api.textures.GpuTexture），HotSpot defineClass 急切解析超接口 → renderpearl.GpuTexture/GpuBackend 在 mixin prepare（~t1.5s）前经 Knot loader 加载（~t0.65s）→ iris MixinGpuTexture3 MixinTargetAlreadyLoadedException（"loaded too early"）→ 失败 prepare 毒化 transformer → modernfix preLaunch 类 transform 重抛 → FormattedException "A mod crashed on startup!" → FabricGuiEntry（"can't find java executable" 噪声）→ exit(1)。vanilla 26.3 不炸（无 mixin 目标 renderpearl）+ 桌面 FO 不炸（无 agent）双对照闭环
+- T2 根修：Task258KnotGate（ecj 3.42 + jar 内 shaded ASM 复用 Task211 管线）——ensure12111 的 defineMetallumClasses 调用点重定向到 defineMetallumClassesMaybe（同描述符零分支插入，StackMapTable 保持有效）；KnotClassLoader 检测→跳过 eager define→Main 类加载信号（Knot 在 preLaunch entrypoints 后才加载 net.minecraft.client.main.Main = prepare 必已完成且设备初始化未开始）+ 5s 守护定时兜底。E2E 探针（FakeKnotClassLoader）全绿：pass-through 2ms / 定时 5s 触发 deferred define / jar diff 仅 MetallumAgent.class+3 gate 类。修复不做在 JavaLauncher 侧的原因：premain 的 isFabricLoaderPresent 探测 system loader 在 Pojav 自管 classpath 下恒 false（FO 会话日志无 Fabric 消息实锤）
+- T1 联机信息：MultiplayerViewController 游戏内状态行接入 TerracottaManager 数据层（initialized 门：stageDescription 阶段 / currentInviteCode 房间码 / players 玩家列表[名字+HOST/LOCAL 角色标注] / currentPort 对局端口），参考 FCL/PCL2CE 房间面板；旧状态行只有 ZeroTier 视角，Task256/257 的重试过程用户不可见
+- T4 首启语言：JavaLauncher.m 解析 general.app_language（system→NSLocale.preferredLanguages 有序最长前缀表；显式码→52 码映射+小写兜底）→ -Dame.launcher.lang → PojavLauncher.launchMinecraft 在 MCOptionUtils.load() 后 lang 键缺失时写入（用户已有选择永优先），FCL/PCL2CE 语义
+- T5 i18n：新 12 键（mp.ingame.status.tc_* + ame193.mp.151-156）入四表（zh-CN/zh-Hans/zh-Hant/en）；task248 缺键 0/硬编码 0/动态键 0，task250 裸键名 0
+- T3 CI 第三轮：run805 双遍 [N/906] Mesa 全量编译（9.9min）实锤 dep_virgl_build 的 cached 分支 `exit 0` 只退出该行 shell（make 每行独立 shell 语义雷，Task256-r2 提速从未生效）——guard 收敛为单行 shell（if/else/fi 内 cp 或递归 $(MAKE) dep_virgl_compile，构建体原 TAB 原样挪入新目标，python 字节级编辑）；run807 因 Makefile 哈希变键一次性 miss（新桶 159968e2 已落袋），808 起 guard 真正早退预期省 ~9-10min/run
+- T6 国内下载：PLMirrorCenter 资产特判退役——mirror_first 档资产同样镜像在前（对齐 PCL2CE；speed_first 仍测速赢家、official_first 不动）；BMCLAPI 全域覆盖（piston-meta/data/launcher/libraries→/maven/assets/forge/neoforge/fabric-meta/quilt）此前已在位，本次为最后一档
+- T7 iPhone 文字：ProfileSettingsViewController 双列门控加宽度阈值 ≥760pt（isLandscape 与 viewWillTransitionToSize 两处同口径）——iPhone 横屏 width>height 但半宽 ~180-460pt 重叠截断（用户截图："标签压图标/683…/分…"），过不了门槛回退单列整宽
+- 门禁：task139/240 双门 all balanced；task191 四表 2889 entries OK；task248 缺键0/硬编码0/动态键0；task250 裸键名0；verify_task255 52/52；verify_task219 ALL GREEN（锚点顺延：唯一键 2843→2855、TAB 672→671）；Java 全树 ecj 编译错误数与基线持平（41 既有缺 lwjgl classpath 项，非本次引入）；Makefile 新块 19 行全 TAB 无空格缩进
+- 事故三件：①javap 缺失（JRE 环境）→ 手写 python class 解析器三易其稿（fields 循环多读 u2 / Code 异常表 / aastore 缺表）②disasm_gl1.py 同款 bug 修复 ③"anager presetNetworkId" 显示层吞字假象再袭——'[manager presetNetworkId]' 的子串误判，字节级 has_ok/has_bad 计数复位（教训：吞字家族判定只认计数不认目视）
+
+Stage Summary:
+- 七项全链交付（7/7）；装机锚点：①26.3 FO 启动日志应见 "[MetallumAgent] Task258: Knot loader detected -- eager define deferred" + Main 信号 "Knot-safe deferred define done"，不再 "A mod crashed on startup!" ②联机状态行出现 联机阶段/房间码/玩家/对局端口 行 ③首启 options.txt 出现 lang=zh_cn（按启动器语言）④镜像优先档资产走 BMCLAPI ⑤iPhone 横屏版本设置单列不重叠 ⑥run 808 起 CI 预期 ~9-10min 提速
