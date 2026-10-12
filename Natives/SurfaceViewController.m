@@ -1616,17 +1616,17 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
         ame251_transitionResyncPending = YES;
         return;
     }
-    [self.ame261_geoResyncTimer invalidate];
-    self.ame261_geoResyncTimer = nil;
+    [ame261_geoResyncTimer invalidate];
+    ame261_geoResyncTimer = nil;
     __weak typeof(self) weakSelf = self;
-    self.ame261_geoResyncTimer = [NSTimer timerWithTimeInterval:0.3
+    ame261_geoResyncTimer = [NSTimer timerWithTimeInterval:0.3
                                                          repeats:NO
                                                            block:^(NSTimer *t) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
-        strongSelf.ame261_geoResyncTimer = nil;
+        strongSelf->_ame261_geoResyncTimer = nil;
         [strongSelf ame261_runAdaptiveGeometryResync];
     }];
-    [[NSRunLoop mainRunLoop] addTimer:self.ame261_geoResyncTimer
+    [[NSRunLoop mainRunLoop] addTimer:ame261_geoResyncTimer
                               forMode:NSRunLoopCommonModes];
 }
 
@@ -4859,8 +4859,8 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
     CallbackBridge_resetVirtualModifierState();
     // ★ Task261：自适应几何恢复定时器随会话终结退役（防 VC 退役后 timer
     //   block 持 weakSelf 空转）。
-    [self.ame261_geoResyncTimer invalidate];
-    self.ame261_geoResyncTimer = nil;
+    [ame261_geoResyncTimer invalidate];
+    ame261_geoResyncTimer = nil;
 }
 
 @end
