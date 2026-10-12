@@ -209,7 +209,7 @@ print("== J. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"J-{lang} 唯一键 2855（Task258 联机状态行 12 键后）", len(keys) == 2855, f"got {len(keys)}")
+    check(f"J-{lang} 唯一键 2873（Task262 重锚实测）", len(keys) == 2873, f"got {len(keys)}")
 check("J-公告 6 条（Task255 清单 13 精简：pin 2 + 版本史 3 + 最新总攻 1）",
       len(ann) == 6
       and ann[0]["id"] == "server-recommend-2026-09-24"
@@ -224,8 +224,8 @@ check("J-JSON 可解析 + id 唯一",
 
 print("== K. 身份与基线 ==")
 plist = rd("Natives/Info.plist")
-check("K1 身份不变（com.air-devs.air——本轮零包名改动）",
-      "<string>com.air-devs.air</string>" in plist)
+check("K1 身份已迁移（Task259 com.prisma-devs.prisma——262 重锚）",
+      "<string>com.prisma-devs.prisma</string>" in plist)
 check("K2 REVISION 保持 22 + Task219 附录在位（无 identity 变更不 bump）",
       "#define REVISION 22" in vh and "Task 219, no bump" in vh)
 mk = open("Makefile", "rb").read()

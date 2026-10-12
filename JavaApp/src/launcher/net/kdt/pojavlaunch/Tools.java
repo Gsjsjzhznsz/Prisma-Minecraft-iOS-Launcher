@@ -212,8 +212,16 @@ public final class Tools {
                 String lastDumpSignature = null;
                 try {
                     // 阶段 1：Fabric entrypoint / 早期启动
+                    // ★ Task262（⑧第三轮复现判读，0c5a6dc 装机日志实锤）：
+                    //   fabric 在 Minecraft 构造器头部（super("Render thread")）
+                    //   即改名线程，mod init 期挂死时相位 1 的 15s 首醒直接
+                    //   转相位 2（其首样本还要再睡 8s）→ 首栈最早 t+23s，用户
+                    //   13-40s 手杀恒抢跑，两相位全程零输出（本轮 latestlog
+                    //   实证：JVM 14s+ 零 LaunchWatchdog 行）。前 3 样本提速
+                    //   6s 且无条件落栈，保证 t+6s 必有一份 entrypoint/mod-init
+                    //   期栈；之后回到 15s 长节奏不刷屏。
                     for (int i = 1; i <= 40; i++) {
-                        Thread.sleep(15000L);
+                        Thread.sleep(i <= 3 ? 6000L : 15000L);
                         Thread.State state = gameThread.getState();
                         if (state == Thread.State.TERMINATED) {
                             return;
@@ -229,6 +237,13 @@ public final class Tools {
                             return;
                         }
                         StackTraceElement[] st = gameThread.getStackTrace();
+                        if (i <= 3) {
+                            // ★ Task262：前 3 快样本无条件落栈（同相位 2 首样本
+                            // 语义）——entrypoint/mod-init 期挂死的必达证据。
+                            dumpStack("entrypoint-phase", i, state, st);
+                            lastDumpSignature = stackSignature(st, 6);
+                            continue;
+                        }
                         String signature = stackSignature(st, 6);
                         if (signature != null && signature.equals(lastDumpSignature)) {
                             // 连续阻塞在同一位置：压缩为单行心跳
@@ -261,18 +276,22 @@ public final class Tools {
             // 从未有机会落栈，卡点（Setting user → Backend library 之间）
             // 永远无栈可查。前 3 快样本保证 30s 内必有至少一份窗口期栈，
             // 之后回到 30s 长节奏不刷屏。
-            for (int i = 1; i <= 20 && dumps < 5; i++) {
-                Thread.sleep(i <= 3 ? 8000L : 30000L);
+            // ★ Task262：首样本立即落栈（原先先睡 8s）——mod init 期挂死时
+            // 相位 1 检测到改名即转此相位，若再睡 8s 首栈最早 t+14s（6s 快
+            // 节奏后），仍可能被手杀抢跑；立即落栈把"改名瞬间游戏线程在哪"
+            // 变成必达证据（24 帧，健康启动仅此一份）。
+            for (int i = 0; i <= 20 && dumps < 5; i++) {
+                if (i > 0) Thread.sleep(i <= 3 ? 8000L : 30000L);
                 if (gameThread.getState() == Thread.State.TERMINATED) {
                     return;
                 }
                 StackTraceElement[] st = gameThread.getStackTrace();
-                if (i == 1) {
+                if (i == 0) {
                     // ★ Task261（⑧取证）：窗口期首样本无条件落栈——冻结检测
                     // 需两个连续同签名（8s 节奏下最早 ~16s），用户 13-40s 手杀
                     // 仍可能抢在前头；无条件首样本把"窗口创建后 8s 游戏线程
                     // 在哪"变成每次启动必达的证据（24 帧，健康启动仅此一份）。
-                    dumpStack("post-window-first", i, gameThread.getState(), st);
+                    dumpStack("post-window-first", i + 1, gameThread.getState(), st);
                 }
                 String signature = stackSignature(st, 6);
                 if (signature != null && signature.equals(frozenSignature)) {

@@ -2671,6 +2671,12 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         [button addTarget:self action:@selector(executebtn_down:) forControlEvents:UIControlEventTouchDown];
         [button addTarget:self action:@selector(executebtn_up_inside:) forControlEvents:UIControlEventTouchUpInside];
         [button addTarget:self action:@selector(executebtn_up_outside:) forControlEvents:UIControlEventTouchUpOutside];
+        // Task262（②配套）：触摸被系统手势/横幅抢走时按 UP 处理——修饰键
+        // 若收不到 UP 会逻辑上永久按住（潜行卡死），Task262 按住高亮也
+        // 会卡色。非保持型按钮 cancel 走 up_outside 同路径 = ACTION_UP
+        // （Task179 长按释放分支补发 UP + 清锁存 + 还原可视）；保持型
+        // 按钮 isOutside=YES 提前 return（不触发翻转补发，语义安全）。
+        [button addTarget:self action:@selector(executebtn_up_outside:) forControlEvents:UIControlEventTouchCancel];
 
         if (isSwipeable) {
             UIPanGestureRecognizer *panRecognizerButton = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(executebtn_swipe:)];
@@ -2729,6 +2735,7 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             [menuButton removeTarget:self action:@selector(executebtn_down:) forControlEvents:UIControlEventTouchDown];
             [menuButton removeTarget:self action:@selector(executebtn_up_inside:) forControlEvents:UIControlEventTouchUpInside];
             [menuButton removeTarget:self action:@selector(executebtn_up_outside:) forControlEvents:UIControlEventTouchUpOutside];
+            [menuButton removeTarget:self action:@selector(executebtn_up_outside:) forControlEvents:UIControlEventTouchCancel];
             [menuButton addTarget:self action:@selector(ame247_menuButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
             self.edgeGesture.enabled = NO;
         } else {
@@ -3829,6 +3836,14 @@ static NSMapTable<ControlButton *, UIColor *> *s_ame261_modLatchColors = nil;
                 if (held) {
                     // DOWN：记录按压起点（供 UP 时区分轻点/长按）。
                     s_ame176_modDownTime[@(keycode)] = @(CFAbsoluteTimeGetCurrent());
+                    // ★ Task262（②摁下去高亮）：按下立即高亮——“像持续奔跑
+                    // 一样摁下去有显示”。原先只有轻点锁存后才着色，按住
+                    // 期间全程零反馈。UP 三条路径对称还原/保持：轻点→
+                    // Task179 锁存路径再发 latched:YES（幂等，saved 色已在
+                    // 表中不会被覆盖）；轻点在锁存态→latched:NO 还原；长按
+                    // 释放→latched:NO 还原。Task227 的 toggle 态 continue
+                    // 在其后，重复按压不重入。
+                    [self ame261_syncModLatchVisualForKeycode:keycode latched:YES];
                     // ★ Task227（反馈 #2：tap-tap 修饰键事件流 2:1）：
                     // toggle 态上的再按压 = 用户意图是"关"（UP 时处理），
                     // 此时键在逻辑上已被扣住——再发一次 DOWN 会造成
@@ -3916,8 +3931,14 @@ static NSMapTable<ControlButton *, UIColor *> *s_ame261_modLatchColors = nil;
                             [s_ame261_modLatchColors setObject:ame261_btn.backgroundColor
                                                         forKey:ame261_btn];
                         }
+                        // ★ Task262：高亮 alpha 下限 0.30——对齐持续奔跑按钮
+                        // 底色（0x4D≈0.30）的可见观感。原先沿用按钮原 alpha：
+                        // classic.json 右SHIFT 主按钮底色 0x0E≈0.055（幽灵
+                        // 键），tint 高亮视觉上不可见 = 用户“摁下去没有高亮”
+                        // 根因。原 alpha 更高则沿用其值不回退。
                         CGFloat ame261_alpha = ame261_btn.backgroundColor != nil
-                            ? CGColorGetAlpha(ame261_btn.backgroundColor.CGColor) : 1.0;
+                            ? MAX(CGColorGetAlpha(ame261_btn.backgroundColor.CGColor), 0.30)
+                            : 1.0;
                         ame261_btn.isToggleOn = YES;
                         ame261_btn.backgroundColor =
                             [self.view.tintColor colorWithAlphaComponent:ame261_alpha];
