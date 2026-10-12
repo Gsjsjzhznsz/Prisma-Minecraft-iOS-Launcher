@@ -47,6 +47,7 @@
 #import "Ame223CoachMarksView.h"
 #import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "LiquidGlassCompat.h"   // ★ Task246：界面风格存取（欢迎页风格选择步骤）
+#import <objc/runtime.h>        // ★ Task260：objc_get/setAssociatedObject（兄弟迁移卡源路径）
 #import "BackgroundManager.h"
 #import "WelcomeViewController.h"
 #import "AboutViewController.h"
