@@ -2670,6 +2670,12 @@
 "welcome.data.import.desc" = "選擇此前匯出的 prisma-backup 備份檔案";
 "welcome.data.skip" = "跳過";
 "welcome.data.skip.desc" = "稍後可在 設定 → 一般 → 從備份匯入";
+"welcome.data.sibling.title" = "偵測到舊版資料";
+"welcome.data.sibling.desc" = "舊包名（air）資料約 %@，可一鍵遷移到本應用";
+"welcome.data.sibling.action" = "一鍵遷移";
+"welcome.data.sibling.confirm" = "將把舊版資料合併到本應用（同名檔案覆蓋），完成後請重新啟動啟動器。";
+"ame260.migrate.progress" = "正在遷移舊版資料…";
+"ame260.migrate.done" = "已遷移 %ld 個檔案，請重新啟動啟動器生效。";
 "welcome.done.title" = "一切就緒！";
 "welcome.done.subtitle" = "祝你玩得愉快。需要協助時，關於頁裡有 QQ 群。";
 "welcome.done.start" = "開始使用";

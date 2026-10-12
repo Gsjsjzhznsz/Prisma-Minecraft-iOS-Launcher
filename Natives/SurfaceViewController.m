@@ -1194,6 +1194,11 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
     self = [super init];
     if (self) {
         self.metadata = metadata;
+        // ★ Task260（清单 2）：会话建立即上报 MC 主版本给玻璃安全闸
+        //   （解析口径与 JavaLauncher Task98 同源；闸语义见 LiquidGlassCompat.h）。
+        NSInteger ame260_major = ame98_mcMajorFromVersionId(
+            [metadata isKindOfClass:[NSDictionary class]] ? (NSString *)metadata[@"id"] : nil);
+        LGCSetGameSessionMCMajor(ame260_major);
     }
     return self;
 }
@@ -4637,6 +4642,8 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
 }
 
 - (void)dealloc {
+    // ★ Task260（清单 2）：会话销毁 = 玻璃安全闸复位（0 = 无活跃会话）。
+    LGCSetGameSessionMCMajor(0);
     // 停止 FPS/内存采样定时器与渲染循环
     [self.statsTimer invalidate];
     self.statsTimer = nil;

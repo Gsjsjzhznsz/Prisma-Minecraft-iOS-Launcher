@@ -36,6 +36,12 @@
 "terracotta.stage.retry" = "Retrying host connection (attempt %lu/2)…";
 "home.tile.cleanup" = "Clean up junk";
 "home.tile.download_center" = "Download center";
+"welcome.data.sibling.title" = "Previous install data detected";
+"welcome.data.sibling.desc" = "Legacy (air bundle) data (~%@) can be migrated with one tap";
+"welcome.data.sibling.action" = "Migrate";
+"welcome.data.sibling.confirm" = "Legacy data will be merged into this app (same-name files overwritten). Restart the launcher afterwards.";
+"ame260.migrate.progress" = "Migrating data from previous install…";
+"ame260.migrate.done" = "Migrated %ld files. Restart the launcher to apply.";
 "preference.profile.jvm_follow_global" = "Follow global setting";
 "preference.detail.auto_keyboard_sdl" = "Automatically enables the SDL software keyboard when a text field needs input in game";
 "preference.detail.mc_toggle_sprint" = "Toggles the sprint latch in every instance's options.txt (press once, keep sprinting)";

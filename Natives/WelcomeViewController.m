@@ -1818,6 +1818,86 @@ static const NSInteger ame218_welcomeStepCount = 8;  // Task246：+1 界面风�
         ame219_anchor = row;
     };
 
+    // ★ Task260（清单 1）：LiveContainer 兄弟数据自动迁移卡——检测到旧包名
+    //   （air）数据目录时置顶呈现"一键迁移"，免去 zip 导出→导入三步舞
+    //   （用户："切换包名之后导入 air 包名的数据无法自动迁移"）。
+    NSArray<NSDictionary *> *ame260_siblings = [DataTransferService ame260_scanSiblingLauncherHomes];
+    if (ame260_siblings.count > 0) {
+        NSDictionary *ame260_best = ame260_siblings.firstObject;
+        unsigned long long ame260_bytes = [ame260_best[@"bytes"] unsignedLongLongValue];
+        NSString *ame260_sizeText = ame260_bytes >= (1ULL << 30)
+            ? [NSString stringWithFormat:@"%.1f GB", (double)ame260_bytes / (double)(1ULL << 30)]
+            : [NSString stringWithFormat:@"%llu MB", ame260_bytes / (1ULL << 20)];
+        UIView *ame260_row = [[UIView alloc] init];
+        ame260_row.translatesAutoresizingMaskIntoConstraints = NO;
+        ame260_row.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.07];
+        ame260_row.layer.cornerRadius = 14;
+        ame260_row.layer.borderWidth = 1.0;
+        ame260_row.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.18].CGColor;
+
+        UIImageView *ame260_tile = [[UIImageView alloc] initWithImage:
+            [UIImage systemImageNamed:@"arrow.triangle.branch"]];
+        ame260_tile.tintColor = [UIColor systemGreenColor];
+        ame260_tile.translatesAutoresizingMaskIntoConstraints = NO;
+        [ame260_row addSubview:ame260_tile];
+
+        UILabel *ame260_t = [[UILabel alloc] init];
+        ame260_t.text = localize(@"welcome.data.sibling.title", nil);
+        ame260_t.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+        ame260_t.translatesAutoresizingMaskIntoConstraints = NO;
+        [ame260_row addSubview:ame260_t];
+
+        UILabel *ame260_s = [[UILabel alloc] init];
+        ame260_s.text = [NSString stringWithFormat:
+            localize(@"welcome.data.sibling.desc", nil), ame260_sizeText];
+        ame260_s.font = [UIFont systemFontOfSize:12.5];
+        ame260_s.textColor = [UIColor secondaryLabelColor];
+        ame260_s.numberOfLines = 2;
+        ame260_s.translatesAutoresizingMaskIntoConstraints = NO;
+        [ame260_row addSubview:ame260_s];
+
+        UIButton *ame260_go = [UIButton buttonWithType:UIButtonTypeSystem];
+        [ame260_go setTitle:localize(@"welcome.data.sibling.action", nil)
+                   forState:UIControlStateNormal];
+        ame260_go.titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
+        ame260_go.layer.cornerRadius = 12;
+        ame260_go.contentEdgeInsets = UIEdgeInsetsMake(8, 14, 8, 14);
+        ame260_go.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.12];
+        ame260_go.translatesAutoresizingMaskIntoConstraints = NO;
+        __weak typeof(self) ame260_wself = self;
+        NSString *ame260_srcPath = ame260_best[@"path"];
+        [ame260_go addTarget:self action:@selector(ame260_siblingMigrateTapped)
+                    forControlEvents:UIControlEventTouchUpInside];
+        objc_setAssociatedObject(self, &kAme260SiblingPathKey,
+            ame260_srcPath, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        (void)ame260_wself;
+        [ame260_row addSubview:ame260_go];
+
+        [container addSubview:ame260_row];
+        [NSLayoutConstraint activateConstraints:@[
+            [ame260_row.topAnchor constraintEqualToAnchor:ame219_anchor.bottomAnchor constant:18],
+            [ame260_row.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+            [ame260_row.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+            [ame260_row.heightAnchor constraintGreaterThanOrEqualToConstant:68],
+            [ame260_tile.leadingAnchor constraintEqualToAnchor:ame260_row.leadingAnchor constant:14],
+            [ame260_tile.centerYAnchor constraintEqualToAnchor:ame260_row.centerYAnchor],
+            [ame260_tile.widthAnchor constraintEqualToConstant:30],
+            [ame260_tile.heightAnchor constraintEqualToConstant:30],
+            [ame260_t.leadingAnchor constraintEqualToAnchor:ame260_tile.trailingAnchor constant:12],
+            [ame260_t.topAnchor constraintEqualToAnchor:ame260_row.topAnchor constant:12],
+            [ame260_t.trailingAnchor constraintLessThanOrEqualToAnchor:ame260_go.leadingAnchor constant:-8],
+            [ame260_s.leadingAnchor constraintEqualToAnchor:ame260_t.leadingAnchor],
+            [ame260_s.trailingAnchor constraintLessThanOrEqualToAnchor:ame260_row.trailingAnchor constant:-14],
+            [ame260_s.topAnchor constraintEqualToAnchor:ame260_t.bottomAnchor constant:2],
+            [ame260_s.bottomAnchor constraintLessThanOrEqualToAnchor:ame260_row.bottomAnchor constant:-10],
+            [ame260_go.centerYAnchor constraintEqualToAnchor:ame260_row.centerYAnchor],
+            [ame260_go.trailingAnchor constraintEqualToAnchor:ame260_row.trailingAnchor constant:-14],
+        ]];
+        ame219_anchor = ame260_row;
+        NSLog(@"[Welcome] Task260: sibling migration card shown (path=%@ bytes=%llu)",
+              ame260_srcPath, ame260_bytes);
+    }
+
     // 主选项：从备份导入
     ame223_addRow(@"square.and.arrow.down",
                   localize(@"welcome.data.import", nil),
@@ -1839,6 +1919,39 @@ static const NSInteger ame218_welcomeStepCount = 8;  // Task246：+1 界面风�
     // 导入完成后的重启提示由 DataTransferService 自己弹；向导不阻拦。
     NSLog(@"[Welcome] Task218: data import requested in onboarding");
     [[DataTransferService sharedService] importDataFromViewController:self];
+}
+
+// ★ Task260（清单 1）：兄弟数据迁移卡的源路径关联键
+static const void *kAme260SiblingPathKey = &kAme260SiblingPathKey;
+
+- (void)ame260_siblingMigrateTapped {
+    NSString *ame260_src = objc_getAssociatedObject(self, &kAme260SiblingPathKey);
+    if (![ame260_src isKindOfClass:[NSString class]] || ame260_src.length == 0) return;
+    NSLog(@"[Welcome] Task260: sibling migration requested (src=%@)", ame260_src);
+    // 确认框：同名覆盖语义要明说（新装默认为空，基本是纯拷贝；但用户可能
+    // 在新 App 里已经玩过一会儿——覆盖前必须知情）。
+    UIAlertController *ame260_confirm = [UIAlertController
+        alertControllerWithTitle:localize(@"welcome.data.sibling.title", nil)
+                         message:localize(@"welcome.data.sibling.confirm", nil)
+                  preferredStyle:UIAlertControllerStyleAlert];
+    [ame260_confirm addAction:[UIAlertAction actionWithTitle
+        :localize(@"welcome.data.sibling.action", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+        [DataTransferService.sharedService
+            ame260_migrateFromSiblingHome:ame260_src presenter:self
+                               completion:^(BOOL ok, NSString *message) {
+            UIAlertController *ame260_done = [UIAlertController
+                alertControllerWithTitle:(ok ? localize(@"welcome.data.sibling.title", nil)
+                                              : localize(@"i18n_str_108", nil))
+                                 message:message
+                          preferredStyle:UIAlertControllerStyleAlert];
+            [ame260_done addAction:[UIAlertAction actionWithTitle
+                :localize(@"i18n_str_44", @"OK") style:UIAlertActionStyleCancel handler:nil]];
+            [self presentViewController:ame260_done animated:YES completion:nil];
+        }];
+    }]];
+    [ame260_confirm addAction:[UIAlertAction actionWithTitle
+        :localize(@"resman.common.cancel", @"Cancel") style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:ame260_confirm animated:YES completion:nil];
 }
 
 - (void)ame218_dataSkipTapped2 {

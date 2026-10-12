@@ -108,6 +108,21 @@ BOOL LGCIsPseudoGlassStyleActive(void) {
     return LGCResolvedInterfaceStyle() == LGCInterfaceStylePseudoGlass;
 }
 
+// ★ Task260（清单 2）：游戏会话玻璃安全闸（契约见 .h）。
+// 0 = 无活跃会话（启动器表面，玻璃不受会话闸影响）；>0 = 活跃会话 MC 主版本。
+static NSInteger ame260_liveSessionMCMajor = 0;
+
+void LGCSetGameSessionMCMajor(NSInteger mcMajor) {
+    ame260_liveSessionMCMajor = mcMajor;
+    NSLog(@"[LGC] Task260: game session MC major -> %ld (in-game glass allowed: %@)",
+          (long)mcMajor,
+          (mcMajor == 0 || mcMajor >= 26) ? @"YES" : @"NO (legacy draw chain, panels fall back to native)");
+}
+
+BOOL LGCGameSessionGlassAllowed(void) {
+    return (ame260_liveSessionMCMajor == 0 || ame260_liveSessionMCMajor >= 26);
+}
+
 // ★ Task239（用户指令：iOS 26 原生液态玻璃 API 重写所有悬浮菜单）：系统
 //   真 UIGlassEffect 工厂。与 Task228 时代的 _LGCCreateGlassEffect 的三点
 //   本质区别：

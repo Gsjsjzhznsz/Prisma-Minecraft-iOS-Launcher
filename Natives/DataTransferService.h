@@ -111,6 +111,35 @@ typedef void (^Ame224ExportProgressBlock)(NSUInteger phase,
 - (void)ame223_presentDestinationPickerForTmpPath:(NSString *)tmpPath
                                               from:(UIViewController *)presenter;
 
+#pragma mark - ★ Task260（清单 1）：LiveContainer 兄弟数据自动迁移
+
+/// 扫描 LiveContainer 同宿主的兄弟应用数据目录，返回旧包名（air 等）
+/// 启动器数据候选（按目录修改时间新→旧）。
+///
+/// 背景（用户："切换包名之后导入 air 包名的数据无法自动迁移"）：iOS 数据
+/// 容器按包名隔离，跨包名只能走 zip 导出/导入；但 LiveContainer 宿主下
+/// 所有托管应用的 Documents 都在同一棵目录树里——旧 air 包的数据目录
+/// 与新 prisma 包的数据目录是兄弟节点，本进程【可读】。本方法把这一层
+/// 变成一键迁移，免去 zip 导出→文件 App→导入三步舞。
+///
+/// 布局判据（8dc60b9 装机日志实锤 POJAV_HOME 形态）：
+///   POJAV_HOME = <LC>/Documents/Data/Application/<OUR-UUID>/Documents
+/// 扫描 <LC>/Documents/Data/Application/*/Documents，剔除自身 UUID，
+/// 以 launcher_preferences_v2.plist / instances/ / accounts/ 三者任一存在
+/// 认定为启动器数据。非 LiveContainer 布局（普通沙盒）返回空数组（功能
+/// 惰性，零副作用）。
+/// 返回元素：@{ @"path": 绝对路径, @"uuid": 目录 UUID, @"bytes": NSNumber }。
++ (NSArray<NSDictionary *> *)ame260_scanSiblingLauncherHomes;
+
+/// 从兄弟数据目录一键迁移：后台线程把 srcPath 全量合并进 POJAV_HOME
+/// （同名覆盖 = 恢复语义；剔除运行期垃圾 latestlog*/hs_err*/哨兵与
+/// Library/ 缓存树），完成后执行与 zip 导入同源的收尾三件（实例合并 /
+/// 偏好重载 / 根视图重建广播）。presenter 用于进度弹窗与确认框；
+/// completion 主线程回调，ok=NO 时 message 为失败原因。
+- (void)ame260_migrateFromSiblingHome:(NSString *)srcPath
+                              presenter:(UIViewController *)presenter
+                             completion:(void(^)(BOOL ok, NSString *message))completion;
+
 @end
 
 NS_ASSUME_NONNULL_END

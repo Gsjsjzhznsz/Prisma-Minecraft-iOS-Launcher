@@ -1500,4 +1500,159 @@ static void ame224_dosDateTime(NSDate *date, uint16_t *dosTime, uint16_t *dosDat
     });
 }
 
+#pragma mark - ★ Task260（清单 1）：LiveContainer 兄弟数据自动迁移
+
++ (NSArray<NSDictionary *> *)ame260_scanSiblingLauncherHomes {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *home = @(getenv("POJAV_HOME") ?: "");
+    if (home.length == 0) return @[];
+
+    // 布局判据：POJAV_HOME 必须形如 .../Data/Application/<UUID>/Documents
+    //（LiveContainer 每应用 Documents）。普通沙盒（<container>/Documents）
+    // 无此形态 → 功能惰性返回空。
+    NSString *ourDocuments = home.lastPathComponent;                    // "Documents"
+    NSString *ourUUIDDir = home.stringByDeletingLastPathComponent;      // .../Data/Application/<UUID>
+    if (![ourDocuments isEqualToString:@"Documents"]) return @[];
+    NSString *ourUUID = ourUUIDDir.lastPathComponent;
+    NSString *appsRoot = ourUUIDDir.stringByDeletingLastPathComponent;  // .../Data/Application
+    NSString *dataDir = appsRoot.stringByDeletingLastPathComponent;     // .../Data
+    if (![appsRoot.lastPathComponent isEqualToString:@"Application"] ||
+        ![dataDir.lastPathComponent isEqualToString:@"Data"]) {
+        return @[];
+    }
+
+    NSMutableArray<NSDictionary *> *found = [NSMutableArray array];
+    for (NSString *entry in [fm contentsOfDirectoryAtPath:appsRoot error:nil]) {
+        if ([entry isEqualToString:ourUUID]) continue;
+        NSString *cand = [appsRoot stringByAppendingPathComponent:entry];
+        cand = [cand stringByAppendingPathComponent:@"Documents"];
+        BOOL isDir = NO;
+        if (![fm fileExistsAtPath:cand isDirectory:&isDir] || !isDir) continue;
+        // 启动器数据认定：三标记任一存在
+        BOOL isLauncherHome =
+            [fm fileExistsAtPath:[cand stringByAppendingPathComponent:@"launcher_preferences_v2.plist"]] ||
+            [fm fileExistsAtPath:[cand stringByAppendingPathComponent:@"accounts"]] ||
+            [fm fileExistsAtPath:[cand stringByAppendingPathComponent:@"instances"]];
+        if (!isLauncherHome) continue;
+        // 规模粗估（只 stat 顶层不做深遍历，扫描在启动路径上必须廉价）
+        unsigned long long bytes = 0;
+        for (NSString *top in [fm contentsOfDirectoryAtPath:cand error:nil]) {
+            if ([top isEqualToString:@"Library"]) continue;   // 缓存树不计
+            NSDictionary *st = [fm attributesOfItemAtPath:
+                [cand stringByAppendingPathComponent:top] error:nil];
+            bytes += st.fileSize ?: 0;
+        }
+        NSDictionary *st = [fm attributesOfItemAtPath:cand error:nil];
+        [found addObject:@{
+            @"path": cand,
+            @"uuid": entry,
+            @"bytes": @(bytes),
+            @"modified": st.fileModificationDate ?: [NSDate date],
+        }];
+    }
+    // 修改时间新 → 旧
+    [found sortUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
+        return [b[@"modified"] compare:a[@"modified"]];
+    }];
+    for (NSDictionary *cand in found) {
+        NSLog(@"[DataTransfer] Task260: sibling launcher home detected (%@) bytes=%@",
+              cand[@"uuid"], cand[@"bytes"]);
+    }
+    if (found.count > 0) {
+        NSLog(@"[DataTransfer] Task260: sibling scan total=%lu (our UUID=%@)",
+              (unsigned long)found.count, ourUUID);
+    }
+    return [found copy];
+}
+
+- (void)ame260_migrateFromSiblingHome:(NSString *)srcPath
+                              presenter:(UIViewController *)presenter
+                             completion:(void(^)(BOOL ok, NSString *message))completion {
+    UIAlertController *progress = [self ame217_progressAlertWithTitle:
+        localize(@"ame260.migrate.progress", @"Migrating data from previous install…")];
+    [presenter presentViewController:progress animated:YES completion:nil];
+
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSFileManager *fm = [NSFileManager defaultManager];
+        NSString *home = @(getenv("POJAV_HOME"));
+        NSString *failMsg = nil;
+        NSInteger migrated = 0;
+
+        // 全量遍历源目录（剔除运行期垃圾 + Library 缓存树；与 zip 导出
+        // 的剔除口径一致——迁移的是"数据"，不是缓存）。
+        NSDirectoryEnumerator *enumerator = [fm enumeratorAtPath:srcPath];
+        NSString *rel;
+        while ((rel = [enumerator nextObject])) {
+            if ([rel isEqualToString:@"Library"] || [rel hasPrefix:@"Library/"]) {
+                [enumerator skipDescendants];
+                continue;
+            }
+            NSString *base = rel.lastPathComponent;
+            if ([base hasPrefix:@"latestlog"] || [base hasPrefix:@"hs_err_pid"] ||
+                [base isEqualToString:@".ame217_session"] ||
+                [base isEqualToString:@"ame251_shutdown.marker"]) {
+                [enumerator skipDescendants];
+                continue;
+            }
+            NSString *srcAbs = [srcPath stringByAppendingPathComponent:rel];
+            BOOL isDir = NO;
+            if (![fm fileExistsAtPath:srcAbs isDirectory:&isDir]) continue;
+            NSString *dstAbs = [home stringByAppendingPathComponent:rel];
+            if (isDir) {
+                if (![fm fileExistsAtPath:dstAbs]) {
+                    [fm createDirectoryAtPath:dstAbs withIntermediateDirectories:YES attributes:nil error:nil];
+                }
+                continue;
+            }
+            NSString *dstDir = [dstAbs stringByDeletingLastPathComponent];
+            if (![fm fileExistsAtPath:dstDir]) {
+                [fm createDirectoryAtPath:dstDir withIntermediateDirectories:YES attributes:nil error:nil];
+            }
+            // 同名覆盖：先删后拷（copy 而非 move——源是旧 App 的数据，保底
+            // 不破坏，迁移确认无误后由用户删除旧应用）。
+            [fm removeItemAtPath:dstAbs error:nil];
+            NSError *cpErr = nil;
+            if (![fm copyItemAtPath:srcAbs toPath:dstAbs error:&cpErr]) {
+                // 单文件失败不中断迁移（符号链接/权限孤例），记日志继续
+                NSLog(@"[DataTransfer] Task260: copy failed for %@ (%@) -- skipped", rel, cpErr.localizedDescription);
+                continue;
+            }
+            migrated++;
+        }
+        NSLog(@"[DataTransfer] Task260: sibling migration copied %ld files%@",
+              (long)migrated, failMsg ? [NSString stringWithFormat:@" (FAILED: %@)", failMsg] : @" (ok)");
+
+        if (failMsg == nil) {
+            // 收尾三件与 zip 导入同源（Task227/230 语义）
+            @try {
+                extern void init_setupMultiDir(void);
+                init_setupMultiDir();
+                NSLog(@"[DataTransfer] Task260: post-migration instance merge executed");
+            } @catch (NSException *ame260_e) {
+                NSLog(@"[DataTransfer] Task260: post-migration merge exception (%@)", ame260_e);
+            }
+            @try {
+                extern void loadPreferences(BOOL reset);
+                loadPreferences(NO);
+                NSLog(@"[DataTransfer] Task260: preferences reloaded after migration");
+            } @catch (NSException *ame260_e2) {
+                NSLog(@"[DataTransfer] Task260: preference reload exception (%@)", ame260_e2);
+            }
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"AppLanguageChanged"
+                                                                    object:[getPrefObject(@"general.app_language") isKindOfClass:NSString.class]
+                                                                        ? (NSString *)getPrefObject(@"general.app_language") : @"system"];
+            });
+        }
+
+        NSString *doneMsg = failMsg ?: [NSString stringWithFormat:
+            localize(@"ame260.migrate.done", @"Migrated %ld files. Restart the launcher to apply."), (long)migrated];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [progress dismissViewControllerAnimated:YES completion:^{
+                completion(failMsg == nil, doneMsg);
+            }];
+        });
+    });
+}
+
 @end

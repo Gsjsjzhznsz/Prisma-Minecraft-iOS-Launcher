@@ -2675,6 +2675,12 @@
 "welcome.data.import.desc" = "Pick a previously exported prisma-backup zip";
 "welcome.data.skip" = "Skip";
 "welcome.data.skip.desc" = "Later via Settings, General, Import from Backup";
+"welcome.data.sibling.title" = "Previous install data detected";
+"welcome.data.sibling.desc" = "Legacy (air bundle) data (~%@) can be migrated with one tap";
+"welcome.data.sibling.action" = "Migrate";
+"welcome.data.sibling.confirm" = "Legacy data will be merged into this app (same-name files overwritten). Restart the launcher afterwards.";
+"ame260.migrate.progress" = "Migrating data from previous install…";
+"ame260.migrate.done" = "Migrated %ld files. Restart the launcher to apply.";
 "welcome.done.title" = "All Set!";
 "welcome.done.subtitle" = "Enjoy the game. The About page has a QQ group if you need help.";
 "welcome.done.start" = "Get Started";

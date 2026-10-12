@@ -1,5 +1,6 @@
 ---
-// Prisma 6.5.0 启动器介绍站 —— iOS 27 液态玻璃
+// Prisma 6.5.0 启动器介绍站 —— iOS 27 液态玻璃（Task260 二轮：真启动器图标
+// favicon/hero、与上游的区别对比区、信息扩容：JIT 指南/系统要求/社区）。
 // 公告数据：构建期 scripts/sync-announcements.mjs 从仓库 main 同步
 // （单一事实源与启动器一致），此快照为离线构建回退。
 import '../styles/global.css';
@@ -9,6 +10,7 @@ const REPO = 'https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher';
 const RELEASE_URL = REPO + '/releases/tag/v6.5.0';
 const IPA_URL = RELEASE_URL + '/download/com.prisma-devs.prisma-6.5.0-ios.ipa';
 const TIPA_URL = RELEASE_URL + '/download/com.prisma-devs.prisma-6.5.0-ios-trollstore.tipa';
+const BASE = '/Prisma-Minecraft-iOS-Launcher';
 
 const pinned = [...announcements.announcements].sort(
   (a, b) => (b.pin === true ? 1 : 0) - (a.pin === true ? 1 : 0) || b.date.localeCompare(a.date)
@@ -18,33 +20,60 @@ const features = [
   {
     icon: '🫧',
     title: 'iOS 27 液态玻璃',
-    body: 'Telegram 同款实况 backdrop 采样 + SDF 边缘折射，面板、弹窗、游戏内菜单整族玻璃质感；降低透明度自动回退原生。',
+    body: 'Telegram 同款实况 backdrop 采样 + SDF 边缘折射，面板、弹窗、游戏内菜单整族玻璃质感；四档可选、最低档全透明；降低透明度自动回退原生，老版本会话自动安全降级。',
   },
   {
     icon: '🎮',
-    title: '每游戏渲染器 + FSR',
-    body: 'MobileGL（Vulkan 直连 / GLES / GL 4.0）、ANGLE、VirGL 全后端矩阵；FSR 1.0 超分低分辨率渲染放大锐化，帧率红利即开即得。',
+    title: '渲染矩阵 + FSR 超分',
+    body: 'MobileGL（Vulkan 直连 / GLES / GL 4.0）、ANGLE、VirGL、kw/gl4es 全后端矩阵；FSR 1.0 低分辨率渲染 + 放大锐化；自动渲染器按版本基线选择 + 崩溃自学降档。',
   },
   {
     icon: '🌐',
-    title: '内置联机',
-    body: 'Terracotta / EasyTier 内核：房间码、玩家列表、对局端口状态面板；访客掉线自动重试，主机端口周期扫描免手动。',
+    title: '内置联机（Terracotta）',
+    body: 'EasyTier 内核：房间码 / 玩家列表 / 对局端口状态面板；访客掉线自动重试、主机端口周期扫描；游戏内玻璃菜单按会话版本自动安全降级。',
   },
   {
     icon: '⬇️',
     title: '国内下载提速',
-    body: 'BMCLAPI / MCIM 镜像矩阵 + 延迟×吞吐量双维度测速选路；统一进度页实时显示当前文件、速率、双维度计数与 ETA。',
+    body: 'BMCLAPI / MCIM 镜像矩阵 + 延迟×吞吐量双维度测速选路（128KB 实测持续速率，不再被低延迟官方源误导）；统一进度页实时显示当前文件、速率、双维度计数与 ETA。',
   },
   {
     icon: '🧩',
     title: '整合包一站式',
-    body: 'Modrinth / CurseForge 整合包在线安装，Fabric / Forge / NeoForge 加载器直装，版本隔离三态选择 + 数据自动迁移。',
+    body: 'Modrinth / CurseForge 整合包在线安装，Fabric / Forge / NeoForge / Quilt 加载器直装；FCL 风格版本隔离三态选择 + 数据自动迁移；26.x 组件下载全线根治。',
+  },
+  {
+    icon: '🤖',
+    title: 'AI 助手',
+    body: '内置 AI 对话（提供商可配置 / 会话列表 / 系统提示词编辑），启动器问题随问随答；全部本地偏好，不强绑任何账号体系。',
   },
   {
     icon: '🛟',
-    title: '数据安全',
-    body: '全量数据一键导出 / 导入（zip），包名迁移无忧；崩溃自学降档 + 深度诊断日志，问题带日志一轮定位。',
+    title: '数据安全与迁移',
+    body: '全量数据一键导出 / 导入（zip 分区可选）；LiveContainer 同宿主检测到旧包名数据时一键迁移；跨包名升级不丢档。',
   },
+  {
+    icon: '🔬',
+    title: '深度诊断',
+    body: 'fatal trace / hs_err / JVM 日志三件套自动留存；主线程看门狗；带日志的问题一轮定位，社区反馈闭环快。',
+  },
+];
+
+const diffs = [
+  ['界面语言', '上游为原生化flat风格', 'iOS 27 液态玻璃全家桶：TG 同款实况折射引擎、四档风格、界面/文字双缩放、动态反色'],
+  ['渲染', '单渲染器全局选择', '每游戏渲染器 + mg 三后端 FSR 1.0 + 崩溃自学降档 + 版本基线自动选择'],
+  ['联机', '依赖外部局域网工具', '内置 Terracotta/EasyTier：房间码、状态面板、自动重试、周期端口扫描全自动化'],
+  ['下载', '官方源为主', 'BMCLAPI/MCIM 镜像矩阵 + 延迟×吞吐量双维测速 + 断点续传 + 文件级进度明细'],
+  ['整合包', '基础安装', 'Modrinth/CurseForge 在线装 + 版本隔离三态 + 26.x 全线兼容 + 组件下载根治'],
+  ['数据', '无迁移能力', '全量导出/导入（分区可选）+ LiveContainer 兄弟目录一键迁移 + 实例感知收尾'],
+  ['可诊断性', '基础日志', 'fatal trace/hs_err/JVM 三件套 + 主线程看门狗 + 渲染/输入探针矩阵'],
+];
+
+const quickstart = [
+  '下载 IPA 并侧载（AltStore / SideStore / 爱思助手 / TrollStore 装 TIPA）',
+  '首次启动走欢迎向导：语言 → 下载源 → 数据迁移（检测到旧版数据可一键迁移）→ 界面风格',
+  '开启 JIT（设置 > JIT：StikDebug / SideStore / TrollStore Magnifier 均可）',
+  '下载一个 Minecraft 版本（或导入整合包），点击启动',
 ];
 ---
 
@@ -54,7 +83,10 @@ const features = [
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prisma —— iOS Minecraft 启动器</title>
-    <meta name="description" content="Prisma：iOS 平台 Minecraft Java 版启动器。iOS 27 液态玻璃界面、每游戏渲染器 + FSR 超分、内置联机、国内镜像加速下载。" />
+    <meta name="description" content="Prisma：iOS 平台 Minecraft Java 版启动器。iOS 27 液态玻璃界面、每游戏渲染器 + FSR 超分、内置联机、国内镜像加速下载、AI 助手、数据一键迁移。" />
+    <link rel="icon" type="image/png" sizes="32x32" href={`${BASE}/favicon.png`} />
+    <link rel="icon" type="image/png" sizes="16x16" href={`${BASE}/icon-16.png`} />
+    <link rel="apple-touch-icon" sizes="180x180" href={`${BASE}/icon-180.png`} />
   </head>
   <body>
     <div class="aurora"></div>
@@ -62,9 +94,10 @@ const features = [
 
     <header class="topbar wrap">
       <div class="glass">
-        <div class="brand"><span class="logo"></span>Prisma</div>
+        <div class="brand"><img class="logo" src={`${BASE}/icon-32.png`} alt="Prisma icon" />Prisma</div>
         <nav class="topnav">
           <a href="#features">特性</a>
+          <a href="#upstream">与上游的区别</a>
           <a href="#announcements">公告</a>
           <a href={REPO} target="_blank" rel="noopener">GitHub</a>
           <a class="cta" href="#download">下载 6.5.0</a>
@@ -73,6 +106,7 @@ const features = [
     </header>
 
     <section class="hero wrap">
+      <img class="hero-icon" src={`${BASE}/icon-192.png`} alt="Prisma launcher icon" width="128" height="128" />
       <span class="chip"><span class="dot"></span>v6.5.0 正式版 · 包名迁移至 com.prisma-devs.prisma</span>
       <h1>Prisma</h1>
       <p class="lead">
@@ -84,12 +118,12 @@ const features = [
         <a class="btn ghost" href={TIPA_URL}>TrollStore TIPA</a>
         <a class="btn ghost" href={RELEASE_URL}>发行说明</a>
       </div>
-      <p class="meta-note">iOS 15+ · 首次启动游戏需开启 JIT · 数据迁移见发行说明</p>
+      <p class="meta-note">iOS 15+ · iPadOS 支持 · 首次启动游戏需开启 JIT · 旧版数据一键迁移</p>
     </section>
 
     <section id="features" class="wrap">
-      <h2 class="sec">为什么是 Prisma</h2>
-      <p class="sec-sub">六个独有方向，全部来自真实装机的逐项反馈闭环。</p>
+      <h2 class="sec">功能全景</h2>
+      <p class="sec-sub">八个方向，全部来自真实装机的逐项反馈闭环（190+ 次提交、11 轮装机迭代）。</p>
       <div class="grid">
         {features.map((f) => (
           <div class="glass card">
@@ -98,6 +132,44 @@ const features = [
             <p>{f.body}</p>
           </div>
         ))}
+      </div>
+    </section>
+
+    <section id="upstream" class="wrap">
+      <h2 class="sec">我们与上游的区别</h2>
+      <p class="sec-sub">
+        Prisma 基于 PojavLauncher（iOS）与 Amethyst 社区成果构建，但远不止换皮——
+        每一项差异都对应一条真实装机反馈的根修闭环。
+      </p>
+      <div class="glass diff-card">
+        <table class="diff-table">
+          <thead>
+            <tr><th>维度</th><th>上游（PojavLauncher / Amethyst）</th><th>Prisma</th></tr>
+          </thead>
+          <tbody>
+            {diffs.map((d) => (
+              <tr>
+                <td class="dim-k">{d[0]}</td>
+                <td class="dim-up">{d[1]}</td>
+                <td class="dim-pr">{d[2]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="quickstart" class="wrap">
+      <h2 class="sec">四步上手</h2>
+      <p class="sec-sub">从下载到进入世界的最短路径。</p>
+      <div class="glass qs-card">
+        <ol class="qs">
+          {quickstart.map((s) => <li>{s}</li>)}
+        </ol>
+        <p class="qs-note">
+          系统要求：iOS 15+（液态玻璃视觉需 iOS 26+，低版本自动回退原生观感）；
+          设备需支持 Metal；联机功能无需额外账号。
+        </p>
       </div>
     </section>
 
@@ -131,8 +203,8 @@ const features = [
           ⚠️ 包名迁移：新 App（com.prisma-devs.prisma）不自动继承旧 App 数据。
         </div>
         <ol class="steps">
-          <li>在<b>旧版</b>（air 包名）中：设置 → 数据传输 → 导出全量备份 zip</li>
-          <li>安装 6.5.0（新包名），首次向导选择「从备份导入」或稍后在 设置 → 数据传输 中导入</li>
+          <li>LiveContainer 用户：新版本首次启动的欢迎向导会自动检测旧包名数据，点「一键迁移」即可（推荐）。</li>
+          <li>其他安装：在<b>旧版</b>（air 包名）中导出全量备份 → 新版中导入 → 重启生效。</li>
           <li>数据确认无误后删除旧图标。air 旧包名今后不再发布。</li>
         </ol>
       </div>
@@ -142,6 +214,7 @@ const features = [
       <div class="wrap">
         <p>
           <a href={REPO} target="_blank" rel="noopener">GitHub 仓库</a> ·
+          <a href={RELEASE_URL} target="_blank" rel="noopener">发行说明</a> ·
           QQ 群 1126547426 ·
           基于 PojavLauncher / Amethyst 社区成果构建，感谢所有上游贡献者
         </p>

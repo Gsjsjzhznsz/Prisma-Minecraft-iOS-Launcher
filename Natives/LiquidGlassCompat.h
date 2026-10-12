@@ -79,6 +79,24 @@ FOUNDATION_EXPORT BOOL LGCIsGlassStyleActive(void);
 ///   一律 AmeFloatingMenu 自绘磨砂，不经系统 UIMenu 玻璃材质）。
 FOUNDATION_EXPORT BOOL LGCIsPseudoGlassStyleActive(void);
 
+/// ★ Task260（清单 2："自动模式下非 26 以上的版本仍然使用液态玻璃导致
+///   崩溃，不会回退，包括意外选择液态玻璃"）：游戏会话玻璃安全闸。
+///
+///   病历：MC <26 会话（kw/nggl4es/MobileGL-GLES 老绘制链）上游戏内玻璃
+///   面板（Task252 TG backdrop 引擎 + 快照供料）崩溃且无回退；MC 26+
+///   （Metallum/MoltenVK 新绘制链）正常。界面风格的 auto 解析只看 iOS
+///   版本，不看会话——老会话撞上玻璃档 = 崩溃。
+///
+///   闸语义：会话内玻璃面板只在【无活跃会话（启动器表面）或 MC 主版本
+///   >= 26】时允许；MC <26 会话内一律回退原生面板（Task244 组合/旧版深
+///   色 FCL 面板），auto 与手动 liquid_glass 同闸——手动选择也绝不崩。
+///   SurfaceViewController 在会话建立/销毁时上报 MC 主版本（解析口径与
+///   JavaLauncher Task98 ame98_mcMajorFromVersionId 同源）。
+FOUNDATION_EXPORT void LGCSetGameSessionMCMajor(NSInteger mcMajor);
+/// NO = 当前活跃会话的 MC 主版本 <26（玻璃面板必须回退原生）；
+/// 无活跃会话时恒 YES（启动器表面不受闸影响）。
+FOUNDATION_EXPORT BOOL LGCGameSessionGlassAllowed(void);
+
 /// ★ Task239（用户指令："请用 iOS 26 原生液态玻璃 API 重写所有悬浮菜单…
 ///   使用 .glassEffect()（SwiftUI）或 UIGlassEffect（UIKit）实现真正的
 ///   液态玻璃弹窗"）→ ★ Task244 默认退役：装机四轮实证（Task239/242/243

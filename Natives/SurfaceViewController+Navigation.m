@@ -332,7 +332,17 @@ static UIColor *ame244_snapshotTint(void) {
     }
     UIScrollView *ame237_scroll = objc_getAssociatedObject(self, kAme237RowsScrollKey);
     NSArray<Ame237MenuRow *> *ame237_rows = objc_getAssociatedObject(self, kAme237RowsKey);
-    if (LGCIsGlassStyleActive()) {
+    // ★ Task260（清单 2）：会话玻璃安全闸——MC <26 会话（老绘制链）上玻璃
+    //   面板崩溃且无回退；auto 与手动 liquid_glass 同闸，<26 会话内一律
+    //   回退原生面板（下面的 else 分支），绝不崩。
+    BOOL ame260_glassAllowed = LGCIsGlassStyleActive() && LGCGameSessionGlassAllowed();
+    if (!LGCIsGlassStyleActive()) {
+        // 风格本身非玻璃：静默走原生（原语义零变化）
+    } else if (!ame260_glassAllowed) {
+        NSLog(@"[GameMenu] Task260: glass panel blocked by session gate (MC major <26 legacy "
+              @"draw chain) -- falling back to native panel (auto and manual liquid_glass alike)");
+    }
+    if (ame260_glassAllowed) {
         // ★ Task239（用户指令：iOS 26 原生液态玻璃 API）：玻璃风格优先
         //   【系统原生 UIGlassEffect】（iOS 26+，真液态玻璃：磨砂 + 折光 +
         //   边缘高光一体）；Task244 默认退役（本进程恒不渲染，见 LGC），
@@ -592,7 +602,9 @@ static UIColor *ame244_snapshotTint(void) {
 
 - (void)ame247_menuSnapshotTick:(CADisplayLink *)ame247_sender {
     if (self.menuView == nil || self.menuView.hidden ||
-        !LGCIsGlassStyleActive()) {
+        !LGCIsGlassStyleActive() ||
+        // ★ Task260（清单 2）：<26 会话闸内供料链整体自停（面板已回退原生）
+        !LGCGameSessionGlassAllowed()) {
         [self ame247_stopMenuSnapshotRefresh];
         return;
     }
@@ -634,6 +646,8 @@ static UIColor *ame244_snapshotTint(void) {
 
 - (void)ame247_startMenuSnapshotRefresh {
     if (!LGCIsGlassStyleActive()) return;
+    // ★ Task260（清单 2）：<26 会话闸内不建供料链（面板已回退原生）
+    if (!LGCGameSessionGlassAllowed()) return;
     [self ame247_stopMenuSnapshotRefresh];
     CADisplayLink *ame247_link = [CADisplayLink displayLinkWithTarget:self
                                                              selector:@selector(ame247_menuSnapshotTick:)];
