@@ -160,3 +160,183 @@ thread: Ame251-ShutdownWatchdog
   #02 0x18f760878  /System/Library/Frameworks/Foundation.framework/Foundation  <redacted> + 4843640
   #03 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
   #04 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
+
+===== [Amethyst fatal trace] 2026-10-12 21:02:56.885 =====
+reason: abort() called
+thread: (unnamed)
+  #00 0x10b2d7174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10b2d7590  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_abort + 79248
+  #02 0x1460a2224  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5abortEbPKvS1_ + 9052708
+  #03 0x146374078  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12009592
+  #04 0x1463736b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12007096
+  #05 0x1463743b4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadPKcim11VMErrorTypeS3_Pc + 12010420
+  #06 0x146227678  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12PosixSignals12user_handlerEv + 10647160
+  #07 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
+  #08 0x13016aa28  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjava.dylib  Java_jdk_internal_loader_NativeLibraries_load + 27176
+  #09 0x165c406b8
+  #10 0x165c3c904
+  #11 0x165c3c904
+  #12 0x165c3c818
+  #13 0x165c3c818
+  #14 0x165c3c818
+  #15 0x165c3ca84
+  #16 0x165c3ca84
+  #17 0x165c3ca84
+  #18 0x165c38154
+  #19 0x145cebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
+  #20 0x145cc290c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass22call_class_initializerEP10JavaThread + 4991244
+  #21 0x145cc12d8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass15initialize_implEP10JavaThread + 4985560
+  #22 0x145f4557c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12LinkResolver19resolve_static_callER8CallInfoRK8LinkInfobP10JavaThread + 7624060
+  #23 0x145f47908  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12LinkResolver14resolve_invokeER8CallInfo6HandleRK18constantPoolHandleiN9Bytecodes4CodeEP10JavaThread + 7633160
+  #24 0x145ce1670  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime14resolve_invokeEP10JavaThreadN9Bytecodes4CodeE + 5117552
+  #25 0x145ce20d0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime18resolve_from_cacheEP10JavaThreadN9Bytecodes4CodeE + 5120208
+  #26 0x165c4b3c4
+  #27 0x165c38154
+  #28 0x145cebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
+  #29 0x145cc290c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass22call_class_initializerEP10JavaThread + 4991244
+  #30 0x145cc12d8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass15initialize_implEP10JavaThread + 4985560
+  #31 0x145f4557c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12LinkResolver19resolve_static_callER8CallInfoRK8LinkInfobP10JavaThread + 7624060
+  #32 0x145f47908  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12LinkResolver14resolve_invokeER8CallInfo6HandleRK18constantPoolHandleiN9Bytecodes4CodeEP10JavaThread + 7633160
+  #33 0x145ce1670  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime14resolve_invokeEP10JavaThreadN9Bytecodes4CodeE + 5117552
+  #34 0x145ce20d0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime18resolve_from_cacheEP10JavaThreadN9Bytecodes4CodeE + 5120208
+  #35 0x165c4b3c4
+  #36 0x165c38154
+  #37 0x145cebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
+  #38 0x145cc290c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass22call_class_initializerEP10JavaThread + 4991244
+  #39 0x145cc12d8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass15initialize_implEP10JavaThread + 4985560
+  #40 0x145cdd990  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime4_newEP10JavaThreadP12ConstantPooli + 5101968
+  #41 0x165c4c488
+  #42 0x165c3c818
+  #43 0x165c3ca84
+  #44 0x165c3d01c
+  #45 0x165c3ca84
+  #46 0x165c38154
+  #47 0x145cebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
+  #48 0x145ceae38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls12call_virtualEP9JavaValueP5KlassP6SymbolS5_P17JavaCallArgumentsP10JavaThread + 5156408
+  #49 0x145ceaf04  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls12call_virtualEP9JavaValue6HandleP5KlassP6SymbolS6_P10JavaThread + 5156612
+  #50 0x145dc8c04  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL12thread_entryP10JavaThreadS0_ + 6065156
+  #51 0x145d009d0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN10JavaThread17thread_main_innerEv + 5245392
+  #52 0x1462f43d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
+  #53 0x146098dcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
+  #54 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
+  #55 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
+
+===== [Amethyst fatal trace] 2026-10-12 21:07:26.811 =====
+reason: abort() called
+thread: (unnamed)
+  #00 0x10b49b174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10b49b590  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_abort + 79248
+  #02 0x14a8a2224  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5abortEbPKvS1_ + 9052708
+  #03 0x14ab74078  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12009592
+  #04 0x14ab736b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12007096
+  #05 0x14ab743b4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadPKcim11VMErrorTypeS3_Pc + 12010420
+  #06 0x14aa27678  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12PosixSignals12user_handlerEv + 10647160
+  #07 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
+  #08 0x12ced6a28  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjava.dylib  Java_jdk_internal_loader_NativeLibraries_load + 27176
+  #09 0x15d0406b8
+  #10 0x15d03c904
+  #11 0x15d03c904
+  #12 0x15d03c818
+  #13 0x15d03c818
+  #14 0x15d03c818
+  #15 0x15d03ca84
+  #16 0x15d03ca84
+  #17 0x15d03ca84
+  #18 0x15d038154
+  #19 0x14a4ebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
+  #20 0x14a4c290c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass22call_class_initializerEP10JavaThread + 4991244
+  #21 0x14a4c12d8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass15initialize_implEP10JavaThread + 4985560
+  #22 0x14a74557c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12LinkResolver19resolve_static_callER8CallInfoRK8LinkInfobP10JavaThread + 7624060
+  #23 0x14a747908  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12LinkResolver14resolve_invokeER8CallInfo6HandleRK18constantPoolHandleiN9Bytecodes4CodeEP10JavaThread + 7633160
+  #24 0x14a4e1670  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime14resolve_invokeEP10JavaThreadN9Bytecodes4CodeE + 5117552
+  #25 0x14a4e20d0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime18resolve_from_cacheEP10JavaThreadN9Bytecodes4CodeE + 5120208
+  #26 0x15d04b3c4
+  #27 0x15d038154
+  #28 0x14a4ebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
+  #29 0x14a4c290c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass22call_class_initializerEP10JavaThread + 4991244
+  #30 0x14a4c12d8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass15initialize_implEP10JavaThread + 4985560
+  #31 0x14a74557c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12LinkResolver19resolve_static_callER8CallInfoRK8LinkInfobP10JavaThread + 7624060
+  #32 0x14a747908  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12LinkResolver14resolve_invokeER8CallInfo6HandleRK18constantPoolHandleiN9Bytecodes4CodeEP10JavaThread + 7633160
+  #33 0x14a4e1670  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime14resolve_invokeEP10JavaThreadN9Bytecodes4CodeE + 5117552
+  #34 0x14a4e20d0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime18resolve_from_cacheEP10JavaThreadN9Bytecodes4CodeE + 5120208
+  #35 0x15d04b3c4
+  #36 0x15d038154
+  #37 0x14a4ebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
+  #38 0x14a4c290c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass22call_class_initializerEP10JavaThread + 4991244
+  #39 0x14a4c12d8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass15initialize_implEP10JavaThread + 4985560
+  #40 0x14a4dd990  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime4_newEP10JavaThreadP12ConstantPooli + 5101968
+  #41 0x15d04c488
+  #42 0x15d03c818
+  #43 0x15d03ca84
+  #44 0x15d03d01c
+  #45 0x15d03ca84
+  #46 0x15d038154
+  #47 0x14a4ebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
+  #48 0x14a4eae38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls12call_virtualEP9JavaValueP5KlassP6SymbolS5_P17JavaCallArgumentsP10JavaThread + 5156408
+  #49 0x14a4eaf04  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls12call_virtualEP9JavaValue6HandleP5KlassP6SymbolS6_P10JavaThread + 5156612
+  #50 0x14a5c8c04  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL12thread_entryP10JavaThreadS0_ + 6065156
+  #51 0x14a5009d0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN10JavaThread17thread_main_innerEv + 5245392
+  #52 0x14aaf43d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
+  #53 0x14a898dcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
+  #54 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
+  #55 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
+
+===== [Amethyst fatal trace] 2026-10-12 21:08:24.518 =====
+reason: abort() called
+thread: (unnamed)
+  #00 0x10949b174  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  ame_write_fatal_trace + 78196
+  #01 0x10949b590  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/AngelAuraAmethyst  hooked_abort + 79248
+  #02 0x1374a2224  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN2os5abortEbPKvS1_ + 9052708
+  #03 0x137774078  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12009592
+  #04 0x1377736b8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEiPKcS1_PcP6ThreadPhPKvS7_S1_im + 12007096
+  #05 0x1377743b4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN7VMError14report_and_dieEP6ThreadPKcim11VMErrorTypeS3_Pc + 12010420
+  #06 0x137627678  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12PosixSignals12user_handlerEv + 10647160
+  #07 0x19ab5f21c  /usr/lib/system/libsystem_platform.dylib  <redacted> + 16924
+  #08 0x12abaea28  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/libjava.dylib  Java_jdk_internal_loader_NativeLibraries_load + 27176
+  #09 0x15d8406b8
+  #10 0x15d83c904
+  #11 0x15d83c904
+  #12 0x15d83c818
+  #13 0x15d83c818
+  #14 0x15d83c818
+  #15 0x15d83ca84
+  #16 0x15d83ca84
+  #17 0x15d83ca84
+  #18 0x15d838154
+  #19 0x1370ebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
+  #20 0x1370c290c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass22call_class_initializerEP10JavaThread + 4991244
+  #21 0x1370c12d8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass15initialize_implEP10JavaThread + 4985560
+  #22 0x13734557c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12LinkResolver19resolve_static_callER8CallInfoRK8LinkInfobP10JavaThread + 7624060
+  #23 0x137347908  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12LinkResolver14resolve_invokeER8CallInfo6HandleRK18constantPoolHandleiN9Bytecodes4CodeEP10JavaThread + 7633160
+  #24 0x1370e1670  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime14resolve_invokeEP10JavaThreadN9Bytecodes4CodeE + 5117552
+  #25 0x1370e20d0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime18resolve_from_cacheEP10JavaThreadN9Bytecodes4CodeE + 5120208
+  #26 0x15d84b3c4
+  #27 0x15d838154
+  #28 0x1370ebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
+  #29 0x1370c290c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass22call_class_initializerEP10JavaThread + 4991244
+  #30 0x1370c12d8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass15initialize_implEP10JavaThread + 4985560
+  #31 0x13734557c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12LinkResolver19resolve_static_callER8CallInfoRK8LinkInfobP10JavaThread + 7624060
+  #32 0x137347908  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN12LinkResolver14resolve_invokeER8CallInfo6HandleRK18constantPoolHandleiN9Bytecodes4CodeEP10JavaThread + 7633160
+  #33 0x1370e1670  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime14resolve_invokeEP10JavaThreadN9Bytecodes4CodeE + 5117552
+  #34 0x1370e20d0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime18resolve_from_cacheEP10JavaThreadN9Bytecodes4CodeE + 5120208
+  #35 0x15d84b3c4
+  #36 0x15d838154
+  #37 0x1370ebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
+  #38 0x1370c290c  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass22call_class_initializerEP10JavaThread + 4991244
+  #39 0x1370c12d8  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN13InstanceKlass15initialize_implEP10JavaThread + 4985560
+  #40 0x1370dd990  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN18InterpreterRuntime4_newEP10JavaThreadP12ConstantPooli + 5101968
+  #41 0x15d84c488
+  #42 0x15d83c818
+  #43 0x15d83ca84
+  #44 0x15d83d01c
+  #45 0x15d83ca84
+  #46 0x15d838154
+  #47 0x1370ebe78  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls11call_helperEP9JavaValueRK12methodHandleP17JavaCallArgumentsP10JavaThread + 5160568
+  #48 0x1370eae38  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls12call_virtualEP9JavaValueP5KlassP6SymbolS5_P17JavaCallArgumentsP10JavaThread + 5156408
+  #49 0x1370eaf04  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN9JavaCalls12call_virtualEP9JavaValue6HandleP5KlassP6SymbolS6_P10JavaThread + 5156612
+  #50 0x1371c8c04  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL12thread_entryP10JavaThreadS0_ + 6065156
+  #51 0x1371009d0  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN10JavaThread17thread_main_innerEv + 5245392
+  #52 0x1376f43d4  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZN6Thread8call_runEv + 11486164
+  #53 0x137498dcc  /private/var/mobile/Containers/Data/Application/6C7AE349-6B58-4A24-AD13-F56DA4D03DC5/Documents/Applications/com.air-devs.air_812896712.app/java_runtimes/java-25-openjdk/lib/server/libjvm.dylib  _ZL19thread_native_entryP6Thread + 9014732
+  #54 0x18ed22038  /usr/lib/system/libsystem_pthread.dylib  _pthread_start + 16440
+  #55 0x18ed1e91c  /usr/lib/system/libsystem_pthread.dylib  thread_start + 2332
