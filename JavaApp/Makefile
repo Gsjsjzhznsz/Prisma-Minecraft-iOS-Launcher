@@ -203,7 +203,7 @@ $(OUTPUTDIR)/patchsvc.jar: $(CLASSES)
 # Task258 KnotGate 哲学）。绝对路径彻底绕开相对解析基准，java.io 解压、NIO 校验、
 # checkAccess 越狱判定、require()/boot() 全部收敛到同一目录。内存内改写，mod jar
 # 磁盘文件不动；无 Cobblemon 会话零影响。ASM 9.7（class major 49）内嵌自
-# src/libs/asm/asm-9.7.jar，agent 类本体按 javac(BOOTJDK) 默认 target 输出，
+# src/libs/asm/asm-9.7-relocated.jar，agent 类本体按 javac(BOOTJDK) 默认 target 输出，
 # 全会话可加载（同 patchsvc 无条件注入先例）。
 # 装机锚点：会话日志应见 "[Task263] showdown-agent armed: user.dir=... ame.showdown.home=..."，
 # Cobblemon 会话另见 "[Task263] showdown path-fix applied to ... GraalShowdownService (3 sites)"
@@ -216,7 +216,7 @@ $(OUTPUTDIR)/showdown_agent.jar: $(CLASSES)
 		exit 1; \
 	fi
 	@mkdir -p $(basename $@)/asm_embed
-	@cd $(basename $@)/asm_embed && $(BOOTJDK)/jar -xf $(CURDIR)/libs/asm/asm-9.7.jar
+	@cd $(basename $@)/asm_embed && $(BOOTJDK)/jar -xf $(CURDIR)/libs/asm/asm-9.7-relocated.jar
 	@rm -rf $(basename $@)/asm_embed/META-INF $(basename $@)/asm_embed/module-info.class
 	@if [ ! -f "$(basename $@)/asm_embed/org/objectweb/asm/ClassReader.class" ]; then \
 		echo "ERROR: asm embed missing org/objectweb/asm/ClassReader.class"; \

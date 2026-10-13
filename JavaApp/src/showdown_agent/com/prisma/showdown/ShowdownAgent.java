@@ -8,11 +8,17 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+// Task263 r2：ASM 内嵌件等长重定位到 com/prisma/shaded（原 org/objectweb/asm 会被
+// Fabric Loader 0.19.5 LoaderUtil.verifyClasspath 的 Knot.<clinit> 守卫以
+// "duplicate ASM classes found on classpath" 拒绝启动——装机 latestlog.selfexit-
+// 1013-210534 实锤；metallum_agent com/metallum/shaded/asm 同款先例）。重定位由
+// scripts/task263_relocate_asm.py 等长字节替换完成（org/objectweb/asm 与
+// com/prisma/shaded 同为 17 字节，class 文件结构零变动）。
+import com.prisma.shaded.ClassReader;
+import com.prisma.shaded.ClassVisitor;
+import com.prisma.shaded.ClassWriter;
+import com.prisma.shaded.MethodVisitor;
+import com.prisma.shaded.Opcodes;
 
 /**
  * Task263: in-memory path absolutizer for Cobblemon's GraalJS showdown service.

@@ -46,26 +46,36 @@ check('A5 HOME_PROPERTY', '"ame.showdown.home"' in src)
 check('A6 COMPUTE_MAXS（无 Frames 重算）',
       'COMPUTE_MAXS' in src and 'COMPUTE_FRAMES' not in src)
 check('A7 premain 取证行', 'showdown-agent armed' in src)
+check('A10 import 重定位包（无 org.objectweb）',
+      'import com.prisma.shaded.ClassReader' in src and 'org.objectweb' not in src)
 check('A8 无分支插入（visitLdcInsn 直改）', 'visitLdcInsn(Object cst)' in src)
 check('A9 改写值白名单函数', 'suffixFor' in src)
 
-# ---------- B. ASM 内嵌件 ----------
-asm_path = f'{REPO}/JavaApp/libs/asm/asm-9.7.jar'
+# ---------- B. ASM 内嵌件（r2：等长重定位，避开 Fabric Loader verifyClasspath 守卫）----------
+asm_path = f'{REPO}/JavaApp/libs/asm/asm-9.7-relocated.jar'
 try:
     z = zipfile.ZipFile(asm_path)
-    d = z.read('org/objectweb/asm/ClassReader.class')
+    names = z.namelist()
+    d = z.read('com/prisma/shaded/ClassReader.class')
     major = struct.unpack('>H', d[6:8])[0]
-    check('B1 asm-9.7.jar 存在且含 ClassReader', True)
+    check('B1 asm-9.7-relocated.jar 存在且含 com/prisma/shaded/ClassReader', True)
     check('B2 asm class major<=52（全会话可加载）', major <= 52, f'major={major}')
+    leftover = [n for n in names if 'org/objectweb' in n] + [
+        n for n in names if b'org/objectweb' in z.read(n) or b'org.objectweb' in z.read(n)]
+    check('B3 零 org/objectweb 残留（Fabric verifyClasspath 守卫区）', len(leftover) == 0,
+          str(leftover[:3]))
+    check('B4 包条目重命名完整（40 项）', len(names) == 40, f'entries={len(names)}')
 except Exception as e:
-    check('B1 asm-9.7.jar 存在且含 ClassReader', False, str(e))
+    check('B1 asm-9.7-relocated.jar 存在且含 com/prisma/shaded/ClassReader', False, str(e))
     check('B2 asm class major<=52（全会话可加载）', False)
+    check('B3 零 org/objectweb 残留（Fabric verifyClasspath 守卫区）', False)
+    check('B4 包条目重命名完整（40 项）', False)
 
 # ---------- C. JavaApp/Makefile ----------
 jam = open(f'{REPO}/JavaApp/Makefile', encoding='utf-8').read()
 check('C1 showdown_agent.jar 规则存在', 'showdown_agent.jar: $(CLASSES)' in jam)
 check('C2 manifest 引用 showdown_agent.txt', 'src/showdown_agent.txt' in jam)
-check('C3 asm 解嵌', 'asm_embed' in jam and 'libs/asm/asm-9.7.jar' in jam)
+check('C3 asm 解嵌（重定位件）', 'asm_embed' in jam and 'libs/asm/asm-9.7-relocated.jar' in jam)
 check('C4 module-info/META-INF 剔除', 'module-info.class' in jam and 'META-INF' in jam)
 check('C5 ClassReader 存在断言', 'org/objectweb/asm/ClassReader.class' in jam)
 jam_lines = jam.split('\n')
