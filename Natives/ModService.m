@@ -446,6 +446,7 @@
         NSMutableArray<ModItem *> *items = [NSMutableArray array];
 
         if (!modsFolder) {
+            NSLog(@"[ModService] Task265 scan: profile=%@ folder=(nil) jars=0", profileName ?: @"(nil)");
             if (completion) {
                 dispatch_async(dispatch_get_main_queue(), ^{ completion(items); });
             }
@@ -483,6 +484,9 @@
         }
 
         dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+            // ★ Task265：扫描结果锚——与 download dest 锚成对，目录错位一轮日志定音
+            NSLog(@"[ModService] Task265 scan: profile=%@ folder=%@ jars=%ld",
+                  profileName ?: @"(nil)", modsFolder, (long)items.count);
             [items sortUsingComparator:^NSComparisonResult(ModItem *obj1, ModItem *obj2) {
                 NSString *name1 = obj1.displayName ?: obj1.fileName;
                 NSString *name2 = obj2.displayName ?: obj2.fileName;
@@ -654,6 +658,9 @@
            progress:(nullable void (^)(NSProgress *downloadProgress))progress
          completion:(ModDownloadHandler)completion {
     NSString *modsFolder = [self ame219_isolationFirstModsFolderForProfile:profileName];
+    // ★ Task265：下载目标锚——今后任何"下载了但游戏/管理页看不到"直接看这行
+    NSLog(@"[ModService] Task265 download dest: profile=%@ folder=%@ file=%@",
+          profileName ?: @"(nil)", modsFolder, mod.fileName ?: @"(nil)");
     if (!modsFolder) {
         if (completion) {
             NSError *error = [NSError errorWithDomain:@"ModServiceError" code:1 userInfo:@{NSLocalizedDescriptionKey:localize(@"i18n_str_453", nil)}];

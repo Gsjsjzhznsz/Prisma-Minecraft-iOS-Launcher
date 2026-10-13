@@ -448,3 +448,61 @@ html[data-lang="en"] table.diff-table:has(th:first-child:contains("Dimension")) 
 @media (prefers-reduced-motion: reduce) {
   .lang-btn, .mirror-chip { transition: none; }
 }
+
+/* ==========================================================================
+   Task265：手机端适配（用户反馈"手机端定栏异常"）
+   病历：顶栏 7 项横排无任何断点，≤820px 时导航溢出玻璃胶囊；
+   锚点跳转被 sticky 顶栏遮住标题；公告日期挤爆行高。
+   修法：≤860px 顶栏改双行（品牌行 + 居中可换行导航），全局限宽，
+   分区锚点 scroll-margin 避让，下载卡/上手卡/公告行内边距收敛。
+   ========================================================================== */
+
+/* sticky 顶栏遮挡锚点标题：桌面/移动统一避让（顶栏高 ~64px + 余量） */
+section[id] { scroll-margin-top: 96px; }
+
+@media (max-width: 860px) {
+  .wrap { padding: 0 16px; }
+
+  /* 顶栏：胶囊改双行圆角卡；导航居中可换行，不再横向溢出 */
+  header.topbar { top: 8px; margin-top: 8px; }
+  .topbar .glass {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 10px 12px 8px;
+    border-radius: 22px;
+  }
+  .brand { justify-content: center; font-size: 16px; }
+  .topnav { justify-content: center; flex-wrap: wrap; gap: 2px; }
+  .topnav a { padding: 7px 11px; font-size: 13px; }
+
+  section { padding: 36px 0; }
+  section[id] { scroll-margin-top: 128px; }  /* 双行顶栏更高，加大避让 */
+  .hero { padding: 52px 0 44px; }
+  .hero .chip { max-width: 100%; }
+  .hero .chip span { white-space: normal; text-align: center; }
+  .hero-icon { width: 104px; height: 104px; border-radius: 24px; }
+
+  .card { padding: 22px 18px; }
+  .grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .diff-card { border-radius: var(--radius-lg); }
+  .dl-card { padding: 28px 18px; }
+  .qs-card { padding: 24px 18px; }
+  .mirror-box { padding: 16px 14px; }
+
+  /* 公告行：日期换行到标题下方，不再挤压内容 */
+  .ann { flex-wrap: wrap; padding: 16px; }
+  .ann .date { margin-left: 0; width: 100%; padding-top: 0; order: 3; }
+}
+
+/* Task265：视觉巡礼两卡（对齐 comm-card 的按钮沉底布局） */
+.tour-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.tour-card h3 { margin-bottom: 0; }
+.tour-card .tour-btn { margin-top: auto; }
+
+@media (max-width: 480px) {
+  .topnav a { padding: 6px 9px; font-size: 12.5px; }
+  .btn { padding: 12px 20px; font-size: 14px; }
+  .comm-num { font-size: 19px; }
+  .hero h1 { margin: 20px 0 12px; }
+}

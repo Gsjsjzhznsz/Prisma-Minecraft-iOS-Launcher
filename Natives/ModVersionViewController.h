@@ -23,6 +23,13 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) NSString *preferredGameVersion;
 @property (nonatomic, copy, nullable) NSString *preferredLoader;
 
+// ★ Task265（模组管理"新装 mod 不显示"第三轮根修）：目标实例锁定——
+// 来源页（模组管理/下载页）显式传入后，本页所有下载/依赖下载统一写入
+// 该实例的隔离 mods 目录；未传入时回退实时 selectedProfileName（旧语义）。
+// 此前本页无视来源绑定、每次下载实时读 selectedProfileName，与来源页
+// 绑定的实例错位时文件落错目录 = 游戏加载了、管理页不显示。
+@property (nonatomic, copy, nullable) NSString *targetProfileName;
+
 // API 来源：1 = Modrinth（默认），2 = CurseForge。
 // 关键修复（CurseForge 搜索结果丢失来源）：Mod 搜索结果可能来自 CurseForge（数字 project ID），
 // 进入版本页时必须沿用搜索时的 API 来源，否则会拿 CurseForge 数字 ID 请求 Modrinth API

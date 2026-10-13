@@ -4724,6 +4724,7 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
     // FCL 风格：传入当前 profile 的偏好版本和加载器，自动选中匹配 chip 并置顶
     versionVC.preferredGameVersion = [self currentProfileMinecraftVersion];
     versionVC.preferredLoader = [self currentProfileLoader];
+    versionVC.targetProfileName = self.targetProfileName ?: ([PLProfiles current].selectedProfileName ?: @"default"); // ★ Task265：目标实例随下载页锁定（整合包流程同规则）
 
     // 标记当前为整合包下载类型，版本选择回调时走整合包安装流程（而非 Mod 下载流程）
     self.pendingDownloadType = @"modpack";
@@ -5285,8 +5286,7 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
     // FCL 风格：传入当前 profile 的偏好版本和加载器，自动选中匹配 chip 并置顶
     versionVC.preferredGameVersion = [self currentProfileMinecraftVersion];
     versionVC.preferredLoader = [self currentProfileLoader];
-
-    // 在中间内容区 push 显示，而非弹窗盖在下载列表之上（与 FCL 安卓一致）
+    versionVC.targetProfileName = self.targetProfileName ?: ([PLProfiles current].selectedProfileName ?: @"default"); // ★ Task265：目标实例随下载页锁定（此前版本页无视来源绑定，与来源实例错位时文件落错目录）
     [self.navigationController pushViewController:versionVC animated:YES];
 }
 

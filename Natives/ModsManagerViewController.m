@@ -133,6 +133,23 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 
 @implementation ModsManagerViewController
 
+#pragma mark - Task265：profile 自适应解析
+
+/// Task265（"新安装的 mod 在模组管理不显示"第三轮根修）：本页所有 profile
+/// 消费点（扫描/徽标/表尾/导入/跳转下载）统一走本解析——显式绑定优先；
+/// 抽屉等未绑定入口（LauncherRoot/LauncherCardLayout 走 alloc]init] 且从
+/// 未设置 profileName）自适应跟随【当前选中实例】，而非退化到 "default"
+/// 主目录。此前 nil → "default" 与下载/游戏侧（selectedProfile 的隔离目录）
+/// 永世错位 = 用户反复反馈的"游戏里加载了、模组管理不显示"（装机
+/// a5e8e1e latestlog：下载 TouchController 落隔离目录且游戏已加载，
+/// 而管理页扫描 default 主目录）。自适应语义：不管哪个入口进来，页面
+/// 编辑的都是用户当前选中的实例——与下载目标/启动目标天然同源。
+- (NSString *)ame265_effectiveProfileName {
+    if (self.profileName.length > 0) return self.profileName;
+    NSString *ame265_sel = PLProfiles.current.selectedProfileName;
+    return ame265_sel.length > 0 ? ame265_sel : @"default";
+}
+
 #pragma mark - Init
 
 - (instancetype)init {
@@ -306,7 +323,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     // Task219（⑪ 版本隔离自动识别）：行尾信息徽标——按当前 profile 的
     // gameDir 自动判定隔离态（隔离 = 蓝底“隔离”，共享 = 灰底“共享目录”），
     // 点击弹说明（下载/扫描只作用于该目录，与 ModService ame219 同口径）。
-    NSInteger ame219_iso = [ModService ame219_isolationStateForProfile:(self.profileName ?: @"default")];
+    NSInteger ame219_iso = [ModService ame219_isolationStateForProfile:[self ame265_effectiveProfileName]]; // Task265：自适应跟随选中实例
     // Task225（#5）：三态徽标（显式隔离 / 嗅探隔离 / 共享），可点——弹
     // 快捷说明 + 前往版本设置的隔离入口（用户反馈"安装模组端依旧默认
     // 共享目录"：多数是没开隔离或开在了别的 profile，这里给一条明路）。
@@ -328,9 +345,10 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     }
     ame219_isoChip.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
     [self.chipsStack addArrangedSubview:ame219_isoChip];
-    NSLog(@"[ModsManager] Task219/225: isolation badge for profile %@ -> %@",
-          self.profileName ?: @"default",
-          (ame219_iso == 1) ? @"isolated" : ((ame219_iso == 2) ? @"sniffed-isolated" : @"shared"));
+    NSLog(@"[ModsManager] Task219/225: isolation badge for profile %@ -> %@ (bound=%@)",
+          [self ame265_effectiveProfileName],
+          (ame219_iso == 1) ? @"isolated" : ((ame219_iso == 2) ? @"sniffed-isolated" : @"shared"),
+          self.profileName ?: @"(nil→follow selected)"); // Task265：绑定来源一并留痕
 
     [NSLayoutConstraint activateConstraints:@[
         // chips 行：紧贴搜索栏下方，tableView 改为锚到 chips 行底部
@@ -403,7 +421,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 /// Task225（#5）：隔离徽标点击——说明当前 mod 安装/扫描的目标目录语义，
 /// 并提供「前往版本设置」入口（隔离开关在版本设置页）。
 - (void)ame225_isolationChipTapped {
-    NSInteger ame225_iso = [ModService ame219_isolationStateForProfile:(self.profileName ?: @"default")];
+    NSInteger ame225_iso = [ModService ame219_isolationStateForProfile:[self ame265_effectiveProfileName]]; // Task265
     NSString *ame225_msg = nil;
     if (ame225_iso == 1) {
         ame225_msg = localize(@"ame225.mods.isolated_note", nil);
@@ -422,7 +440,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
                 handler:^(UIAlertAction * _Nonnull action) {
         // 前往版本设置页（隔离开关在那里）
         ProfileSettingsViewController *ame225_ps = [[ProfileSettingsViewController alloc] init];
-        ame225_ps.profileName = self.profileName ?: @"default";
+        ame225_ps.profileName = [self ame265_effectiveProfileName]; // Task265：自适应跟随
         UINavigationController *ame225_nav = [[UINavigationController alloc] initWithRootViewController:ame225_ps];
         ame225_nav.modalPresentationStyle = UIModalPresentationPageSheet;
         [self presentViewController:ame225_nav animated:YES completion:nil];
@@ -534,7 +552,8 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 
 - (void)loadMods {
     [self setLoading:YES];
-    NSString *profile = self.profileName ?: @"default";
+    NSString *profile = [self ame265_effectiveProfileName]; // Task265：nil 不再退化 default，跟随选中实例（与下载/启动同源）
+    NSLog(@"[ModsManager] Task265 scan profile=%@ (bound=%@)", profile, self.profileName ?: @"(nil→follow selected)");
     __weak typeof(self) weakSelf = self;
     [[ModService sharedService] scanModsForProfile:profile completion:^(NSArray<ModItem *> *mods) {
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -635,9 +654,9 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 /// 空状态"去下载"：跳转统一下载页（无参数化资源类型入口，进入默认页）
 - (void)openDownloadPage {
     DownloadViewController *vc = [[DownloadViewController alloc] init];
-    // 关键修复（目标实例不一致）：传入本管理页绑定的 profileName，
-    // 保证下载写入的实例与当前打开的实例一致
-    vc.targetProfileName = self.profileName;
+    // 关键修复（目标实例不一致）：传入本管理页生效的 profileName（Task265：
+    // 含 nil 绑定时的自适应跟随），保证下载写入的实例与当前打开的实例一致
+    vc.targetProfileName = [self ame265_effectiveProfileName];
     if (self.navigationController) {
         [self.navigationController pushViewController:vc animated:YES];
     } else {
@@ -894,7 +913,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 
 - (void)importModTapped {
     NSError *dirError = nil;
-    NSString *modsDir = [[ModService sharedService] ensureModsFolderForProfile:self.profileName error:&dirError]; // Task264：跟随当前 profile（整合包隔离目录），此前恒写 nil -> default 主目录，导入的 mod 永远不显示
+    NSString *modsDir = [[ModService sharedService] ensureModsFolderForProfile:[self ame265_effectiveProfileName] error:&dirError]; // Task264+265：跟随生效 profile（nil 绑定自适应跟随选中实例），不再恒写 default 主目录
     if (!modsDir) {
         [self showDialogWithTitle:localize(@"resman.common.cannot_import", nil) message:dirError.localizedDescription ?: localize(@"resman.mods.dir_not_found", nil)];
         return;
@@ -912,7 +931,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     if (urls.count == 0) return;
 
     NSError *dirError = nil;
-    NSString *modsDir = [[ModService sharedService] ensureModsFolderForProfile:self.profileName error:&dirError]; // Task264：跟随当前 profile（整合包隔离目录），此前恒写 nil -> default 主目录，导入的 mod 永远不显示
+    NSString *modsDir = [[ModService sharedService] ensureModsFolderForProfile:[self ame265_effectiveProfileName] error:&dirError]; // Task264+265：跟随生效 profile
     if (!modsDir) {
         [self showDialogWithTitle:localize(@"resman.common.import_failed", nil) message:dirError.localizedDescription ?: localize(@"resman.mods.dir_not_found", nil)];
         return;

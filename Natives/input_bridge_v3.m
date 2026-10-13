@@ -172,6 +172,10 @@ static SDL_SetModState_func   *pSDL_SetModState   = NULL;        // Task66
 static bool *ame66_kbState = NULL;   // Task66：SDL 内部键盘状态数组（SDL_GetKeyboardState 返回值，直接写入）
 static int    ame66_kbNumKeys = 0;   // Task66：数组长度（SDL3 = 512 = SDL_NUM_SCANCODES）
 static unsigned short ame66_virtualMods = 0;  // Task66：虚拟修饰键掩码（我们注入的 shift/ctrl/alt/gui）
+// ★ Task265：自适应潜行翻译状态（定义前置：ame229_inputResumeReassert 回前台重读在本文件更早处引用）
+static int g_ame265_sneakGlfwKey = -2;   // -2=未解析 -1=非 shift 绑定(不翻译) 340=左shift 342=右shift
+static CFAbsoluteTime s_ame265_sneakSyncedAt = 0;
+static void ame265_ensureSneakBindingSynced(void);  // 定义在 nativeSendKey 段
 static void *g_sdlWindow = NULL;  // The real SDL3 window pointer
 static void ame104_armAfkHeartbeat(void);  // Task104：AFK 心跳（前向声明，实现见 pushSDLMouseWheel 之后）
 // Task224：SDL 嵌入视图 z 序重钉的公开包装（sdl3_hook.m，自带主线程调度）
@@ -2067,6 +2071,10 @@ void CallbackBridge_syncGrabStateFromSDL(BOOL relMode, const char *source) {
 //       each toggled modifier -- the same path a fresh button tap uses
 //       (keystate array + modstate + SDL event, all in one).
 void ame229_inputResumeReassert(void) {
+    // ★ Task265：回前台强制重读 key_key.sneak（绕过 5s 节流）——用户游戏内
+    // 改绑潜行键后切后台再回来，下一次右 SHIFT 事件即按新绑定翻译。
+    s_ame265_sneakSyncedAt = 0;
+    ame265_ensureSneakBindingSynced();
     cLastX = cursorX;
     cLastY = cursorY;
     // Re-drive every toggle-held virtual modifier: SDL clears its keyboard
@@ -2305,7 +2313,82 @@ BOOL ame161_inputPathIsGLFW(void) {
     return g_sdlWindow == NULL;
 }
 
+// ★ Task265（右 Shift 第 9 次复发终结：自适应恢复，一次性迁移全族退役）：
+// 病历族谱：Task181（洗涤器把用户绑在 right.shift 的潜行洗回默认）→
+// Task225 v3（隔离目录换代重洗 + 仅 v2 cohort 的一次性恢复）→ 本轮（
+// 新装实例/新 gameDir 根本不在 v2 集合，sneak 保持 MC 默认 left.shift，
+// 而控件布局右 SHIFT 按钮恒发 GLFW 342 = 死键；再下一轮还会有新 cohort）。
+// 教训：一次性标记/恢复的 cohort 猜测永远追不上目录换代与新装实例。
+// 根改 = 【事件级自适应翻译】：右 SHIFT 事件发射前实时重读 options.txt 的
+// key_key.sneak（5s 节流），若 MC 潜行绑定 ≠ right.shift（默认 left.shift /
+// 42 / 键缺失），把本次发射的 GLFW 342 原地翻译成 MC 实际绑定（340/42 家族）
+// ——按钮永远命中潜行，【不改写用户任何文件】（Task181 教训永久生效），
+// 无 cohort、无标记、无一次性状态：新装实例 / 隔离换代 / 游戏内改绑，
+// 都在下一次事件或回前台（ame229_inputResumeReassert 触发重读）时自适应。
+// GLF→SDL 两条路径都在本函数下游，单点翻译全路径覆盖；Task229 复驱按
+// ame66_virtualMods 位回放，位随翻译后的 DOWN 事件自然落在 LSHIFT，无需改动。
+// （状态变量 g_ame265_sneakGlfwKey / s_ame265_sneakSyncedAt 定义在文件头部
+//  Task66 掩码声明区，ame229 回前台重读需在其前引用。）
+
+static void ame265_ensureSneakBindingSynced(void) {
+    CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
+    if (s_ame265_sneakSyncedAt != 0 && now - s_ame265_sneakSyncedAt < 5.0) return;
+    s_ame265_sneakSyncedAt = now;
+    int parsed = -1;          // 默认：非 shift 绑定 → 不翻译（用户自定义键位尊重现状）
+    BOOL ame265_found = NO;
+    const char *ame265_paths[2] = { "options.txt", NULL };   // CWD=游戏目录（ame97 对齐）
+    char ame265_alt[PATH_MAX];
+    const char *ame265_gd = getenv("POJAV_GAME_DIR");
+    if (ame265_gd && snprintf(ame265_alt, sizeof(ame265_alt), "%s/options.txt", ame265_gd) < (int)sizeof(ame265_alt)) {
+        ame265_paths[1] = ame265_alt;
+    }
+    for (int i = 0; i < 2 && !ame265_found; i++) {
+        if (!ame265_paths[i]) break;
+        FILE *f = fopen(ame265_paths[i], "rb");
+        if (!f) continue;
+        char line[512];
+        while (fgets(line, sizeof(line), f)) {
+            if (strncmp(line, "key_key.sneak:", 14) == 0) {
+                char val[128] = {0};
+                char *p = line + 14, *w = val;
+                while (*p && *p != '\n' && *p != '\r' && (size_t)(w - val) < sizeof(val) - 1) *w++ = *p++;
+                *w = '\0';
+                // 双格式（Task225 v3 同款覆盖）：新 "key.keyboard.*" / 旧数字 SDL scancode
+                if (strcmp(val, "key.keyboard.right.shift") == 0 || strcmp(val, "54") == 0) parsed = 342;
+                else if (strcmp(val, "key.keyboard.left.shift") == 0 || strcmp(val, "42") == 0) parsed = 340;
+                else parsed = -1;
+                ame265_found = YES;
+                break;
+            }
+        }
+        fclose(f);
+    }
+    if (!ame265_found) parsed = 340;  // options.txt 缺失/首启：MC 默认潜行 = left shift
+    if (parsed != g_ame265_sneakGlfwKey) {
+        g_ame265_sneakGlfwKey = parsed;
+        NSLog(@"[Task265] adaptive sneak sync: key_key.sneak=%s -> right-shift button emits GLFW %d (%s)",
+              ame265_found ? (parsed == 340 ? "left.shift" : (parsed == 342 ? "right.shift" : "non-shift"))
+                           : "ABSENT(default left.shift)",
+              parsed,
+              parsed == 340 ? "TRANSLATE 342->340" : (parsed == 342 ? "identity" : "identity(non-shift binding)"));
+    }
+}
+
+static int ame265_translateSneakKey(int key) {
+    if (key == GLFW_KEY_RIGHT_SHIFT) {
+        ame265_ensureSneakBindingSynced();
+        if (g_ame265_sneakGlfwKey > 0 && g_ame265_sneakGlfwKey != GLFW_KEY_RIGHT_SHIFT) {
+            return g_ame265_sneakGlfwKey;
+        }
+    }
+    return key;
+}
+
 void CallbackBridge_nativeSendKey(int key, int scancode, int action, int mods) {
+    // ★ Task265：右 SHIFT 按钮自适应潜行翻译（函数头 ame265 注释块）。
+    // 翻译在最顶端：下方 Task224 取证日志、GLFW/SDL 双路径、mods 计算、
+    // keyDownBuffer 全部消费翻译后的键码，事件流自洽（DOWN/UP 对称）。
+    key = ame265_translateSneakKey(key);
     static int keySendCount = 0;
     keySendCount++;
     if (keySendCount <= 10 || keySendCount % 50 == 0) {

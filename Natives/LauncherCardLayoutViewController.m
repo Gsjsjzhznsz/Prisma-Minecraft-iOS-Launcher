@@ -768,6 +768,9 @@ static CGFloat LauncherCardLayoutRightPanelWidth(UITraitCollection *trait) {
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vm];
     nav.navigationBar.prefersLargeTitles = NO;
     ModsManagerViewController *m = [[ModsManagerViewController alloc] init];
+    // ★ Task265：抽屉入口显式绑定选中实例（此前 nil → 页面退化扫 default
+    // 主目录，与下载/游戏侧隔离目录错位；详见 LauncherRootViewController 同款注释）
+    m.profileName = PLProfiles.current.selectedProfileName;
     [nav pushViewController:m animated:NO];
     [self setContentViewController:nav animated:YES];
 }

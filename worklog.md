@@ -3185,3 +3185,21 @@ Work Log:
 
 Stage Summary:
 - 装机锚点：①整合包会话日志应见 [Task263] armed+path-fix+jail neutralized+io-probe 两层视图对照+provision done ②若 showdown 仍失败必见 [Task263] watchdog: showdown latch force-released + 游戏可进主菜单（战斗降级）而非黑屏 ③模组管理页尾出现"模组目录"提示行+导入按钮（文件落入隔离目录重扫即见）④中途导入的 mod 不再消失
+
+
+## Task 265——模组管理"新装 mod 不显示"第三轮根修（profile 全链自适应）+ 右 Shift 第 9 次复发自适应恢复（事件级翻译，一次性迁移全族退役）+ 网站手机端适配 + 视觉巡礼双页入站
+
+日期：2026-10-14　构建：本轮提交（CI 轮询中）
+
+Work Log:
+- 用户反馈三件（⑧确认已修复="正常了"）：①新安装的 mod 模组管理仍不显示、游戏里却已加载（Task264 修复不彻底）②网站手机端顶栏异常 ③网站要塞入用户自制两份 HTML 介绍页（PPT 放映版 + 竖屏滑动版）④右 Shift 又失效——用户明确指令"不要老是我叫你恢复，写个自适应恢复"
+- ①根因三链（装机 a5e8e1e latestlog 交叉源码定位）：(a) 抽屉主入口 LauncherRootViewController:707 / LauncherCardLayoutViewController:770 走 alloc]init] 从未设置 profileName → 页面 loadMods/徽标/表尾/导入全线退化 "default" 主目录，与下载/游戏侧（selectedProfile 的整合包隔离目录）永世错位；(b) ModVersionViewController 无视来源绑定，两下载点（ame236/ame235）实时读 selectedProfileName，且依赖跳转页（Task235/236 push 的新版本页）不继承目标实例；(c) Downloads 页锁定 targetProfileName 但版本页不接——文件落错目录="游戏加载了、管理页不显示"的完整解释
+- 根修（profile 全链自适应）：ModsManagerViewController 新增 ame265_effectiveProfileName（显式绑定优先 → 自适应跟随 PLProfiles.selectedProfileName → 兜底 default），10 个消费点（扫描/徽标/徽标弹窗/前往设置/表尾/loadMods/跳转下载/导入×2）统一走该解析；两个抽屉入口显式绑定 selectedProfileName（入口绑定+页内跟随双保险）；ModVersionViewController.h 新增 targetProfileName，双下载点改 targetProfileName 优先，四个呈现点（DownloadVC mod/modpack 流 + 版本页依赖跳转×2）全链传入；ModService 增 Task265 双锚日志（download dest: profile/folder/file + scan: profile/folder/jars）——今后任何"不显示"一轮日志定音
+- ④右 Shift 自适应恢复（input_bridge_v3.m）：病历族谱 Task181（洗涤洗掉用户绑定）→Task225 v3（隔离换代重洗+v2 cohort 一次性恢复）→本轮（新实例/新 gameDir 根本不在 v2 集合，sneak 保持 MC 默认 left.shift × 布局右 SHIFT 按钮恒发 GLFW 342 = 死键）——一次性标记/恢复的 cohort 猜测永远追不上目录换代，根改=事件级自适应翻译：nativeSendKey 顶端对 RIGHT_SHIFT 实时重读 options.txt 的 key_key.sneak（5s 节流+CWD→POJAV_GAME_DIR 双路径+新 "key.keyboard.*"/旧数字双格式），sneak≠right.shift 时把 342 原地翻译为 MC 实际绑定（340/42 家族）；不改写用户任何文件（Task181 教训永久生效）、无 cohort 无标记无一次性状态，新装实例/隔离换代/游戏内改绑均自适应；翻译在 GLFW/SDL 双路径上游单点覆盖，Task224 取证日志/mods 计算/keyDownBuffer 全消费翻译后键码；ame229 回前台强制重读（绕节流）=游戏内改绑回来即生效；Task229 复驱按 ame66_virtualMods 位回放位随翻译自然落 LSHIFT 无需改动；状态变量前置于文件头声明区（ame229 前向引用）
+- ②网站手机端适配（website/）：病历=顶栏 7 项横排零断点（≤820px 溢出玻璃胶囊）+锚点被 sticky 顶栏遮挡+公告日期挤爆行高；根修 global.css：≤860px 顶栏改双行（品牌行+居中可换行导航）、全局限宽收敛、section[id] scroll-margin-top 96/128px、hero/卡片/下载卡/公告行内边距适配、≤480px 二档缩进；站点本地构建 932ms 一页绿
+- ③视觉巡礼入站：用户两份 HTML（Showcase PPT 放映版/Scrolly 竖屏滑动版，各 2.4MB base64 自包含零外链）入 website/public/（showcase.html/scrolly.html）；index.astro 特性区后新增 #tour 区块（放映模式/竖屏滑动模式双卡，中英双语，target=_blank）+ 顶栏"视觉巡礼/Tour"导航项；.tour-card 按钮沉底布局对齐 comm-card
+- 事故续档：磁盘 ENOSPC（rootfs 99%）——清理历史构建产物 artifact-261/rel65/release-r7（均已发布至 GitHub Releases 在档）释放 4GB 后构建复绿；cat 显示层吞字又一例（website.yml branches: [main] 显示为 ain]，od -c 实锤文件完好）；ModService 锚日志首版编辑误删 if(completion)+NSError 两行（自查秒级复绿）
+- 门禁：task139 all balanced；task240 import OK；task191 54 表 2909 键 OK；task248 缺键0/硬编码0/动态键0；task250 0；verify_task263 43/43；astro build 932ms 绿
+
+Stage Summary:
+- 装机锚点：①模组管理任何入口进来徽标/表尾都显示当前选中实例（日志 [ModsManager] Task265 scan profile=...+ [ModService] Task265 scan/download dest 双锚）②新下载/导入的 mod 与游戏加载同目录必见 ③右 Shift 按下即潜行（日志 [Task265] adaptive sneak sync: key_key.sneak=left.shift -> right-shift button emits GLFW 340）④游戏内改绑后回前台自动跟随 ⑤手机端网站顶栏双行不溢出 ⑥网站新增视觉巡礼区块两卡可点开放映/滑动版

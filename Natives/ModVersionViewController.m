@@ -1180,6 +1180,7 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     ame236_vc.apiSource = (ame236_src == kSourceCurseForge) ? kSourceCurseForge : kSourceModrinth;
     ame236_vc.preferredGameVersion = self.preferredGameVersion;
     ame236_vc.preferredLoader = self.preferredLoader;
+    ame236_vc.targetProfileName = self.targetProfileName ?: ([PLProfiles current].selectedProfileName ?: @"default"); // ★ Task265：依赖跳转页继承目标实例
     [self.navigationController pushViewController:ame236_vc animated:YES];
     NSLog(@"[ModVersionVC] Task236 dependency row direct-jump (in-app version list): %@ (pid=%@ src=%ld)",
           ame236_name, ame236_pid, (long)ame236_src);
@@ -1201,7 +1202,9 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     if ([ame236_hashes[@"sha1"] isKindOfClass:[NSString class]]) {
         ame236_dl.fileSHA1 = ame236_hashes[@"sha1"];
     }
-    NSString *ame236_profile = [PLProfiles current].selectedProfileName ?: @"default";
+    // ★ Task265：来源页显式传入的 targetProfileName 优先（与来源页扫描同源），
+    // 未传入时回退实时 selectedProfileName（旧语义）——双下载点同规则
+    NSString *ame236_profile = self.targetProfileName ?: ([PLProfiles current].selectedProfileName ?: @"default");
     [NMToast showMessage:[NSString stringWithFormat:localize(@"launcher.mcl.downloading_file", nil), ame236_dl.displayName]];
     [[ModService sharedService] downloadMod:ame236_dl
                                   toProfile:ame236_profile
@@ -1625,6 +1628,7 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     ame235_vc.apiSource = (_source == kSourceCurseForge) ? kSourceCurseForge : kSourceModrinth;
     ame235_vc.preferredGameVersion = self.preferredGameVersion;
     ame235_vc.preferredLoader = self.preferredLoader;
+    ame235_vc.targetProfileName = self.targetProfileName ?: ([PLProfiles current].selectedProfileName ?: @"default"); // ★ Task265：依赖跳转页继承目标实例
     [self.navigationController pushViewController:ame235_vc animated:YES];
     NSLog(@"[ModVersionVC] Task235 dep go-to-download: %@ (pid=%@ src=%ld)",
           _name, _pid, (long)_source);
@@ -1645,7 +1649,8 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     if ([ame235_hashes[@"sha1"] isKindOfClass:[NSString class]]) {
         ame235_dl.fileSHA1 = ame235_hashes[@"sha1"];
     }
-    NSString *ame235_profile = [PLProfiles current].selectedProfileName ?: @"default";
+    // ★ Task265：同 ame236 下载点——targetProfileName 优先（依赖下载与本体同目录）
+    NSString *ame235_profile = self.targetProfileName ?: ([PLProfiles current].selectedProfileName ?: @"default");
     [NMToast showMessage:[NSString stringWithFormat:localize(@"launcher.mcl.downloading_file", nil), ame235_dl.displayName]];
     [[ModService sharedService] downloadMod:ame235_dl
                                   toProfile:ame235_profile

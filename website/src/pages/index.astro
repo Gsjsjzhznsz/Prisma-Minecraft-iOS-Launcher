@@ -128,6 +128,7 @@ const quickstart = {
         <div class="brand"><img class="logo" src={`${BASE}/icon-32.png`} alt="Prisma icon" />Prisma</div>
         <nav class="topnav">
           <a href="#features"><span class="lang-zh">特性</span><span class="lang-en">Features</span></a>
+          <a href="#tour"><span class="lang-zh">视觉巡礼</span><span class="lang-en">Tour</span></a>
           <a href="#upstream"><span class="lang-zh">与上游的区别</span><span class="lang-en">vs Upstream</span></a>
           <a href="#community"><span class="lang-zh">交流与支持</span><span class="lang-en">Community</span></a>
           <a href="#announcements"><span class="lang-zh">公告</span><span class="lang-en">News</span></a>
@@ -187,6 +188,35 @@ const quickstart = {
             <p>{f.en.body}</p>
           </div>
         ))}
+      </div>
+    </section>
+
+    <!-- ★ Task265：视觉巡礼（用户自制的两份 HTML 介绍页入站：PPT 播放版 + 竖屏滑动版） -->
+    <section id="tour" class="wrap">
+      <h2 class="sec"><span class="lang-zh">视觉巡礼</span><span class="lang-en">Visual Tour</span></h2>
+      <p class="sec-sub">
+        <span class="lang-zh">两种节奏，同一场 Prisma 视觉巡礼：大屏放映版逐页讲解，竖屏滑动版一屏一景随手翻。均为全屏独立页面，点开即看。</span>
+        <span class="lang-en">One tour, two rhythms: the deck mode walks through page by page, the vertical mode flows screen by screen. Both are standalone fullscreen pages — tap and enjoy.</span>
+      </p>
+      <div class="grid">
+        <div class="glass card tour-card">
+          <div class="icon">🎞️</div>
+          <h3><span class="lang-zh">放映模式（PPT）</span><span class="lang-en">Deck Mode (PPT)</span></h3>
+          <p><span class="lang-zh">逐页放映的完整介绍：界面、渲染、联机、下载与诊断全家桶，适合投屏 / 平板横屏浏览。方向键或点击翻页。</span>
+          <span class="lang-en">The full story as a slide deck: UI, rendering, multiplayer, downloads and diagnostics — great for casting or landscape tablets. Arrow keys or tap to advance.</span></p>
+          <a class="btn ghost tour-btn" href={`${BASE}/showcase.html`} target="_blank" rel="noopener">
+            <span class="lang-zh">打开放映版 →</span><span class="lang-en">Open deck →</span>
+          </a>
+        </div>
+        <div class="glass card tour-card">
+          <div class="icon">📱</div>
+          <h3><span class="lang-zh">竖屏滑动模式</span><span class="lang-en">Vertical Scroll Mode</span></h3>
+          <p><span class="lang-zh">为手机竖屏设计的滑动式介绍：一屏一景上下滑动，地铁上也能刷完的 Prisma 全景。</span>
+          <span class="lang-en">A scrollytelling tour designed for phones in portrait: one scene per screen, the whole Prisma story in a thumb swipe.</span></p>
+          <a class="btn ghost tour-btn" href={`${BASE}/scrolly.html`} target="_blank" rel="noopener">
+            <span class="lang-zh">打开滑动版 →</span><span class="lang-en">Open scroll →</span>
+          </a>
+        </div>
       </div>
     </section>
 

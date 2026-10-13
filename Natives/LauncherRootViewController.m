@@ -705,6 +705,11 @@ static CGFloat LauncherRootLayoutRightPanelWidth(UITraitCollection *trait) {
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vm];
     nav.navigationBar.prefersLargeTitles = NO;
     ModsManagerViewController *m = [[ModsManagerViewController alloc] init];
+    // ★ Task265（模组管理"新装 mod 不显示"根修）：抽屉入口此前从未绑定
+    // profileName → 页面内部退化扫描 "default" 主目录，与下载/游戏侧
+    // （selectedProfile 的整合包隔离目录）永世错位。入口处显式绑定选中
+    // 实例；页面内 loadMods 另有 ame265 自适应跟随兜底（双保险）。
+    m.profileName = PLProfiles.current.selectedProfileName;
     [nav pushViewController:m animated:NO];
     [self setContentViewController:nav animated:YES];
 }
