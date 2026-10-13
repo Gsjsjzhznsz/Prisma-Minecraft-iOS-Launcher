@@ -218,12 +218,12 @@ $(OUTPUTDIR)/showdown_agent.jar: $(CLASSES)
 	@mkdir -p $(basename $@)/asm_embed
 	@cd $(basename $@)/asm_embed && $(BOOTJDK)/jar -xf $(CURDIR)/libs/asm/asm-9.7-relocated.jar
 	@rm -rf $(basename $@)/asm_embed/META-INF $(basename $@)/asm_embed/module-info.class
-	@if [ ! -f "$(basename $@)/asm_embed/org/objectweb/asm/ClassReader.class" ]; then \
-		echo "ERROR: asm embed missing org/objectweb/asm/ClassReader.class"; \
+	@if [ ! -f "$(basename $@)/asm_embed/com/prisma/shaded/ClassReader.class" ]; then \
+		echo "ERROR: asm embed missing com/prisma/shaded/ClassReader.class"; \
 		exit 1; \
 	fi
-	@mv $(basename $@)/asm_embed/org $(basename $@)/org
-	@rmdir $(basename $@)/asm_embed
+	@cp -R $(basename $@)/asm_embed/com $(basename $@)/
+	@rm -rf $(basename $@)/asm_embed
 	@cd $(basename $@) && $(BOOTJDK)/jar -cfm ../showdown_agent.jar $(CURDIR)/src/showdown_agent.txt .
 	@echo "Created $(OUTPUTDIR)/showdown_agent.jar (Task263 showdown path absolutizer, asm embedded)"
 

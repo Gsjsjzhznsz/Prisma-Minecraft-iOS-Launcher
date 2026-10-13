@@ -64,7 +64,8 @@ try:
         n for n in names if b'org/objectweb' in z.read(n) or b'org.objectweb' in z.read(n)]
     check('B3 零 org/objectweb 残留（Fabric verifyClasspath 守卫区）', len(leftover) == 0,
           str(leftover[:3]))
-    check('B4 包条目重命名完整（40 项）', len(names) == 40, f'entries={len(names)}')
+    files = [n for n in names if not n.endswith('/')]
+    check('B4 类条目完整（38 类文件 + 2 目录条目）', len(files) == 38 and len(names) == 40, f'files={len(files)} entries={len(names)}')
 except Exception as e:
     check('B1 asm-9.7-relocated.jar 存在且含 com/prisma/shaded/ClassReader', False, str(e))
     check('B2 asm class major<=52（全会话可加载）', False)
@@ -77,7 +78,7 @@ check('C1 showdown_agent.jar 规则存在', 'showdown_agent.jar: $(CLASSES)' in 
 check('C2 manifest 引用 showdown_agent.txt', 'src/showdown_agent.txt' in jam)
 check('C3 asm 解嵌（重定位件）', 'asm_embed' in jam and 'libs/asm/asm-9.7-relocated.jar' in jam)
 check('C4 module-info/META-INF 剔除', 'module-info.class' in jam and 'META-INF' in jam)
-check('C5 ClassReader 存在断言', 'org/objectweb/asm/ClassReader.class' in jam)
+check('C5 ClassReader 存在断言（重定位路径）', 'com/prisma/shaded/ClassReader.class' in jam and 'org/objectweb/asm/ClassReader.class' not in jam)
 jam_lines = jam.split('\n')
 rule_idx = next(i for i, l in enumerate(jam_lines) if 'showdown_agent.jar: $(CLASSES)' in l)
 _end = next(i for i, l in enumerate(jam_lines)
