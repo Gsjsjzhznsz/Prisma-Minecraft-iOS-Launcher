@@ -3203,3 +3203,16 @@ Work Log:
 
 Stage Summary:
 - 装机锚点：①模组管理任何入口进来徽标/表尾都显示当前选中实例（日志 [ModsManager] Task265 scan profile=...+ [ModService] Task265 scan/download dest 双锚）②新下载/导入的 mod 与游戏加载同目录必见 ③右 Shift 按下即潜行（日志 [Task265] adaptive sneak sync: key_key.sneak=left.shift -> right-shift button emits GLFW 340）④游戏内改绑后回前台自动跟随 ⑤手机端网站顶栏双行不溢出 ⑥网站新增视觉巡礼区块两卡可点开放映/滑动版
+
+
+## Task 265——CI 闭环 + v6.5.0 静默替换第八轮（补记）
+
+日期：2026-10-14　构建：d78dbfd（run 38440363412 一轮绿 r1；发行资产已静默替换）
+
+Work Log:
+- run 38438109563（a1c4908）failure：同族静态盲区双雷（Task264 r1 家族）——ame235 下载段实际位于 Ame232DepDetailViewController @implementation（文件尾前置接口类），self.targetProfileName 引用时该类接口无此属性 ×2（1631/1653）；r1 d78dbfd 补前置接口声明 + Task232 呈现点传递 → run 38440363412 一轮终绿
+- 静默替换第八轮：ipa/tipa 235052671B/235053089B 同名保链 updated_at=2026-10-13T18:01:18/18:01:37（构建=d78dbfd）；air legacy EXPORT-ONLY 不动
+- 网站轮：Deploy website run 38438109600（a1c4908）一次绿——手机端适配 + 视觉巡礼双页已上线 Pages
+
+Stage Summary:
+- Task 265 四项全闭环：①模组管理 profile 全链自适应（任何入口=当前选中实例，与下载/启动同源，双锚日志必达）②右 Shift 事件级自适应翻译（无 cohort 无标记，新装/换代/改绑全自愈）③网站手机端双行顶栏+锚点避让 ④视觉巡礼（放映版/竖屏滑动版）入站；装机锚点见上一条目
