@@ -3131,3 +3131,22 @@ Work Log:
 Stage Summary:
 - 提交 7783679 推送 main；装机锚点：①整合包再复现→日志 [LaunchWatchdog] entrypoint-phase sample #1/#2（t+6s/t+12s 必达主线程 24 帧栈，直接给出卡死 mod 与调用点）②游戏内轻点/按住右SHIFT→按钮 tint 高亮（alpha 0.30 可见级）且锁存态持续高亮，再点还原③触摸被抢不再潜行卡死
 - 待 CI 出包后 v6.5.0 资产静默替换（第四轮）
+
+
+## Task 263——⑧大型整合包无输出根修（四轮复现一击定音：showdown 路径基准分裂 + 相位2 驻停即落栈；v6.5.0 静默替换第五轮）
+
+日期：2026-10-13　构建：0bbdddd（run 38398844695 一轮绿 r1；发行资产已静默替换）
+
+Work Log:
+- 装机日志判读（用户上传 latestlog.old.txt，v6.5.0 commit 7783679，Cobblemon 第四轮复现）：改名瞬间首样本（t+6s）抓到 RUNNABLE 类加载推进态（bookshelf init 期 Knot findResourceFwd，健康推进）；t+7s [Cobblemon Showdown] PolyglotException "Invalid CommonJS root folder: showdown"（GraalShowdownService createContext:110 首 eval 触发 GraalJS JSRealm.addCommonJSGlobals 校验 js.commonjs-require-cwd="showdown" 的 getPublicTruffleFile("showdown").exists()）未捕获死亡 -> ShowdownThread.kt 源码逐行吻合：run() 内 latch.countDown() 在 openConnection() 抛异常后永不执行 -> launch() 的 this.latch.await() 永久驻停 Render thread；t+8.87s 起 JVM 零 safepoint 零 GC 全线程静止、fps=0、g_sdlWindow=0x0（窗口从未创建），用户 t+27~29s 手杀（Task192 t+36 对齐换算）
+- GraalJS 取证闭环（oracle/graaljs vm-ce-22.3.0 JSRealm.java:1852-1863）：校验仅 exists() 一处，失败即 "Invalid CommonJS root folder: showdown"（SecurityException 走 "Access denied" 另一文案）；TruffleFile.exists() -> checkAccess(空模式) -> Cobblemon 自定义 FileSystem checkAccess -> path.toRealPath(NOFOLLOW)（NIO）；TruffleFile 构造器 normalizedPath=path.normalize()（保持相对）；TruffleLanguage.Env.getPublicTruffleFile -> 自定义 FS parsePath -> Truffle NIOFileSystem.parsePath=Paths.get 原样相对
+- JDK21 本地端到端实证（真实 Cobblemon-fabric-1.8.2+1.21.1.jar 139MB + GraalJS/Truffle/regex/graal-sdk 22.3.0 + 真实 showdown.zip 11.6MB + Cobblemon/CobblemonConfig 桩类）：①java.io File 系统调用按进程真实 CWD 落盘（mkdirs 落 T_cwd 实证，getAbsolutePath 字符串却显示 user.dir 基准——两套基准在同一次调用内分裂）②NIO UnixPath 相对路径预绝对化到 StaticProperty(-Duser.dir) 基准再 syscall（Files.copy NoSuchFileException 落 T_udir 实证）③对齐场景（cwd==-Duser.dir）真实 openConnection 全链 COMPLETED（解压+校验+boot+require 冒烟）——设备失败实锤运行时两基准分裂
+- 根修：showdown_agent.jar（JavaApp/src/showdown_agent + src/showdown_agent.txt 清单 + libs/asm/asm-9.7.jar 内嵌）——premain 注册 ClassFileTransformer，按类名门控 GraalShowdownService/GraalShowdownUnbundler 两类，visitLdcInsn 直改把 4 个相对路径常量（"showdown"/"./showdown"/"showdown/index.js"/"showdown-backup"）改写为 System.getProperty("ame.showdown.home","")+"/showdown*" 绝对拼接（LDC 入栈1 String 出栈1 String 栈形不变、无分支插入、COMPUTE_MAXS、StackMapTable 原样保留=Task258 哲学；ASM 9.7 major 49 内嵌、agent javac8 -> major 52 全会话可加载=patchsvc Task251 无条件注入先例）；绝对路径彻底绕开相对解析基准，java.io 解压/NIO 校验/checkAccess 越狱判定/require/boot 全收敛到 -Dame.showdown.home=<gameDir>（JavaLauncher 与 -Duser.dir 同源同值）；本地三场景验证：对齐 COMPLETED / 全分裂无 agent 复现设备签名（NoSuchFileException 前置）/ 全分裂+agent COMPLETED 且 106MB 解压落锚定目录两相对基准零泄漏
+- ②相位2 探针根治手杀抢跑第三次（Task262 冻结转储需连续 2 次同签名 8s 节奏最早 t+30s，本次 t+27~29s 手杀 1-3s 之差抢跑卡点栈再度失考）：Tools.java runPostWindowPhase 窗口创建前主线程首次观察为非 RUNNABLE（WAITING/BLOCKED/TIMED_WAITING）即无条件落栈 post-window-parked（一次性 parkedDumped；初始化期无合法驻停点零误报），必达时间 t+14s 彻底跑赢 13-40s 手杀分布；state 变量抽取与 TERMINATED 判定同源
+- 装机锚点：会话日志 [Task263] showdown-agent armed: user.dir=... userDirCanonical=... ame.showdown.home=...（userDirCanonical 与 ObjC [CwdAlign] Task97 getcwd 行对照即可在装机日志上直接判定两基准是否分裂——取证闭环）+ Cobblemon 会话 [Task263] showdown path-fix applied ... GraalShowdownService (3 sites)/GraalShowdownUnbundler (2 sites) + 下轮复现必达 [LaunchWatchdog] post-window-parked 24 帧栈
+- CI r1 双雷（run 38396869851）：①JavaLauncher.m:3150 漏外层方括号（[NSFileManager defaultManager] fileExistsAtPath: 多行消息发送须 [..] 嵌套，Task201 metallum 同款形状）②showdown_agent.jar 规则 rm -rf $(basename $@) 误删模式规则刚拷入的类目录（CLASSES 前置把类落 build/showdown_agent/ 再被 rm 清空守卫必炸）——改守卫 ShowdownAgent.class 存在性后解嵌；0bbdddd run 38398844695 一轮绿
+- 门禁：task139/240 双门 all balanced；task191 2907 键；task248 缺键0/硬编码0/动态键0；task250 直显0；verify219 81/81；verify255 51/51；verify_task263 34/34 全绿（C6 切片边界两次补丁：echo 行带 TAB 前缀 startswith 必 StopIteration 改 in 匹配）；ecj 全树编译错误数与基线持平（1 既有项）；根 Makefile 前导 TAB 671 保形、零空格缩进回归
+- 静默替换：run 38398844695 产物 ipa 235035735B/tipa 235156108B 删旧传新（uploads.github.com 正确主机，api.github.com 上传端点曾静默 404——204 删除成功后上传 None 的排查点）；发行说明补「五轮更新」节；air legacy EXPORT-ONLY 不动
+
+Stage Summary:
+- ⑧四轮复现根修交付：装机锚点 ①Cobblemon 整合包启动日志应见 [Task263] showdown-agent armed + path-fix applied (3 sites)/(2 sites)，进世界即修复成功 ②下轮任何异常启动必达 [LaunchWatchdog] post-window-parked 主线程栈（t+14s）③两基准分裂与否可从 userDirCanonical vs [CwdAlign] getcwd 直接判读；v6.5.0 资产第五轮静默替换完成（updated_at=13:03/13:04）
