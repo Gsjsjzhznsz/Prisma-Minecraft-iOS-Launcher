@@ -3165,3 +3165,23 @@ Work Log:
 
 Stage Summary:
 - 装机锚点：整合包会话日志应见 [Task263] showdown-agent armed（premain）+ path-fix applied (3 sites)/(2 sites)，进世界即 ⑧ 根修生效；Fabric verifyClasspath 守卫不再触发（classpath 零 org/objectweb/asm）；下轮异常启动必达 [LaunchWatchdog] post-window-parked 栈
+
+
+## Task 264——⑧大型整合包卡加载第五轮复现终局根修（agent v2 三防线）+ 模组管理中途加 mod 不显示根修；v6.5.0 静默替换第七轮
+
+日期：2026-10-13　构建：a5e8e1e（run 38422822824 一轮绿 r1；发行资产已静默替换）
+
+Work Log:
+- 用户直传 4 份日志（latestlog/latestlog.old/hs_err_pid31442/fatal_trace，v6.5.0 8af8602 构建）⑧第五轮复现取证闭环：fatal_trace 34 块=13×Task251 正常守护+9×exit(1) 全部 notify_vm_shutdown 正常路径+3×abort 均 java-21 JNI_CreateJavaVM→create_vm→initialize_java_lang_classes 类初始化期+hs_err SIGSEGV 在 QuartzCore 主线程 JVM 启动 0.776s（iPad16,8 LiveContainer 环境）=次生崩溃非根因；latestlog 22:17:00 Cobblemon Showdown 线程 PolyglotException "Invalid CommonJS root folder: /var/mobile/.../showdown"（r1 LDC 绝对化已生效=错误路径已从相对变绝对）→22:17:05 Task86 看门狗必达栈实锤 Render thread 驻停 ShowdownThread.launch:25 latch.await←Cobblemon.initialize:319（Task262 相位2 驻停即落栈探针如期必达，t+6s 证据链完整）
+- 源码级定性（Cobblemon-Global 镜像取 1.8.2 源+Maven 拉 js/truffle-api 22.3.0 源码包）：GraalJS JSRealm.addCommonJSGlobals 校验=getPublicTruffleFile(cwd).exists()，"Invalid CommonJS root folder" 即 exists()==false；TruffleFile.exists()==checkAccess(EMPTY) 不抛 IOException（TruffleFile.checkAccess catch IOException→false）；Cobblemon 自定义 FileSystem.checkAccess 狱=path.toRealPath(NOFOLLOW) 越界即抛——文件夹缺失与 realpath 越狱都收敛为同一报错；ShowdownThread run:40 openConnection 未捕获死亡→latch 永不计数→launch:24 await 永久驻停（1.8.2 行号与设备栈 ±1 吻合）
+- 桌面 1:1 复现实验四轮（/tmp/my-project/graaltest 遗产全利用：真实 Cobblemon-fabric-1.8.2+1.21.1.jar 139MB+GraalJS 22.3.0+ecj+Task263Repro/ShowdownCtxTest）：符号链接分裂场景（/tmp/symtest/var→private + user.dir 属性=/var 拼写 + 真实 CWD=/private 拼写）+ r1 agent → openConnection 完整成功（11.6MB showdown.zip 解压+GraalJS require 全链）⟹ 分裂层在 iOS JVM 端口 IO 层内部，桌面不可复现——按覆盖所有假设原则上三防线
+- agent v2（ShowdownAgent.java 重写）：D1=GraalShowdownService$createContext$1.checkAccess 整段置空 RETURN（visitMethod 发射新体+返回 null 丢弃原体，无分支无帧 major65 安全；JavaUWP CobblemonShowdownFileSystemMixin checkAccess bypass 同款先例；exists() 永不再拒绝校验）；D2=transform 期双层供件（ProtectionDomain CodeSource 定位 mod jar→data/cobblemon/showdown.zip+json java.io 提取 11.6MB→java.io/NIO 双层可见性探针 io-probe[premain/provision-post/provision-fastpath] 落日志=端口 IO 分裂直接取证线）；D3=latch 看门狗（反射 Cobblemon.INSTANCE.showdownThread.latch：showdown 线程未捕获死亡即秒级 countDown/240s livelock 兜底/正常成功路径自然归零静默退出）——最坏降级=战斗系统报错而非渲染线程永久驻停黑屏；保留 r1 LDC 绝对化
+- 本地回归三场景全绿：ecj 编译 OK（stub getConfig 静态性修正）；全新目录分裂场景 38s 供件→COMPLETED/快路径 skip→COMPLETED/复跑→COMPLETED；verify_task263 43/43（新增 A11-A16 狱中和/供件/看门狗/探针/无帧安全/快路径锚）
+- ②模组管理中途加 mod 不显示根因（用户同消息追问）：ModService ensureModsFolderForProfile(nil) 双站点（导入按钮+documentPicker 回调）恒落 default 主目录 mods，整合包实例扫描 custom_gamedir/modrinth_x/mods——导入文件永远不显示。根修：双站点改传 self.profileName（nil 内部仍兜底 default）+ didPick 目录 URL 守卫 + ModService.h ame264_effectiveModsFolderForProfile（ame219 隔离优先同源）+ 模组管理表尾扫描目录提示行（POJAV_GAME_DIR 相对路径显示+导入按钮）
+- CI r1 三雷（跨文件 selector 静态盲区家族）：①NSArray 误用 lastPathComponent→lastObject ②forOpeningContentAt 家族 iPhoneOS26.2 SDK no visible @interface（部署目标不可用，仓库 picker 先例全部 initForOpeningContentTypes 家族）③UIDocumentPickerModeOpenInPlace 杜撰枚举——页脚按钮改"导入模组到此目录"=复用既有 importModTapped（本质目标不变：文件必落隔离目录重扫即见）；54 表键改名 folder.open→folder.import
+- 门禁：task139/240 all balanced+import OK；task191 54 表 2909 键；task248 缺键0/硬编码0/动态键0；task250 0；verify_task263 43/43；task264_inject_i18n 2 键 54 表（em-dash 双反斜杠转义事故全表修复）
+- 静默替换：run 38422822824 产物 ipa/tipa 224.2MB 删旧传新（第七轮，updated_at=15:52:09/15:52:39，构建=a5e8e1e）；air legacy EXPORT-ONLY 不动
+- 工具教训续档：Read 工具显示层吞字第五/六例（ModService.m odsFolder/ModTableViewController [n]——od -c 字节级验证文件完好）；ModService.h CRLF 行尾致 Edit 双失配（python 字节级 splice 复绿，Task256 教训同款）
+
+Stage Summary:
+- 装机锚点：①整合包会话日志应见 [Task263] armed+path-fix+jail neutralized+io-probe 两层视图对照+provision done ②若 showdown 仍失败必见 [Task263] watchdog: showdown latch force-released + 游戏可进主菜单（战斗降级）而非黑屏 ③模组管理页尾出现"模组目录"提示行+导入按钮（文件落入隔离目录重扫即见）④中途导入的 mod 不再消失
