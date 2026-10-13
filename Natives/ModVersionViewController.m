@@ -30,6 +30,10 @@
 /// chip 并置顶，与下载页主流程同体验）。
 @property (nonatomic, copy, nullable) NSString *preferredGameVersion;
 @property (nonatomic, copy, nullable) NSString *preferredLoader;
+/// ★ Task265：目标实例锁定（CI r1 双雷热修：ame235 下载点在本类内，
+/// 此前直接引用 self.targetProfileName 而接口无此属性——同族静态盲区；
+/// 语义不变：由呈现方 ModVersionVC 传入，下载写入同一实例隔离目录）。
+@property (nonatomic, copy, nullable) NSString *targetProfileName;
 @end
 
 static const NSInteger kSourceModrinth    = 1;
@@ -1245,6 +1249,8 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     //   chip 并置顶（与下载页主流程同体验）。
     detail.preferredGameVersion = self.preferredGameVersion;
     detail.preferredLoader = self.preferredLoader;
+    // ★ Task265：目标实例随链传递（详情页“前往下载页”的下载写入同一实例）
+    detail.targetProfileName = self.targetProfileName ?: ([PLProfiles current].selectedProfileName ?: @"default");
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:detail];
     nav.modalPresentationStyle = UIModalPresentationPageSheet;
     [self presentViewController:nav animated:YES completion:nil];
