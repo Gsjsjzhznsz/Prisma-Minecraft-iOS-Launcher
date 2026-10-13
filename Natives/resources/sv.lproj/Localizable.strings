@@ -85,3 +85,5 @@
 "preference.detail.data_sibling_import" = "Detect an old air-build app's data folder sitting next to this app (LiveContainer sibling layout) and merge it in with one tap. Same migration as the welcome wizard, always available here.";
 "prefs.data_sibling.none" = "No old launcher data found next to this app";
 "preference.title.done.data_sibling_import" = "Import entry opened";
+"resman.mods.folder.caption" = "Mods folder — new .jar files go here";
+"resman.mods.folder.open" = "Open mods folder in Files";

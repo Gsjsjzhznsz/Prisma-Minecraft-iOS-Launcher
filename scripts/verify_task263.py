@@ -50,6 +50,20 @@ check('A10 import 重定位包（无 org.objectweb）',
       'import com.prisma.shaded.ClassReader' in src and 'org.objectweb' not in src)
 check('A8 无分支插入（visitLdcInsn 直改）', 'visitLdcInsn(Object cst)' in src)
 check('A9 改写值白名单函数', 'suffixFor' in src)
+check('A11 D1 狱中和（$createContext$1 门控 + checkAccess 置空）',
+      'GraalShowdownService$createContext$1' in src and 'checkAccess' in src
+      and 'jail neutralized' in src)
+check('A12 D2 双层供件（jar 资源 + showdown.zip 提取）',
+      'data/cobblemon/showdown.zip' in src and 'data/cobblemon/showdown.json' in src
+      and 'provisionFromModJar' in src)
+check('A13 D3 latch 看门狗（线程名 + 强制放行日志）',
+      'Ame263-ShowdownWatchdog' in src and 'force-released' in src)
+check('A14 IO 层探针（java.io vs NIO 对照行）',
+      'io-probe[' in src and 'safeRealPath' in src)
+check('A15 D1 新方法体无帧安全（RETURN 直发 + visitMaxs）',
+      'rmv.visitInsn(Opcodes.RETURN)' in src and 'rmv.visitMaxs(0, 4)' in src)
+check('A16 看门狗快路径（线程死亡即放行，不等到超时）',
+      'showdown thread died uncaught' in src and 'seenAlive' in src)
 
 # ---------- B. ASM 内嵌件（r2：等长重定位，避开 Fabric Loader verifyClasspath 守卫）----------
 asm_path = f'{REPO}/JavaApp/libs/asm/asm-9.7-relocated.jar'

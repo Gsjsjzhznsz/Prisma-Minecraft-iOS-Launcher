@@ -3093,3 +3093,5 @@
 "preference.title.done.session_list" = "Session list opened";
 "preference.title.done.system_prompt" = "System prompt editor opened";
 "preference.title.done.data_sibling_import" = "Import entry opened";
+"resman.mods.folder.caption" = "Mods folder — new .jar files go here";
+"resman.mods.folder.open" = "Open mods folder in Files";

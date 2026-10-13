@@ -445,6 +445,88 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     self.tableView.delegate = self;
     [self.tableView registerClass:[ModTableViewCell class] forCellReuseIdentifier:@"ModCell"];
     self.tableView.rowHeight = 68.0;
+    [self ame264_setupScanFolderFooter];
+}
+
+#pragma mark - Task264 扫描目录提示行（中途加 mod 不显示的自解释修复）
+
+/// 表尾提示行：展示当前 profile 实际生效的 mods 目录（与扫描同源），
+/// 并提供"在文件中打开"——文件 App 定点打开该目录，用户拷入的 .jar
+/// 重扫后必然出现在本页。不展示会话式提示（随时可见，随 profile 联动）。
+- (void)ame264_setupScanFolderFooter {
+    NSString *folder = [[ModService sharedService] ame264_effectiveModsFolderForProfile:self.profileName];
+    if (folder.length == 0) {
+        self.tableView.tableFooterView = nil;
+        return;
+    }
+    CGFloat width = self.tableView.bounds.size.width;
+    CGFloat footerH = 58.0;
+    UIView *footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, width, footerH)];
+    footer.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+
+    UIView *card = [[UIView alloc] initWithFrame:CGRectMake(12, 8, width - 24, footerH - 16)];
+    card.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    card.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+    card.layer.cornerRadius = 12.0;
+    card.clipsToBounds = YES;
+    [footer addSubview:card];
+
+    UILabel *caption = [[UILabel alloc] initWithFrame:CGRectMake(12, 8, card.bounds.size.width - 60, 16)];
+    caption.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    caption.text = localize(@"resman.mods.folder.caption", nil);
+    caption.font = [UIFont systemFontOfSize:12.0 weight:UIFontWeightSemibold];
+    caption.textColor = [UIColor secondaryLabelColor];
+    [card addSubview:caption];
+
+    UILabel *pathLabel = [[UILabel alloc] initWithFrame:CGRectMake(12, 26, card.bounds.size.width - 60, 16)];
+    pathLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    pathLabel.text = [self ame264_friendlyFolderPath:folder];
+    pathLabel.font = [UIFont monospacedDigitSystemFontOfSize:11.0 weight:UIFontWeightRegular];
+    pathLabel.textColor = [UIColor tertiaryLabelColor];
+    pathLabel.lineBreakMode = NSLineBreakByTruncatingMiddle;
+    [card addSubview:pathLabel];
+
+    UIButton *openButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    openButton.frame = CGRectMake(card.bounds.size.width - 48, 5, 40, 32);
+    openButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
+    [openButton setImage:[UIImage systemImageNamed:@"folder.badge.gearshape"] forState:UIControlStateNormal];
+    openButton.accessibilityLabel = localize(@"resman.mods.folder.open", nil);
+    openButton.tintColor = [UIColor systemOrangeColor];
+    [openButton addTarget:self action:@selector(ame264_openScannedFolder) forControlEvents:UIControlEventTouchUpInside];
+    [card addSubview:openButton];
+
+    self.tableView.tableFooterView = footer;
+}
+
+/// 目录友好显示：优先相对 POJAV_GAME_DIR（整合包实例即 custom_gamedir/<id>/mods），
+/// 不在基准下则回退末两级路径。
+- (NSString *)ame264_friendlyFolderPath:(NSString *)folder {
+    const char *g = getenv("POJAV_GAME_DIR");
+    NSString *base = g ? [NSString stringWithUTF8String:g] : NSHomeDirectory();
+    if ([folder hasPrefix:base]) {
+        NSString *rel = [folder substringFromIndex:base.length];
+        if ([rel hasPrefix:@"/"]) rel = [rel substringFromIndex:1];
+        if (rel.length > 0) return rel;
+    }
+    NSArray<NSString *> *parts = folder.pathComponents;
+    if (parts.count >= 2) {
+        return [NSString stringWithFormat:@"…/%@/%@", parts[parts.count - 2], parts.lastPathComponent];
+    }
+    return folder;
+}
+
+/// 在文件 App 中定点打开当前扫描目录（forOpeningContent 定位到该目录，
+/// 用户可直接把 .jar 拷进去）。回调沿用既有 documentPicker 拷贝逻辑
+/// （目录 URL 已加守卫跳过），拷完 loadMods 自动刷新。
+- (void)ame264_openScannedFolder {
+    NSString *folder = [[ModService sharedService] ame264_effectiveModsFolderForProfile:self.profileName];
+    if (folder.length == 0) return;
+    NSURL *url = [NSURL fileURLWithPath:folder];
+    UIDocumentPickerViewController *picker =
+        [[UIDocumentPickerViewController alloc] initWithURL:url forOpeningContent:UIDocumentPickerModeOpenInPlace];
+    picker.delegate = self;
+    picker.title = localize(@"resman.mods.folder.open", nil);
+    [self presentViewController:picker animated:YES completion:nil];
 }
 
 #pragma mark - Data Loading
@@ -817,7 +899,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 
 - (void)importModTapped {
     NSError *dirError = nil;
-    NSString *modsDir = [[ModService sharedService] ensureModsFolderForProfile:nil error:&dirError];
+    NSString *modsDir = [[ModService sharedService] ensureModsFolderForProfile:self.profileName error:&dirError]; // Task264：跟随当前 profile（整合包隔离目录），此前恒写 nil -> default 主目录，导入的 mod 永远不显示
     if (!modsDir) {
         [self showDialogWithTitle:localize(@"resman.common.cannot_import", nil) message:dirError.localizedDescription ?: localize(@"resman.mods.dir_not_found", nil)];
         return;
@@ -835,7 +917,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     if (urls.count == 0) return;
 
     NSError *dirError = nil;
-    NSString *modsDir = [[ModService sharedService] ensureModsFolderForProfile:nil error:&dirError];
+    NSString *modsDir = [[ModService sharedService] ensureModsFolderForProfile:self.profileName error:&dirError]; // Task264：跟随当前 profile（整合包隔离目录），此前恒写 nil -> default 主目录，导入的 mod 永远不显示
     if (!modsDir) {
         [self showDialogWithTitle:localize(@"resman.common.import_failed", nil) message:dirError.localizedDescription ?: localize(@"resman.mods.dir_not_found", nil)];
         return;
@@ -846,6 +928,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     NSMutableArray<NSString *> *failedFiles = [NSMutableArray array];
 
     for (NSURL *url in urls) {
+        if ([url hasDirectoryPath]) continue; // Task264：目录 URL（文件 App 定点打开回调）不参与拷贝
         BOOL accessing = [url startAccessingSecurityScopedResource];
         @try {
             NSString *fileName = url.lastPathComponent;

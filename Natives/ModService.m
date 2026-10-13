@@ -318,6 +318,14 @@
     return [self existingModsFolderForProfile:profileName];
 }
 
+/// Task264：当前 profile 实际生效的 mods 目录（与 scanModsForProfile 同源同目录，
+/// Task219 隔离优先语义）。模组管理页展示"扫描目录"提示行 + 文件 App 定点打开。
+/// 用户中途放入该目录的 .jar 重扫后必然可见；此前导入按钮走 ensureModsFolderForProfile(nil)
+/// 恒解析到 default 主目录，整合包实例的隔离目录永远收不到文件——中途加 mod 不显示根因。
+- (nullable NSString *)ame264_effectiveModsFolderForProfile:(NSString *)profileName {
+    return [self ame219_isolationFirstModsFolderForProfile:profileName];
+}
+
 /// Task219：当前 profile 的隔离态对外暴露（ModsManager 徽标用）。
 /// 0 = 不隔离（gameDir 缺失或 "." 且嗅探未命中）；1 = 显式隔离
 /// （gameDir 为 versions/<id>/... 或自定义目录）；2 = 嗅探隔离（Task225：

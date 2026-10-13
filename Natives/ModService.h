@@ -26,6 +26,10 @@ typedef void(^ModDownloadHandler)(NSError * _Nullable error); // Added for downl
 - (BOOL)toggleEnableForMod:(ModItem *)mod error:(NSError **)error;
 - (BOOL)deleteMod:(ModItem *)mod error:(NSError **)error;
 
+/// Task264：当前 profile 实际生效的 mods 目录（与 scanModsForProfile 同源同目录，
+/// Task219 隔离优先语义）。模组管理页用于展示扫描目录提示行，并支持在文件 App 中定点打开。
+- (nullable NSString *)ame264_effectiveModsFolderForProfile:(NSString *)profileName;
+
 // --- Online Mod Downloading ---
 - (void)downloadMod:(ModItem *)mod toProfile:(NSString *)profileName completion:(ModDownloadHandler)completion;
 

@@ -3088,3 +3088,5 @@
 "preference.title.done.session_list" = "會話清單已開啟";
 "preference.title.done.system_prompt" = "系統提示詞已開啟";
 "preference.title.done.data_sibling_import" = "已開啟匯入入口";
+"resman.mods.folder.caption" = "模組目錄 — 新 Mod 的 .jar 檔案放這裡";
+"resman.mods.folder.open" = "在「檔案」中開啟模組目錄";
