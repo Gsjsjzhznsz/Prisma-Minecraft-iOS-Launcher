@@ -200,7 +200,11 @@ public final class Tools {
      *   阶段 1（entrypoint 期，线程尚未改名为 "Render thread"）：每 15s 一次全量栈转储
      *           （前 24 帧），最多 10 分钟；连续阻塞时自动压缩为单行心跳避免刷屏。
      *   阶段 2（窗口建立后，即资源重载/标题屏/进世界期）：每 30s 采样，仅当栈顶 6 帧
-     *           连续 2 次完全一致（疑似冻结 >= 60s）才转储，最多 5 次。
+     *           连续 2 次完全一致（疑似冻结 >= 60s）才转储，最多 5 次。Task263 追加：
+     *           窗口创建前主线程首次驻停（WAITING/BLOCKED/TIMED_WAITING）即无条件
+     *           落栈一次（post-window-parked，仅一次）——初始化期无合法驻停点，
+     *           必达时间 t+14s，跑赢用户 13-40s 手杀分布（Task262 轮 t+30s 冻结
+     *           转储被 1-3s 抢跑第三次失考的根治）。
      * 健康启动的总开销为个位数行日志；线程终止或 JVM 关闭时静默退出。
      */
     private static void startLaunchWatchdog(final Thread gameThread) {
@@ -268,6 +272,8 @@ public final class Tools {
         String frozenSignature = null;
         int frozenCount = 0;
         int dumps = 0;
+        // Task263：窗口期主线程驻停栈只落一次（驻停点不变时无需重复刷屏）
+        boolean parkedDumped = false;
         try {
             // 20 次 x 30s = 10 分钟
             // ★ Task261（⑧大型整合包"无输出"取证）：前 3 个样本提速到 8s——
@@ -282,7 +288,8 @@ public final class Tools {
             // 变成必达证据（24 帧，健康启动仅此一份）。
             for (int i = 0; i <= 20 && dumps < 5; i++) {
                 if (i > 0) Thread.sleep(i <= 3 ? 8000L : 30000L);
-                if (gameThread.getState() == Thread.State.TERMINATED) {
+                Thread.State state = gameThread.getState();
+                if (state == Thread.State.TERMINATED) {
                     return;
                 }
                 StackTraceElement[] st = gameThread.getStackTrace();
@@ -292,6 +299,24 @@ public final class Tools {
                     // 仍可能抢在前头；无条件首样本把"窗口创建后 8s 游戏线程
                     // 在哪"变成每次启动必达的证据（24 帧，健康启动仅此一份）。
                     dumpStack("post-window-first", i + 1, gameThread.getState(), st);
+                }
+                // ★ Task263（⑧四轮复现判读，7783679 装机日志实锤）：改名瞬间
+                // 首样本（t+6s）抓到的是 RUNNABLE 类加载推进态，真正卡死发生在
+                // 其后 ~2s（Cobblemon Showdown 线程 PolyglotException 死亡 ->
+                // ShowdownThread.launch() 的 latch.await() 驻停主线程）；而冻结
+                // 转储要求连续 2 次同签名（8s 节奏下最早 t+30s），本次用户
+                // t+27~29s 手杀第三次以 1-3s 之差抢跑，卡点栈再次失考。根治：
+                // 窗口创建前的 Render thread 本应全程 RUNNABLE 推进（初始化期
+                // 无任何合法驻停点），首次观察为非 RUNNABLE（WAITING/BLOCKED/
+                // TIMED_WAITING）即无条件落栈一次——驻停判定零误报（RUNNABLE
+                // 忙等不受影响，类加载推进态不受影响），必达时间从 t+30s 提前到
+                // t+14s，彻底跑赢 13-40s 手杀分布（实测最快 13s）。
+                if (i > 0 && !parkedDumped
+                        && (state == Thread.State.WAITING
+                            || state == Thread.State.BLOCKED
+                            || state == Thread.State.TIMED_WAITING)) {
+                    dumpStack("post-window-parked", i + 1, state, st);
+                    parkedDumped = true;
                 }
                 String signature = stackSignature(st, 6);
                 if (signature != null && signature.equals(frozenSignature)) {

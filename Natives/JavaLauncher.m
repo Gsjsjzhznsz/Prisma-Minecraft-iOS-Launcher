@@ -3129,6 +3129,32 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     //   headless JVM 不带此属性 = 安装器流程零回归）。
     PUSH_MARGV_LITERAL("-Dame.game.session=1");
 
+    // ★ Task263（⑧大型整合包 Cobblemon showdown 卡死根修）：路径绝对化 agent。
+    //   病历（261/262/263 四轮装机 gamelog，挂死签名逐字一致）：Cobblemon 的
+    //   GraalShowdownService 用 java.io File("showdown") 相对路径解压 showdown.zip
+    //   （系统调用按进程真实 CWD 落盘），而 GraalJS 校验 js.commonjs-require-cwd=
+    //   "showdown" 时 TruffleFile.exists() 经自定义 FileSystem checkAccess 走 NIO
+    //   UnixPath.toRealPath（相对路径预绝对化到 -Duser.dir 属性基准）。JDK21 桌面
+    //   实证：两个基准不同时（java.io=真实 CWD / NIO=属性），解压产物对校验不可见
+    //   -> guest Error "Invalid CommonJS root folder: showdown" -> ShowdownThread
+    //   未捕获死亡，latch.countDown() 永不执行 -> ShowdownThread.launch() 的
+    //   latch.await() 永久驻停 Render thread -> fps=0、SDL 窗口永不创建 -> 黑屏
+    //   "无输出"。showdown_agent（premain + ClassFileTransformer，按类名门控两个
+    //   Cobblemon 类）把 4 个相对路径 LDC 常量改写为 ame.showdown.home 锚定的绝对
+    //   拼接，彻底绕开相对解析基准（本地真 jar 端到端实证：全分歧场景
+    //   openConnection 完整成功，106MB 真实 showdown 解压到锚定目录零泄漏）。
+    //   agent class 文件为 javac 默认 target（Java 8 兼容），全会话无条件注入
+    //   （同 Task251 patchsvc 先例）；无 Cobblemon 会话 transformer 按类名零匹配。
+    //   -Dame.showdown.home=<gameDir> 与 -Duser.dir 同源同值（ame97 chdir 同参）。
+    if ([NSFileManager defaultManager] fileExistsAtPath:
+            [librariesPath stringByAppendingPathComponent:@"showdown_agent.jar"]) {
+        PUSH_MARGV_FORMAT(@"-javaagent:%@/showdown_agent.jar", librariesPath);
+        PUSH_MARGV_FORMAT(@"-Dame.showdown.home=%@", gameDir);
+        NSLog(@"[JavaLauncher] Task263: showdown agent enabled (ame.showdown.home=%@)", gameDir);
+    } else {
+        NSLog(@"[JavaLauncher] Task263: showdown_agent.jar not found in libs, path fix unavailable (Cobblemon modpacks may hang at showdown init)");
+    }
+
     // ★ Task259（清单 10）：FO 整合包 26.3 局域网游戏闪退根修。
     //   病历（456d65e hs_err_pid28441.log，21:08:24，elapsed 35.9s + fatal_trace
     //   21:02:56 三连 abort()）：FO 自带 e4mc 模组，"对局域网开放"时其

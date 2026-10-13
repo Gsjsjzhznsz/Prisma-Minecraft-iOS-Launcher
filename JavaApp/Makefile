@@ -185,6 +185,50 @@ $(OUTPUTDIR)/patchsvc.jar: $(CLASSES)
 # 自动模块（文件名不含任何 ignoreList 前缀）。真实 text2speech 库继续被
 # Java 侧 preProcessLibraries _skip（进 classpath 会与桩 split-package）。
 # 装机锚点：Forge 1.20.1 过 GameNarrator（NoClassDefFoundError: Narrator 消失）。
+# Task263（Cobblemon 大型整合包 showdown 卡死根修）：in-memory 路径绝对化 agent。
+# 病历（261/262/263 四轮装机 gamelog，挂死签名逐字一致）：ShowdownThread.run() ->
+# GraalShowdownService.openConnection() -> attemptUnbundle()（java.io File("showdown")
+# 系统调用按进程真实 CWD 落盘）-> createContext() 首次 Context.eval 触发 GraalJS
+# JSRealm.addCommonJSGlobals() 校验 js.commonjs-require-cwd="showdown"，其
+# TruffleFile.exists() 走自定义 FileSystem checkAccess -> NIO UnixPath.toRealPath，
+# 相对路径解析基准是 -Duser.dir（StaticProperty）属性。两个基准在 iOS 上分裂时
+# （JDK21 桌面实证：java.io 走真实 CWD、NIO 预绝对化走属性基准），刚解压的
+# <真实CWD>/showdown 对校验基准不可见 -> guest Error "Invalid CommonJS root
+# folder: showdown" -> ShowdownThread 未捕获死亡，latch.countDown() 永不执行 ->
+# ShowdownThread.launch() 的 latch.await() 永久驻停 Render thread -> JVM 全局静止、
+# fps=0、SDL 窗口永不创建 -> 黑屏"无输出"。修复：premain 注册 ClassFileTransformer，
+# 按类名门控（仅 GraalShowdownService/GraalShowdownUnbundler 两个类）把 4 个相对
+# 路径 LDC 常量改写为 System.getProperty("ame.showdown.home","")+"/showdown*"
+# 绝对拼接（无分支插入、栈形不变、COMPUTE_MAXS、StackMapTable 原样保留；同
+# Task258 KnotGate 哲学）。绝对路径彻底绕开相对解析基准，java.io 解压、NIO 校验、
+# checkAccess 越狱判定、require()/boot() 全部收敛到同一目录。内存内改写，mod jar
+# 磁盘文件不动；无 Cobblemon 会话零影响。ASM 9.7（class major 49）内嵌自
+# src/libs/asm/asm-9.7.jar，agent 类本体按 javac(BOOTJDK) 默认 target 输出，
+# 全会话可加载（同 patchsvc 无条件注入先例）。
+# 装机锚点：会话日志应见 "[Task263] showdown-agent armed: user.dir=... ame.showdown.home=..."，
+# Cobblemon 会话另见 "[Task263] showdown path-fix applied to ... GraalShowdownService (3 sites)"
+# 与 "... GraalShowdownUnbundler (2 sites)"；整合包进世界即修复成功。
+$(OUTPUTDIR)/showdown_agent.jar: $(CLASSES)
+	@set -e
+	@echo "Creating $@"
+	@rm -rf $(basename $@)
+	@mkdir -p $(basename $@)
+	@if [ ! -d "$(basename $@)/com/prisma/showdown" ]; then \
+		echo "ERROR: showdown agent classes missing com/prisma/showdown"; \
+		exit 1; \
+	fi
+	@mkdir -p $(basename $@)/asm_embed
+	@cd $(basename $@)/asm_embed && $(BOOTJDK)/jar -xf $(CURDIR)/libs/asm/asm-9.7.jar
+	@rm -rf $(basename $@)/asm_embed/META-INF $(basename $@)/asm_embed/module-info.class
+	@if [ ! -f "$(basename $@)/asm_embed/org/objectweb/asm/ClassReader.class" ]; then \
+		echo "ERROR: asm embed missing org/objectweb/asm/ClassReader.class"; \
+		exit 1; \
+	fi
+	@mv $(basename $@)/asm_embed/org $(basename $@)/org
+	@rmdir $(basename $@)/asm_embed
+	@cd $(basename $@) && $(BOOTJDK)/jar -cfm ../showdown_agent.jar $(CURDIR)/src/showdown_agent.txt .
+	@echo "Created $(OUTPUTDIR)/showdown_agent.jar (Task263 showdown path absolutizer, asm embedded)"
+
 $(OUTPUTDIR)/mojang-stubs.jar: $(OUTPUTDIR)/launcher.jar
 	@set -e
 	@rm -rf $(OUTPUTDIR)/mojang-stubs

@@ -1,0 +1,2 @@
+Premain-Class: com.prisma.showdown.ShowdownAgent
+Can-Retransform-Classes: false
