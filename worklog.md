@@ -3115,3 +3115,19 @@ Work Log:
 
 Stage Summary:
 - 十项全交付；装机锚点：①新实例首启 "[Task261] sneak rebind repair: ... -> key.keyboard.right.shift (marker=v4)" ②轻点右Shift高亮/再点还原 ④缩放后 0.3s "[SurfaceVC] Task261: adaptive resync done" ⑤设置→通用新入口 ⑨点启动秒回主页 ⑧静默退出后 POJAV_HOME 出现 latestlog.selfexit-*.txt + 日志含 [GLFWBridge]/[Task261] 探针链；网站右上角 EN 一键切换、交流支持区上线、下载区自动识别版本+国内加速源
+
+
+---
+## Task 262——三项（装机日志先行诊断 0c5a6dc 第三轮复现）：⑧探针盲区结构性根修 / ②右Shift高亮双根因 / TouchCancel 连坐；v6.5.0 静默替换第四轮
+
+Work Log:
+- 装机日志判读（用户上传 latestlog.txt，v6.5.0 commit 0c5a6dc，Cobblemon 1.8.2/fabric 1.21.1 整合包第三次复现）：JVM 07:17:55 起跑，mod init 推进至 Cobblemon showdown，t+8.0s ShowdownThread PolyglotException（Invalid CommonJS root folder: showdown），t+9.074s 起 GC/safepoint 双零=全线程静止（native 阻塞或死锁，非慢加载——454M heap 无压力），g_sdlWindow=0x0/fps=0 实锤窗口创建从未到达，卡点在 mod init 期；Task261 自诊断探针（Task86 相位2 8s 无条件首样本/GLFW 三探针/selfexit 快照）全程零输出
+- 探针盲区结构性根修（Tools.java 双相位）：①fabric 在 Minecraft 构造器头部 super("Render thread") 即改名线程→mod init 期挂死时相位 1 的 15s 首醒直接静默转相位 2（首样本还要再睡 8s）→首栈最早 t+23s，恒被用户 13-40s 手杀抢跑（本轮 JVM 14s+ 零 LaunchWatchdog 行实证）；根修=相位 1 前 3 样本提速 6s 且无条件 24 帧落栈（t+6s 必达 mod-init 期栈）+相位 2 首样本改立即落栈（改名瞬间游戏线程在哪成必达证据）②Cobblemon showdown 联网取证闭环：GitHub 镜像源码（Cobblemon-Global/Cobblemon）逐行吻合栈帧 openConnection:58→createContext:110→Context.eval 首次 eval 触发 CommonJS cwd 校验，wd=Paths.get("./showdown") 相对 user.dir、匿名 FileSystem checkAccess 的 toRealPath 要求 <user.dir>/showdown 存在，与 openHAB#11616（同报错 chown 修复）/JavaUWP CobblemonShowdownFileSystemMixin（checkAccess bypass，同为沙盒平台）三方案互证；Prisma 已传 -Duser.dir+Task97 chdir 已排除该嫌疑，与主线程静止的因果关系未证实——按 Task261 原则不以盲修交差，待看门狗 t+6s/t+14s 双栈一击定音
+- ②右Shift摁下去高亮双根因（用户复诉 261② 无感）：①根因=ame261 锁存高亮沿用按钮原 alpha，classic.json 右SHIFT 主按钮 bgColor=0x0EFFFF≈alpha 0.055 幽灵键，tint 视觉不可见→高亮 alpha 下限 0.30（对齐持续奔跑按钮 bgColor=0x4D858585≈0.30 的可见观感；原 alpha 更高沿用不回退）②根因=原先仅轻点锁存后才着色、按住期间全程零反馈→mod 键 DOWN 即发 ame261 同步高亮，UP 三路径（轻点锁存=YES 幂等 saved 色不覆盖/锁存态轻点=NO 还原/长按释放=NO 还原）天然对称
+- TouchCancel 连坐修复：游戏按钮未挂 UIControlEventTouchCancel→触摸被系统手势/横幅抢走时修饰键逻辑上永久按住（潜行卡死）且 262 按住高亮会卡色；补挂 cancel→executebtn_up_outside 同路径（非保持型=ACTION_UP 走 Task179 长按释放分支补发 UP+清锁存+还原可视；保持型 isOutside=YES 提前 return 不触发翻转补发），伪玻璃 menuButton 摘除路径同步 removeTarget
+- verify219 重锚：唯一键 2855→2873 实测（跨 258-261 四轮累计未重锚）+K1 包名 com.air-devs.air→com.prisma-devs.prisma 跟随 Task259 迁移
+- 门禁：task139/240 双门 all balanced（import WARN 为历史既有）；task191 54 表 2907 entries OK；task248 缺键0/硬编码0/动态键0；task250 直显0；verify219 81/81；verify255 51/51；Tools.java 括号平衡 0/0
+
+Stage Summary:
+- 提交 7783679 推送 main；装机锚点：①整合包再复现→日志 [LaunchWatchdog] entrypoint-phase sample #1/#2（t+6s/t+12s 必达主线程 24 帧栈，直接给出卡死 mod 与调用点）②游戏内轻点/按住右SHIFT→按钮 tint 高亮（alpha 0.30 可见级）且锁存态持续高亮，再点还原③触摸被抢不再潜行卡死
+- 待 CI 出包后 v6.5.0 资产静默替换（第四轮）
