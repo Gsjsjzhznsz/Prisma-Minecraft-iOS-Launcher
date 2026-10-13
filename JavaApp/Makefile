@@ -211,9 +211,7 @@ $(OUTPUTDIR)/patchsvc.jar: $(CLASSES)
 $(OUTPUTDIR)/showdown_agent.jar: $(CLASSES)
 	@set -e
 	@echo "Creating $@"
-	@rm -rf $(basename $@)
-	@mkdir -p $(basename $@)
-	@if [ ! -d "$(basename $@)/com/prisma/showdown" ]; then \
+	@if [ ! -f "$(basename $@)/com/prisma/showdown/ShowdownAgent.class" ]; then \
 		echo "ERROR: showdown agent classes missing com/prisma/showdown"; \
 		exit 1; \
 	fi

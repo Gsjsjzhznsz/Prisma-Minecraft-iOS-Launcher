@@ -70,7 +70,9 @@ check('C4 module-info/META-INF 剔除', 'module-info.class' in jam and 'META-INF
 check('C5 ClassReader 存在断言', 'org/objectweb/asm/ClassReader.class' in jam)
 jam_lines = jam.split('\n')
 rule_idx = next(i for i, l in enumerate(jam_lines) if 'showdown_agent.jar: $(CLASSES)' in l)
-rule_block = jam_lines[rule_idx:rule_idx + 20]
+_end = next(i for i, l in enumerate(jam_lines)
+            if i > rule_idx and l.startswith('Created $(OUTPUTDIR)/showdown_agent.jar'))
+rule_block = jam_lines[rule_idx:_end + 1]
 check('C6 规则行全 TAB 缩进（目标行除外）', all(
     (not l) or l.startswith('\t') or l.startswith('#') or not l.strip() or l.startswith('$(OUTPUTDIR)/showdown_agent.jar:')
     for l in rule_block), str([l for l in rule_block if l.strip() and not l.startswith('\t') and not l.startswith('#') and not l.startswith('$(OUTPUTDIR)/showdown_agent.jar:')][:2]))

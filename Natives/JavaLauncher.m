@@ -3146,8 +3146,8 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     //   agent class 文件为 javac 默认 target（Java 8 兼容），全会话无条件注入
     //   （同 Task251 patchsvc 先例）；无 Cobblemon 会话 transformer 按类名零匹配。
     //   -Dame.showdown.home=<gameDir> 与 -Duser.dir 同源同值（ame97 chdir 同参）。
-    if ([NSFileManager defaultManager] fileExistsAtPath:
-            [librariesPath stringByAppendingPathComponent:@"showdown_agent.jar"]) {
+    if ([[NSFileManager defaultManager] fileExistsAtPath:
+            [librariesPath stringByAppendingPathComponent:@"showdown_agent.jar"]]) {
         PUSH_MARGV_FORMAT(@"-javaagent:%@/showdown_agent.jar", librariesPath);
         PUSH_MARGV_FORMAT(@"-Dame.showdown.home=%@", gameDir);
         NSLog(@"[JavaLauncher] Task263: showdown agent enabled (ame.showdown.home=%@)", gameDir);
