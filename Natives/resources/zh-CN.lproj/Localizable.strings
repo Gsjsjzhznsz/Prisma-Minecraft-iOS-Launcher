@@ -3089,4 +3089,4 @@
 "preference.title.done.system_prompt" = "系统提示词已打开";
 "preference.title.done.data_sibling_import" = "已打开导入入口";
 "resman.mods.folder.caption" = "模组目录 — 新 Mod 的 .jar 文件放这里";
-"resman.mods.folder.open" = "在「文件」中打开模组目录";
+"resman.mods.folder.import" = "导入模组到此目录";

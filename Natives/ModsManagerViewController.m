@@ -489,8 +489,8 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     UIButton *openButton = [UIButton buttonWithType:UIButtonTypeSystem];
     openButton.frame = CGRectMake(card.bounds.size.width - 48, 5, 40, 32);
     openButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
-    [openButton setImage:[UIImage systemImageNamed:@"folder.badge.gearshape"] forState:UIControlStateNormal];
-    openButton.accessibilityLabel = localize(@"resman.mods.folder.open", nil);
+    [openButton setImage:[UIImage systemImageNamed:@"square.and.arrow.down"] ?: [UIImage systemImageNamed:@"folder"] forState:UIControlStateNormal];
+    openButton.accessibilityLabel = localize(@"resman.mods.folder.import", nil);
     openButton.tintColor = [UIColor systemOrangeColor];
     [openButton addTarget:self action:@selector(ame264_openScannedFolder) forControlEvents:UIControlEventTouchUpInside];
     [card addSubview:openButton];
@@ -510,23 +510,18 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     }
     NSArray<NSString *> *parts = folder.pathComponents;
     if (parts.count >= 2) {
-        return [NSString stringWithFormat:@"…/%@/%@", parts[parts.count - 2], parts.lastPathComponent];
+        return [NSString stringWithFormat:@"…/%@/%@", parts[parts.count - 2], parts.lastObject];
     }
     return folder;
 }
 
-/// 在文件 App 中定点打开当前扫描目录（forOpeningContent 定位到该目录，
-/// 用户可直接把 .jar 拷进去）。回调沿用既有 documentPicker 拷贝逻辑
-/// （目录 URL 已加守卫跳过），拷完 loadMods 自动刷新。
+/// "导入到此目录"：直接复用既有导入流（importModTapped 已随 Task264 改走
+/// self.profileName 解析——文件必然落入与本页扫描同源的隔离目录，重扫即见）。
+/// 不采用 forOpeningContentAt 定点开目录：该 API 家族在本仓库部署目标/SDK
+/// 组合下不可用（CI iPhoneOS26.2 实测 no visible @interface），仓库既有
+/// picker 先例全部为 initForOpeningContentTypes 家族。
 - (void)ame264_openScannedFolder {
-    NSString *folder = [[ModService sharedService] ame264_effectiveModsFolderForProfile:self.profileName];
-    if (folder.length == 0) return;
-    NSURL *url = [NSURL fileURLWithPath:folder];
-    UIDocumentPickerViewController *picker =
-        [[UIDocumentPickerViewController alloc] initWithURL:url forOpeningContent:UIDocumentPickerModeOpenInPlace];
-    picker.delegate = self;
-    picker.title = localize(@"resman.mods.folder.open", nil);
-    [self presentViewController:picker animated:YES completion:nil];
+    [self importModTapped];
 }
 
 #pragma mark - Data Loading

@@ -321,4 +321,4 @@
 "prefs.data_sibling.none" = "No old launcher data found next to this app";
 "preference.title.done.data_sibling_import" = "Import entry opened";
 "resman.mods.folder.caption" = "Mods folder — new .jar files go here";
-"resman.mods.folder.open" = "Open mods folder in Files";
+"resman.mods.folder.import" = "Open mods folder in Files";
