@@ -3150,3 +3150,18 @@ Work Log:
 
 Stage Summary:
 - ⑧四轮复现根修交付：装机锚点 ①Cobblemon 整合包启动日志应见 [Task263] showdown-agent armed + path-fix applied (3 sites)/(2 sites)，进世界即修复成功 ②下轮任何异常启动必达 [LaunchWatchdog] post-window-parked 主线程栈（t+14s）③两基准分裂与否可从 userDirCanonical vs [CwdAlign] getcwd 直接判读；v6.5.0 资产第五轮静默替换完成（updated_at=13:03/13:04）
+
+
+## Task 263 r2/r3——装机闪退根修（agent 内嵌 ASM 触发 Fabric verifyClasspath 守卫；等长字节级重定位；v6.5.0 静默替换第六轮）
+
+日期：2026-10-13　构建：4311841（run 38405227029 一轮绿 r3；发行资产已静默替换）
+
+Work Log:
+- 装机日志判读（用户三件套 latestlog.selfexit-1013-210534 + latestlog + fatal_trace，v6.5.0 0bbdddd 构建，第五轮替换后首启）：premain 正常布防（[Task263] showdown-agent armed 全锚点在位，Task261 selfexit 快照机制首次实战精准抓到崩溃现场）-> KnotClient.main:23 Knot.<clinit> -> Fabric Loader 0.19.5 LoaderUtil.verifyClasspath:83 IllegalStateException "duplicate ASM classes found on classpath: showdown_agent.jar (x2, -javaagent 与 libs/*.jar -cp 双重入列) + minecraft/libraries/org/ow2/asm/asm/9.10.1" -> ExceptionInInitializerError -> InvocationTargetException -> JVM vm_exit(1)（fatal_trace 21:05:34 exit(1) via VM_Exit::doit->notify_vm_shutdown->os::_exit）+ Task251 watchdog _exit(0) 21:05:35——全部发生在任何 mod 代码之前
+- 根修：等长字节级重定位 org/objectweb/asm -> com/prisma/shaded（17 字节对 17 字节，class 文件结构零变动零重组风险——Utf8 常量条目是唯一裸字符串载体，结构引用全走 CP 索引；scripts/task263_relocate_asm.py 落库可复现，40 条目 38 处改写自校验零残留+magic/major 断言）；agent import 同步 com.prisma.shaded；metallum_agent com/metallum/shaded/asm 同款先例实证 Fabric 容忍重定位 ASM；重定位版本地三场景回归全绿（premain/transformer 3+2 sites/全分歧 openConnection COMPLETED，106MB 真实 showdown 解压落锚定目录零泄漏）
+- CI 双轮雷（本地规则复刻逮住第二颗）：r1=ObjC 漏外层方括号 + 规则 rm -rf 误删模式规则刚拷入的类目录（改守卫类文件存在性）；r2=守卫仍查旧路径 org/objectweb/asm/ClassReader.class（换 com/prisma/shaded/）+ mv asm_embed/org 在重定位 jar 上必炸（重定位后无 org/ 目录，改 cp -R 合并 com/ 后 rm；本地全步骤复刻实证 38 类文件+2 目录条目零残留——目录条目为 jar 可选项不落盘）；r3 4311841 run 38405227029 一轮绿
+- 门禁：verify_task263 37/37（新增 B3 零 org/objectweb 残留守卫/B4 38+2 条目精化/A10 import 守卫/C5 换锚禁旧路径）；task139/240 all balanced；task191 2907 键；verify219 81/81；根 Makefile TAB 671 保形
+- 静默替换：run 38405227029 产物 ipa 235035280B/tipa 235035626B 删旧传新（第六轮，updated_at=13:45:55/13:46:16）；发行说明补「六轮更新」节；air legacy EXPORT-ONLY 不动
+
+Stage Summary:
+- 装机锚点：整合包会话日志应见 [Task263] showdown-agent armed（premain）+ path-fix applied (3 sites)/(2 sites)，进世界即 ⑧ 根修生效；Fabric verifyClasspath 守卫不再触发（classpath 零 org/objectweb/asm）；下轮异常启动必达 [LaunchWatchdog] post-window-parked 栈
