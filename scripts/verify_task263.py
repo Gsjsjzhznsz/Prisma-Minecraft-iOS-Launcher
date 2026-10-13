@@ -71,7 +71,7 @@ check('C5 ClassReader 存在断言', 'org/objectweb/asm/ClassReader.class' in ja
 jam_lines = jam.split('\n')
 rule_idx = next(i for i, l in enumerate(jam_lines) if 'showdown_agent.jar: $(CLASSES)' in l)
 _end = next(i for i, l in enumerate(jam_lines)
-            if i > rule_idx and l.startswith('Created $(OUTPUTDIR)/showdown_agent.jar'))
+            if i > rule_idx and 'Created $(OUTPUTDIR)/showdown_agent.jar' in l)
 rule_block = jam_lines[rule_idx:_end + 1]
 check('C6 规则行全 TAB 缩进（目标行除外）', all(
     (not l) or l.startswith('\t') or l.startswith('#') or not l.strip() or l.startswith('$(OUTPUTDIR)/showdown_agent.jar:')
