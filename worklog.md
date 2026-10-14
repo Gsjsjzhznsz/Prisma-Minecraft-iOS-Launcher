@@ -3292,3 +3292,12 @@ Work Log:
 
 Stage Summary:
 - r3 热修推送；CI 轮询中
+
+## Task 268 r4——DownloadVC 两处 ame185 派发补 label 实参（r3 重写脚本时收尾补丁步被误删）
+
+Work Log:
+- run 38602380843 failure：DownloadViewController.m:3911/3986 too few arguments（ame185_dispatchToMainSelfHealing 需 (block, label) 双参，r3 只换头部未补收尾）；两处补 @"DownloadVC main wait"/@"DownloadVC reattach wait"
+- 门禁 task139 all balanced
+
+Stage Summary:
+- r4 推送；CI 轮询中

@@ -3908,7 +3908,7 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
             } else {
                 [self ame169_showJITTimeoutInlineWithRetry:handler];
             }
-        });
+        }, @"DownloadVC main wait");
     });
 }
 
@@ -3983,7 +3983,7 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
             } else {
                 [self ame169_showJITTimeoutInlineWithRetry:handler];
             }
-        });
+        }, @"DownloadVC reattach wait");
     });
 }
 
