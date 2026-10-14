@@ -3234,3 +3234,16 @@ Work Log:
 
 Stage Summary:
 - 装机锚点：①右Shift绑定=right.shift 时按下即潜行（日志 [Task266] adaptive sneak sync ... emits GLFW 344 identity + sendKey key=344 scancode=229；绑定=left.shift 时 [Task266] sneak translate 344->340）②iPhone 打开任意原生风格菜单/设置选择项不再崩（[AmeNativeMenu] Task266: alert-style presentation ... skipped 日志即门控生效）③模组管理跨实例下载出横幅（[ModsManager] Task266: cross-profile download dest=... viewing=...）点切换即见文件，表尾目录行与扫描永远同源 ④JIT 待 iPhone 侧日志
+
+---
+Task ID: 266-ci
+Agent: main (Super Z)
+Task: Task 266 闭环补记——CI r1 热修 + v6.5.0 静默替换第九轮
+
+Work Log:
+- run 38489514703（6fa6e76）failure：ame266 三方法实现误插在 @implementation 之前（文件作用域）→ missing context for method declaration ×3（254/263/282）；r1 78b397a 方法块整体移入 @implementation 内（ame240_shared 之后、装配私有方法段之前）+ 三文件结构自检脚本通过 → run 38490672782 一轮终绿
+- 静默替换第九轮：ipa/tipa 235056060B/235056320B 同名保链 updated_at=2026-10-14T00:58:12/00:58:38（构建=78b397a）；uploads API raw body 本轮被拒（Multipart form data required）改 -F 表单上传 201 成功（历轮 raw 直传先例失效记录）
+- worklog 文档轮 6913303 推送
+
+Stage Summary:
+- Task 266 全闭环：①右Shift键码表混淆根除（真自适应两态皆正确）②iPhone alert 呈现崩溃门控③模组管理跨实例横幅+一键切换④JIT 待 iPhone 侧日志定音；新 IPA（78b397a）就绪待装机验证
