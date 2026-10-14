@@ -3301,3 +3301,6 @@ Work Log:
 
 Stage Summary:
 - r4 推送；CI 轮询中
+
+- 【闭环补记】CI run 38603833744（r4 153f25a）终绿；v6.5.0 资产静默替换第十轮完成（ipa 235079078B / tipa 235079361B 同名保链，构建=153f25a；旧资产 204 删除→表单直传 201 uploaded；air legacy EXPORT-ONLY 不动）；worklog 闭环推送
+- 装机验证锚点：①版本设置 TouchController 行（已装）点按出管理菜单→卸载并关闭→开游戏无 touch 协议/控件恢复显示（日志 [TouchController] Task268 profile 'X' explicitly disabled 或 flag=YES but no TouchController jar）②模组管理导航栏"实例：X ▾"切换器 + 下载后跨实例横幅对账（[ModsManager] Task267: reconcile mismatch）+ 改选实例自动跟扫③下载失败任务重试不再卡"等待中"④JIT 等待弹窗（RightPanel/NavCtrl/DownloadVC）均有取消钮⑤1.13-1.21.x 数字 options.txt 档右 SHIFT 生效（[Task266] adaptive sneak sync 340/344 数字形态）⑥Showdown 卡死 240s 后启动放行（[Task263] watchdog stalled past deadline）
