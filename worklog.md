@@ -3216,3 +3216,21 @@ Work Log:
 
 Stage Summary:
 - Task 265 四项全闭环：①模组管理 profile 全链自适应（任何入口=当前选中实例，与下载/启动同源，双锚日志必达）②右 Shift 事件级自适应翻译（无 cohort 无标记，新装/换代/改绑全自愈）③网站手机端双行顶栏+锚点避让 ④视觉巡礼（放映版/竖屏滑动版）入站；装机锚点见上一条目
+
+
+## Task 266——右Shift第10次复发终局根修（键码表混淆纠正）+ AmeNativeMenu alert 呈现崩溃根修（iPhone XS Max iOS 18.7.10）+ 模组管理跨实例错位自解释 + JIT 取证；v6.5.0 静默替换第九轮
+
+日期：2026-10-14　构建：78b397a（run 38490672782 r1 终绿；发行资产已静默替换）
+
+Work Log:
+- 判读装机 d78dbfd 四份 latestlog（iPad Air M4/iPadOS 27.0.1；另 iPhone XS Max/iOS 18.7.10 崩溃文本由用户转述）：①右Shift完整因果链一击定音=executebtn keycodes=[344]九连（按钮正确发射 GLFW 344=RIGHT_SHIFT）→ sendKey key=342（Task265 翻译器把 key.keyboard.right.shift/54 解析成 342 并把 344 改写成 342）→ SDL scancode=226=SDL_SCANCODE_LALT → MC 收到左 ALT 潜行永不触发——标准 GLFW 表 342=LEFT_ALT、344=RIGHT_SHIFT（glfw_keycodes.h 与 glfwKeyToSDLScancode 两处既有正确值），"342=右shift"系 Task225/261/265 注释族谱一脉相承的键码表混淆=历次死键误判总源头+第10次复发真凶（绑定=right.shift 时自适应恢复反而把正确按键改成 ALT）；修法=解析映射 344/340 两态皆正确（identity 直通 SDL 229 / 翻译 344→340 SDL 225），自适应语义（5s节流重读+ame229 回前台重读+不改用户文件）原样保留，翻译生效采样日志（前5+每100）
+- ②AmeNativeMenu alert 呈现崩溃根修：iOS 18+ 对 alert 形态呈现的 UIAlertController 禁止改 presentationController.delegate（NSInternalInconsistencyException），iPhone compact 下 actionSheet 同样解析为 alert 形态（私有 presentation controller 自持 delegate 驱动自适应）→ 三处赋值点 iPhone 必崩（堆栈 presentMenu→presentStyleRoutedWithMenu→presentViaNativeSheet，设置页 general.interface_style/JRE 管理选择触发；iPad regular popover 装机实证零崩溃）；修法=ame266 形态门控（popover=regular 宽度且非 iPhone 才赋值+@try 双护栏；alert 形态不赋值，取消语义由字典 cancel 项物化为 UIAlertActionStyleCancel 承载=iOS 9+ 点按外部触发 handler 同 onDismiss 口径）+ static C 函数类名直调/类扩展前向声明（Task240 家族预防）
+- ③模组管理跨实例错位自解释：Task265 双锚日志同框实锤=download dest profile=Fabulously Optimized (2) folder=modrinth_BB10129F…/mods vs scan profile=Fabulously Optimized folder=modrinth_CA336076…/mods jars=47——下载与扫描各自绑定正确但彼此不同实例+UI 无实例标识；修法=DownloadTaskItem 新 targetProfileName（ModService 中央 mod 下载站点标注）+ModsManager 重写 handleDownloadTaskCompletedNotification 比对（跨实例→tableHeaderView 横幅+一键切换改绑重扫+表尾联动；本实例→撤横幅；基类方法未在 .h 暴露故复制其重载行为）+表尾扫描目录行改 ame265_effectiveProfileName（nil 绑定抽屉入口遗留错位点）
+- ④JIT 未响应取证（无根修证据不足定音）：JIT 经 StikJIT 使能正常（3.2s 条件满足）；游戏中段流畅（fps=44-47 maxGap=61ms）、卡顿集中首载期（maxGap=4997ms 单帧=世界生成）与 shaderc 首播种（t=61320ms，ame_shaderc_cache 已有磁盘缓存）；会话正常收尾（FastQuit→Task251 标记 _exit(0) 符合设计）；待 iPhone 侧 latestlog 定音
+- i18n：resman.mods.cross_profile.text（三定位符）/switch 2 键 × 54 表（en/zh-CN/Hans/Hant 实译余表英文兜底，task266_inject_i18n.py 落库）
+- 门禁：task139 all balanced；task240 all balanced+import OK；task191 54 表 2911 键；task248 缺键0/硬编码0；task250 0；结构自检（方法实现均在 @implementation 区间）三文件 OK
+- 事故：r1 run 38489514703 failure——ame266 三方法实现误插 @implementation 之前（文件作用域）→ missing context for method declaration ×3；r1 78b397a 方法块移入 @implementation 内终绿
+- 静默替换第九轮：ipa/tipa 235056060B/235056320B 同名保链 updated_at=2026-10-14T00:58:12/00:58:38（构建=78b397a）；air legacy EXPORT-ONLY 不动
+
+Stage Summary:
+- 装机锚点：①右Shift绑定=right.shift 时按下即潜行（日志 [Task266] adaptive sneak sync ... emits GLFW 344 identity + sendKey key=344 scancode=229；绑定=left.shift 时 [Task266] sneak translate 344->340）②iPhone 打开任意原生风格菜单/设置选择项不再崩（[AmeNativeMenu] Task266: alert-style presentation ... skipped 日志即门控生效）③模组管理跨实例下载出横幅（[ModsManager] Task266: cross-profile download dest=... viewing=...）点切换即见文件，表尾目录行与扫描永远同源 ④JIT 待 iPhone 侧日志
