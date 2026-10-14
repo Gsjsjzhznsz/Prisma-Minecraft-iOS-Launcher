@@ -122,6 +122,12 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
 
 @end
 
+
+/// Task267（屎山优化）：目标实例三元式单点化（原 5 处复制粘贴表达式收敛）。
+/// 语义与 Task265 原式逐字节等价：来源页显式绑定优先，否则跟随当前选中实例。
+static inline NSString *ame267_effectiveTargetProfile(NSString *ame267_target) {
+    return ame267_target ?: ([PLProfiles current].selectedProfileName ?: @"default");
+}
 @implementation ModVersionViewController
 
 - (void)viewDidLoad {
@@ -1184,7 +1190,7 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     ame236_vc.apiSource = (ame236_src == kSourceCurseForge) ? kSourceCurseForge : kSourceModrinth;
     ame236_vc.preferredGameVersion = self.preferredGameVersion;
     ame236_vc.preferredLoader = self.preferredLoader;
-    ame236_vc.targetProfileName = self.targetProfileName ?: ([PLProfiles current].selectedProfileName ?: @"default"); // ★ Task265：依赖跳转页继承目标实例
+    ame236_vc.targetProfileName = ame267_effectiveTargetProfile(self.targetProfileName); // ★ Task265：依赖跳转页继承目标实例（Task267 单点化）
     [self.navigationController pushViewController:ame236_vc animated:YES];
     NSLog(@"[ModVersionVC] Task236 dependency row direct-jump (in-app version list): %@ (pid=%@ src=%ld)",
           ame236_name, ame236_pid, (long)ame236_src);
@@ -1208,7 +1214,7 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     }
     // ★ Task265：来源页显式传入的 targetProfileName 优先（与来源页扫描同源），
     // 未传入时回退实时 selectedProfileName（旧语义）——双下载点同规则
-    NSString *ame236_profile = self.targetProfileName ?: ([PLProfiles current].selectedProfileName ?: @"default");
+    NSString *ame236_profile = ame267_effectiveTargetProfile(self.targetProfileName);
     [NMToast showMessage:[NSString stringWithFormat:localize(@"launcher.mcl.downloading_file", nil), ame236_dl.displayName]];
     [[ModService sharedService] downloadMod:ame236_dl
                                   toProfile:ame236_profile
@@ -1250,7 +1256,7 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     detail.preferredGameVersion = self.preferredGameVersion;
     detail.preferredLoader = self.preferredLoader;
     // ★ Task265：目标实例随链传递（详情页“前往下载页”的下载写入同一实例）
-    detail.targetProfileName = self.targetProfileName ?: ([PLProfiles current].selectedProfileName ?: @"default");
+    detail.targetProfileName = ame267_effectiveTargetProfile(self.targetProfileName);
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:detail];
     nav.modalPresentationStyle = UIModalPresentationPageSheet;
     [self presentViewController:nav animated:YES completion:nil];
@@ -1634,7 +1640,7 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
     ame235_vc.apiSource = (_source == kSourceCurseForge) ? kSourceCurseForge : kSourceModrinth;
     ame235_vc.preferredGameVersion = self.preferredGameVersion;
     ame235_vc.preferredLoader = self.preferredLoader;
-    ame235_vc.targetProfileName = self.targetProfileName ?: ([PLProfiles current].selectedProfileName ?: @"default"); // ★ Task265：依赖跳转页继承目标实例
+    ame235_vc.targetProfileName = ame267_effectiveTargetProfile(self.targetProfileName); // ★ Task265：依赖跳转页继承目标实例（Task267 单点化）
     [self.navigationController pushViewController:ame235_vc animated:YES];
     NSLog(@"[ModVersionVC] Task235 dep go-to-download: %@ (pid=%@ src=%ld)",
           _name, _pid, (long)_source);
@@ -1656,7 +1662,7 @@ static NSArray<NSDictionary *> *SortOptionItems(void) {
         ame235_dl.fileSHA1 = ame235_hashes[@"sha1"];
     }
     // ★ Task265：同 ame236 下载点——targetProfileName 优先（依赖下载与本体同目录）
-    NSString *ame235_profile = self.targetProfileName ?: ([PLProfiles current].selectedProfileName ?: @"default");
+    NSString *ame235_profile = ame267_effectiveTargetProfile(self.targetProfileName);
     [NMToast showMessage:[NSString stringWithFormat:localize(@"launcher.mcl.downloading_file", nil), ame235_dl.displayName]];
     [[ModService sharedService] downloadMod:ame235_dl
                                   toProfile:ame235_profile

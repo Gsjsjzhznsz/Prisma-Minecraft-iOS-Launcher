@@ -612,6 +612,12 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
 
 @end
 
+
+/// Task267（屎山优化）：下载页锁定目标单点化（原 6 处复制粘贴表达式收敛）。
+/// 语义与原式逐字节等价：锁定打开下载页时的 targetProfileName，缺省 default。
+static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
+    return ame267_target ?: @"default";
+}
 @implementation DownloadViewController
 
 - (void)dealloc {
@@ -5475,7 +5481,7 @@ static NSString *PLSha1FromPrimaryFile(NSDictionary *primaryFile) {
     //   ③ 选"一起安装" → 串行下载前置到同一 mods 目录，全部结束后再下
     //     主模组；单个前置失败不中断整条链，最后汇总失败清单。
     __weak typeof(self) weakSelf = self;
-    NSString *ame227_profileName = self.targetProfileName ?: @"default";
+    NSString *ame227_profileName = ame267_lockedDownloadTarget(self.targetProfileName);
     [[ModDependencyResolver sharedResolver] resolveDependenciesFromVersionDetail:version.rawDictionary
                                                                        apiSource:version.apiSource
                                                             installedProjectIds:nil
@@ -5605,7 +5611,7 @@ static NSString *PLSha1FromPrimaryFile(NSDictionary *primaryFile) {
 - (void)startDownloadForModItem:(ModItem *)item {
     // 关键修复（目标实例不一致）：统一使用打开下载页时锁定的 targetProfileName，
     // 而非实时读取 selectedProfileName，避免与资源管理页绑定的实例不一致导致写入另一游戏目录
-    NSString *profileName = self.targetProfileName ?: @"default";
+    NSString *profileName = ame267_lockedDownloadTarget(self.targetProfileName);
     // ★ Task226（issue #10，PCL2CE 式依赖自动下载）：主模组下载成功后解析
     // Modrinth 依赖并弹确认单（必需依赖一键全下）。apiSource 来自本次
     // 版本选择页（非 CurseForge = Modrinth）；版本/加载器取当前 profile。
@@ -5741,7 +5747,7 @@ static NSString *PLSha1FromPrimaryFile(NSDictionary *primaryFile) {
 - (void)startDownloadForResourcePackItem:(ResourcePackItem *)item {
     // 关键修复（目标实例不一致）：统一使用打开下载页时锁定的 targetProfileName，
     // 而非实时读取 selectedProfileName，避免与资源管理页绑定的实例不一致导致写入另一游戏目录
-    NSString *profileName = self.targetProfileName ?: @"default";
+    NSString *profileName = ame267_lockedDownloadTarget(self.targetProfileName);
     __weak typeof(self) weakSelf = self;
     [[ResourcePackService sharedService] downloadResourcePack:item
                                                     toProfile:profileName
@@ -5766,7 +5772,7 @@ static NSString *PLSha1FromPrimaryFile(NSDictionary *primaryFile) {
 - (void)startDownloadForDataPackItem:(DataPackItem *)item {
     // 关键修复（目标实例不一致）：统一使用打开下载页时锁定的 targetProfileName，
     // 而非实时读取 selectedProfileName，避免与资源管理页绑定的实例不一致导致写入另一游戏目录
-    NSString *profileName = self.targetProfileName ?: @"default";
+    NSString *profileName = ame267_lockedDownloadTarget(self.targetProfileName);
     __weak typeof(self) weakSelf = self;
     [[DataPackService sharedService] downloadDataPack:item
                                             toProfile:profileName
@@ -5792,7 +5798,7 @@ static NSString *PLSha1FromPrimaryFile(NSDictionary *primaryFile) {
 - (void)startDownloadForWorldItem:(WorldItem *)item {
     // 关键修复（目标实例不一致）：统一使用打开下载页时锁定的 targetProfileName，
     // 而非实时读取 selectedProfileName，避免与资源管理页绑定的实例不一致导致写入另一游戏目录
-    NSString *profileName = self.targetProfileName ?: @"default";
+    NSString *profileName = ame267_lockedDownloadTarget(self.targetProfileName);
     __weak typeof(self) weakSelf = self;
     [[WorldService sharedService] downloadWorld:item
                                         toProfile:profileName
@@ -5836,7 +5842,7 @@ static NSString *PLSha1FromPrimaryFile(NSDictionary *primaryFile) {
 - (void)startDownloadForShaderItem:(ShaderItem *)item {
     // 关键修复（目标实例不一致）：统一使用打开下载页时锁定的 targetProfileName，
     // 而非实时读取 selectedProfileName，避免与资源管理页绑定的实例不一致导致写入另一游戏目录
-    NSString *profileName = self.targetProfileName ?: @"default";
+    NSString *profileName = ame267_lockedDownloadTarget(self.targetProfileName);
     __weak typeof(self) weakSelf = self;
     [[ShaderService sharedService] downloadShader:item
                                          toProfile:profileName

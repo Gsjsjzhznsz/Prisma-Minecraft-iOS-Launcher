@@ -3247,3 +3247,20 @@ Work Log:
 
 Stage Summary:
 - Task 266 全闭环：①右Shift键码表混淆根除（真自适应两态皆正确）②iPhone alert 呈现崩溃门控③模组管理跨实例横幅+一键切换④JIT 待 iPhone 侧日志定音；新 IPA（78b397a）就绪待装机验证
+
+## Task 267——模组管理"换模组下载依旧不显示"终局根修（跟随/钉定双模 + 实例切换器 + 下载落点对账）+ JIT 等待可取消（"jit 容易未响应"观感根修）+ 三元式屎山去重；v6.5.5 开版
+
+日期：2026-10-14　构建：本提交（CI 轮询中；版本号 6.5.0 → 6.5.5 用户点名开版）
+
+Work Log:
+- 判读装机 3b97d2d latestlog（iPad Air 11-inch (M4)/iPadOS 27.0.1，2265 行全链）：①B 复发双锚实锤=Task265 download dest profile=Fabulously Optimized (2) folder=modrinth_BB10129F…/mods（JEI 落盘）vs ModsManager Task265 scan profile=Fabulously Optimized (bound=Fabulously Optimized) folder=modrinth_CA336076…/mods jars=47——下载/扫描各自"正确"但彼此不同实例；日志零 Task266 cross-profile 横幅行=通知到达时管理页不在场（下载先于开页），横幅机制天然够不着 ②根因定音=四入口全快照式绑定（LauncherRoot:707/LauncherCardLayout:770 读 selectedProfileName 快照、VersionManager:1815/ProfileSettings:1629 各自语义绑定），快照在页面存续期永不过期——用户改选实例后管理页永远钉在旧实例，ame265_effectiveProfileName 的"显式绑定优先"反而锁死过期态 ③游戏侧正常（JEI init 成功、fps=59 收尾 FastQuit；CrashAssistant ProcessHandleImpl Operation not permitted=iOS 沙盒已知非致命，mod 自接）
+- ①B 终局修复（四件套）：a) ModsManagerViewController 双模语义=ame267_pinProfile（NO=跟随：实时跟随 selectedProfileName、SelectedProfileChanged 即换绑重扫撤横幅刷表尾，页面永不过期；YES=钉定：锁定 profileName）+ame267_pinToProfile: 统一入口 b) 导航栏实例切换器=ame267_profileChip 常驻 titleView（resman.mods.profile_chip 实例名▾），点按弹选择器（跟随当前选中实例+全部实例勾选态+取消），钉定/回跟随全链刷新 c) 下载落点对账=ModService +ame267_noteLastModDownloadToProfile:file:/ame267_lastModDownload（handlePLDownloadCompletion 成功且 Mod 类型才记，@synchronized 护账，cleanup 前捕获 taskItem）+ModsManager ame267_reconcileLastDownloadIfNeeded（viewDidLoad/viewWillAppear 对账，ts 去重，跨实例补挂 Task266 横幅=下载先于开页场景闭环）d) 四入口语义归位=抽屉入口删快照绑定（跟随模式）、VersionManager/ProfileSettings 改 ame267_pinToProfile:（语义钉定）、一键切换 ame265_switchToCrossProfileTarget 复用 pinToProfile（显式钉定）
+- ②JIT 等待可取消（"jit 容易未响应"观感根修）：四个等待点（RightPanel 主等待/ame172 重挂 + NavCtrl 主等待/ame172 重挂）等待 alert 全部零 action=用户被锁 120s（Task226 自动重试后最长 240s）想退出只能杀进程——修法=各点挂 resman.common.cancel action（置 ame267_cancelled）+ 等待条件包装（ame267_cancelled || 原条件，≤200ms 退出循环）+ 完成块取消分支先判（不启动游戏：RightPanel task=nil+setInteractionEnabled:YES+ReloadProfileList；NavCtrl setInteractionEnabled:YES forDownloading:YES+reloadProfileList）+ NavCtrl 781 行 TODO 注释块（原实现者遗留的 cancel 半成品）退役落地
+- ③屎山去重第 1 批（零行为变更）：ModVersionViewController 5 处 + DownloadViewController 6 处 self.targetProfileName 三元式（两种形态）收敛为文件级 static inline ame267_effectiveTargetProfile/ame267_lockedDownloadTarget（语义逐字节等价，Ame232 前置实现同文件可直调）
+- ④v6.5.5 开版：Makefile VERSION 6.5.0 → 6.5.5（用户点名"开发6.5.5"，发行物文件名此后携带新版本）
+- i18n：resman.mods.profile_chip（%@ 单定位符）/profile_picker.title/profile_follow 3 键 × 54 表（en/zh-CN/Hans/Hant 实译余表英文兜底，task267_inject_i18n.py 落库）
+- 事故两件（自愈闭环）：a) CRLF 文件 ModService.h Edit 工具不命中 → python 字节级插入保形（Task257 K4 教训复用）b) JIT 补丁脚本 replacement 三引号非 raw 串里 \1 被解释为八进制 \x01 → 四处 alert 创建块被吞——git show HEAD 提取原块精确回填 + 全文件 \x01 清零验证（教训：replacement 模板一律 raw 串或 re.escape，回填前必须结构断言）
+- 门禁：task139 all balanced；task240 import OK；task191 54 表 2914 键 OK；task248 缺键0/硬编码0/动态键0；task250 裸键名0；verify_task263 43/43 ALL GREEN
+
+Stage Summary:
+- 装机锚点：①模组管理导航栏常驻"实例：X ▾"切换器，点开即见全部实例；下载 mod 后无论先后开页都出横幅（[ModsManager] Task267: reconcile mismatch lastDL=… viewing=…）点切换立见文件；改选实例后管理页自动跟扫（[ModsManager] Task267: SelectedProfileChanged -> …）②JIT 等待弹窗出现"取消"按钮，随时可退（[JIT] Task267: user cancelled JIT wait）不再 120-240s 无响应 ③v6.5.5 产物名携带新版本号

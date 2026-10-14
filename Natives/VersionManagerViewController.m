@@ -1813,7 +1813,8 @@ static const CGFloat kVMCardCornerRadius = 16.0;
         return;
     }
     ModsManagerViewController *vc = [[ModsManagerViewController alloc] init];
-    vc.profileName = self.selectedProfile;
+    // Task267：语义入口（管理此版本的模组）= 钉定该实例，选中实例变化不跟走
+    [vc ame267_pinToProfile:self.selectedProfile];
     [self.navigationController pushViewController:vc animated:YES];
 }
 

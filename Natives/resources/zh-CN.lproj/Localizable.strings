@@ -3092,3 +3092,6 @@
 "resman.mods.folder.import" = "导入模组到此目录";
 "resman.mods.cross_profile.text" = "已下载的 %1$@ 写入了实例「%2$@」（当前查看的是「%3$@」）";
 "resman.mods.cross_profile.switch" = "切换到该实例查看";
+"resman.mods.profile_chip" = "实例：%@ ▾";
+"resman.mods.profile_picker.title" = "选择要管理的实例";
+"resman.mods.profile_follow" = "跟随当前选中实例";

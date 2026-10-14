@@ -1894,9 +1894,18 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     
     self.progressLabel.text = localize(@"i18n_str_436", nil);
     
+    // Task267：等待期可取消——旧版 120s（Task226 自动重试后最长 240s）弹窗
+    // 零 action，想退出只能杀进程 = 「JIT 未响应」观感的直接来源。
+    __block BOOL ame267_cancelled = NO;
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_437", nil)
                                                                    message:hasTrollStoreJIT ? localize(@"i18n_str_2054", nil) : localize(@"i18n_str_439", nil)
                                                             preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+                                              style:UIAlertActionStyleCancel
+                                            handler:^(UIAlertAction * _Nonnull action) {
+        ame267_cancelled = YES;
+        NSLog(@"[JIT] [RightPanel] Task267: user cancelled JIT wait (main)");
+    }]];
     // ★ Task223（“版本设置启动游戏，JIT 有概率卡死”根修层 1/2）：进度型弹窗
     //   无动画呈现——stikjit:// 切后台转场瞬间的 animated present 是主线程
     //   楔死头号嫌疑类（同 NavCtrl 病历注释）。
@@ -1927,7 +1936,7 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         // Task169：有界等待（120s）+每 10s 心跳日志。旧裸循环在 stikjit://
         // 偶发没开成 JIT 时永不退出（装机 485b18c：冷启动首次启动卡在
         // 启动器界面，只能杀进程）。超时后撤弹窗并给出重试/取消。
-        BOOL ok = ame169_waitForJITCondition(^{ return isJITEnabled(false); }, 120.0, @"isJITEnabled");
+        BOOL ok = ame169_waitForJITCondition(^{ return (ame267_cancelled || isJITEnabled(false)); }, 120.0, @"isJITEnabled");
         // Task185：自愈式派发（11e4b63 装机 latestlog.2 病历：condition
         // satisfied 后旧 dispatch_async(main) 续接块在后台被楔死的主队列上
         // 永不执行，Task183 锚点缺失即卡死——见 utils.h
@@ -1941,6 +1950,14 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
             if (ame172_bgt != UIBackgroundTaskInvalid) {
                 [UIApplication.sharedApplication endBackgroundTask:ame172_bgt];
                 ame172_bgt = UIBackgroundTaskInvalid;
+            }
+            if (ame267_cancelled) {
+                // Task267：用户主动取消——不启动游戏，恢复启动器交互态
+                NSLog(@"[JIT] [RightPanel] Task267: JIT wait cancelled -- abandoning launch");
+                self.task = nil;
+                [self setInteractionEnabled:YES];
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"ReloadProfileList" object:nil];
+                return;
             }
             if (ok) {
                 // Task182：成功路径不再依赖 dismiss 的 completion。病历
@@ -2040,9 +2057,17 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
 // ③断言防挂起冻结 + 有界等调试器存活，超时走重试弹窗。
 - (void)ame172_reattachJIT26ThenLaunch:(void(^)(void))handler {
     self.progressLabel.text = localize(@"i18n_str_436", nil);
+    // Task267：重挂等待同样可取消（同主等待语义）。
+    __block BOOL ame267_cancelled = NO;
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_437", nil)
                                                                    message:localize(@"i18n_str_439", nil)
                                                             preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+                                              style:UIAlertActionStyleCancel
+                                            handler:^(UIAlertAction * _Nonnull action) {
+        ame267_cancelled = YES;
+        NSLog(@"[JIT] [RightPanel] Task267: user cancelled JIT wait (reattach)");
+    }]];
     [self presentViewController:alert animated:NO  /* Task223: JIT progress alert presented un-animated (background-transition present is the main-thread wedge suspect) */ completion:nil];
     
     __block UIBackgroundTaskIdentifier ame172_bgt = [UIApplication.sharedApplication beginBackgroundTaskWithName:@"ame172-jit26-reattach" expirationHandler:^{
@@ -2088,12 +2113,20 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         // exception ports / spawned-by-debugger), not for CS_DEBUGGED
         // -- that flag is already set and would race the first brk.
         // Task169：有界等待（120s）+心跳日志，超时走重试弹窗。
-        BOOL ok = ame169_waitForJITCondition(^{ return JIT26IsLikelyDebuggerKeepAttached(); }, 120.0, @"JIT26 debugger attach");
+        BOOL ok = ame169_waitForJITCondition(^{ return (ame267_cancelled || JIT26IsLikelyDebuggerKeepAttached()); }, 120.0, @"JIT26 debugger attach");
         // Task185：自愈式派发（同主等待路径，病历见 utils.h）。
         ame185_dispatchToMainSelfHealing(^{
             if (ame172_bgt != UIBackgroundTaskInvalid) {
                 [UIApplication.sharedApplication endBackgroundTask:ame172_bgt];
                 ame172_bgt = UIBackgroundTaskInvalid;
+            }
+            if (ame267_cancelled) {
+                // Task267：用户主动取消——不启动游戏，恢复启动器交互态
+                NSLog(@"[JIT] [RightPanel] Task267: JIT wait cancelled -- abandoning launch");
+                self.task = nil;
+                [self setInteractionEnabled:YES];
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"ReloadProfileList" object:nil];
+                return;
             }
             if (ok) {
                 // Task182：同主等待路径——后台态 dismiss completion 悬空风险，

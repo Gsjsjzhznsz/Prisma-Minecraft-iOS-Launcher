@@ -1627,7 +1627,8 @@ static NSString * localizeProfileTitle(NSString *title) {
 
 - (void)openModsManager {
     ModsManagerViewController *vc = [[ModsManagerViewController alloc] init];
-    vc.profileName = [self currentProfileName];
+    // Task267：语义入口（本 gameDir 实例的模组）= 钉定，选中实例变化不跟走
+    [vc ame267_pinToProfile:[self currentProfileName]];
     [self.navigationController pushViewController:vc animated:YES];
 }
 

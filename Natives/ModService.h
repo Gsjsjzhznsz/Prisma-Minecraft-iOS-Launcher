@@ -30,6 +30,19 @@ typedef void(^ModDownloadHandler)(NSError * _Nullable error); // Added for downl
 /// Task219 隔离优先语义）。模组管理页用于展示扫描目录提示行，并支持在文件 App 中定点打开。
 - (nullable NSString *)ame264_effectiveModsFolderForProfile:(NSString *)profileName;
 
+/// Task267（模组管理“下载了但列表不显示”终局修复——下载先于开页场景）：
+/// 记录最近一次成功落盘的 mod 下载目标（profile/文件/时间戳）。
+/// handlePLDownloadCompletion 成功路径调用；模组管理页 viewWillAppear 时与本页
+/// 生效实例对账——页面在下载完成之后才打开（Task266 横幅的实时通知够不着）
+/// 也能自解释“文件去了哪个实例”。
++ (void)ame267_noteLastModDownloadToProfile:(nullable NSString *)profileName
+                                       file:(nullable NSString *)fileName;
+
+/// Task267：读取最近一次 mod 下载落点记录。
+/// 返回 @{ @"profile": NSString, @"file": NSString, @"ts": NSNumber(double) }；
+/// 从未成功落盘过 mod 时返回 nil。
++ (nullable NSDictionary<NSString *, id> *)ame267_lastModDownload;
+
 // --- Online Mod Downloading ---
 - (void)downloadMod:(ModItem *)mod toProfile:(NSString *)profileName completion:(ModDownloadHandler)completion;
 

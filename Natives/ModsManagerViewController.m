@@ -135,6 +135,10 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 @property (nonatomic, copy) NSString *ame265_crossProfileDest;   // 待切换目标实例
 @property (nonatomic, strong) UIView *ame265_crossProfileBanner; // 当前横幅视图（tableHeaderView）
 
+// ★ Task267：实例切换器 + 下载落点对账（终局修复：下载进别的实例但列表不显示）
+@property (nonatomic, strong) UIButton *ame267_profileChip;      // 导航栏 titleView：当前生效实例，点击弹切换器
+@property (nonatomic, assign) double ame267_lastReconciledDLTs;  // 已对账的最近下载时间戳（去重）
+
 @end
 
 @implementation ModsManagerViewController
@@ -151,9 +155,15 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 /// 而管理页扫描 default 主目录）。自适应语义：不管哪个入口进来，页面
 /// 编辑的都是用户当前选中的实例——与下载目标/启动目标天然同源。
 - (NSString *)ame265_effectiveProfileName {
-    if (self.profileName.length > 0) return self.profileName;
+    // Task267 终局语义（装机 3b97d2d latestlog 双锚实锤：下载落 (2) 号实例
+    // BB10129F、管理页钉在旧实例 CA336076——快照式绑定永不过期）：
+    //   钉定模式（语义入口/用户切换）→ 锁定 profileName；
+    //   跟随模式（默认，抽屉入口）→ 实时跟随 selectedProfileName，
+    //   SelectedProfileChanged 即重扫（viewDidLoad 观察者），页面永不过期。
+    if (self.ame267_pinProfile && self.profileName.length > 0) return self.profileName;
     NSString *ame265_sel = PLProfiles.current.selectedProfileName;
-    return ame265_sel.length > 0 ? ame265_sel : @"default";
+    if (ame265_sel.length > 0) return ame265_sel;
+    return self.profileName.length > 0 ? self.profileName : @"default";
 }
 
 #pragma mark - Init
@@ -183,6 +193,18 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     [self setupNavigationButtons];
     [self setupChipsRow];
     [self setupTableViewExtras];
+
+    // ★ Task267：导航栏实例切换器（当前生效实例常驻可见，点击弹选择器）
+    [self ame267_setupProfileChip];
+    // ★ Task267：跟随模式实时性——选中实例变化即重扫（页面不过期；
+    //   钉定模式下收到通知仅刷新切换器，不改绑定）。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame267_selectedProfileChanged:)
+                                                 name:@"SelectedProfileChanged"
+                                               object:nil];
+    // ★ Task267：下载先于开页场景对账——页面打开时若最近一次 mod 下载
+    //   落在别的实例，横幅自解释（Task266 实时通知只覆盖页面在场场景）。
+    [self ame267_reconcileLastDownloadIfNeeded];
 
     [self loadMods];
 }
@@ -627,10 +649,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     NSString *ame265_dest = self.ame265_crossProfileDest;
     if (ame265_dest.length == 0) return;
     NSLog(@"[ModsManager] Task266: switch manager binding to cross-profile target %@", ame265_dest);
-    self.profileName = ame265_dest;
-    [self ame265_hideCrossProfileBanner];
-    [self ame264_setupScanFolderFooter];
-    [self reloadResourceList];
+    [self ame267_pinToProfile:ame265_dest]; // Task267：一键切换 = 用户显式钉定（同款刷新链）
 }
 
 - (void)ame265_hideCrossProfileBanner {
@@ -646,6 +665,129 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 /// 关键修复（下载成功后资源管理页不刷新）：文件落盘后自动刷新页面。
 - (void)reloadResourceList {
     [self loadMods];
+}
+
+#pragma mark - Task267 实例切换器 + 跟随/钉定 + 下载落点对账
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    // Task267：每次回页都对账一次（用户可能在下载页新下过 mod）。
+    [self ame267_reconcileLastDownloadIfNeeded];
+    [self ame267_updateProfileChip];
+}
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"SelectedProfileChanged" object:nil];
+}
+
+/// 导航栏实例切换器：titleView 常驻展示当前生效实例名 + 下拉箭头。
+- (void)ame267_setupProfileChip {
+    UIButton *chip = [UIButton buttonWithType:UIButtonTypeSystem];
+    chip.font = [UIFont systemFontOfSize:15.0 weight:UIFontWeightSemibold];
+    chip.tintColor = [UIColor systemOrangeColor];
+    chip.contentEdgeInsets = UIEdgeInsetsMake(4, 10, 4, 10);
+    [chip addTarget:self action:@selector(ame267_profileChipTapped) forControlEvents:UIControlEventTouchUpInside];
+    self.ame267_profileChip = chip;
+    [self ame267_updateProfileChip];
+    self.navigationItem.titleView = chip;
+}
+
+- (void)ame267_updateProfileChip {
+    if (!self.ame267_profileChip) return;
+    NSString *effective = [self ame265_effectiveProfileName] ?: @"default";
+    NSString *title = [NSString stringWithFormat:localize(@"resman.mods.profile_chip", NULL), effective];
+    [self.ame267_profileChip setTitle:title forState:UIControlStateNormal];
+    [self.ame267_profileChip sizeToFit];
+}
+
+/// 选中实例变化：跟随模式下换绑重扫（页面永不过期）；钉定模式仅刷新切换器。
+- (void)ame267_selectedProfileChanged:(NSNotification *)note {
+    NSLog(@"[ModsManager] Task267: SelectedProfileChanged -> %@ (pin=%d bound=%@)",
+          note.object ?: @"(nil)", (int)self.ame267_pinProfile, self.profileName ?: @"(nil)");
+    if (self.ame267_pinProfile) {
+        [self ame267_updateProfileChip];
+        return;
+    }
+    self.ame265_crossProfileDest = nil;
+    [self ame265_hideCrossProfileBanner];
+    [self ame264_setupScanFolderFooter];
+    [self ame267_updateProfileChip];
+    [self reloadResourceList];
+}
+
+/// 切换器点击：列出全部实例（勾选当前生效项）+ 跟随当前选中实例。
+- (void)ame267_profileChipTapped {
+    NSString *effective = [self ame265_effectiveProfileName] ?: @"default";
+    UIAlertController *picker = [UIAlertController alertControllerWithTitle:localize(@"resman.mods.profile_picker.title", NULL)
+                                                                    message:nil
+                                                             preferredStyle:UIAlertControllerStyleAlert];
+    __weak typeof(self) weakSelf = self;
+    // 跟随当前选中实例（跟随模式下勾选态由 title 前缀表达；钉定模式下可选回跟随）
+    NSString *followTitle = [NSString stringWithFormat:@"%@%@",
+        self.ame267_pinProfile ? @"" : @"✓ ",
+        localize(@"resman.mods.profile_follow", NULL)];
+    [picker addAction:[UIAlertAction actionWithTitle:followTitle
+                                               style:UIAlertActionStyleDefault
+                                             handler:^(UIAlertAction *action) {
+        [weakSelf ame267_followSelection];
+    }]];
+    // 全部实例（字典键名排序；PLProfiles profiles 键即实例名）
+    NSDictionary *profiles = [[PLProfiles current] profiles];
+    NSArray *names = [profiles.allKeys sortedArrayUsingSelector:@selector(compare:)];
+    for (NSString *name in names) {
+        NSString *row = [name isEqualToString:effective]
+            ? [NSString stringWithFormat:@"✓ %@", name] : name;
+        [picker addAction:[UIAlertAction actionWithTitle:row
+                                                   style:UIAlertActionStyleDefault
+                                                 handler:^(UIAlertAction *action) {
+            [weakSelf ame267_pinToProfile:name];
+        }]];
+    }
+    [picker addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", NULL)
+                                               style:UIAlertActionStyleCancel
+                                             handler:nil]];
+    [self presentViewController:picker animated:YES completion:nil];
+}
+
+/// 钉定到指定实例（语义入口与切换器共用）：换绑 + 撤历史横幅 + 表尾联动 + 重扫。
+- (void)ame267_pinToProfile:(NSString *)profileName {
+    NSLog(@"[ModsManager] Task267: pin to profile %@", profileName ?: @"(nil)");
+    self.ame267_pinProfile = YES;
+    self.profileName = profileName;
+    self.ame265_crossProfileDest = nil;
+    [self ame265_hideCrossProfileBanner];
+    [self ame264_setupScanFolderFooter];
+    [self ame267_updateProfileChip];
+    [self reloadResourceList];
+}
+
+/// 回到跟随模式：清钉定与旧绑定，重扫即落在当前选中实例。
+- (void)ame267_followSelection {
+    NSLog(@"[ModsManager] Task267: follow selected profile (pin cleared)");
+    self.ame267_pinProfile = NO;
+    self.profileName = nil;
+    self.ame265_crossProfileDest = nil;
+    [self ame265_hideCrossProfileBanner];
+    [self ame264_setupScanFolderFooter];
+    [self ame267_updateProfileChip];
+    [self reloadResourceList];
+}
+
+/// 下载落点对账：最近一次成功落盘的 mod 下载若落在别的实例且尚未对过账，
+/// 横幅自解释（复用 Task266 横幅视图与一键切换）。
+- (void)ame267_reconcileLastDownloadIfNeeded {
+    NSDictionary *record = [ModService ame267_lastModDownload];
+    if (!record) return;
+    double ts = [record[@"ts"] doubleValue];
+    if (ts <= 0.0 || ts <= self.ame267_lastReconciledDLTs) return;
+    NSString *dest = record[@"profile"];
+    NSString *file = record[@"file"];
+    if (dest.length == 0) return;
+    NSString *effective = [self ame265_effectiveProfileName];
+    self.ame267_lastReconciledDLTs = ts; // 无论是否跨实例，看过即对过账
+    if ([dest isEqualToString:effective]) return;
+    NSLog(@"[ModsManager] Task267: reconcile mismatch (lastDL=%@ viewing=%@ file=%@) -- showing banner", dest, effective, file);
+    [self ame265_showCrossProfileBannerForProfile:dest file:file];
 }
 
 - (void)loadMods {

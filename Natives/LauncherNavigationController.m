@@ -777,15 +777,17 @@ static void *ProgressObserverContext = &ProgressObserverContext;
             toolLabel:@"sidestore://sidejit-enable"];
     }
 
+    // Task267：等待期可取消（同 RightPanel 主等待语义，旧 TODO 落地）。
+    __block BOOL ame267_cancelled = NO;
     UIAlertController* alert = [UIAlertController alertControllerWithTitle:localize(@"launcher.wait_jit.title", nil)
         message:hasTrollStoreJIT ? localize(@"launcher.wait_jit_trollstore.message", nil) : localize(@"launcher.wait_jit.message", nil)
         preferredStyle:UIAlertControllerStyleAlert];
-/* TODO:
-    UIAlertAction *cancel = [UIAlertAction actionWithTitle:localize(@"Cancel", nil) style:UIAlertActionStyleCancel handler:^{
-        
-    }];
-    [alert addAction:cancel];
-*/
+    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+                                              style:UIAlertActionStyleCancel
+                                            handler:^(UIAlertAction * _Nonnull action) {
+        ame267_cancelled = YES;
+        NSLog(@"[JIT] [NavCtrl] Task267: user cancelled JIT wait (main)");
+    }]];
     // ★ Task223（用户报“版本设置启动游戏，JIT 有概率卡死”，2832c2b latestlog.8
     //   判读：condition satisfied 后 Task183 锚点缺失、主队列楔死，而
     //   Task192 的全局队列心跳照常——stikjit:// 把 App 切后台的转场瞬间
@@ -803,7 +805,7 @@ static void *ProgressObserverContext = &ProgressObserverContext;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         // Task169：有界等待（120s）+每 10s 心跳日志，超时走重试弹窗（同
         // RightPanel/DownloadVC 两处，群见 utils.m 病历）。
-        BOOL ok = ame169_waitForJITCondition(^{ return isJITEnabled(false); }, 120.0, @"isJITEnabled");
+        BOOL ok = ame169_waitForJITCondition(^{ return (ame267_cancelled || isJITEnabled(false)); }, 120.0, @"isJITEnabled");
         // Task185：自愈式派发（11e4b63 latestlog.2 病历：condition satisfied
         // 后旧 dispatch_async(main) 续接块在后台被楔死的主队列上永不执行——
         // 见 utils.h ame185_dispatchToMainSelfHealing）。
@@ -813,6 +815,14 @@ static void *ProgressObserverContext = &ProgressObserverContext;
             if (ame172_bgt != UIBackgroundTaskInvalid) {
                 [UIApplication.sharedApplication endBackgroundTask:ame172_bgt];
                 ame172_bgt = UIBackgroundTaskInvalid;
+            }
+            if (ame267_cancelled) {
+                // Task267：用户主动取消——不启动游戏，恢复启动器交互态
+                NSLog(@"[JIT] [NavCtrl] Task267: JIT wait cancelled -- abandoning launch");
+                self.task = nil;
+                [self setInteractionEnabled:YES forDownloading:YES];
+                [self reloadProfileList];
+                return;
             }
             if (ok) {
                 // Task182：后台态 dismiss completion 悬空风险（同 RightPanel
@@ -859,9 +869,17 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 /// 后台任务断言，同 RightPanel.ame172_reattachJIT26ThenLaunch，本文本
 /// alert 标题/文案用 NavCtrl 的本地化键）。
 - (void)ame172_reattachJIT26ThenLaunch:(void(^)(void))handler {
+    // Task267：重挂等待同样可取消（同主等待语义）。
+    __block BOOL ame267_cancelled = NO;
     UIAlertController* alert = [UIAlertController alertControllerWithTitle:localize(@"launcher.wait_jit.title", nil)
         message:localize(@"launcher.wait_jit.message", nil)
         preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+                                              style:UIAlertActionStyleCancel
+                                            handler:^(UIAlertAction * _Nonnull action) {
+        ame267_cancelled = YES;
+        NSLog(@"[JIT] [NavCtrl] Task267: user cancelled JIT wait (reattach)");
+    }]];
     // Task223：同主等待路径——重挂弹窗也无动画（后台态 present 安全）。
     [self presentViewController:alert animated:NO completion:nil];
 
@@ -908,12 +926,20 @@ static void *ProgressObserverContext = &ProgressObserverContext;
         // exception ports / spawned-by-debugger), not for CS_DEBUGGED
         // -- that flag is already set and would race the first brk.
         // Task169：有界等待（120s）+心跳日志，超时走重试弹窗。
-        BOOL ok = ame169_waitForJITCondition(^{ return JIT26IsLikelyDebuggerKeepAttached(); }, 120.0, @"JIT26 debugger attach");
+        BOOL ok = ame169_waitForJITCondition(^{ return (ame267_cancelled || JIT26IsLikelyDebuggerKeepAttached()); }, 120.0, @"JIT26 debugger attach");
         // Task185：自愈式派发（同主等待路径，病历见 utils.h）。
         ame185_dispatchToMainSelfHealing(^{
             if (ame172_bgt != UIBackgroundTaskInvalid) {
                 [UIApplication.sharedApplication endBackgroundTask:ame172_bgt];
                 ame172_bgt = UIBackgroundTaskInvalid;
+            }
+            if (ame267_cancelled) {
+                // Task267：用户主动取消——不启动游戏，恢复启动器交互态
+                NSLog(@"[JIT] [NavCtrl] Task267: JIT wait cancelled -- abandoning launch");
+                self.task = nil;
+                [self setInteractionEnabled:YES forDownloading:YES];
+                [self reloadProfileList];
+                return;
             }
             if (ok) {
                 // Task182：同主等待路径——completion:nil + 直接执行。

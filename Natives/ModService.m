@@ -729,6 +729,33 @@
     [self startPLDownloadWithRequest:request taskItem:taskItem progress:progress completion:completion];
 }
 
+#pragma mark - Task267 最近 mod 下载落点记录（模组管理页对账数据源）
+
+// 下载先于开页场景：Task266 横幅靠实时通知，页面不在场时通知够不着。
+// 本记录持久于进程生命周期，模组管理页每次 viewWillAppear 对账补挂横幅。
+// 回调线程为 PLDownloadClient 完成队列（非主线程），@synchronized 护账。
+static NSString *_ame267_lastDLProfile = nil;
+static NSString *_ame267_lastDLFile = nil;
+static double _ame267_lastDLTs = 0.0;
+
++ (void)ame267_noteLastModDownloadToProfile:(NSString *)profileName file:(NSString *)fileName {
+    @synchronized ([ModService class]) {
+        _ame267_lastDLProfile = [profileName copy];
+        _ame267_lastDLFile = [fileName copy];
+        _ame267_lastDLTs = [[NSDate date] timeIntervalSince1970];
+    }
+    NSLog(@"[ModService] Task267 last-download record: profile=%@ file=%@", profileName ?: @"(nil)", fileName ?: @"(nil)");
+}
+
++ (nullable NSDictionary<NSString *, id> *)ame267_lastModDownload {
+    @synchronized ([ModService class]) {
+        if (_ame267_lastDLTs <= 0.0) return nil;
+        return @{ @"profile": _ame267_lastDLProfile ?: @"",
+                  @"file":    _ame267_lastDLFile ?: @"",
+                  @"ts":      @(_ame267_lastDLTs) };
+    }
+}
+
 #pragma mark - PLDownloadClient 封装（进度 delta 累计 / 速率采样 / 完成分发）
 
 /// 发起（或重发）PLDownloadClient 请求并挂接进度、速率、完成回调。
@@ -874,6 +901,8 @@
         return;
     }
     ModDownloadHandler completion = self.downloadCompletionHandlers[taskId];
+    // Task267：taskItem 在 cleanup 中被移除，落点记录需在清理前捕获
+    DownloadTaskItem *ame267_item = self.downloadTaskItems[taskId];
     [self cleanupPLDownloadStateForTaskId:taskId];
     [self.downloadStateLock unlock];
 
@@ -881,6 +910,11 @@
     if (success) {
         [manager updateTaskWithId:taskId stageAtIndex:0 status:PLTaskStageStatusCompleted];
         [manager setTaskWithId:taskId state:DownloadTaskStateCompleted];
+        // Task267：成功落盘才记入“最近 mod 下载落点”（模组管理页对账数据源）
+        if ([ame267_item.resourceType isEqualToString:DownloadTaskResourceTypeMod]) {
+            [ModService ame267_noteLastModDownloadToProfile:ame267_item.targetProfileName
+                                                       file:(ame267_item.displayName.length > 0 ? ame267_item.displayName : ame267_item.resourceName)];
+        }
     } else if ([error.domain isEqualToString:NSURLErrorDomain] && error.code == NSURLErrorCancelled) {
         // 用户取消（DownloadTaskManager 已置 Cancelled，这里幂等对齐）
         [manager setTaskWithId:taskId state:DownloadTaskStateCancelled];
