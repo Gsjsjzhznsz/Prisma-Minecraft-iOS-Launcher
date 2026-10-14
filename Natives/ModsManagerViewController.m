@@ -13,6 +13,7 @@
 #import "ModItem.h"
 #import "ModUpdateService.h"
 #import "ModpackExportService.h" // Task217: parseVersionId（26.x 版本解析）
+#import "ModpackImportService.h" // Task269：启动迁移兑底（升级自动合并重复实例）
 #import "ModVersion.h"
 #import "PLDownloadClient.h"
 #import "PLMirrorCenter.h"
@@ -160,7 +161,14 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     //   钉定模式（语义入口/用户切换）→ 锁定 profileName；
     //   跟随模式（默认，抽屉入口）→ 实时跟随 selectedProfileName，
     //   SelectedProfileChanged 即重扫（viewDidLoad 观察者），页面永不过期。
-    if (self.ame267_pinProfile && self.profileName.length > 0) return self.profileName;
+    if (self.ame267_pinProfile && self.profileName.length > 0) {
+        // Task269 自愈：钉定实例若已被升级自动迁移合并删除（条目不在 profile 表）→
+        // 回落跟随模式，杜绝钉在尸体实例上扫出空列表。
+        if ([[[PLProfiles current] profiles] objectForKey:self.profileName]) return self.profileName;
+        NSLog(@"[ModsManager] Task269: pinned profile \"%@\" no longer exists (migrated) -> follow mode", self.profileName);
+        self.ame267_pinProfile = NO;
+        self.profileName = nil;
+    }
     NSString *ame265_sel = PLProfiles.current.selectedProfileName;
     if (ame265_sel.length > 0) return ame265_sel;
     return self.profileName.length > 0 ? self.profileName : @"default";
@@ -193,6 +201,10 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     [self setupNavigationButtons];
     [self setupChipsRow];
     [self setupTableViewExtras];
+
+    // Task269 兑底：打开管理页也触发一次迁移检查（幂等空转；启动钩子已覆盖主路径，
+    // 此处覆盖"后台迁移收口前用户抢先开页"窗口，重复触发由忙标自拒绝）。
+    [ModpackImportService ame269_migrateDuplicateModpackInstancesIfNeeded];
 
     // ★ Task267：导航栏实例切换器（当前生效实例常驻可见，点击弹选择器）
     [self ame267_setupProfileChip];

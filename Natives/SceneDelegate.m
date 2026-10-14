@@ -10,6 +10,7 @@
 // ★ [MP-RESTORE] Task222：Terracotta 联机恢复（上游同日恢复）
 #import "TerracottaManager.h"
 #import "TerracottaBridge.h"
+#import "ModpackImportService.h" // Task269：升级自动迁移（一实例多文件夹历史遗留合并）
 
 extern __weak UIWindow *mainWindow;
 
@@ -40,6 +41,10 @@ extern BOOL Amethyst_EnforceSDL3Presentation(void);
         extern void uncaughtExceptionHandler(NSException *exception);
         NSSetUncaughtExceptionHandler(&uncaughtExceptionHandler);
         NSLog(@"[SceneDelegate] Task191: uncaught-exception handler re-armed at willConnect");
+        // Task269：升级自动迁移——"一实例多文件夹"历史遗留（重名序号实例家族）
+        // 启动即合并（幂等自愈：无重复实例时空转零 IO；导入进行中自动让路；
+        // 冲突文件一律进 .ame269_backup 备份绝不丢失；选中实例被合并自动切 canonical）。
+        [ModpackImportService ame269_migrateDuplicateModpackInstancesIfNeeded];
         // Task192：定时复挂（LC 覆盖战争的终局方案）。
         // 病历（956ea9b latestlog.1）：willConnect 点的 re-arm 日志在场，
         // 但 insertObject nil 崩溃仍走系统默认裸地址输出——证明 LC 在

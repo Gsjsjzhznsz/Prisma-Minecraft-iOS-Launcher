@@ -3304,3 +3304,17 @@ Stage Summary:
 
 - 【闭环补记】CI run 38603833744（r4 153f25a）终绿；v6.5.0 资产静默替换第十轮完成（ipa 235079078B / tipa 235079361B 同名保链，构建=153f25a；旧资产 204 删除→表单直传 201 uploaded；air legacy EXPORT-ONLY 不动）；worklog 闭环推送
 - 装机验证锚点：①版本设置 TouchController 行（已装）点按出管理菜单→卸载并关闭→开游戏无 touch 协议/控件恢复显示（日志 [TouchController] Task268 profile 'X' explicitly disabled 或 flag=YES but no TouchController jar）②模组管理导航栏"实例：X ▾"切换器 + 下载后跨实例横幅对账（[ModsManager] Task267: reconcile mismatch）+ 改选实例自动跟扫③下载失败任务重试不再卡"等待中"④JIT 等待弹窗（RightPanel/NavCtrl/DownloadVC）均有取消钮⑤1.13-1.21.x 数字 options.txt 档右 SHIFT 生效（[Task266] adaptive sneak sync 340/344 数字形态）⑥Showdown 卡死 240s 后启动放行（[Task263] watchdog stalled past deadline）
+
+## Task 269——「一实例两文件夹」病根根治（重复导入=刷新实例 + 升级自动迁移合并 + mods 身份键防双版本共存；装机 3b97d2d latestlog 双锚实锤用户定案）
+
+Work Log:
+- 用户定案（trace 1a13cb41）："一个实例2个文件夹，造成后面许多bug，赶紧彻底恢复这个问题，升级自动迁移"——Task 267 的跟随/钉定/横幅治的是症状（绑定错位自解释），病根无人治：ModpackImportService parse 阶段 modpackId 恒为新随机 UUID（modrinth_<UUID>）+ createProfileForModpack 重名追加 " (2)" 序号 ⇒ 同一整合包每重下一次必诞生一套新 profile+新文件夹；装机实况 = 下载落 FO (2)=BB10129F、管理页扫 FO=CA336076（47 jars）、游戏跑 BB10129F（latestlog L246/L254/L574 三锚）
+- 仓库同步：本地副本实际停在 f13bfe6（Task 262）——摘要"已含 Task 263-266"系误记；git fetch 后 ff 到 e37c4d3（Task 268 闭环）再动刀
+- ①前向根修（重复导入=刷新实例）：importModpack 头部按规范名查已有 modpack 实例（精确键名优先→规范名匹配；仅 gameDir 含 custom_gamedir/ 者参与），命中即整体改写 modpackInfo：id=已有实例文件夹 id + ame269_reuseProfileName 标记 ⇒ 抽取/下载/装载器全链落同一文件夹（ame224 用户数据保底路径由此激活）；createProfileForModpack 复用分支原地刷新原 profile（保键名/保留未知字段，lastVersionId/javaVersion/icon/javaArgs/serverIp 刷新），绝不新建 "(2)" 克隆；saveImportedModpack 同 id 原位替换防列表重复条目
+- ②升级自动迁移（幂等自愈）：+ame269_migrateDuplicateModpackInstancesIfNeeded（SceneDelegate willConnect 主钩子 + ModsManager viewDidLoad 兜底；忙标自拒绝 + @try/@finally 复位 + 导入进行中让路 ame269_isImportBusy）；规格名聚类→canonical=无序号后缀原名（其次 created 最早）→重复文件夹整树并入 canonical：目标缺失=move（同卷 rename）、同名同尺寸=dedupe、同名不同尺寸=stash；r2 增 mods/ 身份键（ame269_modIdentityKeyForFileName：剥 .jar/.jar.disabled 后自尾剥离纯版本段，sodium-fabric-0.6.0 与 -0.6.1 同键）——verify_task269 首轮 21/23 抓出设计缺口（不同文件名同 mod 新旧版本会双入 mods/=Fabric 重复 id 必崩），r2 补键冲突拦截后 28/28；冲突文件一律进 <custom_gamedir>/.ame269_backup/<ts>/<dupId>/ 绝不丢失；剪空目录→删重复文件夹→主线程收口删重复 profile（选中被合并自动切 canonical，setter 自带 SelectedProfileChanged 广播→管理页跟随重扫）+ defaults 账本 ame269_migration_ledger
+- ③三道自愈兜底（自适应恢复，杜绝"再叫恢复"）：ModsManager ame265_effectiveProfileName 死钉定自愈（钉定实例不在 profile 表→回落跟随+日志）；ModService downloadMod 末梢自愈（目标实例不存在→回落 selectedProfileName）；DownloadVC viewWillAppear 锁定目标过期对账（重锁 selectedProfileName）
+- 验证锚：verify269 28/28（规范名归一 4 + 身份键 4 + gameDir 解析 4 + 装机实况复演 13 + 幂等复跑 1 + 选中切换 1 + 结论行 1）；门禁 task139 all balanced / task191 54 表 2916 键 OK / task248 缺键0硬编码0动态键0 / task250 全零；零新增 i18n 键（迁移静默+日志锚设计，54 表零风险）
+- 装机日志锚点：①升级首启 [Ame269] migrate: family "Fabulously Optimized" has 2 members (canonical="Fabulously Optimized" folder=CA336076) + "... (BB10129F) merged into ..." ②[Ame269] selected profile was merged away -> switched to "Fabulously Optimized" ③重下同包 [ModpackImport] Task269: re-import of "X" reuses existing instance "X" (folder=...) -- no (2) clone ④管理页实例 chip 显示 canonical，列表 47+ jars 齐全
+
+Stage Summary:
+- 提交推送 main（PAT 保形）；一实例一文件夹三角闭环：前向不造新重复 + 存量自动合并 + 三道自愈兜底；用户设备升级后无需任何手动操作，历史遗留 "(2)" 家族启动即合并、模组列表即刻齐整

@@ -786,7 +786,22 @@ static NSString * const kImportedModpacksKey = @"ImportedModpacks";
     return [self importModpack:modpackInfo progress:nil error:error];
 }
 
+// Task269：导入进行中标记（迁移让路用）。try/finally 保证任何 return 路径都会复位。
+static BOOL ame269_sImportBusy = NO;
++ (BOOL)ame269_isImportBusy { @synchronized(self) { return ame269_sImportBusy; } }
+
 - (BOOL)importModpack:(NSDictionary *)modpackInfo
+             progress:(void (^_Nullable)(double progress, NSString *stageMessage))progress
+                error:(NSError **)error {
+    @synchronized(self) { ame269_sImportBusy = YES; }
+    @try {
+        return [self ame269_importModpackInner:modpackInfo progress:progress error:error];
+    } @finally {
+        @synchronized(self) { ame269_sImportBusy = NO; }
+    }
+}
+
+- (BOOL)ame269_importModpackInner:(NSDictionary *)modpackInfo
              progress:(void (^_Nullable)(double progress, NSString *stageMessage))progress
                 error:(NSError **)error {
     // 阶段5修复：每次导入开始时清空失败列表（参照 FCL DownloadList.reset()）
@@ -813,6 +828,29 @@ static NSString * const kImportedModpacksKey = @"ImportedModpacks";
     }
 
     // ---------- Task 5.1：注册整合包导入主任务（6 阶段 + autoPresentDetail 统一进度页） ----------
+    // ---------- Task269：一实例一文件夹——同一整合包重复导入/重下不再新建 "(2)" 克隆实例 ----------
+    // 病根（装机 3b97d2d latestlog 双锚实锤）：parse 阶段 modpackId 恒为新随机 UUID
+    // （modrinth_<UUID>），createProfileForModpack 重名时追加 " (2)" 序号——同一整合包
+    // 每重新导入一次就诞生一套新 profile+新文件夹，下载落 A 文件夹、管理页扫 B 文件夹、
+    // 游戏跑 A 文件夹，"游戏里有模组列表不显示"一族 bug 全部源于此。
+    // 根修：导入前按规范名（剥重名序号）查已有 modpack 实例，命中则整体复用其
+    // modpackId（=复用其 custom_gamedir 文件夹）并在 createProfileForModpack 里原地
+    // 刷新原 profile——重导入语义从"克隆实例"变为"刷新实例"（对齐 HMCL/FCL）。
+    {
+        NSString *ame269_existingProfile = [ModpackImportService ame269_findExistingModpackProfileForDisplayName:modpackInfo[@"name"]];
+        if (ame269_existingProfile.length > 0) {
+            NSString *ame269_existingId = [ModpackImportService ame269_instanceIdFromGameDir:
+                                               PLProfiles.current.profiles[ame269_existingProfile][@"gameDir"]];
+            if (ame269_existingId.length > 0) {
+                NSMutableDictionary *ame269_info = [modpackInfo mutableCopy];
+                ame269_info[@"id"] = ame269_existingId;
+                ame269_info[@"ame269_reuseProfileName"] = ame269_existingProfile;
+                modpackInfo = ame269_info;
+                NSLog(@"[ModpackImport] Task269: re-import of \"%@\" reuses existing instance \"%@\" (folder=%@) -- no (2) clone",
+                      modpackInfo[@"name"] ?: @"(nil)", ame269_existingProfile, ame269_existingId);
+            }
+        }
+    }
     NSString *modpackId = modpackInfo[@"id"];
     NSString *displayName = modpackInfo[@"name"];
     if (![displayName isKindOfClass:[NSString class]] || displayName.length == 0) {
@@ -2605,6 +2643,32 @@ static NSString * const kImportedModpacksKey = @"ImportedModpacks";
     NSString *name = modpackInfo[@"name"];
     NSString *modpackId = modpackInfo[@"id"];
 
+    // Task269：复用已有实例——更新原 profile（保键名/保留未知字段），绝不新建 "(2)"。
+    // 与 importModpackInner 头部的复用改写成对：id 已换成已有实例的文件夹 id，
+    // 这里把 lastVersionId/loader/javaVersion/icon 等刷新进原 profile 即完成"重导入=刷新"。
+    NSString *ame269_reuse = modpackInfo[@"ame269_reuseProfileName"];
+    if (ame269_reuse.length > 0 && PLProfiles.current.profiles[ame269_reuse]) {
+        NSMutableDictionary *ame269_prof = [PLProfiles.current.profiles[ame269_reuse] mutableCopy];
+        ame269_prof[@"lastVersionId"] = versionId ?: @"";
+        ame269_prof[@"gameDir"] = gameDirRelative;
+        ame269_prof[@"type"] = @"modpack";
+        NSString *ame269_mcVersion = modpackInfo[@"minecraftVersion"];
+        if (ame269_mcVersion.length > 0) {
+            NSInteger ame269_javaMajor = [self javaMajorVersionForMC:ame269_mcVersion];
+            ame269_prof[@"javaVersion"] = @{@"component": @"java-runtime", @"majorVersion": @(ame269_javaMajor)};
+        }
+        NSString *ame269_icon = modpackInfo[@"iconBase64"];
+        if (ame269_icon.length > 0) ame269_prof[@"icon"] = ame269_icon;
+        NSString *ame269_javaArgs = modpackInfo[@"javaArguments"];
+        if ([ame269_javaArgs isKindOfClass:[NSString class]] && ame269_javaArgs.length > 0) ame269_prof[@"javaArgs"] = ame269_javaArgs;
+        NSString *ame269_serverIp = modpackInfo[@"joinServerAddress"];
+        if ([ame269_serverIp isKindOfClass:[NSString class]] && ame269_serverIp.length > 0) ame269_prof[@"serverIp"] = ame269_serverIp;
+        PLProfiles.current.profiles[ame269_reuse] = ame269_prof;
+        [PLProfiles.current save];
+        NSLog(@"[ModpackImport] Task269: profile \"%@\" updated in place (one instance one folder)", ame269_reuse);
+        return ame269_reuse;
+    }
+
     // 修复（参照 FCL/HMCL）：profile name 优先使用整合包可读名（name 字段），
     // 仅在重名时回退到 modpackId 避免冲突。原实现直接用 modpackId 作为 profile name，
     // 导致用户在版本列表看到 UUID 而非整合包名。
@@ -2676,6 +2740,329 @@ static NSString * const kImportedModpacksKey = @"ImportedModpacks";
     return profileName;
 }
 
+#pragma mark - Task269 升级自动迁移：一实例多文件夹历史遗留合并（幂等自愈）
+
++ (NSString *)ame269_normalizedInstanceName:(NSString *)name {
+    if (name.length == 0) return name ?: @"";
+    // 剥掉尾部 " (2)"/"（12）" 重名序号后缀（createProfileForModpack 重名追加的家族标记）。
+    // 限 1-2 位数字降低误伤（真实包名以括号数字结尾的场景基本是 3 位以上年份/版本号）。
+    static NSRegularExpression *ame269_re = nil;
+    static dispatch_once_t ame269_once;
+    dispatch_once(&ame269_once, ^{
+        ame269_re = [NSRegularExpression regularExpressionWithPattern:@"\\s*[（(]\\d{1,2}[)）]\\s*$"
+                                                              options:0 error:nil];
+    });
+    __block NSString *norm = name;
+    [ame269_re enumerateMatchesInString:name options:0 range:NSMakeRange(0, name.length)
+                             usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+        if (result) norm = [name stringByReplacingCharactersInRange:result.range withString:@""];
+    }];
+    return norm;
+}
+
+/// gameDir（如 "./custom_gamedir/modrinth_<UUID>"）→ 实例文件夹名 <id>。
+/// 只认 custom_gamedir/ 下一层的 <id>，深层/异常路径一律拒绝（宁不迁移不误伤）。
++ (NSString *)ame269_instanceIdFromGameDir:(NSString *)gameDir {
+    if (gameDir.length == 0) return nil;
+    NSRange range = [gameDir rangeOfString:@"custom_gamedir/" options:NSBackwardsSearch];
+    if (range.location == NSNotFound) return nil;
+    NSString *tail = [gameDir substringFromIndex:NSMaxRange(range)];
+    if (tail.length == 0 || [tail isEqualToString:@"."] || [tail containsString:@"/"]) return nil;
+    return tail;
+}
+
++ (NSString *)ame269_findExistingModpackProfileForDisplayName:(NSString *)displayName {
+    if (displayName.length == 0) return nil;
+    NSDictionary *profiles = PLProfiles.current.profiles;
+    if (profiles.count == 0) return nil;
+    // 1) 精确键名命中优先（最常见的重下场景：profile "X" 已存在，又下了一次 "X"）
+    NSDictionary *exact = profiles[displayName];
+    if ([exact isKindOfClass:[NSDictionary class]]) {
+        NSString *gd = exact[@"gameDir"];
+        if ([gd isKindOfClass:[NSString class]] && [gd containsString:@"custom_gamedir/"]) {
+            return displayName;
+        }
+    }
+    // 2) 规范名匹配（覆盖历史遗留的 "X"/"X (2)"/"X (3)" 家族与改名重下的情况）
+    NSString *want = [self ame269_normalizedInstanceName:displayName];
+    if (want.length == 0) return nil;
+    for (NSString *key in profiles) {
+        NSDictionary *prof = profiles[key];
+        if (![prof isKindOfClass:[NSDictionary class]]) continue;
+        NSString *gd = prof[@"gameDir"];
+        if (![gd isKindOfClass:[NSString class]] || ![gd containsString:@"custom_gamedir/"]) continue;
+        if ([[self ame269_normalizedInstanceName:key] isEqualToString:want]) return key;
+    }
+    return nil;
+}
+
+/// 递归收集 root 下的文件相对路径（先快照后处理，避免边枚举边搬移的失效问题）
++ (void)ame269_collectRelPaths:(NSString *)dir
+                          relTo:(NSString *)root
+                      dirListOut:(NSMutableArray<NSString *> *_Nullable)dirListOut
+                     fileListOut:(NSMutableArray<NSString *> *_Nullable)fileListOut {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSArray *children = [fm contentsOfDirectoryAtPath:dir error:nil];
+    if (!children) return;
+    for (NSString *child in children) {
+        NSString *full = [dir stringByAppendingPathComponent:child];
+        NSString *rel = [full substringFromIndex:MIN(root.length, full.length)];
+        if ([rel hasPrefix:@"/"]) rel = [rel substringFromIndex:1];
+        BOOL isDir = NO;
+        if ([fm fileExistsAtPath:full isDirectory:&isDir] && isDir) {
+            if (dirListOut) [dirListOut addObject:rel];
+            [self ame269_collectRelPaths:full relTo:root dirListOut:dirListOut fileListOut:fileListOut];
+        } else {
+            if (fileListOut) [fileListOut addObject:rel];
+        }
+    }
+}
+
+/// 冲突文件进备份（绝不删除用户数据）：.ame269_backup/<ts>/<dupId>/<相对路径>
++ (void)ame269_stashFile:(NSString *)src backupRoot:(NSString *)backupRoot rel:(NSString *)rel {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *dst = [backupRoot stringByAppendingPathComponent:rel];
+    [fm createDirectoryAtPath:dst.stringByDeletingLastPathComponent
+          withIntermediateDirectories:YES attributes:nil error:nil];
+    if (![fm moveItemAtPath:src toPath:dst error:nil]) {
+        // rename 失败（跨卷等极端场景）→ copy 兜底，源保留则下次启动迁移自愈重试
+        [fm copyItemAtPath:src toPath:dst error:nil];
+    }
+}
+
+/// mods/ 身份键：文件名剥扩展名后自尾剥离版本段（纯数字组/v前缀组），剩余段小写重组。
+/// 用途：sodium-0.6.0.jar 与 sodium-0.6.1.jar 同身份——Fabric 同 id 双版本 jar 同目录必崩，
+/// 合并时凭此键拦截（后来者进备份），根治“老实例+重下新版本共存”家族。
++ (NSString *)ame269_modIdentityKeyForFileName:(NSString *)fileName {
+    if (fileName.length == 0) return fileName ?: @"";
+    NSString *base = fileName;
+    NSString *lower = base.lowercaseString;
+    if ([lower hasSuffix:@".jar.disabled"]) base = [base substringToIndex:base.length - 13];
+    else if ([lower hasSuffix:@".jar"]) base = [base substringToIndex:base.length - 4];
+    NSMutableArray<NSString *> *segs = [[base componentsSeparatedByCharactersInSet:
+        [NSCharacterSet characterSetWithCharactersInString:@"-_.+"]] mutableCopy];
+    static NSPredicate *ame269_verPred = nil;
+    static dispatch_once_t ame269_once;
+    dispatch_once(&ame269_once, ^{
+        ame269_verPred = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", @"(v|V)?\\d+(\\.\\d+)*"];
+    });
+    while (segs.count > 1 && [ame269_verPred evaluateWithObject:segs.lastObject]) {
+        [segs removeLastObject];
+    }
+    return [[segs componentsJoinedByString:@"_"] lowercaseString];
+}
+
+/// 把 srcDir 整树并入 dstDir：缺失即移入 / 同名同尺寸去重 / 同名不同尺寸或同 mod
+/// 身份键冲突（仅 mods/）进备份——保目标版本，绝不让同 mod 两版本 jar 同存 mods/。
++ (void)ame269_mergeFolder:(NSString *)srcDir
+                      into:(NSString *)dstDir
+                backupRoot:(NSString *)backupRoot
+                     moved:(NSInteger *)moved
+                   deduped:(NSInteger *)deduped
+                  stashed:(NSInteger *)stashed {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    [fm createDirectoryAtPath:dstDir withIntermediateDirectories:YES attributes:nil error:nil];
+    // 预建 canonical mods/ 身份键集合（迁移中移动进来的文件同步入集合）
+    NSMutableSet<NSString *> *ame269_modKeys = [NSMutableSet set];
+    NSString *ame269_canonMods = [dstDir stringByAppendingPathComponent:@"mods"];
+    NSArray *ame269_canonModFiles = [fm contentsOfDirectoryAtPath:ame269_canonMods error:nil];
+    for (NSString *existing in ame269_canonModFiles) {
+        [ame269_modKeys addObject:[self ame269_modIdentityKeyForFileName:existing]];
+    }
+    NSMutableArray<NSString *> *srcFiles = [NSMutableArray array];
+    [self ame269_collectRelPaths:srcDir relTo:srcDir dirListOut:nil fileListOut:srcFiles];
+    for (NSString *rel in srcFiles) {
+        NSString *src = [srcDir stringByAppendingPathComponent:rel];
+        NSString *dst = [dstDir stringByAppendingPathComponent:rel];
+        BOOL ame269_inMods = ([rel hasPrefix:@"mods/"] &&
+                             ([rel.lowercaseString hasSuffix:@".jar"] || [rel.lowercaseString hasSuffix:@".jar.disabled"]));
+        NSDictionary *srcAttr = [fm attributesOfItemAtPath:src error:nil];
+        NSDictionary *dstAttr = [fm attributesOfItemAtPath:dst error:nil];
+        if (!dstAttr) {
+            // Task269-r2：mods/ 内身份键冲突（同 mod 不同版本文件名）→ 进备份不放入
+            if (ame269_inMods) {
+                NSString *key = [self ame269_modIdentityKeyForFileName:rel.lastPathComponent];
+                if ([ame269_modKeys containsObject:key]) {
+                    NSLog(@"[Ame269] merge: mod identity conflict on %@ (key=%@) -- stashed, keeping canonical version",
+                          rel.lastPathComponent, key);
+                    [self ame269_stashFile:src backupRoot:backupRoot rel:rel];
+                    if (stashed) (*stashed)++;
+                    continue;
+                }
+                [ame269_modKeys addObject:key];
+            }
+            // 目标缺失 → rename 移入（同卷瞬间完成，保留原始时间戳）
+            [fm createDirectoryAtPath:dst.stringByDeletingLastPathComponent
+                  withIntermediateDirectories:YES attributes:nil error:nil];
+            if ([fm moveItemAtPath:src toPath:dst error:nil]) {
+                if (moved) (*moved)++;
+            } else {
+                [self ame269_stashFile:src backupRoot:backupRoot rel:rel];
+                if (stashed) (*stashed)++;
+            }
+        } else if ([srcAttr fileSize] == [dstAttr fileSize]) {
+            // 同名同尺寸 = 同一文件（jar/配置场景足够判定），去重删除源副本
+            if ([fm removeItemAtPath:src error:nil]) {
+                if (deduped) (*deduped)++;
+            } else {
+                [self ame269_stashFile:src backupRoot:backupRoot rel:rel];
+                if (stashed) (*stashed)++;
+            }
+        } else {
+            // 同名不同尺寸：保目标版本（Fabric 同 id 双版本 jar 必崩），源进备份绝不丢
+            [self ame269_stashFile:src backupRoot:backupRoot rel:rel];
+            if (stashed) (*stashed)++;
+        }
+    }
+}
+
+/// 自底向上剪空目录（removeItemAtPath 只对空目录成功，非空自然保留）
++ (void)ame269_pruneEmptyDirs:(NSString *)root {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSMutableArray<NSString *> *dirs = [NSMutableArray array];
+    [self ame269_collectRelPaths:root relTo:root dirListOut:dirs fileListOut:nil];
+    [dirs sortUsingComparator:^NSComparisonResult(NSString *a, NSString *b) {
+        if (a.length > b.length) return NSOrderedAscending;  // 深的先删
+        if (a.length < b.length) return NSOrderedDescending;
+        return [a compare:b];
+    }];
+    for (NSString *rel in dirs) {
+        [fm removeItemAtPath:[root stringByAppendingPathComponent:rel] error:nil];
+    }
+}
+
++ (void)ame269_migrateDuplicateModpackInstancesIfNeeded {
+    static BOOL ame269_running = NO;
+    @synchronized(self) {
+        if (ame269_running) { NSLog(@"[Ame269] migrate skipped: already running"); return; }
+        if ([self ame269_isImportBusy]) { NSLog(@"[Ame269] migrate skipped: import busy"); return; }
+        ame269_running = YES;
+    }
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+        @try {
+            [self ame269_migrateDuplicateModpackInstancesSync];
+        } @finally {
+            @synchronized(self) { ame269_running = NO; }
+        }
+    });
+}
+
++ (void)ame269_migrateDuplicateModpackInstancesSync {
+    const char *gameDirEnv = getenv("POJAV_GAME_DIR");
+    if (!gameDirEnv) return;
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *customRoot = [@(gameDirEnv) stringByAppendingPathComponent:@"custom_gamedir"];
+
+    // 0) 快照 profile 表（只读分析；写回统一在主线程收口段）
+    NSDictionary *profiles = [PLProfiles.current.profiles copy];
+    if (profiles.count == 0) return;
+
+    // 1) 规范名聚类（仅 modpack 实例：gameDir 指向 custom_gamedir/<id>）
+    NSMutableDictionary<NSString *, NSMutableArray<NSDictionary *> *> *clusters = [NSMutableDictionary dictionary];
+    for (NSString *key in profiles) {
+        NSDictionary *prof = profiles[key];
+        if (![prof isKindOfClass:[NSDictionary class]]) continue;
+        NSString *gd = prof[@"gameDir"];
+        if (![gd isKindOfClass:[NSString class]] || ![gd containsString:@"custom_gamedir/"]) continue;
+        NSString *norm = [self ame269_normalizedInstanceName:key];
+        if (norm.length == 0) continue;
+        NSMutableArray *bucket = clusters[norm];
+        if (!bucket) { bucket = [NSMutableArray array]; clusters[norm] = bucket; }
+        [bucket addObject:@{ @"key": key ?: @"",
+                             @"created": prof[@"created"] ?: @"",
+                             @"gameDir": gd }];
+    }
+
+    // 2) 多成员家族逐个合并；canonical = 无序号后缀的原名优先，其次 created 最早
+    NSMutableArray<NSDictionary *> *plans = [NSMutableArray array];
+    for (NSString *norm in clusters) {
+        NSArray *members = clusters[norm];
+        if (members.count < 2) continue;
+        NSArray *sorted = [members sortedArrayUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
+            BOOL aOrig = [a[@"key"] isEqualToString:[self ame269_normalizedInstanceName:a[@"key"]]];
+            BOOL bOrig = [b[@"key"] isEqualToString:[self ame269_normalizedInstanceName:b[@"key"]]];
+            if (aOrig != bOrig) return aOrig ? NSOrderedAscending : NSOrderedDescending;
+            NSComparisonResult c = [a[@"created"] compare:b[@"created"]];
+            if (c != NSOrderedSame) return c;
+            return [a[@"key"] compare:b[@"key"]];
+        }];
+        NSString *canonicalKey = sorted.firstObject[@"key"];
+        NSString *canonicalId = [self ame269_instanceIdFromGameDir:sorted.firstObject[@"gameDir"]];
+        if (canonicalId.length == 0 || canonicalKey.length == 0) continue;
+        NSString *canonicalDir = [customRoot stringByAppendingPathComponent:canonicalId];
+        NSString *backupRoot = [customRoot stringByAppendingPathComponent:
+            [NSString stringWithFormat:@".ame269_backup/%ld", (long)[[NSDate date] timeIntervalSince1970]]];
+        NSMutableArray<NSString *> *mergedKeys = [NSMutableArray array];
+        NSLog(@"[Ame269] migrate: family \"%@\" has %lu members (canonical=\"%@\" folder=%@)",
+              norm, (unsigned long)sorted.count, canonicalKey, canonicalId);
+        for (NSUInteger i = 1; i < sorted.count; i++) {
+            NSString *dupKey = sorted[i][@"key"];
+            NSString *dupId = [self ame269_instanceIdFromGameDir:sorted[i][@"gameDir"]];
+            if (dupId.length == 0 || [dupId isEqualToString:canonicalId]) continue;
+            NSString *dupDir = [customRoot stringByAppendingPathComponent:dupId];
+            if (![fm fileExistsAtPath:dupDir]) {
+                // 空壳条目（文件夹已不存在）→ 直接计划移除 profile
+                [mergedKeys addObject:dupKey];
+                NSLog(@"[Ame269] migrate: \"%@\" folder gone (dead entry) -- profile will be removed", dupKey);
+                continue;
+            }
+            NSInteger moved = 0, deduped = 0, stashed = 0;
+            [self ame269_mergeFolder:dupDir
+                                into:canonicalDir
+                          backupRoot:[backupRoot stringByAppendingPathComponent:dupId]
+                               moved:&moved deduped:&deduped stashed:&stashed];
+            [self ame269_pruneEmptyDirs:dupDir];
+            NSError *rmErr = nil;
+            BOOL gone = [fm removeItemAtPath:dupDir error:&rmErr];
+            if (gone) {
+                [mergedKeys addObject:dupKey];
+                NSLog(@"[Ame269] migrate: \"%@\" (%@) merged into \"%@\" (moved=%ld deduped=%ld stashed=%ld backup=%@)",
+                      dupKey, dupId, canonicalKey, (long)moved, (long)deduped, (long)stashed, backupRoot.lastPathComponent);
+            } else {
+                NSLog(@"[Ame269] migrate: folder \"%@\" not fully merged (%@) -- profile kept, retry next launch",
+                      dupId, rmErr.localizedDescription ?: @"unknown");
+            }
+        }
+        if (mergedKeys.count > 0) {
+            [plans addObject:@{ @"canonical": canonicalKey, @"merged": mergedKeys }];
+        }
+    }
+    if (plans.count == 0) return;
+
+    // 3) 主线程收口：删重复 profile 条目；选中实例被合并 → 切 canonical（setter 广播）
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSMutableDictionary *live = PLProfiles.current.profiles;
+        NSString *selected = PLProfiles.current.selectedProfileName;
+        BOOL changed = NO;
+        NSString *switchTo = nil;
+        for (NSDictionary *plan in plans) {
+            for (NSString *dead in plan[@"merged"]) {
+                if (live[dead]) {
+                    [live removeObjectForKey:dead];
+                    changed = YES;
+                    NSLog(@"[Ame269] profile entry removed after merge: %@", dead);
+                }
+            }
+            if (selected.length > 0 && [plan[@"merged"] containsObject:selected]) {
+                switchTo = plan[@"canonical"];
+            }
+        }
+        if (changed) [PLProfiles.current save];
+        if (switchTo.length > 0) {
+            // setSelectedProfileName 自带 save + SelectedProfileChanged 广播（管理页跟随重扫）
+            PLProfiles.current.selectedProfileName = switchTo;
+            NSLog(@"[Ame269] selected profile was merged away -> switched to \"%@\"", switchTo);
+        }
+        // 账本：迁移动作可追溯（供设置页/排障读取；全部 plist 安全类型）
+        NSArray *prevLedger = [[NSUserDefaults standardUserDefaults] arrayForKey:@"ame269_migration_ledger"];
+        NSMutableArray *ledger = prevLedger.mutableCopy ?: [NSMutableArray array];
+        [ledger addObject:@{ @"ts": @([[NSDate date] timeIntervalSince1970]),
+                             @"plans": plans }];
+        [[NSUserDefaults standardUserDefaults] setObject:ledger forKey:@"ame269_migration_ledger"];
+        NSLog(@"[Ame269] migration done: %lu plan(s), ledger entries=%lu", (unsigned long)plans.count, (unsigned long)ledger.count);
+    });
+}
+
 #pragma mark - Get Imported Modpacks
 
 - (NSArray<NSDictionary *> *)getImportedModpacks {
@@ -2687,7 +3074,18 @@ static NSString * const kImportedModpacksKey = @"ImportedModpacks";
 - (void)saveImportedModpack:(NSDictionary *)modpackInfo {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSMutableArray *modpacks = [[self getImportedModpacks] mutableCopy];
-    [modpacks addObject:modpackInfo];
+    // Task269：同 id 已存在则原位替换（复用实例的重导入=刷新，不追加重复条目）
+    NSString *ame269_id = modpackInfo[@"id"];
+    BOOL ame269_replaced = NO;
+    for (NSUInteger i = 0; i < modpacks.count; i++) {
+        NSDictionary *item = modpacks[i];
+        if ([item isKindOfClass:[NSDictionary class]] && [item[@"id"] isEqualToString:ame269_id]) {
+            [modpacks replaceObjectAtIndex:i withObject:modpackInfo];
+            ame269_replaced = YES;
+            break;
+        }
+    }
+    if (!ame269_replaced) [modpacks addObject:modpackInfo];
     [defaults setObject:modpacks forKey:kImportedModpacksKey];
     [defaults synchronize];
 }

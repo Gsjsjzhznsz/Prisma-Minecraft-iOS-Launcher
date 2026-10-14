@@ -720,6 +720,13 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    // Task269 对账：锁定的目标实例若已被升级自动迁移合并删除（条目不在 profile 表）→
+    // 重新锁定当前选中实例，避免后续下载落在尸体实例引用上（ModService 末梢另有自愈兜底）。
+    if (self.targetProfileName.length > 0 && !PLProfiles.current.profiles[self.targetProfileName]) {
+        NSLog(@"[Download] Task269: latched target profile \"%@\" gone -> re-latch to selected \"%@\"",
+              self.targetProfileName, PLProfiles.current.selectedProfileName ?: @"(nil)");
+        self.targetProfileName = PLProfiles.current.selectedProfileName;
+    }
     // 重新隐藏导航栏黑条（pop 回根页面时 topViewController == self）
     if (self.navigationController &&
         self.navigationController.viewControllers.firstObject == self &&

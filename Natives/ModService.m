@@ -657,6 +657,14 @@
        expectedSHA1:(nullable NSString *)expectedSHA1
            progress:(nullable void (^)(NSProgress *downloadProgress))progress
          completion:(ModDownloadHandler)completion {
+    // Task269 末梢自愈：目标实例不存在（升级迁移合并后残留的旧实例名引用）→
+    // 回落当前选中实例，杜绝"下载进不存在的实例"再次制造错位。
+    if (profileName.length > 0 && !PLProfiles.current.profiles[profileName]) {
+        NSString *ame269_fallback = PLProfiles.current.selectedProfileName;
+        NSLog(@"[ModService] Task269: target profile \"%@\" gone -> fallback to selected \"%@\"",
+              profileName, ame269_fallback ?: @"(nil)");
+        profileName = ame269_fallback;
+    }
     NSString *modsFolder = [self ame219_isolationFirstModsFolderForProfile:profileName];
     // ★ Task265：下载目标锚——今后任何"下载了但游戏/管理页看不到"直接看这行
     NSLog(@"[ModService] Task265 download dest: profile=%@ folder=%@ file=%@",
