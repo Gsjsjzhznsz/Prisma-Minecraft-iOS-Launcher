@@ -3093,3 +3093,5 @@
 "preference.title.done.data_sibling_import" = "已打开导入入口";
 "resman.mods.folder.caption" = "模组目录 — 新 Mod 的 .jar 文件放这里";
 "resman.mods.folder.import" = "导入模组到此目录";
+"resman.mods.cross_profile.text" = "已下载的 %1$@ 写入了实例「%2$@」（当前查看的是「%3$@」）";
+"resman.mods.cross_profile.switch" = "切换到该实例查看";

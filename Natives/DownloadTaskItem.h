@@ -83,6 +83,14 @@ typedef id _Nullable (^DownloadRetryHandler)(DownloadTaskItem *item);
 /// 原始下载 URL，便于重试/切换源时在模型层直接重建（可选，业务方可不填）
 @property (nonatomic, copy, nullable) NSString *downloadURL;
 
+/// ★ Task266：下载目标实例（profile）名——写入哪个实例的 mods 目录。
+/// 资源管理页据此区分"本实例下载"与"跨实例下载"：不一致时展示跨实例
+/// 横幅（一键切换查看），根除"游戏加载了、管理页不显示"的实例错位困惑
+/// （装机 d78dbfd latestlog.old 实证：下载落 Fabulously Optimized (2)、
+/// 管理页 bound=Fabulously Optimized，双锚日志同框错位）。nil = 旧任务/
+/// 未标注（管理页按本实例处理，行为同现状）。
+@property (nonatomic, copy, nullable) NSString *targetProfileName;
+
 /// 重试回调：业务方注册任务时设置，DownloadTaskManager.retryTaskWithId: 会调用它重建底层 rawTask。
 /// 业务方在 handler 内创建新的 NSURLSessionTask 并赋值给 item.rawTask，无需移除旧 item（manager 已处理）。
 /// 参数为当前 item（已重置状态），返回新的 rawTask（用于 manager 更新 item.rawTask）。

@@ -241,3 +241,5 @@
 "preference.title.done.data_sibling_import" = "Import entry opened";
 "resman.mods.folder.caption" = "Mods folder — new .jar files go here";
 "resman.mods.folder.import" = "Open mods folder in Files";
+"resman.mods.cross_profile.text" = "%1$@ was downloaded to instance \\u201c%2$@\\u201d (this page is showing \\u201c%3$@\\u201d)";
+"resman.mods.cross_profile.switch" = "Switch to that instance";

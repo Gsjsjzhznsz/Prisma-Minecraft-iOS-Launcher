@@ -40,6 +40,28 @@
 //      自绘不依赖 iOS 26 能力，低版本同样可用。真液态玻璃档路由不变
 //      （Task245：启动器内系统原生直出 / Metal 面磨砂面板）。欢迎向导
 //      新增风格选择步骤（WelcomeViewController Task246，真实预览菜单直出）。
+//    - ★ Task266（IMG_0399 iPhone XS Max iOS 18.7.10 装机崩溃根修）：
+//      NSInternalInconsistencyException "The presentation controller of an
+//      alert controller presenting as an alert must not have its delegate
+//      modified"——iOS 18+ 起 UIKit 对【以 alert 形态呈现】的
+//      UIAlertController 禁止修改 presentationController.delegate；iPhone
+//      竖屏 compact 宽度下 actionSheet 同样解析为 alert 形态（私有
+//      _UIAlertControlleriOSPresentationController 自持 delegate 驱动
+//      popover→alert 自适应），三处赋值点（原生档直通/玻璃镜像失败兜底/
+//      双私有入口缺失 fallback）在 iPhone 上必崩（堆栈：presentMenu →
+//      presentStyleRoutedWithMenu → presentViaNativeSheet，设置页
+//      general.interface_style / JRE 管理选择即触发）。iPad regular 宽度
+//      popover 形态不受限（装机 iPadOS 27 实证零崩溃）。
+//      【Task266 定案：delegate 赋值按呈现形态门控】
+//      ① popover 形态（regular 宽度且非 iPhone）→ 保留赋值（自适应
+//         didDismiss 取消语义不变）+ @try 双护栏（未来 iOS 再收紧时降级
+//         而非崩溃）；
+//      ② alert 形态（compact / iPhone 一律）→ 不赋值，取消语义改由
+//         cancel 承载：字典协议含 cancel 项时物化为
+//         UIAlertActionStyleCancel（iOS 9+ 点按外部即触发其 handler，
+//         同 onDismiss 口径；iPhone 上多一行可见取消钮，可及性反而更佳）；
+//         无 cancel 项且 onDismiss 非 nil 时按现状降级（外部点按无回调，
+//         下次呈现自然覆盖 fallbackDismiss，无悬挂状态）。
 //    - handler 唯一合法来源 = 字典协议（公开 API）：UIAction/
 //      UIAlertAction.handler 均非公开属性，从已构建 UIMenu 反取在
 //      iOS 26.2 SDK 为编译错误（Task241 CI r1 :79 双雷实证），KVC
@@ -66,6 +88,14 @@
 // 静态/实例上下文引用时避免 "no known class method"（Task240 CI r1
 // 同款错误家族）。
 + (instancetype)ame240_shared;
+// ★ Task266：ame240_actionSheetFallback（@implementation 之外的 static C
+//   函数）需调用形态门控助手——同 Task240 家族，前向声明提升为本文件可见。
++ (void)ame266_assignPresentationDelegateSafely:(UIAlertController *)alert
+                                           host:(UIViewController *)host;
++ (void)ame266_addCancelCarrierIfNeeded:(UIAlertController *)alert
+                                  dicts:(NSArray<NSDictionary *> *)dicts
+                              onDismiss:(void (^)(void))onDismiss
+                                   host:(UIViewController *)host;
 @end
 
 /// 动作已选中标记（主线程串行访问，无竞态面）。presentationControllerDidDismiss
@@ -200,13 +230,77 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
         }
     }
     ame240_fallbackDismiss = onDismiss;
-    ame245_alert.presentationController.delegate = [AmeNativeMenu ame240_shared];
+    // ★ Task266：iPhone compact 宽度下本呈现解析为 alert 形态——delegate
+    //   赋值即崩（iOS 18+）。popover 形态（iPad regular）保留赋值。
+    //   本函数为 @implementation 之外的 static C 函数（无 self），类名直调。
+    [AmeNativeMenu ame266_assignPresentationDelegateSafely:ame245_alert host:ame245_host];
+    [AmeNativeMenu ame266_addCancelCarrierIfNeeded:ame245_alert dicts:dicts onDismiss:onDismiss host:ame245_host];
     ame245_alert.popoverPresentationController.sourceView = ame245_anchor;
     ame245_alert.popoverPresentationController.sourceRect = ame245_anchor.bounds;
     ame245_alert.popoverPresentationController.permittedArrowDirections =
         UIPopoverArrowDirectionAny;
     [ame245_host presentViewController:ame245_alert animated:YES completion:nil];
     NSLog(@"[AmeNativeMenu] Task245: system menu unavailable, stock actionSheet fallback");
+}
+
+#pragma mark - Task266 呈现形态门控（iPhone alert 形态 delegate 崩溃根修）
+
+/// Task266：本次呈现是否解析为 popover 形态（唯一允许修改 presentation
+/// controller.delegate 的形态）。alert 形态（compact 宽度或 iPhone 任意
+/// 形态）下 UIKit 自持 delegate，外部赋值即 NSInternalInconsistencyException
+/// （iOS 18+ 实证崩，IMG_0399 iOS 18.7.10）。iPhone 即便 regular 宽度
+/// （Plus/Max 横屏）也保守跳过——presentViaNativeSheet 路径的 onDismiss
+/// 消费方（设置页选择项）传 nil，降级零损。
++ (BOOL)ame266_popoverPresentationCapableForHost:(UIViewController *)host {
+    if (host == nil) return NO;
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPhone) return NO;
+    UITraitCollection *ame266_tc = host.view.window.traitCollection ?: host.traitCollection;
+    return (ame266_tc.horizontalSizeClass == UIUserInterfaceSizeClassRegular);
+}
+
+/// Task266：delegate 安全赋值（popover 形态才赋 + @try 双护栏）。非 popover
+/// 形态静默跳过（取消语义由 ame266 cancel 承载或按现状降级）。
++ (void)ame266_assignPresentationDelegateSafely:(UIAlertController *)alert
+                                          host:(UIViewController *)host {
+    if (alert == nil || host == nil) return;
+    if (![self ame266_popoverPresentationCapableForHost:host]) {
+        NSLog(@"[AmeNativeMenu] Task266: alert-style presentation (compact/iPhone) -- presentationController.delegate assignment skipped (iOS 18+ NSInternalInconsistencyException guard)");
+        return;
+    }
+    @try {
+        alert.presentationController.delegate = [self ame240_shared];
+    } @catch (NSException *ame266_e) {
+        NSLog(@"[AmeNativeMenu] Task266: delegate assignment rejected by UIKit (%@) -- continuing without didDismiss callback", ame266_e.name);
+    }
+}
+
+/// Task266：alert 形态下的取消语义承载——字典协议中的 cancel 项物化为
+/// 真正的 UIAlertActionStyleCancel（iOS 9+ 点按 actionSheet 外部即触发
+/// cancel handler，与 presentationControllerDidDismiss 同口径回调
+/// onDismiss；选中动作路径仍由 ame240_actionFired 幂等短路）。仅 alert
+/// 形态调用（popover 形态继续走 delegate didDismiss，不新增可见取消钮）。
++ (void)ame266_addCancelCarrierIfNeeded:(UIAlertController *)alert
+                                 dicts:(NSArray<NSDictionary *> *)dicts
+                             onDismiss:(void (^)(void))onDismiss
+                                  host:(UIViewController *)host {
+    if (alert == nil || onDismiss == nil || dicts.count == 0) return;
+    if ([self ame266_popoverPresentationCapableForHost:host]) return; // popover 形态：delegate 语义保留，不加重
+    for (NSDictionary *ame266_it in dicts) {
+        if (![ame266_it isKindOfClass:[NSDictionary class]]) continue;
+        if (![ame266_it[@"cancel"] boolValue]) continue;
+        NSString *ame266_title = ame266_it[@"title"];
+        if (![ame266_title isKindOfClass:[NSString class]] || ame266_title.length == 0) continue;
+        UIAlertAction *ame266_aa = [UIAlertAction
+            actionWithTitle:ame266_title
+                      style:UIAlertActionStyleCancel
+                    handler:^(UIAlertAction *ame266_ignored) {
+                ame240_actionFired = YES; // 选中取消 = 同口径短路 didDismiss（popover 复用场景）
+                onDismiss();
+            }];
+        [alert addAction:ame266_aa];
+        NSLog(@"[AmeNativeMenu] Task266: alert-style cancel carrier added (title=%@)", ame266_title);
+        return; // 只取第一个 cancel 项
+    }
 }
 
 #pragma mark - 呈现装配（Task242/245）
@@ -264,6 +358,7 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
 /// 语义由 adaptive delegate 承接）。
 + (void)ame242_presentViaGlassMenu:(UIAlertController *)alert
                               host:(UIViewController *)host
+                             dicts:(NSArray<NSDictionary *> *)dicts
                          onDismiss:(void (^)(void))onDismiss {
     BOOL ame242_ok = [AmeFloatingMenu presentGlassMenuForAlert:alert
                                                  fromPresenter:host
@@ -276,7 +371,9 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
     }
     NSLog(@"[AmeNativeMenu] Task242: glass mirror failed, router passthrough");
     ame240_fallbackDismiss = onDismiss;
-    alert.presentationController.delegate = [self ame240_shared];
+    // ★ Task266：同 ame242_presentViaNativeSheet——形态门控 + cancel 承载。
+    [self ame266_assignPresentationDelegateSafely:alert host:host];
+    [self ame266_addCancelCarrierIfNeeded:alert dicts:dicts onDismiss:onDismiss host:host];
     [host presentViewController:alert animated:YES completion:nil];
 }
 
@@ -287,9 +384,16 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
 + (void)ame242_presentViaNativeSheet:(UIAlertController *)alert
                                 view:(UIView *)anchor
                                 host:(UIViewController *)host
+                               dicts:(NSArray<NSDictionary *> *)dicts
                            onDismiss:(void (^)(void))onDismiss {
     ame240_fallbackDismiss = onDismiss;
-    alert.presentationController.delegate = [self ame240_shared];
+    // ★ Task266（IMG_0399 崩溃点）：iPhone compact 宽度下 actionSheet 解析为
+    //   alert 形态——此处直赋 delegate 即 NSInternalInconsistencyException
+    //   （用户堆栈 presentMenu→presentStyleRoutedWithMenu→presentViaNativeSheet
+    //   正是本方法）。改为形态门控赋值（仅 iPad popover）+ alert 形态取消
+    //   语义由 cancel 项承载。
+    [self ame266_assignPresentationDelegateSafely:alert host:host];
+    [self ame266_addCancelCarrierIfNeeded:alert dicts:dicts onDismiss:onDismiss host:host];
     // iPad 必须 popover 锚定（不设 sourceView 直接崩）；iPhone 忽略。
     alert.popoverPresentationController.sourceView = anchor;
     alert.popoverPresentationController.sourceRect = anchor.bounds;
@@ -370,6 +474,7 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
             //   不合成，Task228/230/236 三轮装机实锤同族）。
             [self ame242_presentViaGlassMenu:ame242_alert
                                         host:ame242_host
+                                       dicts:dicts
                                    onDismiss:onDismiss];
         } else {
             // ★ Task245（IMG_0380 用户定案）：真液态玻璃档启动器内选择菜单 =
@@ -383,6 +488,7 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
         [self ame242_presentViaNativeSheet:ame242_alert
                                       view:sourceView
                                       host:ame242_host
+                                     dicts:dicts
                                  onDismiss:onDismiss];
     }
 }

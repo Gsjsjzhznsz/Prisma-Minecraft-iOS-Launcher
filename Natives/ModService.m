@@ -693,6 +693,10 @@
                       supportsResume:YES
                              iconURL:mod.iconURL];
     taskItem.downloadURL = mod.selectedVersionDownloadURL;
+    // ★ Task266：下载目标实例随任务标注——资源管理页据 targetProfileName
+    //   与本页生效实例比对，跨实例下载展示横幅+一键切换（"游戏加载了、
+    //   管理页不显示"的实例错位自解释修复；同锚 Task265 download dest）。
+    taskItem.targetProfileName = profileName;
     // redesign-download-ui Phase 4：单文件下载接入统一进度页——
     // PLTaskStagesSingleFile 单阶段 + autoPresentDetail 自动弹出 PLTaskProgressViewController
     [[DownloadTaskManager sharedManager] setTaskWithId:taskItem.taskId stages:PLTaskStagesSingleFile()];

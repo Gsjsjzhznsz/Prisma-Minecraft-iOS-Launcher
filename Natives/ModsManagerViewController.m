@@ -19,6 +19,8 @@
 #import "PLProfiles.h"
 #import "LauncherPreferences.h"
 #import "DownloadViewController.h"
+#import "DownloadTaskManager.h"
+#import "DownloadTaskItem.h"
 #import "ProfileSettingsViewController.h"   // Task225：隔离徽标 → 版本设置入口
 #import "utils.h"
 #import <CommonCrypto/CommonDigest.h>
@@ -128,6 +130,10 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 
 // ===== 其他 =====
 @property (nonatomic, assign) BOOL hasPlayedInitialAnimation; // 首次加载连锁动画只播一次
+
+// ★ Task266：跨实例下载横幅（"游戏加载了、管理页不显示"实例错位自解释）
+@property (nonatomic, copy) NSString *ame265_crossProfileDest;   // 待切换目标实例
+@property (nonatomic, strong) UIView *ame265_crossProfileBanner; // 当前横幅视图（tableHeaderView）
 
 @end
 
@@ -472,7 +478,10 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 /// 并提供"在文件中打开"——文件 App 定点打开该目录，用户拷入的 .jar
 /// 重扫后必然出现在本页。不展示会话式提示（随时可见，随 profile 联动）。
 - (void)ame264_setupScanFolderFooter {
-    NSString *folder = [[ModService sharedService] ame264_effectiveModsFolderForProfile:self.profileName];
+    // ★ Task266：跟随生效实例（ame265_effectiveProfileName）而非裸绑定——
+    //   nil 绑定入口（抽屉）此前表尾展示 default 主目录而扫描跟随选中实例，
+    //   目录提示行与实际扫描目录不一致（Task265 自适应链上的遗留错位点）。
+    NSString *folder = [[ModService sharedService] ame264_effectiveModsFolderForProfile:[self ame265_effectiveProfileName]];
     if (folder.length == 0) {
         self.tableView.tableFooterView = nil;
         return;
@@ -540,6 +549,95 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 /// picker 先例全部为 initForOpeningContentTypes 家族。
 - (void)ame264_openScannedFolder {
     [self importModTapped];
+}
+
+#pragma mark - Task266 跨实例下载横幅（实例错位自解释 + 一键切换）
+
+/// 下载完成通知（重写基类 ResourceListViewController 同名方法——基类实现未
+/// 在 .h 暴露，此处复制其行为后扩展 Task266 比对逻辑）。
+/// 基类行为：mod/shader/rp/dp/world 资源任务完成 → 主线程重载列表。
+/// Task266 扩展：mod 任务携带 targetProfileName（ModService 中央站点标注）
+/// 时与本页生效实例比对：不一致 = 跨实例下载（文件落在别的实例）→ 展示
+/// 横幅 + 一键切换查看目标实例；一致 = 本实例下载，撤除历史横幅。
+- (void)handleDownloadTaskCompletedNotification:(NSNotification *)notification {
+    DownloadTaskItem *task = notification.userInfo[DownloadTaskManagerTaskKey];
+    NSString *type = task.resourceType;
+    if ([type isKindOfClass:[NSString class]] && [type isEqualToString:DownloadTaskResourceTypeMod]) {
+        NSString *ame265_dest = task.targetProfileName;
+        NSString *ame265_effective = [self ame265_effectiveProfileName];
+        if (ame265_dest.length > 0 && ![ame265_dest isEqualToString:ame265_effective]) {
+            NSLog(@"[ModsManager] Task266: cross-profile download (dest=%@ viewing=%@ file=%@)",
+                  ame265_dest, ame265_effective, task.displayName ?: task.resourceName ?: @"(nil)");
+            [self ame265_showCrossProfileBannerForProfile:ame265_dest
+                                                    file:(task.displayName.length > 0 ? task.displayName : task.resourceName)];
+        } else if (self.ame265_crossProfileBanner != nil) {
+            [self ame265_hideCrossProfileBanner]; // 本实例下载命中：横幅使命完成即撤
+        }
+    }
+    // 基类行为复制：主线程延迟一帧重载（文件系统状态刷新后列表立即可见）
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [weakSelf reloadResourceList];
+    });
+}
+
+/// 跨实例横幅（tableHeaderView 卡片，风格对齐 Task264 表尾提示行）。
+/// 双语键：resman.mods.cross_profile.text（文件名/目标实例/当前实例三参）、
+/// resman.mods.cross_profile.switch（切换按钮）。
+- (void)ame265_showCrossProfileBannerForProfile:(NSString *)destProfile file:(NSString *)fileName {
+    self.ame265_crossProfileDest = destProfile;
+    CGFloat ame265_width = self.tableView.bounds.size.width;
+    if (ame265_width <= 0) ame265_width = 320.0; // 首帧 bounds 未定兜底
+    CGFloat ame265_bannerH = 96.0;
+    UIView *ame265_banner = [[UIView alloc] initWithFrame:CGRectMake(0, 0, ame265_width, ame265_bannerH)];
+    ame265_banner.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    UIView *ame265_card = [[UIView alloc] initWithFrame:CGRectMake(12, 8, ame265_width - 24, ame265_bannerH - 16)];
+    ame265_card.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    ame265_card.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+    ame265_card.layer.cornerRadius = 12.0;
+    ame265_card.clipsToBounds = YES;
+    [ame265_banner addSubview:ame265_card];
+
+    UILabel *ame265_label = [[UILabel alloc] initWithFrame:CGRectMake(12, 10, ame265_card.bounds.size.width - 24, 36)];
+    ame265_label.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    ame265_label.numberOfLines = 2;
+    ame265_label.font = [UIFont systemFontOfSize:12.5];
+    ame265_label.textColor = [UIColor labelColor];
+    ame265_label.text = [NSString stringWithFormat:localize(@"resman.mods.cross_profile.text", NULL),
+                         fileName ?: @"", destProfile ?: @"", [self ame265_effectiveProfileName] ?: @""];
+    [ame265_card addSubview:ame265_label];
+
+    UIButton *ame265_switch = [UIButton buttonWithType:UIButtonTypeSystem];
+    ame265_switch.frame = CGRectMake(12, 52, ame265_card.bounds.size.width - 24, 26);
+    ame265_switch.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    [ame265_switch setTitle:localize(@"resman.mods.cross_profile.switch", NULL) forState:UIControlStateNormal];
+    [ame265_switch setTitleColor:[UIColor systemOrangeColor] forState:UIControlStateNormal];
+    ame265_switch.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+    ame265_switch.titleLabel.font = [UIFont systemFontOfSize:13.0 weight:UIFontWeightSemibold];
+    [ame265_switch addTarget:self action:@selector(ame265_switchToCrossProfileTarget) forControlEvents:UIControlEventTouchUpInside];
+    [ame265_card addSubview:ame265_switch];
+
+    self.ame265_crossProfileBanner = ame265_banner;
+    self.tableView.tableHeaderView = ame265_banner;
+}
+
+/// 一键切换：本页改绑目标实例 → 撤横幅 → 表尾目录行联动 → 重扫。
+/// 切换后列表展示目标实例 mods 目录（用户下载的文件立即可见）。
+- (void)ame265_switchToCrossProfileTarget {
+    NSString *ame265_dest = self.ame265_crossProfileDest;
+    if (ame265_dest.length == 0) return;
+    NSLog(@"[ModsManager] Task266: switch manager binding to cross-profile target %@", ame265_dest);
+    self.profileName = ame265_dest;
+    [self ame265_hideCrossProfileBanner];
+    [self ame264_setupScanFolderFooter];
+    [self reloadResourceList];
+}
+
+- (void)ame265_hideCrossProfileBanner {
+    if (self.tableView.tableHeaderView == self.ame265_crossProfileBanner) {
+        self.tableView.tableHeaderView = nil;
+    }
+    self.ame265_crossProfileBanner = nil;
 }
 
 #pragma mark - Data Loading
