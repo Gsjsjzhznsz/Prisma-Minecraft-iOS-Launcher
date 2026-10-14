@@ -805,7 +805,7 @@ static void *ProgressObserverContext = &ProgressObserverContext;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         // Task169：有界等待（120s）+每 10s 心跳日志，超时走重试弹窗（同
         // RightPanel/DownloadVC 两处，群见 utils.m 病历）。
-        BOOL ok = ame169_waitForJITCondition(^{ return (ame267_cancelled || isJITEnabled(false)); }, 120.0, @"isJITEnabled");
+        BOOL ok = ame169_waitForJITCondition(^{ return (BOOL)(ame267_cancelled || isJITEnabled(false)); }, 120.0, @"isJITEnabled");
         // Task185：自愈式派发（11e4b63 latestlog.2 病历：condition satisfied
         // 后旧 dispatch_async(main) 续接块在后台被楔死的主队列上永不执行——
         // 见 utils.h ame185_dispatchToMainSelfHealing）。
@@ -926,7 +926,7 @@ static void *ProgressObserverContext = &ProgressObserverContext;
         // exception ports / spawned-by-debugger), not for CS_DEBUGGED
         // -- that flag is already set and would race the first brk.
         // Task169：有界等待（120s）+心跳日志，超时走重试弹窗。
-        BOOL ok = ame169_waitForJITCondition(^{ return (ame267_cancelled || JIT26IsLikelyDebuggerKeepAttached()); }, 120.0, @"JIT26 debugger attach");
+        BOOL ok = ame169_waitForJITCondition(^{ return (BOOL)(ame267_cancelled || JIT26IsLikelyDebuggerKeepAttached()); }, 120.0, @"JIT26 debugger attach");
         // Task185：自愈式派发（同主等待路径，病历见 utils.h）。
         ame185_dispatchToMainSelfHealing(^{
             if (ame172_bgt != UIBackgroundTaskInvalid) {

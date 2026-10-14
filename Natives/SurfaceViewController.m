@@ -1340,11 +1340,16 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
     // 低频采样定时器：每 1 秒读取一次 native FPS 计数器和内存占用
     // 参照 FCL/ZL2 的 1Hz 采样策略（FCL_GameMenu.java Thread.sleep(1000)）
     // pojavGetAndResetFps() 读取并重置计数器，1 秒间隔直接返回 FPS 值
-    self.statsTimer = [NSTimer scheduledTimerWithTimeInterval:1.0
-                                                      target:self
-                                                    selector:@selector(updateGameStats)
-                                                    userInfo:nil
-                                                     repeats:YES];
+    // ★ Task268（scan-a #1）：scheduledTimer target:self 保留环 → dealloc 永不
+    //   可达 = 每次游戏会话泄漏整个 SurfaceViewController（视图树 + 观察者 +
+    //   menuButton.menu）且 statsDisplayLink 120Hz 永久空转。改 block 定时器 +
+    //   weakSelf（iOS 10+），dealloc 既有 invalidate 链恢复可达。
+    __weak typeof(self) ame268_ws = self;
+    self.statsTimer = [NSTimer timerWithTimeInterval:1.0
+                                              repeats:YES
+                                                block:^(NSTimer *t) {
+        [ame268_ws updateGameStats];
+    }];
     [[NSRunLoop currentRunLoop] addTimer:self.statsTimer forMode:NSRunLoopCommonModes];
 
     CGFloat screenScale = UIScreen.mainScreen.scale;
@@ -3514,11 +3519,13 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         };
     }
 
+    // ★ Task268（scan-c #4）：单轴滚动只喂单轴——旧版把值同时喂进双轴
+    //   （垂直滚库存会横移创造标签页）。
     mouse.mouseInput.scroll.xAxis.valueChangedHandler = ^(GCControllerAxisInput * _Nonnull axis, float value) {
-        CallbackBridge_nativeSendScroll(value, value);
+        CallbackBridge_nativeSendScroll(value, 0);
     };
     mouse.mouseInput.scroll.yAxis.valueChangedHandler = ^(GCControllerAxisInput * _Nonnull axis, float value) {
-        CallbackBridge_nativeSendScroll(-value, -value);
+        CallbackBridge_nativeSendScroll(0, -value);
     };
 
     if (getPrefBool(@"control.hardware_hide")) {

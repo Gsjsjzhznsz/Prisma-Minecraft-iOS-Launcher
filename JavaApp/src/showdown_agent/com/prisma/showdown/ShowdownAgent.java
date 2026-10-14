@@ -419,16 +419,14 @@ public class ShowdownAgent {
                                 return; // 正常成功路径
                             }
                             boolean alive = ((Thread) sdThread).isAlive();
-                            if (alive) {
-                                seenAlive = true;
-                            }
-                            boolean died = seenAlive && !alive;
-                            boolean stalled = System.currentTimeMillis() >= deadline;
-                            if (died || stalled) {
+                            // ★ Task268（scan-b #1 证伪修复）：原 died 要求先观测到存活
+                            // （seenAlive 门，首轮 5s 轮询前死亡不触发）；stalled 判定在
+                            // while(now<deadline) 体内恒 false（死代码）= 240s 防 livelock
+                            // 兜底实际不存在。died 直接取 !alive（sdThread 对象存在且
+                            // 非存活 = 线程已终止）；deadline 兜底移到循环外。
+                            if (!alive) {
                                 latch.countDown();
-                                System.out.println("[Task263] watchdog: showdown latch force-released ("
-                                        + (died ? "showdown thread died uncaught" : "stalled past deadline")
-                                        + "; boot continues, Cobblemon battles degraded)");
+                                System.out.println("[Task263] watchdog: showdown latch force-released (showdown thread died uncaught; boot continues, Cobblemon battles degraded)");
                                 return;
                             }
                         } catch (Throwable t) {
@@ -436,6 +434,21 @@ public class ShowdownAgent {
                             return;
                         }
                         Thread.sleep(5000);
+                    }
+                    // ★ Task268：deadline 到点兜底（原 stalled 死代码补位）——
+                    // latch 仍 armed 即放行，防 showdown 线程存活但卡死的 livelock。
+                    try {
+                        Object instance = cob.getField("INSTANCE").get(null);
+                        Object sdThread = readField(cob, instance, "showdownThread");
+                        if (sdThread != null) {
+                            CountDownLatch latch = (CountDownLatch) readField(sdThread.getClass(), sdThread, "latch");
+                            if (latch != null && latch.getCount() != 0) {
+                                latch.countDown();
+                                System.out.println("[Task263] watchdog: showdown latch force-released (stalled past deadline; boot continues, Cobblemon battles degraded)");
+                            }
+                        }
+                    } catch (Throwable t) {
+                        System.out.println("[Task263] watchdog post-deadline probe error: " + t);
                     }
                 } catch (Throwable fatal) {
                     System.out.println("[Task263] watchdog fatal (disabled): " + fatal);

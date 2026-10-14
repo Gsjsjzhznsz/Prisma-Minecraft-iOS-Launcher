@@ -903,7 +903,20 @@ static double _ame267_lastDLTs = 0.0;
     ModDownloadHandler completion = self.downloadCompletionHandlers[taskId];
     // Task267：taskItem 在 cleanup 中被移除，落点记录需在清理前捕获
     DownloadTaskItem *ame267_item = self.downloadTaskItems[taskId];
-    [self cleanupPLDownloadStateForTaskId:taskId];
+    // ★ Task268（scan-d #1）：失败/取消保留 request+taskItem——retryHandler
+    //   →restartPLDownloadForTaskId 靠 downloadRequests 命中，旧版一律清空
+    //   = "重试"恒 nil → 任务永久卡"等待中"。成功路径才全量清理。
+    if (success) {
+        [self cleanupPLDownloadStateForTaskId:taskId];
+    } else {
+        [self.downloadOperations removeObjectForKey:taskId];
+        [self.downloadGenerations removeObjectForKey:taskId];
+        [self.downloadAccumulatedBytes removeObjectForKey:taskId];
+        [self.downloadTotalBytes removeObjectForKey:taskId];
+        [self.downloadLastSpeeds removeObjectForKey:taskId];
+        [self.downloadProgressHandlers removeObjectForKey:taskId];
+        [self.downloadCompletionHandlers removeObjectForKey:taskId];
+    }
     [self.downloadStateLock unlock];
 
     DownloadTaskManager *manager = [DownloadTaskManager sharedManager];
@@ -913,10 +926,13 @@ static double _ame267_lastDLTs = 0.0;
         // Task267：成功落盘才记入“最近 mod 下载落点”（模组管理页对账数据源）
         if ([ame267_item.resourceType isEqualToString:DownloadTaskResourceTypeMod]) {
             [ModService ame267_noteLastModDownloadToProfile:ame267_item.targetProfileName
-                                                       file:(ame267_item.displayName.length > 0 ? ame267_item.displayName : ame267_item.resourceName)];
+                                                       file:(ame267_item.resourceName.length > 0 ? ame267_item.resourceName : ame267_item.displayName)]; // Task268：记实际落盘文件名（scan-d #7）
         }
     } else if ([error.domain isEqualToString:NSURLErrorDomain] && error.code == NSURLErrorCancelled) {
         // 用户取消（DownloadTaskManager 已置 Cancelled，这里幂等对齐）
+        // ★ Task268（scan-d #8）：阶段行同步置 Skipped——旧版停在 Running，
+        //   统一进度页显示"进行中"直到页面关闭。
+        [manager updateTaskWithId:taskId stageAtIndex:0 status:PLTaskStageStatusSkipped];
         [manager setTaskWithId:taskId state:DownloadTaskStateCancelled];
     } else {
         [manager updateTaskWithId:taskId stageAtIndex:0 status:PLTaskStageStatusFailed];

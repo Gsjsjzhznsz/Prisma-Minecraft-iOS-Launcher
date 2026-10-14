@@ -850,7 +850,12 @@ NSString* processPath(NSString* path) {
         prefix = @"santander";
     }
 
-    return [NSString stringWithFormat:@"%@://%@", prefix, path];
+    // ★ Task268（scan-c #2）：路径 percent-encode——含空格/非 URL 字符路径
+    //   裸拼 scheme 使 URLWithString 返回 nil → openURL:nil 主线程抛异常。
+    NSString *ame268_encoded = [path stringByAddingPercentEncodingWithAllowedCharacters:
+        [NSCharacterSet URLPathAllowedCharacterSet]];
+    if (!ame268_encoded) ame268_encoded = path;
+    return [NSString stringWithFormat:@"%@://%@", prefix, ame268_encoded];
 }
 
 void openURLGlobal(NSString *path) {
@@ -2371,8 +2376,12 @@ static void ame265_ensureSneakBindingSynced(void) {
                 //   344 改写成 342 → MC 收到左 ALT（装机 d78dbfd latestlog
                 //   sendKey #1-9: key=342 scancode=226 九连实锤）→ 潜行永不触发
                 //   = "绑定正确却无反应"的完整因果链。
-                if (strcmp(val, "key.keyboard.right.shift") == 0 || strcmp(val, "54") == 0) parsed = 344;
-                else if (strcmp(val, "key.keyboard.left.shift") == 0 || strcmp(val, "42") == 0) parsed = 340;
+                // ★ Task268（scan-c #1）：补 GLFW 数字形态（LWJGL3 340=LSHIFT/344=RSHIFT，
+                //   42/54 为 LWJGL2 数字；两族不冲突）——1.13-1.21.x 整合包主力
+                //   版本带若 options.txt 落数字形态，旧解析落 else=-1 → 344 直通
+                //   = 右 SHIFT 死键复活带。
+                if (strcmp(val, "key.keyboard.right.shift") == 0 || strcmp(val, "54") == 0 || strcmp(val, "344") == 0) parsed = 344;
+                else if (strcmp(val, "key.keyboard.left.shift") == 0 || strcmp(val, "42") == 0 || strcmp(val, "340") == 0) parsed = 340;
                 else parsed = -1;
                 ame265_found = YES;
                 break;
@@ -2456,7 +2465,10 @@ void CallbackBridge_nativeSendKey(int key, int scancode, int action, int mods) {
 
     // Path A: GLFW callbacks (older MC versions)
     if (GLFW_invoke_Key && isInputReady) {
-        keyDownBuffer[MAX(0, key-31)]=(jbyte)action;
+        // ★ Task268（scan-c #5）：边界守卫——GLFW_KEY_LAST=348 时 key-31=317
+        //   恰越界（缓冲 317 字节），自定义布局绑 Menu 即 1 字节堆越界写。
+        int ame268_kidx = key - 31;
+        if (ame268_kidx >= 0 && ame268_kidx < 317) keyDownBuffer[ame268_kidx]=(jbyte)action;
         if (mods == 0) {
             mods = getKeyModifiers(key, action);
         }

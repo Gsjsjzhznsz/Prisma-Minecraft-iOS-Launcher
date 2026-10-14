@@ -112,3 +112,5 @@
 "resman.mods.profile_chip" = "Profile: %@ ▾";
 "resman.mods.profile_picker.title" = "Choose the profile to manage";
 "resman.mods.profile_follow" = "Follow the selected profile";
+"component.touch.uninstall_disable" = "Uninstall & disable";
+"component.touch.reinstall" = "Reinstall";

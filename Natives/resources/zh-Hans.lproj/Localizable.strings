@@ -3098,3 +3098,5 @@
 "resman.mods.profile_chip" = "实例：%@ ▾";
 "resman.mods.profile_picker.title" = "选择要管理的实例";
 "resman.mods.profile_follow" = "跟随当前选中实例";
+"component.touch.uninstall_disable" = "卸载并关闭";
+"component.touch.reinstall" = "重新安装";

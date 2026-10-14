@@ -6,6 +6,7 @@
 #import "LauncherSplitViewController.h"
 #import "PLLogOutputView.h"
 #import "PLProfiles.h"
+#import "ModService.h"   // Task268：profile 生效 mods 目录实况核对
 #import "SurfaceViewController.h"
 
 #include <objc/runtime.h>
@@ -259,12 +260,34 @@ static void ame172_applyProfileTouchController(void) {
     @autoreleasepool {
         NSString *profName = PLProfiles.current.selectedProfileName;
         NSDictionary *prof = profName ? PLProfiles.current.profiles[profName] : nil;
-        BOOL on = [prof isKindOfClass:NSDictionary.class] && [prof[@"touchController"] boolValue];
-        if (on) {
-            // ★ Task223（用户报“手动关闭后又被强制开启”）：全局 TouchController
-            //   页手动关闭过的会话（哨兵 control.mod_touch_user_off=YES）不再
-            //   被启动时自动配置顶回 ON——那是用户明确的意图，profile 开关
-            //   只在用户没有全局表态时才生效（手动重新开启会撤哨兵）。
+        id rawKey = [prof isKindOfClass:NSDictionary.class] ? prof[@"touchController"] : nil;
+        BOOL profOn = [rawKey boolValue];
+        // ★ Task268（用户报"装 touch 模组后关不掉 touch 协议/屏蔽控件，关了开游戏又恢复"）：
+        //   旧语义两个洞——a) profile 键 YES 但 mods 已无 TouchController jar（模组管理
+        //   删了 mod，键残留）时只认键不看实况，启动照样自动配置 UDP+屏蔽控件；
+        //   b) 版本设置"关闭"= 删键（无键），启动链对无键不碰全局——全局残留 ON =
+        //   关闭形同虚设。修法：YES 键先核对 mods 实况（jar 不在=本会话禁用）；
+        //   显式 NO 键（Task268 保存语义）= 本会话禁用；无键维持"不碰全局"。
+        BOOL profExplicitOff = [rawKey isKindOfClass:NSNumber.class] && !profOn;
+        if (profOn) {
+            NSString *modsFolder = [[ModService sharedService] ame264_effectiveModsFolderForProfile:profName];
+            BOOL jarPresent = NO;
+            if (modsFolder.length > 0) {
+                NSArray *files = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:modsFolder error:nil];
+                for (NSString *f in files) {
+                    if ([f.pathExtension caseInsensitiveCompare:@"jar"] == NSOrderedSame &&
+                        [f localizedCaseInsensitiveContainsString:@"touch"]) {
+                        jarPresent = YES;
+                        break;
+                    }
+                }
+            }
+            if (!jarPresent) {
+                NSLog(@"[TouchController] Task268 profile '%@' flag=YES but no TouchController jar in mods -- treating as off for this launch", profName);
+                setPrefBool(@"control.mod_touch_enable", NO);
+                setPrefBool(@"control.mod_touch_hide_controls", NO);
+                return;
+            }
             if (getPrefBool(@"control.mod_touch_user_off")) {
                 NSLog(@"[TouchController] Task172 profile '%@' auto-config SKIPPED (user turned TouchController off globally -- not re-enabling)",
                       profName);
@@ -275,6 +298,12 @@ static void ame172_applyProfileTouchController(void) {
             setPrefBool(@"control.mod_touch_hide_controls", YES);
             NSLog(@"[TouchController] Task172 profile auto-config applied for '%@' (enable=1 mode=UDP hideControls=1)",
                   profName);
+        } else if (profExplicitOff) {
+            // Task268：显式关闭 = 本会话禁用（按当前 profile 每次启动重落，跨版本
+            // 不漂移：YES profile 启动会重走上方自动配置）。
+            setPrefBool(@"control.mod_touch_enable", NO);
+            setPrefBool(@"control.mod_touch_hide_controls", NO);
+            NSLog(@"[TouchController] Task268 profile '%@' explicitly disabled -- touch protocol off for this launch", profName);
         } else {
             NSLog(@"[TouchController] Task172 profile '%@' TouchController off -- global settings untouched",
                   profName);

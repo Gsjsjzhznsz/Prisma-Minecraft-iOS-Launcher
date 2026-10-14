@@ -65,7 +65,18 @@ public class IOSTargetDataLine implements TargetDataLine {
             nativeHandle = 0;
         }
         if (handle != 0) {
-            NativeAudioCapture.release(handle);
+            // ★ Task268（scan-b #2）：read() 锁内取句柄/锁外用句柄，close 同步
+            // release 与在途 native read 构成 UAF（native read 会阻塞等音频数据，
+            // 不能持 Java 键）。stop() 已广播唤醒在途 read，宽限 500ms 后释放，
+            // 覆盖其返回路径（守护线程，不阻塞关闭）。
+            Thread ame268Releaser = new Thread(new Runnable() {
+                public void run() {
+                    try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+                    NativeAudioCapture.release(handle);
+                }
+            }, "Ame268-AudioCaptureRelease");
+            ame268Releaser.setDaemon(true);
+            ame268Releaser.start();
         }
         fireEvent(LineEvent.Type.CLOSE);
     }

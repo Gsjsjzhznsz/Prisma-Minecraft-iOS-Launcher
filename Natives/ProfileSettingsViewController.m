@@ -21,6 +21,7 @@
 #import "DownloadTaskItem.h"
 #import "PLTaskStages.h"
 #import "ModpackExportService.h" // for parseVersionId:
+#import "ModService.h"          // Task268：TouchController 卸载走生效 mods 目录
 
 @interface ProfileSettingsViewController () <UITextFieldDelegate, UIPickerViewDataSource, UIPickerViewDelegate>
 
@@ -807,13 +808,11 @@ static NSString * localizeProfileTitle(NSString *title) {
     } else {
         [existing removeObjectForKey:@"jvm_preset"];
     }
-    // Task172：版本级 TouchController——开启落 YES，关闭删键（无键 = 关闭，
-    // 启动链 ame172_applyProfileTouchController 同口径；关闭不碰全局设置）
-    if (self.touchControllerEnabled) {
-        existing[@"touchController"] = @YES;
-    } else {
-        [existing removeObjectForKey:@"touchController"];
-    }
+    // Task172：版本级 TouchController——开启落 YES。
+    // ★ Task268：关闭改写显式 @NO（原"删键"使显式关与从未配置不可分，启动链
+    //   对无键不碰全局——全局残留 ON = 用户感知"关了开游戏又恢复"）。启动链
+    //   ame172_applyProfileTouchController 对显式 NO 落本会话禁用（同口径）。
+    existing[@"touchController"] = self.touchControllerEnabled ? @YES : @NO;
     existing[@"javaVersion"] = self.selectedJavaVersion;
     // Task159：分辨率缩放落 profile 层（NSString，与 PLProfiles resolveKey 的
     // NSString 读取约定一致）；用户未设置时 loadSettings 已把全局回退值填进
@@ -3176,6 +3175,55 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
 /// 成功后写 profile touchController=YES（Task172 键沿用，启动链
 /// ame172_applyProfileTouchController 自动落 UDP 模式 + 屏蔽启动器控件）。
 - (void)installTouchControllerStandalone {
+    // ★ Task268：已安装态（profile 键 YES）先给管理手势——旧版行点击只会重复
+    //   走安装，装完没有任何关闭入口（模组管理删 jar 也关不掉：键残留 YES =
+    //   启动链照样自动配置 UDP+屏蔽控件）。
+    if (self.profile[@"touchController"] && [self.profile[@"touchController"] boolValue]) {
+        UIAlertController *ame268_manage = [UIAlertController alertControllerWithTitle:@"TouchController"
+                                                                               message:nil
+                                                                        preferredStyle:UIAlertControllerStyleAlert];
+        [ame268_manage addAction:[UIAlertAction actionWithTitle:localize(@"component.touch.uninstall_disable", NULL)
+                                                          style:UIAlertActionStyleDestructive
+                                                        handler:^(UIAlertAction *action) {
+            [self ame268_uninstallTouchController];
+        }]];
+        [ame268_manage addAction:[UIAlertAction actionWithTitle:localize(@"component.touch.reinstall", NULL)
+                                                          style:UIAlertActionStyleDefault
+                                                        handler:^(UIAlertAction *action) {
+            [self ame268_continueInstallTouchController];
+        }]];
+        [ame268_manage addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:ame268_manage animated:YES completion:nil];
+        return;
+    }
+    [self ame268_continueInstallTouchController];
+}
+
+
+/// Task268：卸载 TouchController 模组 jar + profile 键显式 NO + 刷新。
+/// 关闭后下次启动 ame172_applyProfileTouchController 走显式 NO 分支 =
+/// 本会话无 touch 协议、控件不再屏蔽（用户实测 bug 的关闭入口）。
+- (void)ame268_uninstallTouchController {
+    NSString *ame268_prof = self.originalName ?: self.profile[@"name"];
+    NSString *modsFolder = ame268_prof ? [[ModService sharedService] ame264_effectiveModsFolderForProfile:ame268_prof] : nil;
+    NSInteger removed = 0;
+    if (modsFolder.length > 0) {
+        NSFileManager *ame268_fm = [NSFileManager defaultManager];
+        for (NSString *f in [ame268_fm contentsOfDirectoryAtPath:modsFolder error:nil]) {
+            if ([f.pathExtension caseInsensitiveCompare:@"jar"] == NSOrderedSame &&
+                [f localizedCaseInsensitiveContainsString:@"touch"]) {
+                if ([ame268_fm removeItemAtPath:[modsFolder stringByAppendingPathComponent:f] error:nil]) removed++;
+            }
+        }
+    }
+    self.touchControllerEnabled = NO;
+    [self saveSettings]; // Task268：显式 @NO 保存口径
+    NSLog(@"[ProfileSettings] Task268: TouchController uninstalled (%ld jar(s)) + profile key=NO for '%@'",
+          (long)removed, ame268_prof);
+    [self reloadAllTableViews];
+}
+
+- (void)ame268_continueInstallTouchController {
     if (![self isFabricProfile]) {
         [self showComponentAlert:localize(@"i18n_str_899", nil)
                           message:localize(@"component.touch.fabric_only", nil)];

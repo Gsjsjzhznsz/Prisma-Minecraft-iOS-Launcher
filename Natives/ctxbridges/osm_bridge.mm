@@ -1084,11 +1084,22 @@ void osm_apply_current_ll() {
 
     br_get_current()->osm.width = bufW;
     br_get_current()->osm.height = bufH;
-    br_get_current()->osm.buffer = reallocf(br_get_current()->osm.buffer, bufW * bufH * 4);
-
-    handle.OSMesaMakeCurrent(br_get_current()->osm.context, br_get_current()->osm.buffer, GL_UNSIGNED_BYTE, bufW, bufH);
-    handle.OSMesaPixelStore(OSMESA_ROW_LENGTH, bufW);
-    handle.OSMesaPixelStore(OSMESA_Y_UP, 0);
+    // ★ Task268（scan-c #6）：reallocf 失败即释放旧缓冲返回 NULL → 后续
+    //   MakeCurrent 绑 NULL（UAF/空绑定）。改 realloc：失败保旧缓冲跳过
+    //   重绑（渲染用旧尺寸继续，限频日志）。
+    void *ame268_buf = realloc(br_get_current()->osm.buffer, (size_t)bufW * (size_t)bufH * 4);
+    if (ame268_buf != NULL) {
+        br_get_current()->osm.buffer = ame268_buf;
+        handle.OSMesaMakeCurrent(br_get_current()->osm.context, br_get_current()->osm.buffer, GL_UNSIGNED_BYTE, bufW, bufH);
+        handle.OSMesaPixelStore(OSMESA_ROW_LENGTH, bufW);
+        handle.OSMesaPixelStore(OSMESA_Y_UP, 0);
+    } else {
+        static bool ame268_logged = false;
+        if (!ame268_logged) {
+            NSLog("[osm] Task268: buffer realloc failed (%dx%d) -- keep old binding", bufW, bufH);
+            ame268_logged = true;
+        }
+    }
 }
 
 void osm_make_current(osm_render_window_t* bundle) {
@@ -1115,6 +1126,8 @@ void osm_make_current(osm_render_window_t* bundle) {
     }
 
     br_set_current((basic_render_window_t *)bundle);
+    // ★ Task268（scan-c #8）：重复绑定先释放旧 CGColorSpaceRef（重绑链每轮泄漏）。
+    if (br_get_current()->osm.color_space) CGColorSpaceRelease(br_get_current()->osm.color_space);
     br_get_current()->osm.color_space = CGColorSpaceCreateDeviceRGB();
     osm_apply_current_ll();
 }

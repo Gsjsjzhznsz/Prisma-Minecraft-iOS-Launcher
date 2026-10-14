@@ -584,7 +584,22 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 - (void)handleDownloadTaskCompletedNotification:(NSNotification *)notification {
     DownloadTaskItem *task = notification.userInfo[DownloadTaskManagerTaskKey];
     NSString *type = task.resourceType;
-    if ([type isKindOfClass:[NSString class]] && [type isEqualToString:DownloadTaskResourceTypeMod]) {
+    // ★ Task268（scan-d #2）：恢复基类同款资源类型过滤——重写时丢失，
+    //   MC 本体/JRE 等任意任务完成也触发 mods 全量重扫（无谓 IO + 日志刷屏）。
+    static NSSet<NSString *> *ame268_resTypes = nil;
+    static dispatch_once_t ame268_onceToken;
+    dispatch_once(&ame268_onceToken, ^{
+        ame268_resTypes = [NSSet setWithObjects:
+            DownloadTaskResourceTypeMod,
+            DownloadTaskResourceTypeShader,
+            DownloadTaskResourceTypeResourcePack,
+            DownloadTaskResourceTypeDataPack,
+            DownloadTaskResourceTypeWorld,
+            nil];
+    });
+    if (![type isKindOfClass:[NSString class]] || type.length == 0 ||
+        ![ame268_resTypes containsObject:type]) return;
+    if ([type isEqualToString:DownloadTaskResourceTypeMod]) {
         NSString *ame265_dest = task.targetProfileName;
         NSString *ame265_effective = [self ame265_effectiveProfileName];
         if (ame265_dest.length > 0 && ![ame265_dest isEqualToString:ame265_effective]) {
@@ -1188,10 +1203,20 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
             NSString *fileName = url.lastPathComponent;
             NSString *destPath = [modsDir stringByAppendingPathComponent:fileName];
             // 同名文件处理
+            // 同名文件处理（★ Task268 scan-d #6：循环探测 _copy/_copy_N——
+            // 旧版只试一次，_copy 也被占时 copyItemAtPath 直接失败）。
             if ([fm fileExistsAtPath:destPath]) {
                 NSString *baseName = [fileName stringByDeletingPathExtension];
                 NSString *ext = [fileName pathExtension];
-                destPath = [modsDir stringByAppendingPathComponent:[NSString stringWithFormat:@"%@_copy.%@", baseName, ext]];
+                NSString *ame268_cand = nil;
+                for (NSInteger ame268_n = 1; ame268_n < 1000; ame268_n++) {
+                    NSString *ame268_name = (ame268_n == 1)
+                        ? [NSString stringWithFormat:@"%@_copy.%@", baseName, ext]
+                        : [NSString stringWithFormat:@"%@_copy_%ld.%@", baseName, (long)(ame268_n - 1), ext];
+                    NSString *ame268_path = [modsDir stringByAppendingPathComponent:ame268_name];
+                    if (![fm fileExistsAtPath:ame268_path]) { ame268_cand = ame268_path; break; }
+                }
+                if (ame268_cand) destPath = ame268_cand;
             }
             NSError *copyError = nil;
             [fm copyItemAtPath:url.path toPath:destPath error:&copyError];

@@ -1936,7 +1936,7 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         // Task169：有界等待（120s）+每 10s 心跳日志。旧裸循环在 stikjit://
         // 偶发没开成 JIT 时永不退出（装机 485b18c：冷启动首次启动卡在
         // 启动器界面，只能杀进程）。超时后撤弹窗并给出重试/取消。
-        BOOL ok = ame169_waitForJITCondition(^{ return (ame267_cancelled || isJITEnabled(false)); }, 120.0, @"isJITEnabled");
+        BOOL ok = ame169_waitForJITCondition(^{ return (BOOL)(ame267_cancelled || isJITEnabled(false)); }, 120.0, @"isJITEnabled");
         // Task185：自愈式派发（11e4b63 装机 latestlog.2 病历：condition
         // satisfied 后旧 dispatch_async(main) 续接块在后台被楔死的主队列上
         // 永不执行，Task183 锚点缺失即卡死——见 utils.h
@@ -2113,7 +2113,7 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         // exception ports / spawned-by-debugger), not for CS_DEBUGGED
         // -- that flag is already set and would race the first brk.
         // Task169：有界等待（120s）+心跳日志，超时走重试弹窗。
-        BOOL ok = ame169_waitForJITCondition(^{ return (ame267_cancelled || JIT26IsLikelyDebuggerKeepAttached()); }, 120.0, @"JIT26 debugger attach");
+        BOOL ok = ame169_waitForJITCondition(^{ return (BOOL)(ame267_cancelled || JIT26IsLikelyDebuggerKeepAttached()); }, 120.0, @"JIT26 debugger attach");
         // Task185：自愈式派发（同主等待路径，病历见 utils.h）。
         ame185_dispatchToMainSelfHealing(^{
             if (ame172_bgt != UIBackgroundTaskInvalid) {

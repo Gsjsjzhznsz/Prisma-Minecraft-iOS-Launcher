@@ -517,8 +517,12 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
                 sourceView:(UIView *)sourceView
                   onDismiss:(void (^)(void))onDismiss
           dictsForFallback:(NSArray<NSDictionary *> *)dicts {
-    if (menu == nil || sourceView == nil) return;
-    if (menu.children.count == 0) return; // 空菜单（全部项被丢弃）不呈现
+    // ★ Task268（scan-a #5）：早退分支统一取消语义——nil 锚点/空菜单静默
+    //   return 不回调 onDismiss，依赖 onDismiss 复位的调用方悬挂。
+    if (menu == nil || sourceView == nil || menu.children.count == 0) {
+        if (onDismiss) onDismiss();
+        return;
+    }
     if (@available(iOS 14.0, *)) {
         // 视图尚未进窗口时防御性回退一跑循环（同帧刚构建的锚点可能
         // 尚未 layout；下帧 responder 链与 window 均就绪）。

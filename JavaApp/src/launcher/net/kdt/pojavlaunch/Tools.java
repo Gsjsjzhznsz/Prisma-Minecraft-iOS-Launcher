@@ -968,7 +968,9 @@ createLibraryInfo(libItem);
             try {
                 Field fieldA = fromVer.getClass().getField(key);
                 value = fieldA.get(fromVer);
-                if (((value instanceof String) && !((String) value).isEmpty()) || value != null) {
+                // ★ Task268（scan-b #4）：原条件空串经 value!=null 恒真（死逻辑），
+                // 子版本 JSON 带空 mainClass 会覆盖父版本有效值（loadClass("") 崩）。
+                if (value != null && (!(value instanceof String) || !((String) value).isEmpty())) {
                     Field fieldB = targetVer.getClass().getField(key);
                     fieldB.set(targetVer, value);
                 }

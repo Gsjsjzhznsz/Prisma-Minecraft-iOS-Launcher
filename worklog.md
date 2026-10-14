@@ -3264,3 +3264,22 @@ Work Log:
 
 Stage Summary:
 - 装机锚点：①模组管理导航栏常驻"实例：X ▾"切换器，点开即见全部实例；下载 mod 后无论先后开页都出横幅（[ModsManager] Task267: reconcile mismatch lastDL=… viewing=…）点切换立见文件；改选实例后管理页自动跟扫（[ModsManager] Task267: SelectedProfileChanged -> …）②JIT 等待弹窗出现"取消"按钮，随时可退（[JIT] Task267: user cancelled JIT wait）不再 120-240s 无响应 ③v6.5.5 产物名携带新版本号
+
+## Task 268——五路子代理全面扫 bug（UIKit/Java/桥接/下载链/网站 50+ 项核查）+ r2 批量根修 + touch 协议恢复 bug（用户新增报告）终局修复；v6.5.0 静默替换第十轮
+
+日期：2026-10-14　构建：本提交（CI 轮询中；VERSION 维持 6.5.0——用户指令本批修复走 v6.5.0 交付）
+
+Work Log:
+- CI r1（be491e3）failure 定音：NavCtrl/LauncherNavigationController.m:808/929 incompatible block pointer types——`a || b` 求值返回 int，块形参要求 BOOL(^)(void)；四处条件包装补 (BOOL) 强转（RightPanel 同构两处一并修）
+- 多子代理侦察（5 路并行 Explore，worklog 各有 267-scan-a/b/c/d/e 条目）：0 P0；P1×9、P2×15 实证清单
+- touch 协议恢复 bug 终局根修（用户 trace 1a13b3da 新增报告"装 touch 模组后关不掉 touch 协议/屏蔽控件，关了开游戏又恢复"）：旧语义双洞=a) profile 键 YES 但 mods 已无 TouchController jar（模组管理删 mod 键残留）时启动链只认键不看实况照样自动配置 UDP+屏蔽控件；b) 版本设置"关闭"=删键（无键），启动链对无键不碰全局——全局残留 ON=关闭形同虚设。修法三件=①ios_uikit_bridge ame172_applyProfileTouchController 重构（YES 键先核对 mods 实况 jar 不在即本会话禁用+显式 NO 键=本会话禁用 enable/hide 双落 NO+无键维持不碰全局；按当前 profile 每次启动重落跨版本不漂移）②saveSettings 关闭改写显式 @NO（显式关与从未配置可分）③组件行已安装态管理手势（卸载并关闭=删 touch jar+键 NO+saveSettings；重新安装；取消；2 新 i18n 键）
+- 子代理 P1 修复：①ModService 重试链断死（scan-d #1：cleanup 一律清 downloadRequests → retryHandler 恒 nil → 任务永久卡"等待中"；失败/取消保留 request+taskItem 仅成功全量清）②ame267 落点记录改记实际落盘文件名（resourceName 优先，scan-d #7）③取消路径阶段行置 Skipped（scan-d #8）④ModsManager 通知恢复基类资源类型过滤（重写时丢失，scan-d #2）⑤input_bridge sneak 翻译器补 GLFW 数字形态 340/344（LWJGL3 族，scan-c #1——1.13-1.21.x options.txt 数字带旧解析落 else=-1=右SHIFT死键复活带）⑥processPath percent-encode（含空格路径 openURL:nil 主线程崩，scan-c #2）⑦SurfaceVC statsTimer 保留环（scheduledTimer target:self→dealloc 永不可达=每会话泄漏整个 VC+displayLink 120Hz 空转；改 block+weakSelf，scan-a #1）⑧DownloadVC 两处 JIT 等待（InlineMessageView onClose 接 ame267_cancelled+完成续接换 ame185 自愈派发，scan-a #2）
+- 子代理 P2 修复：蓝牙滚轮单轴化（scan-c #4）+ keyDownBuffer 边界守卫（GLFW_KEY_LAST=348 越界 1 字节，scan-c #5）+ osm reallocf→realloc 失败保旧缓冲（UAF/空绑定，scan-c #6）+ CGColorSpace 重绑泄漏（scan-c #8）+ 导入同名循环探测 _copy/_copy_N（scan-d #6）+ AmeNativeMenu 早退分支补 onDismiss（scan-a #5）+ ShowdownAgent died 去 seenAlive 门+deadline 兜底移出循环（原 stalled 在 while(now<deadline) 体内恒 false=死代码，scan-b #1）+ Tools.insertSafety 空串死逻辑（畸形 JSON loadClass("") 崩，scan-b #4）+ IOSTargetDataLine release 宽限 500ms（锁内取句柄/锁外用句柄 UAF 面，scan-b #2）
+- scan-e 网站审计（15 项：Info.plist 版本串/Google Fonts @import 阻塞/rotate-hint 遮挡/LEGACY_AIR 耦合等）——本批不动网站（6.5.0 交付轮），清单留档下轮 6.5.5 开版时逐项落地；i18n 新三键 54/54 抽查 PASS
+- scan-a 误报核销：HomeCustomize 双观察者=互补语义（reapply 透明化 + handler 重载表格）非 bug 不修
+- 门禁：task139 all balanced；task191 54 表 2916 键；task248 缺键0/硬编码0；task250 0；verify263 43/43
+- 工具链教训（本轮新增）：①三引号非 raw 串 \1 八进制吞块（r1 事故）②rg/sed 管道显示层吞 `[m`/`@[` 序列（odsDir 实为 [modsDir、anager 实为 [manager——第四次例证）③ObjC 字面量 @" 的 @ 必须入正则④Bash 段公式 heredoc 注入 bash 变量时 PYEOF 内 $ 需单引号防展开
+- VERSION 维持 6.5.0（用户指令"先和模组管理的 bug 在 6.5.0 恢复先"）：Makefile 6.5.5→6.5.0 回退，CI 绿后 v6.5.0 资产静默替换第十轮；6.5.5 正式开版（Info.plist 双键+website 版本串+announcements 条目）留待下轮
+
+Stage Summary:
+- 装机锚点：①版本设置 TouchController 行点按出管理菜单（卸载并关闭后开游戏=无 touch 协议、控件恢复显示；日志 [TouchController] Task268 profile 'X' explicitly disabled / flag=YES but no TouchController jar）②下载失败任务可重试不再卡"等待中"③JIT 等待四处（RightPanel/NavCtrl/DownloadVC×2）全部可取消④右 SHIFT 在 1.13-1.21.x 数字格式档恢复生效（[Task266] adaptive sneak sync 覆盖 340/344 数字形态）⑤模组管理导航栏实例切换器+跨实例横幅对账（Task267 锚点）

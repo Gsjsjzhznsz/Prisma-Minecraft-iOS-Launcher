@@ -3868,6 +3868,12 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
                                                                     title:localize(@"launcher.wait_jit.title", nil)
                                                                  message:hasTrollStoreJIT ? localize(@"launcher.wait_jit_trollstore.message", nil) : localize(@"launcher.wait_jit.message", nil)
                                                                     type:InlineMessageTypeLoading];
+    // ★ Task268（scan-a #2）：等待期可取消（InlineMessageView 关闭钮接
+    // ame267_cancelled，与 RightPanel/NavCtrl 同语义）+ 完成续接换
+    // ame185 自愈派发（Task185 病历族：主队列楔死时裸 dispatch_async 静默丢块）。
+    __block BOOL ame267_cancelled = NO;
+    jitAlert.showsCloseButton = YES;
+    jitAlert.onClose = ^{ ame267_cancelled = YES; };
 
     // Task172：后台任务断言（同 RightPanel，见其病历）：stikjit:// 切后台后
     // 防 iOS 立即挂起冻结等待循环。
@@ -3878,12 +3884,16 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         // Task169：有界等待（120s）+每 10s 心跳日志，超时走错误提示
         //（同 RightPanel/NavCtrl 两处，病历见 utils.m）。
-        BOOL ok = ame169_waitForJITCondition(^{ return isJITEnabled(false); }, 120.0, @"isJITEnabled");
-        dispatch_async(dispatch_get_main_queue(), ^{
+        BOOL ok = ame169_waitForJITCondition(^{ return (BOOL)(ame267_cancelled || isJITEnabled(false)); }, 120.0, @"isJITEnabled");
+        ame185_dispatchToMainSelfHealing(^{
             [jitAlert dismiss];
             if (ame172_bgt != UIBackgroundTaskInvalid) {
                 [UIApplication.sharedApplication endBackgroundTask:ame172_bgt];
                 ame172_bgt = UIBackgroundTaskInvalid;
+            }
+            if (ame267_cancelled) {
+                NSLog(@"[JIT] [DownloadVC] Task268: JIT wait cancelled by user -- abandoning launch");
+                return;
             }
             if (ok) {
                 // Task172：存活性复查（同 RightPanel）：CS_DEBUGGED 已置但
@@ -3910,6 +3920,12 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
                                                                     title:localize(@"launcher.wait_jit.title", nil)
                                                                  message:localize(@"launcher.wait_jit.message", nil)
                                                                     type:InlineMessageTypeLoading];
+    // ★ Task268（scan-a #2）：等待期可取消（InlineMessageView 关闭钮接
+    // ame267_cancelled，与 RightPanel/NavCtrl 同语义）+ 完成续接换
+    // ame185 自愈派发（Task185 病历族：主队列楔死时裸 dispatch_async 静默丢块）。
+    __block BOOL ame267_cancelled = NO;
+    jitAlert.showsCloseButton = YES;
+    jitAlert.onClose = ^{ ame267_cancelled = YES; };
 
     __block UIBackgroundTaskIdentifier ame172_bgt = [UIApplication.sharedApplication beginBackgroundTaskWithName:@"ame172-jit26-reattach" expirationHandler:^{
         // 同上：宽限期到由系统挂起，恢复后继续。
@@ -3951,12 +3967,16 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
         // exception ports / spawned-by-debugger), not for CS_DEBUGGED
         // -- that flag is already set and would race the first brk.
         // Task169：有界等待（120s）+心跳日志，超时走错误提示（不无限转圈）。
-        BOOL ok = ame169_waitForJITCondition(^{ return JIT26IsLikelyDebuggerKeepAttached(); }, 120.0, @"JIT26 debugger attach");
-        dispatch_async(dispatch_get_main_queue(), ^{
+        BOOL ok = ame169_waitForJITCondition(^{ return (BOOL)(ame267_cancelled || JIT26IsLikelyDebuggerKeepAttached()); }, 120.0, @"JIT26 debugger attach");
+        ame185_dispatchToMainSelfHealing(^{
             [jitAlert dismiss];
             if (ame172_bgt != UIBackgroundTaskInvalid) {
                 [UIApplication.sharedApplication endBackgroundTask:ame172_bgt];
                 ame172_bgt = UIBackgroundTaskInvalid;
+            }
+            if (ame267_cancelled) {
+                NSLog(@"[JIT] [DownloadVC] Task268: JIT wait cancelled by user -- abandoning launch");
+                return;
             }
             if (ok) {
                 if (handler) handler();
