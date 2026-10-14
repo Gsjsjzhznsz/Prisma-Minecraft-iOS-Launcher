@@ -243,6 +243,22 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
     NSLog(@"[AmeNativeMenu] Task245: system menu unavailable, stock actionSheet fallback");
 }
 
+
+#pragma mark - 呈现装配（Task242/245）
+
+@implementation AmeNativeMenu
+
+#pragma mark - Singleton
+
++ (instancetype)ame240_shared {
+    static AmeNativeMenu *ame240_shared = nil;
+    static dispatch_once_t ame240_once;
+    dispatch_once(&ame240_once, ^{
+        ame240_shared = [[AmeNativeMenu alloc] init];
+    });
+    return ame240_shared;
+}
+
 #pragma mark - Task266 呈现形态门控（iPhone alert 形态 delegate 崩溃根修）
 
 /// Task266：本次呈现是否解析为 popover 形态（唯一允许修改 presentation
@@ -301,21 +317,6 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
         NSLog(@"[AmeNativeMenu] Task266: alert-style cancel carrier added (title=%@)", ame266_title);
         return; // 只取第一个 cancel 项
     }
-}
-
-#pragma mark - 呈现装配（Task242/245）
-
-@implementation AmeNativeMenu
-
-#pragma mark - Singleton
-
-+ (instancetype)ame240_shared {
-    static AmeNativeMenu *ame240_shared = nil;
-    static dispatch_once_t ame240_once;
-    dispatch_once(&ame240_once, ^{
-        ame240_shared = [[AmeNativeMenu alloc] init];
-    });
-    return ame240_shared;
 }
 
 #pragma mark - 装配私有方法
