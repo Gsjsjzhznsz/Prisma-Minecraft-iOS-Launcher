@@ -3283,3 +3283,12 @@ Work Log:
 
 Stage Summary:
 - 装机锚点：①版本设置 TouchController 行点按出管理菜单（卸载并关闭后开游戏=无 touch 协议、控件恢复显示；日志 [TouchController] Task268 profile 'X' explicitly disabled / flag=YES but no TouchController jar）②下载失败任务可重试不再卡"等待中"③JIT 等待四处（RightPanel/NavCtrl/DownloadVC×2）全部可取消④右 SHIFT 在 1.13-1.21.x 数字格式档恢复生效（[Task266] adaptive sneak sync 覆盖 340/344 数字形态）⑤模组管理导航栏实例切换器+跨实例横幅对账（Task267 锚点）
+
+## Task 268 r3——osm_bridge NSLog C 字符串字面量热修（NSLog 宏 customNSLog 要求 NSString 格式串，漏 @ 前缀）
+
+Work Log:
+- run 38600575181 failure：osm_bridge.mm:1099 no matching function for call to customNSLog（Task268 r2 realloc 守卫分支 NSLog("[osm] ...") 漏 @）；一行修正 + 全仓同款扫描（NSLog(" 直连 C 串）= 0 残留
+- 门禁 task139 all balanced
+
+Stage Summary:
+- r3 热修推送；CI 轮询中

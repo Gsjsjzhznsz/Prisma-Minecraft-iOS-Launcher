@@ -1096,7 +1096,7 @@ void osm_apply_current_ll() {
     } else {
         static bool ame268_logged = false;
         if (!ame268_logged) {
-            NSLog("[osm] Task268: buffer realloc failed (%dx%d) -- keep old binding", bufW, bufH);
+            NSLog(@"[osm] Task268: buffer realloc failed (%dx%d) -- keep old binding", bufW, bufH);
             ame268_logged = true;
         }
     }
