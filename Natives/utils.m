@@ -719,7 +719,10 @@ static BOOL ame274_localizeZhHansProbed = NO;
 static NSBundle *ame274_localizeZhCN = nil;
 static BOOL ame274_localizeZhCNProbed = NO;
 
-static NSBundle *ame274_cachedLprojBundle(NSString *langName, NSBundle **slot, BOOL *probed) {
+// Task274-r3: 出参必须 __strong *——缺省限定符是 __autoreleasing，ARC 禁止把
+// 静态变量地址传给 __autoreleasing 写回参数（CI 实编译抓出×6）；强写回对
+// 非局部对象合法，六个调用点零改动。
+static NSBundle *ame274_cachedLprojBundle(NSString *langName, NSBundle * __strong *slot, BOOL *probed) {
     os_unfair_lock_lock(&ame274_localizeLock);
     if (!*probed) {
         NSString *ame274_lPath = [NSBundle.mainBundle pathForResource:langName ofType:@"lproj"];
