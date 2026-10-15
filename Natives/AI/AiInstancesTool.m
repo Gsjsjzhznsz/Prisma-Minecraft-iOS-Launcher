@@ -6,6 +6,7 @@
 #import "AiInstancesTool.h"
 #import "PLProfiles.h"
 #import "LauncherPreferences.h"
+#import "../utils.h"   // Task271-e：结果/错误文案 i18n 接线需要 localize()
 
 @interface AiInstancesTool ()
 @property (nonatomic, copy) NSString *internalName;
@@ -122,7 +123,7 @@
     }
 
     NSError *err = [NSError errorWithDomain:@"AiTool" code:404
-                                   userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"未知工具 %@", self.internalName]}];
+                                   userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.tools.unknown_tool_fmt", nil), self.internalName]}];
     completion(nil, err);
 }
 
@@ -248,7 +249,7 @@
         });
         NSString *resultJSON = [self filteredVersionsJSON:versions includeSnapshots:includeSnapshots];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSString stringWithFormat:@"%@\n（数据源：%@）", resultJSON, sourceUsed ?: @"bmclapi"], nil);
+            completion([NSString stringWithFormat:localize(@"ai.tools.source_line_fmt", nil), resultJSON, sourceUsed ?: @"bmclapi"], nil);
         });
     }];
 }
@@ -259,9 +260,9 @@
                       lastError:(NSError * _Nullable)lastError
                       completion:(void (^)(NSArray * _Nullable versions, NSString * _Nullable sourceUsed, NSError * _Nullable error))completion {
     if (index >= urlStrings.count) {
-        NSString *detail = lastError.localizedDescription ?: @"未知错误";
+        NSString *detail = lastError.localizedDescription ?: localize(@"resman.common.unknown_error", nil);
         completion(nil, nil, [NSError errorWithDomain:@"AiTool" code:500
-                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"获取版本列表失败（BMCLAPI 与官方源均不可用）:%@", detail]}]);
+                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.instances.manifest_failed_fmt", nil), detail]}]);
         return;
     }
     NSString *urlString = urlStrings[index];
@@ -292,7 +293,7 @@
             }
             if (!versions) {
                 parseError = [NSError errorWithDomain:@"AiTool" code:500
-                                              userInfo:@{NSLocalizedDescriptionKey: @"版本清单格式异常"}];
+                                              userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.instances.manifest_malformed", nil)}];
             }
         }
         dispatch_async(dispatch_get_main_queue(), ^{

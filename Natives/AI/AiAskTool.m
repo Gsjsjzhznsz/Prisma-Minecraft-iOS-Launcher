@@ -113,7 +113,7 @@
     NSArray *steps = [self parseSteps:params];
     if (steps.count == 0) {
         NSError *err = [NSError errorWithDomain:@"AiTool" code:400
-                                       userInfo:@{NSLocalizedDescriptionKey: @"未提供有效问题（questions/question 参数缺失）"}];
+                                       userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.ask.no_questions", nil)}];
         completion(nil, err);
         return;
     }

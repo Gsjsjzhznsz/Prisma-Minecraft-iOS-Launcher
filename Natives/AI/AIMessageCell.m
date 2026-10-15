@@ -206,7 +206,7 @@ static const CGFloat kMsgCornerRadius = 12.0;
     NSString *name = message.toolName.length > 0 ? message.toolName : localize(@"ame193.ai.3", @"工具");
     if (message.isToolResult) {
         // 只显示执行成功/失败状态，不展示冗长的工具返回正文（避免占满屏幕）
-        return message.toolSucceeded ? [NSString stringWithFormat:localize(@"ame193.ai.5", @"✅ %@ 执行成功"), name] : [NSString stringWithFormat:@"❌ %@ 执行失败", name];
+        return message.toolSucceeded ? [NSString stringWithFormat:localize(@"ame193.ai.5", @"✅ %@ 执行成功"), name] : [NSString stringWithFormat:localize(@"ame193.ai.6", nil), name];
     }
     return [NSString stringWithFormat:localize(@"ame193.ai.7", @"⚙️ 工具：%@"), name];
 }

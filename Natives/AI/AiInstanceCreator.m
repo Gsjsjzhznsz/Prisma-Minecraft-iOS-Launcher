@@ -6,6 +6,7 @@
 #import "AiInstanceCreator.h"
 #import "LauncherPreferences.h"
 #import "PLProfiles.h"
+#import "../utils.h"   // Task271-e：结果/错误文案 i18n 接线需要 localize()
 
 @implementation AiInstanceCreator
 
@@ -33,7 +34,7 @@
     NSString *name = [params[@"name"] isKindOfClass:[NSString class]] ? params[@"name"] : @"";
     if (name.length == 0) {
         completion(nil, [NSError errorWithDomain:@"AiTool" code:400
-                                     userInfo:@{NSLocalizedDescriptionKey: @"参数 name 必填"}]);
+                                     userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.instance.param_name_required", nil)}]);
         return;
     }
     // 目录名安全化：去掉路径分隔符（与 VersionManagerViewController 创建目录一致直接拼接，
@@ -43,7 +44,7 @@
     name = [parts componentsJoinedByString:@"_"];
     if (name.length == 0) {
         completion(nil, [NSError errorWithDomain:@"AiTool" code:400
-                                     userInfo:@{NSLocalizedDescriptionKey: @"参数 name 无效"}]);
+                                     userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.instance.name_invalid", nil)}]);
         return;
     }
 
@@ -63,7 +64,7 @@
                                                          error:&dirError]) {
         completion(nil, [NSError errorWithDomain:@"AiTool" code:500
                                      userInfo:@{NSLocalizedDescriptionKey:
-                                         [NSString stringWithFormat:@"创建实例目录失败：%@", dirError.localizedDescription ?: @"未知错误"]}]);
+                                         [NSString stringWithFormat:localize(@"ai.instance.mkdir_failed_fmt", nil), dirError.localizedDescription ?: localize(@"resman.common.unknown_error", nil)]}]);
         return;
     }
 
@@ -80,7 +81,7 @@
         if (!linkOK) {
             completion(nil, [NSError errorWithDomain:@"AiTool" code:500
                                          userInfo:@{NSLocalizedDescriptionKey:
-                                             [NSString stringWithFormat:@"重建 POJAV_GAME_DIR 符号链接失败：%@", linkError.localizedDescription ?: @"未知错误"]}]);
+                                             [NSString stringWithFormat:localize(@"ai.instance.symlink_failed_fmt", nil), linkError.localizedDescription ?: localize(@"resman.common.unknown_error", nil)]}]);
             return;
         }
         [[NSFileManager defaultManager] changeCurrentDirectoryPath:lasmPath];
@@ -108,10 +109,10 @@
 
     NSString *note = @"";
     if (mcVersion.length > 0 || loader.length > 0) {
-        note = [NSString stringWithFormat:@"（备注：MC %@ %@；请继续用 install_game_version / install_loader 安装）",
-                mcVersion.length > 0 ? mcVersion : @"未指定", loader.length > 0 ? loader : @"无加载器"];
+        note = [NSString stringWithFormat:localize(@"ai.instance.note_fmt", nil),
+                mcVersion.length > 0 ? mcVersion : localize(@"ai.instance.unspecified", nil), loader.length > 0 ? loader : localize(@"ai.instance.no_loader", nil)];
     }
-    completion([NSString stringWithFormat:@"已创建并切换到实例「%@」。\n路径：%@%@",
+    completion([NSString stringWithFormat:localize(@"ai.instance.created_fmt", nil),
                 name, instancePath, note], nil);
 }
 

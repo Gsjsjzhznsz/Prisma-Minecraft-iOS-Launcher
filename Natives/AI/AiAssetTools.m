@@ -40,6 +40,7 @@
 #import "MinecraftResourceDownloadTask.h"
 #import "PLTaskStages.h"
 #import "AiSafetyManager.h"
+#import "../utils.h"   // Task271-e：工具结果/错误文案 i18n 接线需要 localize()
 
 /// 工具错误域与常见错误码
 static NSString * const kAiAssetToolDomain = @"AiAssetTool";
@@ -208,7 +209,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
     NSString *query = [params[@"query"] isKindOfClass:[NSString class]] ? params[@"query"] : @"";
     if (query.length == 0) {
         NSError *err = [NSError errorWithDomain:kAiAssetToolDomain code:400
-                                        userInfo:@{NSLocalizedDescriptionKey: @"缺少必填参数 query（搜索关键词）"}];
+                                        userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.missing_query", nil)}];
         completion(nil, err);
         return;
     }
@@ -236,7 +237,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
             hits = json;
         }
         if (![hits isKindOfClass:[NSArray class]] || hits.count == 0) {
-            completion(@"未找到相关项目", nil);
+            completion(localize(@"ai.asset.no_results", nil), nil);
             return;
         }
         NSMutableArray *items = [NSMutableArray array];
@@ -260,12 +261,12 @@ static BOOL aiIsLatestAlias(NSString *s) {
             }];
         }
         if (items.count == 0) {
-            completion(@"未找到相关项目", nil);
+            completion(localize(@"ai.asset.no_results", nil), nil);
             return;
         }
         NSData *data = [NSJSONSerialization dataWithJSONObject:items options:0 error:nil];
         NSString *jsonStr = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"[]";
-        completion([NSString stringWithFormat:@"%@\n（数据源：%@）", jsonStr, usedSource ?: @"Modrinth"], nil);
+        completion([NSString stringWithFormat:localize(@"ai.tools.source_line_fmt", nil), jsonStr, usedSource ?: @"Modrinth"], nil);
     }];
 }
 
@@ -388,14 +389,14 @@ static BOOL aiIsLatestAlias(NSString *s) {
     NSString *slugOrId = [params[@"slugOrId"] isKindOfClass:[NSString class]] ? params[@"slugOrId"] : @"";
     if (slugOrId.length == 0) {
         completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:400
-                                        userInfo:@{NSLocalizedDescriptionKey: @"缺少必填参数 slugOrId"}]);
+                                        userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.missing_slug", nil)}]);
         return;
     }
 
     // 目标目录
     NSString *folder = [self resolvedFolderForParams:params];
     if (folder.length == 0) {
-        completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:500 userInfo:@{NSLocalizedDescriptionKey: @"无法确定安装目录"}]);
+        completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:500 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.cannot_resolve_folder", nil)}]);
         return;
     }
     // latest 别名：等价于不指定版本（自动选最新 release）
@@ -440,10 +441,10 @@ static BOOL aiIsLatestAlias(NSString *s) {
             // 组装最终完成文案（依赖提醒 + Iris 提醒 + Podium 连带说明）
             void (^finishWithNote)(NSString * _Nullable, NSString * _Nullable podiumNote) = ^(NSString * _Nullable result, NSString * _Nullable podiumNote) {
                 NSMutableString *final = [NSMutableString stringWithString:result ?: @""];
-                if (podiumNote.length > 0) [final appendFormat:@"。%@", podiumNote];
-                [final appendString:@"。注意：可能尚未安装该资源的依赖（前置）Mod，建议先启动 Minecraft 测试；若崩溃可让我读取日志（read_logs），日志会显示缺失哪些前置，我再帮你补装。"];
+                if (podiumNote.length > 0) [final appendFormat:localize(@"ai.asset.note_join_fmt", nil), podiumNote];
+                [final appendString:localize(@"ai.asset.note_missing_deps", nil)];
                 if (isIris) {
-                    [final appendString:@" 提醒：若要运行 Iris 光影包，建议把渲染器切换为 Zink（可用 set_setting 修改）。"];
+                    [final appendString:localize(@"ai.asset.note_iris_zink", nil)];
                 }
                 completion(final, nil);
             };
@@ -467,8 +468,8 @@ static BOOL aiIsLatestAlias(NSString *s) {
                                                             profile:[AiAssetNetworkUtil resolveProfileName:params]
                                                          completion:^(BOOL podOK, NSString * _Nullable podName, NSString * _Nullable podMsg) {
                             NSString *note = podOK
-                                ? [NSString stringWithFormat:@"已自动连带安装 %@（用于屏蔽 Sodium 的启动器检测，不装会强制崩溃）", podName ?: @"Podium"]
-                                : @"注意：Sodium 需要搭配 Podium 或 Podium Port（屏蔽启动器检测，否则游戏强制崩溃），自动连带安装失败，请让我重试或手动安装";
+                                ? [NSString stringWithFormat:localize(@"ai.asset.podium_installed_fmt", nil), podName ?: @"Podium"]
+                                : localize(@"ai.asset.podium_failed_note", nil);
                             finishWithNote(result, note);
                         }];
                     } else {
@@ -492,9 +493,9 @@ static BOOL aiIsLatestAlias(NSString *s) {
                     }
                     NSMutableString *final = [NSMutableString stringWithString:bgResult ?: @""];
                     if (needsPodium) {
-                        [final appendString:@"。下载完成后将自动连带安装 Podium（或 Podium Port）"];
+                        [final appendString:localize(@"ai.asset.bg_podium_note", nil)];
                     }
-                    [final appendString:@"。任务在后台进行，可用 check_downloads 查询进度。"];
+                    [final appendString:localize(@"ai.asset.bg_task_note", nil)];
                     completion(final, nil);
                 }
                                           onFinished:^(BOOL success, NSString * _Nullable message) {
@@ -524,14 +525,14 @@ static BOOL aiIsLatestAlias(NSString *s) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
         if (idx >= candidateSlugs.count) {
-            completion(NO, nil, @"Podium 与 Podium Port 均未能安装（Modrinth 未找到适配版本）");
+            completion(NO, nil, localize(@"ai.asset.podium_both_failed", nil));
             return;
         }
         NSString *slug = candidateSlugs[idx];
         NSError *err = nil;
         NSString *modsFolder = [[ModService sharedService] ensureModsFolderForProfile:profile error:&err];
         if (modsFolder.length == 0) {
-            completion(NO, nil, @"无法确定 mods 目录");
+            completion(NO, nil, localize(@"ai.asset.cannot_resolve_mods_dir", nil));
             return;
         }
         [strongSelf fetchVersionsForSlug:slug
@@ -582,7 +583,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
         }
         NSArray *versions = [json isKindOfClass:[NSArray class]] ? json : nil;
         if (versions.count == 0) {
-            completion(nil, nil, nil, [NSError errorWithDomain:kAiAssetToolDomain code:404 userInfo:@{NSLocalizedDescriptionKey: @"该项目暂无可用版本"}]);
+            completion(nil, nil, nil, [NSError errorWithDomain:kAiAssetToolDomain code:404 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.no_versions", nil)}]);
             return;
         }
         // gameVersion 兼容性过滤（Modrinth 版本对象的 game_versions 数组）
@@ -597,7 +598,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
             }
             if (filtered.count == 0) {
                 completion(nil, nil, nil, [NSError errorWithDomain:kAiAssetToolDomain code:404
-                                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"未找到适配 MC %@ 的版本，可换用 versionId 指定版本重试", gameVersion]}]);
+                                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.asset.no_version_for_mc_fmt", nil), gameVersion]}]);
                 return;
             }
             versions = filtered;
@@ -610,7 +611,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
             }
             if (!chosen) {
                 completion(nil, nil, nil, [NSError errorWithDomain:kAiAssetToolDomain code:404
-                                                           userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"未找到版本 %@", versionId]}]);
+                                                           userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.asset.version_not_found_fmt", nil), versionId]}]);
                 return;
             }
         } else {
@@ -625,7 +626,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
         NSArray *files = [chosen isKindOfClass:[NSDictionary class]] ? chosen[@"files"] : nil;
         NSDictionary *file = ([files isKindOfClass:[NSArray class]] && files.count > 0) ? files[0] : nil;
         if (![file isKindOfClass:[NSDictionary class]]) {
-            completion(nil, nil, nil, [NSError errorWithDomain:kAiAssetToolDomain code:404 userInfo:@{NSLocalizedDescriptionKey: @"所选版本无可用文件"}]);
+            completion(nil, nil, nil, [NSError errorWithDomain:kAiAssetToolDomain code:404 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.no_files", nil)}]);
             return;
         }
         NSString *fileURLStr = file[@"url"];
@@ -638,7 +639,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
         NSURL *fileURL = [NSURL URLWithString:[fileURLStr isKindOfClass:[NSString class]] ? fileURLStr : @""];
         if (![filename isKindOfClass:[NSString class]]) filename = @"download";
         if (!fileURL) {
-            completion(nil, nil, nil, [NSError errorWithDomain:kAiAssetToolDomain code:404 userInfo:@{NSLocalizedDescriptionKey: @"下载地址无效"}]);
+            completion(nil, nil, nil, [NSError errorWithDomain:kAiAssetToolDomain code:404 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.invalid_download_url", nil)}]);
             return;
         }
         completion(filename, fileURL, sha1, nil);
@@ -652,13 +653,13 @@ static BOOL aiIsLatestAlias(NSString *s) {
     NSString *versionId = [params[@"versionId"] isKindOfClass:[NSString class]] ? params[@"versionId"] : @"";
     if (versionId.length == 0) {
         completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:400
-                                        userInfo:@{NSLocalizedDescriptionKey: @"缺少必填参数 versionId"}]);
+                                        userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.missing_version_id", nil)}]);
         return;
     }
 
     // wait=false：后台安装，立即返回（结果不回调，进度可用 check_downloads 查询）
     if (!aiWaitRequested(params)) {
-        completion([NSString stringWithFormat:@"已在后台开始安装 MC %@（版本 JSON、库文件、资源文件），任务将注册到下载中心，可随时用 check_downloads 查看进度；安装完成后会自动创建并选中对应实例。", versionId], nil);
+        completion([NSString stringWithFormat:localize(@"ai.asset.bg_install_game_fmt", nil), versionId], nil);
         [AiAssetInstaller installVanillaVersionId:versionId completion:^(BOOL bgSuccess, NSString * _Nullable bgMessage) {
             if (!bgSuccess) {
                 NSLog(@"[AI] 后台安装 MC %@ 失败：%@", versionId, bgMessage ?: @"");
@@ -671,10 +672,10 @@ static BOOL aiIsLatestAlias(NSString *s) {
     // 用户可在下载中心实时查看；无需打开下载页引导手动操作。
     [AiAssetInstaller installVanillaVersionId:versionId completion:^(BOOL success, NSString * _Nullable message) {
         if (success) {
-            completion([NSString stringWithFormat:@"MC %@ 本体已安装完成（版本 JSON、库文件、资源文件均已就绪），并已创建并选中对应实例。", versionId], nil);
+            completion([NSString stringWithFormat:localize(@"ai.asset.game_installed_fmt", nil), versionId], nil);
         } else {
             completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:500
-                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"安装 MC %@ 失败：%@", versionId, message ?: @"未知错误"]}]);
+                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.asset.install_game_failed_fmt", nil), versionId, message ?: localize(@"resman.common.unknown_error", nil)]}]);
         }
     }];
 }
@@ -686,13 +687,13 @@ static BOOL aiIsLatestAlias(NSString *s) {
     NSString *mcVersion = [params[@"mcVersion"] isKindOfClass:[NSString class]] ? params[@"mcVersion"] : @"";
     NSString *loaderType = [params[@"loaderType"] isKindOfClass:[NSString class]] ? [params[@"loaderType"] lowercaseString] : @"";
     if (mcVersion.length == 0) {
-        completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:400 userInfo:@{NSLocalizedDescriptionKey: @"缺少必填参数 mcVersion"}]);
+        completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:400 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.missing_mc_version", nil)}]);
         return;
     }
     NSSet *validLoaders = [NSSet setWithObjects:@"fabric", @"forge", @"neoforge", @"quilt", @"optifine", nil];
     if (![validLoaders containsObject:loaderType]) {
         completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:400
-                                        userInfo:@{NSLocalizedDescriptionKey: @"loaderType 必须为 fabric / forge / neoforge / quilt / optifine 之一"}]);
+                                        userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.invalid_loader_type", nil)}]);
         return;
     }
 
@@ -710,9 +711,9 @@ static BOOL aiIsLatestAlias(NSString *s) {
 
     [AiAssetNetworkUtil postShowDownloadPage];
     if (!installed) {
-        completion([NSString stringWithFormat:@"%@ 安装器需要运行 Java 图形安装器，暂无法全自动。MC %@ 本体也尚未安装，已为你打开下载页，请先安装 MC 本体，再在页面中安装 %@。", [loaderType capitalizedString], mcVersion, loaderType], nil);
+        completion([NSString stringWithFormat:localize(@"ai.asset.gui_installer_no_vanilla_fmt", nil), [loaderType capitalizedString], mcVersion, loaderType], nil);
     } else {
-        completion([NSString stringWithFormat:@"%@ 安装器需要运行 Java 图形安装器，暂无法全自动。MC %@ 已就绪，已为你打开下载页，请在页面中安装 %@ 加载器。", [loaderType capitalizedString], mcVersion, loaderType], nil);
+        completion([NSString stringWithFormat:localize(@"ai.asset.gui_installer_fmt", nil), [loaderType capitalizedString], mcVersion, loaderType], nil);
     }
 }
 
@@ -736,7 +737,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
 
     // wait=false：后台安装，立即返回；后续 completion 全部吞掉（下载中心/check_downloads 可查进度）
     if (!aiWaitRequested(params)) {
-        completion([NSString stringWithFormat:@"已在后台开始安装 %@ 加载器（MC %@）：将自动预装原版本体（如未安装）、写入加载器版本 JSON 并注册实例%@，任务进度可在下载中心或通过 check_downloads 查看。", displayName, mcVersion, isQuilt ? @"" : @"、自动安装 Fabric API"], nil);
+        completion([NSString stringWithFormat:localize(@"ai.asset.bg_install_loader_fmt", nil), displayName, mcVersion, isQuilt ? @"" : localize(@"ai.asset.fabric_api_suffix", nil)], nil);
         completion = ^(NSString * _Nullable r, NSError * _Nullable e) {
             // 后台执行：终态结果不回传（进度与结果均可见于下载中心）
         };
@@ -777,7 +778,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
     [AiAssetInstaller installVanillaVersionId:mcVersion completion:^(BOOL success, NSString * _Nullable message) {
         if (!success) {
             completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:500
-                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"自动预装 MC %@ 本体失败：%@（无法继续安装 %@）", mcVersion, message ?: @"未知错误", displayName]}]);
+                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.asset.preinstall_vanilla_failed_fmt", nil), mcVersion, message ?: localize(@"resman.common.unknown_error", nil), displayName]}]);
             return;
         }
         continueWithLoader();
@@ -812,7 +813,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
                                                                iconURL:nil];
         if (!task) {
             completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:500
-                                            userInfo:@{NSLocalizedDescriptionKey: @"注册加载器安装任务失败"}]);
+                                            userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.register_task_failed", nil)}]);
             return;
         }
         [manager setTaskWithId:task.taskId stages:PLTaskStagesFabricExtra()];
@@ -828,7 +829,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
         if (!profileURL) {
             [manager updateTaskWithId:task.taskId stageAtIndex:profileStage status:PLTaskStageStatusFailed];
             NSError *err = [NSError errorWithDomain:kAiAssetToolDomain code:400
-                                        userInfo:@{NSLocalizedDescriptionKey: @"加载器 profile 地址无效"}];
+                                        userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.invalid_profile_url", nil)}];
             [manager setTaskWithId:task.taskId completedWithError:err];
             completion(nil, err);
             return;
@@ -839,7 +840,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
                 [manager updateTaskWithId:task.taskId stageAtIndex:profileStage status:PLTaskStageStatusFailed];
                 [manager updateTaskWithId:task.taskId stageAtIndex:profileStage progress:0 message:pError.localizedDescription];
                 NSError *err = pError ?: [NSError errorWithDomain:kAiAssetToolDomain code:2
-                                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"获取 %@ profile 失败", displayName]}];
+                                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.asset.fetch_profile_failed_fmt", nil), displayName]}];
                 [manager setTaskWithId:task.taskId completedWithError:err];
                 completion(nil, err);
                 return;
@@ -855,7 +856,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
             if (versionId.length == 0) {
                 [manager updateTaskWithId:task.taskId stageAtIndex:jsonStage status:PLTaskStageStatusFailed];
                 NSError *err = [NSError errorWithDomain:kAiAssetToolDomain code:3
-                                                userInfo:@{NSLocalizedDescriptionKey: @"profile JSON 缺少版本 id"}];
+                                                userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.profile_missing_id", nil)}];
                 [manager setTaskWithId:task.taskId completedWithError:err];
                 completion(nil, err);
                 return;
@@ -874,7 +875,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
             if (!jsonData || ![jsonData writeToFile:jsonPath options:NSDataWritingAtomic error:&saveError]) {
                 [manager updateTaskWithId:task.taskId stageAtIndex:jsonStage status:PLTaskStageStatusFailed];
                 NSError *err = [NSError errorWithDomain:kAiAssetToolDomain code:4
-                                                userInfo:@{NSLocalizedDescriptionKey: saveError.localizedDescription ?: @"写入版本 JSON 失败"}];
+                                                userInfo:@{NSLocalizedDescriptionKey: saveError.localizedDescription ?: localize(@"ai.asset.write_version_json_failed", nil)}];
                 [manager setTaskWithId:task.taskId completedWithError:err];
                 completion(nil, err);
                 return;
@@ -884,7 +885,8 @@ static BOOL aiIsLatestAlias(NSString *s) {
             NSMutableDictionary *prof = [NSMutableDictionary dictionary];
             prof[@"name"] = versionId;
             prof[@"lastVersionId"] = versionId;
-            prof[@"gameDir"] = @".";
+            // ★ Task271（271-a F3）：AI 安装流同步隔离口径 versions/<id>/game
+            prof[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", versionId];
             prof[@"type"] = @"custom";
             prof[@"created"] = [NSDate date].description;
             [PLProfiles.current saveProfile:prof withName:versionId];
@@ -906,14 +908,14 @@ static BOOL aiIsLatestAlias(NSString *s) {
                     }
                     [manager setTaskWithId:task.taskId completedWithError:nil];
                     NSString *result = apiOK
-                        ? [NSString stringWithFormat:@"%@ %@ 已安装完成（MC %@），并已自动安装 Fabric API，实例已创建并选中。", displayName, resolvedLoaderVersion, mcVersion]
-                        : [NSString stringWithFormat:@"%@ %@ 已安装完成（MC %@），实例已创建并选中；但 Fabric API 自动安装失败：%@，可让我重新安装或手动处理。", displayName, resolvedLoaderVersion, mcVersion, apiMessage ?: @"未知原因"];
+                        ? [NSString stringWithFormat:localize(@"ai.asset.loader_done_fabricapi_fmt", nil), displayName, resolvedLoaderVersion, mcVersion]
+                        : [NSString stringWithFormat:localize(@"ai.asset.loader_done_api_failed_fmt", nil), displayName, resolvedLoaderVersion, mcVersion, apiMessage ?: localize(@"ai.asset.unknown_reason", nil)];
                     completion(result, nil);
                 }];
             } else {
                 [manager updateTaskWithId:task.taskId stageAtIndex:libsStage status:PLTaskStageStatusSkipped];
                 [manager setTaskWithId:task.taskId completedWithError:nil];
-                completion([NSString stringWithFormat:@"Quilt %@ 已安装完成（MC %@），实例已创建并选中。", resolvedLoaderVersion, mcVersion], nil);
+                completion([NSString stringWithFormat:localize(@"ai.asset.quilt_done_fmt", nil), resolvedLoaderVersion, mcVersion], nil);
             }
         }];
     };
@@ -928,7 +930,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
     NSURL *listURL = [NSURL URLWithString:listURLStr];
     if (!listURL) {
         completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:400
-                                        userInfo:@{NSLocalizedDescriptionKey: @"加载器版本列表地址无效"}]);
+                                        userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.invalid_loader_list_url", nil)}]);
         return;
     }
     [AiAssetNetworkUtil getJSONFromURL:listURL completion:^(id _Nullable json, NSError * _Nullable error) {
@@ -943,7 +945,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
             NSString *body = [json isKindOfClass:[NSDictionary class]] ? [[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:json options:0 error:nil] encoding:NSUTF8StringEncoding] : ([json isKindOfClass:[NSString class]] ? json : NSStringFromClass([json class]));
             NSLog(@"[AI] %@ 加载器版本列表为空（URL: %@，响应类型: %@，内容: %@）", displayName, listURLStr, NSStringFromClass([json class]), [body substringToIndex:MIN(body.length, 200)]);
             completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:404
-                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"MC %@ 暂无可用 %@ 加载器版本", mcVersion, displayName]}]);
+                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.asset.no_loader_versions_fmt", nil), mcVersion, displayName]}]);
             return;
         }
         // 关键修复（install_loader "latest" 无法解析版本）：Fabric/Quilt meta 版本在嵌套的
@@ -972,7 +974,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
         if (picked.length == 0) {
             NSLog(@"[AI] 无法解析 %@ 加载器版本号（URL: %@，已遍历 %lu 个条目，首个条目: %@）", displayName, listURLStr, (unsigned long)list.count, list.firstObject);
             completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:404
-                                            userInfo:@{NSLocalizedDescriptionKey: @"无法解析加载器版本号"}]);
+                                            userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.cannot_parse_loader_version", nil)}]);
             return;
         }
         startWithLoaderVersion(picked);
@@ -985,7 +987,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
     NSError *err = nil;
     NSString *modsFolder = [[ModService sharedService] ensureModsFolderForProfile:[AiAssetNetworkUtil resolveProfileName:@{}] error:&err];
     if (modsFolder.length == 0) {
-        completion(NO, @"无法确定 mods 目录");
+        completion(NO, localize(@"ai.asset.cannot_resolve_mods_dir", nil));
         return;
     }
     [self fetchVersionsForSlug:@"fabric-api"
@@ -1021,7 +1023,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
 
 + (void)getJSONFromURL:(NSURL *)url completion:(void (^)(id _Nullable, NSError * _Nullable))completion {
     if (!url) {
-        if (completion) completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:400 userInfo:@{NSLocalizedDescriptionKey: @"URL 为空"}]);
+        if (completion) completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:400 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.empty_url", nil)}]);
         return;
     }
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
@@ -1032,12 +1034,12 @@ static BOOL aiIsLatestAlias(NSString *s) {
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if (error || !data) {
-                if (completion) completion(nil, error ?: [NSError errorWithDomain:kAiAssetToolDomain code:1 userInfo:@{NSLocalizedDescriptionKey: @"网络请求失败"}]);
+                if (completion) completion(nil, error ?: [NSError errorWithDomain:kAiAssetToolDomain code:1 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.network_request_failed", nil)}]);
                 return;
             }
             NSInteger status = [(NSHTTPURLResponse *)response statusCode];
             if (status < 200 || status >= 300) {
-                NSString *msg = (status == 404) ? @"资源不存在（404）" : [NSString stringWithFormat:@"请求失败（HTTP %ld）", (long)status];
+                NSString *msg = (status == 404) ? localize(@"ai.asset.not_found_404", nil) : [NSString stringWithFormat:localize(@"ai.net.http_error_fmt", nil), (long)status];
                 if (completion) completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:status userInfo:@{NSLocalizedDescriptionKey: msg}]);
                 return;
             }
@@ -1066,13 +1068,13 @@ static BOOL aiIsLatestAlias(NSString *s) {
                        completion:(void (^)(id _Nullable json, NSString * _Nullable usedSource, NSError * _Nullable error))completion {
     if (!completion) return;
     if (path.length == 0) {
-        completion(nil, nil, [NSError errorWithDomain:kAiAssetToolDomain code:400 userInfo:@{NSLocalizedDescriptionKey: @"Modrinth API 路径为空"}]);
+        completion(nil, nil, [NSError errorWithDomain:kAiAssetToolDomain code:400 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.empty_api_path", nil)}]);
         return;
     }
     if (index >= bases.count) {
-        NSString *detail = lastError.localizedDescription ?: @"未知错误";
+        NSString *detail = lastError.localizedDescription ?: localize(@"resman.common.unknown_error", nil);
         completion(nil, nil, [NSError errorWithDomain:kAiAssetToolDomain code:1
-                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Modrinth 官方源与 MCIM 镜像均不可用：%@", detail]}]);
+                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.asset.both_sources_unavailable_fmt", nil), detail]}]);
         return;
     }
     NSURL *url = [NSURL URLWithString:[bases[index] stringByAppendingString:path]];
@@ -1082,7 +1084,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
     }
     [self getJSONFromURL:url completion:^(id _Nullable json, NSError * _Nullable error) {
         if (json) {
-            NSString *source = [bases[index] containsString:@"mcimirror"] ? @"Modrinth(MCIM镜像)" : @"Modrinth";
+            NSString *source = [bases[index] containsString:@"mcimirror"] ? localize(@"ai.asset.mcim_source_name", nil) : @"Modrinth";
             completion(json, source, nil);
             return;
         }
@@ -1166,9 +1168,9 @@ static BOOL aiIsLatestAlias(NSString *s) {
                              lastError:(NSError * _Nullable)lastError
                              completion:(void (^)(NSDictionary * _Nullable entry, NSError * _Nullable error))completion {
     if (index >= manifestURLStrs.count) {
-        NSString *detail = lastError.localizedDescription ?: @"未知错误";
+        NSString *detail = lastError.localizedDescription ?: localize(@"resman.common.unknown_error", nil);
         if (completion) completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:500
-                                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"获取版本清单失败（BMCLAPI 与官方源均不可用）：%@", detail]}]);
+                                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.asset.manifest_failed_fmt", nil), detail]}]);
         return;
     }
     NSURL *manifestURL = [NSURL URLWithString:manifestURLStrs[index]];
@@ -1187,7 +1189,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
         if (versions.count == 0) {
             [self fetchVersionEntryFromManifests:manifestURLStrs index:index + 1 versionId:versionId
                                       lastError:[NSError errorWithDomain:kAiAssetToolDomain code:2
-                                                                  userInfo:@{NSLocalizedDescriptionKey: @"版本清单格式无效"}]
+                                                                  userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.invalid_manifest", nil)}]
                                       completion:completion];
             return;
         }
@@ -1205,7 +1207,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
         }
         if (![target isKindOfClass:[NSString class]] || target.length == 0) {
             if (completion) completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:404
-                                                            userInfo:@{NSLocalizedDescriptionKey: @"无法解析目标版本号"}]);
+                                                            userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.cannot_resolve_target_version", nil)}]);
             return;
         }
 
@@ -1217,7 +1219,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
             }
         }
         if (completion) completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:404
-                                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"版本清单中未找到版本 %@", target]}]);
+                                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.asset.version_missing_in_manifest_fmt", nil), target]}]);
     }];
 }
 
@@ -1397,7 +1399,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
                  onFinished:(nullable void (^)(BOOL success, NSString * _Nullable message))onFinished {
     if (!url || folder.length == 0 || filename.length == 0) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (completion) completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:400 userInfo:@{NSLocalizedDescriptionKey: @"下载参数不完整"}]);
+            if (completion) completion(nil, [NSError errorWithDomain:kAiAssetToolDomain code:400 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.incomplete_download_params", nil)}]);
         });
         return;
     }
@@ -1436,7 +1438,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
     if (!waitForCompletion) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if (completion) {
-                completion([NSString stringWithFormat:@"已加入后台下载：%@（任务ID %@，目标目录 %@，文件 %@），进度可用 check_downloads 查询", dispName, task.taskId, [folder lastPathComponent], filename], nil);
+                completion([NSString stringWithFormat:localize(@"ai.asset.bg_download_fmt", nil), dispName, task.taskId, [folder lastPathComponent], filename], nil);
             }
         });
     }
@@ -1469,17 +1471,17 @@ static BOOL aiIsLatestAlias(NSString *s) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (!success) {
                     [[DownloadTaskManager sharedManager] setTaskWithId:task.taskId
-                                                      completedWithError:error ?: [NSError errorWithDomain:kAiAssetToolDomain code:1 userInfo:@{NSLocalizedDescriptionKey: @"下载失败"}]];
-                    if (onFinished) onFinished(NO, error.localizedDescription ?: @"下载失败");
+                                                      completedWithError:error ?: [NSError errorWithDomain:kAiAssetToolDomain code:1 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.download_failed", nil)}]];
+                    if (onFinished) onFinished(NO, error.localizedDescription ?: localize(@"ai.asset.download_failed", nil));
                     if (waitForCompletion && completion) {
-                        completion(nil, error ?: [NSError errorWithDomain:kAiAssetToolDomain code:1 userInfo:@{NSLocalizedDescriptionKey: @"下载失败"}]);
+                        completion(nil, error ?: [NSError errorWithDomain:kAiAssetToolDomain code:1 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.asset.download_failed", nil)}]);
                     }
                     return;
                 }
                 [[DownloadTaskManager sharedManager] setTaskWithId:task.taskId completedWithError:nil];
                 if (onFinished) onFinished(YES, nil);
                 if (waitForCompletion && completion) {
-                    NSString *result = [NSString stringWithFormat:@"已安装 %@ 到 %@（%@）", dispName, [folder lastPathComponent], filename];
+                    NSString *result = [NSString stringWithFormat:localize(@"ai.asset.installed_fmt", nil), dispName, [folder lastPathComponent], filename];
                     completion(result, nil);
                 }
             });
@@ -1489,7 +1491,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
 + (void)installVanillaVersionId:(NSString *)versionId
                      completion:(void (^)(BOOL success, NSString * _Nullable message))completion {
     if (versionId.length == 0) {
-        if (completion) dispatch_async(dispatch_get_main_queue(), ^{ completion(NO, @"缺少版本号"); });
+        if (completion) dispatch_async(dispatch_get_main_queue(), ^{ completion(NO, localize(@"ai.asset.missing_version", nil)); });
         return;
     }
 
@@ -1497,7 +1499,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
     [AiAssetNetworkUtil fetchVersionEntry:versionId completion:^(NSDictionary * _Nullable entry, NSError * _Nullable error) {
         if (!entry) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                if (completion) completion(NO, error.localizedDescription ?: @"未在版本清单中找到该版本");
+                if (completion) completion(NO, error.localizedDescription ?: localize(@"ai.asset.version_not_in_manifest", nil));
             });
             return;
         }
@@ -1508,7 +1510,7 @@ static BOOL aiIsLatestAlias(NSString *s) {
         [AiAssetNetworkUtil ensureVersionJSONExists:resolvedId completion:^(BOOL jsonOK) {
             if (!jsonOK) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    if (completion) completion(NO, @"下载版本 JSON 失败");
+                    if (completion) completion(NO, localize(@"ai.asset.download_version_json_failed", nil));
                 });
                 return;
             }
@@ -1547,7 +1549,8 @@ static BOOL aiIsLatestAlias(NSString *s) {
                             NSMutableDictionary *profile = [NSMutableDictionary dictionary];
                             profile[@"name"] = resolvedId;
                             profile[@"lastVersionId"] = resolvedId;
-                            profile[@"gameDir"] = @".";
+                            // ★ Task271（271-a F3）：AI 原版安装同步隔离口径 versions/<id>/game
+                            profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", resolvedId];
                             profile[@"type"] = @"custom";
                             profile[@"created"] = [NSDate date].description;
                             [PLProfiles.current saveProfile:profile withName:resolvedId];
@@ -1555,8 +1558,8 @@ static BOOL aiIsLatestAlias(NSString *s) {
                             [[NSNotificationCenter defaultCenter] postNotificationName:@"ReloadProfileList" object:nil];
                             if (completion) completion(YES, nil);
                         } else {
-                            NSString *msg = errored ? @"下载出错（详见下载中心任务详情）"
-                                                    : @"安装超时（30 分钟）";
+                            NSString *msg = errored ? localize(@"ai.asset.download_error", nil)
+                                                    : localize(@"ai.asset.install_timeout", nil);
                             if (completion) completion(NO, msg);
                         }
                     });

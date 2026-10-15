@@ -578,7 +578,7 @@ static NSString *const kGitHubIssuesURL = @"https://github.com/herbrine8403/Amet
             [result addObject:@{@"icon": @"wifi", @"text": localize(@"crash.suggestion.missinglib_network", @"检查网络连接，确保下载源可访问")}];
             break;
         case CrashTypeMissingMods:
-            [result addObject:@{@"icon": @"arrow.clockwise.circle", @"text": [NSString stringWithFormat:localize(@"ame193.crash.1", @"删除该实例并重新导入整合包（建议换个下载源重试）%@"), self.ame95_missingModNames.count > 0 ? [NSString stringWithFormat:@"——重点确认：%@", [self.ame95_missingModNames componentsJoinedByString:@"、"]] : @""]}];
+            [result addObject:@{@"icon": @"arrow.clockwise.circle", @"text": [NSString stringWithFormat:localize(@"ame193.crash.1", @"删除该实例并重新导入整合包（建议换个下载源重试）%@"), self.ame95_missingModNames.count > 0 ? [NSString stringWithFormat:localize(@"ame193.crash.2", @"——重点确认：%@"), [self.ame95_missingModNames componentsJoinedByString:@"、"]] : @""]}];
             [result addObject:@{@"icon": @"square.and.pencil", @"text": localize(@"crash.suggestion.missingmods_manual", @"或在 Mod 管理器中手动补齐缺失的 mod（版本需与整合包要求一致）")}];
             if (self.ame95_overriddenEvidence.length > 0) {
                 [result addObject:@{@"icon": @"eye.slash", @"text": localize(@"crash.suggestion.missingmods_override", @"日志显示依赖检查被覆盖（Dependencies overridden），它会让缺失 mod 逃避报错直到运行时崩溃；修复后可删掉 config/fabric-loader.json 里的 dependencyOverrides 条目")}];

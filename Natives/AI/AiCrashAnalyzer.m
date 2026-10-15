@@ -4,6 +4,7 @@
 //
 
 #import "AiCrashAnalyzer.h"
+#import "../utils.h"   // Task271-e：分析结果文案 i18n 接线需要 localize()
 
 @implementation AiCrashAnalyzer
 
@@ -35,12 +36,11 @@
             @"alternatives": @[
                 @[@"OutOfMemoryError"],
             ],
-            @"explanation": @"这就像你每个月的工资就那么多，却要同时付房租、水电和零食钱，最后余额见底了。"
-                            "游戏的内存（可用空间）不够用，Java 想再申请内存时被系统拒绝，于是崩溃。",
+            @"explanation": localize(@"ai.crash.oom.explanation", nil),
             @"suggestions": @[
-                @"在启动器设置中调大游戏分配内存（Java 参数里的 -Xmx，让「工资」多起来）。",
-                @"关闭或减少已安装的模组、光影包，减轻「房租压力」。",
-                @"若修改内存也不行，尝试降低渲染距离、关闭光影。",
+                localize(@"ai.crash.oom.sugg1", nil),
+                localize(@"ai.crash.oom.sugg2", nil),
+                localize(@"ai.crash.oom.sugg3", nil),
             ],
         },
         @{
@@ -49,12 +49,11 @@
                 @[@"Failed to initialize JNI", @"META-INF"],
                 @[@"java.lang.UnsatisfiedLinkError"],
             ],
-            @"explanation": @"JNI 就像你的「签证」，负责让游戏（Java）和本机核心库之间通行。"
-                            "如果签证过期或证件不齐（原生库缺失/版本不对），Java 就放行不了，启动直接失败。",
+            @"explanation": localize(@"ai.crash.jni.explanation", nil),
             @"suggestions": @[
-                @"重新安装/重下游戏本体，让核心库完整落盘。",
-                @"确认使用的是完整版 Java 运行时（不要用精简版）。",
-                @"若字库损坏，删除该版本后重新安装对应版本。",
+                localize(@"ai.crash.jni.sugg1", nil),
+                localize(@"ai.crash.jni.sugg2", nil),
+                localize(@"ai.crash.jni.sugg3", nil),
             ],
         },
         @{
@@ -63,12 +62,11 @@
                 @[@"OpenGL", @"GLFW error"],
                 @[@"GLX"],
             ],
-            @"explanation": @"就像司机拿着 B 照却要开大货车，发现驾照不对口。"
-                            "游戏想用图形接口（OpenGL/GLFW/GLX）初始化显示，但当前渲染器支持不完整或驱动不兼容。",
+            @"explanation": localize(@"ai.crash.gl.explanation", nil),
             @"suggestions": @[
-                @"在启动器设置中切换到其它渲染器（如 MobileGlues / GL4ES / Auto）。",
-                @"更新启动器或游戏到较新版本，或降低 OpenGL 版本要求。",
-                @"在设置里重置/恢复默认渲染配置后再试。",
+                localize(@"ai.crash.gl.sugg1", nil),
+                localize(@"ai.crash.gl.sugg2", nil),
+                localize(@"ai.crash.gl.sugg3", nil),
             ],
         },
         @{
@@ -77,11 +75,10 @@
                 @[@"Unsupported Java version"],
                 @[@"Java 8"],
             ],
-            @"explanation": @"就像用普通话跟只会说方言的人聊天，鸡同鸭讲。"
-                            "这个游戏版本要求的 Java 与启动器当前给它的 Java 不匹配，导致无法启动。",
+            @"explanation": localize(@"ai.crash.javaver.explanation", nil),
             @"suggestions": @[
-                @"在启动器版本管理里确认该游戏版本要求的 Java 版本，安装对应的 Java（8/17/21 等）。",
-                @"使用启动器推荐的自动选择 Java 版本的选项。",
+                localize(@"ai.crash.javaver.sugg1", nil),
+                localize(@"ai.crash.javaver.sugg2", nil),
             ],
         },
         @{
@@ -90,11 +87,10 @@
                 @[@"Zombie"],
                 @[@"invalid range"],
             ],
-            @"explanation": @"就像往只有 3 个抽屉的柜子塞 5 个盒子，数字对不上号。"
-                            "某个数值（版本/索引/范围）超出了合法区间，通常是配置文件被损坏或版本号不匹配导致。",
+            @"explanation": localize(@"ai.crash.range.explanation", nil),
             @"suggestions": @[
-                @"删除/重置该实例的相关配置文件后重新创建。",
-                @"重新安装该游戏版本，避免混用损坏的旧配置。",
+                localize(@"ai.crash.range.sugg1", nil),
+                localize(@"ai.crash.range.sugg2", nil),
             ],
         },
         // ===== iOS 环境已知错误（enhance-ai-agent Task 17）=====
@@ -104,10 +100,10 @@
                 @[@"Magic Keyboard", @"crash"],
                 @[@"妙控键盘"],
             ],
-            @"explanation": @"这是 iOS 平台点击妙控键盘（Magic Keyboard）触发的已知崩溃，开发者已知晓该问题。",
+            @"explanation": localize(@"ai.crash.magickeyboard.explanation", nil),
             @"suggestions": @[
-                @"开发者已知该问题，请耐心等待开发者修复。",
-                @"修复前尽量避免连接/点击妙控键盘，或改用触屏与虚拟键盘操作。",
+                localize(@"ai.crash.magickeyboard.sugg1", nil),
+                localize(@"ai.crash.magickeyboard.sugg2", nil),
             ],
         },
         @{
@@ -116,10 +112,10 @@
                 @[@"26.2", @"OpenGL", @"syntax"],
                 @[@"GL_INVALID_OPERATION", @"syntax error"],
             ],
-            @"explanation": @"Minecraft 26.2 在 iOS 渲染层触发了 OpenGL 语法错误，是当前渲染器与该版本的兼容性问题。",
+            @"explanation": localize(@"ai.crash.gl262.explanation", nil),
             @"suggestions": @[
-                @"把该实例的渲染器切换为 MoltenVK（set_setting：key=video.renderer, value=MoltenVK）。",
-                @"切换渲染器后重新启动游戏验证。",
+                localize(@"ai.crash.gl262.sugg1", nil),
+                localize(@"ai.crash.gl262.sugg2", nil),
             ],
         },
         @{
@@ -128,9 +124,9 @@
                 @[@"26.3-Snapshot4"],
                 @[@"SDL3"],
             ],
-            @"explanation": @"Mojang 在 26.3-Snapshot4 把渲染库从 LWJGL 改为 SDL3，iOS 端暂未实现对应支持，因此无法启动。",
+            @"explanation": localize(@"ai.crash.sdl3.explanation", nil),
             @"suggestions": @[
-                @"目前无解，建议换用其它 Minecraft 版本（如 26.2 或更早的正式版）。",
+                localize(@"ai.crash.sdl3.sugg1", nil),
             ],
         },
         @{
@@ -139,10 +135,10 @@
                 @[@"启动器", @"闪退"],
                 @[@"launcher", @"SIGKILL"],
             ],
-            @"explanation": @"启动器自身发生了闪退（而非游戏崩溃），需要开发者介入排查。",
+            @"explanation": localize(@"ai.crash.launchercrash.explanation", nil),
             @"suggestions": @[
-                @"通过 GitHub Issues 或官方 QQ 群（966475918）上报该问题，附上 latestlog.txt。",
-                @"开发者一般在法定节假日集中修复此类问题。",
+                localize(@"ai.crash.launchercrash.sugg1", nil),
+                localize(@"ai.crash.launchercrash.sugg2", nil),
             ],
         },
         @{
@@ -152,11 +148,10 @@
                 @[@"LWJGL", @"no such function"],
                 @[@"LWJGL", @"NoSuchMethodError"],
             ],
-            @"explanation": @"5.0.0 公测起开发者魔改了 LWJGL 3.3.3 以适配 Minecraft 26.2（含部分 3.4.1 特性），"
-                            "这可能导致部分旧版本游戏无法启动。",
+            @"explanation": localize(@"ai.crash.lwjgl.explanation", nil),
             @"suggestions": @[
-                @"确认游戏版本与 LWJGL 版本的兼容性（旧版本游戏建议用对应旧版实例配置）。",
-                @"通过 GitHub Issues 或官方 QQ 群（966475918）反馈具体版本组合。",
+                localize(@"ai.crash.lwjgl.sugg1", nil),
+                localize(@"ai.crash.lwjgl.sugg2", nil),
             ],
         },
         @{
@@ -166,10 +161,10 @@
                 @[@"JIT", @"SIGTRAP"],
                 @[@"ptrace", @"debugged"],
             ],
-            @"explanation": @"属于 JIT（即时编译）未正确开启导致的问题：启动后黑屏或直接闪退。",
+            @"explanation": localize(@"ai.crash.jit.explanation", nil),
             @"suggestions": @[
-                @"建议换用 StikDebug 或 LiveContainer 开启 JIT 后再启动游戏。",
-                @"开发者已知晓该问题，等待后续修复。",
+                localize(@"ai.crash.jit.sugg1", nil),
+                localize(@"ai.crash.jit.sugg2", nil),
             ],
         },
     ];
@@ -186,7 +181,7 @@
 
     if (log.length == 0 && crash.length == 0) {
         NSError *err = [NSError errorWithDomain:@"AiTool" code:400
-                                       userInfo:@{NSLocalizedDescriptionKey: @"参数 log 与 crashReport 至少提供一个"}];
+                                       userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.crash.missing_params", nil)}];
         completion(nil, err);
         return;
     }
@@ -222,11 +217,11 @@
         matchedResult = @{
             @"matched": @NO,
             @"category": @"未知",
-            @"explanation": @"没有匹配到已知错误类型，无法直接定位原因。",
+            @"explanation": localize(@"ai.crash.nomatch.explanation", nil),
             @"suggestions": @[
-                @"再尝试启动一次，观察是否必现。",
-                @"把完整日志或导出的崩溃报告发给社区/开发者在论坛反馈。",
-                @"临时关闭模组和光影，逐个排查是否为某个资源导致。",
+                localize(@"ai.crash.nomatch.sugg1", nil),
+                localize(@"ai.crash.nomatch.sugg2", nil),
+                localize(@"ai.crash.nomatch.sugg3", nil),
             ],
         };
     }

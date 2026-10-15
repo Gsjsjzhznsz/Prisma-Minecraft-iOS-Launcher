@@ -262,6 +262,51 @@
     return nil;
 }
 
+/// ★ Task271（271-a F2 自适应恢复·用户铁律"写个自适应恢复"）：启动自愈——
+///   注册表与运行时行为对齐。运行时嗅探（ame225/JavaLauncher 同口径）早已
+///   把 versions/<vid>/game|/ 视作隔离目录，但 profile 条目 gameDir 缺失/
+///   "." 时（历史安装器写入 gameDir="."、旧版整条替换 saveProfile 抹键等，
+///   装机实锤：fabric-loader-* 实例模组列表变共享目录），模组管理页与下载
+///   落点仍走共享。启动时把【实际存在隔离数据】的 profile 落定为隔离：
+///   幂等（已显式配置的条目绝不碰）、保守（只认非空 mods/saves）、单键覆写
+///   （其余字段原样存活）。
++ (void)ame271_selfHealStrandedIsolation {
+    const char *ame271_env = getenv("POJAV_GAME_DIR");
+    if (!ame271_env || !*ame271_env) return;
+    NSString *ame271_base = [NSString stringWithUTF8String:ame271_env];
+    if (ame271_base.length == 0) return;
+    NSDictionary *ame271_profiles = PLProfiles.current.profiles;
+    if (![ame271_profiles isKindOfClass:[NSDictionary class]] || ame271_profiles.count == 0) return;
+    NSInteger ame271_healed = 0;
+    for (NSString *ame271_key in [ame271_profiles allKeys]) {
+        NSDictionary *ame271_prof = ame271_profiles[ame271_key];
+        if (![ame271_prof isKindOfClass:[NSDictionary class]]) continue;
+        NSString *ame271_gd = ame271_prof[@"gameDir"];
+        BOOL ame271_unset = (![ame271_gd isKindOfClass:[NSString class]] || ame271_gd.length == 0
+            || [ame271_gd isEqualToString:@"."] || [ame271_gd isEqualToString:@"./"]);
+        if (!ame271_unset) continue;                       // 已显式配置：绝不碰
+        NSString *ame271_hit = [self ame225_sniffedIsolationGameDirForProfile:ame271_prof];
+        if (ame271_hit.length == 0) continue;              // 无隔离数据：空转零 IO
+        // 嗅探命中 → 反推注册表相对路径（优先新口径 versions/<vid>/game）
+        NSString *ame271_vid = ame271_prof[@"lastVersionId"];
+        if (![ame271_vid isKindOfClass:[NSString class]] || ame271_vid.length == 0) continue;
+        NSString *ame271_rel = [NSString stringWithFormat:@"versions/%@/game", ame271_vid];
+        if (![ame271_hit isEqualToString:[ame271_base stringByAppendingPathComponent:ame271_rel]]) {
+            ame271_rel = [NSString stringWithFormat:@"versions/%@", ame271_vid];
+        }
+        NSMutableDictionary *ame271_updated = [ame271_prof mutableCopy];
+        ame271_updated[@"gameDir"] = ame271_rel;
+        PLProfiles.current.profiles[ame271_key] = ame271_updated;
+        ame271_healed++;
+        NSLog(@"[Ame271] self-heal: profile \"%@\" gameDir '%@' -> %@ (stranded isolation data)",
+              ame271_key, ame271_gd ?: @"(nil)", ame271_rel);
+    }
+    if (ame271_healed > 0) {
+        [PLProfiles.current save];
+        NSLog(@"[Ame271] self-heal done: %ld profile(s) re-isolated", (long)ame271_healed);
+    }
+}
+
 - (nullable NSString *)existingModsFolderForProfile:(NSString *)profileName {
     NSString *profile = profileName.length ? profileName : @"default";
     NSFileManager *fm = [NSFileManager defaultManager];

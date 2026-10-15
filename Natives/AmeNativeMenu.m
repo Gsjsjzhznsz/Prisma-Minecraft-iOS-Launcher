@@ -458,11 +458,37 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
     UIViewController *ame242_host = [self ame242_hostViewControllerForView:sourceView];
     UIAlertController *ame242_alert = [self ame242_actionSheetFromDicts:dicts
                                                               menuTitle:menu.title];
-    if (ame242_host == nil || ame242_alert == nil ||
-        ame242_host.presentedViewController != nil) {
-        NSLog(@"[AmeNativeMenu] Task242: presentation unavailable (host=%@ alert=%@), treated as cancel",
+    // ★ Task271（271-b D4）：host 已有呈现时沿链上溯到顶端，而非静默取消——
+    //   旧实现 host.presentedViewController != nil 一律 "treated as cancel"：
+    //   页面上残留任何面板/弹层（上一次菜单收尾中、toast 呈现中）时用户点
+    //   选择器毫无反应（"无法切换回隔离"观感的另一来源）。上溯到呈现链顶端
+    //   呈现即可；顶端正在收尾（isBeingDismissed）→ 0.4s 后单次重试。
+    NSInteger ame271_walk = 0;
+    while (ame242_host.presentedViewController != nil &&
+           !ame242_host.presentedViewController.isBeingDismissed && ame271_walk < 8) {
+        ame242_host = ame242_host.presentedViewController;
+        ame271_walk++;
+    }
+    if (ame242_host == nil || ame242_alert == nil) {
+        NSLog(@"[AmeNativeMenu] Task271: presentation unavailable (host=%@ alert=%@), treated as cancel",
               ame242_host, ame242_alert);
         if (onDismiss) onDismiss();
+        return;
+    }
+    if (ame242_host.presentedViewController != nil) {
+        // 顶端正在收尾（walk=0 即首个子层就在收尾）：单次延迟重试（0.4s 后重走全流程）
+        NSLog(@"[AmeNativeMenu] Task271: top presenter dismissing, single retry in 0.4s");
+        void (^ame271_onDismiss)(void) = onDismiss;
+        UIView *ame271_src = sourceView;
+        UIMenu *ame271_menu = menu;
+        NSArray *ame271_dicts = dicts;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.4 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            [self ame242_presentStyleRoutedWithMenu:ame271_menu
+                                         sourceView:ame271_src
+                                              dicts:ame271_dicts
+                                          onDismiss:ame271_onDismiss];
+        });
         return;
     }
     ame240_actionFired = NO; // 本轮会话开始，重新计数

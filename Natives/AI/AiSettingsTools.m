@@ -137,7 +137,7 @@
 }
 
 + (NSString *)stringFromValue:(id)value {
-    if (!value || [value isKindOfClass:[NSNull class]]) return @"（未设置）";
+    if (!value || [value isKindOfClass:[NSNull class]]) return localize(@"ai.settings.unset", nil);
     if ([value isKindOfClass:[NSString class]]) return value;
     return [value description];
 }
@@ -162,7 +162,7 @@
     }
 
     NSError *err = [NSError errorWithDomain:@"AiTool" code:404
-                                   userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"未知工具 %@", self.internalName]}];
+                                   userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.tools.unknown_tool_fmt", nil), self.internalName]}];
     completion(nil, err);
 }
 
@@ -215,7 +215,7 @@
     NSError *jsonError = nil;
     NSData *data = [NSJSONSerialization dataWithJSONObject:table options:NSJSONWritingPrettyPrinted error:&jsonError];
     if (!data || jsonError) {
-        completion(@"序列化设置表失败", nil);
+        completion(localize(@"ai.settings.serialize_failed", nil), nil);
         return;
     }
     completion([[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding], nil);
@@ -228,7 +228,7 @@
     NSString *key = [params[@"key"] isKindOfClass:[NSString class]] ? params[@"key"] : @"";
     if (key.length == 0) {
         completion(nil, [NSError errorWithDomain:@"AiTool" code:400
-                                     userInfo:@{NSLocalizedDescriptionKey: @"参数 key 必填"}]);
+                                     userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.settings.param_key_required", nil)}]);
         return;
     }
 
@@ -255,7 +255,7 @@
     }
 
     completion([NSString stringWithFormat:
-                @"key: %@\n全局值: %@\n实例生效值（%@）: %@\n当前游戏目录: %@",
+                localize(@"ai.settings.get_result_fmt", nil),
                 key, globalDesc, profileName, effectiveDesc,
                 [AiSettingsTools stringFromValue:getPrefObject(@"general.game_directory")]], nil);
 }
@@ -268,7 +268,7 @@
     id value = params[@"value"];
     if (key.length == 0 || value == nil || [value isKindOfClass:[NSNull class]]) {
         completion(nil, [NSError errorWithDomain:@"AiTool" code:400
-                                     userInfo:@{NSLocalizedDescriptionKey: @"参数 key 与 value 必填"}]);
+                                     userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.settings.key_value_required", nil)}]);
         return;
     }
 
@@ -281,7 +281,7 @@
             if (!storageValue) {
                 completion(nil, [NSError errorWithDomain:@"AiTool" code:400
                                              userInfo:@{NSLocalizedDescriptionKey:
-                                                 @"无效的渲染器取值；可选 auto/GL4ES/ANGLE/MobileGlues/Zink/MoltenVK/LTW"}]);
+                                                 localize(@"ai.settings.invalid_renderer", nil)}]);
                 return;
             }
         } else if ([key isEqualToString:@"video.graphics_api"]) {
@@ -289,7 +289,7 @@
             if (!storageValue) {
                 completion(nil, [NSError errorWithDomain:@"AiTool" code:400
                                              userInfo:@{NSLocalizedDescriptionKey:
-                                                 @"无效的图形 API 取值；可选 default/prefer_vulkan/prefer_opengl"}]);
+                                                 localize(@"ai.settings.invalid_graphics_api", nil)}]);
                 return;
             }
         } else {
@@ -301,7 +301,7 @@
         if (!prof) {
             completion(nil, [NSError errorWithDomain:@"AiTool" code:404
                                          userInfo:@{NSLocalizedDescriptionKey:
-                                             [NSString stringWithFormat:@"实例 %@ 不存在", profileName]}]);
+                                             [NSString stringWithFormat:localize(@"ai.settings.instance_missing_fmt", nil), profileName]}]);
             return;
         }
 
@@ -316,7 +316,7 @@
         if ([key isEqualToString:@"video.renderer"]) {
             display = [AiSettingsTools rendererFriendlyName:storageValue];
         }
-        completion([NSString stringWithFormat:@"已将实例「%@」的 %@ 设置为 %@。",
+        completion([NSString stringWithFormat:localize(@"ai.settings.set_instance_fmt", nil),
                     profileName, key, display], nil);
         return;
     }
@@ -331,7 +331,7 @@
     } else if ([key isEqualToString:@"general.game_directory"]) {
         completion(nil, [NSError errorWithDomain:@"AiTool" code:400
                                      userInfo:@{NSLocalizedDescriptionKey:
-                                         @"不建议直接修改游戏目录键（涉及符号链接重建）；新建实例请用 create_instance 工具"}]);
+                                         localize(@"ai.settings.game_dir_readonly", nil)}]);
         return;
     } else if ([key isEqualToString:@"general.download_source"] ||
                [key isEqualToString:@"java.java_args"] ||
@@ -340,12 +340,12 @@
     } else {
         completion(nil, [NSError errorWithDomain:@"AiTool" code:400
                                      userInfo:@{NSLocalizedDescriptionKey:
-                                         [NSString stringWithFormat:@"不支持的设置键：%@（用 list_settings 查看可用键）", key]}]);
+                                         [NSString stringWithFormat:localize(@"ai.settings.unsupported_key_fmt", nil), key]}]);
         return;
     }
 
     [[NSNotificationCenter defaultCenter] postNotificationName:@"ReloadProfileList" object:nil];
-    completion([NSString stringWithFormat:@"已将全局 %@ 设置为 %@。", key, [AiSettingsTools stringFromValue:value]], nil);
+    completion([NSString stringWithFormat:localize(@"ai.settings.set_global_fmt", nil), key, [AiSettingsTools stringFromValue:value]], nil);
 }
 
 @end

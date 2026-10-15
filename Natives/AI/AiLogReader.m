@@ -5,6 +5,7 @@
 
 #import "AiLogReader.h"
 #import "LauncherPreferences.h"
+#import "../utils.h"   // Task271-e：结果/错误文案 i18n 接线需要 localize()
 
 @interface AiLogReader ()
 @property (nonatomic, copy) NSString *internalName;
@@ -121,7 +122,7 @@
 
     if ([self.internalName isEqualToString:@"read_crash_report"]) {
         NSString *content = [self latestCrashReportInGameRoot:gameRoot];
-        completion(content ?: @"未找到崩溃报告", nil);
+        completion(content ?: localize(@"ai.logreader.crash_not_found", nil), nil);
         return;
     }
     if ([self.internalName isEqualToString:@"read_logs"]) {
@@ -133,23 +134,23 @@
         NSFileManager *fm = [NSFileManager defaultManager];
         BOOL isDir = NO;
         if (![fm fileExistsAtPath:logPath isDirectory:&isDir] || isDir) {
-            completion(@"未找到日志", nil);
+            completion(localize(@"ai.logreader.log_not_found", nil), nil);
             return;
         }
         NSString *content = [AiLogReader contentAtPath:logPath];
         if (!content) {
-            completion(@"读取日志失败", nil);
+            completion(localize(@"ai.logreader.read_failed", nil), nil);
             return;
         }
         NSString *result = [self truncatedContent:content
                                           maxChars:4000
-                                            header:@"（日志过长已截断，显示末尾 4000 字符）\n"];
+                                            header:localize(@"ai.logreader.truncated_latest_hdr", nil)];
         completion(result, nil);
         return;
     }
 
     NSError *err = [NSError errorWithDomain:@"AiTool" code:404
-                                   userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"未知工具 %@", self.internalName]}];
+                                   userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.tools.unknown_tool_fmt", nil), self.internalName]}];
     completion(nil, err);
 }
 
@@ -227,8 +228,8 @@
             NSString *content = [AiLogReader contentAtPath:path];
             NSString *truncated = content
                 ? [self truncatedContent:content maxChars:4000
-                                  header:@"（过长已截断，显示末尾 4000 字符）\n"]
-                : @"（读取失败）";
+                                  header:localize(@"ai.logreader.truncated_hdr", nil)]
+                : localize(@"ai.logreader.read_error", nil);
             NSDate *mtime = attrs[NSFileModificationDate];
             @synchronized (entries) {
                 [entries addObject:@{
@@ -259,7 +260,7 @@
                                                     options:NSJSONWritingPrettyPrinted
                                                       error:&jsonError];
         if (!data || jsonError) {
-            completion([NSString stringWithFormat:@"读取了 %lu 份日志（序列化失败）", (unsigned long)sorted.count], nil);
+            completion([NSString stringWithFormat:localize(@"ai.logreader.multi_serialize_failed_fmt", nil), (unsigned long)sorted.count], nil);
             return;
         }
         completion([[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding], nil);
@@ -304,7 +305,7 @@
     NSString *content = [AiLogReader contentAtPath:bestPath];
     if (!content) return nil;
 
-    return [self truncatedContent:content maxChars:6000 header:@"（崩溃报告过长已截断，显示末尾 6000 字符）\n"];
+    return [self truncatedContent:content maxChars:6000 header:localize(@"ai.logreader.truncated_crash_hdr", nil)];
 }
 
 @end

@@ -174,7 +174,24 @@ static PLProfiles* current;
     if (!self.profileDict[@"profiles"]) {
         self.profileDict[@"profiles"] = [NSMutableDictionary dictionary];
     }
-    self.profileDict[@"profiles"][name] = profile;
+    // ★ Task271（271-a RC1 根修·自适应恢复）：saveProfile 从【整条替换】改为
+    //   【合并覆盖】。旧语义 = 新字典整体顶掉旧条目——同名重装/更新（下载页
+    //   Fabric/Quilt、下载页/实例页 OptiFine、AI 安装流等只写部分字段的写入方）
+    //   会把既有条目的 gameDir（版本隔离）/icon/javaArgs/renderer/graphicsApi/
+    //   jvm_preset/touchController/allocatedMemory/memoryAuto/resolution/serverIp
+    //   等全部静默抹掉：用户视角"实例的模组列表变成了共享目录"。合并语义：
+    //   既有键保留、新键覆盖同名键——安装器想写的字段照写，其余实例设置原样
+    //   存活；全新条目（无同名旧档）行为与旧版一致。
+    NSMutableDictionary *ame271_merged =
+        [self.profileDict[@"profiles"][name] isKindOfClass:[NSDictionary class]]
+            ? [NSMutableDictionary dictionaryWithDictionary:self.profileDict[@"profiles"][name]]
+            : [NSMutableDictionary dictionary];
+    for (NSString *ame271_key in profile) {
+        id ame271_val = profile[ame271_key];
+        if (ame271_val == nil) continue;
+        ame271_merged[ame271_key] = ame271_val;
+    }
+    self.profileDict[@"profiles"][name] = ame271_merged;
     [self save];
 }
 

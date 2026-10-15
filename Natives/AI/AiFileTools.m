@@ -5,6 +5,7 @@
 
 #import "AiFileTools.h"
 #import "LauncherPreferences.h"
+#import "../utils.h"   // Task271-e：工具结果/错误文案 i18n 接线需要 localize()
 
 static NSString * const kAiToolDomain = @"AiTool";
 
@@ -166,7 +167,7 @@ static NSString * const kAiToolDomain = @"AiTool";
     if ([self.internalName isEqualToString:@"delete_file"]) { [self performDeleteFile:params completion:completion]; return; }
 
     NSError *err = [NSError errorWithDomain:kAiToolDomain code:404
-                                   userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"未知工具 %@", self.internalName]}];
+                                   userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.tools.unknown_tool_fmt", nil), self.internalName]}];
     completion(nil, err);
 }
 
@@ -181,10 +182,10 @@ static NSString * const kAiToolDomain = @"AiTool";
     NSString *path = [params[@"path"] isKindOfClass:[NSString class]] ? params[@"path"] : nil;
     if (path.length == 0) path = [[self class] currentGameRoot];
     NSString *resolved = [[self class] resolveSafely:path];
-    if (!resolved) { completion(nil, [self errorWithCode:403 message:@"路径越界或无效"]); return; }
+    if (!resolved) { completion(nil, [self errorWithCode:403 message:localize(@"ai.tools.path_out_of_bounds", nil)]); return; }
 
     NSArray *items = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:resolved error:nil];
-    if (!items) { completion(nil, [self errorWithCode:404 message:@"目录不存在"]); return; }
+    if (!items) { completion(nil, [self errorWithCode:404 message:localize(@"ai.file.dir_not_found", nil)]); return; }
 
     NSMutableArray *entries = [NSMutableArray array];
     for (NSString *name in items) {
@@ -212,9 +213,9 @@ static NSString * const kAiToolDomain = @"AiTool";
 
 - (void)performReadFile:(NSDictionary *)params completion:(void(^)(NSString *, NSError *))completion {
     NSString *path = [params[@"path"] isKindOfClass:[NSString class]] ? params[@"path"] : nil;
-    if (path.length == 0) { completion(nil, [self errorWithCode:400 message:@"参数 path 必填"]); return; }
+    if (path.length == 0) { completion(nil, [self errorWithCode:400 message:localize(@"ai.file.param_path_required", nil)]); return; }
     NSString *resolved = [[self class] resolveSafely:path];
-    if (!resolved) { completion(nil, [self errorWithCode:403 message:@"路径越界或无效"]); return; }
+    if (!resolved) { completion(nil, [self errorWithCode:403 message:localize(@"ai.tools.path_out_of_bounds", nil)]); return; }
 
     NSUInteger maxChars = 8000;
     NSNumber *maxNum = params[@"maxChars"];
@@ -224,18 +225,18 @@ static NSString * const kAiToolDomain = @"AiTool";
     }
 
     NSData *data = [NSData dataWithContentsOfFile:resolved];
-    if (!data) { completion(nil, [self errorWithCode:404 message:@"文件不存在或不可读"]); return; }
+    if (!data) { completion(nil, [self errorWithCode:404 message:localize(@"ai.file.file_not_readable", nil)]); return; }
 
     // 二进制检测：包含 NUL 字节，或无法按 UTF-8 解码
     BOOL hasNull = [data rangeOfData:[NSData dataWithBytes:"\0" length:1] options:0 range:NSMakeRange(0, data.length)].location != NSNotFound;
-    if (hasNull) { completion(@"二进制文件不可读", nil); return; }
+    if (hasNull) { completion(localize(@"ai.file.binary_not_readable", nil), nil); return; }
     NSString *content = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     if (!content) {
         content = [[NSString alloc] initWithData:data encoding:NSISOLatin1StringEncoding];
     }
-    if (!content) { completion(@"二进制文件不可读", nil); return; }
+    if (!content) { completion(localize(@"ai.file.binary_not_readable", nil), nil); return; }
     if (content.length > maxChars) {
-        content = [NSString stringWithFormat:@"（内容过长已截断，显示开头 %lu 字符）\n%@", (unsigned long)maxChars,
+        content = [NSString stringWithFormat:localize(@"ai.file.truncated_head_fmt", nil), (unsigned long)maxChars,
                    [content substringToIndex:maxChars]];
     }
     completion(content, nil);
@@ -247,9 +248,9 @@ static NSString * const kAiToolDomain = @"AiTool";
     NSString *path = [params[@"path"] isKindOfClass:[NSString class]] ? params[@"path"] : nil;
     if (path.length == 0) path = [[self class] currentGameRoot];
     NSString *pattern = [params[@"pattern"] isKindOfClass:[NSString class]] ? params[@"pattern"] : nil;
-    if (pattern.length == 0) { completion(nil, [self errorWithCode:400 message:@"参数 pattern（正则）必填"]); return; }
+    if (pattern.length == 0) { completion(nil, [self errorWithCode:400 message:localize(@"ai.file.pattern_required", nil)]); return; }
     NSString *resolved = [[self class] resolveSafely:path];
-    if (!resolved) { completion(nil, [self errorWithCode:403 message:@"路径越界或无效"]); return; }
+    if (!resolved) { completion(nil, [self errorWithCode:403 message:localize(@"ai.tools.path_out_of_bounds", nil)]); return; }
 
     BOOL recursive = NO;
     NSNumber *recNum = params[@"recursive"];
@@ -263,7 +264,7 @@ static NSString * const kAiToolDomain = @"AiTool";
     NSError *regexError = nil;
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:&regexError];
     if (!regex) {
-        completion(nil, [self errorWithCode:400 message:[NSString stringWithFormat:@"正则表达式无效：%@", regexError.localizedDescription]]);
+        completion(nil, [self errorWithCode:400 message:[NSString stringWithFormat:localize(@"ai.file.invalid_regex_fmt", nil), regexError.localizedDescription]]);
         return;
     }
 
@@ -312,26 +313,26 @@ static NSString * const kAiToolDomain = @"AiTool";
 - (void)performWriteFile:(NSDictionary *)params completion:(void(^)(NSString *, NSError *))completion {
     NSString *path = [params[@"path"] isKindOfClass:[NSString class]] ? params[@"path"] : nil;
     NSString *content = [params[@"content"] isKindOfClass:[NSString class]] ? params[@"content"] : @"";
-    if (path.length == 0) { completion(nil, [self errorWithCode:400 message:@"参数 path 必填"]); return; }
+    if (path.length == 0) { completion(nil, [self errorWithCode:400 message:localize(@"ai.file.param_path_required", nil)]); return; }
     if (![params[@"content"] isKindOfClass:[NSString class]]) {
-        completion(nil, [self errorWithCode:400 message:@"参数 content 必填"]); return;
+        completion(nil, [self errorWithCode:400 message:localize(@"ai.file.param_content_required", nil)]); return;
     }
     NSString *resolved = [[self class] resolveSafely:path];
-    if (!resolved) { completion(nil, [self errorWithCode:403 message:@"路径越界或无效"]); return; }
+    if (!resolved) { completion(nil, [self errorWithCode:403 message:localize(@"ai.tools.path_out_of_bounds", nil)]); return; }
 
     NSString *parentDir = [resolved stringByDeletingLastPathComponent];
     NSError *dirError = nil;
     [[NSFileManager defaultManager] createDirectoryAtPath:parentDir withIntermediateDirectories:YES attributes:nil error:&dirError];
-    if (dirError) { completion(nil, [self errorWithCode:500 message:[NSString stringWithFormat:@"创建目录失败：%@", dirError.localizedDescription]]); return; }
+    if (dirError) { completion(nil, [self errorWithCode:500 message:[NSString stringWithFormat:localize(@"ai.file.mkdir_failed_fmt", nil), dirError.localizedDescription]]); return; }
 
     NSData *data = [content dataUsingEncoding:NSUTF8StringEncoding];
     NSError *writeError = nil;
     BOOL ok = [data writeToURL:[NSURL fileURLWithPath:resolved] options:NSDataWritingAtomic error:&writeError];
     if (!ok) {
-        completion(nil, [self errorWithCode:500 message:[NSString stringWithFormat:@"写入失败：%@", writeError.localizedDescription]]);
+        completion(nil, [self errorWithCode:500 message:[NSString stringWithFormat:localize(@"ai.file.write_failed_fmt", nil), writeError.localizedDescription]]);
         return;
     }
-    completion([NSString stringWithFormat:@"已写入（%lu 字符）", (unsigned long)content.length], nil);
+    completion([NSString stringWithFormat:localize(@"ai.file.written_fmt", nil), (unsigned long)content.length], nil);
 }
 
 #pragma mark - edit_file
@@ -340,15 +341,15 @@ static NSString * const kAiToolDomain = @"AiTool";
     NSString *path = [params[@"path"] isKindOfClass:[NSString class]] ? params[@"path"] : nil;
     NSString *oldText = [params[@"oldText"] isKindOfClass:[NSString class]] ? params[@"oldText"] : nil;
     NSString *newText = [params[@"newText"] isKindOfClass:[NSString class]] ? params[@"newText"] : @"";
-    if (path.length == 0) { completion(nil, [self errorWithCode:400 message:@"参数 path 必填"]); return; }
-    if (oldText.length == 0) { completion(nil, [self errorWithCode:400 message:@"参数 oldText 必填"]); return; }
-    if (![params[@"newText"] isKindOfClass:[NSString class]]) { completion(nil, [self errorWithCode:400 message:@"参数 newText 必填"]); return; }
+    if (path.length == 0) { completion(nil, [self errorWithCode:400 message:localize(@"ai.file.param_path_required", nil)]); return; }
+    if (oldText.length == 0) { completion(nil, [self errorWithCode:400 message:localize(@"ai.file.param_oldtext_required", nil)]); return; }
+    if (![params[@"newText"] isKindOfClass:[NSString class]]) { completion(nil, [self errorWithCode:400 message:localize(@"ai.file.param_newtext_required", nil)]); return; }
     NSString *resolved = [[self class] resolveSafely:path];
-    if (!resolved) { completion(nil, [self errorWithCode:403 message:@"路径越界或无效"]); return; }
+    if (!resolved) { completion(nil, [self errorWithCode:403 message:localize(@"ai.tools.path_out_of_bounds", nil)]); return; }
 
     NSError *readError = nil;
     NSString *content = [NSString stringWithContentsOfFile:resolved encoding:NSUTF8StringEncoding error:&readError];
-    if (!content) { completion(nil, [self errorWithCode:404 message:@"读取文件失败或无此文件"]); return; }
+    if (!content) { completion(nil, [self errorWithCode:404 message:localize(@"ai.file.read_failed", nil)]); return; }
 
     // 统计 oldText 出现次数
     NSUInteger occurrences = 0;
@@ -362,7 +363,7 @@ static NSString * const kAiToolDomain = @"AiTool";
         searchRange.length = content.length - next;
     }
     if (occurrences != 1) {
-        completion(nil, [self errorWithCode:422 message:[NSString stringWithFormat:@"oldText 不唯一或未找到（出现 %lu 次）", (unsigned long)occurrences]]);
+        completion(nil, [self errorWithCode:422 message:[NSString stringWithFormat:localize(@"ai.file.oldtext_not_unique_fmt", nil), (unsigned long)occurrences]]);
         return;
     }
 
@@ -371,10 +372,10 @@ static NSString * const kAiToolDomain = @"AiTool";
     NSData *data = [newContent dataUsingEncoding:NSUTF8StringEncoding];
     NSError *writeError = nil;
     if (![data writeToURL:[NSURL fileURLWithPath:resolved] options:NSDataWritingAtomic error:&writeError]) {
-        completion(nil, [self errorWithCode:500 message:[NSString stringWithFormat:@"写回失败：%@", writeError.localizedDescription]]);
+        completion(nil, [self errorWithCode:500 message:[NSString stringWithFormat:localize(@"ai.file.writeback_failed_fmt", nil), writeError.localizedDescription]]);
         return;
     }
-    completion(@"已修改", nil);
+    completion(localize(@"ai.file.modified", nil), nil);
 }
 
 #pragma mark - delete_file
@@ -393,29 +394,29 @@ static NSString * const kAiToolDomain = @"AiTool";
 
 - (void)performDeleteFile:(NSDictionary *)params completion:(void(^)(NSString *, NSError *))completion {
     NSString *path = [params[@"path"] isKindOfClass:[NSString class]] ? params[@"path"] : nil;
-    if (path.length == 0) { completion(nil, [self errorWithCode:400 message:@"参数 path 必填"]); return; }
+    if (path.length == 0) { completion(nil, [self errorWithCode:400 message:localize(@"ai.file.param_path_required", nil)]); return; }
     NSString *resolved = [[self class] resolveSafely:path];
-    if (!resolved) { completion(nil, [self errorWithCode:403 message:@"路径越界或无效"]); return; }
+    if (!resolved) { completion(nil, [self errorWithCode:403 message:localize(@"ai.tools.path_out_of_bounds", nil)]); return; }
 
     NSFileManager *fm = [NSFileManager defaultManager];
     BOOL isDir = NO;
     if (![fm fileExistsAtPath:resolved isDirectory:&isDir]) {
-        completion(nil, [self errorWithCode:404 message:@"文件不存在"]); return;
+        completion(nil, [self errorWithCode:404 message:localize(@"ai.file.file_not_found", nil)]); return;
     }
     if (isDir) {
-        completion(nil, [self errorWithCode:403 message:@"出于安全考虑仅允许删除文件，不允许删除目录"]); return;
+        completion(nil, [self errorWithCode:403 message:localize(@"ai.file.dir_delete_denied", nil)]); return;
     }
     NSString *ext = [[resolved pathExtension] lowercaseString];
     if (![[[self class] deletableExtensions] containsObject:ext]) {
-        completion(nil, [self errorWithCode:403 message:[NSString stringWithFormat:@"出于安全考虑仅允许删除文本类文件（不支持 .%@）", ext]]);
+        completion(nil, [self errorWithCode:403 message:[NSString stringWithFormat:localize(@"ai.file.ext_delete_denied_fmt", nil), ext]]);
         return;
     }
     NSError *removeError = nil;
     if (![fm removeItemAtPath:resolved error:&removeError]) {
-        completion(nil, [self errorWithCode:500 message:[NSString stringWithFormat:@"删除失败：%@", removeError.localizedDescription]]);
+        completion(nil, [self errorWithCode:500 message:[NSString stringWithFormat:localize(@"ai.file.delete_failed_fmt", nil), removeError.localizedDescription]]);
         return;
     }
-    completion(@"已删除", nil);
+    completion(localize(@"ai.file.deleted", nil), nil);
 }
 
 #pragma mark - 工具

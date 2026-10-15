@@ -79,6 +79,11 @@ typedef void(^ModDownloadHandler)(NSError * _Nullable error); // Added for downl
 /// 任一非隐藏条目即返回该隔离目录绝对路径；不命中返回 nil。
 + (nullable NSString *)ame225_sniffedIsolationGameDirForProfile:(NSDictionary *)prof;
 
+/// ★ Task271（271-a F2 自适应恢复）：启动自愈——注册表与运行时行为对齐。
+/// 对 gameDir 缺失/"." 且嗅探命中隔离数据的 profile，落定 gameDir 为隔离
+/// 目录（幂等；已显式配置的条目绝不碰；SceneDelegate 启动钩子调用）。
++ (void)ame271_selfHealStrandedIsolation;
+
 @end
 
 NS_ASSUME_NONNULL_END

@@ -1465,7 +1465,11 @@ static NSString * localizeProfileTitle(NSString *title) {
 }
 
 - (NSString *)currentProfileName {
-    return self.profile[@"name"] ?: self.profileName;
+    // ★ Task271（271-a RC4）：身份统一回字典键——键≠名时（改过名的整合包
+    //   实例等）旧实现返回展示名，ModService 字典查找落空 → 隔离态/解析目
+    //   录全回落共享（隔离实例被误判共享的隐形路径）。profileDictKey 才是
+    //   与启动链/保存链同源的字典键。
+    return self.profileDictKey ?: self.profile[@"name"] ?: self.profileName;
 }
 
 #pragma mark - Table View Delegate
@@ -2969,7 +2973,9 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
             NSMutableDictionary *profile = [NSMutableDictionary dictionary];
             profile[@"name"] = versionId;
             profile[@"lastVersionId"] = versionId;
-            profile[@"gameDir"] = @".";
+            // ★ Task271（271-a F3·Task242 补完）：实例页 OptiFine 同步隔离口径
+            //   versions/<id>/game（用户仍可在三态选择器改回）。
+            profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", versionId];
             profile[@"type"] = @"custom";
             profile[@"created"] = [NSDate date].description;
             [PLProfiles.current saveProfile:profile withName:versionId];
@@ -3499,7 +3505,16 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
         if (ame162_oldKey.length > 0) {
             [PLProfiles.current.profiles removeObjectForKey:ame162_oldKey];
         }
-        PLProfiles.current.profiles[newName] = self.profile;
+        // ★ Task271（271-a RC3）：写入改【合并覆盖】——编辑器打开期间其它
+        //   写入方（下载完成/Ame269 收尾等）给活条目新增的键不再被陈旧工作
+        //   副本整条顶掉；编辑器管辖字段以本页为准。
+        NSMutableDictionary *ame271_liveNew = [PLProfiles.current.profiles[newName] isKindOfClass:[NSDictionary class]]
+            ? [NSMutableDictionary dictionaryWithDictionary:PLProfiles.current.profiles[newName]]
+            : [NSMutableDictionary dictionary];
+        for (NSString *ame271_k in self.profile) {
+            if (self.profile[ame271_k] != nil) ame271_liveNew[ame271_k] = self.profile[ame271_k];
+        }
+        PLProfiles.current.profiles[newName] = ame271_liveNew;
         self.profileDictKey = newName;
         // 如果原来选中的是被重命名的 profile，更新选中
         if ([PLProfiles.current.selectedProfileName isEqualToString:ame162_oldKey]) {
@@ -3508,9 +3523,17 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
     } else {
         // 名称没变，直接保存（Task162：按键落位，不写幻影）
         if (ame162_oldKey.length > 0) {
-            PLProfiles.current.profiles[ame162_oldKey] = self.profile;
+            // ★ Task271（271-a RC3）：合并覆盖（语义同上）——其它写入方的
+            //   新增键（gameDir/icon 等）存活，编辑器管辖字段以本页为准。
+            NSMutableDictionary *ame271_live = [PLProfiles.current.profiles[ame162_oldKey] isKindOfClass:[NSDictionary class]]
+                ? [NSMutableDictionary dictionaryWithDictionary:PLProfiles.current.profiles[ame162_oldKey]]
+                : [NSMutableDictionary dictionary];
+            for (NSString *ame271_k in self.profile) {
+                if (self.profile[ame271_k] != nil) ame271_live[ame271_k] = self.profile[ame271_k];
+            }
+            PLProfiles.current.profiles[ame162_oldKey] = ame271_live;
         } else {
-            PLProfiles.current.profiles[newName] = self.profile;
+            PLProfiles.current.profiles[newName] = [self.profile mutableCopy] ?: [NSMutableDictionary dictionary];
         }
     }
 

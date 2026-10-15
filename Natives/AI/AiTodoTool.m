@@ -4,6 +4,7 @@
 //
 
 #import "AiTodoTool.h"
+#import "../utils.h"   // Task271-e：工具结果/错误文案 i18n 接线需要 localize()
 
 static NSString *const kAiTodoFileName = @"todos.json";
 static const NSInteger kAiTodoMaxItems = 200;
@@ -94,8 +95,8 @@ static const NSInteger kAiTodoMaxItems = 200;
 }
 
 + (NSString *)itemDescription:(NSDictionary *)item {
-    if (![item isKindOfClass:[NSDictionary class]]) return @"（无效条目）";
-    NSString *done = [item[@"done"] boolValue] ? @"[已完成]" : @"[未完成]";
+    if (![item isKindOfClass:[NSDictionary class]]) return localize(@"ai.todo.invalid_item", nil);
+    NSString *done = [item[@"done"] boolValue] ? localize(@"ai.todo.done_tag", nil) : localize(@"ai.todo.undone_tag", nil);
     NSString *desc = [item[@"description"] isKindOfClass:[NSString class]] ? item[@"description"] : @"";
     if (desc.length > 0) {
         return [NSString stringWithFormat:@"#%@ %@ %@ — %@", [item[@"id"] description], done, item[@"title"] ?: @"", desc];
@@ -123,7 +124,7 @@ static const NSInteger kAiTodoMaxItems = 200;
             result = [self performDelete:params error:&error];
         } else {
             error = [NSError errorWithDomain:@"AiTool" code:404
-                                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"未知工具 %@", self.internalName]}];
+                                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.tools.unknown_tool_fmt", nil), self.internalName]}];
         }
 
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -136,7 +137,7 @@ static const NSInteger kAiTodoMaxItems = 200;
     NSString *title = [params[@"title"] isKindOfClass:[NSString class]] ? params[@"title"] : @"";
     if (title.length == 0) {
         if (error) *error = [NSError errorWithDomain:@"AiTool" code:400
-                                            userInfo:@{NSLocalizedDescriptionKey: @"参数 title 必填"}];
+                                            userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.todo.param_title_required", nil)}];
         return nil;
     }
     NSString *desc = [params[@"description"] isKindOfClass:[NSString class]] ? params[@"description"] : @"";
@@ -144,7 +145,7 @@ static const NSInteger kAiTodoMaxItems = 200;
     NSMutableArray *todos = [AiTodoTool loadTodos];
     if (todos.count >= kAiTodoMaxItems) {
         if (error) *error = [NSError errorWithDomain:@"AiTool" code:409
-                                            userInfo:@{NSLocalizedDescriptionKey: @"待办清单已满（200 条），请先清理"}];
+                                            userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.todo.list_full", nil)}];
         return nil;
     }
     NSInteger newId = [AiTodoTool nextIdInTodos:todos];
@@ -158,15 +159,15 @@ static const NSInteger kAiTodoMaxItems = 200;
     [todos addObject:item];
     if (![AiTodoTool saveTodos:todos]) {
         if (error) *error = [NSError errorWithDomain:@"AiTool" code:500
-                                            userInfo:@{NSLocalizedDescriptionKey: @"todos.json 写入失败"}];
+                                            userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.todo.save_failed", nil)}];
         return nil;
     }
-    return [NSString stringWithFormat:@"已创建待办 #%ld：%@", (long)newId, title];
+    return [NSString stringWithFormat:localize(@"ai.todo.created_fmt", nil), (long)newId, title];
 }
 
 - (NSString *)performList {
     NSMutableArray *todos = [AiTodoTool loadTodos];
-    if (todos.count == 0) return @"待办清单为空。";
+    if (todos.count == 0) return localize(@"ai.todo.empty", nil);
 
     NSMutableString *out = [NSMutableString string];
     NSInteger doneCount = 0;
@@ -174,7 +175,7 @@ static const NSInteger kAiTodoMaxItems = 200;
         if ([item[@"done"] boolValue]) doneCount++;
         [out appendFormat:@"%@\n", [AiTodoTool itemDescription:item]];
     }
-    [out appendFormat:@"共 %lu 条，其中已完成 %ld 条。",
+    [out appendFormat:localize(@"ai.todo.summary_fmt", nil),
         (unsigned long)todos.count, (long)doneCount];
     return out;
 }
@@ -192,7 +193,7 @@ static const NSInteger kAiTodoMaxItems = 200;
     }
     if (!target) {
         if (error) *error = [NSError errorWithDomain:@"AiTool" code:404
-                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"待办 #%ld 不存在", (long)itemId]}];
+                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.todo.not_found_fmt", nil), (long)itemId]}];
         return nil;
     }
 
@@ -217,10 +218,10 @@ static const NSInteger kAiTodoMaxItems = 200;
     if (idx != NSNotFound) todos[idx] = updated;
     if (![AiTodoTool saveTodos:todos]) {
         if (error) *error = [NSError errorWithDomain:@"AiTool" code:500
-                                            userInfo:@{NSLocalizedDescriptionKey: @"todos.json 写入失败"}];
+                                            userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.todo.save_failed", nil)}];
         return nil;
     }
-    return [NSString stringWithFormat:@"已更新：%@", [AiTodoTool itemDescription:updated]];
+    return [NSString stringWithFormat:localize(@"ai.todo.updated_fmt", nil), [AiTodoTool itemDescription:updated]];
 }
 
 - (NSString *)performDelete:(NSDictionary *)params error:(NSError **)error {
@@ -235,16 +236,16 @@ static const NSInteger kAiTodoMaxItems = 200;
     }
     if (!target) {
         if (error) *error = [NSError errorWithDomain:@"AiTool" code:404
-                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"待办 #%ld 不存在", (long)itemId]}];
+                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.todo.not_found_fmt", nil), (long)itemId]}];
         return nil;
     }
     [todos removeObject:target];
     if (![AiTodoTool saveTodos:todos]) {
         if (error) *error = [NSError errorWithDomain:@"AiTool" code:500
-                                            userInfo:@{NSLocalizedDescriptionKey: @"todos.json 写入失败"}];
+                                            userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.todo.save_failed", nil)}];
         return nil;
     }
-    return [NSString stringWithFormat:@"已删除待办 #%ld", (long)itemId];
+    return [NSString stringWithFormat:localize(@"ai.todo.deleted_fmt", nil), (long)itemId];
 }
 
 @end

@@ -6,6 +6,7 @@
 #import "AiDownloadProbe.h"
 #import "DownloadTaskManager.h"
 #import "DownloadTaskItem.h"
+#import "../utils.h"   // Task271-e：状态/结果文案 i18n 接线需要 localize()
 
 @interface AiDownloadProbe ()
 @property (nonatomic, copy) NSString *internalName;
@@ -39,14 +40,14 @@
 
 + (NSString *)stateName:(DownloadTaskState)state {
     switch (state) {
-        case DownloadTaskStatePending:     return @"等待中";
-        case DownloadTaskStateDownloading: return @"下载中";
-        case DownloadTaskStatePaused:      return @"已暂停";
-        case DownloadTaskStateCompleted:   return @"已完成";
-        case DownloadTaskStateCancelled:   return @"已取消";
-        case DownloadTaskStateFailed:      return @"失败";
+        case DownloadTaskStatePending:     return localize(@"taskProgress.state.pending", nil);
+        case DownloadTaskStateDownloading: return localize(@"taskProgress.state.downloading", nil);
+        case DownloadTaskStatePaused:      return localize(@"taskProgress.state.paused", nil);
+        case DownloadTaskStateCompleted:   return localize(@"taskProgress.state.completed", nil);
+        case DownloadTaskStateCancelled:   return localize(@"taskProgress.state.cancelled", nil);
+        case DownloadTaskStateFailed:      return localize(@"taskProgress.state.failed", nil);
     }
-    return @"未知";
+    return localize(@"ame189.common.unknown", nil);
 }
 
 - (void)execute:(NSDictionary<NSString *, id> *)params
@@ -56,7 +57,7 @@
     NSArray<DownloadTaskItem *> *tasks = [[DownloadTaskManager sharedManager] allTasks];
 
     if (tasks.count == 0) {
-        completion(@"当前没有下载任务。", nil);
+        completion(localize(@"ai.downloadprobe.no_tasks", nil), nil);
         return;
     }
 
@@ -87,12 +88,12 @@
     NSError *jsonError = nil;
     NSData *data = [NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:&jsonError];
     if (!data || jsonError) {
-        completion([NSString stringWithFormat:@"共 %lu 个下载任务（序列化失败：%@）",
-                    (unsigned long)items.count, jsonError.localizedDescription ?: @"未知错误"], nil);
+        completion([NSString stringWithFormat:localize(@"ai.downloadprobe.serialize_failed_fmt", nil),
+                    (unsigned long)items.count, jsonError.localizedDescription ?: localize(@"resman.common.unknown_error", nil)], nil);
         return;
     }
     NSString *json = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    completion(json ?: @"序列化下载任务失败", nil);
+    completion(json ?: localize(@"ai.downloadprobe.serialize_failed", nil), nil);
 }
 
 @end

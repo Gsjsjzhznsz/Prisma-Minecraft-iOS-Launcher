@@ -4,6 +4,7 @@
 //
 
 #import "AiAPIClient.h"
+#import "../utils.h"   // Task271-e：错误/提示文案 i18n 接线需要 localize()
 
 /// 节流阈值：流式回调最多每 200ms 触发一次，避免主队列/UI 过载
 static const NSTimeInterval kChunkThrottleInterval = 0.2;
@@ -50,7 +51,7 @@ static const NSTimeInterval kChunkThrottleInterval = 0.2;
                     onComplete:(void (^)(NSDictionary * _Nullable fullResponse, NSError * _Nullable error))onComplete {
     if (!provider || provider.baseURL.length == 0 || provider.model.length == 0) {
         NSError *err = [NSError errorWithDomain:@"AiAPIClient" code:100
-                                        userInfo:@{NSLocalizedDescriptionKey: @"AI 提供商配置不完整（缺少 baseURL 或 model）"}];
+                                        userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.api.provider_incomplete", nil)}];
         if (onComplete) {
             dispatch_async(dispatch_get_main_queue(), ^{ onComplete(nil, err); });
         }
@@ -75,7 +76,7 @@ static const NSTimeInterval kChunkThrottleInterval = 0.2;
     NSURL *url = [NSURL URLWithString:urlString];
     if (!url) {
         NSError *err = [NSError errorWithDomain:@"AiAPIClient" code:101
-                                        userInfo:@{NSLocalizedDescriptionKey: @"无效的 API 地址"}];
+                                        userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.api.invalid_url", nil)}];
         if (onComplete) {
             dispatch_async(dispatch_get_main_queue(), ^{ onComplete(nil, err); });
         }
@@ -183,7 +184,7 @@ static const NSTimeInterval kChunkThrottleInterval = 0.2;
                         completion:(void (^)(NSString * _Nullable successMessage, NSError * _Nullable error))completion {
     if (!provider || provider.baseURL.length == 0 || provider.model.length == 0) {
         NSError *err = [NSError errorWithDomain:@"AiAPIClient" code:100
-                                        userInfo:@{NSLocalizedDescriptionKey: @"AI 提供商配置不完整（缺少 baseURL 或 model）"}];
+                                        userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.api.provider_incomplete", nil)}];
         if (completion) {
             dispatch_async(dispatch_get_main_queue(), ^{ completion(nil, err); });
         }
@@ -201,7 +202,7 @@ static const NSTimeInterval kChunkThrottleInterval = 0.2;
             if (error) {
                 completion(nil, error);
             } else {
-                completion(@"连接成功", nil);
+                completion(localize(@"ai.api.connection_ok", nil), nil);
             }
         }
     }];
@@ -328,7 +329,7 @@ static const NSTimeInterval kChunkThrottleInterval = 0.2;
 
 - (NSError *)errorFromResponseBody {
     NSString *body = self.fullResponseText.length > 0 ? self.fullResponseText : @"";
-    NSString *message = [NSString stringWithFormat:@"请求失败（HTTP %ld）", (long)self.statusCode];
+    NSString *message = [NSString stringWithFormat:localize(@"ai.net.http_error_fmt", nil), (long)self.statusCode];
     NSError *jsonError = nil;
     NSDictionary *json = [NSJSONSerialization JSONObjectWithData:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                          options:0 error:&jsonError];
@@ -377,7 +378,7 @@ static const NSTimeInterval kChunkThrottleInterval = 0.2;
         NSError *outError = error;
         if (error.code == NSURLErrorCancelled) {
             outError = [NSError errorWithDomain:@"AiAPIClient" code:NSURLErrorCancelled
-                                       userInfo:@{NSLocalizedDescriptionKey: @"已停止生成"}];
+                                       userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.api.stopped", nil)}];
         }
         [self flushPendingDelta];
         if (complete) {

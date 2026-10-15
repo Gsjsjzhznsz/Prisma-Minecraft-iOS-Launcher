@@ -105,6 +105,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 @property (nonatomic, strong) UIStackView *chipsStack;         // chips 排列
 @property (nonatomic, strong) NSArray<UIButton *> *filterChips;
 @property (nonatomic, strong) UIButton *sortChipButton;
+@property (nonatomic, strong) UIButton *ame219_isoChip;   // ★ Task271：隔离徽标引用（实时刷新用）
 
 // ===== 导航按钮 =====
 @property (nonatomic, strong) UIBarButtonItem *closeButtonItem;
@@ -310,6 +311,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
         [self setSelectMode:NO];
     }
     [self loadMods];
+    [self ame271_refreshIsolationBadge];   // ★ Task271：手动刷新同步徽标/表尾
 }
 
 #pragma mark - 筛选 chips 行（搜索栏下方）
@@ -385,6 +387,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     }
     ame219_isoChip.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
     [self.chipsStack addArrangedSubview:ame219_isoChip];
+    self.ame219_isoChip = ame219_isoChip;   // ★ Task271：持有引用供实时刷新
     NSLog(@"[ModsManager] Task219/225: isolation badge for profile %@ -> %@ (bound=%@)",
           [self ame265_effectiveProfileName],
           (ame219_iso == 1) ? @"isolated" : ((ame219_iso == 2) ? @"sniffed-isolated" : @"shared"),
@@ -696,11 +699,34 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 
 #pragma mark - Task267 实例切换器 + 跟随/钉定 + 下载落点对账
 
+/// ★ Task271（271-a RC2 根修）：隔离徽标实时刷新——旧实现 setupChipsRow 一次性
+///   计算后永不更新（viewWillAppear/钉定/跟随/重扫全不刷新徽标）：用户在版本
+///   设置切完隔离回页，列表已扫新目录而徽标仍显示"共享目录"（"切了还是共享"
+///   的直接来源）。按当前生效实例重算三态 + 同步表尾扫描目录行。
+- (void)ame271_refreshIsolationBadge {
+    if (!self.ame219_isoChip) return;
+    NSInteger ame271_iso = [ModService ame219_isolationStateForProfile:[self ame265_effectiveProfileName]];
+    NSString *ame271_chipKey = (ame271_iso == 1) ? @"ame219.mods.isolated_chip"
+        : (ame271_iso == 2) ? @"ame225.mods.sniffed_chip" : @"ame219.mods.shared_chip";
+    [self.ame219_isoChip setTitle:localize(ame271_chipKey, nil) forState:UIControlStateNormal];
+    UIImage *ame271_icon = (ame271_iso == 1) ? [UIImage systemImageNamed:@"lock.shield"]
+        : (ame271_iso == 2) ? [UIImage systemImageNamed:@"sparkle.magnifyingglass"]
+        : [UIImage systemImageNamed:@"externaldrive"];
+    [self.ame219_isoChip setImage:ame271_icon forState:UIControlStateNormal];
+    [self ame264_setupScanFolderFooter];
+    NSLog(@"[ModsManager] Task271: isolation badge refresh for profile %@ -> %@ (bound=%@)",
+          [self ame265_effectiveProfileName],
+          (ame271_iso == 1) ? @"isolated" : ((ame271_iso == 2) ? @"sniffed-isolated" : @"shared"),
+          self.profileName ?: @"(nil→follow selected)");
+}
+
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     // Task267：每次回页都对账一次（用户可能在下载页新下过 mod）。
     [self ame267_reconcileLastDownloadIfNeeded];
     [self ame267_updateProfileChip];
+    // ★ Task271：回页即刷新隔离徽标/表尾（版本设置切隔离后回页立见新态）。
+    [self ame271_refreshIsolationBadge];
 }
 
 - (void)dealloc {
@@ -733,12 +759,14 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
           note.object ?: @"(nil)", (int)self.ame267_pinProfile, self.profileName ?: @"(nil)");
     if (self.ame267_pinProfile) {
         [self ame267_updateProfileChip];
+        [self ame271_refreshIsolationBadge];   // ★ Task271：钉定态也随选中变化刷新
         return;
     }
     self.ame265_crossProfileDest = nil;
     [self ame265_hideCrossProfileBanner];
     [self ame264_setupScanFolderFooter];
     [self ame267_updateProfileChip];
+    [self ame271_refreshIsolationBadge];   // ★ Task271：钉定换绑同步徽标
     [self reloadResourceList];
 }
 
@@ -785,6 +813,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     [self ame265_hideCrossProfileBanner];
     [self ame264_setupScanFolderFooter];
     [self ame267_updateProfileChip];
+    [self ame271_refreshIsolationBadge];   // ★ Task271：跟随换绑同步徽标
     [self reloadResourceList];
 }
 
@@ -797,6 +826,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     [self ame265_hideCrossProfileBanner];
     [self ame264_setupScanFolderFooter];
     [self ame267_updateProfileChip];
+    [self ame271_refreshIsolationBadge];   // ★ Task271：回跟随时同步徽标
     [self reloadResourceList];
 }
 

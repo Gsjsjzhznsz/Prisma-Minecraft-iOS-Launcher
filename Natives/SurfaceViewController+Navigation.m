@@ -231,7 +231,9 @@ static UIColor *ame244_snapshotTint(void) {
     ame230_setViewTreeStrokeExempt(self.menuView, YES);
 
     // 行滚动区（唯一内容层；玻璃层永远在其下）
-    UIScrollView *ame237_rowsScroll = [[UIScrollView alloc] init];
+    // ★ Task271（271-b D1）：Ame237Scroll 放行取消跟踪——UIControl 行铺满
+    //   滚动区时拖动也能起滚（游戏内 ⚙ 菜单 11 行 × 48pt 超 60% 帽同病）。
+    UIScrollView *ame237_rowsScroll = [[Ame237Scroll alloc] init];
     ame237_rowsScroll.showsVerticalScrollIndicator = NO;
     ame237_rowsScroll.delaysContentTouches = NO;
     ame237_rowsScroll.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -520,6 +522,7 @@ static UIColor *ame244_snapshotTint(void) {
     }
     ame237_scroll.contentSize = CGSizeMake(ame237_w, ame237_y);
     ame237_scroll.scrollEnabled = (ame237_y > ame237_scroll.bounds.size.height + 0.5);
+    ame237_scroll.showsVerticalScrollIndicator = ame237_scroll.isScrollEnabled; // ★ Task271（D5）：可滚时给暗示
     // ★ Task248（⑨）：行区重排（旋转/形态切换）后快照对位几何同步刷新
     [self ame248_alignMenuFrost];
 }

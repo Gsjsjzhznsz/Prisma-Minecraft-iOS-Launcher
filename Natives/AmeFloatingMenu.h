@@ -36,6 +36,16 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/// ★ Task271（271-b D1 P0 根修）：行滚动区专用 UIScrollView——
+///   菜单行是 UIControl 且铺满滚动区，基类 touchesShouldCancelInContentView:
+///   对 UIControl 恒 NO + delaysContentTouches=NO = 拖动手势永远起不来：
+///   伪玻璃档"选择太多被隐藏无法滑动"的直接根因（行区铺满 UIControl，
+///   没有任何空白处可以起拖）。子类统一放行取消（行的高亮即时性由
+///   delaysContentTouches=NO 保留，拖动时行被取消跟踪进入滚动）。
+@interface Ame237Scroll : UIScrollView
+@end
+
+
 /// 悬浮菜单行控件（图标 + 标题 + 自带按压反馈；AmeFloatingMenu 与游戏内
 /// 菜单面板共用同一套行语言）。
 @interface Ame237MenuRow : UIControl

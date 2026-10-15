@@ -3527,9 +3527,12 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
             NSMutableDictionary *profile = [NSMutableDictionary dictionary];
             profile[@"name"] = versionId;
             profile[@"lastVersionId"] = versionId;
-            // 改回原来的"游戏目录切换"机制：所有版本共享根目录（gameDir="."）
-            // 用户通过设置中的"游戏目录切换"功能手动切换不同的 gameDir
-            profile[@"gameDir"] = @".";
+                        // ★ Task271（271-a F3·Task242 补完）：下载页 Fabric/Quilt 对齐新下载原版/
+            //   Forge/NeoForge 的隔离口径 —— gameDir = versions/<id>/game。旧
+            //   gameDir="."（Task242 半迁移遗留+陈旧注释）让同名重装覆写既有隔离
+            //   条目、新装实例生而共享（装机实锤：fabric-loader-* 模组列表变共享）。
+            //   用户仍可在版本设置三态选择器改回。
+            profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", versionId];
             profile[@"type"] = @"custom";
             profile[@"created"] = [NSDate date].description;
             [PLProfiles.current saveProfile:profile withName:versionId];
@@ -4549,7 +4552,9 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
             NSMutableDictionary *profile = [NSMutableDictionary dictionary];
             profile[@"name"] = versionId;
             profile[@"lastVersionId"] = versionId;
-            profile[@"gameDir"] = @".";
+            // ★ Task271（271-a F3·Task242 补完）：下载页 OptiFine 同步隔离口径
+            //   versions/<id>/game（与 Fabric/原版同批半迁移遗留）。
+            profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", versionId];
             profile[@"type"] = @"custom";
             profile[@"created"] = [NSDate date].description;
             [PLProfiles.current saveProfile:profile withName:versionId];

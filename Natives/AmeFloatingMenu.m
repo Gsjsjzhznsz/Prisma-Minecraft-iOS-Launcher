@@ -216,6 +216,18 @@ static UIColor *Ame244SnapshotTint(void) {
 
 #pragma mark - 菜单行控件（图标 + 标题；自带按压反馈；头文件公开供游戏内菜单共用）
 
+#pragma mark - Task271 行滚动区专用 ScrollView（D1 根修）
+
+@implementation Ame237Scroll
+// 菜单行 UIControl 铺满滚动区：基类对 UIControl 拒绝取消跟踪 + 
+// delaysContentTouches=NO = 拖动永远在行上开始且永不转入滚动（伪玻璃档
+// “选择太多被隐藏无法滑动”根因）。统一放行：拖动即取消行跟踪进入滚动，
+// 轻点仍直发行高亮与 TouchUpInside（即时按压反馈保留）。
+- (BOOL)touchesShouldCancelInContentView:(UIView *)view {
+    return YES;
+}
+@end
+
 @implementation Ame237MenuRow
 
 - (instancetype)initWithFrame:(CGRect)frame {
@@ -536,7 +548,9 @@ static UIColor *Ame244SnapshotTint(void) {
     }
 
     // 菜单行（唯一滚动区；高度足够时禁用滚动 = 平铺）
-    self.rowsScroll = [[UIScrollView alloc] init];
+    // ★ Task271（271-b D1）：Ame237Scroll = touchesShouldCancel 放行子类，
+    //   UIControl 行铺满滚动区时拖动也能起滚（否则行区无空白起拖点）。
+    self.rowsScroll = [[Ame237Scroll alloc] init];
     self.rowsScroll.showsVerticalScrollIndicator = NO;
     self.rowsScroll.delaysContentTouches = NO;
     self.rowsScroll.layer.cornerRadius = 16.0;
@@ -770,8 +784,15 @@ static UIColor *Ame244SnapshotTint(void) {
     CGFloat contentH = rowsTop + rowsH + bottomInset;
     CGFloat maxH = floor(bh * 0.72);
     CGFloat panelH = MIN(contentH, maxH);
+    // ★ Task271（271-b D3）：标题/输入区过高时保证行区最小可用视口——
+    //   旧钳制 rowsAvail<50 时只补回 10pt inset，长标题+多输入框+小窗口
+    //   （iPad 分屏/窗口模式）会塌缩到 0：全部行隐藏且无法滚动。
     CGFloat rowsAvail = panelH - rowsTop - bottomInset;
-    if (rowsAvail < 50.0) rowsAvail = MAX(0.0, panelH - rowsTop);
+    if (rowsAvail < 100.0) {
+        CGFloat ame271_want = MIN(bh - 24.0, rowsTop + 110.0 + bottomInset);
+        panelH = MAX(panelH, MIN(ame271_want, contentH));
+        rowsAvail = MAX(0.0, panelH - rowsTop - bottomInset);
+    }
 
     self.panel.frame = CGRectMake((bw - W) / 2.0, (bh - panelH) / 2.0, W, panelH);
     if (self.ame237_kbShift > 0.0) {
@@ -801,6 +822,12 @@ static UIColor *Ame244SnapshotTint(void) {
     self.rowsScroll.frame = CGRectMake(0.0, rowsTop, W, rowsAvail);
     self.rowsScroll.contentSize = CGSizeMake(W, rowsH);
     self.rowsScroll.scrollEnabled = (rowsH > rowsAvail + 0.5);
+    // ★ Task271（271-b D5）：可滚时给出指示器/可达性暗示（旧版恒隐藏 =
+    //   用户无从得知折叠区外还有条目）。
+    self.rowsScroll.showsVerticalScrollIndicator = self.rowsScroll.isScrollEnabled;
+    if (self.rowsScroll.isScrollEnabled && self.rowsScroll.contentOffset.y > rowsH - rowsAvail) {
+        self.rowsScroll.contentOffset = CGPointMake(0.0, MAX(0.0, rowsH - rowsAvail));
+    }
 
     CGFloat ry = 0.0;
     for (NSUInteger i = 0; i < n; i++) {

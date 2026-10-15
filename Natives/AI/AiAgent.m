@@ -10,6 +10,7 @@
 #import "AiAPIClient.h"
 #import "AiToolRegistry.h"
 #import "AiSafetyManager.h"
+#import "../utils.h"   // Task271-e：错误/确认弹窗文案 i18n 接线需要 localize()
 
 /// 工具循环最多轮数
 static const NSInteger kMaxToolRounds = 10;
@@ -123,7 +124,7 @@ static NSString * const kAiSessionMessagesDidChangeNotification = @"AiSessionMes
     if (!session) {
         if (completionHandler) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionHandler([NSError errorWithDomain:@"AiAgent" code:1 userInfo:@{NSLocalizedDescriptionKey: @"会话为空"}]);
+                completionHandler([NSError errorWithDomain:@"AiAgent" code:1 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.agent.empty_session", nil)}]);
             });
         }
         return;
@@ -133,7 +134,7 @@ static NSString * const kAiSessionMessagesDidChangeNotification = @"AiSessionMes
     if (self.running) {
         if (completionHandler) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionHandler([NSError errorWithDomain:@"AiAgent" code:3 userInfo:@{NSLocalizedDescriptionKey: @"上一条回复尚未完成，请稍候或先点停止"}]);
+                completionHandler([NSError errorWithDomain:@"AiAgent" code:3 userInfo:@{NSLocalizedDescriptionKey: localize(@"ai.agent.busy", nil)}]);
             });
         }
         return;
@@ -164,7 +165,7 @@ static NSString * const kAiSessionMessagesDidChangeNotification = @"AiSessionMes
 
     // 轮数护栏
     if (self.toolRound >= kMaxToolRounds) {
-        AiMessage *capMsg = [AiMessage messageWithRole:@"assistant" content:@"本轮工具调用已达上限，请让用户进一步说明。"];
+        AiMessage *capMsg = [AiMessage messageWithRole:@"assistant" content:localize(@"ai.agent.round_limit", nil)];
         [session.messages addObject:capMsg];
         [self saveSession:session];
         self.running = NO;
@@ -379,12 +380,12 @@ static NSString * const kAiSessionMessagesDidChangeNotification = @"AiSessionMes
         // 重试护栏：同一 callID 已执行 ≥3 次则不再回喂
         NSInteger attempts = [strongSelf.attempts[callID] integerValue];
         if (attempts >= kMaxToolAttempts) {
-            AiMessage *failMsg = [AiMessage toolResultMessageWithContent:[NSString stringWithFormat:@"多次尝试仍失败：%@", name ?: @""] toolCallID:callID];
+            AiMessage *failMsg = [AiMessage toolResultMessageWithContent:[NSString stringWithFormat:localize(@"ai.agent.retries_exhausted_fmt", nil), name ?: @""] toolCallID:callID];
             failMsg.toolName = name ?: @"";
             failMsg.toolSucceeded = NO;
             storeResult(idx, failMsg);
             terminalError = [NSError errorWithDomain:@"AiAgent" code:2
-                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"工具 %@ 多次尝试仍失败", name ?: callID]}];
+                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:localize(@"ai.agent.tool_retries_exhausted_fmt", nil), name ?: callID]}];
             noteCompleted(done);
             return;
         }
@@ -393,7 +394,7 @@ static NSString * const kAiSessionMessagesDidChangeNotification = @"AiSessionMes
         // 校验工具是否存在
         id<AiTool> tool = [[AiToolRegistry sharedRegistry] toolForName:name ?: @""];
         if (!tool) {
-            AiMessage *unknownMsg = [AiMessage toolResultMessageWithContent:[NSString stringWithFormat:@"未知工具：%@", name ?: @""] toolCallID:callID];
+            AiMessage *unknownMsg = [AiMessage toolResultMessageWithContent:[NSString stringWithFormat:localize(@"ai.agent.unknown_tool_fmt", nil), name ?: @""] toolCallID:callID];
             unknownMsg.toolName = name ?: @"";
             unknownMsg.toolSucceeded = NO;
             storeResult(idx, unknownMsg);
@@ -413,7 +414,7 @@ static NSString * const kAiSessionMessagesDidChangeNotification = @"AiSessionMes
                 if (!ss3) { if (done) done(); return; }
                 NSString *content = result;
                 if (content.length == 0 && error) content = error.localizedDescription;
-                if (content.length == 0) content = @"（无返回）";
+                if (content.length == 0) content = localize(@"ai.agent.no_result", nil);
                 AiMessage *resMsg = [AiMessage toolResultMessageWithContent:content toolCallID:callID];
                 resMsg.toolName = name ?: @"";
                 resMsg.toolSucceeded = (error == nil);
@@ -424,13 +425,13 @@ static NSString * const kAiSessionMessagesDidChangeNotification = @"AiSessionMes
 
         // 安全确认（DangerousWrite 等需确认时阻塞等待用户选择）
         if ([[AiSafetyManager sharedManager] needsUserConfirmationForPermission:tool.permission]) {
-            [[AiSafetyManager sharedManager] requestConfirmationWithTitle:[NSString stringWithFormat:@"AI 请求执行「%@」", name ?: @""]
-                                                                  message:[NSString stringWithFormat:@"该工具需要你确认后才执行。\n参数：%@", arguments]
+            [[AiSafetyManager sharedManager] requestConfirmationWithTitle:[NSString stringWithFormat:localize(@"ai.agent.confirm_title_fmt", nil), name ?: @""]
+                                                                  message:[NSString stringWithFormat:localize(@"ai.agent.confirm_body_fmt", nil), arguments]
                                                               completion:^(BOOL approved) {
                 __strong typeof(weakSelf) ss4 = weakSelf;
                 if (!ss4 || !ss4.running) { if (done) done(); return; }
                 if (!approved) {
-                    AiMessage *cancelMsg = [AiMessage toolResultMessageWithContent:@"用户已取消该操作" toolCallID:callID];
+                    AiMessage *cancelMsg = [AiMessage toolResultMessageWithContent:localize(@"ai.agent.cancelled_by_user", nil) toolCallID:callID];
                     cancelMsg.toolName = name ?: @"";
                     cancelMsg.toolSucceeded = NO;
                     storeResult(idx, cancelMsg);

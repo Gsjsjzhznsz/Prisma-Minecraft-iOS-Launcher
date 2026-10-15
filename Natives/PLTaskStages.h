@@ -145,7 +145,12 @@ NS_INLINE NSArray<PLTaskStage *> *PLTaskStagesSingleFile(void) {
 /// 供统一进度页（PLTaskProgressViewController）与下载中心卡片（DownloadTasksViewController）共用。
 NS_INLINE NSString *PLTaskStageTitleDisplay(NSString *titleKey) {
     if (titleKey.length == 0) return @"";
-    NSString *value = NSLocalizedString(titleKey, @"");
+    // ★ Task271（用户实证：English 下安装进度页阶段标题仍中文）：改走
+    //   localize() 全链——NSLocalizedString 只认【系统语言】bundle，完全绕过
+    //   general.app_language 应用内语言覆盖（应用内 English + 系统中文 =
+    //   安装进度/下载中心阶段标题恒中文），也绕过 en→zh-Hans 兜底链。
+    //   localize() 尊重应用内覆盖 + 四表回退，fallbackMap 降为纯兜底。
+    NSString *value = localize(titleKey, nil);
     if (![value isEqualToString:titleKey]) return value;
 
     // 过渡期中文兜底（与上方阶段常量一一对应；strings 补全后不再走到这里）
