@@ -1215,7 +1215,10 @@ public class GLFW
     }
 
     public static int glfwGetKey(@NativeType("GLFWwindow *") long window, int key) {
-        return keyDownBuffer.get(Math.max(0, key-31));
+        // 上界守卫：key 最大可达 GLFW_KEY_LAST(348)，减 31 后为 317，越出 keyDownBuffer 容量（合法下标 0..316）。
+        // 与 native 写侧守卫（input_bridge_v3.m kidx<317）对称。
+        int idx = Math.max(0, key - 31);
+        return idx < keyDownBuffer.capacity() ? keyDownBuffer.get(idx) : 0;
     }
 
     public static int glfwGetMouseButton(@NativeType("GLFWwindow *") long window, int button) {

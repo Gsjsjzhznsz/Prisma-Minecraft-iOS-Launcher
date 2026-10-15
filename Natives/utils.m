@@ -19,6 +19,7 @@
 extern uint64_t os_proc_available_memory(void);
 
 #include "utils.h"
+#import <CommonCrypto/CommonCrypto.h>
 #import "LauncherPreferences.h"
 #import "PLProfiles.h"
 #import "NMToast.h"
@@ -1188,4 +1189,24 @@ BOOL ame188_ensureDirectoryHealed(NSString *path) {
         }
     }
     return [fm createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:NULL];
+}
+
+// ★ Task270（屎山 A1）：五服务 iconCachePathForURL 逐字节克隆收敛单点
+// （Mod/DataPack/ResourcePack/Server/Shader 仅子目录名不同）。行为零变更：
+// CC_SHA1 hex 文件名 + 目录懒建语义逐行保留。
+NSString *AMEIconCachePathForURL(NSString *urlString, NSString *subfolder) {
+    if (!urlString) return nil;
+    NSString *cacheDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject];
+    NSString *folder = [cacheDir stringByAppendingPathComponent:subfolder];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:folder]) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:folder withIntermediateDirectories:YES attributes:nil error:nil];
+    }
+    const char *cstr = [urlString UTF8String];
+    unsigned char digest[CC_SHA1_DIGEST_LENGTH];
+    CC_SHA1(cstr, (CC_LONG)strlen(cstr), digest);
+    NSMutableString *hex = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH * 2];
+    for (int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++) {
+        [hex appendFormat:@"%02x", digest[i]];
+    }
+    return [folder stringByAppendingPathComponent:hex];
 }

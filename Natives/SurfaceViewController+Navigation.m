@@ -602,6 +602,11 @@ static UIColor *ame244_snapshotTint(void) {
 
 - (void)ame247_menuSnapshotTick:(CADisplayLink *)ame247_sender {
     if (self.menuView == nil || self.menuView.hidden ||
+        // ★ Task270 P2：VC 已离开窗口（退游戏/被替换）→ 供料链自停。原停止
+        //   条件依赖 dealloc 复位会话闸（P0 前 dealloc 不可达，P0 后也晚于
+        //   离窗）——菜单开着退游戏后死 VC 会以 8Hz 永久快照 dead surface
+        //   空耗 CPU/电池；对齐 ame250_frostTick 的 view.window==nil 同族护栏。
+        self.surfaceView.window == nil ||
         !LGCIsGlassStyleActive() ||
         // ★ Task260（清单 2）：<26 会话闸内供料链整体自停（面板已回退原生）
         !LGCGameSessionGlassAllowed()) {

@@ -3330,3 +3330,23 @@ Work Log:
 
 Stage Summary:
 - 提交推送 main（PAT 保形）；Task269 三轮闭环：v1 病根根治 → r2 身份键防双版本 → r3 三路审查 9 件收口（数据丢失级回归 staging 换装根除）；装机锚点：升级首启 [Ame269] migrate family/merged/ghost 日志链、重下同包 [ModpackImport] Task269: re-import reuses ... staged、换装 [ModpackImport] Task269-r3: staged re-import promoted into live instance、删选中实例 Task269-r3: deleted profile was selected -> repoint
+
+## Task 270——五路子代理全项目代码级 bug 大搜查 + 批量根修 + 遗留清单 M2/M4/M5/M6/M8/M9-1 实施 + 屎山第 2 批收敛（v6.5.5 首轮开发）
+
+Work Log:
+- 五路 Explore 并行搜查（工作记录见项目 worklog 270-a~e 节 + 会话 worklog）：a=Task269 遗留九件精确取证（全部 file:line 实锤+修复方案）；b=JavaApp/src 77 文件七维审查（P1×3+P2×7+P3×9，排除 Task268 已修零重复）；c=ObjC UIKit 层内存/线程六维（P0×1+P1×1+P2×3+P3×2，~40 VC dealloc 链清白核销）；d=服务层 gameDir 口径一致性矩阵（26 消费点）+并发审查（P1×5+P2×5+P3×4）；e=屎山识别（copy-paste 语义漂移 4 实证+A 级 5 项+B 级 4 项+C 级 6 项+死代码 5 项+超长方法 Top17）
+- P0 根修（SurfaceVC 每会话整树泄漏）：SurfaceViewController.m 五块观察者（MousePointerUpdated/GCMouse 连断/GCController 连断）块内 weakSelf 化——原强捕 self 与 strong 属性 token 构成不可破环（self→token→block→self），dealloc 移除链永不可达=玻璃闸复位 LGCSetGameSessionMCMajor(0)/TouchController 销毁/statsDisplayLink invalidate 全为死代码+死实例观察者与活实例竞跑输入回调；registerMouseCallbacks movedHandler 同款 weakSelf（GCMouse→handler→self 环）
+- P1：①launchStageTimer target:self 保留环→block+weakSelf+dealloc 补 invalidate（原仅首帧/错误两路失效，JVM 崩溃路径死 VC 每 0.5s 空转）②ame247 磨砂 displayLink tick 补 surfaceView.window==nil 自停（菜单开着退游戏 8Hz 永久快照 dead surface 空耗 CPU，对齐 ame250_frostTick 同族护栏）③JavaGUI launchJVM 长命后台块 weakSelf（块存活=JVM 全生命周期）
+- P1 服务层（Task269-r3 修复落点错位的直接补刀）：WorldService/DataPackService existing+ensure 主分支改经 gameDirForProfile 绝对化解析（r3 修好的 gameDirForProfile 全仓零调用、实际消费点仍裸拼 prof[@"gameDir"]=玩过一局后存档/数据包扫描下载导入全错位）；ResourcePackService 下载内联回退整段换 ensure-first（ame219 隔离优先对齐，ModService.m:311 同款语义）；ShaderService 下载链 existing-first→ensure-first
+- P1 三服务重试链断死根修（Task268 scan-d#1 修法平移）：DataPack/ResourcePack/Shader handlePLDownloadCompletion 失败/取消分支保留 downloadRequests+downloadTaskItems（原无条件全量清理="重试"恒 nil 任务永久卡"等待中"，ModService.m:914-927 同款成败分支）+取消置 stage Skipped（scan-d#8 平移）
+- P1 WorldService 补 downloadStateLock（四资源服务唯一无锁者：六字典主线程登记 vs delegate 队列读写=NSMutableDictionary 并发崩溃面；登记/重试/进度/完成/失败五区段加锁）+失败回调补派主线程（原直跑 delegate 队列=UI 越线程）
+- P1 Java 三件（270-f 子代理，77 文件 ToolProvider 编译 A/B 基线零新增错误）：GLFW.glfwGetKey 读侧上界守卫（key=348→idx317 越界崩，与 native 写侧 Task268 守卫对称）；Forge splash.properties replace 从路径串移到 read 结果（原恒 no-op=enabled=true 永远关不掉，上游 Pojav bug）；Tools.ame270McVersionAtLeast 数值版本比较落地（"1.9">"1.11" 字典序陷阱：lang 小写 zh_cn 崩溃面+quickPlayMultiplayer 误加）+23 用例语义仿真 PASS
+- P2 Java 五件：Tools.preProcessLibraries 畸形 name 容错（null/段数<3/parseInt NFE 三防）；game[i+1] 尾元素越界守卫；read/write try-with-resources（fd 泄漏根修）；MCOptionUtils.remove 删全部匹配行（对齐 Task104 last-wins）；PatchJNAAgent null className 契约+资源 null 回退+流关闭+readFully 成功后才赋值
+- 遗留清单实施：M2 四服务下载任务 targetProfileName 标注（Task266/267 中央落点此前仅 mods 享有，World/Shader/RP/DataPack 四处对齐）；M4 JRE 管理器三件（removeRuntime 纯数据判选中弃 accessoryType+ame270_sweepReferencesToRemovedRuntime 清 java_homes 悬挂引用+context menu 后 reloadData 同步勾选）；M6 ame229 options 扫描补 custom_gamedir/<id> 第二层（排除点前缀 .ame269_backup/.stage，整合包实例 options.txt 不再漏扫）；M5 实例改名同步 ImportedModpacks 账本 profileName 字段（改名收口遍历原位改写，gameDirAbsolute 不动）；M8 ShaderService resolve/existing/ensure nil 入参跟随 selectedProfileName（ame267 服务层语义，@(default) 恒 miss 字面量退役）；M9-1 迁移 ledger 追加 lastVersionIdDiffs 差异记录（仅记录不改变决策，"新 loader 在 dup"降级可追溯）
+- P2 ShadersManager 导入落点改传本页绑定实例（284/302 原 nil 恒解析默认实例）+ShaderService scan 早退分支补派主线程
+- 屎山第 2 批：★1 JIT openURL 回执对齐（DownloadVC 三处 completionHandler:nil 补 ame185_ok/ame172_ok 取证日志，NavCtrl/RightPanel 同锚——Task268 r4 同族漂移再清零）；A1 iconCachePathForURL 五服务逐字节克隆收敛 utils.m 单点 AMEIconCachePathForURL（行为零变更，子目录名逐字保留）
+- 死代码记录（不动）：WorldService importCompletionHandlers 声明+初始化后零读写（下轮清理候选）
+- 门禁：task139 all balanced；task191 54 表 2916 键 OK；task248 缺键0硬编码0动态键0；task250 全零；零新增 i18n 键 54 表零风险；Java 侧 ToolProvider 全仓编译与 HEAD 基线误差一致（Apple JDK 私有 API 既有 2 项）；本轮修复清单 CRLF 事故 1 起（JavaGUIViewController.m）python 字节级保形解决（Task269-r3⑨ 工程化先例复用）
+
+Stage Summary:
+- 22 文件 +540/−245（Java 5 件 119 行 + ObjC 17 件）；装机验证锚点：①游戏会话正常退出后内存回落（SurfaceVC dealloc 可达，日志/Instruments 双验）②玩过一局后存档/数据包管理页扫描不错位③下载失败点重试不再卡"等待中"（四服务全量）④JRE 管理器删除运行时后启动不再报错（引用清扫）⑤隔离实例导入光影落本实例目录

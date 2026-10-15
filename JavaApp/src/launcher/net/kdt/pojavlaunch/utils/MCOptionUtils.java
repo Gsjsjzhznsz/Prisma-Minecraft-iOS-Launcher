@@ -67,11 +67,13 @@ public class MCOptionUtils
      */
     public static void remove(String key) {
         if (mLineList == null) return;
+        // ame270：与 set() 的去重语义对齐——MC 侧 last-wins，只删首行时
+        // 残留的后续重复行仍会在 MC 侧生效。倒序遍历删除所有匹配行，
+        // 避免正序 remove(i) 后索引漂移漏删。
         String prefix = key + ":";
-        for (int i = 0; i < mLineList.size(); i++) {
+        for (int i = mLineList.size() - 1; i >= 0; i--) {
             if (mLineList.get(i).startsWith(prefix)) {
                 mLineList.remove(i);
-                return;
             }
         }
     }

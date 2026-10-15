@@ -3514,6 +3514,33 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
         }
     }
 
+    // Task270 (M5)：实例改名同步 ImportedModpacks 账本——整合包条目的 profileName
+    // 记录的是 profile 字典键（ModpackImportService createProfileForModpack 写入，
+    // 键名同其 kImportedModpacksKey），改名只动 PLProfiles 键时账本残留死名，
+    // 删除/重导入对账读不到。只精确匹配 profileName 字段，gameDirAbsolute 等不动。
+    if (![self.originalName isEqualToString:newName] && ame162_oldKey.length > 0) {
+        NSUserDefaults *ame270_defaults = [NSUserDefaults standardUserDefaults];
+        NSArray *ame270_modpacks = [ame270_defaults objectForKey:@"ImportedModpacks"];
+        if ([ame270_modpacks isKindOfClass:[NSArray class]]) {
+            NSMutableArray *ame270_updated = [NSMutableArray array];
+            BOOL ame270_changed = NO;
+            for (NSDictionary *ame270_entry in ame270_modpacks) {
+                if ([ame270_entry isKindOfClass:[NSDictionary class]] &&
+                    [ame270_entry[@"profileName"] isEqualToString:ame162_oldKey]) {
+                    NSMutableDictionary *ame270_fixed = [ame270_entry mutableCopy];
+                    ame270_fixed[@"profileName"] = newName;
+                    [ame270_updated addObject:ame270_fixed];
+                    ame270_changed = YES;
+                } else {
+                    [ame270_updated addObject:ame270_entry];
+                }
+            }
+            if (ame270_changed) {
+                [ame270_defaults setObject:ame270_updated forKey:@"ImportedModpacks"];
+            }
+        }
+    }
+
     [PLProfiles.current save];
 
     // 发送通知刷新配置文件列表

@@ -55,21 +55,9 @@
     return [source isEqualToString:@"curseforge"] ? ServerDownloadAPICurseForge : ServerDownloadAPIModrinth;
 }
 
+// ★ Task270（屎山 A1）：逐字节克隆收敛 utils.m 单点 AMEIconCachePathForURL（行为零变更）。
 - (NSString *)iconCachePathForURL:(NSString *)urlString {
-    if (!urlString) return nil;
-    NSString *cacheDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject];
-    NSString *folder = [cacheDir stringByAppendingPathComponent:@"server_icons"];
-    if (![[NSFileManager defaultManager] fileExistsAtPath:folder]) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:folder withIntermediateDirectories:YES attributes:nil error:nil];
-    }
-    const char *cstr = [urlString UTF8String];
-    unsigned char digest[CC_SHA1_DIGEST_LENGTH];
-    CC_SHA1(cstr, (CC_LONG)strlen(cstr), digest);
-    NSMutableString *hex = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH * 2];
-    for (int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++) {
-        [hex appendFormat:@"%02x", digest[i]];
-    }
-    return [folder stringByAppendingPathComponent:hex];
+    return AMEIconCachePathForURL(urlString, @"server_icons");
 }
 
 #pragma mark - 搜索服务器

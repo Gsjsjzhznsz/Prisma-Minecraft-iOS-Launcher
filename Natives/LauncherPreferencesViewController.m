@@ -170,6 +170,22 @@ static NSString* ame202_languageDisplayName(NSString *ame202_code) {
         if ([fm fileExistsAtPath:optRoot] && ![out containsObject:optRoot]) {
             [out addObject:optRoot];
         }
+        // Task270 (M6)：custom_gamedir 第二层——ame269 整合包实例落在
+        // instances/<inst>/custom_gamedir/<id>/options.txt，原扫描漏掉这批档。
+        // 点前缀目录是 .ame269_backup/.ame269_stage 等工作区（ame269 点前缀拒绝
+        // 语义），不是实例，一律跳过。
+        NSString *customRoot = [instDir stringByAppendingPathComponent:@"custom_gamedir"];
+        BOOL customIsDir = NO;
+        if ([fm fileExistsAtPath:customRoot isDirectory:&customIsDir] && customIsDir) {
+            for (NSString *customId in [fm contentsOfDirectoryAtPath:customRoot error:nil]) {
+                if ([customId hasPrefix:@"."]) continue;
+                NSString *optCustom = [[customRoot stringByAppendingPathComponent:customId]
+                    stringByAppendingPathComponent:@"options.txt"];
+                if ([fm fileExistsAtPath:optCustom] && ![out containsObject:optCustom]) {
+                    [out addObject:optCustom];
+                }
+            }
+        }
     }
     // mtime 降序（最近玩的在前）
     __block NSFileManager *fmB = fm;

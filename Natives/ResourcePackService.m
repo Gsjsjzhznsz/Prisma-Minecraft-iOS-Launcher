@@ -76,21 +76,9 @@
 #pragma mark - 工具方法
 
 // 计算 URL 字符串的 SHA1，用作图标缓存文件名
+// ★ Task270（屎山 A1）：逐字节克隆收敛 utils.m 单点 AMEIconCachePathForURL（行为零变更）。
 - (NSString *)iconCachePathForURL:(NSString *)urlString {
-    if (!urlString) return nil;
-    NSString *cacheDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject];
-    NSString *folder = [cacheDir stringByAppendingPathComponent:@"resourcepack_icons"];
-    if (![[NSFileManager defaultManager] fileExistsAtPath:folder]) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:folder withIntermediateDirectories:YES attributes:nil error:nil];
-    }
-    const char *cstr = [urlString UTF8String];
-    unsigned char digest[CC_SHA1_DIGEST_LENGTH];
-    CC_SHA1(cstr, (CC_LONG)strlen(cstr), digest);
-    NSMutableString *hex = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH * 2];
-    for (int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++) {
-        [hex appendFormat:@"%02x", digest[i]];
-    }
-    return [folder stringByAppendingPathComponent:hex];
+    return AMEIconCachePathForURL(urlString, @"resourcepack_icons");
 }
 
 // 从 zip 中读取指定条目的数据
@@ -338,55 +326,20 @@
                 expectedSHA1:(nullable NSString *)expectedSHA1
                     progress:(ResourcePackDownloadProgressHandler _Nullable)progress
                   completion:(ResourcePackDownloadCompletionHandler _Nullable)completion {
-    // 确保 resourcepacks 目录存在
-    NSString *resourcePacksFolder = [self existingResourcePacksFolderForProfile:profileName];
-    NSFileManager *fm = [NSFileManager defaultManager];
-
+    // ★ Task270（ame219 隔离优先对齐 + P1-3 内联回退根修）：下载落点
+    //   ensure-first——原 existing→"裸拼 prof[@"gameDir"]"内联回退不解析相对
+    //   路径（CWD 被 ame97 chdir 永久切走后落嵌套孤儿树），且隔离实例首下载
+    //   落共享目录游戏内不可见（与 ModService.m:311 同款语义）。
+    NSError *ame270DirError = nil;
+    NSString *resourcePacksFolder = [self ensureResourcePacksFolderForProfile:profileName error:&ame270DirError];
     if (!resourcePacksFolder) {
-        // 目录不存在时尝试创建
-        NSString *profile = profileName.length ? profileName : @"default";
-        NSString *gameDir = nil;
-
-        @try {
-            NSDictionary *profiles = PLProfiles.current.profiles;
-            NSDictionary *prof = profiles[profile];
-            if ([prof isKindOfClass:[NSDictionary class]]) {
-                gameDir = prof[@"gameDir"];
-            }
-        } @catch (NSException *ex) { }
-
-        if (!gameDir) {
-            const char *gameDirC = getenv("POJAV_GAME_DIR");
-            if (gameDirC) {
-                gameDir = [NSString stringWithUTF8String:gameDirC];
-            }
+        if (completion) {
+            NSError *error = [NSError errorWithDomain:@"ResourcePackServiceError"
+                                                 code:1
+            userInfo:@{NSLocalizedDescriptionKey: ame270DirError.localizedDescription ?: localize(@"i18n_str_951", nil)}];
+            dispatch_async(dispatch_get_main_queue(), ^{ completion(NO, error); });
         }
-
-        if (gameDir) {
-            resourcePacksFolder = [gameDir stringByAppendingPathComponent:@"resourcepacks"];
-            NSError *dirError = nil;
-            BOOL created = [fm createDirectoryAtPath:resourcePacksFolder
-                         withIntermediateDirectories:YES
-                                          attributes:nil
-                                               error:&dirError];
-            if (!created || dirError) {
-                if (completion) {
-                    NSError *error = [NSError errorWithDomain:@"ResourcePackServiceError"
-                                                         code:1
-                                                     userInfo:@{NSLocalizedDescriptionKey: localize(@"i18n_str_951", nil)}];
-                    dispatch_async(dispatch_get_main_queue(), ^{ completion(NO, error); });
-                }
-                return;
-            }
-        } else {
-            if (completion) {
-                NSError *error = [NSError errorWithDomain:@"ResourcePackServiceError"
-                                                     code:1
-                                                 userInfo:@{NSLocalizedDescriptionKey: localize(@"i18n_str_106", nil)}];
-                dispatch_async(dispatch_get_main_queue(), ^{ completion(NO, error); });
-            }
-            return;
-        }
+        return;
     }
 
     // 校验下载链接
@@ -428,6 +381,9 @@
                       supportsResume:YES
                              iconURL:item.iconURL];
     taskItem.downloadURL = item.selectedVersionDownloadURL;
+    // ★ Task270 M2：下载目标实例随任务标注（对齐 ModService Task266 中央落点
+    // ——跨实例对账/死名回落此前仅 mods 享有，四服务统一）。
+    taskItem.targetProfileName = profileName;
     // redesign-download-ui Phase 3：单文件下载接入统一进度页——
     // PLTaskStagesSingleFile 单阶段 + autoPresentDetail 自动弹出 PLTaskProgressViewController
     [[DownloadTaskManager sharedManager] setTaskWithId:taskItem.taskId stages:PLTaskStagesSingleFile()];
@@ -608,7 +564,21 @@
         return;
     }
     ResourcePackDownloadCompletionHandler completion = self.downloadCompletionHandlers[taskId];
-    [self cleanupPLDownloadStateForTaskId:taskId];
+    // ★ Task270（scan-d #1 修法平移，同 ModService.m:914-927）：失败/取消保留
+    //   request+taskItem——retryHandler→restartPLDownloadForTaskId 靠
+    //   downloadRequests 命中，旧版一律清空 = "重试"恒 nil → 任务永久卡
+    //   "等待中"。成功路径才全量清理。
+    if (success) {
+        [self cleanupPLDownloadStateForTaskId:taskId];
+    } else {
+        [self.downloadOperations removeObjectForKey:taskId];
+        [self.downloadGenerations removeObjectForKey:taskId];
+        [self.downloadAccumulatedBytes removeObjectForKey:taskId];
+        [self.downloadTotalBytes removeObjectForKey:taskId];
+        [self.downloadLastSpeeds removeObjectForKey:taskId];
+        [self.downloadProgressHandlers removeObjectForKey:taskId];
+        [self.downloadCompletionHandlers removeObjectForKey:taskId];
+    }
     [self.downloadStateLock unlock];
 
     DownloadTaskManager *manager = [DownloadTaskManager sharedManager];
@@ -617,6 +587,9 @@
         [manager setTaskWithId:taskId state:DownloadTaskStateCompleted];
     } else if ([error.domain isEqualToString:NSURLErrorDomain] && error.code == NSURLErrorCancelled) {
         // 用户取消（DownloadTaskManager 已置 Cancelled，这里幂等对齐）
+        // ★ Task270（scan-d #8 平移）：阶段行同步置 Skipped——旧版停在 Running，
+        //   统一进度页显示"进行中"直到页面关闭。
+        [manager updateTaskWithId:taskId stageAtIndex:0 status:PLTaskStageStatusSkipped];
         [manager setTaskWithId:taskId state:DownloadTaskStateCancelled];
     } else {
         [manager updateTaskWithId:taskId stageAtIndex:0 status:PLTaskStageStatusFailed];

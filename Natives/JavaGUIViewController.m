@@ -363,20 +363,28 @@ void AWTInputBridge_sendKey(int keycode) {
     [dlThread start];
 
     
+// ★ Task270 P2：长命后台块强捕 self（块存活 = JVM 全生命周期，VC 提前
+//   dismiss 时整树 + displayLink 线程延迟到 JVM 退出才释放）。改弱引用：
+//   取值用 strongSelf，归 nil 即静默退出（JVM 已无宿主无需再启动）。
+__weak typeof(self) ame270LaunchWeakSelf = self;
 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        // 走 getter 兜底：若调用方未触发预解析，getter 会现场解析 manifest
-        // 避免 ivar=0 时 launchJVM 用 minVersion=0 匹配到错误的 JRE（如 Java 8 跑 NeoForge installer）
-        int javaVer = self.requiredJavaVersion;
-        if (javaVer <= 0) {
-            // 解析失败，getter 已弹错误提示，回主线程 dismiss VC 避免黑屏
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self.presentingViewController dismissViewControllerAnimated:YES completion:nil];
-            });
-            return;
-        }
-        launchJVM(nil, self.filepath, windowWidth, windowHeight, javaVer);
-        _requiredJavaVersion = 0;
-    });
+    __strong typeof(self) strongSelf = ame270LaunchWeakSelf;
+    if (!strongSelf) return;
+    // 走 getter 兜底：若调用方未触发预解析，getter 会现场解析 manifest
+    // 避免 ivar=0 时 launchJVM 用 minVersion=0 匹配到错误的 JRE（如 Java 8 跑 NeoForge installer）
+    int javaVer = strongSelf.requiredJavaVersion;
+    if (javaVer <= 0) {
+        // 解析失败，getter 已弹错误提示，回主线程 dismiss VC 避免黑屏
+        dispatch_async(dispatch_get_main_queue(), ^{
+            __strong typeof(self) innerStrong = ame270LaunchWeakSelf;
+            if (!innerStrong) return;
+            [innerStrong.presentingViewController dismissViewControllerAnimated:YES completion:nil];
+        });
+        return;
+    }
+    launchJVM(nil, strongSelf.filepath, windowWidth, windowHeight, javaVer);
+    strongSelf->_requiredJavaVersion = 0;
+});
 
     // 监听背景 UI 效果变化通知，当用户切换背景效果（半透明/毛玻璃）时重新应用透明化
     [[NSNotificationCenter defaultCenter] addObserver:self

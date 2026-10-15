@@ -649,7 +649,9 @@ public final class Tools {
 
         List<String> argList = new ArrayList<String>(Arrays.asList(args));
         // 版本判定：MC < 1.20 用 --server/--port，MC >= 1.20 用 --quickPlayMultiplayer
-        if (versionId.compareTo("1.20") < 0) {
+        // ame270：数值化比较——原 String.compareTo 字典序会把 "1.9"~"1.9.4" 判成 >=1.20
+        // 而误加 --quickPlayMultiplayer（老版本无法识别，自动进服静默失效）。
+        if (!ame270McVersionAtLeast(versionId, 1, 20)) {
             argList.add("--server");
             argList.add(host);
             argList.add("--port");
@@ -661,6 +663,38 @@ public final class Tools {
             System.out.println("[Tools] Auto-join server (quickPlay): " + host + ":" + port);
         }
         return argList.toArray(new String[0]);
+    }
+
+    /**
+     * ame270：数值化 MC 版本比较（取代 String.compareTo 字典序陷阱：
+     * "1.9" 字典序 > "1.11"，老版本被误判为新版本）。
+     * 解析 versionId 前导 "major.minor" 段（截取到第二个 '.' 之前的数字，
+     * 如 "1.16.5" -> "1.16"），major 大于指定值，或 major 相等且 minor
+     * 不小于指定值时返回 true；null / 无前导 "major.minor" 数字段 /
+     * parseInt 失败一律返回 false（预发布 id 如 "1.20-pre6" 的 minor 段
+     * 含非数字后缀，亦按解析失败处理）。
+     */
+    public static boolean ame270McVersionAtLeast(String versionId, int major, int minor) {
+        if (versionId == null || versionId.isEmpty()) {
+            return false;
+        }
+        int firstDot = versionId.indexOf('.');
+        if (firstDot < 0) {
+            return false;
+        }
+        int secondDot = versionId.indexOf('.', firstDot + 1);
+        String prefix = (secondDot < 0) ? versionId : versionId.substring(0, secondDot);
+        String[] parts = prefix.split("\\.");
+        if (parts.length < 2) {
+            return false;
+        }
+        try {
+            int vMajor = Integer.parseInt(parts[0].trim());
+            int vMinor = Integer.parseInt(parts[1].trim());
+            return vMajor > major || (vMajor == major && vMinor >= minor);
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     public static String fromStringArray(String[] strArr) {
@@ -779,6 +813,16 @@ public final class Tools {
         // Support for text2speech is not planned, so skip it for now.
         for (int i = 0; i < libraries.length; i++) {
             DependentLibrary libItem = libraries[i];
+            // ame270：畸形条目零防御修复——getVersionInfo 的库融合循环（其自身
+            // 已有 null 守卫）会把 null 元素 / name 为 null 的 library 原样传回
+            // 本方法；裸 startsWith/split 会直接 NPE 崩掉整个版本解析。
+            if (libItem == null) {
+                continue;
+            }
+            if (libItem.name == null) {
+                libItem._skip = true;
+                continue;
+            }
             if (libItem.name.startsWith("com.mojang:text2speech") ||
                 //libItem.name.startsWith("net.java.jinput") ||
                 libItem.name.startsWith("net.java.dev.jna:platform:") ||
@@ -804,14 +848,32 @@ public final class Tools {
                     continue;
             }
 
-            String[] version = libItem.name.split(":")[2].split("\\.");
+            // ame270：不足三段的畸形坐标（"a:b"）会让 [2] 直接 AIOOBE，
+            // 与 null name 同族——先存变量并守卫。
+            String[] nameSegments = libItem.name.split(":");
+            if (nameSegments.length < 3) {
+                libItem._skip = true;
+                continue;
+            }
+            String[] version = nameSegments[2].split("\\.");
             if (libItem.name.startsWith("net.java.dev.jna:jna:")) {
                 // 强制将 JNA 替换为 5.13.0 以保证 iOS 兼容性。
                 // MC 26.3+ 要求 JNA 5.17.0，但其 darwin-aarch64 libjnidispatch 在 iOS 上
                 // 加载 IOKit/CoreFoundation 后会导致 native crash/卡死（26.2 + JNA 5.13.0 正常）。
                 // MC 不直接使用 JNA API（通过 oshi 间接使用），5.13.0 的 API 完全兼容。
                 // PatchJNAAgent 会替换 Platform.class，与 JNA jar 版本无关。
-                if (Integer.parseInt(version[0]) == 5 && Integer.parseInt(version[1]) == 13 && Integer.parseInt(version[2]) == 0) continue;
+                // ame270：畸形版本段（不足三段 / 非数字）——无法判定是否需要替换，
+                // 保守跳过该条，避免 parseInt NFE / version[1] AIOOBE 崩掉启动链。
+                if (version.length < 3) {
+                    libItem._skip = true;
+                    continue;
+                }
+                try {
+                    if (Integer.parseInt(version[0]) == 5 && Integer.parseInt(version[1]) == 13 && Integer.parseInt(version[2]) == 0) continue;
+                } catch (NumberFormatException e) {
+                    libItem._skip = true;
+                    continue;
+                }
                 System.out.println("[Tools] Replacing JNA " + version[0] + "." + version[1] + "." + version[2] + " with 5.13.0 for iOS compatibility");
 
 createLibraryInfo(libItem);
@@ -819,7 +881,13 @@ createLibraryInfo(libItem);
                 libItem.downloads.artifact.path = "net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar";
                 libItem.downloads.artifact.url = "https://libraries.minecraft.net/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar";
             } else if (libItem.name.startsWith("org.ow2.asm:asm-all:")) {
-                if(Integer.parseInt(version[0]) >= 5) continue;
+                // ame270：版本段非数字（如 "0-beta"）时跳过该条而非 NFE 崩溃
+                try {
+                    if (Integer.parseInt(version[0]) >= 5) continue;
+                } catch (NumberFormatException e) {
+                    libItem._skip = true;
+                    continue;
+                }
                 //System.out.println("Library " + libItem.name + " has been changed to version 5.0.4");
                 createLibraryInfo(libItem);
                 libItem.name = "org.ow2.asm:asm-all:5.0.4";
@@ -935,7 +1003,14 @@ createLibraryInfo(libItem);
                             String perCustomArgStr = (String) perCustomArg;
                             // Check if there is a duplicate argument on combine
                             if (perCustomArgStr.startsWith("--") && totalArgList.contains(perCustomArgStr)) {
-                                perCustomArg = customVer.arguments.game[i + 1];
+                                // ame270：畸形 JSON 中 --flag 位于末尾无值时 i+1 越界（AIOOBE）。
+                                // 置 null 走下方 instanceof String 的 false 分支（不误跳下一元素），
+                                // 正常路径行为与原逻辑完全等价。
+                                if (i + 1 < customVer.arguments.game.length) {
+                                    perCustomArg = customVer.arguments.game[i + 1];
+                                } else {
+                                    perCustomArg = null;
+                                }
                                 if (perCustomArg instanceof String) {
                                     perCustomArgStr = (String) perCustomArg;
                                     // If the next is argument value, skip it
@@ -1035,7 +1110,11 @@ createLibraryInfo(libItem);
     }
 
     public static String read(String path) throws IOException {
-        return read(new FileInputStream(path));
+        // ame270：原实现 FileInputStream 从不 close（每次读版本 JSON/账户/
+        // launcher_profiles 泄漏一个 fd），改 try-with-resources 确保释放。
+        try (InputStream is = new FileInputStream(path)) {
+            return read(is);
+        }
     }
 
     public static void write(String path, byte[] content) throws IOException
@@ -1044,9 +1123,11 @@ createLibraryInfo(libItem);
         outPath.getParentFile().mkdirs();
         outPath.createNewFile();
 
-        BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(path));
-        fos.write(content, 0, content.length);
-        fos.close();
+        // ame270：原实现无 finally——write 抛 IOException 时流泄漏，
+        // 改 try-with-resources 确保异常路径也 close（写出逻辑不变）。
+        try (BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(path))) {
+            fos.write(content, 0, content.length);
+        }
     }
 
     public static void write(String path, String content) throws IOException {

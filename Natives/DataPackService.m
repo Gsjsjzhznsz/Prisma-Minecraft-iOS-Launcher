@@ -77,21 +77,9 @@
 #pragma mark - 工具方法
 
 // 计算 URL 字符串的 SHA1，用作图标缓存文件名
+// ★ Task270（屎山 A1）：逐字节克隆收敛 utils.m 单点 AMEIconCachePathForURL（行为零变更）。
 - (NSString *)iconCachePathForURL:(NSString *)urlString {
-    if (!urlString) return nil;
-    NSString *cacheDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject];
-    NSString *folder = [cacheDir stringByAppendingPathComponent:@"datapack_icons"];
-    if (![[NSFileManager defaultManager] fileExistsAtPath:folder]) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:folder withIntermediateDirectories:YES attributes:nil error:nil];
-    }
-    const char *cstr = [urlString UTF8String];
-    unsigned char digest[CC_SHA1_DIGEST_LENGTH];
-    CC_SHA1(cstr, (CC_LONG)strlen(cstr), digest);
-    NSMutableString *hex = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH * 2];
-    for (int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++) {
-        [hex appendFormat:@"%02x", digest[i]];
-    }
-    return [folder stringByAppendingPathComponent:hex];
+    return AMEIconCachePathForURL(urlString, @"datapack_icons");
 }
 
 // 从 zip 中读取指定条目的数据
@@ -131,7 +119,10 @@
 
 // 解析 profile 的 gameDir，返回 gameDir 或 nil
 - (nullable NSString *)gameDirForProfile:(NSString *)profileName {
-    NSString *profile = profileName.length ? profileName : @"default";
+    // Task270 M1 服务层语义对齐：nil 入参跟随当前选中实例（ame267 语义），
+    // 不再落恒 miss 的 @"default" 字面量（真实默认键 "(Default)"）。
+    if (!profileName.length) profileName = PLProfiles.current.selectedProfileName ?: @"(Default)";
+    NSString *profile = profileName;
     @try {
         NSDictionary *profiles = PLProfiles.current.profiles;
         NSDictionary *prof = profiles[profile];
@@ -164,20 +155,17 @@
 
 // 查找指定 profile 的 datapacks 目录（已存在时返回路径，否则返回 nil）
 - (nullable NSString *)existingDataPacksFolderForProfile:(NSString *)profileName {
-    NSString *profile = profileName.length ? profileName : @"default";
     NSFileManager *fm = [NSFileManager defaultManager];
 
     @try {
-        NSDictionary *profiles = PLProfiles.current.profiles;
-        NSDictionary *prof = profiles[profile];
-        if ([prof isKindOfClass:[NSDictionary class]]) {
-            NSString *gameDir = prof[@"gameDir"];
-            if ([gameDir isKindOfClass:[NSString class]] && gameDir.length > 0) {
-                NSString *dataPacksPath = [gameDir stringByAppendingPathComponent:@"datapacks"];
-                BOOL isDir = NO;
-                if ([fm fileExistsAtPath:dataPacksPath isDirectory:&isDir] && isDir) {
-                    return dataPacksPath;
-                }
+        // Task270 P1：主分支改经 gameDirForProfile 绝对化解析（Task269-r3
+        // 修复落点错位同族残留，对齐 ResourcePackService r3 模式）。
+        NSString *gameDir = [self gameDirForProfile:profileName];
+        if (gameDir.length > 0) {
+            NSString *dataPacksPath = [gameDir stringByAppendingPathComponent:@"datapacks"];
+            BOOL isDir = NO;
+            if ([fm fileExistsAtPath:dataPacksPath isDirectory:&isDir] && isDir) {
+                return dataPacksPath;
             }
         }
     } @catch (NSException *ex) { }
@@ -197,18 +185,14 @@
 
 /// 获取当前 profile 的 datapacks 目录，不存在时自动创建
 - (nullable NSString *)ensureDataPacksFolderForProfile:(NSString *)profileName error:(NSError **)error {
-    NSString *profile = profileName.length ? profileName : @"default";
     NSFileManager *fm = [NSFileManager defaultManager];
     NSString *dataPacksPath = nil;
 
     @try {
-        NSDictionary *profiles = PLProfiles.current.profiles;
-        NSDictionary *prof = profiles[profile];
-        if ([prof isKindOfClass:[NSDictionary class]]) {
-            NSString *gameDir = prof[@"gameDir"];
-            if ([gameDir isKindOfClass:[NSString class]] && gameDir.length > 0) {
-                dataPacksPath = [gameDir stringByAppendingPathComponent:@"datapacks"];
-            }
+        // Task270 P1：同 existing——主分支改经 gameDirForProfile 绝对化解析。
+        NSString *gameDir = [self gameDirForProfile:profileName];
+        if (gameDir.length > 0) {
+            dataPacksPath = [gameDir stringByAppendingPathComponent:@"datapacks"];
         }
     } @catch (NSException *ex) { }
 
@@ -468,6 +452,9 @@
                       supportsResume:YES
                              iconURL:item.iconURL];
     taskItem.downloadURL = item.selectedVersionDownloadURL;
+    // ★ Task270 M2：下载目标实例随任务标注（对齐 ModService Task266 中央落点
+    // ——跨实例对账/死名回落此前仅 mods 享有，四服务统一）。
+    taskItem.targetProfileName = profileName;
     // redesign-download-ui Phase 3：单文件下载接入统一进度页——
     // PLTaskStagesSingleFile 单阶段 + autoPresentDetail 自动弹出 PLTaskProgressViewController
     [[DownloadTaskManager sharedManager] setTaskWithId:taskItem.taskId stages:PLTaskStagesSingleFile()];
@@ -649,7 +636,21 @@
         return;
     }
     DataPackDownloadCompletionHandler completion = self.downloadCompletionHandlers[taskId];
-    [self cleanupPLDownloadStateForTaskId:taskId];
+    // ★ Task270（scan-d #1 修法平移，同 ModService.m:914-927）：失败/取消保留
+    //   request+taskItem——retryHandler→restartPLDownloadForTaskId 靠
+    //   downloadRequests 命中，旧版一律清空 = "重试"恒 nil → 任务永久卡
+    //   "等待中"。成功路径才全量清理。
+    if (success) {
+        [self cleanupPLDownloadStateForTaskId:taskId];
+    } else {
+        [self.downloadOperations removeObjectForKey:taskId];
+        [self.downloadGenerations removeObjectForKey:taskId];
+        [self.downloadAccumulatedBytes removeObjectForKey:taskId];
+        [self.downloadTotalBytes removeObjectForKey:taskId];
+        [self.downloadLastSpeeds removeObjectForKey:taskId];
+        [self.downloadProgressHandlers removeObjectForKey:taskId];
+        [self.downloadCompletionHandlers removeObjectForKey:taskId];
+    }
     [self.downloadStateLock unlock];
 
     DownloadTaskManager *manager = [DownloadTaskManager sharedManager];
@@ -658,6 +659,9 @@
         [manager setTaskWithId:taskId state:DownloadTaskStateCompleted];
     } else if ([error.domain isEqualToString:NSURLErrorDomain] && error.code == NSURLErrorCancelled) {
         // 用户取消（DownloadTaskManager 已置 Cancelled，这里幂等对齐）
+        // ★ Task270（scan-d #8 平移）：阶段行同步置 Skipped——旧版停在 Running，
+        //   统一进度页显示"进行中"直到页面关闭。
+        [manager updateTaskWithId:taskId stageAtIndex:0 status:PLTaskStageStatusSkipped];
         [manager setTaskWithId:taskId state:DownloadTaskStateCancelled];
     } else {
         [manager updateTaskWithId:taskId stageAtIndex:0 status:PLTaskStageStatusFailed];

@@ -471,6 +471,9 @@ static NSString *currentImportTaskId;
                     cell.detailTextLabel.text = version;
                     ((NSMutableDictionary *)self.selectedRuntimes[@"0"])[self.selectedRTTags[indexPath.row]] = verNum.stringValue;
                     setPrefObject(@"java.java_homes", self.selectedRuntimes);
+                    // Task270 (M4)：菜单改选只写数据不动 cell 会导致勾选态/✓ 标记与
+                    // java.java_homes 脱钩（重进页面才恢复），reloadData 同步
+                    [self.tableView reloadData];
                 },
             }];
         }
@@ -568,7 +571,8 @@ static NSString *currentImportTaskId;
 }
 
 - (void)removeRuntimeAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+    // Task270 (M4)：弃用 cellForRowAtIndexPath+accessoryType 判"删的是否选中项"
+    // （cell 不在可见区时返回 nil → 条件恒 NO，selectedRuntimes 残留死名），改纯数据判定
     NSNumber *version = self.sortedJavaVersions[indexPath.section];
     NSString *name = self.javaRuntimes[version][indexPath.row];
 
@@ -577,11 +581,51 @@ static NSString *currentImportTaskId;
         [self.javaRuntimes removeObjectForKey:version];
         [self.selectedRuntimes removeObjectForKey:version.stringValue];
         [self.sortedJavaVersions removeObject:version];
-    } else if (cell.accessoryType == UITableViewCellAccessoryCheckmark) {
+    } else if ([self.selectedRuntimes[version.stringValue] isEqualToString:name]) {
         self.selectedRuntimes[version.stringValue] = self.javaRuntimes[version][0];
     }
 
+    // Task270 (M4)：删除后全量引用清扫（java.java_homes 里凡指向被删 runtime 的
+    // 选择一律清除，防 getSelectedJavaHome 读到悬挂引用）
+    [self ame270_sweepReferencesToRemovedRuntime:name deletedVersion:version];
+
     setPrefObject(@"java.java_homes", self.selectedRuntimes);
+}
+
+// Task270 (M4)：删运行时后的 java.java_homes 全键引用清扫。
+// ① 顶层版本组键（值=运行时名）凡仍指向被删 runtime：组内尚有运行时回落第一个
+//    （与上方重指语义一致），组已空则整键删除；
+// ② "0" tag 表里指向被删空版本组的 tag 键同步删除（tag 删键后
+//    getSelectedJavaHome 走 minVersion 搜索自动回落到已装运行时，即"自动"语义）。
+- (void)ame270_sweepReferencesToRemovedRuntime:(NSString *)name deletedVersion:(NSNumber *)version {
+    NSMutableArray<NSString *> *staleGroupKeys = [NSMutableArray array];
+    for (NSString *key in self.selectedRuntimes) {
+        if ([key isEqualToString:@"0"]) continue;
+        if ([self.selectedRuntimes[key] isEqualToString:name]) {
+            [staleGroupKeys addObject:key];
+        }
+    }
+    for (NSString *key in staleGroupKeys) {
+        NSArray *remaining = self.javaRuntimes[@(key.integerValue)];
+        if (remaining.count > 0) {
+            self.selectedRuntimes[key] = remaining.firstObject;
+        } else {
+            [self.selectedRuntimes removeObjectForKey:key];
+        }
+    }
+
+    if (self.javaRuntimes[version] != nil) return; // 版本组未被删空，tag 表无需处理
+    NSMutableDictionary *tagMap = (NSMutableDictionary *)self.selectedRuntimes[@"0"];
+    if (![tagMap isKindOfClass:[NSMutableDictionary class]]) return;
+    NSMutableArray<NSString *> *deadTags = [NSMutableArray array];
+    for (NSString *tag in tagMap) {
+        if ([tagMap[tag] isEqualToString:version.stringValue]) {
+            [deadTags addObject:tag];
+        }
+    }
+    for (NSString *tag in deadTags) {
+        [tagMap removeObjectForKey:tag];
+    }
 }
 
 - (void)listJREInPath:(NSString *)path markInternal:(BOOL)markInternal {

@@ -3839,7 +3839,12 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     } else if (hasTrollStoreJIT) {
         NSLog(@"[JIT] [DownloadVC] TrollStore entitlement present but isJITEnabled=false, opening apple-magnifier://");
         NSURL *jitURL = [NSURL URLWithString:[NSString stringWithFormat:@"apple-magnifier://enable-jit?bundle-id=%@", NSBundle.mainBundle.bundleIdentifier]];
-        [UIApplication.sharedApplication openURL:jitURL options:@{} completionHandler:nil];
+        // ★ Task270（★1 回执对齐）：补 openURL 回执取证（NavCtrl:749/RightPanel:1812
+        //   均有 ame185_ok 日志，DownloadVC 三处 completionHandler:nil = 回执丢失，
+        //   历次 JIT 排障时本文件 openURL 结果不可考）。
+        [UIApplication.sharedApplication openURL:jitURL options:@{} completionHandler:^(BOOL ame185_ok) {
+            NSLog(@"[JIT] [DownloadVC] Task185 openURL apple-magnifier:// -> %d", ame185_ok);
+        }];
     } else if (getPrefBool(@"debug.debug_skip_wait_jit")) {
         NSLog(@"Debug option skipped waiting for JIT. Java might not work.");
         handler();
@@ -3867,7 +3872,10 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     } else {
         // Assuming 16.7-17.3.1. SideStore still lacks this URL scheme at the time of writing, so it only jumps to SideStore.
         NSLog(@"[JIT] [DownloadVC] Using sidestore:// for iOS < 17.4");
-        [UIApplication.sharedApplication openURL:[NSURL URLWithString:[NSString stringWithFormat:@"sidestore://sidejit-enable?pid=%d", getpid()]] options:@{} completionHandler:nil];
+        // ★ Task270（★1 回执对齐）：同上。
+        [UIApplication.sharedApplication openURL:[NSURL URLWithString:[NSString stringWithFormat:@"sidestore://sidejit-enable?pid=%d", getpid()]] options:@{} completionHandler:^(BOOL ame185_ok) {
+            NSLog(@"[JIT] [DownloadVC] Task185 openURL sidestore:// -> %d", ame185_ok);
+        }];
     }
     
     // 在内容区显示 JIT 等待提示，替代弹窗
@@ -3944,7 +3952,10 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
         if (scriptData) {
             scriptDataString = [@"&script-data=" stringByAppendingString:[scriptData base64EncodedStringWithOptions:0]];
         }
-        [UIApplication.sharedApplication openURL:[NSURL URLWithString:[NSString stringWithFormat:@"stikjit://enable-jit?bundle-id=%@&pid=%d%@", NSBundle.mainBundle.bundleIdentifier, getpid(), scriptDataString]] options:@{} completionHandler:nil];
+        // ★ Task270（★1 回执对齐）：ame172 重挂链的 stikjit:// 同补回执。
+        [UIApplication.sharedApplication openURL:[NSURL URLWithString:[NSString stringWithFormat:@"stikjit://enable-jit?bundle-id=%@&pid=%d%@", NSBundle.mainBundle.bundleIdentifier, getpid(), scriptDataString]] options:@{} completionHandler:^(BOOL ame172_ok) {
+            NSLog(@"[JIT] [DownloadVC] Task172 openURL stikjit:// -> %d", ame172_ok);
+        }];
         NSLog(@"[JIT] [DownloadVC] Task172 stikjit:// re-attach fired (script=%lu bytes)",
               (unsigned long)scriptData.length);
     };

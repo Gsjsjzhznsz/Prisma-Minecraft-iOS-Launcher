@@ -523,6 +523,8 @@ double ame187_iphoneNotchInset(UIView *view, BOOL isLeading);
 // 建目录点替换调用（含下载与解压落盘路径）。
 // ============================================================================
 BOOL ame188_ensureDirectoryHealed(NSString *path);
+NSString *AMEIconCachePathForURL(NSString *urlString, NSString *subfolder);
+
 
 #ifdef __cplusplus
 }

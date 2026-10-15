@@ -208,7 +208,9 @@ public class PojavLauncher {
         if (System.getProperty("pojav.internal.keepForgeSplash") == null) {
             forgeSplashFile.getParentFile().mkdir();
             if (forgeSplashFile.exists()) {
-                Tools.write(forgeSplashFile.getAbsolutePath(), Tools.read(forgeSplashFile.getAbsolutePath().replace("enabled=true", "enabled=false")));
+                // replace 必须作用在 read() 读出的文件内容上，而非路径字符串（原写法恒 no-op，
+                // 存量 enabled=true 永远关不掉，Forge 二次启动 splash 复活）。
+                Tools.write(forgeSplashFile.getAbsolutePath(), Tools.read(forgeSplashFile.getAbsolutePath()).replace("enabled=true", "enabled=false"));
             } else {
                 Tools.write(forgeSplashFile.getAbsolutePath(), "enabled=false");
             }
@@ -314,9 +316,11 @@ public class PojavLauncher {
         // For Minecraft 1.1 to 1.5: zh_CN (uppercase, lowercase crashes)
         MCOptionUtils.load();
         String minecraftVersion = version.id;
-        if (minecraftVersion.compareTo("1.11") >= 0) {
+        // ame270：数值化版本比较——原 String.compareTo 字典序会把 "1.9"~"1.9.5"
+        // 判成 > "1.11"（老版本误写 zh_cn 小写 → 启动崩溃）。
+        if (Tools.ame270McVersionAtLeast(minecraftVersion, 1, 11)) {
             MCOptionUtils.setDefault("lang", "zh_cn");
-        } else if (minecraftVersion.compareTo("1.1") >= 0) {
+        } else if (Tools.ame270McVersionAtLeast(minecraftVersion, 1, 1)) {
             MCOptionUtils.setDefault("lang", "zh_CN");
         }
         // For Minecraft 1.0 and earlier, no language option

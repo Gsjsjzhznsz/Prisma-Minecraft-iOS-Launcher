@@ -281,7 +281,9 @@ static NSString * const kShaderCardCellIdentifier = @"ShaderCardCell";
 
 - (void)importShaderTapped {
     NSError *dirError = nil;
-    NSString *shadersDir = [[ShaderService sharedService] ensureShadersFolderForProfile:nil error:&dirError];
+    // ★ Task270 P2/M1：导入落点改传本页绑定实例（原传 nil 恒解析默认实例，
+    //   隔离实例导入的光影落错目录，与 :370/:415 同口径）。
+    NSString *shadersDir = [[ShaderService sharedService] ensureShadersFolderForProfile:self.profileName error:&dirError];
     if (!shadersDir) {
         [self showSimpleAlertWithTitle:localize(@"resman.common.cannot_import", nil) message:dirError.localizedDescription ?: localize(@"resman.shaders.dir_not_found", nil)];
         return;
@@ -299,7 +301,8 @@ static NSString * const kShaderCardCellIdentifier = @"ShaderCardCell";
     if (urls.count == 0) return;
 
     NSError *dirError = nil;
-    NSString *shadersDir = [[ShaderService sharedService] ensureShadersFolderForProfile:nil error:&dirError];
+    // ★ Task270 P2/M1：同 importShaderTapped——导入落点改传本页绑定实例。
+    NSString *shadersDir = [[ShaderService sharedService] ensureShadersFolderForProfile:self.profileName error:&dirError];
     if (!shadersDir) {
         [self showSimpleAlertWithTitle:localize(@"resman.common.import_failed", nil) message:dirError.localizedDescription ?: localize(@"resman.shaders.dir_not_found", nil)];
         return;

@@ -1450,8 +1450,16 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
 
     // 关键修复（UI 累积异常）：将块观察者存为属性，dealloc 中移除。
     // 之前返回值未存储，导致每次新建 SurfaceViewController 都泄漏一个观察者 + 强引用 self。
+    // ★ Task270 P0 根修：块内改弱引用。原块强捕 self 与 strong 属性 token 构成
+    //   不可破环（self→token→block→self），dealloc 移除链永不可达 = 整个游戏 VC
+    //   每会话泄漏（玻璃闸复位/TouchController 销毁等 dealloc 清理全为死代码，
+    //   死实例的 GC/手柄观察者还会与活实例竞跑输入回调）。isGrabbing/
+    //   virtualMouseEnabled 为 environ.h 全局变量，块内读写不捕获 self，无需转移。
+    __weak typeof(self) weakSelf = self;
     self.mousePointerUpdatedCallback = [[NSNotificationCenter defaultCenter] addObserverForName:@"MousePointerUpdated" object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
-        [self reloadMousePointerImage];
+        __strong typeof(self) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        [strongSelf reloadMousePointerImage];
     }];
 
     self.inputTextField = [[TrackedTextField alloc] initWithFrame:CGRectMake(0, -32.0, self.view.frame.size.width, 30.0)];
@@ -1499,33 +1507,45 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
     self.swipeableButtons = [[NSMutableArray alloc] init];
 
     [KeyboardInput initKeycodeTable];
+    // Task270 P0：同上，块内弱引用化（死实例不再响应硬件连接通知）。
     self.mouseConnectCallback = [[NSNotificationCenter defaultCenter] addObserverForName:GCMouseDidConnectNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
+        __strong typeof(self) strongSelf = weakSelf;
+        if (!strongSelf) return;
         GCMouse* mouse = note.object;
-        [self registerMouseCallbacks:mouse];
-        self.mousePointerView.hidden = isGrabbing || !virtualMouseEnabled;
-        [self setNeedsUpdateOfPrefersPointerLocked];
+        [strongSelf registerMouseCallbacks:mouse];
+        strongSelf.mousePointerView.hidden = isGrabbing || !virtualMouseEnabled;
+        [strongSelf setNeedsUpdateOfPrefersPointerLocked];
     }];
+    // Task270 P0：同上，块内弱引用化（mouse 对象级 handler 清理实例无关，保留）。
     self.mouseDisconnectCallback = [[NSNotificationCenter defaultCenter] addObserverForName:GCMouseDidDisconnectNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
         GCMouse* mouse = note.object;
         mouse.mouseInput.mouseMovedHandler = nil;
         [mouse.mouseInput.auxiliaryButtons makeObjectsPerformSelector:@selector(setPressedChangedHandler:) withObject:nil];
-        [self setNeedsUpdateOfPrefersPointerLocked];
-        if (getPrefBool(@"controll.hardware_hide") && ![self ame139_modControlsHidden]) { self.ctrlView.hidden = NO; }
+        __strong typeof(self) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        [strongSelf setNeedsUpdateOfPrefersPointerLocked];
+        if (getPrefBool(@"controll.hardware_hide") && ![strongSelf ame139_modControlsHidden]) { strongSelf.ctrlView.hidden = NO; }
     }];
     if (GCMouse.current != nil) { [self registerMouseCallbacks:GCMouse.current]; }
 
+    // Task270 P0：同上，块内弱引用化（virtualMouseEnabled 为全局变量直接写）。
     self.controllerConnectCallback = [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidConnectNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
+        __strong typeof(self) strongSelf = weakSelf;
+        if (!strongSelf) return;
         GCController* controller = note.object;
         [ControllerInput initKeycodeTable];
         [ControllerInput registerControllerCallbacks:controller];
-        self.mousePointerView.hidden = isGrabbing;
+        strongSelf.mousePointerView.hidden = isGrabbing;
         virtualMouseEnabled = YES;
-        if (getPrefBool(@"control.hardware_hide")) { self.ctrlView.hidden = YES; }
+        if (getPrefBool(@"control.hardware_hide")) { strongSelf.ctrlView.hidden = YES; }
     }];
+    // Task270 P0：同上，块内弱引用化。
     self.controllerDisconnectCallback = [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidDisconnectNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
+        __strong typeof(self) strongSelf = weakSelf;
+        if (!strongSelf) return;
         GCController* controller = note.object;
         [ControllerInput unregisterControllerCallbacks:controller];
-        if (getPrefBool(@"control.hardware_hide") && ![self ame139_modControlsHidden]) { self.ctrlView.hidden = NO; }
+        if (getPrefBool(@"control.hardware_hide") && ![strongSelf ame139_modControlsHidden]) { strongSelf.ctrlView.hidden = NO; }
     }];
     if (GCController.controllers.count == 1) {
         [ControllerInput initKeycodeTable];
@@ -2451,11 +2471,19 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 
     // ★ Task222（清单第 16 项）：阶段轮转定时器（0.5s 周期：阶段判定 +
     //   耗时刷新 + 微光动画延迟挂载——首帧 layout 完成后 track 才有宽度）
-    self.launchStageTimer = [NSTimer scheduledTimerWithTimeInterval:0.5
-                                                             target:self
-                                                           selector:@selector(updateLaunchStage)
-                                                           userInfo:nil
-                                                            repeats:YES];
+    // ★ Task270 P1：target:self 式定时器被 runloop 强持 → timer→self 保留环，
+    //   dealloc 内 invalidate 永不可达（JVM 崩溃/被杀未走首帧/错误两路失效点时
+    //   死 VC 每 0.5s 空转）。改 block+weakSelf，dealloc 可达后统一 invalidate，
+    //   weakSelf 归 nil 时 timer 自行失效兜底。
+    __weak typeof(self) launchStageWeakSelf = self;
+    self.launchStageTimer = [NSTimer timerWithTimeInterval:0.5
+                                                   repeats:YES
+                                                     block:^(NSTimer *timer) {
+        __strong typeof(self) strongSelf = launchStageWeakSelf;
+        if (!strongSelf) { [timer invalidate]; return; }
+        [strongSelf updateLaunchStage];
+    }];
+    [[NSRunLoop mainRunLoop] addTimer:self.launchStageTimer forMode:NSRunLoopCommonModes];
 
     // Task172：SDL 文本输入路由（sdl3_hook.m 的 Start/StopTextInput 钩子派发）。
     // MC 26.3 EditBox 聚焦时 SDL UIKit 自己的 textField 会抢走 first responder
@@ -3496,12 +3524,17 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 
 - (void)registerMouseCallbacks:(GCMouse *)mouse {
     NSLog(@"Input: Got mouse %@", mouse);
+    // Task270 P0：movedHandler 强捕 self 与 GCMouse 持有链（mouse→handler→self）
+    // 构成保留环——VC 退役后只要鼠标不断开就永不释放。改弱引用，死实例静默。
+    __weak typeof(self) weakSelf = self;
     mouse.mouseInput.mouseMovedHandler = ^(GCMouseInput * _Nonnull mouse, float deltaX, float deltaY) {
         // Always forward mouse movement to the game.
         // When pointer is locked (in-game grabbing), deltaX/deltaY are true deltas.
         // When pointer is NOT locked (menu, or Bluetooth mouse before lock activates),
         // we still send the delta so the virtual mouse or cursor can move.
-        [self sendTouchPoint:CGPointMake(deltaX, -deltaY) withEvent:ACTION_MOVE_MOTION];
+        __strong typeof(self) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        [strongSelf sendTouchPoint:CGPointMake(deltaX, -deltaY) withEvent:ACTION_MOVE_MOTION];
     };
 
     mouse.mouseInput.leftButton.pressedChangedHandler = ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed) {
@@ -4826,6 +4859,11 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
     // 停止 FPS/内存采样定时器与渲染循环
     [self.statsTimer invalidate];
     self.statsTimer = nil;
+    // ★ Task270 P1：launchStageTimer 补入 dealloc 清理链（原仅首帧/错误两路
+    //   失效，JVM 崩溃路径漏清——block+weakSelf 改造后 dealloc 可达，此处
+    //   成为确定性终结点）。
+    [self.launchStageTimer invalidate];
+    self.launchStageTimer = nil;
     [self.statsDisplayLink invalidate];
     self.statsDisplayLink = nil;
     self.statsDisplayLinkTarget = nil;  // 释放 CADisplayLink target

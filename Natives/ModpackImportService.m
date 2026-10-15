@@ -3141,8 +3141,25 @@ static BOOL ame269_sMigrationRunning = NO;
         // 账本：迁移动作可追溯（供设置页/排障读取；全部 plist 安全类型）
         NSArray *prevLedger = [[NSUserDefaults standardUserDefaults] arrayForKey:@"ame269_migration_ledger"];
         NSMutableArray *ledger = prevLedger.mutableCopy ?: [NSMutableArray array];
+        // Task270 (M9-1)：追加 canonical 与各 dup 的 lastVersionId 差异记录。
+        // lastVersionId 由 loader+MC 版本拼成（fabric-loader-<v>-<mc> / forge-<mc>-<v> 等），
+        // 能同时暴露"新 loader 在 dup"场景；dup 与 canonical 相同则不记。
+        // 仅记录供排障，不改变迁移决策（抬升方案明确不做）。
+        NSMutableArray *ame270_versionDiffs = [NSMutableArray array];
+        for (NSDictionary *plan in plans) {
+            NSString *ame270_canonVer = profiles[plan[@"canonical"]][@"lastVersionId"];
+            for (NSString *ame270_dup in plan[@"merged"]) {
+                NSString *ame270_dupVer = profiles[ame270_dup][@"lastVersionId"];
+                if (ame270_canonVer.length == 0 || ame270_dupVer.length == 0) continue;
+                if ([ame270_dupVer isEqualToString:ame270_canonVer]) continue;
+                [ame270_versionDiffs addObject:@{ @"dupName": ame270_dup,
+                                                  @"dupLastVersionId": ame270_dupVer,
+                                                  @"canonicalLastVersionId": ame270_canonVer }];
+            }
+        }
         [ledger addObject:@{ @"ts": @([[NSDate date] timeIntervalSince1970]),
-                             @"plans": plans }];
+                             @"plans": plans,
+                             @"lastVersionIdDiffs": ame270_versionDiffs }];
         [[NSUserDefaults standardUserDefaults] setObject:ledger forKey:@"ame269_migration_ledger"];
         NSLog(@"[Ame269] migration done: %lu plan(s), ledger entries=%lu", (unsigned long)plans.count, (unsigned long)ledger.count);
     });
