@@ -1091,8 +1091,9 @@ static NSString *ame274_readFileTail(NSString *path, NSUInteger maxBytes) {
         [fh closeFile];
         if (logData.length == 0) return nil;
         NSString *s = [[NSString alloc] initWithData:logData encoding:NSUTF8StringEncoding];
-        if (!s) s = [[NSString alloc] initWithData:logData encoding:NSUTF8StringEncoding
-                              allowLossyConversion:YES];
+        // Task274-r1: NSString 无 initWithData:encoding:allowLossyConversion:（CI 实编译抓出）；
+        // 恒不失败的换码回退用 NSISOLatin1StringEncoding（单字节全映射，永不返回 nil）。
+        if (!s) s = [[NSString alloc] initWithData:logData encoding:NSISOLatin1StringEncoding];
         return s;
     } @catch (NSException *ame274_e) {
         [fh closeFile];
