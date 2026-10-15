@@ -127,6 +127,18 @@ extern BOOL Amethyst_EnforceSDL3Presentation(void);
         [WelcomeViewController presentIfNeededFromViewController:rootVC];
     });
 
+    // ★ Task273（PCL CE 式崩溃分析第二层）：上次会话非零退出的崩溃原因
+    //   报告补弹——ame273_writeCrashReport 在闪退前已同步落盘
+    //   ame273_crash_report.txt（确定性层），此处冷启动检出后玻璃弹窗
+    //   给出崩溃类别/关键原因/修复建议/详情（main_hook 会话内让路窗口
+    //   未能展示 PLCrashView 时的必达兜底；消费后归档不重复打扰）。
+    //   延迟 2.5s：避开欢迎向导 0.8s 呈现窗口 + 主界面首帧布局（方法内
+    //   另有沿链上溯，双保险）。
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.5 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        [self ame273_presentPendingCrashReportFrom:rootVC];
+    });
+
     // 外观模式（浅色/深色/跟随系统）：读 general.ui_theme 偏好。
     //   light  -> UIUserInterfaceStyleLight
     //   dark   -> UIUserInterfaceStyleDark（Task160 前的历史默认）
@@ -518,6 +530,108 @@ static void AmeFGLogSwapStats(NSString *phase) {
     dispatch_async(dispatch_get_main_queue(), ^{
         [weakSelf ame189_applyLandscapeWindowTransform];
     });
+}
+
+#pragma mark - Task273：PCL CE 式崩溃分析下次启动补弹
+
+/// 读取 $POJAV_HOME/ame273_crash_report.txt（上次会话非零退出的崩溃原因，
+/// 由 main_hook ame273_writeCrashReport 在 hooked_exit 内同步落盘）→ 弹窗
+/// 展示"崩溃类别 + 关键原因行 + Fabric 修复建议 + 详情摘要"，动作：
+/// 复制原因 / 查看完整日志 / 知道了。呈现前即归档（改名 .last.txt），
+/// 呈现失败不重弹（用户可从完整日志自查；防无限打扰）。
+- (void)ame273_presentPendingCrashReportFrom:(UIViewController *)presenter {
+    @try {
+        if (presenter == nil) return;
+        NSString *home = [NSProcessInfo processInfo].environment[@"POJAV_HOME"];
+        if (home.length == 0) return;
+        NSString *path = [home stringByAppendingPathComponent:@"ame273_crash_report.txt"];
+        NSString *content = [NSString stringWithContentsOfFile:path
+                                                      encoding:NSUTF8StringEncoding error:nil];
+        if (content.length == 0) return;
+
+        // ---- 解析 key: value + detail 块 ----
+        NSString *exitCode = nil, *catCn = nil, *catEn = nil, *headline = nil, *fix = nil;
+        NSMutableArray<NSString *> *details = [NSMutableArray array];
+        BOOL inDetail = NO;
+        for (NSString *raw in [content componentsSeparatedByString:@"\n"]) {
+            NSString *line = raw;
+            while (line.length > 0 && ([line hasSuffix:@"\r"] || [line hasSuffix:@" "])) {
+                line = [line substringToIndex:line.length - 1];
+            }
+            if ([line isEqualToString:@"detail_begin"]) { inDetail = YES; continue; }
+            if ([line isEqualToString:@"detail_end"]) { inDetail = NO; continue; }
+            if (inDetail) { if (line.length > 0) [details addObject:line]; continue; }
+            NSRange eq = [line rangeOfString:@": "];
+            if (eq.location == NSNotFound || eq.location == 0) continue;
+            NSString *k = [line substringToIndex:eq.location];
+            NSString *v = [line substringFromIndex:NSMaxRange(eq)];
+            if ([k isEqualToString:@"exit_code"]) exitCode = v;
+            else if ([k isEqualToString:@"category_cn"]) catCn = v;
+            else if ([k isEqualToString:@"category_en"]) catEn = v;
+            else if ([k isEqualToString:@"headline"]) headline = v;
+            else if ([k isEqualToString:@"fix"]) fix = v;
+        }
+
+        // ---- 呈现前即归档（防重复打扰；完整报告仍可经复制按钮获取） ----
+        NSString *archive = [home stringByAppendingPathComponent:@"ame273_crash_report.last.txt"];
+        [[NSFileManager defaultManager] removeItemAtPath:archive error:nil];
+        [[NSFileManager defaultManager] moveItemAtPath:path toPath:archive error:nil];
+
+        // ---- 组装弹窗文案 ----
+        BOOL ame273_isZh = [[NSLocale preferredLanguages].firstObject.lowercaseString hasPrefix:@"zh"];
+        NSString *ame273_cat = ame273_isZh ? (catCn ?: catEn) : (catEn ?: catCn);
+        NSMutableString *msg = [NSMutableString string];
+        [msg appendFormat:@"[%@] exit %@\n\n", ame273_cat ?: @"?", exitCode ?: @"?"];
+        if (headline.length > 0) [msg appendString:[headline stringByAppendingString:@"\n"]];
+        if (fix.length > 0) [msg appendFormat:@"\n%@\n", fix];
+        NSUInteger ame273_detailMax = 10;
+        if (details.count > 0) {
+            [msg appendString:@"\n"];
+            for (NSUInteger i = 0; i < details.count && i < ame273_detailMax; i++) {
+                NSString *d = details[i];
+                if (d.length > 160) d = [[d substringToIndex:160] stringByAppendingString:@"…"];
+                [msg appendFormat:@"%@\n", d];
+            }
+            if (details.count > ame273_detailMax) {
+                [msg appendFormat:@"… (+%lu)\n", (unsigned long)(details.count - ame273_detailMax)];
+            }
+        }
+
+        UIAlertController *ame273_alert = [UIAlertController
+            alertControllerWithTitle:localize(@"ame273.crash.title", nil)
+                             message:msg
+                      preferredStyle:UIAlertControllerStyleAlert];
+        [ame273_alert addAction:[UIAlertAction actionWithTitle:localize(@"ame273.crash.copy_reason", nil)
+            style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+            [UIPasteboard generalPasteboard].string = content;
+            NSLog(@"[SceneDelegate] Task273: crash reason copied to pasteboard (%lu chars)", (unsigned long)content.length);
+        }]];
+        [ame273_alert addAction:[UIAlertAction actionWithTitle:localize(@"ame273.crash.view_full_log", nil)
+            style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+            NSString *logPath = [home stringByAppendingPathComponent:@"latestlog.txt"];
+            UIActivityViewController *ame273_share = [[UIActivityViewController alloc]
+                initWithActivityItems:@[logPath, [NSURL fileURLWithPath:logPath]]
+                                applicationActivities:nil];
+            ame273_share.popoverPresentationController.sourceView = presenter.view;
+            ame273_share.popoverPresentationController.sourceRect =
+                CGRectMake(presenter.view.bounds.size.width / 2.0,
+                           presenter.view.bounds.size.height / 2.0, 1, 1);
+            [presenter presentViewController:ame273_share animated:YES completion:nil];
+        }]];
+        [ame273_alert addAction:[UIAlertAction actionWithTitle:localize(@"OK", nil)
+            style:UIAlertActionStyleCancel handler:nil]];
+
+        // 呈现宿主沿链上溯（欢迎向导/其他弹层在顶时也能落位）
+        UIViewController *ame273_host = presenter;
+        while (ame273_host.presentedViewController != nil) {
+            ame273_host = ame273_host.presentedViewController;
+        }
+        [ame273_host presentViewController:ame273_alert animated:YES completion:nil];
+        NSLog(@"[SceneDelegate] Task273: pending crash report surfaced (category=%@ exit=%@ details=%lu) -- consumed+archived",
+              (catCn ?: catEn), exitCode, (unsigned long)details.count);
+    } @catch (NSException *ame273_e) {
+        NSLog(@"[SceneDelegate] Task273: pending crash report presentation failed: %@", ame273_e);
+    }
 }
 
 @end

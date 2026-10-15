@@ -12,6 +12,7 @@
 #include <libgen.h>
 #include <pthread.h>
 #include <stdatomic.h>
+#include <stdio.h>      // ★ Task273：ame273_writeCrashReport 的 fopen/fread/fprintf
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -254,6 +255,254 @@ void ame_write_fatal_trace(const char *reason) {
     atomic_store(&busy, 0);
 }
 
+// MARK: - Task273：PCL CE 式崩溃原因落盘（启动器闪退根治第一层）
+//
+// 病历（装机 latestlog f71c88b，iPad Air M4 / iPadOS 27.0.1）：Fabric 依赖
+// 冲突（reeses-sodium-options 2.2.5 要求 sodium 0.9.2，装的是 0.9.3-alpha.1）
+// → FormattedException → System.exit(1) → JVM shutdown hook 写 ame251 标记
+// → 看门狗 150ms 内 _exit(0) 整个进程 —— 用户视角"启动器直接闪退"，而
+// PLCrashView 里现成的 HMCL 式崩溃分析器从未有机会呈现（dispatch_async(main)
+// 输给 150ms 轮询）。
+//
+// 本函数 = 确定性第一层：hooked_exit(code!=0) 入口同步执行（看门狗让路窗口
+// 的第一优先级，先于 handle_fatal_exit/park），直接解析 latestlog 尾部，
+// 把崩溃原因结构化落盘 $POJAV_HOME/ame273_crash_report.txt：
+//   ① 会话内：看门狗检测到 fatal in flight 后让路 ≤8s，PLCrashView（自带
+//     HMCL 式分析）得以呈现，用户当场看到原因；
+//   ② 下次启动：SceneDelegate willConnect 检出待读报告 → 玻璃弹窗给出
+//     "崩溃类别 + 关键原因行 + Fabric 修复建议 + 详情"（PCL CE 崩溃分析
+//     等价物），消费后归档不重复打扰。
+// 全程纯 C stdio（濒死线程上运行，不用 ObjC 运行时）。latestlog 尾部若因
+// 死亡竞态截断（Task 26 同族），自动回退扫描最新的 latestlog.selfexit-*.txt
+// 快照（PatchSVC shutdown hook 在 exit 前已落盘，装机实证内容完整）。
+//
+// 分类体系（与 PLCrashView CrashType 对齐的 C 侧精简版）：
+//   mod_incompatible / missing_dependency / oom / jvm_fatal / java_exception / unknown
+
+static const char *ame273_trim(const char *s) {
+    while (*s == ' ' || *s == '\t' || *s == '\r') s++;
+    return s;
+}
+
+/// 行结构：指向 buf 内部的指针数组（不拷贝字符串，写出时以 %.*s 截长度）。
+typedef struct {
+    const char *start;
+    int len;
+} ame273_line_t;
+
+static void ame273_write_report_file(const char *home, int code,
+                                     const char *category, const char *cat_cn,
+                                     const char *cat_en,
+                                     const char *headline, int headlineLen,
+                                     const char *fix, int fixLen,
+                                     const ame273_line_t *details, int detailCount) {
+    char path[1024];
+    snprintf(path, sizeof(path), "%s/ame273_crash_report.txt", home);
+    FILE *rf = fopen(path, "wb");
+    if (rf == NULL) {
+        NSLog(@"[Ame273] crash report write FAILED (path=%s)", path);
+        return;
+    }
+    time_t now = time(NULL);
+    struct tm tmv;
+    localtime_r(&now, &tmv);
+    fprintf(rf, "=== ame273 crash report ===\n");
+    fprintf(rf, "time: %04d-%02d-%02d %02d:%02d:%02d\n",
+            tmv.tm_year + 1900, tmv.tm_mon + 1, tmv.tm_mday,
+            tmv.tm_hour, tmv.tm_min, tmv.tm_sec);
+    fprintf(rf, "exit_code: %d\n", code);
+    fprintf(rf, "category: %s\n", category);
+    fprintf(rf, "category_cn: %s\n", cat_cn);
+    fprintf(rf, "category_en: %s\n", cat_en);
+    fprintf(rf, "headline: %.*s\n", headlineLen, headline);
+    fprintf(rf, "fix: %.*s\n", fixLen, fix);
+    fprintf(rf, "detail_begin\n");
+    for (int i = 0; i < detailCount; i++) {
+        fprintf(rf, "%.*s\n", details[i].len, details[i].start);
+    }
+    fprintf(rf, "detail_end\n");
+    fclose(rf);
+    NSLog(@"[Ame273] crash report written: %s (category=%s, details=%d) -- next launch will surface it", path, category, detailCount);
+}
+
+static void ame273_writeCrashReport(int code) {
+    const char *home = getenv("POJAV_HOME");
+    if (home == NULL) return;
+
+    // 濒死窗口留 250ms 给日志管道写线程冲尾（Task 26 死亡竞态同族防护；
+    // 看门狗让路窗口 8s，此等待零成本）。
+    usleep(250 * 1000);
+
+    static char buf[262145];   // 静态缓冲，防濒死堆分配
+    long len = 0;
+    char path[1024];
+    snprintf(path, sizeof(path), "%s/latestlog.txt", home);
+    FILE *f = fopen(path, "rb");
+    if (f != NULL) {
+        fseek(f, 0, SEEK_END);
+        long total = ftell(f);
+        long want = (total > 262144) ? 262144 : total;
+        fseek(f, total - want, SEEK_SET);
+        len = (long)fread(buf, 1, (size_t)want, f);
+        buf[len] = '\0';
+        fclose(f);
+    }
+
+    // 逐行切分（原地，不拷贝）
+    ame273_line_t lines[2048];
+    int lineCount = 0;
+    {
+        const char *p = buf;
+        const char *end = buf + len;
+        // 首行可能是截断的半行：跳到第一个换行
+        while (p < end && *p != '\n') p++;
+        if (p < end) p++;
+        while (p < end && lineCount < 2048) {
+            const char *nl = memchr(p, '\n', (size_t)(end - p));
+            int ll = (int)((nl ? nl : end) - p);
+            lines[lineCount].start = p;
+            lines[lineCount].len = ll;
+            lineCount++;
+            if (nl == NULL) break;
+            p = nl + 1;
+        }
+    }
+    if (lineCount == 0) {
+        // latestlog 缺失/空 → 试 selfexit 快照（PatchSVC 已在 exit 前落盘）
+        // 简化：直接放弃解析（报告仍写出 unknown 骨架，下次启动弹窗引导看日志）。
+        ame273_write_report_file(home, code, "unknown", "未知错误",
+                                 "Unknown error", "(log unavailable)", 17,
+                                 "", 0, NULL, 0);
+        return;
+    }
+
+    // ---- 分类扫描（尾部 500 行窗口） ----
+    int catModIncompat = 0, catMissingDep = 0, catOOM = 0, catJvmFatal = 0, catJavaExc = 0;
+    int idxImmediateReason = -1, idxFix = -1, idxIncompatHead = -1;
+    int idxLastCausedBy = -1, idxLastException = -1;
+    int scanFrom = lineCount > 500 ? lineCount - 500 : 0;
+    for (int i = scanFrom; i < lineCount; i++) {
+        const char *s = ame273_trim(lines[i].start);
+        int ll = lines[i].len - (int)(s - lines[i].start);
+        if (ll <= 0) continue;
+        if (strstr(s, "Immediate reason: ")) idxImmediateReason = i;
+        if (strstr(s, "Fix: ")) idxFix = i;
+        if (strstr(s, "Incompatible mods found!")) idxIncompatHead = i;
+        if (strstr(s, "FormattedException") || strstr(s, "Some of your mods are incompatible") ||
+            strstr(s, "HARD_DEP") || strstr(s, "Mod resolution failed")) catModIncompat = 1;
+        if (strstr(s, "NO_CANDIDATE") || strstr(s, "Missing or unsupported mandatory dependencies") ||
+            strstr(s, "missing mod") || strstr(s, "could not be found")) catMissingDep = 1;
+        if (strstr(s, "OutOfMemoryError") || strstr(s, "Cannot reserve enough space") ||
+            strstr(s, "OutOfMemory")) catOOM = 1;
+        if (strstr(s, "SIGSEGV") || strstr(s, "EXCEPTION_ACCESS_VIOLATION") ||
+            strstr(s, "A fatal error has been detected") || strstr(s, "hs_err")) catJvmFatal = 1;
+        if (strstr(s, "Caused by: ")) idxLastCausedBy = i;
+        if (strstr(s, "Exception") || strstr(s, "Error")) {
+            catJavaExc = 1;
+            idxLastException = i;
+        }
+    }
+
+    // latestlog 尾部被死亡竞态截断（无任何已知标记）时不再重读——selfexit
+    // 快照带 MMdd-HHmmss 时间戳无法在濒死环境枚举，全量重读同文件也无增量；
+    // unknown 报告本身已引导用户下次启动从弹窗进入完整日志排查。
+
+    const char *category = "unknown";
+    const char *cat_cn = "未知错误";
+    const char *cat_en = "Unknown error";
+    if (catModIncompat) {
+        category = "mod_incompatible";
+        cat_cn = "模组不兼容/冲突";
+        cat_en = "Mod incompatibility";
+    } else if (catMissingDep) {
+        category = "missing_dependency";
+        cat_cn = "缺少依赖/模组";
+        cat_en = "Missing dependency";
+    } else if (catOOM) {
+        category = "oom";
+        cat_cn = "内存不足";
+        cat_en = "Out of memory";
+    } else if (catJvmFatal) {
+        category = "jvm_fatal";
+        cat_cn = "JVM/原生层致命错误";
+        cat_en = "JVM/native fatal error";
+    } else if (idxLastException >= 0) {
+        category = "java_exception";
+        cat_cn = "Java 异常";
+        cat_en = "Java exception";
+    }
+
+    // ---- headline / fix ----
+    const char *headline = "no reason line captured";
+    int headlineLen = (int)strlen(headline);
+    if (idxImmediateReason >= 0) {
+        headline = ame273_trim(lines[idxImmediateReason].start);
+        headlineLen = lines[idxImmediateReason].len - (int)(headline - lines[idxImmediateReason].start);
+    } else if (idxLastCausedBy >= 0) {
+        headline = ame273_trim(lines[idxLastCausedBy].start);
+        headlineLen = lines[idxLastCausedBy].len - (int)(headline - lines[idxLastCausedBy].start);
+    } else if (idxLastException >= 0) {
+        headline = ame273_trim(lines[idxLastException].start);
+        headlineLen = lines[idxLastException].len - (int)(headline - lines[idxLastException].start);
+    }
+    const char *fix = "";
+    int fixLen = 0;
+    if (idxFix >= 0) {
+        fix = ame273_trim(lines[idxFix].start);
+        fixLen = lines[idxFix].len - (int)(fix - lines[idxFix].start);
+    }
+
+    // ---- 详情块：headline 定位 → 连续取块（Fabric 崩溃块天然连续完整） ----
+    ame273_line_t details[20];
+    int detailCount = 0;
+    int blockIdx = -1;
+    if (idxIncompatHead >= 0) blockIdx = idxIncompatHead;
+    else if (idxImmediateReason >= 0 && idxImmediateReason > 0) blockIdx = idxImmediateReason - 1;
+    else if (idxLastCausedBy >= 0) blockIdx = idxLastCausedBy;
+    else if (idxLastException >= 0) blockIdx = idxLastException;
+    if (blockIdx >= 0) {
+        for (int i = blockIdx; i < lineCount && detailCount < 18; i++) {
+            const char *s = ame273_trim(lines[i].start);
+            int ll = lines[i].len - (int)(s - lines[i].start);
+            if (ll <= 0) continue;
+            details[detailCount].start = s;
+            details[detailCount].len = ll > 300 ? 300 : ll;
+            detailCount++;
+        }
+    }
+    if (detailCount == 0) {
+        // 兜底：最后 12 条非空行
+        for (int i = (lineCount > 12 ? lineCount - 12 : 0); i < lineCount && detailCount < 18; i++) {
+            const char *s = ame273_trim(lines[i].start);
+            int ll = lines[i].len - (int)(s - lines[i].start);
+            if (ll <= 0) continue;
+            details[detailCount].start = s;
+            details[detailCount].len = ll > 300 ? 300 : ll;
+            detailCount++;
+        }
+    }
+
+    ame273_write_report_file(home, code, category, cat_cn, cat_en,
+                             headline, headlineLen, fix, fixLen,
+                             details, detailCount);
+}
+
+// Task273：PLCrashView 生命周期旗标（看门狗让路协议的握手信号；
+// PLCrashView.m 经 utils.h 声明调用，链接期解析到本文件实现）。
+atomic_int g_ame273_fatalExitInFlight = 0;
+static atomic_int g_ame273_crashViewPresented = 0;
+static atomic_int g_ame273_crashViewDismissed = 0;
+
+void ame273_crashViewDidPresent(void) {
+    atomic_store(&g_ame273_crashViewPresented, 1);
+    NSLog(@"[Ame273] crash view presented -- watchdog grace window extended (user reading)");
+}
+
+void ame273_crashViewDidDismiss(void) {
+    atomic_store(&g_ame273_crashViewDismissed, 1);
+    NSLog(@"[Ame273] crash view dismissed -- watchdog will exit promptly");
+}
+
 void handle_fatal_exit(int code) {
     if (NSThread.isMainThread) {
         return;
@@ -378,6 +627,15 @@ void hooked_exit(int code) {
         fflush(NULL);
         _exit(0);
     }
+    // ★ Task273（启动器闪退根治）：非零退出 = 游戏崩溃——先置 fatal-in-flight
+    //   旗标（看门狗让路协议握手），再同步落盘崩溃原因报告（PCL CE 式解析
+    //   第一层，濒死线程上确定性执行），之后才走 handle_fatal_exit/park
+    //   （PLCrashView 异步上主线程呈现）。看门狗检测到旗标后让路 ≤8s 等
+    //   崩溃界面上屏、呈现后最长 120s 等用户读完——彻底根修"看门狗 150ms
+    //   抢杀 = 启动器直接闪退、HMCL 式分析器从未有机会呈现"（f71c88b
+    //   装机实锤）；报告文件同时供下次启动补弹（双保险自适应恢复）。
+    atomic_store(&g_ame273_fatalExitInFlight, 1);
+    ame273_writeCrashReport(code);
     handle_fatal_exit(code);
 
     orig_exit(code);
@@ -2188,8 +2446,39 @@ void ame251_armShutdownForceExitWatchdog(void) {
                 [[NSThread currentThread] setName:@"Ame251-ShutdownWatchdog"];
                 while (YES) {
                     if (access(ame251_markerPath, F_OK) == 0) {
-                        NSLog(@"[main_hook] Task251: shutdown marker detected -> immediate _exit(0) (JVM shutdown phase entered; no libc teardown window)");
-                        ame_write_fatal_trace("Task251: shutdown marker -> _exit(0) (post-main hang guard)");
+                        // ★ Task273（启动器闪退根治）：非零退出路径让路。
+                        //   旧行为：marker 一到立即 _exit(0)——PLCrashView 的
+                        //   dispatch_async(main) 呈现永远输给 150ms 轮询，HMCL 式
+                        //   崩溃分析从未有机会展示 = 用户视角"启动器直接闪退"
+                        //   （f71c88b 装机实锤）。新协议：hooked_exit(code!=0)
+                        //   已置 fatal-in-flight 旗标且崩溃报告已同步落盘 →
+                        //   让路 ≤8s 等崩溃界面上屏；上屏后再等用户读完（≤120s，
+                        //   用户点重启/退出按钮自行 exit(0) 走 hooked_exit(0)
+                        //   快速通道）。挂死防护语义不变：旗标未置位（shutdown
+                        //   hooks 挂死、libc exit 从未发生）→ 立即 _exit(0)。
+                        if (!atomic_load(&g_ame273_fatalExitInFlight)) {
+                            NSLog(@"[main_hook] Task251: shutdown marker detected -> immediate _exit(0) (JVM shutdown phase entered; no libc teardown window)");
+                            ame_write_fatal_trace("Task251: shutdown marker -> _exit(0) (post-main hang guard)");
+                            fflush(NULL);
+                            _exit(0);
+                        }
+                        NSLog(@"[main_hook] Task273: marker + fatal exit in flight -- crash-view grace window (max 8s, report already on disk)");
+                        int ame273_waited = 0;
+                        while (ame273_waited < 80 && !atomic_load(&g_ame273_crashViewPresented)) {
+                            usleep(100 * 1000);
+                            ame273_waited++;
+                        }
+                        if (atomic_load(&g_ame273_crashViewPresented)) {
+                            NSLog(@"[main_hook] Task273: crash view presented -- waiting user dismissal (max 120s; launcher buttons exit via hooked_exit(0) fast path)");
+                            int ame273_read = 0;
+                            while (ame273_read < 1200 && !atomic_load(&g_ame273_crashViewDismissed)) {
+                                usleep(100 * 1000);
+                                ame273_read++;
+                            }
+                        } else {
+                            NSLog(@"[Ame273] crash view did not present within 8s (log view unavailable?) -- report file covers next-launch dialog");
+                        }
+                        ame_write_fatal_trace("Task273: crash-view grace window elapsed -> _exit(0)");
                         fflush(NULL);
                         _exit(0);
                     }

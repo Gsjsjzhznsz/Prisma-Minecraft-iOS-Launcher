@@ -3129,3 +3129,8 @@
 "cleanup.orphan_confirm" = "¿Eliminar la versión sin referencia \\\"%@\\\" y su carpeta de datos aislados? (la carpeta game aislada por Task242 se elimina con ella; las partidas no se conservan)";
 "jvm.preset.title" = "Preajuste de la JVM";
 "jvm.preset.custom_args" = "Argumentos personalizados de la JVM";
+
+// Task273: PCL CE-style crash analysis next-launch dialog
+"ame273.crash.title" = "La partida anterior terminó inesperadamente";
+"ame273.crash.copy_reason" = "Copiar la causa";
+"ame273.crash.view_full_log" = "Ver registro completo";

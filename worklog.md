@@ -3366,3 +3366,20 @@ Work Log:
 
 Stage Summary:
 - 装机验证锚点：①启动日志 [Ame271] self-heal: profile ... re-isolated（fabric-loader-* 模组列表回隔离）②版本设置切隔离→模组管理回页徽标即时更新③伪玻璃档 55 项语言选择器/80 项版本筛选可流畅滚动④English 下安装进度/下载中心阶段标题全英文⑤AI 助手英文界面零中文⑥八大语言设置页全量无缺键回落
+
+---
+Task ID: 273
+Agent: main (Super Z)
+Task: 用户 trace 1a140381429ce145 双病灶根修——①"还是无法切换回隔离"（装机 latestlog f71c88b 实锤：版本隔离选择器系统菜单动作内再呈现子菜单被 UIKit 静默丢弃，route 日志 10 连发零呈现）②"依赖问题启动器直接闪退，而不是像 PCL CE 提供明确的崩溃原因"（FormatttedException→exit(1)→Ame251 看门狗 150ms 抢杀整个 App，PLCrashView 的 HMCL 式崩溃分析器从未有机会呈现）
+
+Work Log:
+- 双病灶 latestlog 全链取证闭环：①L98-103 版本隔离玻璃菜单 #2(2 actions=切共享搬回询问)/#3(1 action=汇总)切共享成功→L105-134 十连发 Task245 system menu route 零后续状态变化=子菜单静默丢弃实锤（ame245_presentViaSystemMenu 同锚点同 UIContextMenuInteraction 上一会话收尾窗口内 presentMenu 被 UIKit 吞掉，无异常无回调）；②L783-822 Fabric 依赖冲突（reeses-sodium-options 2.2.5 硬依赖 sodium 0.9.2+mc26.3，实装 0.9.3-alpha.1，包内容错非装错）→FabricGuiEntry fork java 失败（iOS 无 bin/java）→System.exit(1)→PatchSVC shutdown hook 写 ame251 marker（L820 先于 hooked_exit L821）→看门狗 150ms 轮询 _exit(0) 整进程=闪退，PLCrashView showWithExitCode 的 dispatch_async(main) 竞速必败
+- 修复①（AmeNativeMenu.m 系统菜单重入根修+双层自愈）：甲=重入窗口改道（UIAction/UIAlertAction handler 触发时刻打点 ame273_lastMenuActionAt+会话 active/收尾时刻三口径，1.2s/0.6s 窗口内玻璃档不再走系统原生路由改走磨砂面板——alert #2/#3 同机 handler 内呈现成功实证该路由不受 context menu 收尾影响）；乙=静默丢弃看门狗（系统路由后代次计数+0.7s delegate 未被询问=确认丢弃自动转 ame240_actionSheetFallback 磨砂面板/Popover 直通兜底，任何未来 iOS 新丢弃形态自动兜住=自适应恢复铁律）+会话状态机接线（configurationForMenuAtLocation 置 active+撤销看门狗/didEnd 置收尾）
+- 修复②（PCL CE 式崩溃分析三层）：第一层=ame273_writeCrashReport（main_hook.m 纯 C stdio 濒死线程确定性执行：latestlog 尾 256KB 逐行分类扫描 mod_incompatible/missing_dependency/oom/jvm_fatal/java_exception/unknown 六类+Fabric Immediate reason/Fix 抓取+详情块 headline 定位连续取块，250ms 冲尾等待，结构化落盘 ame273_crash_report.txt）；第二层=会话内呈现（hooked_exit(code!=0) 先置 g_ame273_fatalExitInFlight 再落报告再 handle_fatal_exit+PLCrashView 生命周期握手 ame273_crashViewDidPresent/DidDismiss 经 utils.h 声明+看门狗新协议：旗标未置=挂死防护立即 _exit(0) 语义不变，旗标在=让路 ≤8s 等崩溃界面上屏+呈现后 ≤120s 等用户读完，用户点重启/退出按钮走 hooked_exit(0) 快速通道）——HMCL 式分析器（PLCrashView 既有 CrashType 13 类+suggestion 卡片）首次真正有机会展示；第三层=下次启动补弹（SceneDelegate willConnect+2.5s ame273_presentPendingCrashReportFrom：解析报告→玻璃弹窗"崩溃类别(按系统语言 zh/en)+exit 码+关键原因行+修复建议+详情 10 行"，动作复制原因/查看完整日志(UIActivityViewController 分享 latestlog)/知道了，呈现前归档 .last.txt 防重复打扰+沿链上溯+@try 护栏）
+- i18n：ame273.crash.title/copy_reason/view_full_log 三新键 14 表注入（en/zh-Hans/zh-CN/zh-Hant/ja 门禁五表+ko/ru/de/fr/es/pt/pt-BR/it/en-GB 八大主要语言，长尾 40 表走 en→zh-Hans→zh-CN 运行时回退链）
+- 门禁全绿：task139 all balanced+task191 54 表 OK（zh 系 3105 键）+task248 缺键0硬编码0动态键0+task250 全零+task273_balance_check.py（task139 同款语义扩展到本轮 4 编辑文件全 balanced，字符字面量/宏续行修正版）
+- 附带：main_hook.m 显式补 #include <stdio.h>（ame273 fopen/fread 依赖，原文件无 stdio）
+
+Stage Summary:
+- 19 文件 +565/−3；装机验证锚点：①版本隔离选择器点"隔离此版本"→0.3s 内出现"迁移并开启/仅开启"子菜单（玻璃面板档，日志 [AmeNativeMenu] Task273: reentry window active）→选后徽标立即回 isolated+扫描落 versions/<id>/game/mods ②依赖冲突类整合包启动崩溃→崩溃界面当场呈现（PLCrashView HMCL 式分析：模组冲突分类+建议卡片），用户点重启/退出可控退出③即便错过会话内界面，下次启动 2.5s 后弹"上次游戏异常退出"玻璃弹窗给出原因+修复建议+复制按钮④正常退出（exit 0）/headless 安装器/挂死场景看门狗立即 _exit 语义零回归
+- 本例整合包本身内容错（Vulkan Optimization-26.3-6.1 的 manifest 钉了 sodium 0.9.3-alpha.1 与 reeses-sodium-options 冲突），启动器侧职责=把原因讲清楚（PCL CE 等价物），不替包作者改内容

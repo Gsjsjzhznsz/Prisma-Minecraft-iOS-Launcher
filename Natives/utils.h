@@ -352,6 +352,13 @@ void handle_fatal_exit(int code);
 // O_APPEND 直写 $POJAV_HOME/fatal_trace.txt（绕过 latestlog 管道，防丢尾）
 void ame_write_fatal_trace(const char *reason);
 
+// ★ Task273（main_hook.m 实现）：PCL CE 式崩溃分析让路协议握手信号。
+// PLCrashView 呈现成功/被用户关闭时回调——Ame251 看门狗据此决定让路
+// 时长（非零退出 = 崩溃：≤8s 等呈现 + 呈现后 ≤120s 等读完；挂死场景
+// 旗标未置位 = 立即 _exit(0) 语义不变）。
+void ame273_crashViewDidPresent(void);
+void ame273_crashViewDidDismiss(void);
+
 NSString* localize(NSString* key, NSString* comment);
 NSMutableDictionary* parseJSONFromFile(NSString *path);
 NSError* saveJSONToFile(NSDictionary *dict, NSString *path);

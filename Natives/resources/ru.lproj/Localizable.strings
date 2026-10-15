@@ -3142,3 +3142,8 @@
 "cleanup.orphan_confirm" = "Удалить версию без экземпляра «%@» и её изолированную папку данных? (изолированная папка игры Task242 удаляется вместе с ней; сохранения не сохранятся)";
 "jvm.preset.title" = "Пресет JVM";
 "jvm.preset.custom_args" = "Пользовательские аргументы JVM";
+
+// Task273: PCL CE-style crash analysis next-launch dialog
+"ame273.crash.title" = "Предыдущая игра завершилась с ошибкой";
+"ame273.crash.copy_reason" = "Копировать причину";
+"ame273.crash.view_full_log" = "Открыть полный журнал";

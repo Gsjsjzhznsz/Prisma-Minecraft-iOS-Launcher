@@ -3285,3 +3285,8 @@
 "ai.tools.path_out_of_bounds" = "路径越界或无效";
 "ai.tools.source_line_fmt" = "%@\n（数据源：%@）";
 "ai.tools.unknown_tool_fmt" = "未知工具 %@";
+
+// Task273: PCL CE-style crash analysis next-launch dialog
+"ame273.crash.title" = "上次游戏异常退出";
+"ame273.crash.copy_reason" = "复制原因";
+"ame273.crash.view_full_log" = "查看完整日志";

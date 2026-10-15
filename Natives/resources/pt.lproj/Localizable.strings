@@ -309,3 +309,8 @@
 "ai.tools.path_out_of_bounds" = "Path is outside the allowed directory or invalid";
 "ai.tools.source_line_fmt" = "%@\n(Source: %@)";
 "ai.tools.unknown_tool_fmt" = "Unknown tool: %@";
+
+// Task273: PCL CE-style crash analysis next-launch dialog
+"ame273.crash.title" = "A partida anterior terminou inesperadamente";
+"ame273.crash.copy_reason" = "Copiar a causa";
+"ame273.crash.view_full_log" = "Ver registo completo";

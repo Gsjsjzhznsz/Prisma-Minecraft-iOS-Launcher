@@ -3137,3 +3137,8 @@
 "cleanup.orphan_confirm" = "Supprimer la version sans référence « %@ » et son dossier de données isolées ? (le dossier de jeu isolé part avec ; les mondes ne sont pas conservés)";
 "jvm.preset.title" = "Préréglage JVM";
 "jvm.preset.custom_args" = "Arguments JVM personnalisés";
+
+// Task273: PCL CE-style crash analysis next-launch dialog
+"ame273.crash.title" = "La partie précédente s'est terminée anormalement";
+"ame273.crash.copy_reason" = "Copier la cause";
+"ame273.crash.view_full_log" = "Voir le journal complet";

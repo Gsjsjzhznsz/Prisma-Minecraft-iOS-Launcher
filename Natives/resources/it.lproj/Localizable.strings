@@ -3127,3 +3127,8 @@
 "cleanup.orphan_confirm" = "Eliminare la versione senza riferimenti «%@» e la sua cartella dati isolata? (anche la cartella game isolata da Task242 viene eliminata; i salvataggi non vengono conservati)";
 "jvm.preset.title" = "Preset JVM";
 "jvm.preset.custom_args" = "Argomenti JVM personalizzati";
+
+// Task273: PCL CE-style crash analysis next-launch dialog
+"ame273.crash.title" = "La sessione di gioco precedente è terminata in modo anomalo";
+"ame273.crash.copy_reason" = "Copia la causa";
+"ame273.crash.view_full_log" = "Visualizza log completo";

@@ -3122,3 +3122,8 @@
 "cleanup.orphan_confirm" = "참조되지 않는 버전 \"%@\"과(와) 그 격리 데이터 폴더를 삭제할까요? (Task242로 격리된 game 폴더도 함께 삭제되며 세이브는 유지되지 않아요)";
 "jvm.preset.title" = "JVM 프리셋";
 "jvm.preset.custom_args" = "사용자 지정 JVM 인수";
+
+// Task273: PCL CE-style crash analysis next-launch dialog
+"ame273.crash.title" = "이전 게임이 비정상 종료되었습니다";
+"ame273.crash.copy_reason" = "원인 복사";
+"ame273.crash.view_full_log" = "전체 로그 보기";

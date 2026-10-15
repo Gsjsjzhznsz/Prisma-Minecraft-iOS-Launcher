@@ -119,6 +119,11 @@ static NSString *const kGitHubIssuesURL = @"https://github.com/herbrine8403/Amet
 
         currentCrashVC = crashVC;
         [rootVC presentViewController:crashVC animated:NO completion:nil];
+        // ★ Task273：呈现成功握手 —— Ame251 看门狗据此从"150ms 抢杀"切换到
+        //   让路窗口（≤8s 等本呈现 + 呈现后 ≤120s 等用户读完），HMCL 式崩溃
+        //   分析首次真正有机会展示（装机 f71c88b：看门狗 150ms _exit 抢杀 =
+        //   "启动器直接闪退"病灶）。
+        ame273_crashViewDidPresent();
     });
 }
 
@@ -1308,6 +1313,8 @@ static NSString *const kGitHubIssuesURL = @"https://github.com/herbrine8403/Amet
 
     [self dismissViewControllerAnimated:YES completion:^{
         currentCrashVC = nil;
+        // ★ Task273：用户主动关闭崩溃界面握手 —— 看门狗读后即刻 _exit。
+        ame273_crashViewDidDismiss();
     }];
 }
 

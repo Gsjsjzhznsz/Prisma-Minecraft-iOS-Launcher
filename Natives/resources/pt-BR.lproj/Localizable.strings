@@ -3130,3 +3130,8 @@
 "cleanup.orphan_confirm" = "Excluir a versão sem referência “%@” e sua pasta de dados isolada? (a pasta game isolada vai junto; os mundos não são mantidos)";
 "jvm.preset.title" = "Predefinição da JVM";
 "jvm.preset.custom_args" = "Argumentos da JVM personalizados";
+
+// Task273: PCL CE-style crash analysis next-launch dialog
+"ame273.crash.title" = "A partida anterior terminou inesperadamente";
+"ame273.crash.copy_reason" = "Copiar a causa";
+"ame273.crash.view_full_log" = "Ver registro completo";

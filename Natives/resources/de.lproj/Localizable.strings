@@ -3144,3 +3144,8 @@ der Minecraft-Version zu wählen. Verringerte Auflösung reduziert die Arbeitsla
 "jvm.preset.custom_args" = "Benutzerdefinierte JVM-Argumente";
 
 /* Task271 translations */
+
+// Task273: PCL CE-style crash analysis next-launch dialog
+"ame273.crash.title" = "Letzte Spielsitzung unerwartet beendet";
+"ame273.crash.copy_reason" = "Grund kopieren";
+"ame273.crash.view_full_log" = "Vollständiges Log anzeigen";
