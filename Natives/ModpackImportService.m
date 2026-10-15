@@ -787,17 +787,27 @@ static NSString * const kImportedModpacksKey = @"ImportedModpacks";
 }
 
 // Task269：导入进行中标记（迁移让路用）。try/finally 保证任何 return 路径都会复位。
+// Task269-r3：读写统一走类级锁（v1 实例锁与类锁混用互斥失效——review-a 中2）。
 static BOOL ame269_sImportBusy = NO;
+static BOOL ame269_sMigrationRunning = NO;
 + (BOOL)ame269_isImportBusy { @synchronized(self) { return ame269_sImportBusy; } }
++ (void)ame269_setImportBusy:(BOOL)busy { @synchronized(self) { ame269_sImportBusy = busy; } }
++ (BOOL)ame269_isMigrationRunning { @synchronized(self) { return ame269_sMigrationRunning; } }
 
 - (BOOL)importModpack:(NSDictionary *)modpackInfo
              progress:(void (^_Nullable)(double progress, NSString *stageMessage))progress
                 error:(NSError **)error {
-    @synchronized(self) { ame269_sImportBusy = YES; }
+    // Task269-r3：迁移进行中则短暂让路（启动窗口期用户秒开导入的并发保护，review-a 中2）
+    NSInteger ame269_waits = 0;
+    while ([ModpackImportService ame269_isMigrationRunning] && ame269_waits < 30) {
+        [NSThread sleepForTimeInterval:0.1];
+        ame269_waits++;
+    }
+    [ModpackImportService ame269_setImportBusy:YES];
     @try {
         return [self ame269_importModpackInner:modpackInfo progress:progress error:error];
     } @finally {
-        @synchronized(self) { ame269_sImportBusy = NO; }
+        [ModpackImportService ame269_setImportBusy:NO];
     }
 }
 
@@ -836,6 +846,9 @@ static BOOL ame269_sImportBusy = NO;
     // 根修：导入前按规范名（剥重名序号）查已有 modpack 实例，命中则整体复用其
     // modpackId（=复用其 custom_gamedir 文件夹）并在 createProfileForModpack 里原地
     // 刷新原 profile——重导入语义从"克隆实例"变为"刷新实例"（对齐 HMCL/FCL）。
+    // Task269-r3：复用路径全程落 staging 目录，下载/装载全部成功后才原子换装上位——
+    // 失败/取消只清 staging，活实例分毫不动（v1 整删前置导致失败丢 mods 的回归根除）。
+    BOOL ame269_isReuse = NO;
     {
         NSString *ame269_existingProfile = [ModpackImportService ame269_findExistingModpackProfileForDisplayName:modpackInfo[@"name"]];
         if (ame269_existingProfile.length > 0) {
@@ -846,7 +859,8 @@ static BOOL ame269_sImportBusy = NO;
                 ame269_info[@"id"] = ame269_existingId;
                 ame269_info[@"ame269_reuseProfileName"] = ame269_existingProfile;
                 modpackInfo = ame269_info;
-                NSLog(@"[ModpackImport] Task269: re-import of \"%@\" reuses existing instance \"%@\" (folder=%@) -- no (2) clone",
+                ame269_isReuse = YES;
+                NSLog(@"[ModpackImport] Task269: re-import of \"%@\" reuses existing instance \"%@\" (folder=%@) -- staged, no (2) clone",
                       modpackInfo[@"name"] ?: @"(nil)", ame269_existingProfile, ame269_existingId);
             }
         }
@@ -885,8 +899,20 @@ static BOOL ame269_sImportBusy = NO;
     NSString *gameDirAbsolute = [self absoluteGameDirForModpackId:modpackId];
     NSString *gameDirRelative = [self relativeGameDirForModpackId:modpackId];
 
-    // 清理可能存在的旧目录
-    if ([fm fileExistsAtPath:gameDirAbsolute]) {
+    // Task269-r3：复用路径 staging 重定向——解压/下载/装载全部落 staging，
+    // 活实例文件夹在换装点（写 profile 前）之前分毫不动。
+    NSString *ame269_realDir = nil;
+    NSString *ame269_stageDir = nil;
+    if (ame269_isReuse) {
+        ame269_realDir = gameDirAbsolute;
+        ame269_stageDir = [self.customGameDir stringByAppendingPathComponent:
+            [NSString stringWithFormat:@".ame269_stage-%@-%ld", modpackId, (long)[[NSDate date] timeIntervalSince1970]]];
+        [fm removeItemAtPath:ame269_stageDir error:nil]; // 残留 staging 清理
+        gameDirAbsolute = ame269_stageDir;
+    }
+
+    // 清理可能存在的旧目录（Task269-r3：复用路径跳过——活实例由换装点接管，绝不提前整删）
+    if (!ame269_isReuse && [fm fileExistsAtPath:gameDirAbsolute]) {
         // Task224：用户数据保底——重导入的目录里可能有上次导入后玩家积累的
         // 存档/截图/配置（隔离 gameDir 与版本元数据分居后，modpack 目录仍是
         // 重导入的整删对象）。先把这些挪到同级 -backup-<时间戳> 目录再删，
@@ -1064,6 +1090,44 @@ static BOOL ame269_sImportBusy = NO;
     // 阶段4 完成 → 阶段5（完成配置）进行中
     [manager updateTaskWithId:taskId currentStageIndex:5];
     [manager updateTaskWithId:taskId stageAtIndex:5 status:PLTaskStageStatusRunning];
+
+    // Task269-r3 复用路径安全换装：全部下载/装载成功后才动原文件夹——
+    // staging 原子换名上位，原实例整体移入 <id>-backup-<ts>（含 mods 可手工找回），
+    // staging 上位失败则备份原路搬回；换装后回收新文件夹缺失的用户数据项
+    // （saves/screenshots/config/servers.dat/options.txt）——升级不丢档。
+    if (ame269_isReuse) {
+        NSString *ame269_backupDir = [self.customGameDir stringByAppendingPathComponent:
+            [NSString stringWithFormat:@"%@-backup-%ld", modpackId, (long)[[NSDate date] timeIntervalSince1970]]];
+        if ([fm fileExistsAtPath:ame269_realDir]) {
+            NSError *ame269_bkErr = nil;
+            if (![fm moveItemAtPath:ame269_realDir toPath:ame269_backupDir error:&ame269_bkErr]) {
+                NSLog(@"[ModpackImport] Task269-r3: live instance move-aside FAILED (%@) -- abort import, live instance untouched",
+                      ame269_bkErr.localizedDescription ?: @"?");
+                [self cleanupAbortedImportWithGameDir:ame269_stageDir mainTaskFailed:YES];
+                return NO;
+            }
+        }
+        NSError *ame269_swErr = nil;
+        if (![fm moveItemAtPath:ame269_stageDir toPath:ame269_realDir error:&ame269_swErr]) {
+            NSLog(@"[ModpackImport] Task269-r3: staging promote FAILED (%@) -- restoring backup",
+                  ame269_swErr.localizedDescription ?: @"?");
+            if ([fm fileExistsAtPath:ame269_backupDir]) {
+                [fm moveItemAtPath:ame269_backupDir toPath:ame269_realDir error:nil];
+            }
+            [self cleanupAbortedImportWithGameDir:ame269_stageDir mainTaskFailed:YES];
+            return NO;
+        }
+        NSArray<NSString *> *ame269_restore = @[@"saves", @"screenshots", @"config", @"servers.dat", @"options.txt"];
+        for (NSString *ame269_item in ame269_restore) {
+            NSString *ame269_src = [ame269_backupDir stringByAppendingPathComponent:ame269_item];
+            NSString *ame269_dst = [ame269_realDir stringByAppendingPathComponent:ame269_item];
+            if ([fm fileExistsAtPath:ame269_src] && ![fm fileExistsAtPath:ame269_dst]) {
+                [fm moveItemAtPath:ame269_src toPath:ame269_dst error:nil];
+            }
+        }
+        NSLog(@"[ModpackImport] Task269-r3: staged re-import promoted into live instance %@ (old copy kept at %@)",
+              ame269_realDir.lastPathComponent, ame269_backupDir.lastPathComponent);
+    }
 
     // 第 4 步: 写 profile
     if (progress) progress(0.95, localize(@"i18n_str_1294", nil));
@@ -2767,7 +2831,7 @@ static BOOL ame269_sImportBusy = NO;
     NSRange range = [gameDir rangeOfString:@"custom_gamedir/" options:NSBackwardsSearch];
     if (range.location == NSNotFound) return nil;
     NSString *tail = [gameDir substringFromIndex:NSMaxRange(range)];
-    if (tail.length == 0 || [tail isEqualToString:@"."] || [tail containsString:@"/"]) return nil;
+    if (tail.length == 0 || [tail hasPrefix:@"."] || [tail containsString:@"/"]) return nil;
     return tail;
 }
 
@@ -2932,30 +2996,33 @@ static BOOL ame269_sImportBusy = NO;
 }
 
 + (void)ame269_migrateDuplicateModpackInstancesIfNeeded {
-    static BOOL ame269_running = NO;
     @synchronized(self) {
-        if (ame269_running) { NSLog(@"[Ame269] migrate skipped: already running"); return; }
+        if (ame269_sMigrationRunning) { NSLog(@"[Ame269] migrate skipped: already running"); return; }
         if ([self ame269_isImportBusy]) { NSLog(@"[Ame269] migrate skipped: import busy"); return; }
-        ame269_running = YES;
+        ame269_sMigrationRunning = YES;
     }
+    // Task269-r3：主线程预快照 profile 表（profiles getter 有懒转换副作用，
+    // 不在后台线程触碰；两个调用点均在主线程——review-a 中3）。
+    NSDictionary *ame269_snapshot = [PLProfiles.current.profiles copy];
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
         @try {
-            [self ame269_migrateDuplicateModpackInstancesSync];
+            [self ame269_migrateDuplicateModpackInstancesSync:ame269_snapshot];
         } @finally {
-            @synchronized(self) { ame269_running = NO; }
+            @synchronized(self) { ame269_sMigrationRunning = NO; }
         }
     });
 }
 
-+ (void)ame269_migrateDuplicateModpackInstancesSync {
++ (void)ame269_migrateDuplicateModpackInstancesSync:(NSDictionary *)snapshot {
     const char *gameDirEnv = getenv("POJAV_GAME_DIR");
     if (!gameDirEnv) return;
     NSFileManager *fm = [NSFileManager defaultManager];
     NSString *customRoot = [@(gameDirEnv) stringByAppendingPathComponent:@"custom_gamedir"];
 
-    // 0) 快照 profile 表（只读分析；写回统一在主线程收口段）
-    NSDictionary *profiles = [PLProfiles.current.profiles copy];
+    // 0) 主线程预快照（只读分析；写回统一在主线程收口段）
+    NSDictionary *profiles = snapshot;
     if (profiles.count == 0) return;
+    NSMutableArray<NSString *> *ame269_deadIds = [NSMutableArray array]; // 被合并实例的文件夹 id（账本回收用）
 
     // 1) 规范名聚类（仅 modpack 实例：gameDir 指向 custom_gamedir/<id>）
     NSMutableDictionary<NSString *, NSMutableArray<NSDictionary *> *> *clusters = [NSMutableDictionary dictionary];
@@ -2999,6 +3066,7 @@ static BOOL ame269_sImportBusy = NO;
             NSString *dupKey = sorted[i][@"key"];
             NSString *dupId = [self ame269_instanceIdFromGameDir:sorted[i][@"gameDir"]];
             if (dupId.length == 0 || [dupId isEqualToString:canonicalId]) continue;
+            [ame269_deadIds addObject:dupId];
             NSString *dupDir = [customRoot stringByAppendingPathComponent:dupId];
             if (![fm fileExistsAtPath:dupDir]) {
                 // 空壳条目（文件夹已不存在）→ 直接计划移除 profile
@@ -3048,6 +3116,23 @@ static BOOL ame269_sImportBusy = NO;
             }
         }
         if (changed) [PLProfiles.current save];
+        // Task269-r3：回收被合并实例在 ImportedModpacks 账本中的幽灵条目（review-c M3）
+        if (ame269_deadIds.count > 0) {
+            NSMutableArray *mp = [[[NSUserDefaults standardUserDefaults] objectForKey:@"ImportedModpacks"] mutableCopy];
+            if (mp.count > 0) {
+                NSMutableArray *mp2 = [NSMutableArray array];
+                for (NSDictionary *e in mp) {
+                    if ([e isKindOfClass:[NSDictionary class]] && [ame269_deadIds containsObject:e[@"id"]]) {
+                        NSLog(@"[Ame269] ghost ImportedModpacks entry removed: %@", e[@"id"]);
+                        continue;
+                    }
+                    [mp2 addObject:e];
+                }
+                if (mp2.count != mp.count) {
+                    [[NSUserDefaults standardUserDefaults] setObject:mp2 forKey:@"ImportedModpacks"];
+                }
+            }
+        }
         if (switchTo.length > 0) {
             // setSelectedProfileName 自带 save + SelectedProfileChanged 广播（管理页跟随重扫）
             PLProfiles.current.selectedProfileName = switchTo;
@@ -3108,8 +3193,19 @@ static BOOL ame269_sImportBusy = NO;
     }
 
     if (profileName) {
+        // Task269-r3：删除的若是选中实例 → 重指剩余首个实例（setter 自带 save+广播），
+        // 杜绝 selectedProfile 悬挂死名 → 管理页跟随扫共享目录/启动链读死 profile（review-b H5）。
+        BOOL ame269_wasSelected = [profileName isEqualToString:PLProfiles.current.selectedProfileName];
         [PLProfiles.current.profiles removeObjectForKey:profileName];
-        [PLProfiles.current save];
+        if (ame269_wasSelected) {
+            NSArray<NSString *> *ame269_rest = [PLProfiles.current.profiles allKeys];
+            NSString *ame269_next = ame269_rest.firstObject;
+            NSLog(@"[ModpackImport] Task269-r3: deleted profile was selected -> repoint to %@",
+                  ame269_next ?: @"(nil)");
+            PLProfiles.current.selectedProfileName = ame269_next;
+        } else {
+            [PLProfiles.current save];
+        }
     }
 
     // Task 5.6：versionId 唯一化后，主 versions 目录下本次导入的版本目录随整合包删除一并清理，

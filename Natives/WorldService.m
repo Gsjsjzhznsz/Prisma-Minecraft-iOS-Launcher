@@ -77,8 +77,18 @@
         NSDictionary *prof = profiles[profile];
         if ([prof isKindOfClass:[NSDictionary class]]) {
             NSString *gameDir = prof[@"gameDir"];
-            if ([gameDir isKindOfClass:[NSString class]] && gameDir.length > 0) {
-                return gameDir;
+            // Task269-r3：相对路径（如 ./custom_gamedir/<id>）统一相对 POJAV_GAME_DIR
+            // 解析成绝对路径——裸相对依赖进程 CWD，而 CWD 会被启动链 chdir 永久切走，
+            // 玩过一局后存档/资源包/数据包全部错位（review-c H1；与 ModService 同口径）。
+            if ([gameDir isKindOfClass:[NSString class]] && gameDir.length > 0 && ![gameDir isEqualToString:@"."]) {
+                if ([gameDir isAbsolutePath]) return gameDir;
+                NSString *clean = [gameDir hasPrefix:@"./"] ? [gameDir substringFromIndex:2] : gameDir;
+                const char *baseC = getenv("POJAV_GAME_DIR");
+                return baseC ? [[NSString stringWithUTF8String:baseC] stringByAppendingPathComponent:clean] : gameDir;
+            }
+            if ([gameDir isKindOfClass:[NSString class]] && [gameDir isEqualToString:@"."]) {
+                const char *baseC = getenv("POJAV_GAME_DIR");
+                if (baseC) return [NSString stringWithUTF8String:baseC];
             }
         }
     } @catch (NSException *ex) { }

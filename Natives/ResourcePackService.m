@@ -140,7 +140,15 @@
         NSDictionary *prof = profiles[profile];
         if ([prof isKindOfClass:[NSDictionary class]]) {
             NSString *gameDir = prof[@"gameDir"];
-            if ([gameDir isKindOfClass:[NSString class]] && gameDir.length > 0) {
+            // Task269-r3：相对路径（如 ./custom_gamedir/<id>）统一相对 POJAV_GAME_DIR
+            // 解析成绝对路径——裸相对依赖进程 CWD，CWD 会被启动链 chdir 永久切走
+            // （review-c H1；与 ModService 同口径）。
+            if ([gameDir isKindOfClass:[NSString class]] && gameDir.length > 0 && ![gameDir isEqualToString:@"."]) {
+                if (![gameDir isAbsolutePath]) {
+                    NSString *clean = [gameDir hasPrefix:@"./"] ? [gameDir substringFromIndex:2] : gameDir;
+                    const char *baseC = getenv("POJAV_GAME_DIR");
+                    gameDir = baseC ? [[NSString stringWithUTF8String:baseC] stringByAppendingPathComponent:clean] : gameDir;
+                }
                 NSString *resourcePacksPath = [gameDir stringByAppendingPathComponent:@"resourcepacks"];
                 BOOL isDir = NO;
                 if ([fm fileExistsAtPath:resourcePacksPath isDirectory:&isDir] && isDir) {
@@ -174,8 +182,19 @@
         NSDictionary *prof = profiles[profile];
         if ([prof isKindOfClass:[NSDictionary class]]) {
             NSString *gameDir = prof[@"gameDir"];
-            if ([gameDir isKindOfClass:[NSString class]] && gameDir.length > 0) {
+            // Task269-r3：同 existing——相对路径统一相对 POJAV_GAME_DIR 解析（review-c H1）
+            if ([gameDir isKindOfClass:[NSString class]] && gameDir.length > 0 && ![gameDir isEqualToString:@"."]) {
+                if (![gameDir isAbsolutePath]) {
+                    NSString *clean = [gameDir hasPrefix:@"./"] ? [gameDir substringFromIndex:2] : gameDir;
+                    const char *baseC = getenv("POJAV_GAME_DIR");
+                    gameDir = baseC ? [[NSString stringWithUTF8String:baseC] stringByAppendingPathComponent:clean] : gameDir;
+                }
                 resourcePacksPath = [gameDir stringByAppendingPathComponent:@"resourcepacks"];
+            } else if ([gameDir isKindOfClass:[NSString class]] && [gameDir isEqualToString:@"."]) {
+                const char *baseC = getenv("POJAV_GAME_DIR");
+                if (baseC) {
+                    resourcePacksPath = [[NSString stringWithUTF8String:baseC] stringByAppendingPathComponent:@"resourcepacks"];
+                }
             }
         }
     } @catch (NSException *ex) { }

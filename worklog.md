@@ -3318,3 +3318,15 @@ Work Log:
 
 Stage Summary:
 - 提交推送 main（PAT 保形）；一实例一文件夹三角闭环：前向不造新重复 + 存量自动合并 + 三道自愈兜底；用户设备升级后无需任何手动操作，历史遗留 "(2)" 家族启动即合并、模组列表即刻齐整
+
+## Task 269 r2/r3——三路子代理全面审查收口（62fb8c5 后置审查：269-review-a/b/c 三线并行，交叉印证五处独立新发现；数据丢失级回归当轮排雷）
+
+Work Log:
+- 三路子代理（Explore 并行）：a=Task269 迁移代码逐行审查（无严重级；中3+低6）；b=实例绑定同族横向搜查（shader/RP/DP/world 四链同族+删除链大口子）；c=实例名→文件夹→读写落点全链一致性（CWD 漂移全局事实+复用重导入回归）。工作记录见项目 worklog 269-review-a/b/c 三节
+- r2（当轮热修）：verify269 首轮 21/23 抓出「不同文件名同 mod 新旧版本双入 mods/」设计缺口——补 ame269_modIdentityKeyForFileName（剥扩展名+自尾剥离纯版本段，sodium-fabric-0.6.0/0.6.1 同键），mergeFolder 的 mods/ 分支身份键冲突即 stash（保 canonical 版本），verify269 28/28
+- r3（子代理发现当轮收口，9 件）：①【高/回归】复用重导入整删活实例提前到下载前（ame224 备份不含 mods+零恢复=失败丢 mods）→ staging 安全换装：全程落 .ame269_stage-<id>-<ts>，下载/装载全部成功后原实例整体移入 <id>-backup-<ts>（含 mods 可找回）→ staging 原子换名上位，上位失败备份原路搬回，换装后回收新文件夹缺失的用户数据项（saves/screenshots/config/servers.dat/options.txt 原位移回），失败/取消只清 staging 活实例分毫不动（review-c H2+review-a 中1 双锚）②【中】忙标双锁失效（实例锁写@类锁读互斥虚设）→ ame269_sImportBusy 读写统一类级锁 + 导入入口等迁移收尾（≤3s 轮询）（review-a 中2）③【中】迁移后台读活字典竞态 → 主线程预快照 profiles copy 传入 Sync（两调用点均主线程）（review-a 中3）④【高】deleteModpack 删选中实例不重指不广播（selectedProfile 悬挂死名→管理页扫共享目录/启动链读死 profile）→ 删前判 wasSelected，重指剩余首个实例（setter 自带 save+广播）（review-b H5）⑤【高】World/DataPack/ResourcePack 三服务裸相对 gameDir+进程 CWD 被 ame97 chdir 永久切走 → 玩过一局后存档/资源包/数据包全部错位、下载落嵌套孤儿树 → 三服务 gameDirForProfile/existing/ensure 五处统一相对 POJAV_GAME_DIR 解析成绝对路径（与 ModService resolveAbsoluteGameDirForProfile 同口径）（review-c H1+review-b H2/H3/H4 三线互证）⑥【低】迁移收口补回收 ImportedModpacks 幽灵条目（deadIds 比对过滤）（review-c M3 半件）⑦【低】instanceIdFromGameDir 拒点前缀（.ame269_backup/.ame269_stage 永不当实例）（review-a 低8）⑧verify269 补点前缀拒绝用例位（规格同步）⑨补丁工程化：显示层吞字（[m 词首吞噬第五例）干扰 Edit 锚点 → python 字节级锚点预验证补丁脚本（scripts/patch_task269_r3.py 等，锚点唯一性断言失败即 abort 不做半套）
+- 遗留清单（下轮候选，均子代理实锤 file:line）：M1 四资源管理页快照绑定+"default"字面量回退（默认实例实为"(Default)"）+零 SelectedProfileChanged 观察+ShadersManager 导入传 nil——ame267 语义下沉待做；M2 非 mod 四服务下载任务不落 targetProfileName（跨实例横幅/对账/死名回落仅 mods 享有）；M3 删除实例不回收 custom_gamedir/<id> 实体（孤儿文件夹， Cleanup 不覆盖）；M4 JRE 管理器删运行时无引用清扫+accessoryType 判选中复用失效；M5 实例改名不更新 ImportedModpacks 账本；M6 ame229 options.txt 工具集漏 custom_gamedir 实例；M7 DataTransfer/Cleanup 以实例根为基准不入 custom_gamedir 子树；ShaderService 共享目录回退语义（隔离优先未对齐 ame219）；迁移"新 loader 在 dup"场景 canonical lastVersionId 评估
+- 门禁：task139 all balanced；verify269 28/28；task191/248/250 未涉新键零风险
+
+Stage Summary:
+- 提交推送 main（PAT 保形）；Task269 三轮闭环：v1 病根根治 → r2 身份键防双版本 → r3 三路审查 9 件收口（数据丢失级回归 staging 换装根除）；装机锚点：升级首启 [Ame269] migrate family/merged/ghost 日志链、重下同包 [ModpackImport] Task269: re-import reuses ... staged、换装 [ModpackImport] Task269-r3: staged re-import promoted into live instance、删选中实例 Task269-r3: deleted profile was selected -> repoint
