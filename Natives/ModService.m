@@ -9,7 +9,8 @@
 //
 
 #import "ModService.h"
-#import <CommonCrypto/CommonCrypto.h>
+// ★ Task274-h S14：CommonCrypto import 随零调用 sha1ForFileAtPath 删除（全文件 CC_ 族
+//   仅该方法使用，rg 亲证）
 #import <UIKit/UIKit.h>
 #import "PLProfiles.h"
 #import "ModItem.h"
@@ -161,18 +162,8 @@
 }
 
 // ---------- 辅助方法 ----------
-- (nullable NSString *)sha1ForFileAtPath:(NSString *)path {
-    NSData *d = [NSData dataWithContentsOfFile:path];
-    if (!d) return nil;
-    unsigned char digest[CC_SHA1_DIGEST_LENGTH];
-    CC_SHA1(d.bytes, (CC_LONG)d.length, digest);
-    NSMutableString *hex = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH * 2];
-    for (int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++) {
-        [hex appendFormat:@"%02x", digest[i]];
-    }
-    return [hex copy];
-}
-
+// ★ Task274-h S14：sha1ForFileAtPath 零调用副本已删除（rg 亲证全文件仅此 1 处定义
+//   零调用；活副本在 ModpackExportService:939 有分块实现）。
 // ★ Task270（屎山 A1）：逐字节克隆收敛 utils.m 单点 AMEIconCachePathForURL（行为零变更）。
 - (NSString *)iconCachePathForURL:(NSString *)urlString {
     return AMEIconCachePathForURL(urlString, @"mod_icons");
@@ -198,7 +189,10 @@
 ///   第 2 步（ShouldBeIndie 启发式）同源：目录形状说明用户已把该版本当
 ///   隔离实例用，mod 安装/扫描只认隔离目录，不再落到共享根。
 - (nullable NSString *)resolveAbsoluteGameDirForProfile:(NSString *)profileName {
-    NSString *profile = profileName.length ? profileName : @"default";
+    // ★ Task274-h S7：nil 入参跟随当前选中实例（ame267 语义），不再落恒 miss 的
+    // @"default" 字面量（真实默认键 "(Default)"；对齐 Task270 M1 服务层口径）。
+    if (!profileName.length) profileName = PLProfiles.current.selectedProfileName ?: @"(Default)";
+    NSString *profile = profileName;
     @try {
         NSDictionary *profiles = PLProfiles.current.profiles;
         NSDictionary *prof = profiles[profile];
@@ -312,7 +306,10 @@
     //   - 幂等：跑过一次后 gameDir 已非 '.'；隔离目录由 ensureModsFolder 惰性创建
     NSInteger ame272_swept = 0;
     for (NSString *ame272_key in [ame271_profiles allKeys]) {
-        if ([ame272_key isEqualToString:@"default"]) continue;
+        // Task274: 真实默认键是 "(Default)"（旧守卫 @"default" 恒不匹配 =
+        // (Default) 主实例会被误 sweep 进隔离，共享模组从列表"消失"）；
+        // 两个键名都排除，宁可漏扫不可误扫。
+        if ([ame272_key isEqualToString:@"(Default)"] || [ame272_key isEqualToString:@"default"]) continue;
         NSDictionary *ame272_prof = ame271_profiles[ame272_key];
         if (![ame272_prof isKindOfClass:[NSDictionary class]]) continue;
         if (ame272_prof[@"gameDirExplicit"] != nil) continue;   // 显式选择过：尊重用户
@@ -341,7 +338,10 @@
 }
 
 - (nullable NSString *)existingModsFolderForProfile:(NSString *)profileName {
-    NSString *profile = profileName.length ? profileName : @"default";
+    // ★ Task274-h S7：nil 入参跟随当前选中实例（ame267 语义），不再落恒 miss 的
+    // @"default" 字面量（真实默认键 "(Default)"；对齐 Task270 M1 服务层口径）。
+    if (!profileName.length) profileName = PLProfiles.current.selectedProfileName ?: @"(Default)";
+    NSString *profile = profileName;
     NSFileManager *fm = [NSFileManager defaultManager];
 
     // 优先用 profile gameDir（已解析为绝对路径）
@@ -397,7 +397,10 @@
 /// （gameDir 为 versions/<id>/... 或自定义目录）；2 = 嗅探隔离（Task225：
 /// gameDir 为 "." 但 versions/<vid>/ 下已有 mods/saves——上游 auto 语义）。
 + (NSInteger)ame219_isolationStateForProfile:(NSString *)profileName {
-    NSString *profile = profileName.length ? profileName : @"default";
+    // ★ Task274-h S7：nil 入参跟随当前选中实例（ame267 语义），不再落恒 miss 的
+    // @"default" 字面量（真实默认键 "(Default)"；对齐 Task270 M1 服务层口径）。
+    if (!profileName.length) profileName = PLProfiles.current.selectedProfileName ?: @"(Default)";
+    NSString *profile = profileName;
     @try {
         NSDictionary *profiles = PLProfiles.current.profiles;
         NSDictionary *prof = profiles[profile];
@@ -418,7 +421,10 @@
 
 /// 获取当前 profile 的 mods 目录，不存在时自动创建
 - (nullable NSString *)ensureModsFolderForProfile:(NSString *)profileName error:(NSError **)error {
-    NSString *profile = profileName.length ? profileName : @"default";
+    // ★ Task274-h S7：nil 入参跟随当前选中实例（ame267 语义），不再落恒 miss 的
+    // @"default" 字面量（真实默认键 "(Default)"；对齐 Task270 M1 服务层口径）。
+    if (!profileName.length) profileName = PLProfiles.current.selectedProfileName ?: @"(Default)";
+    NSString *profile = profileName;
     NSFileManager *fm = [NSFileManager defaultManager];
     NSString *modsPath = nil;
 
@@ -757,7 +763,10 @@
     // 注册到统一下载任务管理器（rawTask 稍后赋值为 PLDownloadOperation；悬浮球已移除，始终注册以便下载任务列表跟踪）
     NSString *resourceName = mod.fileName.length > 0 ? mod.fileName : (mod.displayName.length > 0 ? mod.displayName : @"mod");
     NSString *displayName = mod.displayName.length > 0 ? mod.displayName : resourceName;
-    NSString *downloadSource = getPrefObject(@"general.download_source") ?: @"official";
+    // ★ Task274-h S8：退役键 general.download_source（Task218 声明无写入方，恒 nil
+    //   → @"official" 来源标签失真）→ PLMirrorCenter legacySourceTokenForType
+    //   （Task218 收敛口径，对齐 World/DP/RP/Shader 四服务）。
+    NSString *downloadSource = [PLMirrorCenter legacySourceTokenForType:PLMirrorResourceTypeAssetDownload];
     DownloadTaskItem *taskItem = [[DownloadTaskManager sharedManager]
         registerTaskWithResourceType:DownloadTaskResourceTypeMod
                         resourceName:resourceName

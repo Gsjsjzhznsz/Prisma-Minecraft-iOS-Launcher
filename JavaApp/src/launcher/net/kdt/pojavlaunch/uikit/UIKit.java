@@ -49,25 +49,38 @@ public class UIKit {
         // 用 URLClassLoader 加载 JAR，支持 JarInJar（Forge/NeoForge 部分版本 installer 内嵌 JAR 依赖）
         // 父 ClassLoader 为系统 ClassLoader，确保 PojavLauncher/UIKit bridge 类仍可加载
         java.net.URL[] urls = new java.net.URL[]{new java.io.File(filepath).toURI().toURL()};
-        ClassLoader loader = new java.net.URLClassLoader(urls, ClassLoader.getSystemClassLoader());
-        Class<?> clazz = loader.loadClass(mainClass);
-        Method method = clazz.getMethod("main", String[].class);
-        try {
-            method.invoke(null, new Object[]{args});
-        } catch (java.lang.reflect.InvocationTargetException ite) {
-            // 解包 InvocationTargetException，暴露 installer main 方法的真实异常
-            Throwable cause = ite.getCause();
-            if (cause != null) {
-                throw cause;
+        // ame274：URLClassLoader 从不 close = 每次启动 installer 泄漏一个
+        // 打开的 jar fd；try-with-resources 在 main 返回（或异常上抛）后关闭。
+        try (java.net.URLClassLoader loader = new java.net.URLClassLoader(urls, ClassLoader.getSystemClassLoader())) {
+            Class<?> clazz = loader.loadClass(mainClass);
+            Method method = clazz.getMethod("main", String[].class);
+            try {
+                method.invoke(null, new Object[]{args});
+            } catch (java.lang.reflect.InvocationTargetException ite) {
+                // 解包 InvocationTargetException，暴露 installer main 方法的真实异常
+                Throwable cause = ite.getCause();
+                if (cause != null) {
+                    throw cause;
+                }
+                throw ite;
             }
-            throw ite;
         }
     }
 
     public static void updateMCGuiScale() {
         MCOptionUtils.load();
         String str = MCOptionUtils.get("guiScale");
-        guiScale = (str == null ? 0 :Integer.parseInt(str));
+        // ame274：options.txt 里的坏值（手改的 "auto"/空串等）直接 NFE 上抛
+        // 打断启动链；try-catch 回退 0（= 自动档，对齐 native 侧解析口径）。
+        int parsedScale = 0;
+        if (str != null) {
+            try {
+                parsedScale = Integer.parseInt(str);
+            } catch (NumberFormatException e) {
+                System.err.println("[UIKit] Invalid guiScale value '" + str + "' in options.txt, falling back to 0");
+            }
+        }
+        guiScale = parsedScale;
 
         int scale = Math.max(Math.min(GLFW.mGLFWWindowWidth / 320, GLFW.mGLFWWindowHeight / 240), 1);
         if(scale < guiScale || guiScale == 0){

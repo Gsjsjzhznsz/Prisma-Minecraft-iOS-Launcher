@@ -9,7 +9,8 @@
 //
 
 #import "ShaderService.h"
-#import <CommonCrypto/CommonCrypto.h>
+// ★ Task274-h S14：CommonCrypto import 随零调用 sha1ForFileAtPath 删除（全文件 CC_ 族
+//   仅该方法使用，rg 亲证）
 #import <UIKit/UIKit.h>
 #import "PLProfiles.h"
 #import "ShaderItem.h"
@@ -72,17 +73,8 @@
 
 #pragma mark - Helpers
 
-- (nullable NSString *)sha1ForFileAtPath:(NSString *)path {
-    NSData *d = [NSData dataWithContentsOfFile:path];
-    if (!d) return nil;
-    unsigned char digest[CC_SHA1_DIGEST_LENGTH];
-    CC_SHA1(d.bytes, (CC_LONG)d.length, digest);
-    NSMutableString *hex = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH * 2];
-    for (int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++) {
-        [hex appendFormat:@"%02x", digest[i]];
-    }
-    return [hex copy];
-}
+// ★ Task274-h S14：sha1ForFileAtPath 零调用副本已删除（rg 亲证全文件仅此 1 处定义
+//   零调用；活副本在 ModpackExportService:939 有分块实现）。
 
 // ★ Task270（屎山 A1）：逐字节克隆收敛 utils.m 单点 AMEIconCachePathForURL（行为零变更）。
 - (NSString *)iconCachePathForURL:(NSString *)urlString {

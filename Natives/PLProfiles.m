@@ -29,14 +29,22 @@ static PLProfiles* current;
 }
 
 + (PLProfiles *)current {
-    if (!current) {
-        [self updateCurrent];
+    // ★ Task274-h S3：单例创建/整体替换本身收进类锁——两线程同见 nil 会双建实例
+    // （后建者胜，先建实例上未落盘的写全部丢失）。updateCurrent 供会话中重载
+    // （AI 安装流等），原子性同样由类锁保证。锁序：类锁 → 实例锁（init 内 save），
+    // 实例方法从不回调 +current/+updateCurrent，无环。
+    @synchronized (self) {
+        if (!current) {
+            [self updateCurrent];
+        }
+        return current;
     }
-    return current;
 }
 
 + (void)updateCurrent {
-    current = [[PLProfiles alloc] initWithCurrentInstance];
+    @synchronized (self) {
+        current = [[PLProfiles alloc] initWithCurrentInstance];
+    }
 }
 
 + (id)profile:(NSMutableDictionary *)profile resolveKey:(id)key {
@@ -106,15 +114,20 @@ static PLProfiles* current;
 }
 
 - (id)profiles {
-    id profiles = self.profileDict[@"profiles"];
-    if (![profiles isKindOfClass:[NSDictionary class]]) {
-        profiles = [NSMutableDictionary dictionary];
-        self.profileDict[@"profiles"] = profiles;
-    } else if (![profiles isKindOfClass:[NSMutableDictionary class]]) {
-        profiles = [profiles mutableCopy];
-        self.profileDict[@"profiles"] = profiles;
+    // ★ Task274-h S3：惰性可变换 + 读全部收进实例锁（写方 saveProfile/save 同锁，
+    // 消除跨线程 NSMutableDictionary 结构竞态）。返回的仍是活字典（外部直接
+    // 变更方依赖该语义，本轮不改变）。
+    @synchronized (self) {
+        id profiles = self.profileDict[@"profiles"];
+        if (![profiles isKindOfClass:[NSDictionary class]]) {
+            profiles = [NSMutableDictionary dictionary];
+            self.profileDict[@"profiles"] = profiles;
+        } else if (![profiles isKindOfClass:[NSMutableDictionary class]]) {
+            profiles = [profiles mutableCopy];
+            self.profileDict[@"profiles"] = profiles;
+        }
+        return profiles;
     }
-    return profiles;
 }
 
 - (id)selectedProfile {
@@ -122,13 +135,19 @@ static PLProfiles* current;
 }
 
 - (NSString *)selectedProfileName {
-    return (id)self.profileDict[@"selectedProfile"];
+    @synchronized (self) {
+        return (id)self.profileDict[@"selectedProfile"];
+    }
 }
 
 - (void)setSelectedProfileName:(NSString *)name {
-    self.profileDict[@"selectedProfile"] = (id)name;
-    [self save];
-    
+    // ★ Task274-h S3：字典写 + save 收进实例锁；SelectedProfileChanged 通知必须发在
+    //   锁外——观察者可能同步重入 PLProfiles，锁内发通知构成重入/他线程等待死锁面。
+    @synchronized (self) {
+        self.profileDict[@"selectedProfile"] = (id)name;
+        [self save];
+    }
+
     [[NSNotificationCenter defaultCenter] postNotificationName:@"SelectedProfileChanged" object:name];
 }
 
@@ -147,7 +166,9 @@ static PLProfiles* current;
     } else if ([obj isKindOfClass:[NSDictionary class]]) {
         NSMutableDictionary *clean = [NSMutableDictionary dictionaryWithCapacity:[obj count]];
         [obj enumerateKeysAndObjectsUsingBlock:^(id key, id val, BOOL *stop) {
-            id safeKey = [key isKindOfClass:[NSDate class]] ? [self jsonSanitizedObject:key] : key;
+            // ★ Task274-h S9：非字符串键统一走清洗（NSDate→ISO 串、NSURL→absoluteString、
+            //   其余→description）——JSON 对象键必须为字符串，此前仅 NSDate 键被处理。
+            id safeKey = [key isKindOfClass:[NSString class]] ? key : [self jsonSanitizedObject:key];
             clean[safeKey] = [self jsonSanitizedObject:val];
         }];
         return clean;
@@ -157,20 +178,41 @@ static PLProfiles* current;
             [clean addObject:[self jsonSanitizedObject:item]];
         }
         return clean;
+    } else if ([obj isKindOfClass:[NSURL class]]) {
+        // ★ Task274-h S9：NSURL 安全化（JSON 非法类型，整树枚举时一并转字符串）
+        return [obj absoluteString] ?: @"";
     }
-    return obj;
+    // ★ Task274-h S9：兜底——未知类型（NSSet/NSValue/NSNull 等）转 NSString 描述，
+    //   绝不抛异常；此前直透传 → isValidJSONObject 失败 → 整次保存被静默丢弃。
+    return [obj description] ?: @"";
 }
 
 - (void)save {
-    id sanitized = [self jsonSanitizedObject:self.profileDict];
-    if ([NSJSONSerialization isValidJSONObject:sanitized]) {
-        saveJSONToFile(sanitized, self.profilePath);
-    } else {
-        NSLog(@"[PLProfiles] save failed: profileDict still contains invalid JSON types after sanitization");
+    // ★ Task274-h S3：全树遍历（jsonSanitizedObject 递归枚举）+ 落盘整体在实例锁内，
+    //   防并发变更打断枚举（枚举中字典被改 = 崩溃面）。
+    @synchronized (self) {
+        id sanitized = [self jsonSanitizedObject:self.profileDict];
+        if ([NSJSONSerialization isValidJSONObject:sanitized]) {
+            saveJSONToFile(sanitized, self.profilePath);
+        } else {
+            // ★ Task274-h S9：失败路径可见日志（带上下文+键数量）——此前仅一句
+            //   固定文案，isValidJSONObject 不过时整次保存被静默丢弃无从排查。
+            NSDictionary *ame274_profiles = ([self.profileDict isKindOfClass:[NSDictionary class]]
+                ? self.profileDict[@"profiles"] : nil);
+            NSLog(@"[PLProfiles] SAVE FAILED: profileDict still contains invalid JSON types after sanitization"
+                  @" (topLevelKeys=%@, profileCount=%ld, selectedProfile=%@, path=%@)",
+                  ([self.profileDict isKindOfClass:[NSDictionary class]] ? [self.profileDict allKeys] : nil),
+                  (long)([ame274_profiles isKindOfClass:[NSDictionary class]] ? [(NSDictionary *)ame274_profiles count] : -1),
+                  self.profileDict[@"selectedProfile"],
+                  self.profilePath);
+        }
     }
 }
 
 - (void)saveProfile:(NSMutableDictionary<NSString *, NSString *> *)profile withName:(NSString *)name {
+    // ★ Task274-h S3：读-合并-写全程在实例锁内（save 为同锁可重入）——后台安装器
+    //   并发 saveProfile 与主线程读之间此前零锁。
+    @synchronized (self) {
     if (!self.profileDict[@"profiles"]) {
         self.profileDict[@"profiles"] = [NSMutableDictionary dictionary];
     }
@@ -193,6 +235,7 @@ static PLProfiles* current;
     }
     self.profileDict[@"profiles"][name] = ame271_merged;
     [self save];
+    }
 }
 
 #pragma mark - 服务器地址（FCL 风格：启动后自动加入服务器）
@@ -204,19 +247,23 @@ static PLProfiles* current;
 
 // 获取指定 profile 的服务器地址，缺失或为空均返回 @""
 - (NSString *)serverIpForProfile:(NSString *)profileName {
-    NSString *ip = self.profiles[profileName][@"serverIp"];
-    return ip ?: @"";
+    @synchronized (self) {
+        NSString *ip = self.profiles[profileName][@"serverIp"];
+        return ip ?: @"";
+    }
 }
 
 // 设置指定 profile 的服务器地址，nil 转为 @""
 - (void)setServerIp:(NSString *)serverIp forProfile:(NSString *)profileName {
-    NSMutableDictionary *profile = [self.profiles[profileName] mutableCopy];
-    if (!profile) {
-        profile = [NSMutableDictionary dictionary];
+    @synchronized (self) {
+        NSMutableDictionary *profile = [self.profiles[profileName] mutableCopy];
+        if (!profile) {
+            profile = [NSMutableDictionary dictionary];
+        }
+        profile[@"serverIp"] = serverIp ?: @"";
+        self.profiles[profileName] = profile;
+        [self save];
     }
-    profile[@"serverIp"] = serverIp ?: @"";
-    self.profiles[profileName] = profile;
-    [self save];
 }
 
 @end

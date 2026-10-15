@@ -117,13 +117,16 @@ static char ame240_dismissKey;
 //   甲（重入改道）：菜单动作刚触发/会话未收尾的窗口内，玻璃档改走
 //     磨砂面板（UIAlertController 家族呈现不受 context menu 收尾
 //     影响——同机 alert #2/#3 在 handler 内呈现成功实锤）；
-//   乙（静默丢弃看门狗）：系统路由后 0.7s 内 delegate 未被询问
+//   乙（静默丢弃看门狗）：系统路由后 1.1s 内 delegate 未被询问（Task274-g 宽限
+//     延长 + 兜底前再探呈现迹象，慢设备 delegate 晚到不再双 UI）
 //     （configurationForMenuAtLocation 未回调 = 系统根本没开菜单）
 //     自动转磨砂面板/actionSheet 兜底，任何未来 iOS 版本再出现新
 //     丢弃形态也自动兜住（自适应恢复，用户铁律）。
 static CFAbsoluteTime ame273_lastMenuActionAt = 0;   ///< UIAction/UIAlertAction handler 最近触发时刻
-static BOOL ame273_systemMenuSessionActive = NO;     ///< 系统 context menu 会话进行中（delegate 已询问未收尾）
+static BOOL ame273_systemMenuSessionActive = NO;     ///< 系统 context menu 会话进行中（delegate 已询问未收尾；读取时需过 5s 自过期门，Task274-g G3）
+static CFAbsoluteTime ame273_sessionStartAt = 0;     ///< 会话起点（Task274-g G3：5s 自过期依据 / G4：呈现迹象判断）
 static CFAbsoluteTime ame273_lastSessionEndAt = 0;   ///< 上一会话收尾时刻
+static CFAbsoluteTime ame273_presentRequestAt = 0;   ///< 最近一次系统路由请求时刻（Task274-g G4：兜底前再探基准）
 static BOOL ame273_systemMenuOpenExpected = NO;      ///< 已请求系统开菜单但 delegate 尚未确认
 static int ame273_openGeneration = 0;                ///< 呈现代次（防陈旧定时器误兜底）
 
@@ -132,13 +135,20 @@ static int ame273_openGeneration = 0;                ///< 呈现代次（防陈�
 /// 内部消费，无需 ObjC 派发）。
 static BOOL ame273_systemMenuReentryLikely(void) {
     CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
-    if (ame273_systemMenuSessionActive) return YES;
+    if (ame273_systemMenuSessionActive) {
+        // ★ Task274-g（G3）：5s 自过期——didEndMenuForConfiguration 一次不达
+        //   （UIKit 偶发不回调）不再永久粘滞（粘滞 = 此后所有系统菜单恒
+        //   改道磨砂面板直至重启）。超窗后按"会话已收尾"处理；
+        //   真实重入场景（动作 handler 内再呈现）由 1.2s actionAt
+        //   窗与 0.6s lastSessionEndAt 窗继续覆盖。
+        if (ame273_sessionStartAt > 0 && (now - ame273_sessionStartAt) < 5.0) return YES;
+    }
     if (ame273_lastMenuActionAt > 0 && (now - ame273_lastMenuActionAt) < 1.2) return YES;
     if (ame273_lastSessionEndAt > 0 && (now - ame273_lastSessionEndAt) < 0.6) return YES;
     return NO;
 }
 
-/// Task273：静默丢弃看门狗（系统路由 0.7s 无 delegate 询问 → 兜底）。
+/// Task273：静默丢弃看门狗（系统路由 1.1s 无 delegate 询问且无呈现迹象 → 兜底；Task274-g 宽限+再探）。
 /// 声明前置：实现在 ame245_presentViaSystemMenu 内联 dispatch_after。
 static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
                                        UIMenu *menu,
@@ -486,19 +496,28 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
     // ★ Task273：静默丢弃自愈看门狗——presentMenu 调用成功不代表菜单真的
     //   开了（前一会话收尾窗口内 UIKit 静默丢弃，无异常无回调）。delegate
     //   configurationForMenuAtLocation 被询问 = 菜单真开了（清除标记）；
-    //   0.7s 后仍悬挂 = 确认丢弃 → 自动转磨砂面板/actionSheet 兜底
+    //   1.1s 后仍悬挂且无呈现迹象 = 确认丢弃 → 自动转磨砂面板/actionSheet 兜底
     //   （ame240_actionSheetFallback 内建玻璃档磨砂面板主路径 + popover
     //   锚定直通兜底，自适应恢复零人工）。代次计数防陈旧定时器误兜底。
+    //   ★ Task274-g（G4）：宽限 0.7s→1.1s（慢设备 delegate 晚到留头寸）+
+    //   兜底前再探呈现迹象（sessionStartAt 晚于本次请求 = delegate
+    //   刚被询问 = 菜单在开）——context menu 不走 VC 呈现链
+    //   （presentedViewController 守卫拦不住），只能以 delegate 会话状态为准；
+    //   否则磨砂面板先出、系统菜单随后照开 = 双 UI。
     ame273_openGeneration++;
     int ame273_myGen = ame273_openGeneration;
     ame273_systemMenuOpenExpected = YES;
+    ame273_presentRequestAt = CFAbsoluteTimeGetCurrent();
     UIMenu *ame273_menu = menu;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.7 * NSEC_PER_SEC)),
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.1 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
-        if (ame273_myGen == ame273_openGeneration && ame273_systemMenuOpenExpected) {
+        BOOL ame273_menuDidStartOpening =
+            (ame273_sessionStartAt > ame273_presentRequestAt);
+        if (ame273_myGen == ame273_openGeneration && ame273_systemMenuOpenExpected &&
+            !ame273_menuDidStartOpening) {
             ame273_systemMenuOpenExpected = NO;
             ame273_lastSessionEndAt = CFAbsoluteTimeGetCurrent();
-            NSLog(@"[AmeNativeMenu] Task273: system menu silent-drop confirmed (0.7s no delegate query) -- glass panel fallback (self-heal)");
+            NSLog(@"[AmeNativeMenu] Task273: system menu silent-drop confirmed (1.1s no delegate query) -- glass panel fallback (self-heal)");
             ame240_actionSheetFallback(ame245_ix, ame273_menu, dicts, onDismiss);
         }
     });
@@ -718,6 +737,7 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
     // ★ Task273：delegate 被询问 = 系统真在开菜单——撤销静默丢弃看门狗。
     ame273_systemMenuOpenExpected = NO;
     ame273_systemMenuSessionActive = YES;
+    ame273_sessionStartAt = CFAbsoluteTimeGetCurrent(); // ★ Task274-g（G3/G4）：会话起点（5s 自过期 + 呈现迹象）
     return [UIContextMenuConfiguration
         configurationWithIdentifier:nil
                      previewProvider:nil

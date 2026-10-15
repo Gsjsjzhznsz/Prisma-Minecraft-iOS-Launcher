@@ -20,26 +20,28 @@ public class IOSTargetDataLine implements TargetDataLine {
 
     @Override
     public void open(AudioFormat format, int bufferSize) throws LineUnavailableException {
+        // ame274：open 全程持锁——原先仅"状态检查"与"赋值"两小段持锁，
+        // 并发 open 时两次 NativeAudioCapture.init 产生两个 native handle，
+        // 后者覆盖前者 = 先者泄漏（无人 release）。Java 锁可重入，锁内
+        // close() 的 stop/release 语义不变；fireEvent 仍在锁外，同现状。
         synchronized (lock) {
             if (open) close();
-        }
-        if (format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED
-                || format.getSampleSizeInBits() != 16
-                || format.getChannels() != 1) {
-            throw new LineUnavailableException("Unsupported format: " + format);
-        }
-        this.format = format;
-        this.bufferSize = Math.max(bufferSize, 4096);
-        long handle = NativeAudioCapture.init(
-            (int) format.getSampleRate(),
-            format.getChannels(),
-            format.getSampleSizeInBits(),
-            format.isBigEndian()
-        );
-        if (handle == 0) {
-            throw new LineUnavailableException("Failed to initialize native audio capture");
-        }
-        synchronized (lock) {
+            if (format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED
+                    || format.getSampleSizeInBits() != 16
+                    || format.getChannels() != 1) {
+                throw new LineUnavailableException("Unsupported format: " + format);
+            }
+            this.format = format;
+            this.bufferSize = Math.max(bufferSize, 4096);
+            long handle = NativeAudioCapture.init(
+                (int) format.getSampleRate(),
+                format.getChannels(),
+                format.getSampleSizeInBits(),
+                format.isBigEndian()
+            );
+            if (handle == 0) {
+                throw new LineUnavailableException("Failed to initialize native audio capture");
+            }
             nativeHandle = handle;
             open = true;
         }

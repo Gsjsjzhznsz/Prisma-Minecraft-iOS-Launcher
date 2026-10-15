@@ -15,6 +15,7 @@
 #import <CommonCrypto/CommonCrypto.h>
 #import <UIKit/UIKit.h>
 #import "PLProfiles.h"
+#import "ModService.h"   // Task274-h S11: Task225 isolation sniff (ame225_sniffedIsolationGameDirForProfile)
 #import "DataPackItem.h"
 #import "UZKArchive.h"
 #import "DownloadTaskManager.h"
@@ -136,6 +137,18 @@
                 NSString *clean = [gameDir hasPrefix:@"./"] ? [gameDir substringFromIndex:2] : gameDir;
                 const char *baseC = getenv("POJAV_GAME_DIR");
                 return baseC ? [[NSString stringWithUTF8String:baseC] stringByAppendingPathComponent:clean] : gameDir;
+            }
+            // ★ Task274-h S11（Task225 嗅探平移·双保险）：gameDir 缺失/空/"." 时先按
+            //   目录形状嗅探 versions/<lastVersionId>/game 隔离（与 ModService resolve
+            //   逐行同口径）——'.' 实例（AiInstanceCreator 仍写 '.'、A3 sweep 仅启动期
+            //   收敛）的数据包下载此前落共享根，与 mods 落点短暂分居。
+            {
+                NSString *ame225_sniffed = [ModService ame225_sniffedIsolationGameDirForProfile:prof];
+                if (ame225_sniffed.length > 0) {
+                    NSLog(@"[DataPackService] Task225 auto-sniffed isolation for profile %@ -> %@ (mods/saves present)",
+                          profile, ame225_sniffed.lastPathComponent);
+                    return ame225_sniffed;
+                }
             }
             if ([gameDir isKindOfClass:[NSString class]] && [gameDir isEqualToString:@"."]) {
                 const char *baseC = getenv("POJAV_GAME_DIR");

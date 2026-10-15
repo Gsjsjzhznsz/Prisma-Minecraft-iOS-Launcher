@@ -209,7 +209,7 @@ print("== J. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"J-{lang} 唯一键 3068（Task271 重锚实测：+186 ai.* 新键）", len(keys) == 3068, f"got {len(keys)}")
+    check(f"J-{lang} 唯一键 3071（Task274 重锚实测：Task273 ame273×3 入 14 表；ai.fix 重复键清理后 entries==unique）", len(keys) == 3071, f"got {len(keys)}")
 check("J-公告 6 条（Task255 清单 13 精简：pin 2 + 版本史 3 + 最新总攻 1）",
       len(ann) == 6
       and ann[0]["id"] == "server-recommend-2026-09-24"
@@ -229,8 +229,8 @@ check("K1 身份已迁移（Task259 com.prisma-devs.prisma——262 重锚）",
 check("K2 REVISION 保持 22 + Task219 附录在位（无 identity 变更不 bump）",
       "#define REVISION 22" in vh and "Task 219, no bump" in vh)
 mk = open("Makefile", "rb").read()
-check("K3 Makefile TAB 基线 671（Task258 dep_virgl 单行 guard 重构）",
-      sum(1 for line in mk.split(b"\n") if line.startswith(b"\t")) == 671)
+check("K3 Makefile TAB 基线 654（Task274 重锚实测：死代码清理 METHOD_INFOPLIST+dep_mobilegl -17 TAB 行）",
+      sum(1 for line in mk.split(b"\n") if line.startswith(b"\t")) == 654)
 yml = open(".github/workflows/development.yml", "rb").read()
 check("K4 工作流 CRLF 完整", yml.count(b"\r\n") == yml.count(b"\n"))
 

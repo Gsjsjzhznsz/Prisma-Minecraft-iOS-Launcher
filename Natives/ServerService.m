@@ -21,6 +21,10 @@
 @property (nonatomic, strong) NSMutableDictionary<NSURLSessionTask *, NSString *> *downloadDestinationPaths;
 @property (nonatomic, strong) NSMutableDictionary<NSURLSessionTask *, ServerProgressHandler> *downloadProgressHandlers;
 @property (nonatomic, strong) NSMutableDictionary<NSURLSessionTask *, NSString *> *downloadTaskIDs;
+// ★ Task274-h S4：四字典此前零锁跨线程读写（主线程登记 vs delegate 串行队列读写）
+//   = NSMutableDictionary 并发消息崩溃面；对齐 WorldService Task270 downloadStateLock
+//   同款锁纪律（六区段：登记/重试重建/didFinish 读+清/didWriteData 读/didComplete 读+清）。
+@property (nonatomic, strong) NSLock *downloadStateLock;
 @end
 
 @implementation ServerService
@@ -46,6 +50,7 @@
         _downloadDestinationPaths = [NSMutableDictionary dictionary];
         _downloadProgressHandlers = [NSMutableDictionary dictionary];
         _downloadTaskIDs = [NSMutableDictionary dictionary];
+        _downloadStateLock = [NSLock new];
     }
     return self;
 }
@@ -224,11 +229,14 @@
     }
 
     NSURLSessionDownloadTask *task = [self.downloadSession downloadTaskWithURL:url];
+    // ★ Task274-h S4：登记区跨线程加锁
+    [self.downloadStateLock lock];
     self.downloadCompletionHandlers[task] = completion;
     self.downloadDestinationPaths[task] = destPath;
     if (progress) {
         self.downloadProgressHandlers[task] = progress;
     }
+    [self.downloadStateLock unlock];
 
     // 注册到 DownloadTaskManager（统一进度跟踪）
     DownloadTaskItem *taskItem = [[DownloadTaskManager sharedManager]
@@ -240,7 +248,9 @@
                      supportsResume:YES
                             iconURL:serverItem.iconURL];
     taskItem.downloadURL = serverItem.serverPackDownloadURL;
+    [self.downloadStateLock lock];
     self.downloadTaskIDs[task] = taskItem.taskId;
+    [self.downloadStateLock unlock];
     [[DownloadTaskManager sharedManager] setTaskWithId:taskItem.taskId state:DownloadTaskStateDownloading];
 
     // 设置 retryHandler：FCL 风格重新下载
@@ -254,12 +264,15 @@
         NSURL *retryURL = [NSURL URLWithString:taskItemRef.downloadURL] ?: url;
         if (!retryURL) return nil;
         NSURLSessionDownloadTask *newTask = [strongSelf.downloadSession downloadTaskWithURL:retryURL];
+        // ★ Task274-h S4：重试重建区跨线程加锁（锁内不调 DownloadTaskManager）
+        [strongSelf.downloadStateLock lock];
         strongSelf.downloadCompletionHandlers[newTask] = capturedCompletion;
         strongSelf.downloadDestinationPaths[newTask] = capturedDestPath;
         if (capturedProgress) {
             strongSelf.downloadProgressHandlers[newTask] = capturedProgress;
         }
         strongSelf.downloadTaskIDs[newTask] = taskItemRef.taskId;
+        [strongSelf.downloadStateLock unlock];
         [[DownloadTaskManager sharedManager] setTaskWithId:taskItemRef.taskId state:DownloadTaskStateDownloading];
         [newTask resume];
         return newTask;
@@ -273,9 +286,12 @@
 - (void)URLSession:(NSURLSession *)session
       downloadTask:(NSURLSessionDownloadTask *)downloadTask
 didFinishDownloadingToURL:(NSURL *)location {
+    // ★ Task274-h S4：读区跨线程加锁
+    [self.downloadStateLock lock];
     ServerDownloadHandler handler = self.downloadCompletionHandlers[downloadTask];
     NSString *destinationPath = self.downloadDestinationPaths[downloadTask];
     NSString *taskID = self.downloadTaskIDs[downloadTask];
+    [self.downloadStateLock unlock];
 
     // 关键修复（旧任务覆盖新任务）：暂停→继续→重试重建任务后，被取消的旧 downloadTask
     // 的完成回调不得操作新任务。rawTask 指向当前活动任务，不一致即旧任务残留：丢弃。
@@ -286,10 +302,13 @@ didFinishDownloadingToURL:(NSURL *)location {
         }
     }
 
+    // ★ Task274-h S4：清区跨线程加锁
+    [self.downloadStateLock lock];
     [self.downloadCompletionHandlers removeObjectForKey:downloadTask];
     [self.downloadDestinationPaths removeObjectForKey:downloadTask];
     [self.downloadProgressHandlers removeObjectForKey:downloadTask];
     [self.downloadTaskIDs removeObjectForKey:downloadTask];
+    [self.downloadStateLock unlock];
 
     if (!handler || !destinationPath) return;
 
@@ -325,8 +344,11 @@ didFinishDownloadingToURL:(NSURL *)location {
       didWriteData:(int64_t)bytesWritten
  totalBytesWritten:(int64_t)totalBytesWritten
 totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
+    // ★ Task274-h S4：读区跨线程加锁
+    [self.downloadStateLock lock];
     void(^progress)(NSProgress *) = self.downloadProgressHandlers[downloadTask];
     NSString *taskID = self.downloadTaskIDs[downloadTask];
+    [self.downloadStateLock unlock];
 
     // 关键修复（旧任务覆盖新任务）：旧 downloadTask 的进度回调不得推进新任务进度
     if (taskID) {
@@ -356,8 +378,11 @@ totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
           task:(NSURLSessionTask *)task
 didCompleteWithError:(NSError *)error {
     if (error) {
+        // ★ Task274-h S4：读区跨线程加锁
+        [self.downloadStateLock lock];
         ServerDownloadHandler handler = self.downloadCompletionHandlers[task];
         NSString *taskID = self.downloadTaskIDs[task];
+        [self.downloadStateLock unlock];
 
         // 关键修复（旧任务覆盖新任务）：暂停→继续→重试重建任务后，被取消/替换的旧任务
         // 的取消回调不得把新任务打成 Failed。rawTask 指向当前活动任务，不一致即旧任务残留。
@@ -373,10 +398,13 @@ didCompleteWithError:(NSError *)error {
         }
         if (handler) {
             dispatch_async(dispatch_get_main_queue(), ^{ handler(error); });
+            // ★ Task274-h S4：清区跨线程加锁
+            [self.downloadStateLock lock];
             [self.downloadCompletionHandlers removeObjectForKey:task];
             [self.downloadDestinationPaths removeObjectForKey:task];
             [self.downloadProgressHandlers removeObjectForKey:task];
             [self.downloadTaskIDs removeObjectForKey:task];
+            [self.downloadStateLock unlock];
         }
     }
 }

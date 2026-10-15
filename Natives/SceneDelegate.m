@@ -295,12 +295,15 @@ extern BOOL Amethyst_EnforceSDL3Presentation(void);
 
 - (void)applyLanguageChange:(NSNotification *)notification {
     // 语言切换后重建根视图控制器以应用新语言
+    // ★ Task274-g（G2）：布局口径对齐 willConnect——仅显式写盘 "vs" 走三栏，
+    //   未选择过（nil/其他）走 Task180 定稿默认 card。旧实现口径反转
+    //   （仅 "card" 走卡片）：从未选过布局（nil）的用户切语言后布局被换成三栏。
     NSString *layout = getPrefObject(@"general.ui_layout");
     UIViewController *rootVC;
-    if ([layout isEqualToString:@"card"]) {
-        rootVC = [[LauncherCardLayoutViewController alloc] init];
-    } else {
+    if ([layout isEqualToString:@"vs"]) {
         rootVC = [[LauncherRootViewController alloc] init];
+    } else {
+        rootVC = [[LauncherCardLayoutViewController alloc] init];
     }
     [UIView transitionWithView:self.window duration:0.3 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
         self.window.rootViewController = rootVC;
@@ -534,6 +537,33 @@ static void AmeFGLogSwapStats(NSString *phase) {
 
 #pragma mark - Task273：PCL CE 式崩溃分析下次启动补弹
 
+/// ★ Task274-g（G6）：等呈现链上"收尾中"层走完再呈现。alert 动作 handler
+/// 触发时本 alert 正在收尾——此刻直接 present 会撞
+/// presentation-in-progress（疑似首点无响应）。遍历时跳过
+/// 正在收尾（isBeingDismissed）的顶层；顶端仍在收尾→ 0.4s 单次重试
+/// （Task271 D4 同款口径）；ame274_depth 防重试递归失控。
+static void ame274_presentAfterSettling(UIViewController *presenter, UIViewController *target, int ame274_depth) {
+    UIViewController *ame274_host = presenter;
+    NSInteger ame274_walk = 0;
+    while (ame274_host.presentedViewController != nil &&
+           !ame274_host.presentedViewController.isBeingDismissed && ame274_walk < 8) {
+        ame274_host = ame274_host.presentedViewController;
+        ame274_walk++;
+    }
+    if (ame274_host.presentedViewController != nil) {
+        if (ame274_depth <= 0) {
+            NSLog(@"[SceneDelegate] Task274: presentation still settling after retry, give up (view-full-log)");
+            return;
+        }
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.4 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            ame274_presentAfterSettling(presenter, target, ame274_depth - 1);
+        });
+        return;
+    }
+    [ame274_host presentViewController:target animated:YES completion:nil];
+}
+
 /// 读取 $POJAV_HOME/ame273_crash_report.txt（上次会话非零退出的崩溃原因，
 /// 由 main_hook ame273_writeCrashReport 在 hooked_exit 内同步落盘）→ 弹窗
 /// 展示"崩溃类别 + 关键原因行 + Fabric 修复建议 + 详情摘要"，动作：
@@ -616,7 +646,13 @@ static void AmeFGLogSwapStats(NSString *phase) {
             ame273_share.popoverPresentationController.sourceRect =
                 CGRectMake(presenter.view.bounds.size.width / 2.0,
                            presenter.view.bounds.size.height / 2.0, 1, 1);
-            [presenter presentViewController:ame273_share animated:YES completion:nil];
+            // ★ Task274-g（G6）：alert handler 触发时本 alert 正在收尾，直接
+            //   present 撞 presentation-in-progress（疑似首点无响应）——
+            //   等 0.5s 收尾动画走完，再从稳定顶端呈现（ame274_presentAfterSettling）。
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)),
+                           dispatch_get_main_queue(), ^{
+                ame274_presentAfterSettling(presenter, ame273_share, 1);
+            });
         }]];
         [ame273_alert addAction:[UIAlertAction actionWithTitle:localize(@"OK", nil)
             style:UIAlertActionStyleCancel handler:nil]];

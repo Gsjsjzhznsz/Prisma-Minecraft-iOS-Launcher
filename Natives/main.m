@@ -104,9 +104,9 @@ bool init_checkForJailbreak() {
     }
 
     // Check if we have platform bit set
-    uint32_t flags;
-    csops(0, CS_OPS_STATUS, &flags, sizeof(flags));
-    if ((flags & CS_PLATFORM_BINARY) != 0) {
+    // ★ Task274-f r2（F5）：flags 清零 + csops 返回值并入条件——原实现未初始化即用（csops 失败时按栈垃圾判定 platform 位）。失败/未置位统一落既有的 /Applications 目录探测兜底。
+    uint32_t flags = 0;
+    if (csops(0, CS_OPS_STATUS, &flags, sizeof(flags)) == 0 && (flags & CS_PLATFORM_BINARY) != 0) {
         return true;
     }
 
@@ -121,7 +121,7 @@ void init_logDeviceAndVer(char *argument) {
     NSLog(@"[Pre-Init] Fork: https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher");
     NSLog(@"[Pre-Init] Upstream: https://github.com/herbrine8403/Amethyst-iOS-MyRemastered");
     NSLog(@"[Pre-Init] Please try not to post this log of the remastered launcher to the original GitHub Issues for help.");
-    NSLog(@"[Pre-Init] Version: %@", NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"], CONFIG_TYPE);
+    NSLog(@"[Pre-Init] Version: %@ (%s)", NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"], CONFIG_TYPE);
     NSLog(@"[Pre-Init] Commit: %s (%s)", CONFIG_COMMIT, CONFIG_BRANCH);
     
     NSString *tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", NSBundle.mainBundle.bundlePath];

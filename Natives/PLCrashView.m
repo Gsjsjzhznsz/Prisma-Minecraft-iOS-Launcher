@@ -69,6 +69,33 @@ typedef NS_ENUM(NSInteger, CrashType) {
 static PLCrashView *currentCrashVC = nil;
 static NSString *const kGitHubIssuesURL = @"https://github.com/herbrine8403/Amethyst-iOS-MyRemastered/issues";
 
+/// ★ Task274-g（G5）：L2 崩溃界面呈现成功即消费 ame273_crash_report.txt（改名
+/// 归档 seen-<epoch>.txt）——否则下次启动 L3 会补弹同一崩溃（L2 已把原因展示过）。
+/// NSFileManager 自包含实现，不动 main_hook/utils（归并行代理）。仅在 L2 呈现
+/// 成功路径调用；L2 未呈现（keyWindow 缺失/提前被杀）不调用，报告保持原文件名
+/// 在盘，下次启动由 SceneDelegate L3 补弹（Task273 旗标协议语义不变）。
+static void ame274_archiveCrashReportAfterL2Present(void) {
+    @try {
+        NSString *home = [NSProcessInfo processInfo].environment[@"POJAV_HOME"];
+        if (home.length == 0) return;
+        NSFileManager *fm = [NSFileManager defaultManager];
+        NSString *path = [home stringByAppendingPathComponent:@"ame273_crash_report.txt"];
+        if (![fm fileExistsAtPath:path]) return;
+        NSString *archive = [home stringByAppendingPathComponent:
+            [NSString stringWithFormat:@"ame273_crash_report.seen-%.0f.txt",
+             [NSDate date].timeIntervalSince1970]];
+        [fm removeItemAtPath:archive error:nil];
+        NSError *moveError = nil;
+        if ([fm moveItemAtPath:path toPath:archive error:&moveError]) {
+            NSLog(@"[PLCrashView] Task274: L2 presented -> crash report archived as %@ (next-launch L3 will not re-pop)", archive.lastPathComponent);
+        } else {
+            NSLog(@"[PLCrashView] Task274: crash report archive failed (%@) -- kept on disk for next-launch L3", moveError.localizedDescription);
+        }
+    } @catch (NSException *ame274_e) {
+        NSLog(@"[PLCrashView] Task274: crash report archive exception: %@", ame274_e);
+    }
+}
+
 #pragma mark - Public Methods
 
 + (void)showWithExitCode:(int)exitCode {
@@ -124,6 +151,9 @@ static NSString *const kGitHubIssuesURL = @"https://github.com/herbrine8403/Amet
         //   分析首次真正有机会展示（装机 f71c88b：看门狗 150ms _exit 抢杀 =
         //   "启动器直接闪退"病灶）。
         ame273_crashViewDidPresent();
+        // ★ Task274-g（G5）：呈现成功即消费报告文件（归档改名）——L2 已把崩溃
+        //   原因展示给用户，报告留盘会让下次启动 L3 补弹同一崩溃。
+        ame274_archiveCrashReportAfterL2Present();
     });
 }
 
@@ -1044,49 +1074,91 @@ static NSString *const kGitHubIssuesURL = @"https://github.com/herbrine8403/Amet
 
 #pragma mark - Log Content
 
+/// Task274-g（G8）：只读文件尾部 maxBytes 字节（文件不足则整读），失败/空返回 nil。
+/// 供崩溃界面日志卡展示——崩溃时 latestlog 可达数 MB，主线程整读会拖住
+/// PLCrashView 呈现 8s 让路窗口（Task273 看门狗让路协议）。
+static NSString *ame274_readFileTail(NSString *path, NSUInteger maxBytes) {
+    if (path.length == 0) return nil;
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSDictionary *attrs = [fm attributesOfItemAtPath:path error:nil];
+    unsigned long long size = attrs ? [attrs fileSize] : 0;
+    if (size == 0) return nil;
+    NSFileHandle *fh = [NSFileHandle fileHandleForReadingAtPath:path];
+    if (!fh) return nil;
+    @try {
+        if (size > maxBytes) [fh seekToFileOffset:size - maxBytes];
+        NSData *logData = [fh readDataToEndOfFile];
+        [fh closeFile];
+        if (logData.length == 0) return nil;
+        NSString *s = [[NSString alloc] initWithData:logData encoding:NSUTF8StringEncoding];
+        if (!s) s = [[NSString alloc] initWithData:logData encoding:NSUTF8StringEncoding
+                              allowLossyConversion:YES];
+        return s;
+    } @catch (NSException *ame274_e) {
+        [fh closeFile];
+        return nil;
+    }
+}
+
 - (void)loadLogContent {
+    // ★ Task274-g（G8）：主线程同步整读 latestlog.txt（崩溃时数 MB）拖住崩溃呈现
+    //   8s 让路窗口——改后台队列只读尾部 4KB 回主线程塞 textView；
+    //   空文件/读失败回落现状占位行为（fatal_trace 尾窗同法）。
     NSString *latestlogPath = [NSString stringWithFormat:@"%s/latestlog.txt", getenv("POJAV_HOME")];
-    NSString *logContent = [NSString stringWithContentsOfFile:latestlogPath encoding:NSUTF8StringEncoding error:nil];
-
-    if (!logContent || logContent.length == 0) {
-        _logTextView.text = nil;
-        _logPlaceholderLabel.hidden = NO;
-        return;
-    }
-
-    // 获取最后150行
-    NSArray *lines = [logContent componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
-    NSInteger startIndex = MAX(0, (NSInteger)lines.count - 150);
-    NSMutableArray *lastLines = [NSMutableArray array];
-    for (NSInteger i = startIndex; i < (NSInteger)lines.count; i++) {
-        NSString *line = lines[i];
-        if (line.length > 0) {
-            [lastLines addObject:line];
-        }
-    }
-
-    _logTextView.text = [lastLines componentsJoinedByString:@"\n"];
-
-    // Task 27：日志尾部可能在死亡竞争中丢失（Task 26 教训），把 fatal_trace.txt
-    // 尾部追加显示（若存在）——这是错误界面上唯一直接可见的死亡现场
     NSString *tracePath = [NSString stringWithFormat:@"%s/fatal_trace.txt", getenv("POJAV_HOME")];
-    NSString *trace = [NSString stringWithContentsOfFile:tracePath encoding:NSUTF8StringEncoding error:nil];
-    if (trace.length > 0) {
-        NSArray *traceLines = [trace componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
-        NSInteger tStart = MAX(0, (NSInteger)traceLines.count - 40);
-        NSMutableArray *traceTail = [NSMutableArray arrayWithObject:@"----- fatal_trace.txt (tail) -----"];
-        for (NSInteger i = tStart; i < (NSInteger)traceLines.count; i++) {
-            NSString *tl = traceLines[i];
-            if (tl.length > 0) [traceTail addObject:tl];
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSString *logContent = ame274_readFileTail(latestlogPath, 4096);
+        if (logContent.length == 0) {
+            // 空文件/读失败：回落现状行为（占位提示；不追加 fatal_trace，同旧口径）
+            dispatch_async(dispatch_get_main_queue(), ^{
+                __strong typeof(self) strongSelf = weakSelf;
+                if (!strongSelf) return;
+                strongSelf.logTextView.text = nil;
+                strongSelf.logPlaceholderLabel.hidden = NO;
+            });
+            return;
         }
-        _logTextView.text = [_logTextView.text stringByAppendingFormat:@"\n%@", [traceTail componentsJoinedByString:@"\n"]];
-    }
 
-    _logPlaceholderLabel.hidden = _logTextView.text.length > 0;
+        // 尾窗首行可能是截断残行（仅尾读时）：裁掉后取最后 150 行（同旧语义）
+        NSArray *lines = [logContent componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+        NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:latestlogPath error:nil];
+        NSUInteger firstIdx = (attrs && [attrs fileSize] > 4096) ? 1 : 0;
+        NSInteger startIndex = MAX((NSInteger)firstIdx, (NSInteger)lines.count - 150);
+        NSMutableArray *lastLines = [NSMutableArray array];
+        for (NSInteger i = startIndex; i < (NSInteger)lines.count; i++) {
+            NSString *line = lines[i];
+            if (line.length > 0) {
+                [lastLines addObject:line];
+            }
+        }
+        NSMutableString *logText =
+            [NSMutableString stringWithString:[lastLines componentsJoinedByString:@"\n"]];
 
-    // 滚动到底部
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.logTextView scrollRangeToVisible:NSMakeRange(self.logTextView.text.length, 0)];
+        // Task 27：日志尾部可能在死亡竞争中丢失（Task 26 教训），把 fatal_trace.txt
+        // 尾部追加显示（若存在）——这是错误界面上唯一直接可见的死亡现场
+        NSString *trace = ame274_readFileTail(tracePath, 4096);
+        if (trace.length > 0) {
+            NSArray *traceLines = [trace componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+            NSDictionary *tAttrs = [[NSFileManager defaultManager] attributesOfItemAtPath:tracePath error:nil];
+            NSUInteger tFirst = (tAttrs && [tAttrs fileSize] > 4096) ? 1 : 0;
+            NSInteger tStart = MAX((NSInteger)tFirst, (NSInteger)traceLines.count - 40);
+            NSMutableArray *traceTail = [NSMutableArray arrayWithObject:@"----- fatal_trace.txt (tail) -----"];
+            for (NSInteger i = tStart; i < (NSInteger)traceLines.count; i++) {
+                NSString *tl = traceLines[i];
+                if (tl.length > 0) [traceTail addObject:tl];
+            }
+            [logText appendFormat:@"\n%@", [traceTail componentsJoinedByString:@"\n"]];
+        }
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            __strong typeof(self) strongSelf = weakSelf;
+            if (!strongSelf) return;
+            strongSelf.logTextView.text = logText;
+            strongSelf.logPlaceholderLabel.hidden = strongSelf.logTextView.text.length > 0;
+            // 滚动到底部
+            [strongSelf.logTextView scrollRangeToVisible:NSMakeRange(strongSelf.logTextView.text.length, 0)];
+        });
     });
 }
 

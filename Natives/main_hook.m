@@ -10,6 +10,7 @@
 #include <execinfo.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <os/lock.h>   // ★ Task274-f r2（F7 硬化）：os_unfair_lock/OS_UNFAIR_LOCK_INIT 声明头（前任 F7 改动依赖；utils.m 同款）
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdio.h>      // ★ Task273：ame273_writeCrashReport 的 fopen/fread/fprintf
@@ -326,6 +327,17 @@ static void ame273_write_report_file(const char *home, int code,
 }
 
 static void ame273_writeCrashReport(int code) {
+    // ★ Task274-f（F2）：一次性/防重入防护（参照本文件 ame_write_fatal_trace
+    //   的 CAS 语义）——两个线程同时 hooked_exit(≠0) 并发进入时，旧实现会
+    //   各自 fopen("wb") 同一报告文件互相截断。CAS 失败方直接返回：
+    //   赢家已确定性落盘一份完整报告（本进程正在死亡，一次性即正确；
+    //   与 L3 下次启动补弹完全兼容）。
+    static atomic_int ame274_reportBusy = 0;
+    int ame274_expected = 0;
+    if (!atomic_compare_exchange_strong(&ame274_reportBusy, &ame274_expected, 1)) {
+        NSLog(@"[Ame273] concurrent crash report write suppressed (one-shot guard, Task274-f F2)");
+        return;
+    }
     const char *home = getenv("POJAV_HOME");
     if (home == NULL) return;
 
@@ -364,6 +376,11 @@ static void ame273_writeCrashReport(int code) {
             lines[lineCount].len = ll;
             lineCount++;
             if (nl == NULL) break;
+            // ★ Task274-f（F2）：就地 NUL 截断本行——行指针只是 buf 内部切片，
+            //   原实现各行无终止符，下方 strstr 分类扫描会跨行连扫到后续行
+            //   （近似解析：分类/定位可归到错误行）。覆写 '\n' 为 '\0' 不影响
+            //   已记录的 start/len（%.*s 按长度输出），仅让 strstr 精确止于行尾。
+            *(char *)nl = '\0';
             p = nl + 1;
         }
     }
@@ -819,40 +836,86 @@ void* hooked_dlopen(const char* path, int mode) {
 // 当 redirectFunctionHWBreakpoint 被选中时，dlopen 需要通过硬件断点 + Mach 异常
 // 来重定向 dyld 内的 mmap/fcntl 调用，因为此时无法直接修改 dyld 代码段。
 // ============================================================================
-void *exception_handler(void *unused) {
-    mach_msg_server(mach_exc_server, sizeof(union __RequestUnion__catch_mach_exc_subsystem), excPort, MACH_MSG_OPTION_NONE);
+void *exception_handler(void *portArg) {
+    // Task274-f（F7）：端口经线程参数传入——创建流程改为"全部就绪才发布
+    //   excPort"，异常服务线程不再依赖该全局的发布时序（旧序 pthread_create
+    //   与赋值之间存在读空窗口）。
+    mach_port_t ame274_excSrvPort = (mach_port_t)(uintptr_t)portArg;
+    mach_msg_server(mach_exc_server, sizeof(union __RequestUnion__catch_mach_exc_subsystem), ame274_excSrvPort, MACH_MSG_OPTION_NONE);
     abort();
 }
 
 void *hooked_dlopen_26_ppl(const char *path, int mode) {
+    // ★ Task274-f（F7）：excPort 惰性创建收口——旧实现无锁 if(!excPort)，
+    //   并发 dlopen 首调 = 双 receive 端口 + 双异常服务线程（后建者顶掉
+    //   先建者，异常端口指向已无人服务的端口）；mach_port_allocate/
+    //   pthread_create 返回值被忽略（分配失败时空端口仍被当异常端口硬闯）。
+    //   os_unfair_lock 收口单次创建 + 全链返回值检查：任一步失败回收
+    //   半成品端口，excPort 保持 NULL（下方 fallback 跳过调试状态手术，
+    //   dlopen 语义照常）。
+    static os_unfair_lock ame274_excLock = OS_UNFAIR_LOCK_INIT;
     if (!excPort) {
-        mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &excPort);
-        mach_port_insert_right(mach_task_self(), excPort, excPort, MACH_MSG_TYPE_MAKE_SEND);
-        pthread_t thread;
-        pthread_create(&thread, NULL, exception_handler, NULL);
+        os_unfair_lock_lock(&ame274_excLock);
+        if (!excPort) {
+            mach_port_t ame274_newPort = MACH_PORT_NULL;
+            kern_return_t ame274_kr = mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &ame274_newPort);
+            if (ame274_kr == KERN_SUCCESS) {
+                ame274_kr = mach_port_insert_right(mach_task_self(), ame274_newPort, ame274_newPort, MACH_MSG_TYPE_MAKE_SEND);
+                if (ame274_kr == KERN_SUCCESS) {
+                    pthread_t ame274_srvThread;
+                    int ame274_pthrRc = pthread_create(&ame274_srvThread, NULL, exception_handler, (void *)(uintptr_t)ame274_newPort);
+                    if (ame274_pthrRc == 0) {   // ★ Task274-f r2（F7 硬化）：返回值即错误码，日志直接用（原 errno 无 <errno.h> 头文件保障）
+                        pthread_detach(ame274_srvThread);
+                        excPort = ame274_newPort;   // 全部就绪才发布（double-checked 读侧免锁）
+                    } else {
+                        // 服务线程起不来：端口无用，整体销毁（一并释放发送权与接收权）
+                        mach_port_destroy(mach_task_self(), ame274_newPort);
+                        NSLog(@"main_hook: Task274-f pthread_create(exception_handler) failed (%d) -- HW breakpoint dlopen redirect disabled", ame274_pthrRc);   // ★ Task274-f r2（F7 硬化）
+                    }
+                } else {
+                    mach_port_destroy(mach_task_self(), ame274_newPort);
+                    NSLog(@"main_hook: Task274-f mach_port_insert_right failed (%d) -- HW breakpoint dlopen redirect disabled", ame274_kr);
+                }
+            } else {
+                NSLog(@"main_hook: Task274-f mach_port_allocate failed (%d) -- HW breakpoint dlopen redirect disabled", ame274_kr);
+            }
+        }
+        os_unfair_lock_unlock(&ame274_excLock);
     }
 
-    // save old thread states
-    exception_mask_t mask = EXC_MASK_BREAKPOINT;
-    mach_msg_type_number_t masksCnt = 1;
-    exception_handler_t handler = excPort;
-    exception_behavior_t behavior = EXCEPTION_STATE | MACH_EXCEPTION_CODES;
-    thread_state_flavor_t flavor = ARM_THREAD_STATE64;
+    // ★ Task274-f（F7）：fallback——excPort 未就绪（创建失败）时跳过调试状态
+    //   手术：旧行为会带着空异常端口设置硬件断点（breakpoint 触发无人接管
+    //   = SIGTRAP），并丢失旧端口状态。跳过后 dlopen 原语义照常（@loader_path
+    //   修正保留），仅缺 HW 断点重定向能力。
+    mach_port_t thread = MACH_PORT_NULL;
+    exception_mask_t origMask = 0;
+    mach_msg_type_number_t origCnt = 0;
+    exception_handler_t origHandler = MACH_PORT_NULL;
+    exception_behavior_t origBehavior = 0;
+    thread_state_flavor_t origFlavor = 0;
     arm_debug_state64_t origDebugState;
-    mach_port_t thread = mach_thread_self();
-    thread_get_state(thread, ARM_DEBUG_STATE64, (thread_state_t)&origDebugState, &(mach_msg_type_number_t){ARM_DEBUG_STATE64_COUNT});
-    thread_swap_exception_ports(thread, mask, handler, behavior, flavor, &mask, &masksCnt, &handler, &behavior, &flavor);
-    if (masksCnt != 1) {
-        NSLog(@"main_hook: Expected 1 exception port, got %d. HW breakpoint hook may fail.", masksCnt);
-    }
+    if (excPort) {
+        // save old thread states
+        exception_mask_t mask = EXC_MASK_BREAKPOINT;
+        mach_msg_type_number_t masksCnt = 1;
+        exception_handler_t handler = excPort;
+        exception_behavior_t behavior = EXCEPTION_STATE | MACH_EXCEPTION_CODES;
+        thread_state_flavor_t flavor = ARM_THREAD_STATE64;
+        thread = mach_thread_self();
+        thread_get_state(thread, ARM_DEBUG_STATE64, (thread_state_t)&origDebugState, &(mach_msg_type_number_t){ARM_DEBUG_STATE64_COUNT});
+        thread_swap_exception_ports(thread, mask, handler, behavior, flavor, &origMask, &origCnt, &origHandler, &origBehavior, &origFlavor);
+        if (origCnt != 1) {
+            NSLog(@"main_hook: Expected 1 exception port, got %d. HW breakpoint hook may fail.", origCnt);
+        }
 
-    // hook stuff. this will overwrite LiveContainer private container multitask's hook, we will load __TEXT using JIT inside
-    arm_debug_state64_t hookDebugState = {0};
-    for(int i = 0; i < 6 && hwRedirectOrig[i]; i++) {
-        hookDebugState.__bvr[i] = (uint64_t)hwRedirectOrig[i];
-        hookDebugState.__bcr[i] = 0x1e5;
+        // hook stuff. this will overwrite LiveContainer private container multitask's hook, we will load __TEXT using JIT inside
+        arm_debug_state64_t hookDebugState = {0};
+        for(int i = 0; i < 6 && hwRedirectOrig[i]; i++) {
+            hookDebugState.__bvr[i] = (uint64_t)hwRedirectOrig[i];
+            hookDebugState.__bcr[i] = 0x1e5;
+        }
+        thread_set_state(thread, ARM_DEBUG_STATE64, (thread_state_t)&hookDebugState, ARM_DEBUG_STATE64_COUNT);
     }
-    thread_set_state(thread, ARM_DEBUG_STATE64, (thread_state_t)&hookDebugState, ARM_DEBUG_STATE64_COUNT);
 
     // fixup @loader_path since we cannot use musttail here
     void *result;
@@ -867,8 +930,13 @@ void *hooked_dlopen_26_ppl(const char *path, int mode) {
     }
 
     // restore old thread states
-    thread_set_state(thread, ARM_DEBUG_STATE64, (thread_state_t)&origDebugState, ARM_DEBUG_STATE64_COUNT);
-    thread_swap_exception_ports(thread, mask, handler, behavior, flavor, &mask, &masksCnt, &handler, &behavior, &flavor);
+    if (thread != MACH_PORT_NULL) {
+        thread_set_state(thread, ARM_DEBUG_STATE64, (thread_state_t)&origDebugState, ARM_DEBUG_STATE64_COUNT);
+        thread_swap_exception_ports(thread, origMask, origHandler, origBehavior, origFlavor, &origMask, &origCnt, &origHandler, &origBehavior, &origFlavor);
+        // ★ Task274-f（F7）：mach_thread_self() 返回的发送权用完即还（原实现
+        //   每次调用泄漏 +1 发送权；仅释放本调用持有的引用，不影响线程本身）。
+        mach_port_deallocate(mach_task_self(), thread);
+    }
 
     return result;
 }
@@ -1207,6 +1275,18 @@ static VkZResult retryPipelineWithSIntFormats(
     VkZVertexInputBindingDescription** allocedBindings = calloc(createInfoCount, sizeof(VkZVertexInputBindingDescription*));
     VkZVertexInputAttributeDescription** allocedAttrs = calloc(createInfoCount, sizeof(VkZVertexInputAttributeDescription*));
 
+    // ★ Task274-f（F8）：OOM 根治——原实现 malloc/calloc 返回值未查，分配
+    //   失败时 memcpy 落 NULL = SIGSEGV。任一失败即释放已分配块，走与
+    //   "真实函数句柄缺失"同款的既有错误分支。
+    if (newCreateInfos == NULL || newVIS == NULL || allocedBindings == NULL || allocedAttrs == NULL) {
+        free(newCreateInfos);
+        free(newVIS);
+        free(allocedBindings);
+        free(allocedAttrs);
+        NSLog(@"[ZinkStrideFix] OOM preparing UINT->SINT retry copies -- returning initialization failure");
+        return VK_Z_ERROR_INITIALIZATION_FAILED;
+    }
+
     memcpy(newCreateInfos, pCreateInfos, sizeof(VkZGraphicsPipelineCreateInfo) * createInfoCount);
 
     for (uint32_t i = 0; i < createInfoCount; i++) {
@@ -1219,6 +1299,20 @@ static VkZResult retryPipelineWithSIntFormats(
         if (vis->pVertexAttributeDescriptions && vis->vertexAttributeDescriptionCount > 0) {
             uint32_t attrCount = vis->vertexAttributeDescriptionCount;
             VkZVertexInputAttributeDescription* newAttrs = malloc(sizeof(VkZVertexInputAttributeDescription) * attrCount);
+            if (newAttrs == NULL) {
+                // ★ Task274-f（F8）：深拷贝中途 OOM——按槽位释放（calloc 清零，
+                //   未分配槽位为 NULL，free(NULL) 安全）后走既有错误分支。
+                for (uint32_t ame274_k = 0; ame274_k < createInfoCount; ame274_k++) {
+                    free(allocedBindings[ame274_k]);
+                    free(allocedAttrs[ame274_k]);
+                }
+                free(allocedAttrs);
+                free(allocedBindings);
+                free(newVIS);
+                free(newCreateInfos);
+                NSLog(@"[ZinkStrideFix] OOM copying vertex attribute descriptions -- returning initialization failure");
+                return VK_Z_ERROR_INITIALIZATION_FAILED;
+            }
             memcpy(newAttrs, vis->pVertexAttributeDescriptions, sizeof(VkZVertexInputAttributeDescription) * attrCount);
             for (uint32_t j = 0; j < attrCount; j++) {
                 if (isVkUIntFormat(newAttrs[j].format)) {
@@ -1244,6 +1338,19 @@ static VkZResult retryPipelineWithSIntFormats(
             if (pipelineNeedsAlignment) {
                 uint32_t bindingCount = vis->vertexBindingDescriptionCount;
                 VkZVertexInputBindingDescription* newBindings = malloc(sizeof(VkZVertexInputBindingDescription) * bindingCount);
+                if (newBindings == NULL) {
+                    // ★ Task274-f（F8）：深拷贝中途 OOM（同 newAttrs 分支）。
+                    for (uint32_t ame274_k = 0; ame274_k < createInfoCount; ame274_k++) {
+                        free(allocedBindings[ame274_k]);
+                        free(allocedAttrs[ame274_k]);
+                    }
+                    free(allocedAttrs);
+                    free(allocedBindings);
+                    free(newVIS);
+                    free(newCreateInfos);
+                    NSLog(@"[ZinkStrideFix] OOM copying vertex binding descriptions -- returning initialization failure");
+                    return VK_Z_ERROR_INITIALIZATION_FAILED;
+                }
                 memcpy(newBindings, vis->pVertexBindingDescriptions, sizeof(VkZVertexInputBindingDescription) * bindingCount);
                 for (uint32_t j = 0; j < bindingCount; j++) {
                     uint32_t oldStride = newBindings[j].stride;
@@ -1293,6 +1400,16 @@ static VkZResult createPipelinesWithAlignedStrides(
     VkZPipelineVertexInputStateCreateInfo* newVIS = malloc(sizeof(VkZPipelineVertexInputStateCreateInfo) * createInfoCount);
     VkZVertexInputBindingDescription** allocedBindings = calloc(createInfoCount, sizeof(VkZVertexInputBindingDescription*));
 
+    // ★ Task274-f（F8）：OOM 根治（同 retryPipelineWithSIntFormats）——分配
+    //   失败即释放已分配块并走既有错误分支，memcpy 不再落 NULL。
+    if (newCreateInfos == NULL || newVIS == NULL || allocedBindings == NULL) {
+        free(newCreateInfos);
+        free(newVIS);
+        free(allocedBindings);
+        NSLog(@"[ZinkStrideFix] OOM preparing stride-alignment copies -- returning initialization failure");
+        return VK_Z_ERROR_INITIALIZATION_FAILED;
+    }
+
     memcpy(newCreateInfos, pCreateInfos, sizeof(VkZGraphicsPipelineCreateInfo) * createInfoCount);
 
     for (uint32_t i = 0; i < createInfoCount; i++) {
@@ -1310,6 +1427,17 @@ static VkZResult createPipelinesWithAlignedStrides(
 
         uint32_t bindingCount = vis->vertexBindingDescriptionCount;
         VkZVertexInputBindingDescription* newBindings = malloc(sizeof(VkZVertexInputBindingDescription) * bindingCount);
+        if (newBindings == NULL) {
+            // ★ Task274-f（F8）：深拷贝中途 OOM（同 retryPipeline 分支，无 allocedAttrs）。
+            for (uint32_t ame274_k = 0; ame274_k < createInfoCount; ame274_k++) {
+                free(allocedBindings[ame274_k]);
+            }
+            free(allocedBindings);
+            free(newVIS);
+            free(newCreateInfos);
+            NSLog(@"[ZinkStrideFix] OOM copying vertex binding descriptions -- returning initialization failure");
+            return VK_Z_ERROR_INITIALIZATION_FAILED;
+        }
         memcpy(newBindings, vis->pVertexBindingDescriptions, sizeof(VkZVertexInputBindingDescription) * bindingCount);
         for (uint32_t j = 0; j < bindingCount; j++) {
             uint32_t oldStride = newBindings[j].stride;
@@ -1471,81 +1599,79 @@ static VkZResult amethyst_vkCreateGraphicsPipelines(
     return VK_Z_SUCCESS;
 }
 
+// ★ Task274-f（F11）：两个 vk wrapper 的 10 符号×2 strcmp 复制块收敛为表驱动。
+// 表项语义与原 if-strcmp 链逐一对应：命中 name → 惰性解析 *real（若空且上游
+// resolver 可用）→ 返回 hook；未命中名落原有尾部（resolver 空时
+// amethyst_orig_dlsym 兜底）。(void*) 函数指针转换与 &g_real 槽位写法沿用
+// zinkStrideFixRebind 的 fishhook rebindings 先例；查表顺序 = 原链顺序，
+// 零行为变更。
+typedef struct {
+    const char *name;   // 被拦截的入口名
+    void *hook;         // 返回给调用方的我们的 hook
+    void **real;        // 惰性解析槽（&g_real_X）
+} ame274_vk_hook_entry_t;
+
+// 前向声明（hook 实现体在本表之后定义；static 函数需先声明方可入表）
+static void* amethyst_vkGetDeviceProcAddr(VkZDevice device, const char* pName);
+static void amethyst_vkCmdBindPipeline(VkZCommandBuffer cmd, VkZPipelineBindPoint bp, VkZPipeline pipeline);
+static void amethyst_vkCmdDraw(VkZCommandBuffer cmd, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
+static void amethyst_vkCmdDrawIndexed(VkZCommandBuffer cmd, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance);
+static void amethyst_vkCmdDrawIndirect(VkZCommandBuffer cmd, uint64_t buffer, uint64_t offset, uint32_t drawCount, uint32_t stride);
+static void amethyst_vkCmdDrawIndexedIndirect(VkZCommandBuffer cmd, uint64_t buffer, uint64_t offset, uint32_t drawCount, uint32_t stride);
+static void amethyst_vkCmdDrawIndirectCount(VkZCommandBuffer cmd, uint64_t buffer, uint64_t offset, uint64_t countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
+static void amethyst_vkCmdDrawIndexedIndirectCount(VkZCommandBuffer cmd, uint64_t buffer, uint64_t offset, uint64_t countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
+static void amethyst_vkDestroyPipeline(VkZDevice device, VkZPipeline pipeline, const void* pAllocator);
+
+// vkGetInstanceProcAddr 视角的可拦截入口（顺序 = 原 strcmp 链顺序）
+static const ame274_vk_hook_entry_t ame274_vkInstanceHookTable[] = {
+    {"vkGetDeviceProcAddr",           (void *)amethyst_vkGetDeviceProcAddr,           (void **)&g_real_vkGetDeviceProcAddr},
+    {"vkCreateGraphicsPipelines",     (void *)amethyst_vkCreateGraphicsPipelines,     (void **)&g_real_vkCreateGraphicsPipelines},
+    {"vkCmdBindPipeline",             (void *)amethyst_vkCmdBindPipeline,             (void **)&g_real_vkCmdBindPipeline},
+    {"vkCmdDraw",                     (void *)amethyst_vkCmdDraw,                     (void **)&g_real_vkCmdDraw},
+    {"vkCmdDrawIndexed",              (void *)amethyst_vkCmdDrawIndexed,              (void **)&g_real_vkCmdDrawIndexed},
+    {"vkCmdDrawIndirect",             (void *)amethyst_vkCmdDrawIndirect,             (void **)&g_real_vkCmdDrawIndirect},
+    {"vkCmdDrawIndexedIndirect",      (void *)amethyst_vkCmdDrawIndexedIndirect,      (void **)&g_real_vkCmdDrawIndexedIndirect},
+    {"vkCmdDrawIndirectCount",        (void *)amethyst_vkCmdDrawIndirectCount,        (void **)&g_real_vkCmdDrawIndirectCount},
+    {"vkCmdDrawIndexedIndirectCount", (void *)amethyst_vkCmdDrawIndexedIndirectCount, (void **)&g_real_vkCmdDrawIndexedIndirectCount},
+    {"vkDestroyPipeline",             (void *)amethyst_vkDestroyPipeline,             (void **)&g_real_vkDestroyPipeline},
+};
+
+// vkGetDeviceProcAddr 视角的可拦截入口（原链不含 vkGetDeviceProcAddr 自身）
+static const ame274_vk_hook_entry_t ame274_vkDeviceHookTable[] = {
+    {"vkCreateGraphicsPipelines",     (void *)amethyst_vkCreateGraphicsPipelines,     (void **)&g_real_vkCreateGraphicsPipelines},
+    {"vkCmdBindPipeline",             (void *)amethyst_vkCmdBindPipeline,             (void **)&g_real_vkCmdBindPipeline},
+    {"vkCmdDraw",                     (void *)amethyst_vkCmdDraw,                     (void **)&g_real_vkCmdDraw},
+    {"vkCmdDrawIndexed",              (void *)amethyst_vkCmdDrawIndexed,              (void **)&g_real_vkCmdDrawIndexed},
+    {"vkCmdDrawIndirect",             (void *)amethyst_vkCmdDrawIndirect,             (void **)&g_real_vkCmdDrawIndirect},
+    {"vkCmdDrawIndexedIndirect",      (void *)amethyst_vkCmdDrawIndexedIndirect,      (void **)&g_real_vkCmdDrawIndexedIndirect},
+    {"vkCmdDrawIndirectCount",        (void *)amethyst_vkCmdDrawIndirectCount,        (void **)&g_real_vkCmdDrawIndirectCount},
+    {"vkCmdDrawIndexedIndirectCount", (void *)amethyst_vkCmdDrawIndexedIndirectCount, (void **)&g_real_vkCmdDrawIndexedIndirectCount},
+    {"vkDestroyPipeline",             (void *)amethyst_vkDestroyPipeline,             (void **)&g_real_vkDestroyPipeline},
+};
+
+static const ame274_vk_hook_entry_t *ame274_vkFindHookEntry(
+    const ame274_vk_hook_entry_t *table, size_t tableCount, const char *pName) {
+    for (size_t ame274_i = 0; ame274_i < tableCount; ame274_i++) {
+        if (strcmp(pName, table[ame274_i].name) == 0) {
+            return &table[ame274_i];
+        }
+    }
+    return NULL;
+}
+
 /// vkGetInstanceProcAddr wrapper
 /// 拦截 vkGetDeviceProcAddr、vkCreateGraphicsPipelines、vkCmd* 请求，返回我们的 hook
 static void* amethyst_vkGetInstanceProcAddr(VkZInstance instance, const char* pName) {
     if (pName) {
-        if (strcmp(pName, "vkGetDeviceProcAddr") == 0) {
-            if (!g_real_vkGetDeviceProcAddr && g_real_vkGetInstanceProcAddr) {
-                g_real_vkGetDeviceProcAddr = (PFN_zkGetDeviceProcAddr)
-                    g_real_vkGetInstanceProcAddr(instance, pName);
+        const ame274_vk_hook_entry_t *ame274_e = ame274_vkFindHookEntry(
+            ame274_vkInstanceHookTable,
+            sizeof(ame274_vkInstanceHookTable) / sizeof(ame274_vkInstanceHookTable[0]),
+            pName);
+        if (ame274_e != NULL) {
+            if (!*ame274_e->real && g_real_vkGetInstanceProcAddr) {
+                *ame274_e->real = (void *)g_real_vkGetInstanceProcAddr(instance, pName);
             }
-            return (void*)amethyst_vkGetDeviceProcAddr;
-        }
-        if (strcmp(pName, "vkCreateGraphicsPipelines") == 0) {
-            if (!g_real_vkCreateGraphicsPipelines && g_real_vkGetInstanceProcAddr) {
-                g_real_vkCreateGraphicsPipelines = (PFN_zkCreateGraphicsPipelines)
-                    g_real_vkGetInstanceProcAddr(instance, pName);
-            }
-            return (void*)amethyst_vkCreateGraphicsPipelines;
-        }
-        // vkCmd* hooks（dummy pipeline skip draws）
-        if (strcmp(pName, "vkCmdBindPipeline") == 0) {
-            if (!g_real_vkCmdBindPipeline && g_real_vkGetInstanceProcAddr) {
-                g_real_vkCmdBindPipeline = (PFN_zkCmdBindPipeline)
-                    g_real_vkGetInstanceProcAddr(instance, pName);
-            }
-            return (void*)amethyst_vkCmdBindPipeline;
-        }
-        if (strcmp(pName, "vkCmdDraw") == 0) {
-            if (!g_real_vkCmdDraw && g_real_vkGetInstanceProcAddr) {
-                g_real_vkCmdDraw = (PFN_zkCmdDraw)
-                    g_real_vkGetInstanceProcAddr(instance, pName);
-            }
-            return (void*)amethyst_vkCmdDraw;
-        }
-        if (strcmp(pName, "vkCmdDrawIndexed") == 0) {
-            if (!g_real_vkCmdDrawIndexed && g_real_vkGetInstanceProcAddr) {
-                g_real_vkCmdDrawIndexed = (PFN_zkCmdDrawIndexed)
-                    g_real_vkGetInstanceProcAddr(instance, pName);
-            }
-            return (void*)amethyst_vkCmdDrawIndexed;
-        }
-        if (strcmp(pName, "vkCmdDrawIndirect") == 0) {
-            if (!g_real_vkCmdDrawIndirect && g_real_vkGetInstanceProcAddr) {
-                g_real_vkCmdDrawIndirect = (PFN_zkCmdDrawIndirect)
-                    g_real_vkGetInstanceProcAddr(instance, pName);
-            }
-            return (void*)amethyst_vkCmdDrawIndirect;
-        }
-        if (strcmp(pName, "vkCmdDrawIndexedIndirect") == 0) {
-            if (!g_real_vkCmdDrawIndexedIndirect && g_real_vkGetInstanceProcAddr) {
-                g_real_vkCmdDrawIndexedIndirect = (PFN_zkCmdDrawIndexedIndirect)
-                    g_real_vkGetInstanceProcAddr(instance, pName);
-            }
-            return (void*)amethyst_vkCmdDrawIndexedIndirect;
-        }
-        if (strcmp(pName, "vkCmdDrawIndirectCount") == 0) {
-            if (!g_real_vkCmdDrawIndirectCount && g_real_vkGetInstanceProcAddr) {
-                g_real_vkCmdDrawIndirectCount = (PFN_zkCmdDrawIndirectCount)
-                    g_real_vkGetInstanceProcAddr(instance, pName);
-            }
-            return (void*)amethyst_vkCmdDrawIndirectCount;
-        }
-        if (strcmp(pName, "vkCmdDrawIndexedIndirectCount") == 0) {
-            if (!g_real_vkCmdDrawIndexedIndirectCount && g_real_vkGetInstanceProcAddr) {
-                g_real_vkCmdDrawIndexedIndirectCount = (PFN_zkCmdDrawIndexedIndirectCount)
-                    g_real_vkGetInstanceProcAddr(instance, pName);
-            }
-            return (void*)amethyst_vkCmdDrawIndexedIndirectCount;
-        }
-        // vkDestroyPipeline hook：dummy pipeline 销毁时跳过，避免 MoltenVK 崩溃
-        if (strcmp(pName, "vkDestroyPipeline") == 0) {
-            if (!g_real_vkDestroyPipeline && g_real_vkGetInstanceProcAddr) {
-                g_real_vkDestroyPipeline = (PFN_zkDestroyPipeline)
-                    g_real_vkGetInstanceProcAddr(instance, pName);
-            }
-            return (void*)amethyst_vkDestroyPipeline;
+            return ame274_e->hook;
         }
     }
     if (!g_real_vkGetInstanceProcAddr) {
@@ -1560,70 +1686,15 @@ static void* amethyst_vkGetInstanceProcAddr(VkZInstance instance, const char* pN
 /// 拦截 vkCreateGraphicsPipelines、vkCmd* 请求，返回我们的 hook
 static void* amethyst_vkGetDeviceProcAddr(VkZDevice device, const char* pName) {
     if (pName) {
-        if (strcmp(pName, "vkCreateGraphicsPipelines") == 0) {
-            if (!g_real_vkCreateGraphicsPipelines && g_real_vkGetDeviceProcAddr) {
-                g_real_vkCreateGraphicsPipelines = (PFN_zkCreateGraphicsPipelines)
-                    g_real_vkGetDeviceProcAddr(device, pName);
+        const ame274_vk_hook_entry_t *ame274_e = ame274_vkFindHookEntry(
+            ame274_vkDeviceHookTable,
+            sizeof(ame274_vkDeviceHookTable) / sizeof(ame274_vkDeviceHookTable[0]),
+            pName);
+        if (ame274_e != NULL) {
+            if (!*ame274_e->real && g_real_vkGetDeviceProcAddr) {
+                *ame274_e->real = (void *)g_real_vkGetDeviceProcAddr(device, pName);
             }
-            return (void*)amethyst_vkCreateGraphicsPipelines;
-        }
-        // vkCmd* hooks（dummy pipeline skip draws）
-        if (strcmp(pName, "vkCmdBindPipeline") == 0) {
-            if (!g_real_vkCmdBindPipeline && g_real_vkGetDeviceProcAddr) {
-                g_real_vkCmdBindPipeline = (PFN_zkCmdBindPipeline)
-                    g_real_vkGetDeviceProcAddr(device, pName);
-            }
-            return (void*)amethyst_vkCmdBindPipeline;
-        }
-        if (strcmp(pName, "vkCmdDraw") == 0) {
-            if (!g_real_vkCmdDraw && g_real_vkGetDeviceProcAddr) {
-                g_real_vkCmdDraw = (PFN_zkCmdDraw)
-                    g_real_vkGetDeviceProcAddr(device, pName);
-            }
-            return (void*)amethyst_vkCmdDraw;
-        }
-        if (strcmp(pName, "vkCmdDrawIndexed") == 0) {
-            if (!g_real_vkCmdDrawIndexed && g_real_vkGetDeviceProcAddr) {
-                g_real_vkCmdDrawIndexed = (PFN_zkCmdDrawIndexed)
-                    g_real_vkGetDeviceProcAddr(device, pName);
-            }
-            return (void*)amethyst_vkCmdDrawIndexed;
-        }
-        if (strcmp(pName, "vkCmdDrawIndirect") == 0) {
-            if (!g_real_vkCmdDrawIndirect && g_real_vkGetDeviceProcAddr) {
-                g_real_vkCmdDrawIndirect = (PFN_zkCmdDrawIndirect)
-                    g_real_vkGetDeviceProcAddr(device, pName);
-            }
-            return (void*)amethyst_vkCmdDrawIndirect;
-        }
-        if (strcmp(pName, "vkCmdDrawIndexedIndirect") == 0) {
-            if (!g_real_vkCmdDrawIndexedIndirect && g_real_vkGetDeviceProcAddr) {
-                g_real_vkCmdDrawIndexedIndirect = (PFN_zkCmdDrawIndexedIndirect)
-                    g_real_vkGetDeviceProcAddr(device, pName);
-            }
-            return (void*)amethyst_vkCmdDrawIndexedIndirect;
-        }
-        if (strcmp(pName, "vkCmdDrawIndirectCount") == 0) {
-            if (!g_real_vkCmdDrawIndirectCount && g_real_vkGetDeviceProcAddr) {
-                g_real_vkCmdDrawIndirectCount = (PFN_zkCmdDrawIndirectCount)
-                    g_real_vkGetDeviceProcAddr(device, pName);
-            }
-            return (void*)amethyst_vkCmdDrawIndirectCount;
-        }
-        if (strcmp(pName, "vkCmdDrawIndexedIndirectCount") == 0) {
-            if (!g_real_vkCmdDrawIndexedIndirectCount && g_real_vkGetDeviceProcAddr) {
-                g_real_vkCmdDrawIndexedIndirectCount = (PFN_zkCmdDrawIndexedIndirectCount)
-                    g_real_vkGetDeviceProcAddr(device, pName);
-            }
-            return (void*)amethyst_vkCmdDrawIndexedIndirectCount;
-        }
-        // vkDestroyPipeline hook：dummy pipeline 销毁时跳过，避免 MoltenVK 崩溃
-        if (strcmp(pName, "vkDestroyPipeline") == 0) {
-            if (!g_real_vkDestroyPipeline && g_real_vkGetDeviceProcAddr) {
-                g_real_vkDestroyPipeline = (PFN_zkDestroyPipeline)
-                    g_real_vkGetDeviceProcAddr(device, pName);
-            }
-            return (void*)amethyst_vkDestroyPipeline;
+            return ame274_e->hook;
         }
     }
     if (!g_real_vkGetDeviceProcAddr) {
@@ -2142,11 +2213,15 @@ static void *ame202_tinyglHandle(void) {
 
 /// hooked_dlsym 的直接调用者是否 tinygl4angle 自身（其 ame182_resolve 的
 /// 兜底 dlsym(framework, gl*) 不能被钉扎截胡——会解析回自己）。
-/// noinline + 返回地址层级 1：level0 = hooked_dlsym 内的调用点，
-/// level1 = hooked_dlsym 的调用者（即真正的发起方）。
+/// noinline + 返回地址层级 2（Task274-f F6 修正）：调用链 = 真调用方 →
+/// hooked_dlsym → ame202_pinGLSymbol → 本函数，level0/1 分别落在
+/// pinGLSymbol / hooked_dlsym 内部（恒为启动器自身镜像），真正的发起方
+/// 在 level2——旧实现查 level1 恒不等于 tinygl4angle，钉扎对 tinygl4angle
+/// 自身 ame182_resolve 的兜底 dlsym(framework, gl*) 也生效（其注释警告的
+/// "解析回自己 = 无限递归"防护形同虚设）。
 __attribute__((noinline))
 static BOOL ame202_callerIsTinygl(void) {
-    void *ame202_ra = __builtin_return_address(1);
+    void *ame202_ra = __builtin_return_address(2);
     Dl_info ame202_info;
     if (ame202_ra == NULL || dladdr(ame202_ra, &ame202_info) == 0) return NO;
     return ame202_info.dli_fname != NULL && strstr(ame202_info.dli_fname, "tinygl4angle") != NULL;
@@ -2189,6 +2264,7 @@ static void *ame202_eglGPA_wrapper(const char *procname) {
 ///   "[tinygl4angle] Task182 gles pin" = 劫持铁证，旧会话为零）。
 ///   修法：钉扎只在 AMETHYST_RENDERER == libtinygl4angle 的会话生效
 ///   （JavaLauncher 在 JVM 启动前 setenv，游戏会话全程正确）。
+__attribute__((noinline))   // ★ Task274-f r2（F6 硬化）：钉住栈帧——ame202_callerIsTinygl 的 __builtin_return_address(2) 依赖本函数保有独立帧（单调用点 static 函数在 -O2 下可能被内联，层级随优化器漂移；冷路径，不内联无性能代价）
 static void *ame202_pinGLSymbol(void *handle, const char *name) {
     if (name == NULL) return NULL;
     if (!(name[0] == 'g' && name[1] == 'l') && strncmp(name, "egl", 3) != 0) return NULL;
@@ -2409,7 +2485,7 @@ void init_hookFunctions() {
 //   路甲（本函数）：Java shutdown hook 起跑即写标记文件
 //     $POJAV_HOME/ame251_shutdown.marker（PatchSVC premain 注册，仅游戏
 //     会话 -Dame.game.session=1；hook 线程与挂死 hook 并发运行，标记必达）
-//     → 本看门狗线程 150ms 轮询命中 → fflush + _exit(0) 当场终结。
+//     → 本看门狗线程 150ms 轮询命中 → 2s 旗标等待窗（Task274-f F1，窗口耗尽旗标未现即兜底）→ fflush + _exit(0) 当场终结。
 //     覆盖面：shutdown hooks 挂死、DestroyJavaVM 挂死、任何 post-main 滞留。
 //   路乙（ame251_rebindJvmExitOnce）：libjvm 是 init_hookFunctions 之后
 //     才 dlopen 的 image，启动期 fishhook 从未覆盖它（sdl3_hook.m:2106
@@ -2455,12 +2531,36 @@ void ame251_armShutdownForceExitWatchdog(void) {
                         //   让路 ≤8s 等崩溃界面上屏；上屏后再等用户读完（≤120s，
                         //   用户点重启/退出按钮自行 exit(0) 走 hooked_exit(0)
                         //   快速通道）。挂死防护语义不变：旗标未置位（shutdown
-                        //   hooks 挂死、libc exit 从未发生）→ 立即 _exit(0)。
+                        //   hooks 挂死、libc exit 从未发生）→ 2s 旗标等待窗耗尽后 _exit(0)（Task274-f F1）。
                         if (!atomic_load(&g_ame273_fatalExitInFlight)) {
-                            NSLog(@"[main_hook] Task251: shutdown marker detected -> immediate _exit(0) (JVM shutdown phase entered; no libc teardown window)");
-                            ame_write_fatal_trace("Task251: shutdown marker -> _exit(0) (post-main hang guard)");
-                            fflush(NULL);
-                            _exit(0);
+                            // ★ Task274-f（F1）：让路协议结构性竞态根修——ame251 标记由
+                            //   Java shutdown hook【起跑时】写入（PatchSVC premain 注册的
+                            //   hook 线程），而 fatal-in-flight 旗标要等【全部 hooks 跑完】
+                            //   经 halt0 → ::exit → hooked_exit(≠0) 才置位。旧实现首轮命中
+                            //   "标记已在、旗标未置"窗口（150ms）即 _exit(0)，把仍在运行的
+                            //   shutdown hooks 连同其后的 ame273_writeCrashReport 与
+                            //   PLCrashView 呈现一并抢杀——Task273 要根治的正是这条路径
+                            //   （让路协议对 System.exit(≠0) 主场景结构性失明）。
+                            //   窗口理由：旗标未置时不再立即 _exit，改 2s 窗口（100ms 间隔）
+                            //   轮询旗标——旗标出现 → 落入下方既有 8s 呈现/120s 阅读让路
+                            //   协议（崩溃报告已由 hooked_exit 同步落盘）；窗口耗尽旗标仍
+                            //   未来（shutdown hooks 真挂死）→ 走下方原 _exit(0) 兜底，挂死
+                            //   防护语义不变，仅生效点从 150ms 推迟到 ~2.15s（为 hooked_exit
+                            //   留出 hooks 收尾窗口的对价）。exit(0)/headless 路径旗标永不
+                            //   置位：正常退出由 hooked_exit(0) 的 _exit 先行终结，仅 hooks
+                            //   挂死时才多等 2s 后兜底。
+                            int ame274_flagWaited = 0;
+                            while (ame274_flagWaited < 20 && !atomic_load(&g_ame273_fatalExitInFlight)) {
+                                usleep(100 * 1000);
+                                ame274_flagWaited++;
+                            }
+                            if (!atomic_load(&g_ame273_fatalExitInFlight)) {
+                                NSLog(@"[main_hook] Task251: shutdown marker -> _exit(0) (flag still absent after 2s flag-wait window; post-main hang guard)");
+                                ame_write_fatal_trace("Task251: shutdown marker -> _exit(0) (post-main hang guard)");
+                                fflush(NULL);
+                                _exit(0);
+                            }
+                            NSLog(@"[main_hook] Task274-f: fatal exit flag appeared after %dms flag-wait -- entering crash-view grace protocol", ame274_flagWaited * 100);
                         }
                         NSLog(@"[main_hook] Task273: marker + fatal exit in flight -- crash-view grace window (max 8s, report already on disk)");
                         int ame273_waited = 0;

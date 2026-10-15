@@ -16,13 +16,13 @@ public class MCOptionUtils
             mLineList.clear();
         }
         
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(Tools.DIR_GAME_PROFILE + "/options.txt"));
+        // ame274：reader 收进 try-with-resources——readLine 中途 IOException
+        // 时旧实现永远到不了 close()，启动链每次调用泄漏一个 fd。
+        try (BufferedReader reader = new BufferedReader(new FileReader(Tools.DIR_GAME_PROFILE + "/options.txt"))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 mLineList.add(line);
             }
-            reader.close();
         } catch (IOException e) {
             System.err.println("Could not load options.txt");
             e.printStackTrace();
@@ -117,8 +117,8 @@ public class MCOptionUtils
      * 内存态与磁盘态分叉，26.3 的 30fps 限帧正是这种分叉的实锤现场）。
      */
     public static String getFromFile(String key) {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(Tools.DIR_GAME_PROFILE + "/options.txt"));
+        // ame274：同 load()——reader 收进 try-with-resources，异常路径不再泄漏 fd。
+        try (BufferedReader reader = new BufferedReader(new FileReader(Tools.DIR_GAME_PROFILE + "/options.txt"))) {
             String line;
             String last = null;
             int occurrences = 0;
@@ -128,7 +128,6 @@ public class MCOptionUtils
                     occurrences++;
                 }
             }
-            reader.close();
             if (occurrences > 1) {
                 System.out.println("[MCOptionUtils] Task104 WARNING: '" + key + "' appears " + occurrences
                     + " times in options.txt (last-wins at MC side): " + last);

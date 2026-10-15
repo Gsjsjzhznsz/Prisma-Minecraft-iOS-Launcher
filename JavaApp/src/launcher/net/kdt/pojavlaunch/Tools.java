@@ -3,11 +3,11 @@ package net.kdt.pojavlaunch;
 import android.util.ArrayMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.io.ByteArrayOutputStream;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -23,7 +23,7 @@ import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -782,32 +782,6 @@ public final class Tools {
         return libStr.toString();
     }
     
-    public static void moveInside(String from, String to) {
-        File fromFile = new File(from);
-        for (File fromInside : fromFile.listFiles()) {
-            moveRecursive(fromInside.getAbsolutePath(), to);
-        }
-        fromFile.delete();
-    }
-
-    public static void moveRecursive(String from, String to) {
-        moveRecursive(new File(from), new File(to));
-    }
-
-    public static void moveRecursive(File from, File to) {
-        File toFrom = new File(to, from.getName());
-        try {
-            if (from.isDirectory()) {
-                for (File child : from.listFiles()) {
-                    moveRecursive(child, toFrom);
-                }
-            }
-        } finally {
-            from.getParentFile().mkdirs();
-            from.renameTo(toFrom);
-        }
-    }
-
     public static void preProcessLibraries(DependentLibrary[] libraries) {
         // Ignore some libraries since they are unsupported (jinput, text2speech) or unused (LWJGL)
         // Support for text2speech is not planned, so skip it for now.
@@ -961,10 +935,22 @@ createLibraryInfo(libItem);
                     if (library == null || library.name == null) {
                         continue;
                     }
+                    // ame274：无冒号的畸形 name（如 "foo"）会让 lastIndexOf(":")
+                    // 返回 -1，substring(0,-1) 直接 SIOOBE 崩掉整个版本解析
+                    // （ame270 三防只护了其后的 preProcessLibraries，融合循环在
+                    // 其之前）。与上方 null 守卫同口径静默跳过：畸形名本就不可能
+                    // 匹配任何继承库名。
+                    if (library.name.indexOf(':') < 0) {
+                        continue;
+                    }
                     String libName = library.name.substring(0, library.name.lastIndexOf(":"));
 
                     for(DependentLibrary inheritLibrary : inheritLibraryList) {
                         if (inheritLibrary == null || inheritLibrary.name == null) {
+                            continue;
+                        }
+                        // ame274：同上——继承侧畸形 name 一样会 substring(0,-1)。
+                        if (inheritLibrary.name.indexOf(':') < 0) {
                             continue;
                         }
                         String inheritLibName = inheritLibrary.name.substring(0, inheritLibrary.name.lastIndexOf(":"));
@@ -1056,20 +1042,6 @@ createLibraryInfo(libItem);
         }
     }
     
-    public static String convertStream(InputStream inputStream) throws IOException {
-        return convertStream(inputStream, Charset.forName("UTF-8"));
-    }
-    
-    public static String convertStream(InputStream inputStream, Charset charset) throws IOException {
-        String out = "";
-        int len;
-        byte[] buf = new byte[512];
-        while((len = inputStream.read(buf))!=-1) {
-            out += new String(buf,0,len,charset);
-        }
-        return out;
-    }
-
     public static void copy(final InputStream input, final OutputStream output) throws IOException {
         final byte[] buffer = new byte[8192];
         int n = 0;
@@ -1078,35 +1050,18 @@ createLibraryInfo(libItem);
         }
     }
 
-    public static File lastFileModified(String dir) {
-        File fl = new File(dir);
-
-        File[] files = fl.listFiles(new FileFilter() {
-                public boolean accept(File file) {
-                    return file.isFile();
-                }
-            });
-
-        long lastMod = Long.MIN_VALUE;
-        File choice = null;
-        for (File file : files) {
-            if (file.lastModified() > lastMod) {
-                choice = file;
-                lastMod = file.lastModified();
-            }
-        }
-
-        return choice;
-    }
-
     public static String read(InputStream is) throws IOException {
-        String out = "";
+        // ame274（J10）：512B 缓冲 + 循环 String += 是 O(n²)（每次启动全量读
+        // 账户/launcher_profiles/版本 JSON），改 ByteArrayOutputStream 一次成串。
+        // ame274（J4）：原平台默认 charset 解码在非 UTF-8 默认字符集下会把
+        // 中文用户名读坏，钉 UTF-8（与 write 侧对应）。
+        ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
         int len;
-        byte[] buf = new byte[512];
+        byte[] buf = new byte[8192];
         while((len = is.read(buf))!=-1) {
-            out += new String(buf,0,len);
+            out.write(buf, 0, len);
         }
-        return out;
+        return out.toString(StandardCharsets.UTF_8);
     }
 
     public static String read(String path) throws IOException {
@@ -1131,6 +1086,8 @@ createLibraryInfo(libItem);
     }
 
     public static void write(String path, String content) throws IOException {
-        write(path, content.getBytes());
+        // ame274（J4）：平台默认 charset 写出在非 UTF-8 默认字符集下会把中文
+        // 用户名写坏（账户 JSON/launcher_profiles.json/options.txt），钉 UTF-8。
+        write(path, content.getBytes(StandardCharsets.UTF_8));
     }
 }

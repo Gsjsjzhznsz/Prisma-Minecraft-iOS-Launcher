@@ -14,7 +14,6 @@ import net.kdt.pojavlaunch.utils.*;
 import net.kdt.pojavlaunch.value.*;
 
 public class PojavLauncher {
-    private static float currProgress, maxProgress;
 
     public static void main(String[] args) throws Throwable {
         // Skip calling to com.apple.eawt.Application.nativeInitializeApplicationDelegate()
@@ -285,6 +284,13 @@ public class PojavLauncher {
 
         MinecraftAccount account = MinecraftAccount.load(args[0]);
         JMinecraftVersionList.Version version = Tools.getVersionInfo(args[1]);
+        // ame274：判空前移——下一行即首次解引用 version.id，原 Task202 块内
+        // 的 version!=null 迟到判空毫无防护价值。null 只会来自 getVersionInfo
+        // 对空/畸形 JSON 返回 null，此处立即给出可定位的错误而非裸 NPE。
+        if (version == null) {
+            throw new RuntimeException("Version JSON for '" + args[1]
+                    + "' parsed to null (malformed or empty file)");
+        }
         System.out.println("Launching Minecraft " + version.id);
 
         // Task94: LWJGL 版本上报链路诊断（原位置的检查被错误地嵌在 vulkan-only 的
@@ -362,7 +368,7 @@ public class PojavLauncher {
         //   并打出吓人的不兼容警告。加 .jar 后缀门：只有【活跃】的
         //   OptiFine（mods/*.jar）才告警，禁用副本（.jar.disabled / .disabled
         //   / .txt 等一切非 .jar 形态）不再触发。
-        if (version != null && version.id != null
+        if (version.id != null
                 && version.id.toLowerCase(java.util.Locale.ROOT).contains("forge")) {
             java.io.File ame202ModsDir = new java.io.File(Tools.DIR_GAME_NEW, "mods");
             String[] ame202ModsList = ame202ModsDir.isDirectory() ? ame202ModsDir.list() : null;

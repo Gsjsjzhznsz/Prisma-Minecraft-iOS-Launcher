@@ -14,6 +14,7 @@
 #import <CommonCrypto/CommonCrypto.h>
 #import <UIKit/UIKit.h>
 #import "PLProfiles.h"
+#import "ModService.h"   // Task274-h S11: Task225 isolation sniff (ame225_sniffedIsolationGameDirForProfile)
 #import "ResourcePackItem.h"
 #import "UZKArchive.h"
 #import "DownloadTaskManager.h"
@@ -120,7 +121,10 @@
 
 // 查找指定 profile 的 resourcepacks 目录（已存在时返回路径，否则返回 nil）
 - (nullable NSString *)existingResourcePacksFolderForProfile:(NSString *)profileName {
-    NSString *profile = profileName.length ? profileName : @"default";
+    // ★ Task274-h S7：nil 入参跟随当前选中实例（ame267 语义），不再落恒 miss 的
+    // @"default" 字面量（真实默认键 "(Default)"；对齐 Task270 M1 gameDirForProfile 口径）。
+    if (!profileName.length) profileName = PLProfiles.current.selectedProfileName ?: @"(Default)";
+    NSString *profile = profileName;
     NSFileManager *fm = [NSFileManager defaultManager];
 
     @try {
@@ -128,6 +132,21 @@
         NSDictionary *prof = profiles[profile];
         if ([prof isKindOfClass:[NSDictionary class]]) {
             NSString *gameDir = prof[@"gameDir"];
+            // ★ Task274-h S11（Task225 嗅探平移）：gameDir 缺失/空/"." 时先嗅探
+            //   versions/<lastVersionId>/game 隔离形状（ModService 同口径）——命中且
+            //   其 resourcepacks 已存在才重定向（本方法"存在即用"契约不变）。
+            if (![gameDir isKindOfClass:[NSString class]] || gameDir.length == 0 || [gameDir isEqualToString:@"."]) {
+                NSString *ame225_sniffed = [ModService ame225_sniffedIsolationGameDirForProfile:prof];
+                if (ame225_sniffed.length > 0) {
+                    NSString *ame225_rp = [ame225_sniffed stringByAppendingPathComponent:@"resourcepacks"];
+                    BOOL ame225_isDir = NO;
+                    if ([fm fileExistsAtPath:ame225_rp isDirectory:&ame225_isDir] && ame225_isDir) {
+                        NSLog(@"[ResourcePackService] Task225 auto-sniffed isolation for profile %@ -> %@",
+                              profile, ame225_sniffed.lastPathComponent);
+                        return ame225_rp;
+                    }
+                }
+            }
             // Task269-r3：相对路径（如 ./custom_gamedir/<id>）统一相对 POJAV_GAME_DIR
             // 解析成绝对路径——裸相对依赖进程 CWD，CWD 会被启动链 chdir 永久切走
             // （review-c H1；与 ModService 同口径）。
@@ -161,7 +180,9 @@
 
 /// 获取当前 profile 的 resourcepacks 目录，不存在时自动创建
 - (nullable NSString *)ensureResourcePacksFolderForProfile:(NSString *)profileName error:(NSError **)error {
-    NSString *profile = profileName.length ? profileName : @"default";
+    // ★ Task274-h S7：nil 入参跟随当前选中实例（同 existing 口径）。
+    if (!profileName.length) profileName = PLProfiles.current.selectedProfileName ?: @"(Default)";
+    NSString *profile = profileName;
     NSFileManager *fm = [NSFileManager defaultManager];
     NSString *resourcePacksPath = nil;
 
@@ -170,6 +191,16 @@
         NSDictionary *prof = profiles[profile];
         if ([prof isKindOfClass:[NSDictionary class]]) {
             NSString *gameDir = prof[@"gameDir"];
+            // ★ Task274-h S11（Task225 嗅探平移）：gameDir 缺失/空/"." 时先嗅探——命中
+            //   即落嗅探目录（ensure 语义=惰性建目录，与 ModService ensure 同口径）。
+            if (![gameDir isKindOfClass:[NSString class]] || gameDir.length == 0 || [gameDir isEqualToString:@"."]) {
+                NSString *ame225_sniffed = [ModService ame225_sniffedIsolationGameDirForProfile:prof];
+                if (ame225_sniffed.length > 0) {
+                    NSLog(@"[ResourcePackService] Task225 auto-sniffed isolation for profile %@ -> %@ (ensure)",
+                          profile, ame225_sniffed.lastPathComponent);
+                    resourcePacksPath = [ame225_sniffed stringByAppendingPathComponent:@"resourcepacks"];
+                }
+            }
             // Task269-r3：同 existing——相对路径统一相对 POJAV_GAME_DIR 解析（review-c H1）
             if ([gameDir isKindOfClass:[NSString class]] && gameDir.length > 0 && ![gameDir isEqualToString:@"."]) {
                 if (![gameDir isAbsolutePath]) {
@@ -179,9 +210,13 @@
                 }
                 resourcePacksPath = [gameDir stringByAppendingPathComponent:@"resourcepacks"];
             } else if ([gameDir isKindOfClass:[NSString class]] && [gameDir isEqualToString:@"."]) {
-                const char *baseC = getenv("POJAV_GAME_DIR");
-                if (baseC) {
-                    resourcePacksPath = [[NSString stringWithUTF8String:baseC] stringByAppendingPathComponent:@"resourcepacks"];
+                // ★ Task274-h S11：S11 嗅探命中时 resourcePacksPath 已落嗅探目录，
+                //   此处共享根兜底仅在未命中时覆盖（原实现无条件覆盖 = 嗅探被冲掉）。
+                if (!resourcePacksPath) {
+                    const char *baseC = getenv("POJAV_GAME_DIR");
+                    if (baseC) {
+                        resourcePacksPath = [[NSString stringWithUTF8String:baseC] stringByAppendingPathComponent:@"resourcepacks"];
+                    }
                 }
             }
         }

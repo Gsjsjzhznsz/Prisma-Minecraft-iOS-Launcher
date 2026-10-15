@@ -2155,15 +2155,13 @@ if ([section isEqualToString:@"general"]) {
         [self.view addSubview:closeButton];
     }
     
+    // 监听背景 UI 效果变化通知：当用户在背景设置中切换毛玻璃/半透明或调整透明度时，
+    // 重新应用透明化效果并重载全表，保证背景始终正确透出。
+    // ★ Task274-g（G7）：旧实现为同一通知注册双 handler（本 handler 全表
+    //   reloadData + reapplyBackgroundEffect 全树透明化）叠加触发——去重为单
+    //   handler（两段逻辑并入 handleBackgroundUIEffectChanged:，一次通知一轮）。
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleBackgroundUIEffectChanged:)
-                                                 name:@"BackgroundUIEffectChanged"
-                                               object:nil];
-
-    // 监听背景 UI 效果变化通知：当用户在背景设置中切换毛玻璃/半透明或调整透明度时，
-    // 重新调用 makeViewControllerTransparent 以应用最新的视觉效果，保证背景始终正确透出。
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(reapplyBackgroundEffect)
                                                  name:@"BackgroundUIEffectChanged"
                                                object:nil];
 
@@ -2368,8 +2366,11 @@ if ([section isEqualToString:@"general"]) {
 }
 
 - (void)dealloc {
+    // ★ Task274-g（G7）：对称摘除 viewDidLoad 全部注册（旧 dealloc 漏
+    //   LGCInterfaceStyleChangedNotification——ame224 界面风格切换监听）。
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"BackgroundUIEffectChanged" object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"OpenCurseForgeAPIKeySettings" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:LGCInterfaceStyleChangedNotification object:nil];
 }
 
 - (void)viewDidAppear:(BOOL)animated {
@@ -2476,6 +2477,10 @@ if ([section isEqualToString:@"general"]) {
 }
 
 - (void)handleBackgroundUIEffectChanged:(NSNotification *)notification {
+    // ★ Task274-g（G7）：单 handler 合并原双注册逻辑（透明化重应用 + 全表重载），
+    //   一次通知只走一轮，不再叠加触发（双 handler 全表 reloadData 与全树
+    //   透明化递归叠加 = 冗余重绘）。
+    [self reapplyBackgroundEffect];
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.tableView reloadData];
     });

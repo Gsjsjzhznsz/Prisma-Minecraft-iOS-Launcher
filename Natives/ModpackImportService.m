@@ -48,6 +48,10 @@ static NSString * const kImportedModpacksKey = @"ImportedModpacks";
 ///   安装开工时按项目批量预取（ame272_prefetchCurseForgeFileMetadata:）填充；
 ///   fetchCurseForgeFileMetadata / 候选构造优先读缓存（装机实证旧元数据/HEAD 端点双双 404）。
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSDictionary *> *ame272_cfFilesByFileID;
+/// ★ Task274-h S13：本次导入会话 CurseForge 元数据预取失败一次性标记——置位后逐文件
+///   回退链跳过死端点（GET filesByFileID 10s + HEAD 文件名 15s = 每文件最多 25s 纯等待
+///   挤占 12 并发槽），元数据缺文件名时按既有 BMCL/CDN 垫底顺序直试。
+@property (nonatomic, assign) BOOL ame274_cfPrefetchDead;
 /// redesign-download-ui Phase 5 Task 5.1：整合包导入主任务（6 阶段 + autoPresentDetail 统一进度页）
 @property (nonatomic, copy, nullable) NSString *currentImportTaskId;
 /// Task 5.9：本次导入写入主 versions 目录的 version JSON 路径（取消时清理）
@@ -875,7 +879,9 @@ static BOOL ame269_sMigrationRunning = NO;
         displayName = modpackId ?: localize(@"i18n_str_118", nil);
     }
     NSString *iconURL = [self resolveIconURLFromModpackInfo:modpackInfo];
-    NSString *downloadSource = getPrefObject(@"general.download_source") ?: @"official";
+    // ★ Task274-h S8：退役键 general.download_source（Task218 声明无写入方，恒 nil）
+    //   → PLMirrorCenter legacySourceTokenForType（Task218 收敛口径，对齐四资源服务）。
+    NSString *downloadSource = [PLMirrorCenter legacySourceTokenForType:PLMirrorResourceTypeAssetDownload];
     DownloadTaskManager *manager = [DownloadTaskManager sharedManager];
     DownloadTaskItem *mainTask = [manager registerTaskWithResourceType:DownloadTaskResourceTypeModpack
                                                           resourceName:modpackId ?: displayName
@@ -1131,6 +1137,10 @@ static BOOL ame269_sMigrationRunning = NO;
         }
         NSLog(@"[ModpackImport] Task269-r3: staged re-import promoted into live instance %@ (old copy kept at %@)",
               ame269_realDir.lastPathComponent, ame269_backupDir.lastPathComponent);
+        // ★ Task274-h S2：换装成功后 gameDirAbsolute 复位为 realDir——否则第 5 步
+        //   saveImportedModpack 把 .ame269_stage-<id>-<ts> 死路径持久化进账本，
+        //   deleteModpack 的 fileExistsAtPath 必败 → 静默跳过 → mods/saves 整树残留。
+        gameDirAbsolute = ame269_realDir;
     }
 
     // 第 4 步: 写 profile
@@ -1141,7 +1151,10 @@ static BOOL ame269_sMigrationRunning = NO;
                                                     error:error];
     if (!profileName) {
         [manager updateTaskWithId:taskId stageAtIndex:5 status:PLTaskStageStatusFailed];
-        [self cleanupAbortedImportWithGameDir:gameDirAbsolute mainTaskFailed:YES];
+        // ★ Task274-h S2：换装成功后 gameDirAbsolute 已复位为 realDir——profile 写失败
+        //   不得整删刚上位的活实例（Task269-r3 保护语义）。复用路径清理对象只能是
+        //   staging 残迹（已不存在，幂等 no-op）；全新路径维持原口径。
+        [self cleanupAbortedImportWithGameDir:(ame269_isReuse ? ame269_stageDir : gameDirAbsolute) mainTaskFailed:YES];
         return NO;
     }
 
@@ -1153,6 +1166,8 @@ static BOOL ame269_sMigrationRunning = NO;
     savedModpack[@"versionId"] = versionId;
     savedModpack[@"importDate"] = [self iso8601StringFromDate:[NSDate date]];
     [self saveImportedModpack:savedModpack];
+    // ★ Task274-h S6：导入收尾备份老化（保留最近 2 份；绝不触碰活实例与 staging）
+    [self ame274_pruneInstanceBackupsForInstanceId:modpackId];
 
     // 阶段5 完成 + 主任务完成
     [manager updateTaskWithId:taskId stageAtIndex:5 status:PLTaskStageStatusCompleted];
@@ -1489,7 +1504,9 @@ static BOOL ame269_sMigrationRunning = NO;
     NSArray *files = modpackInfo[@"files"];
     if (files.count == 0) return YES;
 
-    NSString *downloadSource = getPrefObject(@"general.download_source") ?: @"official";
+    // ★ Task274-h S8：退役键 general.download_source（Task218 声明无写入方，恒 nil）
+    //   → PLMirrorCenter legacySourceTokenForType（Task218 收敛口径，对齐四资源服务）。
+    NSString *downloadSource = [PLMirrorCenter legacySourceTokenForType:PLMirrorResourceTypeAssetDownload];
     // 修复整合包图标不显示：原实现将 modpackInfo[@"iconBase64"]（base64 编码的图片数据字符串）
     // 直接赋给 iconURL 字段，传给 setImageWithURL: 时 NSURL URLWithString: 返回 nil（base64 不是合法 URL），
     // 导致整合包下载任务的图标永远不显示。
@@ -1600,6 +1617,9 @@ static BOOL ame269_sMigrationRunning = NO;
     // ★ Task272：安装开工先按项目批量预取 CurseForge 依赖元数据（去重 projectID，
     //   每项目 1 请求；旧路径每文件各发 1 个注定 404 的 10s 超时假请求 = 纯延迟）。
     //   预取失败不阻断——逐文件回退链照旧，只是拿不到真实文件名。
+    // ★ Task274-h S13：会话级死端点标记随本次 downloadModFiles 重置（预取后按命中
+    //   情况重新置位；"重试缺失模组"链路复用本方法，同样重新评估）。
+    self.ame274_cfPrefetchDead = NO;
     [self ame272_prefetchCurseForgeFileMetadata:pendingFiles];
 
     for (NSDictionary *fileInfo in pendingFiles) {
@@ -1637,7 +1657,12 @@ static BOOL ame269_sMigrationRunning = NO;
                 //（修复 P0-2：CurseForge manifest 无哈希，此前仅 zip EOCD 兜底，静默损坏文件
                 // 无法拦截）、classId 项目类型分发（修复 P0-3：shader/resource/datapack 不再
                 // 全塞 mods/）。元数据不可用时回退 HEAD 文件名解析 + zip EOCD 兜底。
-                NSDictionary *fileMeta = [self fetchCurseForgeFileMetadata:projectID fileID:fileID];
+                // ★ Task274-h S13：预取已判死的会话跳过逐文件死端点 GET（缓存必空，
+                //   请求注定 10s 超时）；fileMeta=nil 走既有 fallback 链。
+                NSDictionary *fileMeta = nil;
+                if (!self.ame274_cfPrefetchDead) {
+                    fileMeta = [self fetchCurseForgeFileMetadata:projectID fileID:fileID];
+                }
 
                 // 文件名：manifest 透传 > 元数据 fileName > HEAD 解析 > "pid-fid.jar" fallback
                 BOOL hasRealFileName = NO;
@@ -1650,7 +1675,12 @@ static BOOL ame269_sMigrationRunning = NO;
                         fileName = metaName;
                         hasRealFileName = YES;
                     } else {
-                        NSString *realName = [self fetchCurseForgeRealFileName:projectID fileID:fileID];
+                        // ★ Task274-h S13：预取已判死的会话跳过 HEAD 文件名死端点（15s/文件），
+                        //   直接落 "projectID-fileID.jar" fallback + BMCL/CDN 垫底候选。
+                        NSString *realName = nil;
+                        if (!self.ame274_cfPrefetchDead) {
+                            realName = [self fetchCurseForgeRealFileName:projectID fileID:fileID];
+                        }
                         if (realName.length > 0) {
                             fileName = realName;
                             hasRealFileName = YES;
@@ -1743,6 +1773,23 @@ if (hasRealFileName) {
                 // ===== Modrinth：downloads 数组逐一经 PLMirrorCenter（AssetDownload）重写为镜像候选 =====
                 NSString *relPath = fileInfo[@"path"];
                 NSArray *downloads = [fileInfo[@"downloads"] isKindOfClass:[NSArray class]] ? fileInfo[@"downloads"] : @[];
+                // ★ Task274-h S12：Modrinth relPath 清洗——恶意 .mrpack 可构造
+                //   "config/../../.." 形态，经目录拼接/写盘语义逃逸 gameDir 写任意路径。
+                //   含 ".." 段（或 path 非 NSString，防御预筛遗漏）的条目视为无效：置空
+                //   downloads 使其落入下方"无有效下载链接"既有失败口径（failedFiles/
+                //   Task95 报告/计数/槽位收尾自动一致），另有专项 NSLog 供取证。
+                BOOL ame274_unsafeRelPath = YES;
+                if ([relPath isKindOfClass:[NSString class]]) {
+                    ame274_unsafeRelPath = NO;
+                    for (NSString *ame274_pc in [relPath pathComponents]) {
+                        if ([ame274_pc isEqualToString:@".."]) { ame274_unsafeRelPath = YES; break; }
+                    }
+                }
+                if (ame274_unsafeRelPath) {
+                    NSLog(@"[ModpackImport] Task274-h S12: modrinth entry with unsafe path (traversal guard): %@",
+                          ([relPath isKindOfClass:[NSString class]] ? relPath : @"(non-string path)"));
+                    downloads = @[];
+                }
                 fileName = relPath.lastPathComponent;
 
                 // 关键修复（保留）：之前 `if (![relPath hasPrefix:@"mods/"]) continue;` 会丢弃所有非
@@ -1936,9 +1983,14 @@ if (hasRealFileName) {
 
                 // 聚合进度：文件完成计数推进主进度条（0.15 ~ 0.85 区间与既有 UI 语义一致）
                 NSUInteger completedNow = 0;
+                long long ame274_bytesNow = 0;
                 @synchronized(aggregate) {
                     aggregate[@"completed"] = @([aggregate[@"completed"] unsignedLongValue] + 1);
                     completedNow = [aggregate[@"completed"] unsignedLongValue];
+                    // ★ Task274-h S5：bytes 原在此后锁外裸读（写方 progress 回调持
+                    //   @synchronized(aggregate)，12 并发完成回调期间构成并发读写崩溃面）
+                    //   ——并入本锁区同锁读出。
+                    ame274_bytesNow = [aggregate[@"bytes"] longLongValue];
                 }
                 if (progress && total > 0) {
                     progress(0.15 + 0.70 * ((double)completedNow / (double)total),
@@ -1953,7 +2005,7 @@ if (hasRealFileName) {
                 [[DownloadTaskManager sharedManager] updateTaskWithId:aggregateTask.taskId
                                                               progress:MIN(MAX((double)completedNow / MAX((double)total, 1.0), 0.0), 1.0)
                                                             totalBytes:0
-                                                       downloadedBytes:[aggregate[@"bytes"] longLongValue]];
+                                                       downloadedBytes:ame274_bytesNow];
 
                 // 释放并发槽位并离开 group（与提交侧的 wait/enter 配对）
                 dispatch_semaphore_signal(slotSemaphore);
@@ -2260,9 +2312,14 @@ if (hasRealFileName) {
     @synchronized(self) {
         if (!self.ame272_cfFilesByFileID) self.ame272_cfFilesByFileID = [NSMutableDictionary dictionary];
     }
+    // ★ Task274-h S13：预取前快照缓存计数（缓存为单例级跨导入存活——delta 判据才能
+    //   精确表达"本次预取零新增"，避免同会话二次导入被旧缓存误判/漏判）。
+    NSUInteger ame274_cacheCountBefore = self.ame272_cfFilesByFileID.count;
     NSString *ame272_base = [PLMirrorCenter mcimCurseForgeAPIBaseURL];
     if (ame272_base.length == 0) {
         NSLog(@"[ModpackImport] Task272: mcim CF API base unavailable -- metadata prefetch skipped");
+        // ★ Task274-h S13：预取不可用 → 会话级置死标记，逐文件回退链跳过死端点
+        self.ame274_cfPrefetchDead = YES;
         return;
     }
     NSURLSessionConfiguration *ame272_cfg = [NSURLSessionConfiguration defaultSessionConfiguration];
@@ -2336,6 +2393,13 @@ if (hasRealFileName) {
     }
     dispatch_group_wait(ame272_grp, DISPATCH_TIME_FOREVER);
     [ame272_session finishTasksAndInvalidate];
+    // ★ Task274-h S13：预取零命中 → 会话级置死标记（后续逐文件 GET/HEAD 全是
+    //   同款死端点，逐文件重试=纯延迟；置位后按既有 BMCL/CDN 垫底顺序直试）。
+    if (self.ame272_cfFilesByFileID.count <= ame274_cacheCountBefore) {
+        self.ame274_cfPrefetchDead = YES;
+        NSLog(@"[ModpackImport] Task274-h S13: CF metadata prefetch yielded nothing (%lu project(s)) -- per-file dead-endpoint fallback disabled for this import session",
+              (unsigned long)ame272_pids.count);
+    }
 }
 
 /// 阶段5修复（参照 FCL CurseForgeFileResolver）：当整合包 manifest 中缺失 fileName 且
@@ -2415,7 +2479,10 @@ if (hasRealFileName) {
         return NO;
     }
 
-    NSString *downloadSource = getPrefObject(@"general.download_source") ?: @"official";
+    // ★ Task274-h S8：general.download_source 已随 Task218 退役（无写入方，恒 nil →
+    //   @"official" 来源标签失真）——对齐 World/DP/RP/Shader 的 PLMirrorCenter 口径
+    //   （loader 下载走 ModLoader 镜像体系，标签 token 同型）。
+    NSString *downloadSource = [PLMirrorCenter legacySourceTokenForType:PLMirrorResourceTypeModLoader];
     // 版本 JSON 必须写入 POJAV_GAME_DIR/versions/（主目录），而非 gameDirAbsolute（整合包隔离目录）。
     // Minecraft 启动器 Java 端 Tools.java 的 DIR_HOME_VERSION 固定指向 POJAV_GAME_DIR/versions，
     // 不从 profile gameDir 读取。之前写入 gameDirAbsolute/versions/ 会导致启动时"找不到版本信息"。
@@ -3319,6 +3386,74 @@ if (hasRealFileName) {
     });
 }
 
+/// ★ Task274-h S6：导入收尾的备份老化（自愈·保守）——Task224 重导入备份
+/// <id>-backup-<ts>（fresh 路径）与 Task269-r3 换装备份（reuse 路径）此前只进不出，
+/// 整个旧实例（含 mods/saves 全树）每次重导入都留一份，长期累积可占数 GB。
+/// 收尾处按实例 id 只保留最近 2 份 <id>-backup-*（其余整删，逐个 NSLog）；
+/// .ame269_backup/<ts> 合并备份同口径收敛。绝不触碰活实例目录与 staging：
+/// 仅精确匹配 "<id>-backup-" 前缀（活实例=<id> 本体、staging=.ame269_stage-*，
+/// 两类名称均不含该前缀形态，天然排除）。
+- (void)ame274_pruneInstanceBackupsForInstanceId:(NSString *)modpackId {
+    if (![modpackId isKindOfClass:[NSString class]] || modpackId.length == 0) return;
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *ame274_prefix = [NSString stringWithFormat:@"%@-backup-", modpackId];
+
+    // 1) <id>-backup-* 只保留最近 2 份（目录名尾缀为秒级时间戳，按数值降序取最新）
+    NSMutableArray<NSDictionary *> *ame274_backups = [NSMutableArray array];
+    NSArray<NSString *> *ame274_entries = [fm contentsOfDirectoryAtPath:self.customGameDir error:nil];
+    for (NSString *ame274_name in ame274_entries) {
+        if (![ame274_name hasPrefix:ame274_prefix]) continue;
+        long long ame274_ts = [[ame274_name substringFromIndex:ame274_prefix.length] longLongValue];
+        [ame274_backups addObject:@{ @"name": ame274_name,
+                                     @"path": [self.customGameDir stringByAppendingPathComponent:ame274_name],
+                                     @"ts": @(ame274_ts) }];
+    }
+    if (ame274_backups.count > 2) {
+        NSArray *ame274_sorted = [ame274_backups sortedArrayUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
+            long long ats = [a[@"ts"] longLongValue], bts = [b[@"ts"] longLongValue];
+            if (ats != bts) return ats > bts ? NSOrderedAscending : NSOrderedDescending;
+            return [a[@"name"] compare:b[@"name"]];
+        }];
+        for (NSUInteger i = 2; i < ame274_sorted.count; i++) {
+            NSError *ame274_err = nil;
+            if ([fm removeItemAtPath:ame274_sorted[i][@"path"] error:&ame274_err]) {
+                NSLog(@"[ModpackImport] Task274-h S6: pruned stale instance backup %@ (keep latest 2)",
+                      ame274_sorted[i][@"name"]);
+            } else {
+                NSLog(@"[ModpackImport] Task274-h S6: failed to prune %@ (%@)",
+                      ame274_sorted[i][@"name"], ame274_err.localizedDescription ?: @"?");
+            }
+        }
+    }
+
+    // 2) .ame269_backup/<ts> 同口径收敛（Task269 家族合并冲突备份，只留最近 2 个时间戳）
+    NSString *ame274_backupRoot = [self.customGameDir stringByAppendingPathComponent:@".ame269_backup"];
+    NSArray<NSString *> *ame274_tsEntries = [fm contentsOfDirectoryAtPath:ame274_backupRoot error:nil];
+    if (ame274_tsEntries.count > 2) {
+        NSMutableArray<NSDictionary *> *ame274_tsBuckets = [NSMutableArray array];
+        for (NSString *ame274_name in ame274_tsEntries) {
+            [ame274_tsBuckets addObject:@{ @"name": ame274_name,
+                                           @"path": [ame274_backupRoot stringByAppendingPathComponent:ame274_name],
+                                           @"ts": @(ame274_name.longLongValue) }];
+        }
+        NSArray *ame274_sortedTs = [ame274_tsBuckets sortedArrayUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
+            long long ats = [a[@"ts"] longLongValue], bts = [b[@"ts"] longLongValue];
+            if (ats != bts) return ats > bts ? NSOrderedAscending : NSOrderedDescending;
+            return [a[@"name"] compare:b[@"name"]];
+        }];
+        for (NSUInteger i = 2; i < ame274_sortedTs.count; i++) {
+            NSError *ame274_err = nil;
+            if ([fm removeItemAtPath:ame274_sortedTs[i][@"path"] error:&ame274_err]) {
+                NSLog(@"[ModpackImport] Task274-h S6: pruned stale .ame269_backup bucket %@ (keep latest 2)",
+                      ame274_sortedTs[i][@"name"]);
+            } else {
+                NSLog(@"[ModpackImport] Task274-h S6: failed to prune .ame269_backup/%@ (%@)",
+                      ame274_sortedTs[i][@"name"], ame274_err.localizedDescription ?: @"?");
+            }
+        }
+    }
+}
+
 #pragma mark - Get Imported Modpacks
 
 - (NSArray<NSDictionary *> *)getImportedModpacks {
@@ -3360,6 +3495,24 @@ if (hasRealFileName) {
     if (gameDirAbsolute && [fm fileExistsAtPath:gameDirAbsolute]) {
         if (![fm removeItemAtPath:gameDirAbsolute error:error]) {
             return NO;
+        }
+    }
+    // ★ Task274-h S2（自愈兜底）：历史缺陷曾把 .ame269_stage-<id>-<ts> 死路径持久化进
+    //   账本 gameDirAbsolute——上方 fileExistsAtPath 必败 → 静默跳过 → mods/saves 整树
+    //   残留。按 gameDirRelative 反推规范目录（custom_gamedir/<id>）再清一次；幂等：
+    //   两条路径同目录（已删）或目录不存在时均为 no-op。
+    {
+        NSString *ame274_deadId = modpackInfo[@"id"];
+        if ([ame274_deadId isKindOfClass:[NSString class]] && ame274_deadId.length > 0) {
+            NSString *ame274_realDir = [self absoluteGameDirForModpackId:ame274_deadId];
+            if (ame274_realDir.length > 0 && [fm fileExistsAtPath:ame274_realDir]
+                && ![ame274_realDir isEqualToString:gameDirAbsolute]) {
+                NSLog(@"[ModpackImport] Task274-h S2: ledger gameDirAbsolute '%@' is dead -- removing real dir %@ (self-heal)",
+                      gameDirAbsolute ?: @"(nil)", ame274_realDir.lastPathComponent);
+                if (![fm removeItemAtPath:ame274_realDir error:error]) {
+                    return NO;
+                }
+            }
         }
     }
 

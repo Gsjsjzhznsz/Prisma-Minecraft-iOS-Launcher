@@ -615,9 +615,12 @@ BOOL isJITEnabled(BOOL checkCSFlags) {
     // stikjit:// round trip on every launch.  The helpers
     // JIT26IsLikelyDebuggerKeepAttached() / JIT26DebuggerAttachedViaPtrace()
     // / JIT26DebuggerViaExceptionPorts() are still exported for diagnostics.
-    int flags;
-    csops(getpid(), 0, &flags, sizeof(flags));
-    return (flags & CS_DEBUGGED) != 0;
+    // ★ Task274-f r2（F4）：flags 清零 + csops 返回值检查——原实现未初始化即用（csops 失败时按栈垃圾判定 CS_DEBUGGED）。失败按未启用既有结果返回 NO。
+    int flags = 0;
+    if (csops(getpid(), 0, &flags, sizeof(flags)) == 0) {
+        return (flags & CS_DEBUGGED) != 0;
+    }
+    return NO;
 }
 
 void openLink(UIViewController* sender, NSURL* link) {
@@ -701,17 +704,60 @@ BOOL isConnectivityError(NSError *error) {
     }
 }
 
+// ★ Task274-f r2（F9）：localize 全 UI 热路径 bundle 记忆化（原实现每次调用重做 pathForResource + bundleWithPath）。缓存三组：
+//   ① 目标 .lproj bundle（键 = langOverride 解析结果，语言切换即失配重建）；
+//   ② en / zh-Hans / zh-CN 兜底 bundle（进程内不变，惰性构建一次；路径探测失败的 nil 结果也缓存，坏装不再每次重探）。
+//   线程安全：os_unfair_lock 护全部读写（本文件 DeviceGetJITFlags 缓存同款先例；较 @synchronized 免去锁对象惰性初始化竞态面）。
+//   命中路径返回与重建路径完全同一 NSBundle 指针，localizedStringForKey 调用序列不变，输出逐字节等价；失败回落行为零变化。
+static os_unfair_lock ame274_localizeLock = OS_UNFAIR_LOCK_INIT;
+static NSString *ame274_localizeKey = nil;      // 上次解析键（nil = 未设/"system"）
+static NSBundle *ame274_localizeTarget = nil;   // 键对应的目标 .lproj bundle（路径未找到时 nil）
+static NSBundle *ame274_localizeEn = nil;
+static BOOL ame274_localizeEnProbed = NO;
+static NSBundle *ame274_localizeZhHans = nil;
+static BOOL ame274_localizeZhHansProbed = NO;
+static NSBundle *ame274_localizeZhCN = nil;
+static BOOL ame274_localizeZhCNProbed = NO;
+
+static NSBundle *ame274_cachedLprojBundle(NSString *langName, NSBundle **slot, BOOL *probed) {
+    os_unfair_lock_lock(&ame274_localizeLock);
+    if (!*probed) {
+        NSString *ame274_lPath = [NSBundle.mainBundle pathForResource:langName ofType:@"lproj"];
+        *slot = ame274_lPath ? [NSBundle bundleWithPath:ame274_lPath] : nil;
+        *probed = YES;
+    }
+    NSBundle *ame274_b = *slot;
+    os_unfair_lock_unlock(&ame274_localizeLock);
+    return ame274_b;
+}
+
 NSString* localize(NSString* key, NSString* comment) {
     // 检查用户是否在设置中手动选择了语言
     NSString *langOverride = getPrefObject(@"general.app_language");
     NSBundle *targetBundle = nil;
 
-    if (langOverride && ![langOverride isEqualToString:@"system"]) {
-        // 用户手动选择了特定语言，使用对应的 .lproj bundle
-        NSString *lprojPath = [NSBundle.mainBundle pathForResource:langOverride ofType:@"lproj"];
-        if (lprojPath) {
-            targetBundle = [NSBundle bundleWithPath:lprojPath];
+    // ★ Task274-f r2（F9）：目标 bundle 记忆化——键 = langOverride 解析结果（nil = 未设/"system"）。命中复用上次构建的 bundle；失配（首次、system↔语言切换）才重建。偏好本身每次调用重读（锁外），语言切换后键自然失配，无陈旧窗口。
+    NSString *ame274_langKey = (langOverride && ![langOverride isEqualToString:@"system"]) ? langOverride : nil;
+    os_unfair_lock_lock(&ame274_localizeLock);
+    BOOL ame274_keyHit = (ame274_langKey == nil)
+        ? (ame274_localizeKey == nil)
+        : (ame274_localizeKey != nil && [ame274_langKey isEqualToString:ame274_localizeKey]);
+    if (ame274_keyHit) {
+        targetBundle = ame274_localizeTarget;
+    }
+    os_unfair_lock_unlock(&ame274_localizeLock);
+    if (!ame274_keyHit) {
+        if (ame274_langKey) {
+            // 用户手动选择了特定语言，使用对应的 .lproj bundle
+            NSString *lprojPath = [NSBundle.mainBundle pathForResource:ame274_langKey ofType:@"lproj"];
+            if (lprojPath) {
+                targetBundle = [NSBundle bundleWithPath:lprojPath];
+            }
         }
+        os_unfair_lock_lock(&ame274_localizeLock);
+        ame274_localizeKey = [ame274_langKey copy];
+        ame274_localizeTarget = targetBundle;
+        os_unfair_lock_unlock(&ame274_localizeLock);
     }
 
     NSString *value;
@@ -719,16 +765,14 @@ NSString* localize(NSString* key, NSString* comment) {
         value = [targetBundle localizedStringForKey:key value:key table:nil];
         // 如果用户选择的语言缺少该 key，回退到英文
         if ([value isEqualToString:key]) {
-            NSString *enPath = [NSBundle.mainBundle pathForResource:@"en" ofType:@"lproj"];
-            NSBundle *enBundle = [NSBundle bundleWithPath:enPath];
+            NSBundle *enBundle = ame274_cachedLprojBundle(@"en", &ame274_localizeEn, &ame274_localizeEnProbed);
             value = [enBundle localizedStringForKey:key value:nil table:nil];
             if ([value isEqualToString:key]) {
                 // Task191：zh-Hans 兜底（en.lproj 曾因一行值内未转义引号整表解析
                 // 失败，用户手动切换语言后全界面显示 "i18n_str_N" 裸键名——任何
                 // 单一语言表损坏/缺键时，退到最全的 zh-Hans 表而不是把键名
                 // 直接暴露给用户。
-                NSString *zhPath = [NSBundle.mainBundle pathForResource:@"zh-Hans" ofType:@"lproj"];
-                NSBundle *zhBundle = [NSBundle bundleWithPath:zhPath];
+                NSBundle *zhBundle = ame274_cachedLprojBundle(@"zh-Hans", &ame274_localizeZhHans, &ame274_localizeZhHansProbed);
                 value = [zhBundle localizedStringForKey:key value:nil table:nil];
                 if ([value isEqualToString:key]) {
                     // ★ Task228：zh-Hans 之后追加 zh-CN 一跳。Task227 的 i18n
@@ -736,9 +780,7 @@ NSString* localize(NSString* key, NSString* comment) {
                     // 未转义 → 整表解析失败），en→zh-Hans 两跳全部失守时，
                     // 唯一幸存的 zh-CN 表反而无处可退——用户全界面裸键名。
                     // 兜底线越长，单一坏表把键名漏给用户的概率越低。
-                    NSString *ame228_zhCNPath = [NSBundle.mainBundle pathForResource:@"zh-CN" ofType:@"lproj"];
-                    NSBundle *ame228_zhCNBundle = [NSBundle bundleWithPath:ame228_zhCNPath];
-                    value = [ame228_zhCNBundle localizedStringForKey:key value:nil table:nil];
+                    value = [ame274_cachedLprojBundle(@"zh-CN", &ame274_localizeZhCN, &ame274_localizeZhCNProbed) localizedStringForKey:key value:nil table:nil];
                     if (value == nil || [value isEqualToString:key]) {
                         // 英文也没有，尝试 UIKit 系统翻译
                         value = [[NSBundle bundleWithIdentifier:@"com.apple.UIKit"] localizedStringForKey:key value:nil table:nil];
@@ -750,20 +792,16 @@ NSString* localize(NSString* key, NSString* comment) {
         // 跟随系统语言（默认行为）
         value = NSLocalizedString(key, nil);
         if (![NSLocale.preferredLanguages[0] isEqualToString:@"en"] && [value isEqualToString:key]) {
-            NSString* path = [NSBundle.mainBundle pathForResource:@"en" ofType:@"lproj"];
-            NSBundle* languageBundle = [NSBundle bundleWithPath:path];
+            NSBundle *languageBundle = ame274_cachedLprojBundle(@"en", &ame274_localizeEn, &ame274_localizeEnProbed);
             value = [languageBundle localizedStringForKey:key value:nil table:nil];
             if ([value isEqualToString:key]) {
                 // Task191：zh-Hans 兜底（同上，系统语言表损坏/缺键时的防线）
-                NSString *zhPath = [NSBundle.mainBundle pathForResource:@"zh-Hans" ofType:@"lproj"];
-                NSBundle *zhBundle = [NSBundle bundleWithPath:zhPath];
+                NSBundle *zhBundle = ame274_cachedLprojBundle(@"zh-Hans", &ame274_localizeZhHans, &ame274_localizeZhHansProbed);
                 value = [zhBundle localizedStringForKey:key value:nil table:nil];
                 if ([value isEqualToString:key]) {
                     // ★ Task228：同上——zh-Hans 之后追加 zh-CN 一跳（Task227
                     // 四表同坏事故的兜底加固；zh-CN 是五表对齐后另一张完整简中表）。
-                    NSString *ame228_zhCNPath = [NSBundle.mainBundle pathForResource:@"zh-CN" ofType:@"lproj"];
-                    NSBundle *ame228_zhCNBundle = [NSBundle bundleWithPath:ame228_zhCNPath];
-                    value = [ame228_zhCNBundle localizedStringForKey:key value:nil table:nil];
+                    value = [ame274_cachedLprojBundle(@"zh-CN", &ame274_localizeZhCN, &ame274_localizeZhCNProbed) localizedStringForKey:key value:nil table:nil];
                     if (value == nil || [value isEqualToString:key]) {
                         value = [[NSBundle bundleWithIdentifier:@"com.apple.UIKit"] localizedStringForKey:key value:nil table:nil];
                     }
@@ -914,40 +952,49 @@ BOOL DeviceCanCreateRXMap(void) {
     return ret == 0;
 }
 
+static BOOL ame274_txmHeuristicFallback(void) {
+    // ★ Task274-f r2（F3）：原 !d 分支内联的保守硬件/OS 启发式原样抽取，供两处共用（行为逐分支等价）。
+    NSUInteger (*MGGetSInt64Answer)(NSString *) = dlsym(RTLD_DEFAULT, "MGGetSInt64Answer");
+    if (MGGetSInt64Answer == NULL) {
+        if (@available(iOS 19.0, *)) return YES;
+        return NO;
+    }
+    NSUInteger chipID = MGGetSInt64Answer(@"ChipID");
+    switch (chipID) {
+        case 0x8020: // A12
+        case 0x8027: // A12X/Z
+            return NO;
+        case 0x8030: // A13
+        case 0x8101: // A14
+        case 0x8103: // M1
+            if (@available(iOS 27.0, *)) return YES;
+            return NO;
+        default:
+            if (@available(iOS 19.0, *)) return YES;
+            return NO;
+    }
+}
+
 static BOOL DeviceHasTXMReal(void) {
     DIR *d = opendir("/private/preboot");
     if (!d) {
         // /private/preboot is no longer readable on iOS 26.6 and iOS 27.
         // Fall back to a conservative hardware/OS heuristic.
-        NSUInteger (*MGGetSInt64Answer)(NSString *) = dlsym(RTLD_DEFAULT, "MGGetSInt64Answer");
-        if (MGGetSInt64Answer == NULL) {
-            if (@available(iOS 19.0, *)) return YES;
-            return NO;
-        }
-        NSUInteger chipID = MGGetSInt64Answer(@"ChipID");
-        switch (chipID) {
-            case 0x8020: // A12
-            case 0x8027: // A12X/Z
-                return NO;
-            case 0x8030: // A13
-            case 0x8101: // A14
-            case 0x8103: // M1
-                if (@available(iOS 27.0, *)) return YES;
-                return NO;
-            default:
-                if (@available(iOS 19.0, *)) return YES;
-                return NO;
-        }
+        return ame274_txmHeuristicFallback();
     }
     struct dirent *dir;
-    char txmPath[PATH_MAX];
+    // ★ Task274-f r2（F3）：txmPath 曾未初始化即用——目录打开成功但无任何 96 字符 UUID 项时，下方 access() 读未初始化栈缓冲（UB）。清零 + found 标志：未找到走与 !d 同款启发式 fallback（原 UB 路径实机近似恒为 access 假，启发式是对该路径的语义收编）。
+    char txmPath[PATH_MAX] = {0};
+    BOOL ame274_found = NO;
     while ((dir = readdir(d)) != NULL) {
         if(strlen(dir->d_name) == 96) {
             snprintf(txmPath, sizeof(txmPath), "/private/preboot/%s/usr/standalone/firmware/FUD/Ap,TrustedExecutionMonitor.img4", dir->d_name);
+            ame274_found = YES;
             break;
         }
     }
     closedir(d);
+    if (!ame274_found) return ame274_txmHeuristicFallback();
     return access(txmPath, F_OK) == 0;
 }
 

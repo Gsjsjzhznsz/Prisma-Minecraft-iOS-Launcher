@@ -116,7 +116,7 @@ static NSString *const ame217_qqGroup = @"1126547426";
     return label;
 }
 
-/// 头部卡：图标 + 名称 + 版本（动态读 Info.plist，双键同值 6.5.0）。
+/// 头部卡：图标 + 名称 + 版本（动态读 Info.plist，双键同值 6.5.5）。
 - (void)ame217_buildHeaderCard {
     UIView *card = [self ame217_card];
     UIStackView *inner = [[UIStackView alloc] init];

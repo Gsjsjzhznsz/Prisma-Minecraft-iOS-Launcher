@@ -29,17 +29,29 @@ public class PatchSVC implements ClassFileTransformer {
 
         System.out.println("PatchSVC: Replacing class " + className);
 
-        try {
-            InputStream inputStream = PatchSVC.class.getClassLoader().getResourceAsStream(patchFile);
+        // ame274：平移 PatchJNAAgent 已修契约并加强——原实现 available()+readFully
+        // 裸读：available()==0 时把零字节数组当补丁返回（JVM 侧表现为
+        // ClassFormatError 而非优雅回退），且异常路径流从不 close（fd 泄漏）。
+        // 现改为 try-with-resources 全量读；资源缺失/零字节/读失败一律回退
+        // 原类字节码（ClassFileTransformer 契约中"原样返回=不替换"，与既有
+        // catch 回退语义一致，也无需依赖 null 返回语义）。
+        try (InputStream inputStream = PatchSVC.class.getClassLoader().getResourceAsStream(patchFile)) {
             if (inputStream == null) {
                 System.err.println("PatchSVC: ERROR - Patch file not found: " + patchFile);
                 return classfileBuffer;
             }
 
-            DataInputStream dataInputStream = new DataInputStream(inputStream);
-            byte[] patched = new byte[inputStream.available()];
-            dataInputStream.readFully(patched);
-            dataInputStream.close();
+            ByteArrayOutputStream patchBuffer = new ByteArrayOutputStream(8192);
+            byte[] chunk = new byte[8192];
+            int read;
+            while ((read = inputStream.read(chunk)) != -1) {
+                patchBuffer.write(chunk, 0, read);
+            }
+            byte[] patched = patchBuffer.toByteArray();
+            if (patched.length == 0) {
+                System.err.println("PatchSVC: ERROR - Patch file empty: " + patchFile + ", using original bytecode");
+                return classfileBuffer;
+            }
 
             System.out.println("PatchSVC: SUCCESS - Patched " + className);
             return patched;

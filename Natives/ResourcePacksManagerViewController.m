@@ -206,7 +206,10 @@
 
 - (void)refreshLocalList {
     [self setLoading:YES];
-    NSString *profile = self.profileName ?: @"default";
+    // ★ Task274-g（G1）：nil 直传服务层——ResourcePackService 已内置跟随选中实例语义
+    //   （Task274-h S7 对齐 Task270 M1：nil→selectedProfileName→"(Default)"）。旧
+    //   ?: @"default" 是恒 miss 字面量（真实默认键 "(Default)"）=选中实例却恒扫共享根。
+    NSString *profile = self.profileName;
     [[ResourcePackService sharedService] scanResourcePacksForProfile:profile completion:^(NSArray<ResourcePackItem *> *items) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.localItems removeAllObjects];

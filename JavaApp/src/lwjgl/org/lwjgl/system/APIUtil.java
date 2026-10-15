@@ -244,8 +244,10 @@ public final class APIUtil {
 
             APIVersion that = (APIVersion)o;
 
+            // ame274：上游原样为 that.minor——原转写把 minor 与 major 比较，
+            // equals 语义破坏（如 (3,3) 与 (3,1) 会判等）。
             return this.major == that.major &&
-                   this.minor == that.major &&
+                   this.minor == that.minor &&
                    Objects.equals(this.revision, that.revision) &&
                    Objects.equals(this.implementation, that.implementation);
         }
