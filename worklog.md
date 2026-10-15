@@ -3350,3 +3350,19 @@ Work Log:
 
 Stage Summary:
 - 22 文件 +540/−245（Java 5 件 119 行 + ObjC 17 件）；装机验证锚点：①游戏会话正常退出后内存回落（SurfaceVC dealloc 可达，日志/Instruments 双验）②玩过一局后存档/数据包管理页扫描不错位③下载失败点重试不再卡"等待中"（四服务全量）④JRE 管理器删除运行时后启动不再报错（引用清扫）⑤隔离实例导入光影落本实例目录
+
+---
+Task ID: 271 / 271-ci
+Agent: main (Super Z)
+Task: Task 271 全链——①隔离"变共享切不回"五点根修 ②伪液态玻璃"选择太多被隐藏无法滑动"四点根修 ③English 残留中文根修 + AI 模块 221 字面量接线 + 186 新键 54 表 ④八大主要语言全量翻译（miss_ref=0）
+
+Work Log:
+- 271-a：F1 saveProfile 合并覆盖（同名重装不再抹 gameDir/实例设置）+ F2 启动自愈 ame271_selfHealStrandedIsolation（嗅探命中隔离数据即落定 gameDir，幂等）+ F3 四安装流对齐 versions/<id>/game（下载页 Fabric/Quilt/OptiFine、实例页 OptiFine、AI×2）+ F4 隔离徽标实时刷新（viewWillAppear/钉定/跟随/选中变化/手动刷新）+ F5 actionDone 合并覆盖 + currentProfileName 回字典键
+- 271-b：D1 Ame237Scroll（touchesShouldCancelInContentView 恒 YES）修 UIControl 行铺满拖动死锁（悬浮菜单+游戏内菜单双面板）+ D3 最小 100pt 行区视口 + D4 呈现链上溯+收尾重试 + D5 滚动指示器
+- i18n：PLTaskStageTitleDisplay 改 localize()（应用内语言覆盖生效，English 安装进度不再中文）+ AI 模块 221 字面量接线（186 新键 54 表）+ PLCrashView:581 + 占位符 4 处修复（含 pt-BR login.jit.fail 游离 %s 崩溃面）
+- 翻译：ja+910 ko+2754 ru+2440 fr+2664 de+2584 es+2683 pt-BR+2685 it+2690（八语言 miss_ref=0，占位符 multiset 对 en 零失配）
+- 门禁七道全绿（task139/191/248/250/verify219 81/81 重锚 3068/verify255 28/28/verify269 28/28）；CI run 38747515319 failure（SceneDelegate 缺 import ModService.h）→ r1 fc10409 → run 38749322937 一轮终绿
+- 产物：ipa/tipa 221.4MB + dSYM 6.4MB 全在位；VERSION 维持 6.5.0（静默替换路线）
+
+Stage Summary:
+- 装机验证锚点：①启动日志 [Ame271] self-heal: profile ... re-isolated（fabric-loader-* 模组列表回隔离）②版本设置切隔离→模组管理回页徽标即时更新③伪玻璃档 55 项语言选择器/80 项版本筛选可流畅滚动④English 下安装进度/下载中心阶段标题全英文⑤AI 助手英文界面零中文⑥八大语言设置页全量无缺键回落
