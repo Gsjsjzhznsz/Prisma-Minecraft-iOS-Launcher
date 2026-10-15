@@ -327,3 +327,8 @@
 "ai.tools.path_out_of_bounds" = "Path is outside the allowed directory or invalid";
 "ai.tools.source_line_fmt" = "%@\n(Source: %@)";
 "ai.tools.unknown_tool_fmt" = "Unknown tool: %@";
+
+/* Task271 translations */
+"ame273.crash.title" = "Previous game exited unexpectedly";
+"ame273.crash.copy_reason" = "Copy reason";
+"ame273.crash.view_full_log" = "View full log";

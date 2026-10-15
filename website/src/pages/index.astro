@@ -9,7 +9,7 @@ import '../styles/global.css';
 import announcements from '../data/announcements.json';
 
 const REPO = 'https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher';
-const FALLBACK_TAG = 'v6.5.0';
+const FALLBACK_TAG = 'v6.5.5';
 const releaseUrl = (tag) => `${REPO}/releases/tag/${tag}`;
 const assetUrl = (tag, name) => `${REPO}/releases/download/${tag}/${name}`;
 const IPA = (tag) => assetUrl(tag, `com.prisma-devs.prisma-${tag.replace(/^v/, '')}-ios.ipa`);
@@ -133,7 +133,7 @@ const quickstart = {
           <a href="#community"><span class="lang-zh">交流与支持</span><span class="lang-en">Community</span></a>
           <a href="#announcements"><span class="lang-zh">公告</span><span class="lang-en">News</span></a>
           <a href={REPO} target="_blank" rel="noopener">GitHub</a>
-          <a class="cta" href="#download"><span class="lang-zh">下载 6.5.0</span><span class="lang-en">Download</span></a>
+          <a class="cta" href="#download"><span class="lang-zh">下载 6.5.5</span><span class="lang-en">Download</span></a>
           <button id="langToggle" class="lang-btn" type="button" aria-label="切换语言 / Switch language">EN</button>
         </nav>
       </div>
@@ -141,7 +141,7 @@ const quickstart = {
 
     <section class="hero wrap">
       <img class="hero-icon" src={`${BASE}/icon-192.png`} alt="Prisma launcher icon" width="128" height="128" />
-      <span class="chip"><span class="dot"></span><span class="lang-zh">v6.5.0 正式版 · 包名迁移至 com.prisma-devs.prisma</span><span class="lang-en">v6.5.0 stable · bundle id moved to com.prisma-devs.prisma</span></span>
+      <span class="chip"><span class="dot"></span><span class="lang-zh">v6.5.5 正式版 · 包名迁移至 com.prisma-devs.prisma</span><span class="lang-en">v6.5.5 stable · bundle id moved to com.prisma-devs.prisma</span></span>
       <h1>Prisma</h1>
       <p class="lead">
         <span class="lang-zh">
@@ -338,8 +338,8 @@ const quickstart = {
       <div class="glass dl-card">
         <h2 class="sec"><span class="lang-zh">下载 Prisma</span><span class="lang-en">Download Prisma</span></h2>
         <p class="sec-sub">
-          <span class="lang-zh">当前展示：<b id="dl-tag">v6.5.0</b>（页面自动识别最新发行版，识别失败时回退此构建期版本）</span>
-          <span class="lang-en">Showing: <b id="dl-tag-en">v6.5.0</b> (auto-detected latest release; falls back to this build-time version offline)</span>
+          <span class="lang-zh">当前展示：<b id="dl-tag">v6.5.5</b>（页面自动识别最新发行版，识别失败时回退此构建期版本）</span>
+          <span class="lang-en">Showing: <b id="dl-tag-en">v6.5.5</b> (auto-detected latest release; falls back to this build-time version offline)</span>
         </p>
         <div class="row">
           <a class="btn primary" id="dl-ipa-btn" href={IPA(FALLBACK_TAG)}>⬇ <span class="lang-zh">IPA（AltStore / SideStore / 爱思）</span><span class="lang-en">IPA (AltStore / SideStore / i4)</span></a>
@@ -422,7 +422,7 @@ const quickstart = {
       })();
 
       // ★ Task261 ⑩：自动识别最新发行版（GitHub Releases API；1h localStorage
-      // 缓存；失败静默回退构建期 v6.5.0 —— 国内网络无代理时 API 常不可达，
+      // 缓存；失败静默回退构建期 v6.5.5 —— 国内网络无代理时 API 常不可达，
       // 页面主体此时仍展示构建期版本与加速源链接，零阻断）。
       (function () {
         var REPO_API = 'https://api.github.com/repos/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/latest';

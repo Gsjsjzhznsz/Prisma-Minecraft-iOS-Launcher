@@ -9,7 +9,7 @@ OUTPUTDIR   := $(SOURCEDIR)/artifacts
 WORKINGDIR  := $(SOURCEDIR)/Natives/build
 DETECTPLAT  := $(shell uname -s)
 DETECTARCH  := $(shell uname -m)
-VERSION     := 6.5.0
+VERSION     := 6.5.5
 BRANCH      := $(shell git branch --show-current)
 COMMIT      := $(shell git log --oneline | sed '2,10000000d' | cut -b 1-7)
 PLATFORM    ?= 2
@@ -108,14 +108,6 @@ MOLTENVK_LIBRARY      ?= $(SOURCEDIR)/Natives/resources/Frameworks/libMoltenVK.d
 
 # Function to use later for checking dependencies
 METHOD_DEPCHECK   = $(shell $(1) >/dev/null 2>&1 && echo 1)
-
-# Function to modify Info.plist files
-METHOD_INFOPLIST  =  \
-	if [ '$(4)' = '0' ]; then \
-		plutil -replace $(1) -string $(2) $(3); \
-	else \
-		plutil -value $(2) -key $(1) $(3); \
-	fi
 
 # Function to check directories
 METHOD_DIRCHECK   = \
@@ -408,20 +400,6 @@ dep_mg:
 	echo "[shaderc-impl] glslang static libs OK (spirv=$$mg_spirv_a glslang=$$mg_glslang_a rl=$$mg_rl_a)"
 	cp $(WORKINGDIR)/mobileglues/libmobileglues*.dylib $(WORKINGDIR)/
 	echo '[Amethyst v$(VERSION)] dep_mg - end'
-dep_mobilegl:
-	# Task 113：MobileGL 重新集成（仅 DirectVulkan 后端）。
-	# - libMobileGL.dylib 为预编译产物（MobileGL-Dev，LGPL-3.0），随包携带于
-	#   Natives/resources/Frameworks/，payload 的 "cp -R resources/*" 自动打包。
-	# - 上游同款二进制（caf6822 会话实测 26.3 完全流畅：CAMetalLayer 直呈 +
-	#   IMMEDIATE 呈现模式 + 无 CPU 回读）。
-	# - 运行时入口 = 设置-视频-"MobileGL Vulkan 直呈渲染器"开关（mobilegl_vulkan），
-	#   不进主渲染器列表（用户要求）；GLES 变体（libMobileGL-gles.dylib）不引入
-	#   （上游实测其他后端有问题）。
-	# - 源码构建路径（BUILD_MOBILEGL=1，见上游 Makefile dep_mobilegl_build）未引入：
-	#   预编译产物已验证可用；需要重建时参照上游 55256e33 的 vendored source 流程。
-	# 保留空目标避免外部 make 调用报错（payload 依赖 resources/ 直拷，无需本目标做事）
-	@echo '[Amethyst v$(VERSION)] dep_mobilegl - using prebuilt libMobileGL.dylib in Natives/resources/Frameworks/ (Task113, Vulkan-only)'
-
 
 dep_openal_shim:
 	# Task 129：OpenAL ALC_SOFT_system_events 兼容垫片（26.1.2 整合包崩溃修复）。
@@ -950,4 +928,4 @@ clean:
 	rm -rf $(OUTPUTDIR)
 	echo '[Amethyst v$(VERSION)] clean - end'
 
-.PHONY: all clean check native java jre package dsym deploy help dep_virgl
+.PHONY: all clean check native java jre package dsym deploy help dep_virgl dep_mg dep_openal_shim dep_mithril_glshim dep_shader_shims dep_nggl4es dep_gl4eszl2 dep_virgl_build dep_virgl_compile dep_angle_freeze dep_sdl3_guard

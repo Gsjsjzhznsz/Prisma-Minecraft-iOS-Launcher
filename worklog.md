@@ -3383,3 +3383,18 @@ Work Log:
 Stage Summary:
 - 19 文件 +565/−3；装机验证锚点：①版本隔离选择器点"隔离此版本"→0.3s 内出现"迁移并开启/仅开启"子菜单（玻璃面板档，日志 [AmeNativeMenu] Task273: reentry window active）→选后徽标立即回 isolated+扫描落 versions/<id>/game/mods ②依赖冲突类整合包启动崩溃→崩溃界面当场呈现（PLCrashView HMCL 式分析：模组冲突分类+建议卡片），用户点重启/退出可控退出③即便错过会话内界面，下次启动 2.5s 后弹"上次游戏异常退出"玻璃弹窗给出原因+修复建议+复制按钮④正常退出（exit 0）/headless 安装器/挂死场景看门狗立即 _exit 语义零回归
 - 本例整合包本身内容错（Vulkan Optimization-26.3-6.1 的 manifest 钉了 sodium 0.9.3-alpha.1 与 reeses-sodium-options 冲突），启动器侧职责=把原因讲清楚（PCL CE 等价物），不替包作者改内容
+
+---
+Task ID: 274 (main, 闭环)
+Agent: main (Super Z)
+Task: 第三轮五路子代理全面审查+批量根修（P1×11/P2×22）+ v6.5.5 升号
+
+Work Log:
+- 274-a..e 五路只读审查：39 条新发现 + 效率/屎山 21 条；确认 Task 273 CI（bbcf4d0）终绿
+- 274-f（超时后 r2 续作，前任 6 hunk 审计全保留）/g/h/i/j 五路修复：原生核心 F1-F13（Task273 看门狗竞态根修=ame251 标记早于旗标的结构性抢杀、writeCrashReport CAS 重入防护、csops/txmPath 未初始化三族、localize NSBundle 记忆化、SSZipArchive 死码 -1815 行）；UI G1-G8（四资源管理页 @"default" 字面量=nil 实时跟随选中、语言切换布局口径对齐 willConnect、L2 崩溃报告呈现即归档防下次重弹）；服务 S1-S14（PLProfiles/ServerService 锁收口、WorldService 重试链 taskDescription 补全、staging 账本污染自愈、换装备份保留最近 2 份、CF prefetch 判死跳过逐文件死端点）；Java J1-J10（PatchSVC 补丁契约、UTF-8 钉扎防中文用户名坏档、死码五件）
+- 主代理补刀：ModService A3 sweep 守卫 @"default"→"(Default)"（旧守卫恒不匹配=主实例可能被误扫隔离）；ai.fix 34 重复键 6 表 last-wins 清理（.strings 解析后者胜=零运行时变化）+ en restart_hint 语法修复；verify_task219 重锚（J 3071 / K3 654）
+- v6.5.5 升号：Makefile VERSION / Info.plist 双键 / WelcomeViewController 动态读 CFBundleShortVersionString 单源化 / website index.astro 7 处；ame273 三键 en 值注入 40 缺失表
+
+Stage Summary:
+- 门禁全绿：task139 all balanced / task240 全绿 / task191 54 表 OK（zh 3071 entries==unique）/ task248 缺键0硬编码0 / task250 全零 / verify269 28/28 / verify255 全绿 / verify219 81/81
+- 装机锚点：①依赖冲突崩溃→PLCrashView 当场呈现且下次启动不重弹（报告已归档）②四资源页（着色器/资源包/数据包/世界）跟随当前选中实例不再看共享根③localize 切语言即时生效④CF 大包安装不再逐文件死等 25s⑤English 界面 AI 修复文案语法正常⑥ECJ A/B 基线零新增错误
