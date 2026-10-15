@@ -1061,7 +1061,9 @@ createLibraryInfo(libItem);
         while((len = is.read(buf))!=-1) {
             out.write(buf, 0, len);
         }
-        return out.toString(StandardCharsets.UTF_8);
+        // Task274-r1: ByteArrayOutputStream.toString(Charset) 是 Java 10+ API，
+        // CI 用 JDK8 构建会挂；改 new String(byte[], Charset)（Java 6+ 可用）。
+        return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
 
     public static String read(String path) throws IOException {
