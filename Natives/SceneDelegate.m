@@ -11,6 +11,7 @@
 #import "TerracottaManager.h"
 #import "TerracottaBridge.h"
 #import "ModpackImportService.h" // Task269：升级自动迁移（一实例多文件夹历史遗留合并）
+#import "ModService.h"           // ★ Task271：启动自愈 ame271_selfHealStrandedIsolation
 
 extern __weak UIWindow *mainWindow;
 
