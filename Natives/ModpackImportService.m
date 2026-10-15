@@ -2327,7 +2327,7 @@ if (hasRealFileName) {
                           ame272_pid, ame272_http.statusCode, ame272_err.localizedDescription ?: @"-");
                 }
             } @catch (NSException *ame272_ex) {
-                NSLog(@"[ModpackImport] Task272: prefetch parse exception: %@", ame272_ex.localizedDescription);
+                NSLog(@"[ModpackImport] Task272: prefetch parse exception: %@", ame272_ex.reason);
             } @finally {
                 dispatch_semaphore_signal(ame272_sem);
                 dispatch_group_leave(ame272_grp);
