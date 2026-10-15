@@ -44,6 +44,10 @@ static NSString * const kImportedModpacksKey = @"ImportedModpacks";
 @property (nonatomic, strong) NSMutableArray<NSDictionary *> *failedFilesInternal;
 /// Phase 3（Task 3.2）：跟踪本次导入过程中因 404/资源不存在被跳过的文件（警告，非失败）
 @property (nonatomic, strong) NSMutableArray<NSDictionary *> *skippedFilesInternal;
+/// ★ Task272：CurseForge manifest 依赖文件元数据缓存（fileID → fileName/downloadUrl/sha1/classId/fileLength）。
+///   安装开工时按项目批量预取（ame272_prefetchCurseForgeFileMetadata:）填充；
+///   fetchCurseForgeFileMetadata / 候选构造优先读缓存（装机实证旧元数据/HEAD 端点双双 404）。
+@property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSDictionary *> *ame272_cfFilesByFileID;
 /// redesign-download-ui Phase 5 Task 5.1：整合包导入主任务（6 阶段 + autoPresentDetail 统一进度页）
 @property (nonatomic, copy, nullable) NSString *currentImportTaskId;
 /// Task 5.9：本次导入写入主 versions 目录的 version JSON 路径（取消时清理）
@@ -1593,6 +1597,11 @@ static BOOL ame269_sMigrationRunning = NO;
                                               totalFileCount:(NSInteger)total];
     }
 
+    // ★ Task272：安装开工先按项目批量预取 CurseForge 依赖元数据（去重 projectID，
+    //   每项目 1 请求；旧路径每文件各发 1 个注定 404 的 10s 超时假请求 = 纯延迟）。
+    //   预取失败不阻断——逐文件回退链照旧，只是拿不到真实文件名。
+    [self ame272_prefetchCurseForgeFileMetadata:pendingFiles];
+
     for (NSDictionary *fileInfo in pendingFiles) {
         // 取消检查点：停止提交新任务；已在途任务等待其自然收尾后由 group_wait 返回
         if ([self checkCancelledWithError:error]) {
@@ -1683,18 +1692,27 @@ static BOOL ame269_sMigrationRunning = NO;
                                                                error:nil];
                 destPath = [categoryDir stringByAppendingPathComponent:fileName];
 
-                // 候选列表（按尝试顺序）：
-                //   1) BMCLAPI 下载端点（主源：无需 API Key，302 重定向到真实文件）
-                //   2) 官方 Edge CDN 直链（真实文件名已知时；经 PLMirrorCenter AssetDownload
-                //      重写可附带 MCIM 镜像候选，官方/镜像先后由用户下载源策略决定）
-                //   3) cdn.curseforge.com 下载端点兜底（不依赖文件名，靠服务端重定向）
-                NSURL *bmclURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@/curseforge/files/%lld/%lld/download",
-                                                       PLMirrorBMCLAPIRootURL, projectID, fileID]];
-                if (bmclURL) {
-                    [candidates addObject:bmclURL];
-                    recordURL = bmclURL.absoluteString;
+                // 候选列表（按尝试顺序）——★ Task272 重建（2026-10 实测 + 装机 fc10409
+                //   日志 12/12 依赖 404 实锤：旧 1/3 两级端点已死，文件名又永不解析 =
+                //   edge 权威直链永不入候选）：
+                //   1) 元数据 downloadUrl（MCIM API 权威返回，通常即 edge.forgecdn 直链；
+                //      经 PLMirrorCenter AssetDownload 重写按下载源策略附镜像候选）
+                //   2) edge.forgecdn.net 规则构造直链（fileID/1000 + fileID%1000 + 真实
+                //      文件名；同日志整合包 zip 即本域 200 实证可达）
+                //   3) BMCLAPI / cdn.curseforge.com 旧端点垫底（实测 404/403，仅保留最终
+                //      兜底语义；前两级命中后不再产生无效重试延迟）
+                NSString *ame272_metaDownload = fileMeta[@"downloadUrl"];
+                if ([ame272_metaDownload isKindOfClass:[NSString class]] && ame272_metaDownload.length > 0) {
+                    NSURL *ame272_metaURL = [NSURL URLWithString:ame272_metaDownload];
+                    if (ame272_metaURL) {
+                        if (recordURL.length == 0) recordURL = ame272_metaURL.absoluteString;
+                        for (NSURL *u in [PLMirrorCenter candidateURLsForOriginalURL:ame272_metaURL
+                                                                    resourceType:PLMirrorResourceTypeAssetDownload]) {
+                            if (![candidates containsObject:u]) [candidates addObject:u];
+                        }
+                    }
                 }
-                if (hasRealFileName) {
+if (hasRealFileName) {
                     NSString *encodedName = [fileName stringByAddingPercentEncodingWithAllowedCharacters:
                                              NSCharacterSet.URLPathAllowedCharacterSet];
                     NSURL *edgeURL = [NSURL URLWithString:[NSString stringWithFormat:@"https://edge.forgecdn.net/files/%lld/%03lld/%@",
@@ -1706,6 +1724,13 @@ static BOOL ame269_sMigrationRunning = NO;
                         }
                     }
                 }
+                NSURL *bmclURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@/curseforge/files/%lld/%lld/download",
+                                                       PLMirrorBMCLAPIRootURL, projectID, fileID]];
+                if (bmclURL) {
+                    [candidates addObject:bmclURL];
+                    if (recordURL.length == 0) recordURL = bmclURL.absoluteString;
+                }
+
                 NSURL *cfURL = [NSURL URLWithString:[NSString stringWithFormat:@"https://cdn.curseforge.com/files/%lld/%lld/download",
                                                      projectID, fileID]];
                 if (cfURL) {
@@ -1866,6 +1891,25 @@ static BOOL ame269_sMigrationRunning = NO;
                     @synchronized(aggregate) {
                         aggregate[@"skipped404"] = @([aggregate[@"skipped404"] unsignedLongValue] + 1);
                     }
+                    // ★ Task272：404 跳过同步进 failedFilesInternal（缺失文件就是缺失文件）——
+                    //   Task 95 报告/重试缺失模组入口需要完整清单；旧语义 404 不入清单且
+                    //   failedCount==0 → 终门判 YES = 全依赖缺失仍"安装成功"（装机实锤根因）。
+                    //   条目形状与普通失败分支一致（含 projectID/fileID 供重试链重建请求）。
+                    {
+                        NSMutableDictionary *ame272_skipEntry = [@{
+                            @"fileName": fileName ?: @"(unknown)",
+                            @"url": recordURL ?: @"",
+                            @"reason": dlError.localizedDescription ?: @"404 Not Found",
+                            @"format": isCurseForge ? @"curseforge" : @"modrinth"
+                        } mutableCopy];
+                        if (isCurseForge) {
+                            ame272_skipEntry[@"projectID"] = fileInfo[@"projectID"] ?: @0;
+                            ame272_skipEntry[@"fileID"] = fileInfo[@"fileID"] ?: @0;
+                        }
+                        @synchronized(self) {
+                            [self.failedFilesInternal addObject:ame272_skipEntry];
+                        }
+                    }
                 } else {
                     // 阶段5修复（参照 FCL DownloadList）：普通失败记入 failedFiles，
                     // 让上层可向用户展示哪些 mod 缺失并提供"重试缺失模组"入口。
@@ -1953,7 +1997,13 @@ static BOOL ame269_sMigrationRunning = NO;
     // "重试缺失模组"入口（旧 70% 静默阈值会隐藏"下载不完全"问题，导致启动崩溃）。
     //   - 全部成功（或仅存在 404 跳过，跳过为警告非失败）：返回 YES
     //   - 有失败：返回 NO，error 中带失败文件名（最多 5 个），完整列表经 failedDownloadFiles 访问
-    if (total == 0 || failedCount == 0) {
+    // ★ Task272：全 404 ≠ 成功——装机日志实锤：12/12 依赖 404 → failedCount==0 走
+    //   YES 分支 = "安装成功"但整合包一个 mod 都没有（用户"安装整合包缺失文件"根因）。
+    //   新语义（参考 FCL/HMCL：缺失依赖 = 安装失败 + 缺失清单 + 可重试）：仅当
+    //   failedCount==0 且 skipped404<total（至少装到一个真实文件）才返回 YES；
+    //   全部缺失（skipped404>=total）一律 NO，上层经 failedDownloadFiles 展示缺失
+    //   清单并可重试（404 条目本轮起已入清单）。
+    if (total == 0 || (failedCount == 0 && skipped404Count < total)) {
         // Task 6.1：全部收尾，聚合卡片标记完成
         [[DownloadTaskManager sharedManager] setTaskWithId:aggregateTask.taskId completedWithError:nil];
         return YES;
@@ -2117,6 +2167,14 @@ static BOOL ame269_sMigrationRunning = NO;
 ///   - classId：按项目类型分发目录（修复 P0-3：shader/resource/datapack 不再全塞 mods/）
 ///     6=Mods, 12=Resource Packs, 17=Worlds, 5231=Data Packs, 6552=Shaders
 - (nullable NSDictionary *)fetchCurseForgeFileMetadata:(long long)projectID fileID:(long long)fileID {
+    // ★ Task272：缓存优先（开工预取已覆盖 → 零网络零等待）；未命中才回退旧端点
+    //   （2026-10 实测 404，仅作最后兜底语义保留）。
+    @synchronized(self) {
+        NSDictionary *ame272_cached = self.ame272_cfFilesByFileID[@(fileID)];
+        if ([ame272_cached isKindOfClass:[NSDictionary class]] && ame272_cached.count > 0) {
+            return ame272_cached;
+        }
+    }
     NSString *apiURL = [NSString stringWithFormat:@"%@/cf/v1/mods/files/%lld", PLMirrorBMCLAPIRootURL, fileID];
     NSURL *url = [NSURL URLWithString:apiURL];
     if (!url) return nil;
@@ -2182,6 +2240,102 @@ static BOOL ame269_sMigrationRunning = NO;
     }
     [session finishTasksAndInvalidate];
     return metadata;
+}
+
+/// ★ Task272（CF 依赖链全死根修）：按 manifest 去重 projectID 批量预取文件元数据。
+///   端点 = MCIM CurseForge API 镜像（无 key 设备唯一可用路径；装机同日志
+///   searchModWithFilters/loadDetailsOfMod 实证 200 且条目含 fileName/downloadUrl）。
+///   GET {base}/mods/{projectID}/files → data[] → fileID 索引入 ame272_cfFilesByFileID。
+///   参考 FCL/HMCL：均先按 (projectID,fileID) 拉权威文件表再下载，绝不裸拼下载 URL。
+///   并发上限 4、单请求 12s 超时、整体阻塞至收尾（调用方本就在后台导入线程）。
+- (void)ame272_prefetchCurseForgeFileMetadata:(NSArray<NSDictionary *> *)pendingFiles {
+    NSMutableSet<NSNumber *> *ame272_pids = [NSMutableSet set];
+    for (NSDictionary *ame272_fi in pendingFiles) {
+        NSNumber *ame272_pid = ame272_fi[@"projectID"];
+        if ([ame272_pid isKindOfClass:[NSNumber class]] && ame272_pid.longLongValue > 0) {
+            [ame272_pids addObject:ame272_pid];
+        }
+    }
+    if (ame272_pids.count == 0) return;
+    @synchronized(self) {
+        if (!self.ame272_cfFilesByFileID) self.ame272_cfFilesByFileID = [NSMutableDictionary dictionary];
+    }
+    NSString *ame272_base = [PLMirrorCenter mcimCurseForgeAPIBaseURL];
+    if (ame272_base.length == 0) {
+        NSLog(@"[ModpackImport] Task272: mcim CF API base unavailable -- metadata prefetch skipped");
+        return;
+    }
+    NSURLSessionConfiguration *ame272_cfg = [NSURLSessionConfiguration defaultSessionConfiguration];
+    ame272_cfg.timeoutIntervalForRequest = 12;
+    ame272_cfg.HTTPAdditionalHeaders = @{
+        @"User-Agent": @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        @"Accept": @"application/json"
+    };
+    NSURLSession *ame272_session = [NSURLSession sessionWithConfiguration:ame272_cfg];
+    dispatch_group_t ame272_grp = dispatch_group_create();
+    dispatch_semaphore_t ame272_sem = dispatch_semaphore_create(4);
+    for (NSNumber *ame272_pid in ame272_pids) {
+        NSURL *ame272_url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/mods/%@/files", ame272_base, ame272_pid]];
+        if (!ame272_url) continue;
+        dispatch_semaphore_wait(ame272_sem, DISPATCH_TIME_FOREVER);
+        dispatch_group_enter(ame272_grp);
+        NSMutableURLRequest *ame272_req = [NSMutableURLRequest requestWithURL:ame272_url];
+        ame272_req.HTTPMethod = @"GET";
+        NSLog(@"[ModpackImport] Task272: prefetch CF files of project %@ -> %@", ame272_pid, ame272_url.absoluteString);
+        [[ame272_session dataTaskWithRequest:ame272_req
+                           completionHandler:^(NSData *ame272_data, NSURLResponse *ame272_resp, NSError *ame272_err) {
+            @try {
+                NSHTTPURLResponse *ame272_http = [ame272_resp isKindOfClass:[NSHTTPURLResponse class]]
+                    ? (NSHTTPURLResponse *)ame272_resp : nil;
+                if (!ame272_err && ame272_http.statusCode == 200 && ame272_data.length > 0) {
+                    NSDictionary *ame272_root = [NSJSONSerialization JSONObjectWithData:ame272_data options:0 error:nil];
+                    NSArray *ame272_arr = [ame272_root isKindOfClass:[NSDictionary class]] ? ame272_root[@"data"] : nil;
+                    if ([ame272_arr isKindOfClass:[NSArray class]]) {
+                        NSInteger ame272_got = 0;
+                        for (NSDictionary *ame272_f in ame272_arr) {
+                            if (![ame272_f isKindOfClass:[NSDictionary class]]) continue;
+                            NSNumber *ame272_fid = ame272_f[@"id"];
+                            if (![ame272_fid isKindOfClass:[NSNumber class]] || ame272_fid.longLongValue <= 0) continue;
+                            NSMutableDictionary *ame272_entry = [NSMutableDictionary dictionary];
+                            NSString *ame272_fn = ame272_f[@"fileName"];
+                            if ([ame272_fn isKindOfClass:[NSString class]] && ame272_fn.length > 0) {
+                                ame272_entry[@"fileName"] = ame272_fn;
+                            }
+                            NSString *ame272_du = ame272_f[@"downloadUrl"];
+                            if ([ame272_du isKindOfClass:[NSString class]] && ame272_du.length > 0 &&
+                                ([ame272_du hasPrefix:@"http://"] || [ame272_du hasPrefix:@"https://"])) {
+                                ame272_entry[@"downloadUrl"] = ame272_du;
+                            }
+                            NSString *ame272_s1 = ame272_f[@"sha1"];
+                            if ([ame272_s1 isKindOfClass:[NSString class]] && ame272_s1.length == 40) {
+                                ame272_entry[@"sha1"] = ame272_s1;
+                            }
+                            NSNumber *ame272_cid = ame272_f[@"classId"];
+                            if ([ame272_cid isKindOfClass:[NSNumber class]]) ame272_entry[@"classId"] = ame272_cid;
+                            NSNumber *ame272_flen = ame272_f[@"fileLength"];
+                            if ([ame272_flen isKindOfClass:[NSNumber class]]) ame272_entry[@"fileLength"] = ame272_flen;
+                            if (ame272_entry.count > 0) {
+                                @synchronized(self) { self.ame272_cfFilesByFileID[ame272_fid] = ame272_entry; }
+                                ame272_got++;
+                            }
+                        }
+                        NSLog(@"[ModpackImport] Task272: project %@ -> %ld file metadata cached",
+                              ame272_pid, (long)ame272_got);
+                    }
+                } else {
+                    NSLog(@"[ModpackImport] Task272: project %@ prefetch failed (status=%d err=%@)",
+                          ame272_pid, ame272_http.statusCode, ame272_err.localizedDescription ?: @"-");
+                }
+            } @catch (NSException *ame272_ex) {
+                NSLog(@"[ModpackImport] Task272: prefetch parse exception: %@", ame272_ex.localizedDescription);
+            } @finally {
+                dispatch_semaphore_signal(ame272_sem);
+                dispatch_group_leave(ame272_grp);
+            }
+        }] resume];
+    }
+    dispatch_group_wait(ame272_grp, DISPATCH_TIME_FOREVER);
+    [ame272_session finishTasksAndInvalidate];
 }
 
 /// 阶段5修复（参照 FCL CurseForgeFileResolver）：当整合包 manifest 中缺失 fileName 且

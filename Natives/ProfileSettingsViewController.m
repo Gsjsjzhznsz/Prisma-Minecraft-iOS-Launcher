@@ -63,6 +63,10 @@
 // “切换渲染器为其他都会自动切回自动”（渲染器/内存/分辨率/Java 全部丢写）。
 // 修复：加载时记录真实键，保存按键写；重命名按旧键删、新键建。
 @property (nonatomic, copy, nullable) NSString *profileDictKey;
+/// ★ Task272：gameDir 是否被本页显式改过（隔离三态/自定义路径）。saveSettings 取值
+///   优先级"本页改动 > 活字典 > 加载快照"，防止本页开着期间外部（自愈/安装流/清扫）
+///   写入活字典的隔离态被任意一次保存静默抹回快照值（"切了隔离又变共享"根因之一）。
+@property (nonatomic, assign) BOOL ame272_gameDirTouched;
 // Hero 卡片（顶部 Profile 信息卡片）
 @property (nonatomic, strong, nullable) UIView *heroCard;
 
@@ -835,8 +839,42 @@ static NSString * localizeProfileTitle(NSString *title) {
     } else {
         [existing removeObjectForKey:@"javaArgs"];
     }
-    // 保存游戏目录（版本隔离用）：gameDir 为 nil 时默认 "."，与 main 分支行为一致
-    existing[@"gameDir"] = self.profile[@"gameDir"] ?: @".";
+    // ★ Task272（隔离"切不回"根修 A1）：gameDir 取值三态——本页显式改动 > 活字典 >
+    //   加载快照。旧实现恒用 viewDidLoad 快照回写：本页开着期间，启动自愈/安装流/
+    //   默认隔离清扫对活字典的隔离化写入，会被任意一次 saveSettings（渲染器/内存/
+    //   JVM 等任何一行改动）静默抹回快照值 = 用户"切了隔离又变共享"的直接根因。
+    //   活字典才是跨页面的权威状态；本页改过（ame272_gameDirTouched）以本页为准；
+    //   全新条目（活字典无键）保留快照兜底（新建语义不变）。
+    {
+        NSString *ame272_gd = nil;
+        id ame272_liveMark = nil;
+        if (self.ame272_gameDirTouched) {
+            ame272_gd = self.profile[@"gameDir"];
+            ame272_liveMark = self.profile[@"gameDirExplicit"];
+        } else {
+            NSDictionary *ame272_live = PLProfiles.current.profiles[ame162_targetKey];
+            if ([ame272_live isKindOfClass:[NSDictionary class]]) {
+                NSString *ame272_liveGD = ame272_live[@"gameDir"];
+                if ([ame272_liveGD isKindOfClass:[NSString class]] && ame272_liveGD.length > 0) {
+                    ame272_gd = ame272_liveGD;
+                }
+                ame272_liveMark = ame272_live[@"gameDirExplicit"];
+                if (ame272_liveMark == nil) ame272_liveMark = self.profile[@"gameDirExplicit"];
+            } else {
+                ame272_gd = self.profile[@"gameDir"];
+                ame272_liveMark = self.profile[@"gameDirExplicit"];
+            }
+        }
+        if (![ame272_gd isKindOfClass:[NSString class]] || ame272_gd.length == 0) {
+            ame272_gd = self.profile[@"gameDir"] ?: @".";
+        }
+        existing[@"gameDir"] = ame272_gd;
+        if (ame272_liveMark != nil) {
+            existing[@"gameDirExplicit"] = ame272_liveMark;
+        }
+        NSLog(@"[ProfileSettings] Task272: save gameDir for '%@' -> %@ (touched=%d)",
+              ame162_targetKey, existing[@"gameDir"], (int)self.ame272_gameDirTouched);
+    }
     // existing 中的 name 和 lastVersionId 字段保持原始值不变
     PLProfiles.current.profiles[ame162_targetKey] = existing;
     [PLProfiles.current save];
@@ -1606,6 +1644,8 @@ static NSString * localizeProfileTitle(NSString *title) {
 
     [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_898", nil) style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         self.profile[@"gameDir"] = @".";
+        self.profile[@"gameDirExplicit"] = @YES;   // ★ Task272（A2）：显式选择标记
+        self.ame272_gameDirTouched = YES;          // ★ Task272（A1）：本页主动改动
         [self saveSettings];
         [self reloadAllTableViews];
         [self updateHeroCard];
@@ -1620,6 +1660,8 @@ static NSString * localizeProfileTitle(NSString *title) {
             newGameDir = @".";
         }
         self.profile[@"gameDir"] = newGameDir;
+        self.profile[@"gameDirExplicit"] = @YES;   // ★ Task272（A2）：显式选择标记
+        self.ame272_gameDirTouched = YES;          // ★ Task272（A1）：本页主动改动
         [self saveSettings];
         [self reloadAllTableViews];
         [self updateHeroCard];
@@ -1834,6 +1876,10 @@ static NSString * localizeProfileTitle(NSString *title) {
 
         dispatch_async(dispatch_get_main_queue(), ^{
             self.profile[@"gameDir"] = relative;
+            // ★ Task272（A2）：显式选择标记——启动默认隔离清扫见此标记绝不回改（用户
+            //   意图至高）；同时标记本页主动改动（saveSettings 取本页值而非活字典）。
+            self.profile[@"gameDirExplicit"] = @YES;
+            self.ame272_gameDirTouched = YES;
             [self saveSettings];
             [self reloadAllTableViews];
             [self updateHeroCard];
@@ -1891,7 +1937,10 @@ static NSString * localizeProfileTitle(NSString *title) {
     }
 
     // 先切共享（立即生效）
+    // ★ Task272（A2）：显式选择标记——用户主动回共享，清扫永不强行再隔离。
     self.profile[@"gameDir"] = @".";
+    self.profile[@"gameDirExplicit"] = @YES;
+    self.ame272_gameDirTouched = YES;
     [self saveSettings];
     [self reloadAllTableViews];
     [self updateHeroCard];

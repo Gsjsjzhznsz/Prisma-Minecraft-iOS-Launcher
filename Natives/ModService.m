@@ -301,6 +301,39 @@
         NSLog(@"[Ame271] self-heal: profile \"%@\" gameDir '%@' -> %@ (stranded isolation data)",
               ame271_key, ame271_gd ?: @"(nil)", ame271_rel);
     }
+    // ★ Task272（默认隔离收敛清扫·用户铁律"自适应恢复"第二阶段）：F2 只治
+    //   "有滞留隔离数据"的条目；隔离目录为空/不存在的旧条目（gameDir='.' 且
+    //   从未显式选择）永远滞留共享根 = 跨实例串目录（装机实锤：26.2 实例模组
+    //   列表显示的是隔壁 26.1.2 的模组）。本清扫把从未被用户显式配置过的 '.'
+    //   条目收敛到 versions/<vid>/game（与 Task242 新实例默认隔离语义对齐）：
+    //   - gameDirExplicit 标记（三态选择器/自定义路径写入）= 用户显式选择，绝不碰
+    //   - default 主实例不参与（它就是共享根本体）
+    //   - 整合包实例 gameDir 为 ./custom_gamedir/... 非 '.'，天然不在范围
+    //   - 幂等：跑过一次后 gameDir 已非 '.'；隔离目录由 ensureModsFolder 惰性创建
+    NSInteger ame272_swept = 0;
+    for (NSString *ame272_key in [ame271_profiles allKeys]) {
+        if ([ame272_key isEqualToString:@"default"]) continue;
+        NSDictionary *ame272_prof = ame271_profiles[ame272_key];
+        if (![ame272_prof isKindOfClass:[NSDictionary class]]) continue;
+        if (ame272_prof[@"gameDirExplicit"] != nil) continue;   // 显式选择过：尊重用户
+        NSString *ame272_gd = ame272_prof[@"gameDir"];
+        BOOL ame272_unset = (![ame272_gd isKindOfClass:[NSString class]] || ame272_gd.length == 0
+            || [ame272_gd isEqualToString:@"."] || [ame272_gd isEqualToString:@"./"]);
+        if (!ame272_unset) continue;
+        NSString *ame272_vid = ame272_prof[@"lastVersionId"];
+        if (![ame272_vid isKindOfClass:[NSString class]] || ame272_vid.length == 0) continue;
+        NSMutableDictionary *ame272_updated = [ame272_prof mutableCopy];
+        ame272_updated[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", ame272_vid];
+        PLProfiles.current.profiles[ame272_key] = ame272_updated;
+        ame272_swept++;
+        NSLog(@"[Ame271] default-isolation sweep: profile \"%@\" gameDir '%@' -> versions/%@/game (never explicitly configured)",
+              ame272_key, ame272_gd ?: @"(nil)", ame272_vid);
+    }
+    if (ame272_swept > 0) {
+        ame271_healed += ame272_swept;
+        NSLog(@"[Ame271] default-isolation sweep: %ld profile(s) converged to versions/<id>/game",
+              (long)ame272_swept);
+    }
     if (ame271_healed > 0) {
         [PLProfiles.current save];
         NSLog(@"[Ame271] self-heal done: %ld profile(s) re-isolated", (long)ame271_healed);
