@@ -690,7 +690,15 @@ public final class Tools {
         }
         try {
             int vMajor = Integer.parseInt(parts[0].trim());
-            int vMinor = Integer.parseInt(parts[1].trim());
+            // ★ Task275 J-P2-3：minor 带后缀（"26.4-snapshot-1"/"1.20-pre6"）原
+            // parseInt NFE → false → quickPlay/server-args 走错分支（同文件 ame171
+            // 正则版能正确吃掉后缀，本解析器是其字典序残余变体）。前导数字截取。
+            java.util.regex.Matcher ame275_m = java.util.regex.Pattern
+                .compile("^\\d+").matcher(parts[1].trim());
+            if (!ame275_m.find()) {
+                return false;
+            }
+            int vMinor = Integer.parseInt(ame275_m.group());
             return vMajor > major || (vMajor == major && vMinor >= minor);
         } catch (NumberFormatException e) {
             return false;
@@ -1078,12 +1086,19 @@ createLibraryInfo(libItem);
     {
         File outPath = new File(path);
         outPath.getParentFile().mkdirs();
-        outPath.createNewFile();
-
-        // ame270：原实现无 finally——write 抛 IOException 时流泄漏，
-        // 改 try-with-resources 确保异常路径也 close（写出逻辑不变）。
-        try (BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(path))) {
+        // ★ Task275 J-P1-2：原子覆盖写（tmp + rename，ForgeProcessorRunner.writeStatus
+        //   同款口径）——原直接 FileOutputStream 打开即截断，写出中断（iOS 手杀/
+        //   看门狗 _exit/JETSAM）= options.txt（3 次/启动高频写点）半写损坏。
+        File ame275_tmp = new File(path + ".tmp");
+        try (BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(ame275_tmp))) {
             fos.write(content, 0, content.length);
+        }
+        // 同目录 rename 原子换名；失败回退直接覆盖写（保持旧下限语义）
+        if (!ame275_tmp.renameTo(outPath)) {
+            try (BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(path))) {
+                fos.write(content, 0, content.length);
+            }
+            ame275_tmp.delete();
         }
     }
 

@@ -1268,7 +1268,10 @@ void pojavPumpEvents(void* window) {
                 break;
         }
     }
-    atomic_store_explicit(&eventCounter, counter, memory_order_release);
+    // ★ Task275（P1-a2）：陈旧 counter 回写退役——原“读 counter→处理 [0,counter)→
+    //   回写同一 counter”在泵处理期间生产者已 fetch_add 前进时，回写把新事件索
+    //   引回卷（重复投递/覆盖丢失）。队列清零唯一归 pojavRewindEvents（Java 侧每
+    //   帧 PumpEvents 后调用），泵只读不写。
 }
 void pojavRewindEvents() {
     atomic_store_explicit(&eventCounter, 0, memory_order_release);
@@ -1296,29 +1299,29 @@ Java_org_lwjgl_glfw_GLFW_glfwSetCursorPos(JNIEnv *env, jclass clazz, jlong windo
 }
 
 void sendData(short type, int i1, int i2, short i3, short i4) {
-    size_t counter = atomic_load_explicit(&eventCounter, memory_order_acquire);
-    if (counter < 7999) {
-        GLFWInputEvent *event = &events[counter++];
-        event->type = type;
-        event->i1 = i1;
-        event->i2 = i2;
-        event->i3 = i3;
-        event->i4 = i4;
-    }
-    atomic_store_explicit(&eventCounter, counter, memory_order_release);
+    // ★ Task275（P1-a2）：RMW 改原子 fetch_add——原 load→写槽→store 三步非原子，
+    //   双生产者（触摸/键盘线程）可写同一槽位，与泵的并发窗口丢事件。fetch_add
+    //   给每个事件独占槽位；超容量丢弃语义不变（rewind 每帧归零）。
+    size_t counter = atomic_fetch_add_explicit(&eventCounter, 1, memory_order_acq_rel);
+    if (counter >= 7999) return;
+    GLFWInputEvent *event = &events[counter];
+    event->type = type;
+    event->i1 = i1;
+    event->i2 = i2;
+    event->i3 = i3;
+    event->i4 = i4;
 }
 
 void sendDataFloat(short type, float i1, float i2, short i3, short i4) {
-    size_t counter = atomic_load_explicit(&eventCounter, memory_order_acquire);
-    if (counter < 7999) {
-        GLFWInputEvent *event = &events[counter++];
-        event->type = type;
-        event->f1 = i1;
-        event->f2 = i2;
-        event->i3 = i3;
-        event->i4 = i4;
-    }
-    atomic_store_explicit(&eventCounter, counter, memory_order_release);
+    // ★ Task275（P1-a2）：同 sendData，fetch_add 消除 RMW 竞态。
+    size_t counter = atomic_fetch_add_explicit(&eventCounter, 1, memory_order_acq_rel);
+    if (counter >= 7999) return;
+    GLFWInputEvent *event = &events[counter];
+    event->type = type;
+    event->f1 = i1;
+    event->f2 = i2;
+    event->i3 = i3;
+    event->i4 = i4;
 }
 
 void closeGLFWWindow() {
@@ -1739,7 +1742,10 @@ int callback_SurfaceViewController_touchHotbar(CGFloat x, CGFloat y) {
     // 每次命中测试最多重读一次（2 秒节流，文件 ~1KB，触摸线程零负担）。
     {
         static double s_ame175_lastScaleRefresh = 0.0;
-        double ame175_now = (double)clock() / (double)CLOCKS_PER_SEC;
+        // ★ Task275（P3-a9）：clock() 是进程 CPU 时间（多线程忙时 4 倍速于墙钟，
+        //   闲时几乎不走）——2s 节流失真。改墙钟 CFAbsoluteTimeGetCurrent
+        //   （ame265 同文件 2348 行同款正确示范）。
+        double ame175_now = CFAbsoluteTimeGetCurrent();
         if (ame175_now - s_ame175_lastScaleRefresh > 2.0) {
             s_ame175_lastScaleRefresh = ame175_now;
             refreshGuiScaleNatively();

@@ -171,14 +171,19 @@
 
     // 先规范化参数再透传给工具 execute
     NSDictionary *normalized = [self normalizedParams:params];
-    [tool execute:normalized completion:^(NSString * _Nullable result, NSError * _Nullable error) {
-        // 统一把结果回调到主线程
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (completion) {
-                completion(result, error);
-            }
-        });
-    }];
+    // ★ Task275（E-P2-8）：工具执行改后台队列——grep_files/list_files/read_file 的
+    //   同步 NSFileManager 遍历/全量读此前全在主线程（AiAgent 工具阶段主队列），
+    //   几十 MB 模组目录递归可冻结 UI 数秒。completion 本就回主线程，语义不变。
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        [tool execute:normalized completion:^(NSString * _Nullable result, NSError * _Nullable error) {
+            // 统一把结果回调到主线程
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (completion) {
+                    completion(result, error);
+                }
+            });
+        }];
+    });
 }
 
 @end

@@ -286,7 +286,13 @@ public class GLFWVulkan {
                 .calloc()
                 .sType(VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT)
                 .pLayer(PointerBuffer.create(window, 1));
-            return vkCreateMetalSurfaceEXT(instance, pCreateInfo, null, surface);
+            // ★ Task275 J-P3-7：off-heap calloc 泄漏——上游 LWJGL 模板的 finally-free
+            //   在 iOS stub 改写时丢失，每次 Vulkan 建面漏一小块 native 内存。
+            try {
+                return vkCreateMetalSurfaceEXT(instance, pCreateInfo, null, surface);
+            } finally {
+                pCreateInfo.free();
+            }
         } /* else {
             VkAndroidSurfaceCreateInfoKHR pCreateInfo = VkAndroidSurfaceCreateInfoKHR
                 .calloc()

@@ -441,3 +441,8 @@
 "ame273.crash.title" = "Previous game exited unexpectedly";
 "ame273.crash.copy_reason" = "Copy reason";
 "ame273.crash.view_full_log" = "View full log";
+
+// ★ Task275: modpack download i18n (14 主要语言实译 + 长尾英文回退值)
+"download.modpack.retry_failed" = "Modpack download failed (retried %ld times): %@";
+"download.empty_data" = "Download returned empty data";
+"common.unknown_error" = "Unknown error";

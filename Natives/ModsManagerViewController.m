@@ -640,7 +640,16 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     self.ame265_crossProfileDest = destProfile;
     CGFloat ame265_width = self.tableView.bounds.size.width;
     if (ame265_width <= 0) ame265_width = 320.0; // 首帧 bounds 未定兜底
-    CGFloat ame265_bannerH = 96.0;
+    // ★ Task275（P3-b8）：横幅定高截断根修——三参长文件名/长实例名在 96pt/2 行
+    //   下溢出即截尾。先测文本实际高度，横幅/卡片/按钮全部随动。
+    NSString *ame265_text = [NSString stringWithFormat:localize(@"resman.mods.cross_profile.text", NULL),
+                             fileName ?: @"", destProfile ?: @"", [self ame265_effectiveProfileName] ?: @""];
+    CGFloat ame265_textH = [ame265_text boundingRectWithSize:CGSizeMake(ame265_width - 48.0, CGFLOAT_MAX)
+                                                     options:NSStringDrawingUsesLineFragmentOrigin
+                                                  attributes:@{NSFontAttributeName: [UIFont systemFontOfSize:12.5]}
+                                                     context:nil].size.height;
+    ame265_textH = MAX(36.0, MIN(ceil(ame265_textH) + 4.0, 78.0));   // 2~4 行自适应封顶
+    CGFloat ame265_bannerH = 10.0 + ame265_textH + 6.0 + 26.0 + 12.0 + 8.0;
     UIView *ame265_banner = [[UIView alloc] initWithFrame:CGRectMake(0, 0, ame265_width, ame265_bannerH)];
     ame265_banner.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     UIView *ame265_card = [[UIView alloc] initWithFrame:CGRectMake(12, 8, ame265_width - 24, ame265_bannerH - 16)];
@@ -650,17 +659,16 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     ame265_card.clipsToBounds = YES;
     [ame265_banner addSubview:ame265_card];
 
-    UILabel *ame265_label = [[UILabel alloc] initWithFrame:CGRectMake(12, 10, ame265_card.bounds.size.width - 24, 36)];
+    UILabel *ame265_label = [[UILabel alloc] initWithFrame:CGRectMake(12, 10, ame265_card.bounds.size.width - 24, ame265_textH)];
     ame265_label.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    ame265_label.numberOfLines = 2;
+    ame265_label.numberOfLines = 0;
     ame265_label.font = [UIFont systemFontOfSize:12.5];
     ame265_label.textColor = [UIColor labelColor];
-    ame265_label.text = [NSString stringWithFormat:localize(@"resman.mods.cross_profile.text", NULL),
-                         fileName ?: @"", destProfile ?: @"", [self ame265_effectiveProfileName] ?: @""];
+    ame265_label.text = ame265_text;
     [ame265_card addSubview:ame265_label];
 
     UIButton *ame265_switch = [UIButton buttonWithType:UIButtonTypeSystem];
-    ame265_switch.frame = CGRectMake(12, 52, ame265_card.bounds.size.width - 24, 26);
+    ame265_switch.frame = CGRectMake(12, 10 + ame265_textH + 6.0, ame265_card.bounds.size.width - 24, 26);
     ame265_switch.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     [ame265_switch setTitle:localize(@"resman.mods.cross_profile.switch", NULL) forState:UIControlStateNormal];
     [ame265_switch setTitleColor:[UIColor systemOrangeColor] forState:UIControlStateNormal];
@@ -1300,7 +1308,7 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
         // 额外触发自愈重扫，幽灵条目即刻从列表消失。
         NSLog(@"[ModsManager] Task217: toggle failed for %@ -- %@", mod.filePath, error);
         [self showDialogWithTitle:localize(@"mods.toggle.failed", nil)
-                          message:error.localizedDescription ?: @"unknown error"];
+                          message:error.localizedDescription ?: localize(@"common.unknown_error", nil)];   // ★ Task275（i18n）
         if ([error.domain isEqualToString:@"ModServiceError"] && error.code == 201) {
             [self loadMods];
         }

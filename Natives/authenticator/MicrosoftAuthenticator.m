@@ -261,7 +261,20 @@ static NSString *ame224_nameChangeErrorMessage(NSInteger code, NSString *bodyStr
     AFHTTPSessionManager *manager = AFHTTPSessionManager.manager;
     manager.requestSerializer = AFJSONRequestSerializer.serializer;
     [manager GET:@"https://api.minecraftservices.com/minecraft/profile" parameters:nil headers:headers progress:nil success:^(NSURLSessionDataTask *task, NSDictionary *response) {
+        // ★ Task275（E-P3-18b 同族）：序列化成功但顶层是数组/标量时原直取下标 =
+        //   NSArray 不响应 objectForKeyedSubscript 崩溃。
+        if (![response isKindOfClass:[NSDictionary class]]) {
+            NSLog(@"[Task275] MC profile response is not a dict -- aborting profile fetch");
+            return;
+        }
         NSString *uuid = response[@"id"];
+        // ★ Task275（E-P3-18a）：畸形 profile id（非空但 <32 位）原样 substringWithRange
+        //   = NSRangeException 崩溃（异常/恶意服务器可触发）。长度不足时不再切片。
+        if (![uuid isKindOfClass:[NSString class]] || uuid.length < 32) {
+            NSLog(@"[Task275] MC profile id malformed (len=%lu) -- skip dash-formatting, keep raw",
+                  (unsigned long)([uuid isKindOfClass:[NSString class]] ? uuid.length : 0));
+            self.authData[@"profileId"] = [uuid isKindOfClass:[NSString class]] ? uuid : @"";
+        } else {
         self.authData[@"profileId"] = [NSString stringWithFormat:@"%@-%@-%@-%@-%@",
             [uuid substringWithRange:NSMakeRange(0, 8)],
             [uuid substringWithRange:NSMakeRange(8, 4)],
@@ -269,6 +282,7 @@ static NSString *ame224_nameChangeErrorMessage(NSInteger code, NSString *bodyStr
             [uuid substringWithRange:NSMakeRange(16, 4)],
             [uuid substringWithRange:NSMakeRange(20, 12)]
         ];
+        }
         // Task185：先落 username——旧顺序在首登时 username 尚为 nil，拼出的
         // 头像 URL 存成字面 "head/(null)"；之后刷新链若在 checkMCProfile
         // 之前断掉（如 keychain 丢失），坏 URL 永久留在 .json 里 =
@@ -366,7 +380,11 @@ static NSString *ame224_nameChangeErrorMessage(NSInteger code, NSString *bodyStr
         } else {
             NSLog(@"[Task185] keychain token still missing (dialog suppressed this session)");
         }
-        callback(nil, YES);
+        // ★ Task275（E-P2-11）：keychain 令牌丢失时原 callback(nil, YES) 报“成功”——
+        //   上层 ame128_markSessionValidated 标记本会话已验证后跳过 refresh，游戏以
+        //   不存在的 accessToken 启动。改报失败（失败侧 UI 已有优雅降级路径，不硬
+        //   阻断选择），validated 标记只在真实刷新成功时打点。
+        callback(nil, NO);
         return;
     }
 

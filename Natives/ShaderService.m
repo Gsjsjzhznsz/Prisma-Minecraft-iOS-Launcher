@@ -9,6 +9,7 @@
 //
 
 #import "ShaderService.h"
+#import "ModService.h"   // Task275 F2: Task225 isolation sniff (ame225_sniffedIsolationGameDirForProfile)
 // ★ Task274-h S14：CommonCrypto import 随零调用 sha1ForFileAtPath 删除（全文件 CC_ 族
 //   仅该方法使用，rg 亲证）
 #import <UIKit/UIKit.h>
@@ -100,6 +101,17 @@
         NSDictionary *prof = profiles[profile];
         if (![prof isKindOfClass:[NSDictionary class]]) return nil;
         NSString *gameDir = prof[@"gameDir"];
+        // ★ Task275 F2（Task274-h S11 补漏）：gameDir 缺失/空/"." 时先按目录形状嗅探
+        //   versions/<lastVersionId>/game 隔离——'.' 实例的 mods 已走嗅探隔离而光影
+        //   仍落共享根（Shader 是五服务唯一漏平移嗅探的一家，同会话落点分居）。
+        if (![gameDir isKindOfClass:[NSString class]] || gameDir.length == 0 || [gameDir isEqualToString:@"."]) {
+            NSString *ame225_sniffed = [ModService ame225_sniffedIsolationGameDirForProfile:prof];
+            if (ame225_sniffed.length > 0) {
+                NSLog(@"[ShaderService] Task275: auto-sniffed isolation for profile %@ -> %@ (mods/saves present)",
+                      profile, ame225_sniffed.lastPathComponent);
+                return ame225_sniffed;
+            }
+        }
         if (![gameDir isKindOfClass:[NSString class]] || gameDir.length == 0) return nil;
         if ([gameDir isEqualToString:@"."]) {
             const char *env = getenv("POJAV_GAME_DIR");
@@ -189,7 +201,15 @@
 
 - (void)scanShadersForProfile:(NSString *)profileName completion:(ShaderListHandler)completion {
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        NSString *shadersFolder = [self existingShadersFolderForProfile:profileName];
+        // ★ Task275 F1（P0·ame219 隔离优先语义平移）：扫描不再走"隔离目录缺失→共享根
+        //   兑底"——新隔离实例的 shaderpacks 尚未创建时列表必须为空（本实例确实没有），
+        //   而不是显示共享根/隔壁实例列表（跨实例串目录病史同构，mods 已修四类漏网）。
+        //   ensure-first：缺目录即建；创建受限再退"存在即用"。
+        NSError *ame275DirError = nil;
+        NSString *shadersFolder = [self ensureShadersFolderForProfile:profileName error:&ame275DirError];
+        if (!shadersFolder) {
+            shadersFolder = [self existingShadersFolderForProfile:profileName];
+        }
         NSMutableArray<ShaderItem *> *items = [NSMutableArray array];
 
         if (!shadersFolder) {
@@ -296,6 +316,15 @@
           expectedSHA1:(nullable NSString *)expectedSHA1
               progress:(nullable void (^)(NSProgress *downloadProgress))progress
             completion:(ShaderDownloadHandler)completion {
+    // ★ Task275 F7（Task269 末梢自愈平移）：目标实例不存在（ame269 迁移合并/
+    //   改名后残留的旧实例名引用）→ 回落当前选中实例，杜绝下载进死名后被
+    //   resolve 兑底静默落共享根（ModService.m:734 同款）。
+    if (profileName.length > 0 && !PLProfiles.current.profiles[profileName]) {
+        NSString *ame275_fallback = PLProfiles.current.selectedProfileName;
+        NSLog(@"[ShaderService] Task275: target profile \"%@\" gone -> fallback to selected \"%@\"",
+              profileName, ame275_fallback ?: @"(nil)");
+        profileName = ame275_fallback;
+    }
     // Ensure shaderpacks folder exists
     // ★ Task270（ame219 隔离优先对齐）：下载落点 ensure-first——profile 配置了
     //   gameDir（隔离/自定义）时只认隔离目录缺目录即建，绝不回退共享目录

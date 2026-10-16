@@ -204,7 +204,13 @@
 
 - (void)scanWorldsForProfile:(NSString *)profileName completion:(WorldListHandler)completion {
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        NSString *savesFolder = [self existingWorldsFolderForProfile:profileName];
+        // ★ Task275 F1（P0·ame219 隔离优先语义平移）：扫描不再走"隔离目录缺失→共享根
+        //   兑底"——新隔离实例列表必须为空而非显示共享根/隔壁实例列表（跨实例串目录）。
+        NSError *ame275DirError = nil;
+        NSString *savesFolder = [self ensureWorldsFolderForProfile:profileName error:&ame275DirError];
+        if (!savesFolder) {
+            savesFolder = [self existingWorldsFolderForProfile:profileName];
+        }
         NSMutableArray<WorldItem *> *items = [NSMutableArray array];
 
         if (!savesFolder) {
@@ -374,6 +380,14 @@
             toProfile:(NSString *)profileName
              progress:(WorldDownloadProgressHandler _Nullable)progress
            completion:(WorldDownloadCompletionHandler _Nullable)completion {
+    // ★ Task275 F7（Task269 末梢自愈平移）：目标实例不存在→回落当前选中实例
+    //   （ModService.m:734 同款，杜绝死名 resolve 兑底静默落共享根）。
+    if (profileName.length > 0 && !PLProfiles.current.profiles[profileName]) {
+        NSString *ame275_fallback = PLProfiles.current.selectedProfileName;
+        NSLog(@"[WorldService] Task275: target profile \"%@\" gone -> fallback to selected \"%@\"",
+              profileName, ame275_fallback ?: @"(nil)");
+        profileName = ame275_fallback;
+    }
     // 确保 saves 目录存在
     NSError *ensureError = nil;
     NSString *savesFolder = [self ensureWorldsFolderForProfile:profileName error:&ensureError];

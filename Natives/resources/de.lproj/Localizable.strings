@@ -117,8 +117,6 @@
 
 "preference.section.general" = "Allgemeine Einstellungen";
 "preference.section.video" = "Grafik-Einstellungen";
-"preference.section.footer.video" = "Der automatische Renderer erlaubt Prisma die besten Optionen basierend auf  
-der Minecraft-Version zu wählen. Verringerte Auflösung reduziert die Arbeitslast der GPU für eine bessere Leistung.";
 "preference.section.control" = "Steuerung anpassen";
 "preference.section.debug" = "UI-Debugging-Einstellungen";
 "preference.section.footer.debug" = "Neben dem Debuggen können diese Einstellungen für benutzerdefinierte Steuerelemente nützlich sein. Möglicherweise muss der Launcher neu startet werden, damit die Änderungen wirksam werden.";
@@ -3149,3 +3147,8 @@ der Minecraft-Version zu wählen. Verringerte Auflösung reduziert die Arbeitsla
 "ame273.crash.title" = "Letzte Spielsitzung unerwartet beendet";
 "ame273.crash.copy_reason" = "Grund kopieren";
 "ame273.crash.view_full_log" = "Vollständiges Log anzeigen";
+
+// ★ Task275: modpack download i18n (14 主要语言实译 + 长尾英文回退值)
+"download.modpack.retry_failed" = "Modpack-Download fehlgeschlagen (%ld Wiederholungsversuche): %@";
+"download.empty_data" = "Download lieferte leere Daten";
+"common.unknown_error" = "Unbekannter Fehler";

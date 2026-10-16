@@ -1874,6 +1874,33 @@ static NSString * localizeProfileTitle(NSString *title) {
             }
         }
 
+        // ★ Task275 F8：未识别条目兑底清扫（Task226 leftovers 先例平移·自适应恢复）——
+        //   ame217_items 是闭集，根级 mod 数据目录（journeymap/XaeroWorldMap 等）
+        //   不随迁 = 两侧分居（开隔离后游戏从隔离目录新建空数据，旧数据滞留共享
+        //   根）。闭集外顶层条目补搬（目标已存在绝不覆盖）；共享层/实例容器/
+        //   隐藏目录绝不碰（custom_gamedir 里住着别的实例，搬走=灾难）。
+        if (migrate && !ame223_sameDir) {
+            NSArray<NSString *> *ame275_sweepDeny = @[
+                @"versions", @"libraries", @"assets", @"instances", @"custom_gamedir",
+                @"logs", @"crash-reports",
+                @"launcher_profiles.json", @"launcher_preferences.plist"
+            ];
+            NSInteger ame275_swept = 0;
+            for (NSString *ame275_name in [fm contentsOfDirectoryAtPath:migrateSource error:nil]) {
+                if ([ame275_name hasPrefix:@"."]) continue;                 // .ame269_backup/.stage/.DS_Store
+                if ([ame275_name hasPrefix:@"modrinth_"]) continue;         // 旧版实例文件夹（隔壁实例本体）
+                if ([ame275_name containsString:@"-backup-"] || [ame275_name containsString:@"-stage-"]) continue;
+                if ([ame275_sweepDeny containsObject:ame275_name]) continue;
+                NSString *ame275_src = [migrateSource stringByAppendingPathComponent:ame275_name];
+                NSString *ame275_dst = [isoDir stringByAppendingPathComponent:ame275_name];
+                if ([fm fileExistsAtPath:ame275_dst]) continue;             // 目标已有 → 绝不覆盖
+                if ([fm moveItemAtPath:ame275_src toPath:ame275_dst error:nil]) ame275_swept++;
+            }
+            if (ame275_swept > 0) {
+                NSLog(@"[ProfileSettings] Task275 F8: isolation migration leftover sweep moved %ld untracked item(s)", (long)ame275_swept);
+            }
+        }
+
         dispatch_async(dispatch_get_main_queue(), ^{
             self.profile[@"gameDir"] = relative;
             // ★ Task272（A2）：显式选择标记——启动默认隔离清扫见此标记绝不回改（用户
@@ -1980,6 +2007,30 @@ static NSString * localizeProfileTitle(NSString *title) {
                         movedBack++;
                     } else {
                         skippedBack++;
+                    }
+                }
+                // ★ Task275 F8：搬回兑底清扫（同主迁移）——journeymap 等 mod 数据
+                //   目录闭集外条目随搬回，否则滞留隔离目录（对 Task226 leftovers 模式）。
+                {
+                    NSArray<NSString *> *ame275_sweepDeny = @[
+                        @"versions", @"libraries", @"assets", @"instances", @"custom_gamedir",
+                        @"logs", @"crash-reports",
+                        @"launcher_profiles.json", @"launcher_preferences.plist"
+                    ];
+                    NSInteger ame275_sweptBack = 0;
+                    for (NSString *ame275_name in [fm contentsOfDirectoryAtPath:isoSource error:nil]) {
+                        if ([ame275_name hasPrefix:@"."]) continue;
+                        if ([ame275_name hasPrefix:@"modrinth_"]) continue;
+                        if ([ame275_name containsString:@"-backup-"] || [ame275_name containsString:@"-stage-"]) continue;
+                        if ([ame275_sweepDeny containsObject:ame275_name]) continue;
+                        NSString *ame275_src = [isoSource stringByAppendingPathComponent:ame275_name];
+                        NSString *ame275_dst = [instanceRoot stringByAppendingPathComponent:ame275_name];
+                        if ([fm fileExistsAtPath:ame275_dst]) continue;
+                        if ([fm moveItemAtPath:ame275_src toPath:ame275_dst error:nil]) ame275_sweptBack++;
+                    }
+                    if (ame275_sweptBack > 0) {
+                        NSLog(@"[ProfileSettings] Task275 F8: move-back leftover sweep moved %ld untracked item(s)", (long)ame275_sweptBack);
+                        movedBack += ame275_sweptBack;
                     }
                 }
                 NSLog(@"[ProfileSettings] Task224 isolation move-back: moved=%ld skipped=%ld (from %@)",

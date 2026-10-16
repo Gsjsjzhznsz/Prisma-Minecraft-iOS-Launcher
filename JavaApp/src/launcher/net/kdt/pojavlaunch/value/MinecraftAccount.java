@@ -32,6 +32,13 @@ public class MinecraftAccount
 
     public static MinecraftAccount parse(String content) throws JsonSyntaxException {
         MinecraftAccount account = Tools.GLOBAL_GSON.fromJson(content, MinecraftAccount.class);
+        // ★ Task275 J-P3-9：空串/"null" JSON（半写损坏文件，Gson 契约返回 null）
+        //   原直接 account.xuid = 裸 NPE 无上下文崩溃。改空白账户壳 + 日志（签名
+        //   不变，调用方 IOException 语义零影响）。
+        if (account == null) {
+            System.err.println("MinecraftAccount: parse returned null (empty/corrupted JSON) -- using blank account shell");
+            account = new MinecraftAccount();
+        }
         // Read access token from keychain
         if (account.xuid != null) {
             account.accessToken = getAccessTokenFromKeychain(account.xuid);

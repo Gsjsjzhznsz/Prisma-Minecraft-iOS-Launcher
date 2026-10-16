@@ -91,6 +91,20 @@ static void ame274_archiveCrashReportAfterL2Present(void) {
         } else {
             NSLog(@"[PLCrashView] Task274: crash report archive failed (%@) -- kept on disk for next-launch L3", moveError.localizedDescription);
         }
+        // ★ Task275（P3-b9）：归档保留最近 5 份——每次 L2 呈现都新增
+        // seen-<epoch>.txt 且无清理方，无限累积（Cleanup 不覆盖该前缀）。
+        NSArray *ame275_seen = [fm contentsOfDirectoryAtPath:home error:nil];
+        NSMutableArray<NSString *> *ame275_archives = [NSMutableArray array];
+        for (NSString *ame275_n in ame275_seen) {
+            if ([ame275_n hasPrefix:@"ame273_crash_report.seen-"]) [ame275_archives addObject:ame275_n];
+        }
+        if (ame275_archives.count > 5) {
+            [ame275_archives sortUsingSelector:@selector(localizedStandardCompare:)];
+            for (NSUInteger ame275_i = 0; ame275_i < ame275_archives.count - 5; ame275_i++) {
+                [fm removeItemAtPath:[home stringByAppendingPathComponent:ame275_archives[ame275_i]] error:nil];
+            }
+            NSLog(@"[PLCrashView] Task275: crash report archives trimmed to newest 5 (was %lu)", (unsigned long)ame275_archives.count);
+        }
     } @catch (NSException *ame274_e) {
         NSLog(@"[PLCrashView] Task274: crash report archive exception: %@", ame274_e);
     }
@@ -1173,7 +1187,11 @@ static NSString *ame274_readFileTail(NSString *path, NSUInteger maxBytes) {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         NSString *latestlogPath = [NSString stringWithFormat:@"%s/latestlog.txt", getenv("POJAV_HOME")];
-        cachedLog = [NSString stringWithContentsOfFile:latestlogPath encoding:NSUTF8StringEncoding error:nil] ?: @"";
+        // ★ Task275（P1-b2）：分析读改 256KB 尾窗（ame273_writeCrashReport 同口径）——
+        //   原主线程整读数 MB 日志，后续 containsString/全文 split O(n)×N 次，大日志卡
+        //   主线程数秒即可击穿 Task273 的 8s 让路窗（最重崩溃时崩溃界面反而出不来，
+        //   只剩 L3 补弹）。崩溃归因关键证据（异常链/at exit）集中于日志尾部。
+        cachedLog = ame274_readFileTail(latestlogPath, 256 * 1024) ?: @"";
         NSString *extra = [PLCrashView fatalEvidenceText];
         if (extra.length > 0) {
             cachedLog = [cachedLog stringByAppendingFormat:@"\n%@", extra];
@@ -1339,10 +1357,14 @@ static NSString *ame274_readFileTail(NSString *path, NSUInteger maxBytes) {
 }
 
 - (void)showFullLog {
-    // 显示完整的 PLLogOutputView
-    if ([SurfaceViewController currentInstance]) {
-        [[SurfaceViewController currentInstance].logOutputView actionToggleLogOutput];
-    }
+    // ★ Task275（P2-b4）：日志视图是 SurfaceVC 的子视图，本页以 OverFullScreen 全屏
+    //   盖在其上——直接 toggle 发生在看不见的图层下 = 点了没反应。先收本页再切换。
+    SurfaceViewController *ame275_surface = [SurfaceViewController currentInstance];
+    if (!ame275_surface) return;
+    [self dismissViewControllerAnimated:YES completion:^{
+        [ame275_surface.logOutputView actionToggleLogOutput];
+        NSLog(@"[PLCrashView] Task275: dismissed crash page then toggled full log output view");
+    }];
 }
 
 - (void)openGitHubIssues {

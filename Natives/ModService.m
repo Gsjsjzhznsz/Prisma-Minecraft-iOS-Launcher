@@ -13,7 +13,7 @@
 //   仅该方法使用，rg 亲证）
 #import <UIKit/UIKit.h>
 #import "PLProfiles.h"
-#import "ModItem.h"
+#import "ModpackImportService.h"  // Task275 F6: ame269_isImportBusy 让路守卫
 #import "UnzipKit.h"
 #import "DownloadTaskManager.h"
 #import "DownloadTaskItem.h"
@@ -265,6 +265,12 @@
 ///   幂等（已显式配置的条目绝不碰）、保守（只认非空 mods/saves）、单键覆写
 ///   （其余字段原样存活）。
 + (void)ame271_selfHealStrandedIsolation {
+    // ★ Task275 F6：导入/迁移进行中让路（幂等，下轮启动再愈）——原自愈写与
+    //   后台导入写者无锁竞跑（iPad 多窗口 willConnect 可重入放大触发面）。
+    if ([ModpackImportService ame269_isImportBusy]) {
+        NSLog(@"[Ame271] self-heal skipped: import busy");
+        return;
+    }
     const char *ame271_env = getenv("POJAV_GAME_DIR");
     if (!ame271_env || !*ame271_env) return;
     NSString *ame271_base = [NSString stringWithUTF8String:ame271_env];
@@ -290,7 +296,9 @@
         }
         NSMutableDictionary *ame271_updated = [ame271_prof mutableCopy];
         ame271_updated[@"gameDir"] = ame271_rel;
-        PLProfiles.current.profiles[ame271_key] = ame271_updated;
+        [PLProfiles.current applyChanges:^(NSMutableDictionary<NSString *, id> *ame275_profiles) {
+            ame275_profiles[ame271_key] = ame271_updated;
+        }];
         ame271_healed++;
         NSLog(@"[Ame271] self-heal: profile \"%@\" gameDir '%@' -> %@ (stranded isolation data)",
               ame271_key, ame271_gd ?: @"(nil)", ame271_rel);
@@ -321,7 +329,9 @@
         if (![ame272_vid isKindOfClass:[NSString class]] || ame272_vid.length == 0) continue;
         NSMutableDictionary *ame272_updated = [ame272_prof mutableCopy];
         ame272_updated[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", ame272_vid];
-        PLProfiles.current.profiles[ame272_key] = ame272_updated;
+        [PLProfiles.current applyChanges:^(NSMutableDictionary<NSString *, id> *ame275_profiles) {
+            ame275_profiles[ame272_key] = ame272_updated;
+        }];
         ame272_swept++;
         NSLog(@"[Ame271] default-isolation sweep: profile \"%@\" gameDir '%@' -> versions/%@/game (never explicitly configured)",
               ame272_key, ame272_gd ?: @"(nil)", ame272_vid);

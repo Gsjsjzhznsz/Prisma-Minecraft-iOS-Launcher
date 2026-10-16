@@ -3147,3 +3147,8 @@
 "ame273.crash.title" = "Предыдущая игра завершилась с ошибкой";
 "ame273.crash.copy_reason" = "Копировать причину";
 "ame273.crash.view_full_log" = "Открыть полный журнал";
+
+// ★ Task275: modpack download i18n (14 主要语言实译 + 长尾英文回退值)
+"download.modpack.retry_failed" = "Не удалось скачать модпак (повторных попыток: %ld): %@";
+"download.empty_data" = "Загрузка вернула пустые данные";
+"common.unknown_error" = "Неизвестная ошибка";

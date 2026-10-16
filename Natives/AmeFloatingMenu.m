@@ -716,7 +716,16 @@ static UIColor *Ame244SnapshotTint(void) {
 }
 
 - (void)ame246_refreshTick {
-    // ★ Task252：TG 玻璃分支——快照供料模式以 0.5x 原料持续喟 glass
+    // ★ Task275（P1-b3）：离窗自停——外部 dismiss（未走 ame237_dismissWithAction 的
+    //   路径，如被父链 dismiss/游戏退出链式收口）后 view.window==nil 仅 early-return
+    //   不停链 = displayLink target:self 强持 self，dealloc 永不可达，8Hz 快照空转
+    //   永久泄 VC+runloop 源（ame247/ame250 同款护栏平移）。
+    if (self.view.window == nil) {
+        NSLog(@"[AmeMenu] Task275: frost refresh link self-stopped (window detached)");
+        [self ame246_stopBackgroundRefresh];
+        return;
+    }
+    // ★ Task252：TG 玻璃分支——快照供料模式以 0.5x 原料持续喂 glass
     //   （滤镜栈自带微模糊+colorMatrix，原料保留真实细节供边缘折射）；
     //   实况模式无需重抓（链接在 start 处已短路，此为兑底）。
     if (self.ame252_glass != nil) {
@@ -1219,6 +1228,27 @@ static UIColor *Ame244SnapshotTint(void) {
     }
     // 原生直通（交换后 = 原实现）
     [self ame237_hook_presentViewController:viewControllerToPresent animated:flag completion:completion];
+}
+
+// ★ Task275（P1-b1）：玻璃镜像 dismiss 断链根修——Task237 只接管了 present，dismiss
+// 仍直透：玻璃档下 [alert dismissViewControllerAnimated:] 打在从未上屏的源 alert
+// 上（presented/presenting 全 nil = UIKit 静默 no-op），真正上屏的镜像面板永不关
+// 闭 + completion 内后续流程全部死亡（RightPanel JIT 等待四路/WorldsManager 导入
+// 队列/DataTransfer 进度框/BingWallpaper HUD 等 10 处实锤；仓内先例 =
+// MultiplayerViewController 1922 同病理注释）。命中“源 alert 且镜像在屏”时改道
+// ame247_dismissMirroredAlert（含字段回写/停链/完成双保险），其余零开销直透。
+- (BOOL)ame237_hook_dismissViewControllerAnimated:(BOOL)flag completion:(void (^)(void))completion {
+    if ([self isKindOfClass:[UIAlertController class]] && LGCIsGlassStyleActive()) {
+        UIAlertController *ame275_alert = (UIAlertController *)self;
+        UIViewController *ame275_mirror = [AmeFloatingMenu ame247_findMirrorForAlert:ame275_alert];
+        if (ame275_mirror != nil) {
+            NSLog(@"[AmeMenu] Task275: mirrored alert dismiss re-routed to glass mirror");
+            [AmeFloatingMenu ame247_dismissMirroredAlert:ame275_alert completion:completion];
+            return YES;
+        }
+    }
+    // 原生直通（交换后 = 原实现）
+    return [self ame237_hook_dismissViewControllerAnimated:flag completion:completion];
 }
 
 @end

@@ -30,6 +30,11 @@ public class MCOptionUtils
     }
     
     public static void set(String key, String value) {
+        // ★ Task275 J-P3-10：save() 置 null 后调 set/setDefault 恒 NPE——与 remove
+        //   的防御口径、get() 的懒加载口径统一（当前调用序安全，纯属埋雷）。
+        if (mLineList == null) {
+            load();
+        }
         // Task 104：去重写入。MC 的 Options.load 逐行 putString —— 同 key
         // 多行时【后出现的行覆盖先前的行】。旧实现对重复行只改第一处，
         // 残留的后续旧行会在 MC 侧覆盖我们的值（例：历史遗留的
@@ -55,6 +60,9 @@ public class MCOptionUtils
     }
 
     public static void setDefault(String key, String value) {
+        if (mLineList == null) {
+            load();   // ★ Task275 J-P3-10：懒加载口径统一
+        }
         if (get(key) == null) {
             mLineList.add(key + ":" + value);
         }

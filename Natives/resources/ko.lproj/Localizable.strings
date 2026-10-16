@@ -3127,3 +3127,8 @@
 "ame273.crash.title" = "이전 게임이 비정상 종료되었습니다";
 "ame273.crash.copy_reason" = "원인 복사";
 "ame273.crash.view_full_log" = "전체 로그 보기";
+
+// ★ Task275: modpack download i18n (14 主要语言实译 + 长尾英文回退值)
+"download.modpack.retry_failed" = "모드팩 다운로드 실패(재시도 %ld회): %@";
+"download.empty_data" = "다운로드가 빈 데이터를 반환했습니다";
+"common.unknown_error" = "알 수 없는 오류";

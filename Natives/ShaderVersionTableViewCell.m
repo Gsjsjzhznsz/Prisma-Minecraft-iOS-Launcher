@@ -273,13 +273,20 @@
     }
 
     // 发布日期：ISO 8601 → 短日期格式
-    NSISO8601DateFormatter *dateFormatter = [[NSISO8601DateFormatter alloc] init];
-    NSDate *date = [dateFormatter dateFromString:version.datePublished];
+    // ★ Task275（P3-b10）：formatter static 缓存——滚动列表每 cell 新建两个
+    //   NSISO8601/NSDateFormatter（创建成本高，O(n) 构造）。
+    static NSISO8601DateFormatter *ame275_iso = nil;
+    static NSDateFormatter *ame275_display = nil;
+    static dispatch_once_t ame275_once;
+    dispatch_once(&ame275_once, ^{
+        ame275_iso = [[NSISO8601DateFormatter alloc] init];
+        ame275_display = [[NSDateFormatter alloc] init];
+        ame275_display.dateStyle = NSDateFormatterShortStyle;
+        ame275_display.timeStyle = NSDateFormatterNoStyle;
+    });
+    NSDate *date = [ame275_iso dateFromString:version.datePublished];
     if (date) {
-        NSDateFormatter *displayFormatter = [[NSDateFormatter alloc] init];
-        displayFormatter.dateStyle = NSDateFormatterShortStyle;
-        displayFormatter.timeStyle = NSDateFormatterNoStyle;
-        self.datePublishedLabel.text = [displayFormatter stringFromDate:date];
+        self.datePublishedLabel.text = [ame275_display stringFromDate:date];
     } else {
         self.datePublishedLabel.text = localize(@"i18n_str_460", nil);
     }

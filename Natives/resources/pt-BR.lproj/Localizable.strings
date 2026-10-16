@@ -3135,3 +3135,8 @@
 "ame273.crash.title" = "A partida anterior terminou inesperadamente";
 "ame273.crash.copy_reason" = "Copiar a causa";
 "ame273.crash.view_full_log" = "Ver registro completo";
+
+// ★ Task275: modpack download i18n (14 主要语言实译 + 长尾英文回退值)
+"download.modpack.retry_failed" = "Falha ao baixar o modpack (tentativas: %ld): %@";
+"download.empty_data" = "O download devolveu dados vazios";
+"common.unknown_error" = "Erro desconhecido";

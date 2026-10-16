@@ -2420,10 +2420,20 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         NSLog(@"[JavaLauncher] GRAPHICS_API is set to %@\n", graphicsApi);
 
         // Setup gameDir
-        gameDir = [NSString stringWithFormat:@"%s/instances/%@/%@",
-            getenv("POJAV_HOME"), getPrefObject(@"general.game_directory"),
-            [PLProfiles resolveKeyForCurrentProfile:@"gameDir"]]
-            .stringByStandardizingPath;
+        // ★ Task275 F5：绝对路径自定义隔离目录原样使用——原实现无条件嵌套拼接
+        //   instances/<gd>/<绝对路径>，stringByStandardizingPath 收拢双斜杠后变为
+        //   instances/<gd>/var/...：启动 chdir 落进嵌套孤儿树，与服务层五处 resolve
+        //   （isAbsolutePath 原样返回）分叉成两套口径（管理页/下载落点在真实目录）。
+        {
+            NSString *ame275_gd = [PLProfiles resolveKeyForCurrentProfile:@"gameDir"];
+            if ([ame275_gd isAbsolutePath]) {
+                gameDir = ame275_gd;
+            } else {
+                gameDir = [NSString stringWithFormat:@"%s/instances/%@/%@",
+                    getenv("POJAV_HOME"), getPrefObject(@"general.game_directory"), ame275_gd]
+                    .stringByStandardizingPath;
+            }
+        }
 
         // ★ Task225（反馈 #5：与 ModService 同源的隔离嗅探）：profile 的
         // gameDir 为 "."/缺失时，若 versions/<vid>/game（或旧口径
@@ -3796,8 +3806,13 @@ int launchHeadlessJVM(NSString *mainClass, NSArray<NSString *> *args, int minJav
             });
             // 后台轮询等待 JIT 生效（与 RightPanel 同款节奏；manual 模式下
             // 用户手动附加后同样能继续）
-            while (!isJITEnabled(NO)) {
-                usleep(1000 * 200);
+            // ★ Task275（P2-a3）：无界裸循环改有界等待（Task169/267 修的另外三处，
+            //   此处漏网）——stikjit 未驻留时 Forge/NeoForge 安装线程永久空转，
+            //   "正在开启 JIT"弹窗永远挂着且 cancel 点了也退不出。120s 超时
+            //   走下方既有失败口径（优雅 -1 返回）。
+            if (!ame169_waitForJITCondition(^{ return isJITEnabled(NO); }, 120.0, @"Headless-JIT")) {
+                NSLog(@"[JavaLauncher] launchHeadlessJVM: Task275 JIT wait timed out (120s) -- failing gracefully");
+                return -1;
             }
             NSLog(@"[JavaLauncher] launchHeadlessJVM: Task139 JIT became enabled, continuing");
         }
@@ -3839,8 +3854,10 @@ int launchHeadlessJVM(NSString *mainClass, NSArray<NSString *> *args, int minJav
                 options:@{} completionHandler:nil];
             showDialog(localize(@"i18n_str_437", nil), localize(@"i18n_str_439", nil));
         });
-        while (!JIT26IsLikelyDebuggerKeepAttached()) {
-            usleep(1000 * 200);
+        // ★ Task275（P2-a3）：同上，有界等待替代无界裸循环。
+        if (!ame169_waitForJITCondition(^{ return JIT26IsLikelyDebuggerKeepAttached(); }, 120.0, @"Headless-JIT26")) {
+            NSLog(@"[JavaLauncher] launchHeadlessJVM: Task275 JIT26 attach wait timed out (120s) -- failing gracefully");
+            return -1;
         }
         NSLog(@"[JIT] [Headless] Task139: JIT26 debugger re-attached, continuing");
     }

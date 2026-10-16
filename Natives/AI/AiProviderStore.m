@@ -32,14 +32,35 @@ static NSString * const kSelectedProviderIdKey = @"ai.selected_provider_id";
 
 #pragma mark - 文件路径
 
-/// Documents/AI/ 目录路径（不存在则创建）
+/// Application Support/AI/ 目录路径（不存在则创建）。
+/// ★ Task275（E-P2-7）：providers.json（含 apiKey）从 Documents/AI 迁出——
+/// Info.plist 开了 UIFileSharingEnabled，Documents 经 USB/文件 App 直接可读
+/// = 唯一明文外露的密钥（Task131 第三方凭据已上 Keychain 的纪律对齐）。
+/// 旧路径一次性迁移（仅 providers.json；sessions.json 属 AiSessionStore 自管）。
 - (NSString *)aiDirectoryPath {
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *docDir = [paths firstObject];
-    NSString *aiDir = [docDir stringByAppendingPathComponent:@"AI"];
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+    NSString *baseDir = [paths firstObject] ?: [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    NSString *aiDir = [baseDir stringByAppendingPathComponent:@"AI"];
     NSFileManager *fm = [NSFileManager defaultManager];
     if (![fm fileExistsAtPath:aiDir]) {
         [fm createDirectoryAtPath:aiDir withIntermediateDirectories:YES attributes:nil error:nil];
+    }
+    // 一次性迁移：旧 Documents/AI/providers.json → 新目录（新目录已有则清除外露副本）
+    NSString *ame275_legacy = [[[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject]
+        stringByAppendingPathComponent:@"AI"] stringByAppendingPathComponent:@"providers.json"];
+    if ([fm fileExistsAtPath:ame275_legacy]) {
+        NSString *ame275_modern = [aiDir stringByAppendingPathComponent:@"providers.json"];
+        if (![fm fileExistsAtPath:ame275_modern]) {
+            NSError *ame275_mvErr = nil;
+            if ([fm moveItemAtPath:ame275_legacy toPath:ame275_modern error:&ame275_mvErr]) {
+                NSLog(@"[AiProviderStore] Task275: providers.json migrated out of file-sharing-visible Documents (apiKey hardening)");
+            } else {
+                NSLog(@"[AiProviderStore] Task275: legacy providers.json move failed (%@) -- re-migrates next launch", ame275_mvErr.localizedDescription);
+            }
+        } else {
+            [fm removeItemAtPath:ame275_legacy error:nil];
+            NSLog(@"[AiProviderStore] Task275: stale exposed providers.json copy removed (modern copy present)");
+        }
     }
     return aiDir;
 }

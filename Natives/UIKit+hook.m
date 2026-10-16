@@ -78,6 +78,22 @@ void init_hookUIKitConstructor(void) {
         }
     }
 
+    // ★ Task275（P1-b1）：dismiss 侧镜像改道钩子（与 Task237 present 钩子配对；
+    //   玻璃档下源 alert 的 dismiss 打在从未上屏的对象上 = 镜像永不关 +
+    //   completion 死亡，见 AmeFloatingMenu.m 路由分类注释）。
+    {
+        Method ame275_orig = class_getInstanceMethod([UIViewController class],
+                                                      @selector(dismissViewControllerAnimated:completion:));
+        Method ame275_hook = class_getInstanceMethod([UIViewController class],
+                                                      @selector(ame237_hook_dismissViewControllerAnimated:completion:));
+        if (ame275_orig != NULL && ame275_hook != NULL) {
+            method_exchangeImplementations(ame275_orig, ame275_hook);
+            NSLog(@"[AmeMenu] Task275 dismiss router installed (mirrored alert dismiss re-routed; native style passes through)");
+        } else {
+            NSLog(@"[AmeMenu] Task275 dismiss router SKIPPED (base selector missing -- unexpected)");
+        }
+    }
+
     // Add this line to swizzle the _imageWithSize: method
     swizzleUIImageMethod(NSSelectorFromString(@"_imageWithSize:"), @selector(hook_imageWithSize:));
 

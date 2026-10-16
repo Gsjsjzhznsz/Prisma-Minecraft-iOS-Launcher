@@ -1137,7 +1137,12 @@ public class GLFW
             // called and all input is silently dropped.
             callJV(0L, Functions.PumpEvents);
         } else {
-            for (Long ptr : mGLFWWindowMap.keySet()) callJV(ptr, Functions.PumpEvents);
+            // ★ Task275 J-P3-8：每帧 keySet 增强 for 分配 ArrayIterator（ArrayMap
+            //   集合视图按低频访问设计）= 120fps 约 7200 临时对象/分钟。改 keyAt
+            //   直取零分配（GLFW.java:1075 同款口径）。
+            for (int ame275_i = 0; ame275_i < mGLFWWindowMap.size(); ame275_i++) {
+                callJV(mGLFWWindowMap.keyAt(ame275_i), Functions.PumpEvents);
+            }
         }
         callV(Functions.RewindEvents);
     }
@@ -1459,7 +1464,13 @@ public class GLFW
     @NativeType("int")
     public static boolean glfwExtensionSupported(@NativeType("char const *") CharSequence ext) {
         //return Arrays.stream(glGetString(GL_EXTENSIONS).split(" ")).anyMatch(ext::equals);
-        // Fast path, but will return true if one has the same prefix
-        return glGetString(GL_EXTENSIONS).contains(ext);
+        // ★ Task275 J-P3-6：contains 子串匹配对同前缀扩展名假阳性（mod 拿到假 true
+        //   调不存在的入口 = GL 错误/黑块，上游遗留）。空白分词精确匹配。
+        String ame275_exts = glGetString(GL_EXTENSIONS);
+        if (ame275_exts == null || ext == null) return false;
+        for (String ame275_tok : ame275_exts.split(" ")) {
+            if (ame275_tok.contentEquals(ext)) return true;
+        }
+        return false;
     }
 }

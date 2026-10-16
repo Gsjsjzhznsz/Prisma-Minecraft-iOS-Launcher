@@ -392,6 +392,12 @@ static NSString * const kShaderCardCellIdentifier = @"ShaderCardCell";
     }];
 }
 
+/// Task275（P2-b7）：选中实例变化实时跟随（钉定态除外）
+- (void)ame275_selectedProfileDidChange {
+    if (self.profileName.length > 0) return;   // 钉定：不跟随选中变化
+    [self refreshLocalShadersList];
+}
+
 - (void)updateEmptyState {
     if (self.filteredLocalShaders.count > 0) {
         [self hideEmptyState];

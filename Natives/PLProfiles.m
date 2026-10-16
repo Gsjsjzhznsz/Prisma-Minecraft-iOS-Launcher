@@ -238,6 +238,20 @@ static PLProfiles* current;
     }
 }
 
+// ★ Task275 F6：锁内批量变更 API（声明见 .h）。
+- (void)applyChanges:(void (NS_NOESCAPE ^)(NSMutableDictionary<NSString *, id> *profiles))changes {
+    if (!changes) return;
+    @synchronized (self) {
+        id profiles = self.profileDict[@"profiles"];
+        if (![profiles isKindOfClass:[NSMutableDictionary class]]) {
+            profiles = [NSMutableDictionary dictionary];
+            self.profileDict[@"profiles"] = profiles;
+        }
+        changes(profiles);
+        [self save];   // 同锁可重入（saveProfile 先例）
+    }
+}
+
 #pragma mark - 服务器地址（FCL 风格：启动后自动加入服务器）
 
 // 获取当前选中 profile 的服务器地址，留空返回 @""

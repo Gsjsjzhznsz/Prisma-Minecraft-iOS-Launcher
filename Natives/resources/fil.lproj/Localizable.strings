@@ -120,7 +120,7 @@
 "preference.detail.cosmetica" = "Paganahin ang mga kapa mula sa Cosmetica (dating Arc). Para sa karagdagang impormasyon mangyaring bisitahin ang https://cosmetica.cc. Nangangailangan ng OptiFine";
 "preference.title.debug_logging" = "Pag-log sa pag-debug";
 "preference.detail.debug_logging" = "Nagla-log ng mga panloob na setting at pagkilos sa latestlog.txt. Nakakatulong ito sa mga developer na mas madaling mahanap ang mga isyu, ngunit ang Minecraft ay maaaring tumakbo nang mas mabagal dahil mas madalas na isusulat ang mga log.";
-"preference.title.jitstreamer_server" = "JitStreamer error: %@";
+"preference.title.jitstreamer_server" = "Address ng JitStreamer server";
 "preference.detail.jitstreamer_server" = "Binibigyang-daan kang lumipat sa isang custom na JitStreamer server IP, tulad ng para sa mga self-host na pagkakataon. Maaaring iwanang mag-isa ang opsyong ito kung gagamitin mo ang mga default na server ng JitStreamer.";
 "preference.title.appicon" = "Set app icon";
 "preference.detail.appicon" = "Allows you to choose between different Home Screen icons for Prisma.";
@@ -450,3 +450,8 @@
 "ame273.crash.title" = "Previous game exited unexpectedly";
 "ame273.crash.copy_reason" = "Copy reason";
 "ame273.crash.view_full_log" = "View full log";
+
+// ★ Task275: modpack download i18n (14 主要语言实译 + 长尾英文回退值)
+"download.modpack.retry_failed" = "Modpack download failed (retried %ld times): %@";
+"download.empty_data" = "Download returned empty data";
+"common.unknown_error" = "Unknown error";

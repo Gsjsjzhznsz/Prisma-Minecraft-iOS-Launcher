@@ -88,10 +88,22 @@ static CGFloat const kBatchToolbarBottomGap = 12.0; // 工具栏与安全区底�
                                              selector:@selector(handleDownloadTaskCompletedNotification:)
                                                  name:DownloadTaskManagerTaskCompletedNotification
                                                object:nil];
+
+    // ★ Task275（P2-b7）：选中实例变化实时跟随——四资源管理页的“跟随”此前只跟到
+    //   扫描时刻（服务层解析 selected），页面在场期间实例被迁移/合并/切换时列表
+    //   陈旧；ModsManager 已有同款观察者，基类统一补齐，子类钩子各自重扫。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame275_selectedProfileDidChange)
+                                                 name:@"SelectedProfileChanged"
+                                               object:nil];
 }
 
 - (void)dealloc {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+/// Task275（P2-b7）：选中实例变化子类钩子（默认空实现，见 viewDidLoad 注释）。
+- (void)ame275_selectedProfileDidChange {
 }
 
 /// 下载任务完成通知处理：该任务属于资源类型任务（mod/shader/resourcepack/datapack/world）时，

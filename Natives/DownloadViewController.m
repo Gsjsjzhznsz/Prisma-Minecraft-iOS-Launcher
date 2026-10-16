@@ -426,7 +426,7 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
 /// 6 类资源共用的配置逻辑：标题/描述/元信息/图标/标签
 /// FCL 风格：标题 14sp + 第二行（下载次数 + 描述），元信息（作者/日期）合并到 descLabel
 - (void)configureCommonWithData:(NSDictionary *)data type:(ModernAssetType)type {
-    self.titleLabel.text = data[@"title"] ?: data[@"slug"] ?: @"Unknown";
+    self.titleLabel.text = data[@"title"] ?: data[@"slug"] ?: localize(@"ame189.common.unknown", nil);   // ★ Task275（i18n：复用既有键）
 
     // 第二行：下载次数 + 描述（FCL download_count + description 同行）
     NSString *downloadsStr = [self formatDownloadCount:data[@"downloads"]];
@@ -4820,7 +4820,7 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
                 __strong typeof(weakSelf) strongSelf2 = weakSelf;
                 if (!strongSelf2) return;
                 if (error || !location) {
-                    downloadError = error ?: [NSError errorWithDomain:@"DownloadError" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Download returned empty data"}];
+                    downloadError = error ?: [NSError errorWithDomain:@"DownloadError" code:1 userInfo:@{NSLocalizedDescriptionKey: localize(@"download.empty_data", nil)}];   // ★ Task275（i18n）
                     NSLog(@"[ModpackDownload] Attempt %ld failed: %@", (long)downloadAttempt, downloadError.localizedDescription);
                     if (downloadAttempt < 3) {
                         // 间隔 1.5s 后重试，避免连续请求触发限流
@@ -4832,7 +4832,7 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
                                                               stageAtIndex:0
                                                                   status:PLTaskStageStatusFailed];
                         [[DownloadTaskManager sharedManager] setTaskWithId:taskItem.taskId completedWithError:downloadError];
-                        [strongSelf2 showError:[NSString stringWithFormat:@"Modpack download failed (retried %ld times): %@", (long)downloadAttempt, downloadError.localizedDescription ?: @"Unknown error"]];
+                        [strongSelf2 showError:[NSString stringWithFormat:localize(@"download.modpack.retry_failed", nil), (long)downloadAttempt, downloadError.localizedDescription ?: localize(@"common.unknown_error", nil)]];   // ★ Task275（i18n）
                     }
                     return;
                 }

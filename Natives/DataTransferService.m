@@ -20,6 +20,7 @@
 #import "external/UnzipKit/UZKArchive.h"
 #import "utils.h"
 #import "LauncherPreferences.h"   // getPrefObject（Task224 分区口径读当前实例名）
+#import "PLProfiles.h"            // Task275 F3: 自动切实例后注册表同步
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 // Task224：自研 zip 写器直接使用 zlib（deflate/crc32）。libz 已随 UnzipKit
 // 加载（其 load commands 链接 /usr/lib/libz.1.dylib），符号经 dlsym 解析，
@@ -572,6 +573,15 @@ typedef NS_ENUM(NSInteger, Ame229PickerMode) {
                     } @catch (NSException *ame232_e) {
                         NSLog(@"[DataTransfer] Task232: instance switch symlink exception (%@)", ame232_e);
                     }
+                    // ★ Task275 F3：自动切实例后同步 PLProfiles 注册表——init_setupMultiDir
+                    //   只重指软链/偏好不认识 PLProfiles，current 仍持【旧实例】的
+                    //   launcher_profiles.json 内存字典；此后任意一次 profile 写（装 mod
+                    //   的 saveProfile/改 serverIp/游戏内分辨率写入）会把旧实例表整体
+                    //   落盘进新实例注册表（跨实例注册表覆写，与“隔离切不回”同族漂移）。
+                    //   对齐 VersionManager 人工链（updateCurrent + 双通知）。
+                    [PLProfiles updateCurrent];
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"ReloadProfileList" object:nil];
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"SelectedProfileChanged" object:nil];
                     ame227_gd = ame232_target;
                     ame227_instPath = [NSString stringWithFormat:@"%s/instances/%@",
                         getenv("POJAV_HOME"), ame232_target];

@@ -217,9 +217,16 @@ void ame_write_fatal_trace(const char *reason) {
 
     char tname[64] = {0};
     pthread_getname_np(pthread_self(), tname, sizeof(tname));
+    // ★ Task275（P2-a5）：snprintf 返回“应有长度”而非实际写入——reason 无界（唯一
+    //   无界入口 = NSException reason，超 16KB 截断后返回值把 len 推过 sizeof，
+    //   下一条 sizeof(report)-len size_t 下溢 = 濒死路径越界写）。累加后钐制。
     len += (size_t)snprintf(report + len, sizeof(report) - len,
         "reason: %s\nthread: %s\n",
         reason ? reason : "(null)", tname[0] ? tname : "(unnamed)");
+    if (len >= sizeof(report)) {
+        report[sizeof(report) - 1] = '\0';
+        return;
+    }
 
     void *frames[64];
     int n = backtrace(frames, 64);

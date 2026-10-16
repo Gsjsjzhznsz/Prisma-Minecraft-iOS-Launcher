@@ -244,7 +244,13 @@
 
 - (void)scanDataPacksForProfile:(NSString *)profileName completion:(DataPackListHandler)completion {
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        NSString *dataPacksFolder = [self existingDataPacksFolderForProfile:profileName];
+        // ★ Task275 F1（P0·ame219 隔离优先语义平移）：扫描不再走"隔离目录缺失→共享根
+        //   兑底"——新隔离实例列表必须为空而非显示共享根/隔壁实例列表（跨实例串目录）。
+        NSError *ame275DirError = nil;
+        NSString *dataPacksFolder = [self ensureDataPacksFolderForProfile:profileName error:&ame275DirError];
+        if (!dataPacksFolder) {
+            dataPacksFolder = [self existingDataPacksFolderForProfile:profileName];
+        }
         NSMutableArray<DataPackItem *> *items = [NSMutableArray array];
 
         if (!dataPacksFolder) {
@@ -358,6 +364,14 @@
             expectedSHA1:(nullable NSString *)expectedSHA1
                 progress:(DataPackDownloadProgressHandler _Nullable)progress
               completion:(DataPackDownloadCompletionHandler _Nullable)completion {
+    // ★ Task275 F7（Task269 末梢自愈平移）：目标实例不存在→回落当前选中实例
+    //   （ModService.m:734 同款，杜绝死名 resolve 兑底静默落共享根）。
+    if (profileName.length > 0 && !PLProfiles.current.profiles[profileName]) {
+        NSString *ame275_fallback = PLProfiles.current.selectedProfileName;
+        NSLog(@"[DataPackService] Task275: target profile \"%@\" gone -> fallback to selected \"%@\"",
+              profileName, ame275_fallback ?: @"(nil)");
+        profileName = ame275_fallback;
+    }
     NSFileManager *fm = [NSFileManager defaultManager];
     NSString *dataPacksFolder = nil;
 
@@ -394,7 +408,12 @@
         }
     } else {
         // 默认下载到 <gameDir>/datapacks/
-        dataPacksFolder = [self existingDataPacksFolderForProfile:profileName];
+        // ★ Task275 F1：ensure-first（原 existing-first 在隔离叶目录未建时把
+        //   下载落到共享根——同扫描病灶）。
+        dataPacksFolder = [self ensureDataPacksFolderForProfile:profileName error:nil];
+        if (!dataPacksFolder) {
+            dataPacksFolder = [self existingDataPacksFolderForProfile:profileName];
+        }
         if (!dataPacksFolder) {
             NSString *gameDir = [self gameDirForProfile:profileName];
             if (gameDir) {

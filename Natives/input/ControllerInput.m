@@ -40,15 +40,19 @@ BOOL leftShiftHeld;
 }
 
 + (void)sendKeyEvent:(int)controllerKeycode pressed:(BOOL)pressed {
-    int keycode;
+    // ★ Task275（E-P1-3）：keycode 必须有初值——mapping 为 nil（controlmap 缺失/
+    //   解析失败）或按键未配置时，原未初始化局部变量走 switch = 未定义行为
+    //   （"按未映射键重放上一次映射键"/首次发送随机值）。GLFW_KEY_UNKNOWN
+    //   已有专门 case，零成本根修。
+    int keycode = GLFW_KEY_UNKNOWN;
     __block NSMutableDictionary *mapping;
     if (isGrabbing) {
         mapping = gameMap;
     } else {
         mapping = menuMap;
     }
-    
-    for (NSMutableDictionary *buttonDict in mapping) {
+
+    if (mapping != nil) for (NSMutableDictionary *buttonDict in mapping) {
         if(controllerKeycode == [buttonDict[@"gamepad_button"] intValue]) {
             keycode = [buttonDict[@"keycode"] intValue];
         }

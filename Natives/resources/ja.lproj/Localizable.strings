@@ -3212,3 +3212,8 @@
 "ame273.crash.title" = "前回のゲームが異常終了しました";
 "ame273.crash.copy_reason" = "原因をコピー";
 "ame273.crash.view_full_log" = "完全なログを表示";
+
+// ★ Task275: modpack download i18n (14 主要语言实译 + 长尾英文回退值)
+"download.modpack.retry_failed" = "モッドパックのダウンロードに失敗しました（再試行 %ld 回）：%@";
+"download.empty_data" = "ダウンロードが空のデータを返しました";
+"common.unknown_error" = "不明なエラー";

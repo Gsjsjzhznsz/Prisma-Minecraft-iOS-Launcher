@@ -158,7 +158,7 @@ jobs:
 
       - name: Install Java 8 (Temurin) via Homebrew
         run: |
-          brew install --cask temurin@8 || true
+          brew install --cask temurin@8
 
       - name: Install brew toolchain (ldid/meson/ninja/bison/pkg-config in one pass)
         # ★ Task255（清单 12：CI 构建提速）：brew install 合并为一次调用——

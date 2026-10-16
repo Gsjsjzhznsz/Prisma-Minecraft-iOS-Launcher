@@ -1092,6 +1092,7 @@ static NSString *ame131_readCredentials(NSString *authserver, NSString *loginIde
                                         weakSelf.authData[@"profilePicURL"] = [skinURL stringByReplacingOccurrencesOfString:@".png" withString:@"/helm.png"];
                                     }
                                     [weakSelf saveChanges];
+                                    ame134_notifyAccountInfoUpdated();   // ★ Task275（E-P3-12）：真实皮肤落地广播（Task134 写点纪律）
                                     if (callback) callback(nil, YES);
                                 });
                                 return;
@@ -1117,8 +1118,10 @@ static NSString *ame131_readCredentials(NSString *authserver, NSString *loginIde
 - (NSString *)parseErrorMessageFromError:(NSError *)error {
     NSData *data = error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
     if (data) {
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
-        if (json) {
+        id json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
+        // ★ Task275（E-P3-18b）：服务器返回 JSON 数组时原直取 objectForKeyedSubscript
+        //   = NSArray 不响应选择器崩溃（异常/损坏服务器可触发）。
+        if ([json isKindOfClass:[NSDictionary class]]) {
             NSString *msg = json[@"errorMessage"] ?: json[@"error"];
             if (msg.length > 0) return msg;
         }
@@ -1406,6 +1409,7 @@ static NSString *ame131_readCredentials(NSString *authserver, NSString *loginIde
                                                 weakSelf.authData[@"profilePicURL"] = [skinURL stringByReplacingOccurrencesOfString:@".png" withString:@"/helm.png"];
                                             }
                                             [weakSelf saveChanges];
+                                            ame134_notifyAccountInfoUpdated();   // ★ Task275（E-P3-12）
                                         });
                                         return;
                                     }
@@ -1702,6 +1706,7 @@ static NSString *ame131_readCredentials(NSString *authserver, NSString *loginIde
                                                         weakSelf.authData[@"profilePicURL"] = [skinURL stringByReplacingOccurrencesOfString:@".png" withString:@"/helm.png"];
                                                     }
                                                     [weakSelf saveChanges];
+                                                    ame134_notifyAccountInfoUpdated();   // ★ Task275（E-P3-12）
                                                 });
                                                 return;
                                             }

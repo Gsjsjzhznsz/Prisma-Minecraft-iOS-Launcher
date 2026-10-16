@@ -332,7 +332,12 @@ public class PojavLauncher {
         // For Minecraft 1.0 and earlier, no language option
         MCOptionUtils.save();
         String configPath = null;
-        if (version.logging != null) {
+        // ★ Task275 J-P2-4：logging.client.file 两级解引用无判空——畸形 version JSON
+        //   （第三方工具产物，Task173/ame270 有前科）"logging": {} 即裸 NPE 崩启动链。
+        //   任一缺失落下方既有 log4j fallback（本就是为此兜底，只是没接上）。
+        if (version.logging != null && version.logging.client != null
+                && version.logging.client.file != null
+                && version.logging.client.file.id != null) {
             if (version.logging.client.file.id.equals("client-1.12.xml")) {
                 configPath = Tools.DIR_BUNDLE + "/log4j-rce-patch-1.12.xml";
             } else if (version.logging.client.file.id.equals("client-1.7.xml")) {

@@ -3256,3 +3256,8 @@
 "ame273.crash.title" = "上次遊戲異常退出";
 "ame273.crash.copy_reason" = "複製原因";
 "ame273.crash.view_full_log" = "檢視完整日誌";
+
+// ★ Task275: modpack download i18n (14 主要语言实译 + 长尾英文回退值)
+"download.modpack.retry_failed" = "整合包下載失敗（已重試 %ld 次）：%@";
+"download.empty_data" = "下載傳回了空資料";
+"common.unknown_error" = "未知錯誤";

@@ -1348,6 +1348,13 @@ static BOOL ame269_sMigrationRunning = NO;
                 }
             }
 
+            NSString *ame275_safeRel = AME275SafeRelativePath(relativePath);
+            if (!ame275_safeRel) {
+                NSLog(@"[ModpackImport] Task275 F4: zip entry with unsafe path skipped: %@", filename);
+                return;
+            }
+            relativePath = ame275_safeRel;
+
             NSString *destItemPath = [baseDir stringByAppendingPathComponent:relativePath];
             NSString *destDirPath = fileInfo.isDirectory ? destItemPath : destItemPath.stringByDeletingLastPathComponent;
             BOOL createdDir = [NSFileManager.defaultManager createDirectoryAtPath:destDirPath
@@ -1720,6 +1727,17 @@ static BOOL ame269_sMigrationRunning = NO;
                                          withIntermediateDirectories:YES
                                                           attributes:nil
                                                                error:nil];
+                // ★ Task275 F4：CF fileName 净化——manifest/元数据字段不可信，
+                //   "../../x.jar" 或绝对路径会逃逸 gameDir；不安全时回退 pid-fid
+                //   安全名继续安装（文件仍可用，不整包失败）。
+                {
+                    NSString *ame275_safeName = AME275SafeRelativePath(fileName);
+                    if (!ame275_safeName || [ame275_safeName containsString:@"/"]) {
+                        NSLog(@"[ModpackImport] Task275 F4: CF fileName unsafe (%@) -> fallback pid-fid name", fileName);
+                        ame275_safeName = [NSString stringWithFormat:@"%lld-%lld.jar", projectID, fileID];
+                    }
+                    fileName = ame275_safeName;
+                }
                 destPath = [categoryDir stringByAppendingPathComponent:fileName];
 
                 // 候选列表（按尝试顺序）——★ Task272 重建（2026-10 实测 + 装机 fc10409
@@ -1781,7 +1799,11 @@ if (hasRealFileName) {
                 BOOL ame274_unsafeRelPath = YES;
                 if ([relPath isKindOfClass:[NSString class]]) {
                     ame274_unsafeRelPath = NO;
-                    for (NSString *ame274_pc in [relPath pathComponents]) {
+                    // ★ Task275 F4：绝对路径条目补拒（stringByAppendingPathComponent
+                    //   遇绝对路径整段替换 base = 写任意容器路径，S12 原只堵 ".." 段）。
+                    if ([relPath hasPrefix:@"/"]) {
+                        ame274_unsafeRelPath = YES;
+                    } else for (NSString *ame274_pc in [relPath pathComponents]) {
                         if ([ame274_pc isEqualToString:@".."]) { ame274_unsafeRelPath = YES; break; }
                     }
                 }
@@ -2948,8 +2970,11 @@ if (hasRealFileName) {
         if ([ame269_javaArgs isKindOfClass:[NSString class]] && ame269_javaArgs.length > 0) ame269_prof[@"javaArgs"] = ame269_javaArgs;
         NSString *ame269_serverIp = modpackInfo[@"joinServerAddress"];
         if ([ame269_serverIp isKindOfClass:[NSString class]] && ame269_serverIp.length > 0) ame269_prof[@"serverIp"] = ame269_serverIp;
-        PLProfiles.current.profiles[ame269_reuse] = ame269_prof;
-        [PLProfiles.current save];
+        // ★ Task275 F6：裸写活字典改走锁内变更 API（后台导入线程 vs 主线程
+        //   写者结构竞态收口；save 随 API 内部落盘，不再两段式）。
+        [PLProfiles.current applyChanges:^(NSMutableDictionary<NSString *, id> *ame275_profiles) {
+            ame275_profiles[ame269_reuse] = ame269_prof;
+        }];
         NSLog(@"[ModpackImport] Task269: profile \"%@\" updated in place (one instance one folder)", ame269_reuse);
         return ame269_reuse;
     }
@@ -3019,8 +3044,10 @@ if (hasRealFileName) {
         profile[@"launchArguments"] = launchArguments;
     }
 
-    PLProfiles.current.profiles[profileName] = profile;
-    [PLProfiles.current save];
+    // ★ Task275 F6：裸写活字典改走锁内变更 API（同上）。
+    [PLProfiles.current applyChanges:^(NSMutableDictionary<NSString *, id> *ame275_profiles) {
+        ame275_profiles[profileName] = profile;
+    }];
 
     return profileName;
 }
@@ -3519,16 +3546,19 @@ if (hasRealFileName) {
     if (profileName) {
         // Task269-r3：删除的若是选中实例 → 重指剩余首个实例（setter 自带 save+广播），
         // 杜绝 selectedProfile 悬挂死名 → 管理页跟随扫共享目录/启动链读死 profile（review-b H5）。
+        // ★ Task275 F6：活字典裸写收口锁内变更 API（后台导入线程竞态）。
         BOOL ame269_wasSelected = [profileName isEqualToString:PLProfiles.current.selectedProfileName];
-        [PLProfiles.current.profiles removeObjectForKey:profileName];
+        __block NSString *ame269_next = nil;
+        [PLProfiles.current applyChanges:^(NSMutableDictionary<NSString *, id> *ame275_profiles) {
+            [ame275_profiles removeObjectForKey:profileName];
+            if (ame269_wasSelected) {
+                ame269_next = [(NSArray<NSString *> *)[ame275_profiles allKeys] firstObject];
+            }
+        }];
         if (ame269_wasSelected) {
-            NSArray<NSString *> *ame269_rest = [PLProfiles.current.profiles allKeys];
-            NSString *ame269_next = ame269_rest.firstObject;
             NSLog(@"[ModpackImport] Task269-r3: deleted profile was selected -> repoint to %@",
                   ame269_next ?: @"(nil)");
             PLProfiles.current.selectedProfileName = ame269_next;
-        } else {
-            [PLProfiles.current save];
         }
     }
 

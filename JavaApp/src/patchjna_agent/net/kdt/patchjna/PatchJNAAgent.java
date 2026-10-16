@@ -23,9 +23,20 @@ public class PatchJNAAgent implements ClassFileTransformer {
                     System.err.println("PatchJNAAgent: Platform.class.patch not found, using original bytecode");
                     return classfileBuffer;
                 }
-                byte[] patchedByteCode = new byte[inputStream.available()];
-                DataInputStream dataInputStream = new DataInputStream(inputStream);
-                dataInputStream.readFully(patchedByteCode);
+                // ★ Task275 J-P1-1：available() 定长 + readFully = 短读静默截断类字节码
+                //   （readFully 只保证读满给定数组，available 少报时补丁残缺且无任何
+                //   日志——PatchSVC 274 已根治同款，本 agent 漏平移）。改全量读至 EOF。
+                java.io.ByteArrayOutputStream ame275_buf = new java.io.ByteArrayOutputStream();
+                byte[] ame275_chunk = new byte[8192];
+                int ame275_n;
+                while ((ame275_n = inputStream.read(ame275_chunk)) != -1) {
+                    ame275_buf.write(ame275_chunk, 0, ame275_n);
+                }
+                byte[] patchedByteCode = ame275_buf.toByteArray();
+                if (patchedByteCode.length == 0) {
+                    System.err.println("PatchJNAAgent: Platform.class.patch is empty, using original bytecode");
+                    return classfileBuffer;
+                }
                 transformeredByteCode = patchedByteCode;
             } catch (Exception e) {
                 e.printStackTrace();

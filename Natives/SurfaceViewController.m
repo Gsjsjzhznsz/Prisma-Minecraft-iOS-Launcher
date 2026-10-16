@@ -555,7 +555,12 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
         // 必须先检查 weakSelf 本身是否为 nil。
         while (weakSelf && weakSelf.touchControllerTransportHandle >= 0 && ![weakSelf isViewDismissed]) {
             @autoreleasepool {
-                NSMutableData *buffer = [NSMutableData dataWithLength:256];
+                // ★ Task275（E-P1-1）：预填 256 零字节 + 桥接层 appendBytes（Task134
+                //   新契约）+ setLength:result 截断保留前缀 = 真实 payload 永远落在
+                //   截断线之后，mod→launcher 消息（VIBRATE/KEYBOARD_SHOW/INITIALIZE
+                //   能力协商）全部被读成全零 type=0 丢弃（静态库通道激活即爆发）。
+                //   改空缓冲，append 语义成立。
+                NSMutableData *buffer = [NSMutableData data];
                 int result = [TouchControllerBridge receiveFromTransport:weakSelf.touchControllerTransportHandle buffer:buffer];
 
                 if (result > 0) {

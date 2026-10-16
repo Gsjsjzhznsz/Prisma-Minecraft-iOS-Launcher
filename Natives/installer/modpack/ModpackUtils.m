@@ -12,6 +12,13 @@
             return;
         }
         NSString *fileName = [fileInfo.filename substringFromIndex:dir.length+1];
+        // ★ Task275 F4：zip-slip 净化（overrides/client-overrides 提取共用本入口）
+        NSString *ame275_safe = AME275SafeRelativePath(fileName);
+        if (!ame275_safe) {
+            NSLog(@"[ModpackUtils] Task275 F4: archive entry with unsafe path skipped: %@", fileInfo.filename);
+            return;
+        }
+        fileName = ame275_safe;
         NSString *destItemPath = [path stringByAppendingPathComponent:fileName];
         NSString *destDirPath = fileInfo.isDirectory ? destItemPath : destItemPath.stringByDeletingLastPathComponent;
         BOOL createdDir = [NSFileManager.defaultManager createDirectoryAtPath:destDirPath

@@ -3398,3 +3398,41 @@ Work Log:
 Stage Summary:
 - 门禁全绿：task139 all balanced / task240 全绿 / task191 54 表 OK（zh 3071 entries==unique）/ task248 缺键0硬编码0 / task250 全零 / verify269 28/28 / verify255 全绿 / verify219 81/81
 - 装机锚点：①依赖冲突崩溃→PLCrashView 当场呈现且下次启动不重弹（报告已归档）②四资源页（着色器/资源包/数据包/世界）跟随当前选中实例不再看共享根③localize 切语言即时生效④CF 大包安装不再逐文件死等 25s⑤English 界面 AI 修复文案语法正常⑥ECJ A/B 基线零新增错误
+
+---
+Task ID: 275 (review phase)
+Agent: main (Super Z) + 6 Explore subagents (275-a..f)
+Task: 第四轮全面更仔细审查（用户指令：继续多子代理全面审查+6.5.5 转 Beta 预发布）
+
+Work Log:
+- v6.5.5 release 已转预发布 Beta（prerelease=true，标题 Prisma 6.5.5 Beta（预发布），正文加横幅，资产保留）
+- 275-a..f 六路并行只读审查：a=原生核心回归+效率 b=UI 玻璃生命周期 c=服务层隔离矩阵 d=Java 二轮 e=未审区域首审（authenticator/AI/terracotta/ZeroTier/TouchController/website/Makefile/entitlements）f=i18n 全 54 表机器审计
+- 发现汇总：P0×1（四资源服务扫描共享根兜底=F1）、P1×13（玻璃镜像 dismiss 断链 10 调用点/PLCrashView 主线程整读/Ame237 8Hz 泄漏/input_bridge 事件计数竞态/main.m 日志线程无池/PatchJNAAgent available 截断/Tools.write 非原子/TouchController 256 零缓冲/TerracottaBridge NUL 越界/ControllerInput keycode 未初始化/ZeroTier 探测竞态/PatchJNAAgent/隔离矩阵 Shader 嗅探漏网）
+- 效率热点：main.m 每 2KB chunk fsync、ame225 每次启动全量 assets index、GLFW 每帧 iterator、AI 工具主线程同步
+- i18n：54 表语法 100% 健康、零 CJK 真泄漏；崩溃面 2 条（ar/fil jitstreamer_server 游离 %@）；46 长尾表覆盖率 8.5-15.9%（按回退链设计，列为分批后续）
+
+---
+Task ID: 275
+Agent: main (Super Z) + 6 Explore subagents (275-a..f)
+Task: 第四轮全面更仔细审查 + 批量根修（用户指令：没让你正式发布6.5.5先转预发布Beta，然后再重新进行全面更仔细的审查）
+
+Work Log:
+- v6.5.5 release 转 Beta 预发布（prerelease=true + 标题/正文横幅，tag/资产不动）
+- 275-a..f 六路只读审查（原生核心回归+效率 / UI 玻璃生命周期 / 服务层隔离矩阵 / Java 二轮 / 未审区域首审 / i18n 全 54 表机器审计）：P0×1 + P1×13 + P2×20 + P3×25+
+- 本轮修复清单（46 文件）：
+  【P0 F1 隔离矩阵】Shader/RP/DP/World 四资源服务扫描路径"隔离目录缺失→共享根兜底"根修（ame219 ensure-first 语义平移，mods 已修四类漏网=跨实例串目录病史同构）；F2 ShaderService 补 Task225 嗅探（五服务唯一漏网家）；F7 四服务下载入口死名回落 selected（Task269 平移）；F8 隔离迁移/搬回加闭集外兜底清扫（Task226 leftovers 模式，journeymap 类 mod 数据随迁，拒绝清单护住 custom_gamedir/modrinth_* 实例容器）
+  【P1 UI 玻璃】P1-b1 玻璃镜像 dismiss 断链根修（dismissViewControllerAnimated 钩子+ame247_findMirrorForAlert 改道 ame247_dismissMirroredAlert——Task237 只接管 present 的系统性欠账，RightPanel JIT 等待四路/WorldsManager 导入队列/DataTransfer/BingWallpaper 等 10 处调用点一次性接通）；P1-b2 PLCrashView 分析读改 256KB 尾窗（主线程整读数 MB 可击穿 Task273 8s 让路窗）；P1-b3 Ame237 8Hz displayLink 离窗自停（外部 dismiss 泄漏 VC+runloop 源）
+  【P1 服务/并发】F3 DataTransfer Task232 自动切实例补 PLProfiles updateCurrent+双通知（旧实例注册表覆写新实例根修）；F6 PLProfiles 新增 applyChanges 锁内变更 API+ModpackImport 三处裸写收口+ame271 自愈 import-busy 让路
+  【P1 原生核心】P1-a1 main.m 日志线程 @autoreleasepool（Task 2-a 遗留，长会话数百 MB 泄漏）；P1-a2 input_bridge 事件队列 RMW 竞态根修（生产者 fetch_add+泵陈旧 counter 回写退役）
+  【P1 Java/外设】J-P1-1 PatchJNAAgent available() 截断根修（全量读）；J-P1-2 Tools.write 原子写 tmp+rename（options.txt 撕裂档）；E-P1-1 TouchController 256 零预填缓冲根修（mod 消息全零丢弃）；E-P1-2 TerracottaBridge NUL 扫描 256 上限（堆越界读）；E-P1-3 ControllerInput keycode 初值（UB）；E-P1-4 ZeroTier 探测 dispatch_once（永久缓存不可用）
+  【P1 认证】E-P2-11 MS 认证器 keychain 丢失不再报成功（callback NO，杜绝无 token 启动）
+  【P2 批】F4 整合包路径穿越单点净化 AME275SafeRelativePath（plainzip/mmc 条目+CF fileName+Modrinth 绝对路径，utils 单点）；F5 JavaLauncher 绝对路径 gameDir 嵌套拼接根修；P2-a3 headless JIT 双裸循环有界等待（120s+优雅失败）；P2-a4 fatalExitGroup nil-leave/over-leave 守卫；P2-a5 fatal trace snprintf 钳制；P2-b4 PLCrashView 查看完整日志先收页再切换；P2-b5 SceneDelegate L3 宿主现取+呈现成功后才归档；E-P2-5 TerracottaManager join 代际令牌；E-P2-6 AI 错误正文 rawErrorBody（401/限流原因可见）；E-P2-7 AI providers.json 迁出文件 App 可见区（apiKey 加固+自动迁移）；E-P2-8 AI 文件工具后台队列
+  【P3 批】J-P2-4 version logging 判空；J-P2-3 版本解析前导数字（26.4-snapshot/1.20-pre6 走对分支）；J-P3-6 扩展名精确匹配；J-P3-7 Vulkan calloc free；J-P3-8 每帧 iterator→keyAt；J-P3-9 账户空 JSON 壳；J-P3-10 MCOptionUtils 懒加载统一；E-P3-12 头像落地广播×3；E-P3-13 玩家列表变化补通知；E-P3-14 os_log 子系统统一 prisma；E-P3-18 uuid/响应形状守卫×3；P3-a9 clock()→墙钟；P3-a11 pipe() 检查；P3-b8 跨实例横幅自适应高度；P3-b10 cell formatter static 化；P3-b9 崩溃归档保留 5 份
+  【基建/发布】Makefile deploy 两处旧包名 prisma 化；entitlements.codesign.xml 对齐生成模板（prisma 包名+统一 team 前缀）；workflow temurin||true 摘除（CRLF 字节级保形）；i18n：ar/fil jitstreamer_server 游离 %@/错植修复+de 重复键清理+tr 裸换行合并+3 新键 54 表（download.modpack.retry_failed/download.empty_data/common.unknown_error，14 主要语言实译+长尾英文回退值）+代码侧 4 处硬编码接线
+- 误报澄清：main_hook "ain_hook]" 系显示层吞字第五例（od -c 实证 [main_hook] 完好，未改）；ContainerHelpers arrayid] 同前例
+- 判定记录：launchJVM/Headless 双胞胎抽取、J 死码删除、46 长尾表全量翻译、website 版本常量收敛列下轮（改动面/风险比本轮大）
+- 门禁：task139 all balanced；task191 54 表 OK（zh 3074）；task248 缺键0硬编码0动态键0；task250 全零；task240 OK；verify269 28/28；verify255 PASS；YAML safe_load OK；Makefile 前导 TAB 零
+
+Stage Summary:
+- 107 文件批量根修（P0×1+P1×13+P2×12+P3×17+i18n/基建 4）推送 main，CI 轮询中；v6.5.5 Beta 资产待 CI 绿后静默替换
+- 装机验证锚点：①新隔离实例四资源管理页（光影/资源包/数据包/世界）显示空列表而非隔壁实例内容②玻璃档下 JIT 等待弹窗成功后自动消失（不再幽灵滞留）③崩溃大日志时崩溃界面 8s 内可呈现④AI 报错显示服务端真实原因（401/限流文案）⑤整合包恶意路径条目被跳过日志 [ModpackImport] Task275 F4⑥journeymap 类数据随隔离迁移（Task275 F8 sweep 日志）

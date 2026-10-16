@@ -122,8 +122,7 @@
 "preference.title.debug_logging" = "Hata ayıklama kaydı tutma";
 "preference.detail.debug_logging" = "İç seçenekleri ve eylemleri latestlog.txt'ye kaydeder. Bu geliştiricilerin sorunu daha kolay bulmasını sağlar, fakat çok sık kayıt edileceği için Minecraft daha yavaş çalışabilir.";
 "preference.title.jitstreamer_server" = "JitStreamer sunucu IP'si";
-"preference.detail.jitstreamer_server" = "Özel bir Jit Streamer suncu IP'sine geçmenizi sağlar, kendi kendini barındıran kurulumlar için gibi.
-Bu seçenek varsayılan JitStreamer sunucusunu kullanıyorsanız olduğu gibi bırakılabilir.";
+"preference.detail.jitstreamer_server" = "Özel bir Jit Streamer suncu IP'sine geçmenizi sağlar, kendi kendini barındıran kurulumlar için gibi. Bu seçenek varsayılan JitStreamer sunucusunu kullanıyorsanız olduğu gibi bırakılabilir.";
 "preference.title.appicon" = "Uygulama simgesini ayarla";
 "preference.detail.appicon" = "Prisma için farklı Ana Ekran simgeleri arasında seçim yapmanızı sağlar.";
 "preference.title.appicon-default" = "Göze aşina Prisma açık";
@@ -456,3 +455,8 @@ Bu seçenek varsayılan JitStreamer sunucusunu kullanıyorsanız olduğu gibi b�
 "ame273.crash.title" = "Previous game exited unexpectedly";
 "ame273.crash.copy_reason" = "Copy reason";
 "ame273.crash.view_full_log" = "View full log";
+
+// ★ Task275: modpack download i18n (14 主要语言实译 + 长尾英文回退值)
+"download.modpack.retry_failed" = "Modpack download failed (retried %ld times): %@";
+"download.empty_data" = "Download returned empty data";
+"common.unknown_error" = "Unknown error";

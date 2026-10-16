@@ -104,29 +104,31 @@ static void zeroTierEventCallback(void *msgPtr) {
 /// 首次调用通过 zts_node_start() 返回值检测：ZTS_ERR_OK 为真实 framework，
 /// ZTS_ERR_SERVICE 为 stub。检测后清理状态并缓存结果。
 - (BOOL)isFrameworkAvailable {
-    [_lock lock];
-    BOOL cached = _frameworkChecked;
-    BOOL available = _frameworkAvailable;
-    [_lock unlock];
-    if (cached) return available;
-
-    int result = zts_node_start();
-    BOOL frameworkAvailable = (result == ZTS_ERR_OK);
-    if (frameworkAvailable) {
-        // 真实 framework，清理启动的节点
-        zts_node_stop();
-        NSTimeInterval deadline = [NSDate timeIntervalSinceReferenceDate] + 2.0;
-        while (zts_node_is_online() == 1 && [NSDate timeIntervalSinceReferenceDate] < deadline) {
-            [NSThread sleepForTimeInterval:0.05];
+    // ★ Task275（E-P1-4）：探测体 dispatch_once 串行化——原探测无互斥（锁只护
+    //   缓存标志），两次并发调用（Multiplayer connect 流跑在 global 并发队列，
+    //   快速重试/房主+访客双入口可达）时后到者 zts_node_start 返回非 OK，
+    //   frameworkAvailable=NO 被永久缓存，本进程终身不可用。
+    static dispatch_once_t ame275_onceToken;
+    static BOOL ame275_available = NO;
+    dispatch_once(&ame275_onceToken, ^{
+        int result = zts_node_start();
+        BOOL frameworkAvailable = (result == ZTS_ERR_OK);
+        if (frameworkAvailable) {
+            // 真实 framework，清理启动的节点
+            zts_node_stop();
+            NSTimeInterval deadline = [NSDate timeIntervalSinceReferenceDate] + 2.0;
+            while (zts_node_is_online() == 1 && [NSDate timeIntervalSinceReferenceDate] < deadline) {
+                [NSThread sleepForTimeInterval:0.05];
+            }
         }
-    }
-    NSLog(@"[ZeroTierBridge] framework check: zts_node_start()=%d, available=%@", result, frameworkAvailable ? @"YES" : @"NO");
-
-    [_lock lock];
-    _frameworkAvailable = frameworkAvailable;
-    _frameworkChecked = YES;
-    [_lock unlock];
-    return frameworkAvailable;
+        NSLog(@"[ZeroTierBridge] framework check: zts_node_start()=%d, available=%@", result, frameworkAvailable ? @"YES" : @"NO");
+        ame275_available = frameworkAvailable;
+        [_lock lock];
+        _frameworkAvailable = frameworkAvailable;
+        _frameworkChecked = YES;
+        [_lock unlock];
+    });
+    return ame275_available;
 }
 
 #pragma mark - 节点管理

@@ -182,11 +182,18 @@ static void terracottaCallWithOptionalCString(NSString *s, void (^body)(const ch
         size_t totalLen = 0;
         char *cursor = raw;
         int nulCount = 0;
-        while (nulCount < 3) {
+        // ★ Task275（E-P1-2）：无界 NUL 扫描加硬上限——Rust 侧返回串不足 3 个 NUL
+        //   （版本字段缺失/异常/老版本库）时指针扫过缓冲区末尾 = 堆越界读，
+        //   totalLen 随之膨胀、后续 bytes[i] 同样越界。
+        while (nulCount < 3 && totalLen < 256) {
             char ch = *cursor;
             totalLen += 1;
             if (ch == 0) nulCount += 1;
             cursor += 1;
+        }
+        if (nulCount < 3) {
+            NSLog(@"[TerracottaBridge] Task275: metadata has <3 NUL separators within 256 bytes -- treating as invalid");
+            return nil;
         }
         /* 按 \0 切分 */
         NSMutableArray<NSString *> *segments = [NSMutableArray array];

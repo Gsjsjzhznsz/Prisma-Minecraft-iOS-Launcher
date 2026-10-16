@@ -3132,3 +3132,8 @@
 "ame273.crash.title" = "La sessione di gioco precedente è terminata in modo anomalo";
 "ame273.crash.copy_reason" = "Copia la causa";
 "ame273.crash.view_full_log" = "Visualizza log completo";
+
+// ★ Task275: modpack download i18n (14 主要语言实译 + 长尾英文回退值)
+"download.modpack.retry_failed" = "Download del modpack non riuscito (%ld tentativi): %@";
+"download.empty_data" = "Il download ha restituito dati vuoti";
+"common.unknown_error" = "Errore sconosciuto";

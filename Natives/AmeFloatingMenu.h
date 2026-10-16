@@ -118,6 +118,12 @@ NS_ASSUME_NONNULL_BEGIN
                                  animated:(BOOL)flag
                                completion:(nullable void (^)(void))completion;
 
+/// Task275（P1-b1）：dismiss 侧镜像改道钩子（与 present 配对，安装于
+/// UIKit+hook.m）——玻璃档下源 alert 上的 dismiss 打在从未上屏的对象上，
+/// 命中在屏镜像时改道 ame247_dismissMirroredAlert，其余零开销直透。
+- (BOOL)ame237_hook_dismissViewControllerAnimated:(BOOL)flag
+                                        completion:(nullable void (^)(void))completion;
+
 @end
 
 NS_ASSUME_NONNULL_END

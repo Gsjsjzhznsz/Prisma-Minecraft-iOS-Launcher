@@ -1260,3 +1260,23 @@ NSString *AMEIconCachePathForURL(NSString *urlString, NSString *subfolder) {
     }
     return [folder stringByAppendingPathComponent:hex];
 }
+
+// ★ Task275 F4：整合包内相对路径单点净化（zip-slip/绝对路径逃逸）。
+// 恶意整合包可用 ".." 段/绝对路径条目借 stringByAppendingPathComponent 的
+// 绝对路径替换语义逃逸 gameDir 写任意容器路径（含隔壁实例的 mods/config
+// ——隔离边界被整合包击穿）。Task274 S12 只堵了 .mrpack files[].path 的
+// ".."，plainzip/mmc 条目、CF manifest fileName、Modrinth 绝对路径三入口
+// 在本函数收敛。
+NSString *AME275SafeRelativePath(NSString *rel) {
+    if (![rel isKindOfClass:[NSString class]] || rel.length == 0) return nil;
+    if ([rel hasPrefix:@"/"]) return nil;                               // 绝对路径条目
+    if ([rel rangeOfString:@"\\"].location != NSNotFound) return nil;   // Windows 分隔符
+    NSMutableArray<NSString *> *ame275_comps = [NSMutableArray array];
+    for (NSString *ame275_comp in [rel pathComponents]) {
+        if (ame275_comp.length == 0 || [ame275_comp isEqualToString:@"."]) continue;
+        if ([ame275_comp isEqualToString:@".."]) return nil;            // 父级穿越
+        [ame275_comps addObject:ame275_comp];
+    }
+    if (ame275_comps.count == 0) return nil;
+    return [ame275_comps componentsJoinedByString:@"/"];
+}

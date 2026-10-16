@@ -217,9 +217,14 @@ void init_redirectStdio() {
 
     /* create the pipe and redirect stdout and stderr */
     static int pfd[2];
-    pipe(pfd);
+    // ★ Task275（P3-a11）：pipe() 失败不再静默——原失败后 dup2(-1) 使整条日志链
+    //   瘫痪且无任何痕迹。
+    if (pipe(pfd) != 0) {
+        NSLog(@"[Pre-init] pipe() failed (errno=%d) -- stdout/stderr stay console-only", errno);
+    } else {
     dup2(pfd[1], fileno(stdout));
     dup2(pfd[1], fileno(stderr));
+    }
 
     /* create the logging thread */
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -236,6 +241,11 @@ void init_redirectStdio() {
                 rsize = read(pfd[0], buf, sizeof(buf)-1);
             } while (rsize < 0 && errno == EINTR);
             if (rsize <= 0) break;
+            // ★ Task275（P1-a1）：每次迭代包 @autoreleasepool——原无限循环体跑在 GCD
+            //   为单个 block 建的唯一 pool 里，每条日志 chunk 的临时 ObjC 对象
+            //   （NSString/NSArray/NSData/userInfo 字典）全进程生命周期单调堆积永不
+            //   drain，MC 加载期日志速率高，长会话可泄漏数百 MB（Task 2-a 遗留）。
+            @autoreleasepool {
             @try {
             if (rsize < 2048) {
                 buf[rsize] = '\0';
@@ -290,12 +300,24 @@ void init_redirectStdio() {
                 }
             }
             [file writeData:[NSData dataWithBytes:buf length:rsize]];
-            [file synchronizeFile];
+            // ★ Task275（效率·fsync 风暴）：原每 ≤2KB chunk 一次 synchronizeFile（逐块
+            //   fsync 级刷盘），JVM 启动/shaderc 编译风暴期每秒数百次同步 I/O。改 8s
+            //   节流（closeFile 前补一次终刷，不丢尾）。
+            {
+                static CFAbsoluteTime ame275_lastSync = 0;
+                CFAbsoluteTime ame275_now = CFAbsoluteTimeGetCurrent();
+                if (ame275_now - ame275_lastSync > 8.0) {
+                    [file synchronizeFile];
+                    ame275_lastSync = ame275_now;
+                }
+            }
             } @catch (NSException *e) {
                 // 读取线程绝不能因单次异常死亡：死亡 = 后续日志全部丢失（Task 26 教训）
                 NSLog(@"[Pre-init] latestlog reader exception: %@", e);
             }
+            }
         }
+        [file synchronizeFile];
         [file closeFile];
     });
 

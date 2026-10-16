@@ -125,7 +125,15 @@ static PLLogOutputView* current;
 - (void)actionToggleLogOutput {
     if (fatalErrorOccurred) {
         [UIApplication.sharedApplication performSelector:@selector(suspend)];
-        dispatch_group_leave(fatalExitGroup);
+        // ★ Task275（P2-a4）：fatalExitGroup 守卫 + 一次性清账——fatalErrorOccurred
+        //   可由 handleExitCode:1 置位（不经过 handle_fatal_exit，group 从未
+        //   create/enter），此时 leave(nil) 崩溃；且 leave 后不清零 = 猜测窗口内
+        //   二次触发（再点 X/再走 Navigation/AppDelegate 路径）over-leave 崩溃。
+        //   口径对齐 AppDelegate.m 的 nil 化收尾。
+        if (fatalExitGroup != nil) {
+            dispatch_group_leave(fatalExitGroup);
+            fatalExitGroup = nil;
+        }
         return;
     }
 
@@ -145,6 +153,7 @@ static PLLogOutputView* current;
     if (fatalErrorOccurred && fatalExitGroup != nil) {
         [UIApplication.sharedApplication performSelector:@selector(suspend)];
         dispatch_group_leave(fatalExitGroup);
+        fatalExitGroup = nil;   // ★ Task275（P2-a4）：一次性清账防 over-leave
     }
 }
 

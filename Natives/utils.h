@@ -532,6 +532,12 @@ double ame187_iphoneNotchInset(UIView *view, BOOL isLeading);
 BOOL ame188_ensureDirectoryHealed(NSString *path);
 NSString *AMEIconCachePathForURL(NSString *urlString, NSString *subfolder);
 
+// ★ Task275 F4：整合包内相对路径单点净化（zip-slip/绝对路径逃逸）。
+// 返回 nil = 不安全（".." 段 / 绝对路径 / 反斜杠分隔 / 清洗后为空），
+// 调用方跳过该条目或回退安全名。iOS 沙盒挡不住容器内写，恶意 zip 条目
+// 可借 stringByAppendingPathComponent 的绝对路径替换语义跨实例覆写 mods/config。
+NSString *AME275SafeRelativePath(NSString *rel);
+
 
 #ifdef __cplusplus
 }

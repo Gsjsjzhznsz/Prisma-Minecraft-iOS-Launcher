@@ -28,6 +28,10 @@ static BOOL g_ame256_terraLibInitialized = NO;
 @property(nonatomic, assign) uint16_t currentPort;
 @property(nonatomic, copy, nullable) NSString *stageDescription;
 @property(nonatomic, copy, nullable) NSArray<TerracottaPlayerProfile *> *players;
+// ★ Task275（E-P2-5）：加入代际令牌——预检窗（最长 ~6s）内用户 stopSession/
+// 重复加入时，预检完成回调无条件 setGuesting+startPolling = 会话“复活”/
+// 双 guest 流程互踩（PortForwarder _acceptGeneration 同款模式）。
+@property(nonatomic, assign) NSInteger ame275_joinGeneration;
 @property(nonatomic, copy, nullable) NSString *directConnectURL;
 @property(nonatomic, copy, nullable) NSString *lastError;
 @property(nonatomic, assign) BOOL initialized;
@@ -157,6 +161,9 @@ static BOOL g_ame256_terraLibInitialized = NO;
     self.status = TerracottaStatusConnecting;
     self.stageDescription = localize(@"terracotta.stage.precheck", nil);
     self.lastError = nil;
+    // ★ Task275（E-P2-5）：新 join 递增代际，预检回调快照比对（见下方回调头）。
+    self.ame275_joinGeneration++;
+    NSInteger ame275_gen = self.ame275_joinGeneration;
 
     [[SilentAudioPlayer shared] startKeepingAlive];
 
@@ -254,6 +261,12 @@ static BOOL g_ame256_terraLibInitialized = NO;
         }
         dispatch_group_wait(g, DISPATCH_TIME_FOREVER);
         dispatch_async(dispatch_get_main_queue(), ^{
+            // ★ Task275（E-P2-5）：代际失效即退出（stopSession/新 join 已使本轮回调作废）
+            if (ame275_gen != self.ame275_joinGeneration) {
+                NSLog(@"[Terracotta] Task275: join precheck callback stale (gen %ld != %ld) -- dropped",
+                      (long)ame275_gen, (long)self.ame275_joinGeneration);
+                return;
+            }
             if (!anyReachable) {
                 self.status = TerracottaStatusError;
                 self.lastError = localize(@"terracotta.error.no_public_peer", nil);
@@ -283,6 +296,7 @@ static BOOL g_ame256_terraLibInitialized = NO;
     /* ★ Task256：用户主动停会话 = 撤销在飞的自动重试（4s 延迟窗内
        点停止的竞态面）。 */
     _guestRetryArmed = NO;
+    self.ame275_joinGeneration++;   // ★ Task275（E-P2-5）：在飞预检回调作废
     [TerracottaBridge setWaiting];
     [self stopPolling];
     [[SilentAudioPlayer shared] stopKeepingAlive];
@@ -341,7 +355,14 @@ static BOOL g_ame256_terraLibInitialized = NO;
 - (void)applyState:(TerracottaState *)state {
     if (state.kind == _lastStateKind && state.index == _lastStateIndex) {
         /* 状态没变，但玩家列表可能变化（新玩家加入），仍更新 */
-        if (state.profiles != nil) self.players = state.profiles;
+        // ★ Task275（E-P3-13）：dedup 分支更新 players 后直接 return 无任何通知，
+        //   Rust 侧 index 不随 roster 变化时 UI 列表滞留。内容有变才补发通知
+        //   （幂等去抖：内容相同不打扰）。
+        if (state.profiles != nil) {
+            BOOL ame275_changed = ![state.profiles isEqualToArray:self.players];
+            self.players = state.profiles;
+            if (ame275_changed) [self notifyStateChanged];
+        }
         return;
     }
     _lastStateKind = state.kind;

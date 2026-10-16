@@ -602,10 +602,6 @@ static void ame274_presentAfterSettling(UIViewController *presenter, UIViewContr
             else if ([k isEqualToString:@"fix"]) fix = v;
         }
 
-        // ---- 呈现前即归档（防重复打扰；完整报告仍可经复制按钮获取） ----
-        NSString *archive = [home stringByAppendingPathComponent:@"ame273_crash_report.last.txt"];
-        [[NSFileManager defaultManager] removeItemAtPath:archive error:nil];
-        [[NSFileManager defaultManager] moveItemAtPath:path toPath:archive error:nil];
 
         // ---- 组装弹窗文案 ----
         BOOL ame273_isZh = [[NSLocale preferredLanguages].firstObject.lowercaseString hasPrefix:@"zh"];
@@ -627,10 +623,9 @@ static void ame274_presentAfterSettling(UIViewController *presenter, UIViewContr
             }
         }
 
-        UIAlertController *ame273_alert = [UIAlertController
-            alertControllerWithTitle:localize(@"ame273.crash.title", nil)
-                             message:msg
-                      preferredStyle:UIAlertControllerStyleAlert];
+                // ★ Task275（P2-b5）：宿主现取锚——2.5s 延迟期间语言切换等会重建根，
+        // 快照宿主脱窗后 present 静默失败且报告已归档 = 补弹永久丢失。
+        __block UIViewController *ame273_anchor = nil;
         [ame273_alert addAction:[UIAlertAction actionWithTitle:localize(@"ame273.crash.copy_reason", nil)
             style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
             [UIPasteboard generalPasteboard].string = content;
@@ -642,7 +637,7 @@ static void ame274_presentAfterSettling(UIViewController *presenter, UIViewContr
             UIActivityViewController *ame273_share = [[UIActivityViewController alloc]
                 initWithActivityItems:@[logPath, [NSURL fileURLWithPath:logPath]]
                                 applicationActivities:nil];
-            ame273_share.popoverPresentationController.sourceView = presenter.view;
+            ame273_share.popoverPresentationController.sourceView = ame273_anchor.view;
             ame273_share.popoverPresentationController.sourceRect =
                 CGRectMake(presenter.view.bounds.size.width / 2.0,
                            presenter.view.bounds.size.height / 2.0, 1, 1);
@@ -651,18 +646,28 @@ static void ame274_presentAfterSettling(UIViewController *presenter, UIViewContr
             //   等 0.5s 收尾动画走完，再从稳定顶端呈现（ame274_presentAfterSettling）。
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)),
                            dispatch_get_main_queue(), ^{
-                ame274_presentAfterSettling(presenter, ame273_share, 1);
+                ame274_presentAfterSettling(ame273_anchor, ame273_share, 1);
             });
         }]];
         [ame273_alert addAction:[UIAlertAction actionWithTitle:localize(@"OK", nil)
             style:UIAlertActionStyleCancel handler:nil]];
 
-        // 呈现宿主沿链上溯（欢迎向导/其他弹层在顶时也能落位）
-        UIViewController *ame273_host = presenter;
-        while (ame273_host.presentedViewController != nil) {
+        // ★ Task275（P2-b5）：宿主现取（window.root 起步，沿链上溯跳过收尾中顶层）
+        UIViewController *ame273_host = self.window.rootViewController ?: presenter;
+        while (ame273_host.presentedViewController != nil &&
+               !ame273_host.presentedViewController.isBeingDismissed) {
             ame273_host = ame273_host.presentedViewController;
         }
+        ame273_anchor = ame273_host;
         [ame273_host presentViewController:ame273_alert animated:YES completion:nil];
+
+        // ★ Task275（P2-b5）：呈现成功后才归档——原"呈现前即归档"在宿主脱窗/
+        // 呈现失败时报告永久丢失；防重复打扰语义保留（失败下轮启动重试，
+        // 每轮至多一弹，非会话内无限打扰）。
+        NSString *ame275_archive = [[NSProcessInfo processInfo].environment[@"POJAV_HOME"]
+            stringByAppendingPathComponent:@"ame273_crash_report.last.txt"];
+        [[NSFileManager defaultManager] removeItemAtPath:ame275_archive error:nil];
+        [[NSFileManager defaultManager] moveItemAtPath:path toPath:ame275_archive error:nil];
         NSLog(@"[SceneDelegate] Task273: pending crash report surfaced (category=%@ exit=%@ details=%lu) -- consumed+archived",
               (catCn ?: catEn), exitCode, (unsigned long)details.count);
     } @catch (NSException *ame273_e) {

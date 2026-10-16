@@ -204,6 +204,12 @@
     [self refreshLocalList];
 }
 
+/// Task275（P2-b7）：选中实例变化实时跟随（钉定态除外）
+- (void)ame275_selectedProfileDidChange {
+    if (self.profileName.length > 0) return;   // 钉定：不跟随选中变化
+    [self refreshLocalList];
+}
+
 - (void)refreshLocalList {
     [self setLoading:YES];
     // ★ Task274-g（G1）：nil 直传服务层——ResourcePackService 已内置跟随选中实例语义
