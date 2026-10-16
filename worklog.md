@@ -3436,3 +3436,17 @@ Work Log:
 Stage Summary:
 - 107 文件批量根修（P0×1+P1×13+P2×12+P3×17+i18n/基建 4）推送 main，CI 轮询中；v6.5.5 Beta 资产待 CI 绿后静默替换
 - 装机验证锚点：①新隔离实例四资源管理页（光影/资源包/数据包/世界）显示空列表而非隔壁实例内容②玻璃档下 JIT 等待弹窗成功后自动消失（不再幽灵滞留）③崩溃大日志时崩溃界面 8s 内可呈现④AI 报错显示服务端真实原因（401/限流文案）⑤整合包恶意路径条目被跳过日志 [ModpackImport] Task275 F4⑥journeymap 类数据随隔离迁移（Task275 F8 sweep 日志）
+
+---
+Task ID: 275 (闭环)
+Agent: main (Super Z)
+Task: Task 275 CI 闭环 + v6.5.5 Beta 资产静默替换 + 交付通知
+
+Work Log:
+- run 38854749895 failure：SceneDelegate L3 补弹链 ame273_alert 声明行被自写补丁脚本误吞（P2-b5 锚点改造时正则 span 含原始声明，恢复脚本未回填）→ r1 dbc22bd 原样补回 UIAlertController 构造块；教训升级：正则替换脚本对『声明类锚点』保形回填必须核对恢复 span 是否含被匹配原始代码
+- run 38855985641（r1）一轮终绿；产物 ipa/tipa 235.8MB + dSYM 全在位
+- v6.5.5 Beta release 资产静默替换（同名保链，构建=dbc22bd；scripts/task275_release_assets.py：CI artifact curl 下载→解 zip→旧资产删除→uploads.github.com 字节体重传；Azure 跳转 auth 剥离走 curl -sSL）+ 正文构建锚追加
+- 交付通知：六组测试锚点已交用户（四资源页隔离空列表/玻璃 JIT 弹窗自动关/大日志崩溃界面/AI 真实报错/整合包穿越拦截/隔离迁移 sweep）
+
+Stage Summary:
+- Task 275 全链闭环：v6.5.5 Beta（prerelease）+ 六路审查 P0×1/P1×13/P2×12/P3×17 批量根修 107 文件 + CI 一轮终绿 + Beta 资产就绪待装机验证；遗留清单（launchJVM 拆分/Java 死码删除/46 长尾表全量翻译/website 版本收敛/ame225 缓存）逐项在案列下轮
