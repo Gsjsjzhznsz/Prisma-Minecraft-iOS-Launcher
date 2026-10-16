@@ -623,7 +623,11 @@ static void ame274_presentAfterSettling(UIViewController *presenter, UIViewContr
             }
         }
 
-                // ★ Task275（P2-b5）：宿主现取锚——2.5s 延迟期间语言切换等会重建根，
+        UIAlertController *ame273_alert = [UIAlertController
+            alertControllerWithTitle:localize(@"ame273.crash.title", nil)
+                             message:msg
+                      preferredStyle:UIAlertControllerStyleAlert];
+        // ★ Task275（P2-b5）：宿主现取锚——2.5s 延迟期间语言切换等会重建根，
         // 快照宿主脱窗后 present 静默失败且报告已归档 = 补弹永久丢失。
         __block UIViewController *ame273_anchor = nil;
         [ame273_alert addAction:[UIAlertAction actionWithTitle:localize(@"ame273.crash.copy_reason", nil)
