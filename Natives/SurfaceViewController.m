@@ -3152,11 +3152,26 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     // 所以从未暴露）。FSR 除法保持原位（Task78 锚点）。
     if (mgFsrScale > 0.0f) screenScale /= mgFsrScale;
     screenScale *= resolutionScale;
-    // ★ Task267：自由窗口 scale-mode——触点在小窗视图 pt 空间，先按
-    //   "整帧物理 / 视图"比例映射回整帧口径再走信念换算（MC 按 windowWidth
-    //   信念归一化，整帧口径不变）。全屏态因子恒 1.0 零变化。
-    CGFloat ame267_ax = ame267_freeformScaled ? (CGFloat)ame267_adaptiveScaleX : 1.0;
-    CGFloat ame267_ay = ame267_freeformScaled ? (CGFloat)ame267_adaptiveScaleY : 1.0;
+    // ★ Task267：自由窗口 scale-mode——触点在小窗视图 pt 空间，按
+    //   "整帧物理 / 视图"比例映射回整帧口径。
+    // ★ Task276（用户 2026-10-17："小窗依旧漂移"）双乘根修：
+    //   ame267_adaptiveScale 的定义 = "视图 pt → 整帧物理 px"【完整】因子
+    //   （physicalWidth = 整帧 surfaceView 宽 × 设备 screenScale，冻结守卫
+    //   保证小窗期保持全屏口径）——它本身已含设备物理尺度。小窗态必须
+    //   【替换】screenScale 的 pt→px 职责、只保留信念倍率（resScale/FSR）；
+    //   旧式 location×screenScale×ax 把设备倍率叠乘两次 = 触点输出放大
+    //   screenScale 倍（iPad 2.0）→ 光标/点击越靠右下偏得越多 = "小窗
+    //   依旧漂移"根因（远端 Task267 原版即带此疾，视觉重排正确但输入
+    //   恒偏）。全屏态两因子恒走 screenScale 原路零变化。
+    //   （热栏/直发 UI 命中路径 ame267_adaptedPoint 不受影响——那是
+    //   native 层整帧物理 px 口径的自洽几何，与 MC 信念换算无关。）
+    CGFloat ame267_outX = screenScale;
+    CGFloat ame267_outY = screenScale;
+    if (ame267_freeformScaled) {
+        CGFloat ame267_belief = (mgFsrScale > 0.0f) ? resolutionScale / mgFsrScale : resolutionScale;
+        ame267_outX = (CGFloat)ame267_adaptiveScaleX * ame267_belief;
+        ame267_outY = (CGFloat)ame267_adaptiveScaleY * ame267_belief;
+    }
     // Task202（议题 #1）：双指滚动手势进行中——光标移动抑制（虚拟/非虚拟
     // 鼠标同门；ACTION_DOWN/UP 不受影响，点击照常）。锚点照常推进：
     // 滚动结束后的首个 MOVE 不会把光标瞬移到旧锚点的反向 delta 上。
@@ -3179,13 +3194,13 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             lastVirtualMousePoint = location;
             self.mousePointerView.frame = virtualMouseFrame;
             CallbackBridge_nativeSendCursorPos(event,
-                virtualMouseFrame.origin.x * screenScale * ame267_ax,
-                virtualMouseFrame.origin.y * screenScale * ame267_ay);
+                virtualMouseFrame.origin.x * ame267_outX,
+                virtualMouseFrame.origin.y * ame267_outY);
             return;
         }
         lastVirtualMousePoint = location;
     }
-    CallbackBridge_nativeSendCursorPos(event, location.x * screenScale * ame267_ax, location.y * screenScale * ame267_ay);
+    CallbackBridge_nativeSendCursorPos(event, location.x * ame267_outX, location.y * ame267_outY);
 }
 
 #pragma mark - Input: on-surface functions

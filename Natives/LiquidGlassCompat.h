@@ -48,6 +48,9 @@ FOUNDATION_EXPORT NSNotificationName const LGCUIScaleChangedNotification;
 FOUNDATION_EXPORT NSNotificationName const LGCTextScaleChangedNotification;
 /// 文字动态反色开关变化广播（Task225 #12；object = NSNumber BOOL）
 FOUNDATION_EXPORT NSNotificationName const LGCTextContrastChangedNotification;
+/// ★ Task276：伪液态玻璃透明度变化广播（object = nil；在屏伪玻璃面板
+///   ——TG 玻璃填充/快照磨砂 tint——监听后即时重铺，滑条拖动即见效果）
+FOUNDATION_EXPORT NSNotificationName const LGCPseudoGlassTransparencyChangedNotification;
 
 /// 判断当前系统是否支持液态玻璃（iOS 26+）
 FOUNDATION_EXPORT BOOL LGCIsLiquidGlassAvailable(void);

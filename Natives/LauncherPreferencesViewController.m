@@ -836,12 +836,14 @@ if ([section isEqualToString:@"general"]) {
     self.prefDetailVisible = self.navigationController == nil;
     
     self.prefSections = @[@"general", @"video", @"mobileglues", @"control", @"java", @"download", @"ai", @"debug"];
-    // ★ Task267（用户："设置界面设置项全部重新排序，解决新用户无法找到可以使用的功能"）：
-    //   分组默认【展开】——旧默认全折叠时新用户打开设置只看到 8 行组头，
-    //   完全不知道里面有什么（可发现性第一杀手）。展开后组头仍可点击
-    //   折叠（会话内记忆），搜索照常可用。组间/组内顺序同轮重排：
-    //   语言/外观 → 视频 → 渲染器 → 控制 → 内存与 Java → 下载源 → AI → 调试。
-    self.prefSectionsVisible = YES;
+    // ★ Task267：组间/组内顺序重排照旧保留（语言/外观 → 视频 → 渲染器 →
+    //   控制 → 内存与 Java → 下载源 → AI → 调试，组内高频行前置）。
+    // ★ Task276（用户 2026-10-17："能不能撤销 bf9753c 对设置展开的修改"）：
+    //   分组默认展开【撤销】——恢复旧默认全折叠（打开设置只见 8 行组头，
+    //   组头点按展开/折叠的会话内记忆与搜索自动展开语义均不受影响）。
+    //   bf9753c 的"新用户可发现性"收益让位于用户对折叠形态的既有习惯
+    //   （装机实感裁定）；重排与组名语义修正不回退。
+    self.prefSectionsVisible = NO;
 
 
     // Task224（#19）：「界面缩放」行右侧显示当前百分比。typeButton 基类
@@ -998,14 +1000,18 @@ if ([section isEqualToString:@"general"]) {
             //   百分比，默认 50 = 既有观感锚点）。消费面 = 伪玻璃渲染管线
             //   三处（TG .panel 填充 / 快照磨砂 tint 启动器+游戏内），呈现
             //   时即取即用；真液态玻璃档游戏内磨砂面板同享（Metal 域）。
+            // ★ Task276（"滑块无效"三连根修之三）：解除 whenNotInGame 灰禁
+            //   ——透明度写入零风险且经广播即时生效，游戏内（伪玻璃面板
+            //   最高频观察场景）恰恰最需要可调；同族滑条 ui_scale/text_scale
+            //   均无此限制。在屏面板由 LGC 广播驱动重铺（AmeLiquidGlassView
+            //   填充 / 快照 tint 双路监听）。
             @{@"key": @"pseudo_glass_transparency",
               @"title": localize(@"preference.title.pseudo_glass_transparency", nil),
               @"hasDetail": @YES,
               @"icon": @"drop.degreesign",
               @"type": self.typeSlider,
               @"min": @(0),
-              @"max": @(100),
-              @"enableCondition": whenNotInGame
+              @"max": @(100)
             },
             @{@"key": @"ui_scale",
               @"title": localize(@"preference.title.ui_scale", nil),

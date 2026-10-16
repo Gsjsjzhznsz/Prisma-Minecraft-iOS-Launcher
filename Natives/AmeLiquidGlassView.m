@@ -692,21 +692,17 @@ NSArray *AME252GlassFiltersInternal(void) {
 
     // TG .panel 填充（浅 white@0.70 / 深 11%white@0.85，generateLegacyGlassImage
     // .panel 分支值）——玻璃激活时面板可读性由它独立承载。
-    // ★ Task263（反馈 5：伪玻璃透明度设置项，iOS 27 式可调）：填充 alpha 按
-    //   LGCPseudoGlassTransparency() 线性映射——默认 0.5 精确回到既有锚点
-    //   （深 0.85 / 浅 0.70）；1.0 最透 / 0.0 最闷，两端不越可读性底座。
+    // ★ Task263（反馈 5）+ ★ Task276（"滑块无效"三连根修之一）：填充 alpha
+    //   按 LGCPseudoGlassTransparency() 映射——0.5 精确回既有锚点（深 0.85 /
+    //   浅 0.70）；梯度拉宽到 ±0.15/±0.20（0.0 最闷 = 深 1.00 实心板/浅 0.90；
+    //   1.0 最透 = 深 0.70/浅 0.50）——首轮 ±0.10/±0.20 梯度在毛玻璃观感上
+    //   不可分辨（装机实测拖满无感），拉宽后拖动即有明确反馈。构建与刷新
+    //   收敛到 ame263_applyFillTransparency（通知监听重铺 = 滑条拖动在屏
+    //   面板即时生效，无需关开面板）。
     _ame252_fillView = [[UIView alloc] initWithFrame:self.bounds];
     _ame252_fillView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _ame252_fillView.userInteractionEnabled = NO;
-    CGFloat ame263_t = LGCPseudoGlassTransparency();
-    CGFloat ame263_darkFillA = 0.95 - 0.20 * ame263_t;   // 0.75(最透)..0.95(最闷)，0.5→0.85
-    CGFloat ame263_lightFillA = 0.90 - 0.40 * ame263_t;  // 0.50..0.90，0.5→0.70
-    _ame252_fillView.backgroundColor = [UIColor colorWithDynamicProvider:
-        ^UIColor * (UITraitCollection *tc) {
-            return (tc.userInterfaceStyle == UIUserInterfaceStyleDark)
-                ? [UIColor colorWithWhite:0.11 alpha:ame263_darkFillA]
-                : [UIColor colorWithWhite:1.0 alpha:ame263_lightFillA];
-        }];
+    [self ame263_applyFillTransparency];
     [self addSubview:_ame252_fillView];
 
     _ame252_rimLayer = [CAShapeLayer layer];
@@ -716,7 +712,39 @@ NSArray *AME252GlassFiltersInternal(void) {
     _ame252_rimLayer.delegate = nil;
     [self.layer addSublayer:_ame252_rimLayer];
 
+    // ★ Task276：透明度变化监听（滑条拖动 → 在屏面板填充即时重铺）。
+    //   selector 形式不 retain observer，dealloc 退订成对。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame263TransparencyChanged:)
+                                                 name:LGCPseudoGlassTransparencyChangedNotification
+                                               object:nil];
+
     return self;
+}
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+/// ★ Task263 反馈 5 + Task276：TG .panel 填充 alpha 映射（梯度拉宽见 init
+///   注释；0.5 = Task244/252 锚点）。动态 provider 延迟求值 = 深浅色切换
+///   时也读最新透明度。
+- (void)ame263_applyFillTransparency {
+    _ame252_fillView.backgroundColor = [UIColor colorWithDynamicProvider:
+        ^UIColor * (UITraitCollection *tc) {
+            CGFloat ame263_t = LGCPseudoGlassTransparency();
+            BOOL ame263_dark = (tc.userInterfaceStyle == UIUserInterfaceStyleDark);
+            CGFloat ame263_a = ame263_dark
+                ? 0.85 - 0.30 * (ame263_t - 0.5)   // 1.00(最闷)..0.70(最透)，0.5→0.85
+                : 0.70 - 0.40 * (ame263_t - 0.5);  // 0.90..0.50，0.5→0.70
+            return ame263_dark
+                ? [UIColor colorWithWhite:0.11 alpha:ame263_a]
+                : [UIColor colorWithWhite:1.0 alpha:ame263_a];
+        }];
+}
+
+- (void)ame263TransparencyChanged:(NSNotification *)note {
+    [self ame263_applyFillTransparency];
 }
 
 - (void)setAme252_cornerRadius:(CGFloat)radius {

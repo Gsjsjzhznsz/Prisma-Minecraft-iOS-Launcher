@@ -206,17 +206,21 @@ static BOOL Ame244SnapshotLooksValid(UIImage *ame244_img) {
 /// ★ Task244：快照磨砂上的可读性 tint——快照不透明，panel 底色被它盖住
 ///   无法再压暗，压暗层必须浮在快照【之上】、内容之下。深色 = 黑 0.40
 ///   （暗玻璃）；浅色 = 白 0.42（奶白玻璃，labelColor 黑字可读）。
-///   ★ Task263（反馈 5：伪玻璃透明度设置项）：tint alpha 随
-///   LGCPseudoGlassTransparency() 线性映射——默认 0.5 精确回到既有
-///   锚点（深 0.40 / 浅 0.42）；1.0 最透 / 0.0 最闷。
+///   ★ Task263（反馈 5）：tint alpha 随 LGCPseudoGlassTransparency() 映射，
+///   0.5 精确回既有锚点（深 0.40 / 浅 0.42）；1.0 最透 / 0.0 最闷。
+///   ★ Task276（"滑块无效"三连根修之二）：梯度拉宽到 ±0.25/±0.275
+///   （0.0 最闷 = 深 0.65/浅 0.70；1.0 最透 = 深 0.15/浅 0.15）——首轮
+///   ±0.15/±0.20 梯度装机实测不可分辨；provider 内延迟求值（每次深浅
+///   色切换读最新值），在屏面板重铺由通知监听驱动（viewDidLoad 注册）。
 static UIColor *Ame244SnapshotTint(void) {
-    CGFloat ame263_t = LGCPseudoGlassTransparency();
-    CGFloat ame263_darkA = 0.55 - 0.30 * ame263_t;    // 0.25(最透)..0.55(最闷)，0.5→0.40
-    CGFloat ame263_lightA = 0.62 - 0.40 * ame263_t;   // 0.22..0.62，0.5→0.42
     return [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull tc) {
+        CGFloat ame263_t = LGCPseudoGlassTransparency();
+        CGFloat ame263_a = (tc.userInterfaceStyle == UIUserInterfaceStyleDark)
+            ? 0.40 - 0.50 * (ame263_t - 0.5)    // 0.65(最闷)..0.15(最透)，0.5→0.40
+            : 0.42 - 0.55 * (ame263_t - 0.5);   // 0.70..0.15，0.5→0.42
         return (tc.userInterfaceStyle == UIUserInterfaceStyleDark)
-            ? [UIColor colorWithWhite:0.0 alpha:ame263_darkA]
-            : [UIColor colorWithWhite:1.0 alpha:ame263_lightA];
+            ? [UIColor colorWithWhite:0.0 alpha:ame263_a]
+            : [UIColor colorWithWhite:1.0 alpha:ame263_a];
     }];
 }
 
@@ -487,6 +491,7 @@ static UIColor *Ame244SnapshotTint(void) {
             UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         ame244_tint.backgroundColor = Ame244SnapshotTint();
         ame244_tint.userInteractionEnabled = NO;
+        ame244_tint.tag = 244;   // ★ Task276：通知重铺定位锚（viewWithTag）
         [ame245_clip addSubview:ame244_tint];
 
         self.ame245_frostClip = ame245_clip;
@@ -637,6 +642,18 @@ static UIColor *Ame244SnapshotTint(void) {
                                              selector:@selector(ame237_keyboardWillHide:)
                                                  name:UIKeyboardWillHideNotification
                                                object:nil];
+    // ★ Task276：伪玻璃透明度变化 → 在屏面板快照 tint 即时重铺
+    //（TG 玻璃填充层由 AmeLiquidGlassView 自监听重铺，两路同源通知）。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame263TransparencyChanged:)
+                                                 name:LGCPseudoGlassTransparencyChangedNotification
+                                               object:nil];
+}
+
+/// ★ Task276：滑条拖动 → 在屏快照磨砂面板 tint 即时重铺（tag 244 定位）。
+- (void)ame263TransparencyChanged:(NSNotification *)note {
+    UIView *ame263_tint = [self.ame245_frostClip viewWithTag:244];
+    if (ame263_tint != nil) ame263_tint.backgroundColor = Ame244SnapshotTint();
 }
 
 - (void)dealloc {
@@ -1247,18 +1264,19 @@ static UIColor *Ame244SnapshotTint(void) {
                                completion:(nullable void (^)(void))completion {
     if ([viewControllerToPresent isKindOfClass:[UIAlertController class]] && LGCIsGlassStyleActive()) {
         @try {
-            // ★ Task263（反馈 4："液态玻璃的情况下连点多次还是触发伪液态玻璃"）
-            //   接管域收窄——装机日志 1015 23:35 实锤：真玻璃档下启动器内确认
-            //   弹窗（确认删除/版本隔离，alertStyle=1 无输入框）也被本 hook
-            //   整体替换成魔改磨砂面板（= 用户口中的"伪液态玻璃"），与
-            //   Task245/IMG_0380 定案（选择项/弹窗 = 系统原生液态玻璃）冲突。
-            //   收窄后真玻璃档仅剩两个接管域：
-            //   ① Metal 游戏面（系统磨砂在 Metal 上不合成，Task228/230/236 同族）
-            //   ② 输入类弹窗（含 textFields，如内存数值输入）
+            // ★ Task263（反馈 4）接管域收窄 + ★ Task276（用户 2026-10-17：
+            //   "在选择为液态玻璃的情况下多次点击会卡出伪液态玻璃"）最终
+            //   收窄——装机日志 1015 23:35 实锤真玻璃档下启动器内确认弹窗
+            //   （确认删除/版本隔离）被整体替换成魔改磨砂面板（= 用户口中
+            //   的"伪液态玻璃"），Task263 首轮收窄保留的 textFields>0 全局
+            //   条件仍是残留缺口：启动器内带输入框的 alert（版本隔离命名/
+            //   添加服务器等）同样被替换。系统磨砂不合成实锤（Task228/230/
+            //   236）全部在 Metal 域——输入类弹窗的接管价值只在游戏内存在。
+            //   收窄后真玻璃档接管域仅剩：
+            //   ① Metal 游戏面（含其中的输入类弹窗——inGame 已全覆盖）
             //   伪玻璃档（pseudo_glass）维持全接管不动（该档定义如此）。
             UIAlertController *ame263_alert = (UIAlertController *)viewControllerToPresent;
             BOOL ame263_shouldReplace = LGCIsPseudoGlassStyleActive() ||
-                                        ame263_alert.textFields.count > 0 ||
                                         [AmeFloatingMenu ame263_presenterInsideGameSurface:self];
             if (ame263_shouldReplace &&
                 [AmeFloatingMenu presentGlassMenuForAlert:ame263_alert
