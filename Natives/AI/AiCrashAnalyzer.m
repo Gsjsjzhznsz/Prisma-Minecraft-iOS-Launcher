@@ -23,8 +23,8 @@
            "\n  - crashReport（string，可选）：崩溃报告全文（通常来自 read_crash_report）。"
            "\n至少提供一个入参。返回 JSON：{matched, category, explanation, suggestions}。"
            "\ncategory 取值：内存不足 / JNI 初始化失败 / 图形初始化失败 / Java 版本不符 / 数值越界 / "
-           "iOS-妙控键盘崩溃 / iOS-MC 26.2 OpenGL 语法错误 / iOS-MC 26.3-Snapshot4 启动失败（SDL3） / "
-           "iOS-启动器自身闪退 / iOS-LWJGL 魔改兼容问题 / iOS-启动黑屏/直接闪退（JIT） / 未知。"
+           "iOS-妙控键盘崩溃 / iOS-MC 26.2 OpenGL 语法错误 / iOS-MC 26.3 SDL 通路报错 / "
+           "iOS-启动器自身闪退 / iOS-LWJGL 兼容问题 / iOS-启动黑屏/直接闪退（JIT） / 未知。"
            "\n边界：仅内置规则匹配，不承诺 100% 命中；未命中时给出通用排查建议。";
 }
 
@@ -119,7 +119,7 @@
             ],
         },
         @{
-            @"category": @"iOS-MC 26.3-Snapshot4 启动失败（SDL3）",
+            @"category": @"iOS-MC 26.3 SDL 通路报错",
             @"alternatives": @[
                 @[@"26.3-Snapshot4"],
                 @[@"SDL3"],
@@ -142,7 +142,7 @@
             ],
         },
         @{
-            @"category": @"iOS-LWJGL 魔改兼容问题",
+            @"category": @"iOS-LWJGL 兼容问题",
             @"alternatives": @[
                 @[@"LWJGL", @"UnsatisfiedLinkError"],
                 @[@"LWJGL", @"no such function"],

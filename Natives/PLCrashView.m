@@ -4,6 +4,7 @@
 #import "ios_uikit_bridge.h"
 #import "utils.h"
 #import "BackgroundManager.h"
+#import "CrashAnalyzer.h"
 
 @interface PLCrashView ()
 // 数据
@@ -29,6 +30,12 @@ typedef NS_ENUM(NSInteger, CrashType) {
 };
 @property (nonatomic, assign) CrashType crashType;
 @property (nonatomic, strong, nullable) NSString *crashDetail; // 崩溃详情（从日志提取的关键行）
+// ★ Task267：Prisma 自研 CrashAnalyzer 的 hs_err 结构化分型接入
+//   （analyzeHsErrFile: 的返回字典：signal/isOOM/blamedRenderer/
+//   problematicFrame/nativeFrames）。此前本页只把 hs_err 头 4KB 当
+//   文本证据展示，丢掉了分型结果——"没有我们项目的详细错误分析器"
+//   的核心缺口。analyzeCrashType 末尾融合（详见 ame267_refineWithHsErr）。
+@property (nonatomic, strong, nullable) NSDictionary *ame267_hsErr;
 // Task 95：缺失 mod 崩溃的解析产物（供建议卡片精确点名）
 @property (nonatomic, strong, nullable) NSArray<NSString *> *ame95_missingModNames; // 推断的缺失 mod/库名单
 @property (nonatomic, copy, nullable) NSString *ame95_overriddenEvidence;           // "Dependencies overridden for ..." 证据行（可为空）
@@ -67,7 +74,9 @@ typedef NS_ENUM(NSInteger, CrashType) {
 
 // 当前正在显示的崩溃 VC 实例（单例）
 static PLCrashView *currentCrashVC = nil;
-static NSString *const kGitHubIssuesURL = @"https://github.com/herbrine8403/Amethyst-iOS-MyRemastered/issues";
+// ★ Task267（用户："崩溃界面还是上游的分析"）：反馈出口从上游 Amethyst
+//   仓库改指本仓库——用户点"前往 GitHub Issues"应到 Prisma 的 issue 区。
+static NSString *const kGitHubIssuesURL = @"https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/issues";
 
 /// ★ Task274-g（G5）：L2 崩溃界面呈现成功即消费 ame273_crash_report.txt（改名
 /// 归档 seen-<epoch>.txt）——否则下次启动 L3 会补弹同一崩溃（L2 已把原因展示过）。
@@ -607,8 +616,8 @@ static void ame274_archiveCrashReportAfterL2Present(void) {
             [result addObject:@{@"icon": @"arrow.clockwise", @"text": localize(@"crash.suggestion.oom_restart", @"重启启动器后重试（释放内存碎片）")}];
             break;
         case CrashTypeSegfault:
-            [result addObject:@{@"icon": @"cpu", @"text": localize(@"crash.suggestion.segfault_renderer", @"尝试切换渲染器（gl4es / MetalGlues / virgil）")}];
-            [result addObject:@{@"icon": @"shield", @"text": localize(@"crash.suggestion.segfault_jit", @"确保 JIT 已启用（TrollStore/SideStore + JIT 权限）")}];
+            [result addObject:@{@"icon": @"cpu", @"text": localize(@"crash.suggestion.segfault_renderer", @"尝试切换渲染器（MobileGlues / Zink / MoltenVK / ANGLE / VirGL）")}];
+            [result addObject:@{@"icon": @"shield", @"text": localize(@"crash.suggestion.segfault_jit", @"确保 JIT 已启用（设置→调试：自动/StikDebug/SideStore/StosDebug/JitStreamer-EB/TrollStore/手动）")}];
             [result addObject:@{@"icon": @"arrow.clockwise", @"text": localize(@"crash.suggestion.segfault_restart", @"重启启动器后重试")}];
             break;
         case CrashTypeAbort:
@@ -639,7 +648,7 @@ static void ame274_archiveCrashReportAfterL2Present(void) {
             [result addObject:@{@"icon": @"info.circle", @"text": localize(@"crash.suggestion.javaver_check", @"检查游戏版本要求的 Java 版本")}];
             break;
         case CrashTypeRendererError:
-            [result addObject:@{@"icon": @"cpu", @"text": localize(@"crash.suggestion.renderer_switch", @"尝试切换渲染器：gl4es / MetalGlues / virgil")}];
+            [result addObject:@{@"icon": @"cpu", @"text": localize(@"crash.suggestion.renderer_switch", @"尝试切换渲染器：MobileGlues / Zink / MoltenVK / ANGLE / VirGL")}];
             [result addObject:@{@"icon": @"eye.slash", @"text": localize(@"crash.suggestion.renderer_shader", @"禁用光影包后重试")}];
             [result addObject:@{@"icon": @"arrow.down.circle", @"text": localize(@"crash.suggestion.renderer_resolution", @"降低游戏分辨率缩放比例")}];
             break;
@@ -898,6 +907,89 @@ static void ame274_archiveCrashReportAfterL2Present(void) {
     // 兜底：未知
     self.crashType = CrashTypeUnknown;
     self.crashDetail = nil;
+
+    // ★ Task267：Prisma 详细错误分析器（CrashAnalyzer）hs_err 分型融合。
+    //   退出码语义弱（JVM fatal 常以 exit(1) 出现、Task208 直死不落码），
+    //   而 hs_err 是 JVM 自落的信号级铁证——分类完统一拉一次对账。
+    [self ame267_refineWithHsErr];
+}
+
+/// ★ Task267：hs_err_pid*.log 结构化分型融合（自研 CrashAnalyzer，
+///   Task217/218 渲染器自学的同一引擎；此前本页只把 hs_err 头 4KB 当
+///   文本证据，丢掉了分型结果 = "没有我们项目的详细错误分析器"的缺口）。
+///   融合策略（保守精化，不推翻已有分类）：
+///   - hs_err 命中 isOOM → OOM 优先（JVM OOM 常以 exit(1) 呈现，退出码
+///     路径漏判；OOM 不记渲染器的锅，与 Task217/218 口径一致）；
+///   - 信号级死亡且命中渲染器家族库 → RendererError，detail 带
+///     Problematic frame / 归因库 / native 帧摘要（详细分析直接可见）；
+///   - 无归因的信号 → 仅当原分类为 Unknown/Segfault/Abort 时按信号精化；
+///   - 无 hs_err（FastQuit/SIGKILL）零动作，维持原分类。
+- (void)ame267_refineWithHsErr {
+    if (_exitCode == 0) return;
+    const char *ame267_homeC = getenv("POJAV_HOME");
+    NSString *ame267_home = ame267_homeC ? [NSString stringWithUTF8String:ame267_homeC] : nil;
+    if (ame267_home.length == 0) return;
+    // 扫 mtime 最新的 hs_err_pid*.log（JavaLauncher ame217 同款口径；
+    // Task27 已把 -XX:ErrorFile 定向到 POJAV_HOME 根，浅扫描即可）。
+    NSFileManager *ame267_fm = [NSFileManager defaultManager];
+    NSArray *ame267_files = [ame267_fm contentsOfDirectoryAtPath:ame267_home error:nil];
+    NSString *ame267_best = nil;
+    NSDate *ame267_bestDate = nil;
+    for (NSString *ame267_f in ame267_files) {
+        if (![ame267_f hasPrefix:@"hs_err_pid"] || ![ame267_f hasSuffix:@".log"]) continue;
+        NSString *ame267_path = [ame267_home stringByAppendingPathComponent:ame267_f];
+        NSDate *ame267_d = [[ame267_fm attributesOfItemAtPath:ame267_path error:nil]
+            fileModificationDate];
+        if (ame267_d && (!ame267_bestDate || [ame267_d compare:ame267_bestDate] == NSOrderedDescending)) {
+            ame267_bestDate = ame267_d;
+            ame267_best = ame267_path;
+        }
+    }
+    if (ame267_best.length == 0) return;
+    NSDictionary *ame267_r = [CrashAnalyzer analyzeHsErrFile:ame267_best];
+    if (ame267_r.count == 0) return;
+    self.ame267_hsErr = ame267_r;
+
+    BOOL ame267_oom = [ame267_r[@"isOOM"] boolValue];
+    NSString *ame267_signal = ame267_r[@"signal"] ?: @"";
+    NSString *ame267_blamed = ame267_r[@"blamedRenderer"] ?: @"";
+    NSString *ame267_pf = ame267_r[@"problematicFrame"] ?: @"";
+    NSString *ame267_nf = ame267_r[@"nativeFrames"] ?: @"";
+    BOOL ame267_isSignalDeath = [ame267_signal hasPrefix:@"SIG"] &&
+                                ![ame267_signal isEqualToString:@"(unknown)"];
+
+    // 结构化诊断摘要（走 crashDetail 槽位，与 extractLine 产物同位展示）。
+    NSMutableString *ame267_diag = [NSMutableString string];
+    if (ame267_pf.length > 0) [ame267_diag appendFormat:@"Problematic frame: %@", ame267_pf];
+    if (ame267_blamed.length > 0) {
+        if (ame267_diag.length > 0) [ame267_diag appendString:@"\n"];
+        [ame267_diag appendFormat:@"CrashAnalyzer 归因：%@（渲染器层库）", ame267_blamed];
+    }
+    if (ame267_nf.length > 0) {
+        if (ame267_diag.length > 0) [ame267_diag appendString:@"\n"];
+        [ame267_diag appendFormat:@"native 帧：%@", ame267_nf];
+    }
+    if (ame267_diag.length == 0) return;   // hs_err 无可融合结论，维持原分类
+
+    if (ame267_oom) {
+        self.crashType = CrashTypeOOM;
+        if (self.crashDetail.length == 0) self.crashDetail = [ame267_diag copy];
+        NSLog(@"[PLCrashView] Task267: hs_err refined -> OOM (CrashAnalyzer)");
+        return;
+    }
+    if (ame267_isSignalDeath && ame267_blamed.length > 0) {
+        self.crashType = CrashTypeRendererError;
+        if (self.crashDetail.length == 0) self.crashDetail = [ame267_diag copy];
+        NSLog(@"[PLCrashView] Task267: hs_err refined -> RendererError (blamed %@)", ame267_blamed);
+        return;
+    }
+    if (ame267_isSignalDeath &&
+        (self.crashType == CrashTypeUnknown || self.crashType == CrashTypeSegfault ||
+         self.crashType == CrashTypeAbort)) {
+        self.crashType = [ame267_signal containsString:@"ABRT"] ? CrashTypeAbort : CrashTypeSegfault;
+        if (self.crashDetail.length == 0) self.crashDetail = [ame267_diag copy];
+        NSLog(@"[PLCrashView] Task267: hs_err refined -> %ld (%@)", (long)self.crashType, ame267_signal);
+    }
 }
 
 /// 从日志中提取包含指定关键词的第一行（用于崩溃详情展示）
@@ -1301,7 +1393,14 @@ static NSString *ame274_readFileTail(NSString *path, NSUInteger maxBytes) {
             reason = localize(@"crash.reason.java_version", @"Java 版本不匹配（UnsupportedClassVersionError）");
             break;
         case CrashTypeRendererError:
-            reason = localize(@"crash.reason.renderer", @"渲染器错误（OpenGL/Metal/EGL 初始化失败）");
+            reason = localize(@"crash.reason.renderer", @"渲染器错误（OpenGL/Vulkan/EGL 初始化失败）");
+            // ★ Task267：hs_err 归因到具体渲染器库时点名展示。
+            if (self.ame267_hsErr[@"blamedRenderer"] &&
+                [self.ame267_hsErr[@"blamedRenderer"] isKindOfClass:NSString.class] &&
+                [(NSString *)self.ame267_hsErr[@"blamedRenderer"] length] > 0) {
+                reason = [NSString stringWithFormat:@"%@（CrashAnalyzer 归因：%@）",
+                          reason, self.ame267_hsErr[@"blamedRenderer"]];
+            }
             break;
         case CrashTypeModLoadingFailure:
             reason = localize(@"crash.reason.mod_loading", @"Mod 加载失败（Forge/Fabric/OptiFine 加载错误）");

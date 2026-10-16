@@ -211,7 +211,15 @@ static BOOL ame240_openInteractionMenu(UIContextMenuInteraction *ix) {
         @try {
             [ix presentMenu];
             return YES;
-        } @catch (NSException *ame240_e) {}
+        } @catch (NSException *ame240_e) {
+            // ★ Task267（用户："液态玻璃档多擑几次会弹出伪液态玻璃"）：
+            //   异常路径必须留痕——连续快速触发时上一次菜单 dismiss 动画
+            //   未完成，presentMenu 会抛 UIKit 内部异常被 @catch 吩掉，
+            //   下游 fallback 落到磨砂面板 = 伪玻璃乱入。装机日志凭这行
+            //   直接定谳竞争窗口。
+            NSLog(@"[AmeNativeMenu] Task267: presentMenu exception: %@ (%@)",
+                  ame240_e.name, ame240_e.reason);
+        }
     }
     if ([ix respondsToSelector:@selector(_presentMenuAtLocation:)]) {
         UIView *ame240_v = ix.view;
@@ -221,7 +229,10 @@ static BOOL ame240_openInteractionMenu(UIContextMenuInteraction *ix) {
             @try {
                 [ix _presentMenuAtLocation:ame240_p];
                 return YES;
-            } @catch (NSException *ame240_e) {}
+            } @catch (NSException *ame240_e) {
+                NSLog(@"[AmeNativeMenu] Task267: _presentMenuAtLocation: exception: %@ (%@)",
+                      ame240_e.name, ame240_e.reason);
+            }
         }
     }
     NSLog(@"[AmeNativeMenu] Task245: neither presentMenu nor _presentMenuAtLocation: responded");
@@ -266,7 +277,10 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
     }
     for (UIAlertAction *ame245_aa in ame245_items) [ame245_alert addAction:ame245_aa];
 
-    if (LGCIsGlassStyleActive()) {
+    // ★ Task267：磨砂面板兜底收窄到伪玻璃档专属。真液态玻璃档系统菜单
+    //   呈现失败（连续触发竞争）时不再落入磨砂面板（用户观感 = "伪液态
+    //   玻璃乱入"），改直通 stock actionSheet（系统原生弹窗，观感同族）。
+    if (LGCIsPseudoGlassStyleActive()) {
         BOOL ame245_ok = [AmeFloatingMenu presentGlassMenuForAlert:ame245_alert
                                                      fromPresenter:ame245_host
                                                           animated:YES

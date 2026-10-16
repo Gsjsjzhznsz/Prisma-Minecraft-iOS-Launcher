@@ -2174,12 +2174,39 @@ static BOOL ame202_metalSessionArmed(void) {
     return s_ame202_metal ? [SurfaceViewController isRunning] : NO;
 }
 
+// ★ Task267（用户："意外回退 Vulkan 之后需要手动点击取消启动才能看到游戏
+//   界面"）：SDL3-Vulkan 会话首帧信号补链。病历：MC 26.3+ 的 GL 后端探测
+//   失败时静默回落原生 Vulkan（MoltenVK），呈现面建在 SDL 自己的 view 上
+//   （SDL_uikitmetalview 的 CAMetalLayer，Task32 嵌入架构）——三个既有首帧
+//   信号源全部失联：①pojavSwapBuffers（GL-only）不被调；②Ame248FPSMetal
+//   Layer 门（pojavIsActualVulkanPath 以 clientAPI==NO_API 判定，SDL3 路径
+//   从不调 pojavSetWindowHint → 恒 GL 客户端 → 门恒关，且呈现面根本不是
+//   GameSurfaceView 的层）；③本文件的 Task202 swizzle 门（AMETHYST_METAL
+//   只在 Metal 会话导出）→ 启动遮罩的 PojavFirstFrameRendered 永远等不到，
+//   游戏其实在 SDL 视图里正常渲染，用户手点"取消启动"（只揭遮罩不杀进程）
+//   才看得到画面。修法：nextDrawable hook 增加 SDL_uikit 层分支——owner
+//   view 类名含 SDL_uikit 且游戏运行中 = 游戏真 present（启动器自身玻璃
+//   层的 Metal layer 天然排除；GL 会话的 SDL 视图无 CAMetalLayer 不重叠；
+//   26.2 GLFW-Vulkan 的呈现面在 GameSurfaceView 层由 ②门覆盖不重叠）。
+//   命中即 pojavIncrementFpsCounter()——egl_bridge 的 s_firstFrameRendered
+//   去重门自动完成首帧通知；附带收益：SDL3-Vulkan 会话 FPS 从 0 变真值。
+static BOOL ame267_isSDLVulkanLayer(CAMetalLayer *ame267_layer) {
+    if (ame267_layer == nil) return NO;
+    UIView *ame267_owner = (UIView *)ame267_layer.delegate;
+    if (ame267_owner == nil || ![ame267_owner isKindOfClass:[UIView class]]) return NO;
+    NSString *ame267_cls = NSStringFromClass([ame267_owner class]);
+    return [ame267_cls containsString:@"SDL_uikit"];
+}
+
 static IMP ame202_orig_nextDrawable = NULL;
 
 static id ame202_nextDrawable_hook(id self, SEL _cmd) {
     id ame202_drawable = ((id (*)(id, SEL))ame202_orig_nextDrawable)(self, _cmd);
-    if (ame202_drawable != nil && ame202_metalSessionArmed()) {
-        pojavIncrementFpsCounter();
+    if (ame202_drawable != nil && [SurfaceViewController isRunning]) {
+        if (ame202_metalSessionArmed() ||
+            ame267_isSDLVulkanLayer((CAMetalLayer *)self)) {
+            pojavIncrementFpsCounter();
+        }
     }
     return ame202_drawable;
 }

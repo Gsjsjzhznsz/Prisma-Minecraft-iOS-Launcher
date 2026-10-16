@@ -78,6 +78,12 @@
 // Hero 卡片容器（包含 heroCard，作为 leftTableView 的 tableHeaderView）
 @property (nonatomic, strong, nullable) UIView *heroContainer;
 
+// ★ Task267（用户："设置不应该全部展开"）：版本设置页 5 个 Bento 分组
+//   的折叠状态（全局 section 索引 → BOOL，YES = 折叠只显表头）。
+//   Task224 起本页恒平铺（一屏全部行），与主设置页的分组折叠形态不一致；
+//   改为：默认全收起（与主设置页同款可发现性语义），点分组表头展开/收起。
+@property (nonatomic, strong, nonnull) NSMutableArray<NSNumber *> *ame267_sectionCollapsed;
+
 @end
 
 // 已汉化/英化的行标题显示映射：模块标题在 self.sections 中仍保留中文作为逻辑键（isEqualToString 比较），
@@ -691,6 +697,27 @@ static NSString * localizeProfileTitle(NSString *title) {
         [advancedRows copy],
         @[localize(@"i18n_str_730", nil)]
     ];
+    // ★ Task267：折叠状态数组随 sections 同步重建（幂等；重建 = 重置为
+    //   全收起——与本页每次打开新建实例的生命周期一致）。
+    if (self.ame267_sectionCollapsed.count != self.sections.count) {
+        NSMutableArray<NSNumber *> *ame267_collapsed = [NSMutableArray array];
+        for (NSUInteger ame267_i = 0; ame267_i < self.sections.count; ame267_i++) {
+            [ame267_collapsed addObject:@NO];
+        }
+        self.ame267_sectionCollapsed = ame267_collapsed;
+    }
+}
+
+/// ★ Task267：分组表头点击 → 翻转折叠状态并重载该组所在 tableView。
+- (void)ame267_toggleSection:(UITapGestureRecognizer *)tap {
+    NSInteger ame267_global = (NSInteger)tap.view.tag;
+    if (ame267_global < 0 ||
+        ame267_global >= (NSInteger)self.ame267_sectionCollapsed.count) return;
+    BOOL ame267_now = self.ame267_sectionCollapsed[ame267_global].boolValue;
+    self.ame267_sectionCollapsed[ame267_global] = @(!ame267_now);
+    NSLog(@"[ProfileSettings] Task267: section %ld toggled -> %@",
+          (long)ame267_global, ame267_now ? @"expanded" : @"collapsed");
+    [self reloadAllTableViews];
 }
 
 #pragma mark - Dual Table View Helpers
@@ -899,6 +926,11 @@ static NSString * localizeProfileTitle(NSString *title) {
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     NSInteger globalSection = [self globalSectionForTableView:tableView localSection:section];
     if (globalSection < 0 || globalSection >= (NSInteger)self.sections.count) return 0;
+    // ★ Task267：折叠分组只保留表头行（行数 0），点击表头展开。
+    if (globalSection < (NSInteger)self.ame267_sectionCollapsed.count &&
+        self.ame267_sectionCollapsed[globalSection].boolValue) {
+        return 0;
+    }
     return [self.sections[globalSection] count];
 }
 
@@ -914,8 +946,66 @@ static NSString * localizeProfileTitle(NSString *title) {
     }
 }
 
+// ★ Task267：可点击折叠分组表头（viewForHeaderInSection 优先于
+//   titleForHeaderInSection；self-sizing 不可靠 → 固定 40pt）。
+//   右侧折叠指示：折叠 ▸ / 展开 ▾（系统性字符，无需图片资源）。
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    return 40.0;
+}
+
+- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
+    NSInteger globalSection = [self globalSectionForTableView:tableView localSection:section];
+    NSString *ame267_title = [self tableView:tableView titleForHeaderInSection:section] ?: @"";
+    BOOL ame267_collapsed = (globalSection >= 0 &&
+                             globalSection < (NSInteger)self.ame267_sectionCollapsed.count &&
+                             self.ame267_sectionCollapsed[globalSection].boolValue);
+
+    UITableViewHeaderFooterView *ame267_header =
+        [tableView dequeueReusableHeaderFooterViewWithIdentifier:@"ame267SectionHeader"];
+    if (!ame267_header) {
+        ame267_header = [[UITableViewHeaderFooterView alloc]
+            initWithReuseIdentifier:@"ame267SectionHeader"];
+        UILabel *ame267_label = [[UILabel alloc] initWithFrame:CGRectZero];
+        ame267_label.tag = 26701;
+        ame267_label.font = [UIFont systemFontOfSize:15.0 weight:UIFontWeightSemibold];
+        ame267_label.translatesAutoresizingMaskIntoConstraints = NO;
+        [ame267_header.contentView addSubview:ame267_label];
+        UILabel *ame267_arrow = [[UILabel alloc] initWithFrame:CGRectZero];
+        ame267_arrow.tag = 26702;
+        ame267_arrow.font = [UIFont systemFontOfSize:12.0 weight:UIFontWeightMedium];
+        ame267_arrow.textColor = [UIColor secondaryLabelColor];
+        ame267_arrow.textAlignment = NSTextAlignmentRight;
+        ame267_arrow.translatesAutoresizingMaskIntoConstraints = NO;
+        [ame267_header.contentView addSubview:ame267_arrow];
+        [NSLayoutConstraint activateConstraints:@[
+            [ame267_label.leadingAnchor constraintEqualToAnchor:ame267_header.contentView.layoutMarginsGuide.leadingAnchor],
+            [ame267_label.centerYAnchor constraintEqualToAnchor:ame267_header.contentView.centerYAnchor],
+            [ame267_arrow.trailingAnchor constraintEqualToAnchor:ame267_header.contentView.layoutMarginsGuide.trailingAnchor],
+            [ame267_arrow.leadingAnchor constraintGreaterThanOrEqualToAnchor:ame267_label.trailingAnchor constant:8],
+            [ame267_arrow.centerYAnchor constraintEqualToAnchor:ame267_header.contentView.centerYAnchor],
+            [ame267_arrow.widthAnchor constraintEqualToConstant:20],
+        ]];
+        UITapGestureRecognizer *ame267_tap = [[UITapGestureRecognizer alloc]
+            initWithTarget:self action:@selector(ame267_toggleSection:)];
+        [ame267_header.contentView addGestureRecognizer:ame267_tap];
+    }
+    UILabel *ame267_titleLabel = (UILabel *)[ame267_header.contentView viewWithTag:26701];
+    UILabel *ame267_arrowLabel = (UILabel *)[ame267_header.contentView viewWithTag:26702];
+    ame267_titleLabel.text = ame267_title;
+    ame267_arrowLabel.text = ame267_collapsed ? @"▸" : @"▾";
+    // tag 承载全局 section 索引（点击翻转用）。
+    ame267_header.contentView.tag = (NSInteger)globalSection;
+    return ame267_header;
+}
+
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
     NSInteger globalSection = [self globalSectionForTableView:tableView localSection:section];
+    // ★ Task267：折叠分组的 footer 一并隐藏（否则空组下悬一段说明文案）。
+    if (globalSection >= 0 &&
+        globalSection < (NSInteger)self.ame267_sectionCollapsed.count &&
+        self.ame267_sectionCollapsed[globalSection].boolValue) {
+        return nil;
+    }
     if (globalSection == 0) {
         return localize(@"i18n_str_881", nil);
     }

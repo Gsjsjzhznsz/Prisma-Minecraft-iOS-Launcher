@@ -397,6 +397,19 @@ static BOOL ame83_fsr_capable_renderer(NSString *renderer) {
     //   只在流停 0.3s 后跑一次全链重算，避免每帧重算 drawableSize）。
     CGSize ame261_lastSyncedViewSize;
     NSTimer *ame261_geoResyncTimer;
+    // ★ Task267（用户："切小窗会导致窗口偏移，显示底下的壁纸；要像其他
+    //   启动器那样直接缩放，输入输出都不错位"根修）：自由窗口 scale-mode。
+    //   根因：视图栈（rootView/touchView/surfaceView）只在旋转路径
+    //   viewWillTransitionToSize 被重排，自由窗口缩放【不走】该路径 →
+    //   touchView.frame 陈旧 = 整帧画面左上裁切（偏移）+ 未覆盖区透出
+    //   窗口第 0 层壁纸；Task261 重算链取根于陈旧 touchView → 数值全部
+    //   不变 → 宣告同值被去重 = 零自适应。修法（scale-mode）：非全屏
+    //   窗口态把视图栈重排到当前 bounds、信念链（windowWidth/drawable
+    //   Size/ame_surface*）冻结 → CA 把整帧 drawable 等比缩放进小窗
+    //   （"直接缩放"），输入按 视图pt→整帧物理px 比例换算（不错位）。
+    BOOL ame267_freeformScaled;   // YES = 非全屏窗口缩放态（信念冻结中）
+    float ame267_adaptiveScaleX;  // 视图 pt -> 整帧物理 px（x）
+    float ame267_adaptiveScaleY;  // 视图 pt -> 整帧物理 px（y）
 }
 // Task 139：FSR 兜底自愈后的输入缩放复位（C 入口
 // ame139_fsr_heal_reset_input_scale 经主线程转发到本方法；ivar 私有，
@@ -1673,6 +1686,24 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
         ame251_transitionResyncPending = YES;
         return;
     }
+    // ★ Task267：自由窗口缩放态（scale-mode）——视图栈重排 + 信念冻结，
+    //   不走全链重算（重算根 touchView 陈旧是本 bug 的结构性根源）。
+    if (![self ame267_isFullscreenWindow]) {
+        NSLog(@"[SurfaceVC] Task267: freeform window detected (win %@ vs screen %@) -> scale-mode rescale",
+              NSStringFromCGSize(self.view.window.bounds.size),
+              NSStringFromCGSize(self.view.window.screen.bounds.size));
+        ame267_freeformScaled = YES;
+        [self ame267_rescaleViewStackToCurrentBounds];
+        ame261_lastSyncedViewSize = ame261_now;   // 锚点同步防重复触发
+        return;
+    }
+    // ★ Task267：回全屏——解冻信念链，走原 Task261 全链重算+重宣告。
+    if (ame267_freeformScaled) {
+        ame267_freeformScaled = NO;
+        ame267_adaptiveScaleX = 1.0f;
+        ame267_adaptiveScaleY = 1.0f;
+        NSLog(@"[SurfaceVC] Task267: back to fullscreen -- unfreezing beliefs for full resync");
+    }
     NSLog(@"[SurfaceVC] Task261: adaptive geometry resync (view %.0fx%.0f, last-synced %.0fx%.0f)",
           ame261_now.width, ame261_now.height,
           ame261_lastSyncedViewSize.width, ame261_lastSyncedViewSize.height);
@@ -1691,6 +1722,72 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
     ame248_geoResyncPending = YES;
     NSLog(@"[SurfaceVC] Task261: adaptive resync done (window %dx%d force-announced)",
           (int)windowWidth, (int)windowHeight);
+}
+
+/// ★ Task267：全屏态判定——window bounds 与 screen bounds 一致（自由窗口/
+///   分屏/竖形窗口下 window 自身小于 screen；Task189 翻转后的窗口 bounds
+///   同样不等于 screen）。两种转置顺序都算匹配（UIScreen.bounds 随界面
+///   方向，window 同理）。无窗口（转场间隙）按全屏处理 = 维持现信念。
+- (BOOL)ame267_isFullscreenWindow {
+    UIWindow *ame267_win = self.view.window;
+    if (ame267_win == nil) return YES;
+    CGSize ame267_s = ame267_win.screen.bounds.size;
+    CGSize ame267_w = ame267_win.bounds.size;
+    BOOL ame267_match =
+        (fabs(ame267_w.width - ame267_s.width) < 1.0 && fabs(ame267_w.height - ame267_s.height) < 1.0) ||
+        (fabs(ame267_w.width - ame267_s.height) < 1.0 && fabs(ame267_w.height - ame267_s.width) < 1.0);
+    return ame267_match;
+}
+
+/// ★ Task267：scale-mode 视图栈重排——把游戏视图栈按当前 view.bounds
+///   重新铺满（语义对齐旋转路径 viewWillTransitionToSize，含 +30pt
+///   rootView 约定与 ctrlView/inputTextField/SDL 嵌入视图全套随动），
+///   而信念链冻结不动 → CA 把整帧 drawable 等比缩放进小窗，无裁切、
+///   无露壁纸；adaptiveScale 因子供输入换算（sendTouchPoint/热栏）。
+///   回全屏时由 ame261 恢复链解冻并重算归一（因子自动复位 1.0）。
+- (void)ame267_rescaleViewStackToCurrentBounds {
+    CGFloat ame267_w = self.view.bounds.size.width;
+    CGFloat ame267_h = self.view.bounds.size.height;
+    if (ame267_w < 1.0 || ame267_h < 1.0) return;
+
+    // rootView 保留旋转路径的 +30pt 输入坐标系约定（Task59：菜单溢出区）
+    self.rootView.bounds = CGRectMake(0, 0, ame267_w + 30.0, ame267_h);
+    CGRect ame267_frame = self.view.frame;
+    ame267_frame.size = CGSizeMake(ame267_w, ame267_h);
+    self.touchView.frame = ame267_frame;
+    self.inputTextField.frame = CGRectMake(0, -32.0, ame267_w, 30.0);
+    self.ctrlView.frame = getSafeArea(self.view.frame);
+    [self.ctrlView.subviews makeObjectsPerformSelector:@selector(update)];
+    // surfaceView 铺满 touchView：drawableSize 保持整帧 → CA 等比缩放
+    if (self.surfaceView.superview != nil) {
+        self.surfaceView.frame = self.touchView.frame;
+    }
+    // SDL 嵌入视图 frame re-assert（Task254 同款）
+    UIView *ame267_sv = (__bridge UIView *)ame_hook_getEmbeddedSDLView();
+    if (ame267_sv && ame267_sv.superview) {
+        ame267_sv.frame = ame267_sv.superview.bounds;
+    }
+    // 输入换算因子（视图 pt -> 整帧物理 px）
+    if (physicalWidth > 0 && ame267_w > 0.5) {
+        ame267_adaptiveScaleX = (float)physicalWidth / (float)ame267_w;
+    }
+    if (physicalHeight > 0 && ame267_h > 0.5) {
+        ame267_adaptiveScaleY = (float)physicalHeight / (float)ame267_h;
+    }
+    virtualMouseFrame = self.mousePointerView.frame;   // 旋转路径同款收尾
+    NSLog(@"[SurfaceVC] Task267: scale-mode stack resync (view %.0fx%.0f, adaptive %.2fx%.2f, phys %dx%d, window stays %dx%d)",
+          ame267_w, ame267_h, ame267_adaptiveScaleX, ame267_adaptiveScaleY,
+          (int)physicalWidth, (int)physicalHeight, (int)windowWidth, (int)windowHeight);
+}
+
+/// ★ Task267：热栏/直发路径的 scale-mode 坐标适配——视图 pt 口径先乘
+///   adaptiveScale 映射到整帧物理 px（热栏命中几何以 physicalWidth/Height
+///   为基准）。全屏态原样返回（零变化）。
+- (CGPoint)ame267_adaptedPoint:(CGPoint)pt {
+    if (!ame267_freeformScaled) return pt;
+    pt.x *= ame267_adaptiveScaleX;
+    pt.y *= ame267_adaptiveScaleY;
+    return pt;
 }
 
 - (void)updateAudioSettings {
@@ -1777,6 +1874,17 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
 }
 
 - (void)updateSavedResolution {
+    // ★ Task267：自由窗口缩放态信念冻结——surfaceView.frame 已被重排为
+    //   小窗尺寸，若继续重算会把 windowWidth/drawableSize 写成小窗口径
+    //   （MC 信念扰动 + ANGLE 冻结 guard 拉锯 + Task82 缩角落家族风险），
+    //   scale-mode 语义 = 整帧渲染 + CA 缩放呈现。所有调用点（旋转/
+    //   回前台/首触点/偏好变更）经此单一守卫自动豁免。
+    if (ame267_freeformScaled) {
+        ame261_lastSyncedViewSize = self.view.bounds.size;
+        NSLog(@"[SurfaceVC] Task267: updateSavedResolution frozen in freeform scale-mode (window stays %dx%d)",
+              (int)windowWidth, (int)windowHeight);
+        return;
+    }
     for (UIWindowScene *scene in UIApplication.sharedApplication.connectedScenes.allObjects) {
         self.screenScale = scene.screen.scale;
         if (scene.session.role != UIWindowSceneSessionRoleApplication) {
@@ -2514,6 +2622,31 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
                                              selector:@selector(ame250_willResignActive)
                                                  name:UIApplicationWillResignActiveNotification
                                                object:nil];
+    // ★ Task267（C3）：渲染器回退告知——MC 26.x GL 后端探测失败会静默回落
+    //   原生 Vulkan（日志行 "Using graphics backend Vulkan"），用户只看到
+    //   "卡住"不知道发生了什么。日志广播上打一次 toast（会话级去重），
+    //   说明现状 + 指路（换渲染器/关 VulkanMod 组合）。
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame267_onLogLine:)
+                                                 name:@"PLLogOutputLineNotification"
+                                               object:nil];
+}
+
+/// ★ Task267（C3）：日志行监听——Vulkan 回退实锤行 toast 告知（每会话一次）。
+- (void)ame267_onLogLine:(NSNotification *)note {
+    NSString *line = note.userInfo[@"line"];
+    if (![line isKindOfClass:NSString.class]) return;
+    static BOOL s_ame267_fallbackToasted = NO;
+    if (s_ame267_fallbackToasted) return;
+    if ([line containsString:@"Using graphics backend Vulkan"] &&
+        ![line containsString:@"prefer_vulkan"]) {
+        s_ame267_fallbackToasted = YES;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [NMToast showMessage:localize(@"ame267.toast.vulkan_fallback",
+                @"游戏已回退到 Vulkan 渲染（GL 后端不可用）。若出现崩溃或性能问题，建议在实例设置里更换渲染器")];
+        });
+        NSLog(@"[SurfaceVC] Task267: Vulkan fallback detected from game log -- user notified");
+    }
 }
 
 /// 取消启动：用户点击"取消启动"按钮时调用。
@@ -2589,6 +2722,20 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             (long)(elapsed / 60.0), (long)elapsed % 60];
     } else {
         self.launchElapsedLabel.text = [NSString stringWithFormat:@"%lds", (long)elapsed];
+    }
+
+    // ★ Task267（用户："意外回退 Vulkan 之后要手动点取消启动才能看到游戏
+    //   界面"）：超时自动揭遮罩兜底。根修在 main_hook（SDL3-Vulkan 的
+    //   SDL_uikit CAMetalLayer 首帧分支），本兜底防同族第三形态：任何
+    //   "游戏其实已在渲染但首帧信号失联"的会话不再永久挂遮罩。90s 阈值
+    //   避让大型整合包正常加载（Task222 时间轴 40s+ 一倍余量）；行为 =
+    //   复用错误路径的遮罩移除（不杀进程），toast 明示 + 日志留痕。
+    if (elapsed >= 90.0) {
+        NSLog(@"[SurfaceViewController] Task267: launch overlay auto-dismissed after %.0fs "
+              @"(no first-frame signal; game may still be rendering)", elapsed);
+        [NMToast showMessage:localize(@"ame267.launch.overlay_timeout",
+            @"加载时间较长，已自动显示游戏画面；如仍黑屏请点菜单里的关闭按钮返回")];
+        [self dismissLaunchOverlayOnError];
     }
 }
 
@@ -3005,6 +3152,11 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     // 所以从未暴露）。FSR 除法保持原位（Task78 锚点）。
     if (mgFsrScale > 0.0f) screenScale /= mgFsrScale;
     screenScale *= resolutionScale;
+    // ★ Task267：自由窗口 scale-mode——触点在小窗视图 pt 空间，先按
+    //   "整帧物理 / 视图"比例映射回整帧口径再走信念换算（MC 按 windowWidth
+    //   信念归一化，整帧口径不变）。全屏态因子恒 1.0 零变化。
+    CGFloat ame267_ax = ame267_freeformScaled ? (CGFloat)ame267_adaptiveScaleX : 1.0;
+    CGFloat ame267_ay = ame267_freeformScaled ? (CGFloat)ame267_adaptiveScaleY : 1.0;
     // Task202（议题 #1）：双指滚动手势进行中——光标移动抑制（虚拟/非虚拟
     // 鼠标同门；ACTION_DOWN/UP 不受影响，点击照常）。锚点照常推进：
     // 滚动结束后的首个 MOVE 不会把光标瞬移到旧锚点的反向 delta 上。
@@ -3026,12 +3178,14 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             virtualMouseFrame.origin.y = clamp(virtualMouseFrame.origin.y, 0, self.surfaceView.frame.size.height);
             lastVirtualMousePoint = location;
             self.mousePointerView.frame = virtualMouseFrame;
-            CallbackBridge_nativeSendCursorPos(event, virtualMouseFrame.origin.x * screenScale, virtualMouseFrame.origin.y * screenScale);
+            CallbackBridge_nativeSendCursorPos(event,
+                virtualMouseFrame.origin.x * screenScale * ame267_ax,
+                virtualMouseFrame.origin.y * screenScale * ame267_ay);
             return;
         }
         lastVirtualMousePoint = location;
     }
-    CallbackBridge_nativeSendCursorPos(event, location.x * screenScale, location.y * screenScale);
+    CallbackBridge_nativeSendCursorPos(event, location.x * screenScale * ame267_ax, location.y * screenScale * ame267_ay);
 }
 
 #pragma mark - Input: on-surface functions
@@ -3094,6 +3248,12 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     if (self.surfaceView.superview == nil) return;   // 会话未启动
     // ★ Task250：回前台 = 门控解除（后续常规推送恢复；本次重申走强制通道）。
     g_ame250_appActive = YES;
+    // ★ Task267：小窗（scale-mode）态回前台——UIKit 后台往返可能重排过
+    //   视图栈，重排一次（updateSavedResolution 的冻结守卫保证信念不被
+    //   写坏；全屏态此路不通零变化）。
+    if (ame267_freeformScaled) {
+        [self ame267_rescaleViewStackToCurrentBounds];
+    }
     [self updateSavedResolution];
     // ★ Task254（反馈 1）：复屏侧立即打一行三方取证 + SDL 视图几何（不等
     //   首触点——装机实锤复屏后触摸可能根本不进 SurfaceVC 触摸链）。
@@ -3469,8 +3629,11 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         // 写入）；Stage Manager/外接屏场景两者不等 → 热栏手势与主触点同一根
         // 触摸两套像素坐标 = 错位存活面之一。
         CGFloat screenScale = (self.screenScale > 0.0f) ? self.screenScale : [[UIScreen mainScreen] scale];
+        // ★ Task267：scale-mode 坐标适配（视图 pt → 整帧物理 px）
+        CGPoint ame267_hotbarPt = [self ame267_adaptedPoint:
+            CGPointMake(locationInView.x * screenScale, locationInView.y * screenScale)];
         int slot = self.enableHotbarGestures ?
-        callback_SurfaceViewController_touchHotbar(locationInView.x * screenScale, locationInView.y * screenScale) : -1;
+        callback_SurfaceViewController_touchHotbar(ame267_hotbarPt.x, ame267_hotbarPt.y) : -1;
         if (slot != -1 && currentHotbarSlot != slot && (event == ACTION_DOWN || currentHotbarSlot != -1)) {
             currentHotbarSlot = slot;
             CallbackBridge_nativeSendKey(slot, 0, 1, 0);
@@ -3607,8 +3770,11 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         // sendTouchEvent 两处，这里和 surfaceOnLongpress 同病）。
         CGFloat screenScale = (self.screenScale > 0.0f) ? self.screenScale : [[UIScreen mainScreen] scale];
         CGPoint point = [sender locationInView:self.rootView];
+        // ★ Task267：scale-mode 坐标适配（视图 pt → 整帧物理 px）
+        CGPoint ame267_hotbarPt = [self ame267_adaptedPoint:
+            CGPointMake(point.x * screenScale, point.y * screenScale)];
         int hotbarSlot = self.enableHotbarGestures ?
-            callback_SurfaceViewController_touchHotbar(point.x * screenScale, point.y * screenScale) : -1;
+            callback_SurfaceViewController_touchHotbar(ame267_hotbarPt.x, ame267_hotbarPt.y) : -1;
         if (hotbarSlot != -1 && currentHotbarSlot == hotbarSlot) {
             CallbackBridge_nativeSendKey(GLFW_KEY_F, 0, 1, 0);
             CallbackBridge_nativeSendKey(GLFW_KEY_F, 0, 0, 0);
@@ -3647,8 +3813,11 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         CGPoint location = [sender locationInView:self.rootView];
         // ★ Task249：口径统一（同 surfaceOnDoubleClick，见彼处注释）。
         CGFloat screenScale = (self.screenScale > 0.0f) ? self.screenScale : UIScreen.mainScreen.scale;
+        // ★ Task267：scale-mode 坐标适配（视图 pt → 整帧物理 px）
+        CGPoint ame267_hotbarPt = [self ame267_adaptedPoint:
+            CGPointMake(location.x * screenScale, location.y * screenScale)];
         currentHotbarSlot = self.enableHotbarGestures ?
-            callback_SurfaceViewController_touchHotbar(location.x * screenScale, location.y * screenScale) : -1;
+            callback_SurfaceViewController_touchHotbar(ame267_hotbarPt.x, ame267_hotbarPt.y) : -1;
     }
     if (sender.state == UIGestureRecognizerStateBegan) {
         self.shouldTriggerClick = NO;
@@ -4591,8 +4760,11 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
         CGPoint locationInView = [touch locationInView:self.rootView];
         // Task247（T2）：同上——热栏探测与主触点链统一 scene scale 口径。
         CGFloat screenScale = (self.screenScale > 0.0f) ? self.screenScale : [[UIScreen mainScreen] scale];
+        // ★ Task267：scale-mode 坐标适配（视图 pt → 整帧物理 px）
+        CGPoint ame267_hotbarPt = [self ame267_adaptedPoint:
+            CGPointMake(locationInView.x * screenScale, locationInView.y * screenScale)];
         currentHotbarSlot = self.enableHotbarGestures ?
-            callback_SurfaceViewController_touchHotbar(locationInView.x * screenScale, locationInView.y * screenScale) : -1;
+            callback_SurfaceViewController_touchHotbar(ame267_hotbarPt.x, ame267_hotbarPt.y) : -1;
         if ([self isTouchInactive:self.hotbarTouch] && currentHotbarSlot != -1) {
             self.hotbarTouch = touch;
         }

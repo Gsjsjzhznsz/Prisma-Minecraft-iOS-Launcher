@@ -3267,3 +3267,11 @@
 "download.modpack.retry_failed" = "Modpack download failed (retried %ld times): %@";
 "download.empty_data" = "Download returned empty data";
 "common.unknown_error" = "Unknown error";
+
+// ---- Task267 (Vulkan overlay / JIT legacy dialogs / download target visibility) ----
+"ame267.launch.overlay_timeout" = "Loading is taking longer than expected; the game screen has been revealed automatically. If it is still black, use the close button in the game menu to return.";
+"ame267.toast.vulkan_fallback" = "Game fell back to Vulkan rendering (GL backend unavailable). If you hit crashes or poor performance, switch the renderer in the instance settings.";
+"ame267.jit.legacy_lc" = "Prisma was launched with a legacy JIT script. It has been updated to the Universal script automatically, please restart LiveContainer to continue.";
+"ame267.jit.legacy_stik" = "Support for legacy JIT scripts has been removed, please switch to the Universal JIT script. Current StikDebug builds auto-assign the script by app name (older sideloaded builds bundled the same script as Amethyst-MeloNX.js), so updating StikDebug is the easiest fix. To assign manually: long-press on the launcher app when enabling JIT in StikDebug, tap \"Assign Script\", then pick UniversalJIT26.js from the launcher's Documents directory (exported automatically at every startup).";
+"ame267.download.target_title" = "Download · Instance: %@";
+"ame267.download.target_mismatch" = "Note: downloads still target instance \"%@\" (locked when the page was opened). Re-enter the download page to switch instances.";

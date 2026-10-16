@@ -3262,3 +3262,11 @@
 "download.modpack.retry_failed" = "整合包下載失敗（已重試 %ld 次）：%@";
 "download.empty_data" = "下載傳回了空資料";
 "common.unknown_error" = "未知錯誤";
+
+// ---- Task267 (Vulkan overlay / JIT legacy dialogs / download target visibility) ----
+"ame267.launch.overlay_timeout" = "載入時間較長，已自動顯示遊戲畫面；如仍黑屏請點選單裡的關閉按鈕返回";
+"ame267.toast.vulkan_fallback" = "遊戲已回退到 Vulkan 渲染（GL 後端不可用）。若出現崩潰或效能問題，建議在實例設定裡更換渲染器";
+"ame267.jit.legacy_lc" = "Prisma 偵測到舊版 JIT 腳本。已自動更新為 Universal 腳本，請重啟 LiveContainer 後繼續。";
+"ame267.jit.legacy_stik" = "舊版 JIT 腳本支援已移除，請切換到 Universal JIT 腳本。新版 StikDebug 會按應用名稱自動指派腳本（舊版側載安裝套件內建的腳本名為 Amethyst-MeloNX.js），更新 StikDebug 是最簡單的修復方式。手動指派：在 StikDebug 啟用 JIT 時長按本啟動器應用 → 點 \"Assign Script\" → 選擇啟動器 Documents 目錄裡的 UniversalJIT26.js（每次啟動都會自動匯出）。";
+"ame267.download.target_title" = "下載 · 實例：%@";
+"ame267.download.target_mismatch" = "注意：下載目標實例仍為「%@」（開啟下載頁時鎖定），切換實例請重新進入下載頁";

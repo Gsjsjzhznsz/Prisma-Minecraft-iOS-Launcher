@@ -21,6 +21,7 @@
 #import "ResourcePackService.h"
 #import "DataPackService.h"
 #import "PLProfiles.h"
+#import "NMToast.h"   // Task267：目标实例偏差提醒
 #import "LauncherPreferences.h"
 #import "VersionCardCell.h"
 #import "MinecraftResourceDownloadTask.h"
@@ -468,6 +469,8 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
 // versionFilterSegment 高度约束：版本 tab 显示（约 32pt），其他 tab 设为 0，
 // 避免 hidden=YES 时仍占空间导致 tabSegment 与 searchBar 之间出现"大白条"。
 @property (nonatomic, strong) NSLayoutConstraint *versionFilterHeightConstraint;
+// ★ Task267：目标实例偏差提醒一次开关（viewWillAppear 对账用）
+@property (nonatomic, assign) BOOL ame267_profileMismatchToasted;
 @property (nonatomic, strong) UISearchBar *searchBar;
 // Task189：控件仓库 tab 折叠搜索框用（hidden 不释放约束空间，需高度归零）
 @property (nonatomic, strong) NSLayoutConstraint *searchBarHeightConstraint;
@@ -704,6 +707,10 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     if (!self.targetProfileName.length) {
         self.targetProfileName = PLProfiles.current.selectedProfileName;
     }
+    // ★ Task267（目标实例可见性）：快照语义保留（防下载中途切实例误写
+    //   目录），但目标实例必须在 UI 上可见——页面标题带上实例名，消除
+    //   "资源到底装到哪个实例"的黑盒感。
+    self.title = [NSString stringWithFormat:localize(@"ame267.download.target_title", @"下载 · 实例：%@"), self.targetProfileName ?: @"default"];
 
     [self setupUI];
     // 初始 tab：默认 0（版本）；资源管理界面"去下载"引导跳转时会指定对应资源类型 tab
@@ -726,6 +733,18 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
         NSLog(@"[Download] Task269: latched target profile \"%@\" gone -> re-latch to selected \"%@\"",
               self.targetProfileName, PLProfiles.current.selectedProfileName ?: @"(nil)");
         self.targetProfileName = PLProfiles.current.selectedProfileName;
+    }
+    // ★ Task267：用户切实例后回到下载页——快照仍锁定旧实例，明示一次
+    //   （不阻断操作），防"以为装到新实例"。上一步 Task269 已消化迁移
+    //   合并的尸体重锁场景，此处只剩"切了实例但目标仍是旧实例"的提示。
+    NSString *ame267_current = PLProfiles.current.selectedProfileName;
+    if (self.targetProfileName.length > 0 && ame267_current.length > 0 &&
+        ![ame267_current isEqualToString:self.targetProfileName] &&
+        !self.ame267_profileMismatchToasted) {
+        self.ame267_profileMismatchToasted = YES;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [NMToast showMessage:[NSString stringWithFormat:localize(@"ame267.download.target_mismatch", @"注意：下载目标实例仍为「%@」（打开下载页时锁定），切换实例请重新进入下载页"), self.targetProfileName]];
+        });
     }
     // 重新隐藏导航栏黑条（pop 回根页面时 topViewController == self）
     if (self.navigationController &&
