@@ -3506,3 +3506,20 @@ Work Log:
 Stage Summary:
 - CI run 38940635562（f6fb93d）Success 一轮终绿——Task 263(重放版) 闭环
 - 移交下轮：v6.5.5 Beta 资产仍为 dbc22bd 构建，六项修复随 CI artifact 就绪待资产静默替换（task275_release_assets 同款管道；本轮 API 令牌不在侧，不盲动发布物）
+
+---
+Task ID: 276
+Agent: main (Super Z)
+Task: 装机反馈四项：撤销 bf9753c 设置展开 / 真玻璃档连点伪玻璃 / 小窗依旧漂移 / 伪玻璃透明度滑块无效 + i18n 复查
+
+Work Log:
+- 资产取证：下载 v6.5.5 Beta tipa 解包实锤——pseudo_glass_transparency i18n 键与 ame263_presenterInsideGameSurface 符号均 0 命中 = 资产为 bf9753c 构建（10-16 09:40 替换，Task263 重放版 6c65c79 17:02 未含）；用户能报"滑块无效"判定其侧载了含六项修复的 CI artifact——四项均按"最新代码仍有缺口"处理
+- ①撤销展开：prefSectionsVisible YES→NO（Task267 重排与组名修正保留）；Task263-①折叠态 footer 根修随默认折叠恢复常态生效
+- ②最终收窄：hook 的 textFields>0 全局条件并入 inGame 域——shouldReplace = pseudo ∥ presenterInsideGameSurface（inGame 已全覆盖输入类，启动器内带输入框 alert 不再被替换）
+- ③双乘根修：sendTouchPoint 旧式 location×screenScale×ax——ax 定义为"视图pt→整帧物理px"完整因子（physicalWidth=整帧surfaceView宽×设备screenScale）已含设备尺度，叠乘=输出放大 screenScale 倍（iPad 2.0）=触点越靠右下偏得越多；小窗态 ax×(resScale/FSR)【替换】screenScale，直发+虚拟鼠标两路径同修；热栏 adaptedPoint（native 自洽几何）不动
+- ④滑块三连根修：a.映射梯度拉宽（填充深 ±0.15/浅 ±0.20、tint 深 ±0.25/浅 ±0.275，0.5 锚点逐字节保持）b.解除滑条 whenNotInGame 灰禁（游戏内可调）c.LGC 广播 LGCPseudoGlassTransparencyChangedNotification（同值去重）+ AmeLiquidGlassView 填充自监听重铺（dealloc 退订成对）+ Ame237 面板 tint 监听重铺（tag 244）+ provider 全部延迟求值
+- ⑥i18n 复查：task248 缺键0/硬编码0/动态键0；task191 四主表 3088；task139 all balanced；task250 全零；verify219 81/81（3088）；verify255 52 PASS——本轮零新增文案无遗漏
+- 工具事故零；门禁一次通过
+
+Stage Summary:
+- 四项反馈全修提交 11e660e 推送 main；CI run 38947624603 轮询中；装机锚点：①设置打开默认全折叠 ②真玻璃档启动器内任意 alert（含输入类）原生直通 ③小窗内触摸点击与光标位置逐点对齐（不再向右下放大偏移）④伪玻璃档拖滑条在屏面板 ≤1 拖动 tick 内可见透明度变化、真玻璃档 Metal 域弹窗同享
