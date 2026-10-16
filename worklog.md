@@ -3471,3 +3471,24 @@ Work Log:
 Stage Summary:
 - 装机验证锚点:①设置页 8 组默认全展开+新顺序(语言/主题最上,内存与 Java 紧随控制,下载源/AI/调试靠后)②组头点击折叠/展开会话内记忆③设置搜索照常④主页新增'版本管理'磁贴(点击直达版本管理+模组管理)⑤多次弹窗(登录提示/JVM 重启弹窗等)后内存不涨⑥TrollStore JIT 拉起失败提示跟随 App 语言显示
 - 遗留转介:下载页目标实例名展示(评估后本轮放弃,下一轮候选);Task 275 P1 未修清单在案
+
+---
+Task ID: 263(重放版)
+Agent: main (Super Z)
+Task: 用户六项装机反馈(①设置折叠②崩溃界面简略分析+查看日志详情退桌面③小窗④连点伪玻璃⑤伪玻璃透明度设置⑥i18n)——撞号发现后于 origin/main(211f5b9,Task263-275 基线)外科手术重放
+
+Work Log:
+- 撞号处置：原实现 14b342a 基于旧基线，远端已被并行会话推进到 Task 275（远端队列的 Task263 = 整合包根修，用户六项在远端零实施：ame263_/透明度 API 全零命中）——终止 rebase 硬对齐远端，逐项重审计：③小窗已被 Task267 scale-mode 重缩放全面覆盖（控件层/输入条/SDL re-assert/坐标映射）→ 弃用；②a hs_err 精化已被远端 ame267_refineWithHsErr（保守精化式）超越 → 弃用；①②④⑤⑥ 为净缺口逐项重放
+- ①设置折叠 footer 根修：titleForFooterInSection 对折叠分区（visibility NO）返回 nil（IMG_0391 实锤折叠分区仍拖整段灰字含与 Hero 卡重复的版本三行）——远端 267 已改默认展开+会话记忆，本修补齐"折叠态 footer 文字墙"最后一块
+- ②a 崩溃分析双解析器补缺：ame263_detectFabricIncompatibleFromLog（FormattedException 人话方案行 '- Replace mod' 直进建议卡首条+细节封顶 10 行+新类型 CrashTypeModIncompatible+crashReasonText/三条建议）；ame263_extractMinecraftCrashReportFromLog（MC 原生报告 Description+异常链+//诊断注释上卡）；analyzeCrashType 接入序 2.5 位（OOM 后 SIGSEGV 前）与 5.5 位（缺失库前）堵 1015 实证被泛化分支抢定型丢方案行路径
+- ②b 查看日志详情根修：ame263_logExpanded+ame263_applyLogExpansion 独占日志卡高度控制（viewDidLayoutSubviews 加守卫），fatal 场景不再走 actionToggleLogOutput 的 [UIApplication suspend]+dispatch_group_leave 死路（Task275 只修"点了没反应"，suspend 死路仍在）——卡内展开全量日志（latestlog 256KB 尾窗复用 ame274_readFileTail + fatal_trace 全量 + hs_err 头 4KB 复用 +fatalEvidenceText 同源链），不退桌面、重启不卡等待 MC 启动画面
+- ④连点伪玻璃收窄：Task237 中央 hook 真玻璃档接管域仅剩 Metal 游戏面（ame263_presenterInsideGameSurface 沿 presenting/parent 双链上溯命中 SurfaceViewController/JavaGUIViewController 族）+ 输入类弹窗（textFields>0）两域；伪玻璃档维持全接管——装机 23:35 实锤启动器内确认删除/版本隔离 alert 被整体替换磨砂面板与 Task245/IMG_0380 原生玻璃定案冲突
+- ⑤伪玻璃透明度设置项（iOS 27 式）：LGC API 0.0-1.0 默认 0.5（内部 0-100 整数存储钳制，objectForKey 判缺省——0 是合法档位不能作哨兵）；三消费面线性映射（AmeLiquidGlassView TG .panel 填充 dark 0.95-0.20t/light 0.90-0.40t；AmeFloatingMenu 与 +Navigation 两处快照 tint dark 0.55-0.30t/light 0.62-0.40t，默认 0.5 精确回 Task244/252 锚点深 0.40/浅 0.42）即取即用无广播；设置→通用界面风格行下滑条 0-100% get/set 双向路由（whenNotInGame）
+- ⑥i18n：task248 审计 6 缺键 + preference.detail 派生键 = 7 键×4 表（en/zh-Hans/zh-CN/zh-Hant，3081→3088 四表锁步）；collapse_log 改双 localize 直调补旧版三元式逃闸1 盲区；verify255 品牌闸修正豁免域（ame267.jit.legacy_stik 的 "Amethyst-MeloNX.js" 为旧 sideload 构建脚本事实文件名，与 credits 同属非品牌自称豁免——该红由远端 267-net 引入，本轮零触及）
+- 门禁：task248 缺键0/硬编码0/动态键0；task191 54 表 OK（四主表 3088）；task139 all balanced；task250 全零；verify219 81/81 ALL GREEN（重锚 3088）；verify255 52 PASS 0 FAIL
+- 重放纪律：SurfaceViewController.m/PLLogOutputView.m 零改动（③ 远端已解，②b 全在卡内）；diff 398+/20- 13 文件；编辑文件括号差值与 HEAD 全等（注释先天文本）
+
+Stage Summary:
+- 装机验证锚点：①组头折叠后只剩表头行（灰字墙消失，展开恢复）②Fabric 不兼容崩卡显示"Mod 版本不兼容"+Fabric 方案行居建议首条③"查看日志详情"卡内展开全量日志并变"收起日志"，不退桌面、重启不卡等待画面④启动器内确认删除/版本隔离弹窗=系统原生液态玻璃，游戏内 Metal 面板仍自绘⑤设置→通用"玻璃透明度"滑条即改即生效（0% 最闷 100% 最透，默认 50%）
+- 重复实现存档：14b342a 留 reflog（旧基线全量版含 hs_err 追加与小窗第三洞修，远端缺相应能力时可参照）
+- 移交远端：verify255 品牌闸豁免域修正随本提交入树，远端下轮直拉即绿

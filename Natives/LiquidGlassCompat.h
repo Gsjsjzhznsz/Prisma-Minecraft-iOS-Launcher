@@ -79,6 +79,18 @@ FOUNDATION_EXPORT BOOL LGCIsGlassStyleActive(void);
 ///   一律 AmeFloatingMenu 自绘磨砂，不经系统 UIMenu 玻璃材质）。
 FOUNDATION_EXPORT BOOL LGCIsPseudoGlassStyleActive(void);
 
+/// ★ Task263（反馈 5："伪液态玻璃能不能添加新设置项，就像 iOS27 一样可以
+///   调节玻璃的透明度"）：伪液态玻璃透明度（0.0-1.0，默认 0.5）。
+///   语义：1.0 = 最透（背景折光最清楚），0.0 = 最闷（磨砂防御底最厚）；
+///   默认 0.5 精确映射回 Task244/252 装机验证过的既有观感锚点
+///   （TG .panel 填充 深色 0.85/浅色 0.70；快照磨砂 tint 深 0.40/浅 0.42）。
+///   消费面：AmeLiquidGlassView 填充层、AmeFloatingMenu 快照 tint、
+///   游戏内菜单（SurfaceViewController+Navigation）快照 tint——面板均为
+///   瞬时视图，呈现时即取即用，无需广播重铺。
+FOUNDATION_EXPORT CGFloat LGCPseudoGlassTransparency(void);
+/// 写入伪液态玻璃透明度（0.0-1.0，内部 0-100 整数存储+钳制）
+FOUNDATION_EXPORT void LGCSetPseudoGlassTransparency(CGFloat transparency);
+
 /// ★ Task260（清单 2："自动模式下非 26 以上的版本仍然使用液态玻璃导致
 ///   崩溃，不会回退，包括意外选择液态玻璃"）：游戏会话玻璃安全闸。
 ///

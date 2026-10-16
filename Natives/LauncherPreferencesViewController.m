@@ -695,6 +695,11 @@ if ([section isEqualToString:@"general"]) {
             if ([key isEqualToString:@"text_scale"]) {
                 return @((NSInteger)round(LGCTextScaleMultiplier() * 100.0));
             }
+            // ★ Task263（反馈 5）：伪玻璃透明度以【整数百分比】呈现给滑条
+            //（0-100，默认 50），存储走 LGC 的 prisma.pseudo_glass_transparency。
+            if ([key isEqualToString:@"pseudo_glass_transparency"]) {
+                return @((NSInteger)round(LGCPseudoGlassTransparency() * 100.0));
+            }
         }
         return getPrefObject(keyFull);
     };
@@ -803,7 +808,7 @@ if ([section isEqualToString:@"general"]) {
             }
             if ([key isEqualToString:@"ui_scale"]) {
                 // 滑条回调每 tick 都走这里（sliderMoved 不派发 action）——
-                // LGCSetUIScaleMultiplier 内部做步进铉制 + 广播，主菜单/
+                // LGCSetUIScaleMultiplier 内部做步进钳制 + 广播，主菜单/
                 // 右栏实时重排即由该广播驱动。
                 double ame225_pct = [value isKindOfClass:[NSNumber class]]
                     ? [value doubleValue] : [value doubleValue];
@@ -813,6 +818,14 @@ if ([section isEqualToString:@"general"]) {
             if ([key isEqualToString:@"text_scale"]) {
                 double ame225_pct = [value doubleValue];
                 LGCSetTextScaleMultiplier(ame225_pct / 100.0);
+                return;
+            }
+            // ★ Task263（反馈 5）：伪玻璃透明度滑条写入（0-100 → 0.0-1.0，
+            //   钳制在 LGC 层；面板呈现时即取即用，无需广播重铺）。
+            if ([key isEqualToString:@"pseudo_glass_transparency"]) {
+                double ame263_pct = [value isKindOfClass:[NSNumber class]]
+                    ? [value doubleValue] : 50.0;
+                LGCSetPseudoGlassTransparency(ame263_pct / 100.0);
                 return;
             }
         }
@@ -979,6 +992,20 @@ if ([section isEqualToString:@"general"]) {
                   nav.modalPresentationStyle = UIModalPresentationFormSheet;
                   [self presentViewController:nav animated:YES completion:nil];
               }
+            },
+            // ★ Task263（反馈 5："伪液态玻璃能不能添加新设置项，就像 iOS27
+            //   一样可以调节玻璃的透明度"）：伪玻璃透明度滑条（0-100 整数
+            //   百分比，默认 50 = 既有观感锚点）。消费面 = 伪玻璃渲染管线
+            //   三处（TG .panel 填充 / 快照磨砂 tint 启动器+游戏内），呈现
+            //   时即取即用；真液态玻璃档游戏内磨砂面板同享（Metal 域）。
+            @{@"key": @"pseudo_glass_transparency",
+              @"title": localize(@"preference.title.pseudo_glass_transparency", nil),
+              @"hasDetail": @YES,
+              @"icon": @"drop.degreesign",
+              @"type": self.typeSlider,
+              @"min": @(0),
+              @"max": @(100),
+              @"enableCondition": whenNotInGame
             },
             @{@"key": @"ui_scale",
               @"title": localize(@"preference.title.ui_scale", nil),
@@ -2640,6 +2667,16 @@ if ([section isEqualToString:@"general"]) {
 #pragma mark - UITableView Delegate
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
+    // ★ Task263（反馈 1："设置还不是折叠，你自己展开的怎么不知道折叠了呢"）：
+    //   分区折叠态（visibility NO）下 footer 描述段照旧渲染——IMG_0391 装机
+    //   实锤每节表头下都拖着一整段灰字（含与 Hero 卡重复的版本三行），
+    //   折叠页观感仍是"八段文字墙"= 用户眼里的"没折叠"。修法：折叠分区
+    //   footer 返回 nil（真正折叠 = 只剩表头行），展开时恢复描述段；
+    //   reloadSections（表头点按折叠/展开）会重新查询本方法，零额外刷新。
+    if (section < (NSInteger)self.prefSectionsVisibility.count &&
+        !self.prefSectionsVisibility[section].boolValue) {
+        return nil;
+    }
     if (section == 0) { // Add to general section
         NSString *versionString = [NSString stringWithFormat:@"Amethyst iOS Remastered %@\n%@ on %@ (%s)\nPID: %d",
             NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"],

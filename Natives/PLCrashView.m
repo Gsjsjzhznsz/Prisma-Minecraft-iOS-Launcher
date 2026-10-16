@@ -25,6 +25,7 @@ typedef NS_ENUM(NSInteger, CrashType) {
     CrashTypeJavaVersionMismatch,// Java 版本不匹配
     CrashTypeRendererError,      // 渲染器错误
     CrashTypeModLoadingFailure,  // Mod 加载失败
+    CrashTypeModIncompatible,    // ★ Task263：Mod 版本不兼容（Fabric FormattedException 实证块）
     CrashTypeJavaException,      // Java 异常
     CrashTypeUnknown             // 未知错误
 };
@@ -39,6 +40,9 @@ typedef NS_ENUM(NSInteger, CrashType) {
 // Task 95：缺失 mod 崩溃的解析产物（供建议卡片精确点名）
 @property (nonatomic, strong, nullable) NSArray<NSString *> *ame95_missingModNames; // 推断的缺失 mod/库名单
 @property (nonatomic, copy, nullable) NSString *ame95_overriddenEvidence;           // "Dependencies overridden for ..." 证据行（可为空）
+// ★ Task263：Fabric 不兼容解析产物（FormattedException 的用户向方案行，
+//   例：" - Replace mod 'Sodium' (sodium) 0.9.3-alpha.1+mc26.3 with version 0.9.2+mc26.3."）
+@property (nonatomic, copy, nullable) NSString *ame263_incompatSummary;
 
 // UI 组件
 @property (nonatomic, strong) UIScrollView *mainScrollView;
@@ -68,6 +72,9 @@ typedef NS_ENUM(NSInteger, CrashType) {
 @property (nonatomic, strong) CAGradientLayer *suggestionAccentLayer;
 // 日志卡片高度约束（根据屏幕高度动态调整）
 @property (nonatomic, strong) NSLayoutConstraint *logCardHeightConstraint;
+// ★ Task263：日志卡展开态（查看日志详情 ↔ 收起日志；展开时高度控制权
+//   从 viewDidLayoutSubviews 移交给 ame263_applyLogExpansion）
+@property (nonatomic, assign) BOOL ame263_logExpanded;
 @end
 
 @implementation PLCrashView
@@ -205,7 +212,11 @@ static void ame274_archiveCrashReportAfterL2Present(void) {
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     // 根据屏幕高度动态调整日志卡片高度，避免小屏挤压按钮或大屏浪费空间
-    [self adjustLogCardHeight];
+    // ★ Task263：展开态由 ame263_applyLogExpansion 独占高度控制权，
+    //   布局回写不再覆盖（否则一布局展开态就被打回定高）。
+    if (!self.ame263_logExpanded) {
+        [self adjustLogCardHeight];
+    }
     // 更新错误卡片顶部红色 accent 条的 frame
     if (_accentGradientLayer) {
         _accentGradientLayer.frame = CGRectMake(0, 0, _errorCardView.bounds.size.width, 2);
@@ -657,6 +668,14 @@ static void ame274_archiveCrashReportAfterL2Present(void) {
             [result addObject:@{@"icon": @"arrow.clockwise.circle", @"text": localize(@"crash.suggestion.modload_update", @"更新 Mod 加载器（Forge/Fabric/OptiFine）")}];
             [result addObject:@{@"icon": @"info.circle", @"text": localize(@"crash.suggestion.modload_version", @"检查 Mod 是否支持当前 MC 版本")}];
             break;
+        case CrashTypeModIncompatible:
+            // ★ Task263：Fabric 自带的人话方案行直接作为首条建议（若解析到）
+            if (self.ame263_incompatSummary.length > 0) {
+                [result addObject:@{@"icon": @"wand.and.stars", @"text": [NSString stringWithFormat:localize(@"crash.suggestion.incompat_fabric_plan", @"按 Fabric 给出的方案：%@"), self.ame263_incompatSummary]}];
+            }
+            [result addObject:@{@"icon": @"puzzlepiece", @"text": localize(@"crash.suggestion.incompat_align", @"在 Mod 管理中把报告点名的 mod 更新/降级到匹配版本，或移除多余一方")}];
+            [result addObject:@{@"icon": @"clock.arrow.circlepath", @"text": localize(@"crash.suggestion.incompat_pack_update", @"整合包更新后新旧 mod 混装常见此崩：以报告列出的版本对为准")}];
+            break;
         case CrashTypeJavaException:
             [result addObject:@{@"icon": @"doc.text", @"text": localize(@"crash.suggestion.java_log", @"查看完整日志定位异常堆栈")}];
             [result addObject:@{@"icon": @"trash", @"text": localize(@"crash.suggestion.java_mods", @"检查 Mod 是否兼容（移除最近添加的 Mod）")}];
@@ -787,6 +806,118 @@ static void ame274_archiveCrashReportAfterL2Present(void) {
     return YES;
 }
 
+/// ★ Task263：Fabric mod 不兼容检测（装机日志 1015 23:36:58 实证：
+/// reeses-sodium-options 2.2.5 要求 sodium 0.9.2，实装 0.9.3-alpha.1 →
+/// FormattedException → exit(1)，旧分析链只给"Mod 加载失败"一句泛话 =
+/// 用户投诉的"上游的简略问题分析"。Fabric 自己已给出人话方案行，本解析
+/// 把它原样搬上错误卡片。）
+///
+/// 触发词（任一）："Some of your mods are incompatible with the game or
+/// each other!"（FormattedException 头）/ "Incompatible mods found!"（日志
+/// 行）。采集范围：触发行到堆栈首行（"\tat "）或空 20 行窗口内，凡
+/// " - " 开头的方案/细节行 + "A potential solution"/"More details:" 导语。
+/// 产物：
+///   * ame263_incompatSummary —— 第一条 " - Replace mod ..." 方案行
+///   * crashDetail —— 导语 + 方案行 + 细节行（封顶 10 行，防错误卡爆版）
+/// 返回 YES 表示已识别并定型（analyzeCrashType 直接返回）。
+- (BOOL)ame263_detectFabricIncompatibleFromLog:(NSString *)logContent lowerLog:(NSString *)lowerLog {
+    if (logContent.length == 0) return NO;
+    NSArray<NSString *> *lines = [logContent componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+    NSInteger triggerIdx = -1;
+    for (NSInteger i = 0; i < (NSInteger)lines.count; i++) {
+        NSString *l = lines[i];
+        if ([l containsString:@"Some of your mods are incompatible with the game or each other"] ||
+            [l containsString:@"Incompatible mods found!"]) {
+            triggerIdx = i;
+            break;
+        }
+    }
+    if (triggerIdx < 0) return NO;
+
+    NSMutableArray<NSString *> *collected = [NSMutableArray array];
+    NSString *summary = nil;
+    for (NSInteger i = triggerIdx; i < (NSInteger)lines.count && collected.count < 10; i++) {
+        NSString *raw = lines[i];
+        NSString *l = [raw stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (l.length == 0) break;
+        if ([l hasPrefix:@"\tat "] || [raw hasPrefix:@"\tat "]) break;   // Java 堆栈开始
+        BOOL keep = [l hasPrefix:@"- "] || [l hasPrefix:@" - "] ||
+                    [l containsString:@"A potential solution"] ||
+                    [l containsString:@"More details:"] ||
+                    [l containsString:@"Some of your mods are incompatible"];
+        if (!keep) continue;
+        // 堆栈行形态的异常头（"net.fabricmc.loader.impl.FormattedException: ..."）只取冒号后人话段
+        if ([l containsString:@"FormattedException:"]) {
+            NSRange c = [l rangeOfString:@":"];
+            if (c.location != NSNotFound && c.location + 1 < l.length) {
+                l = [[l substringFromIndex:c.location + 1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+            }
+        }
+        if (l.length == 0 || l.length > 300) continue;
+        if (![collected containsObject:l]) [collected addObject:l];
+        // 方案行 = Fabric 给出的人话修复建议（" - Replace mod 'X' ... with version Y."）
+        if (summary == nil && [l containsString:@"Replace mod '"]) summary = l;
+    }
+    if (collected.count == 0) return NO;
+
+    self.crashType = CrashTypeModIncompatible;
+    self.ame263_incompatSummary = summary;
+    self.crashDetail = [collected componentsJoinedByString:@"\n"];
+    return YES;
+}
+
+/// ★ Task263：Minecraft 原生崩溃报告解析（"---- Minecraft Crash Report ----"
+/// 块——游戏内崩溃（mod 冲突/世界加载/渲染异常）MC 自带人话报告，旧链
+/// 只做关键词分型丢掉了 Description 与 Caused by 链）。采集 Description
+/// 行 + 首个异常行 + 前 2 条 "Caused by" + 头部注释（"// " 开头的诊断语）。
+- (BOOL)ame263_extractMinecraftCrashReportFromLog:(NSString *)logContent {
+    if (logContent.length == 0) return NO;
+    NSRange report = [logContent rangeOfString:@"---- Minecraft Crash Report ----"];
+    if (report.location == NSNotFound) return NO;
+    NSArray<NSString *> *lines = [logContent componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+    // 定位报告头所在行
+    NSInteger start = -1;
+    NSUInteger consumed = 0;
+    for (NSInteger i = 0; i < (NSInteger)lines.count; i++) {
+        consumed += lines[i].length + 1;
+        if (consumed >= report.location + report.length) { start = i; break; }
+    }
+    if (start < 0) return NO;
+
+    NSString *description = nil;
+    NSMutableArray<NSString *> *exceptions = [NSMutableArray array];
+    NSString *comment = nil;
+    for (NSInteger i = start + 1; i < (NSInteger)lines.count && (description == nil || exceptions.count < 3 || comment == nil); i++) {
+        NSString *l = [lines[i] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+        if ([l hasPrefix:@"-- Head --"]) break;   // 进入堆栈细节区，收手
+        if (description == nil && [l hasPrefix:@"Description:"]) description = l;
+        if (comment == nil && [l hasPrefix:@"// "]) comment = l;
+        if (exceptions.count < 3 && l.length > 0 &&
+            ([l containsString:@"Exception"] || [l containsString:@"Error"]) &&
+            ![l hasPrefix:@"#"] && ![l hasPrefix:@"//"] &&
+            [l rangeOfString:@":"].location != NSNotFound && l.length < 260) {
+            BOOL dup = NO;
+            for (NSString *e in exceptions) if ([e isEqualToString:l]) { dup = YES; break; }
+            if (!dup) [exceptions addObject:l];
+        }
+        if ([l hasPrefix:@"Description:"] || description != nil) {
+            // Description 后紧跟异常块；异常收满 3 条且 Description 已得即可停
+            if (description != nil && exceptions.count >= 3) break;
+        }
+    }
+    if (description == nil && exceptions.count == 0) return NO;
+
+    NSMutableString *detail = [NSMutableString string];
+    if (description.length > 0) [detail appendFormat:@"%@\n", description];
+    for (NSString *e in exceptions) [detail appendFormat:@"  %@\n", e];
+    if (comment.length > 0) [detail appendFormat:@"%@", comment];
+    if (detail.length == 0) return NO;
+
+    self.crashType = CrashTypeJavaException;
+    self.crashDetail = [detail copy];
+    return YES;
+}
+
 /// 分析崩溃类型（基于 exitCode 和日志关键词）
 ///
 /// 参照 HMCL 的崩溃分析器，通过 exitCode 和日志中的异常关键词，
@@ -809,6 +940,13 @@ static void ame274_archiveCrashReportAfterL2Present(void) {
     if ([self isOOMCrash]) {
         self.crashType = CrashTypeOOM;
         self.crashDetail = [self extractLineContaining:@"outofmemory" fromLog:lowerLog] ?: [self extractLineContaining:@"cannot allocate" fromLog:lowerLog];
+        return;
+    }
+
+    // ★ Task263 2.5：Fabric mod 不兼容（FormattedException 人话方案块）——
+    //   必须先于一切泛化关键词：本块自带权威修复方案，被泛化分支抢先
+    //   定型为"Mod 加载失败"就丢掉了方案行（装机日志 1015 实证路径）。
+    if ([self ame263_detectFabricIncompatibleFromLog:logContent lowerLog:lowerLog]) {
         return;
     }
 
@@ -860,6 +998,13 @@ static void ame274_archiveCrashReportAfterL2Present(void) {
         [lowerLog containsString:@"duplicate mod"]) {
         self.crashType = CrashTypeModConflict;
         self.crashDetail = [self extractLineContaining:@"nosuchmethod" fromLog:lowerLog] ?: [self extractLineContaining:@"classcast" fromLog:lowerLog];
+        return;
+    }
+
+    // ★ Task263 5.5：MC 原生崩溃报告（"---- Minecraft Crash Report ----"）
+    //   ——Description + 异常链原样上卡（游戏内崩溃的人话报告，优先于
+    //   泛化关键词，避免被 "fabric+error" 之类误抢定型）。
+    if ([self ame263_extractMinecraftCrashReportFromLog:logContent]) {
         return;
     }
 
@@ -1163,6 +1308,12 @@ static void ame274_archiveCrashReportAfterL2Present(void) {
 }
 
 - (void)adjustLogCardHeight {
+    self.logCardHeightConstraint.constant = [self ame263_baseLogCardHeight];
+}
+
+/// ★ Task263：收起态基准高度（原 adjustLogCardHeight 的屏幕分档逻辑，
+///   展开/收起切换共用）。
+- (CGFloat)ame263_baseLogCardHeight {
     CGFloat screenHeight = self.view.bounds.size.height;
     // 根据屏幕高度调整日志卡片高度：
     //   小屏幕（iPhone SE）日志区较矮，给按钮留空间
@@ -1175,7 +1326,7 @@ static void ame274_archiveCrashReportAfterL2Present(void) {
     } else {
         logHeight = 300;
     }
-    self.logCardHeightConstraint.constant = logHeight;
+    return logHeight;
 }
 
 #pragma mark - Log Content
@@ -1405,6 +1556,10 @@ static NSString *ame274_readFileTail(NSString *path, NSUInteger maxBytes) {
         case CrashTypeModLoadingFailure:
             reason = localize(@"crash.reason.mod_loading", @"Mod 加载失败（Forge/Fabric/OptiFine 加载错误）");
             break;
+        case CrashTypeModIncompatible:
+            // ★ Task263：不兼容类型的原因行只报事实，细节与方案在 crashDetail
+            reason = localize(@"crash.reason.mod_incompatible", @"Mod 版本不兼容（多个 mod 对同一依赖的版本要求冲突，或 mod 与 MC/加载器版本不匹配）");
+            break;
         case CrashTypeJavaException:
             reason = localize(@"crash.reason.java_exception", nil);
             break;
@@ -1456,14 +1611,77 @@ static NSString *ame274_readFileTail(NSString *path, NSUInteger maxBytes) {
 }
 
 - (void)showFullLog {
-    // ★ Task275（P2-b4）：日志视图是 SurfaceVC 的子视图，本页以 OverFullScreen 全屏
-    //   盖在其上——直接 toggle 发生在看不见的图层下 = 点了没反应。先收本页再切换。
-    SurfaceViewController *ame275_surface = [SurfaceViewController currentInstance];
-    if (!ame275_surface) return;
-    [self dismissViewControllerAnimated:YES completion:^{
-        [ame275_surface.logOutputView actionToggleLogOutput];
-        NSLog(@"[PLCrashView] Task275: dismissed crash page then toggled full log output view");
-    }];
+    // ★ Task263（反馈 2 装机实证："点击查看日志详细按钮会退出到桌面，
+    //   打开 app 发现在等待 mc 启动画面"）：旧实现转调 PLLogOutputView
+    //   actionToggleLogOutput —— 该方法带上游 fatal 语义（fatalErrorOccurred
+    //   时 [UIApplication suspend] + dispatch_group_leave）：suspend 把 app
+    //   送回桌面，leave 唤醒 handle_fatal_exit 的 park 线程继续 orig_exit
+    //   终结进程 = 点"查看日志详情"得到退到桌面；重开时残留会话停在
+    //   启动等待画面。Task275 的先 dismiss 再 toggle 修了"点了没反应"，
+    //   但 fatal suspend 死路仍在。根修：不再触碰 PLLogOutputView，改为
+    //   崩溃页内自展开（日志卡定高 → 近全屏 + 完整日志尾部，按钮变
+    //   "收起日志"），两个问题一起根除。
+    self.ame263_logExpanded = !self.ame263_logExpanded;
+    [self ame263_applyLogExpansion];
+}
+
+/// ★ Task263：日志卡展开/收起（高度动画 + 完整日志装载 + 按钮文案切换）。
+///   展开态由本方法独占 logCardHeightConstraint 控制权（viewDidLayoutSubviews
+///   已加守卫），高度不再被布局回写打回定高。
+- (void)ame263_applyLogExpansion {
+    BOOL expand = self.ame263_logExpanded;
+    CGFloat target = expand
+        ? MAX(self.view.bounds.size.height * 0.72, 420.0)
+        : [self ame263_baseLogCardHeight];
+    self.logCardHeightConstraint.constant = target;
+    // ★ Task263 ⑥：双 localize 直调（不写三元内联——三元式调用曾逃过
+    //   task248 闸1 静态扫描，crash.collapse_log 一度从未入表）。
+    NSString *ame263_buttonTitle = expand
+        ? localize(@"crash.collapse_log", @"收起日志")
+        : localize(@"crash.view_log", @"查看日志详情");
+    [_fullLogButton setTitle:ame263_buttonTitle forState:UIControlStateNormal];
+    if (expand) {
+        [self ame263_loadFullLogContent];
+    } else {
+        [self loadLogContent];   // 收起恢复摘要（尾读 150 行 + fatal_trace 尾）
+    }
+    [UIView animateWithDuration:0.25 delay:0
+                        options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionCurveEaseInOut
+                     animations:^{ [self.view layoutIfNeeded]; } completion:nil];
+    // 展开后滚到底部（最新日志在尾部）
+    if (expand && self.logTextView.text.length > 0) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.logTextView scrollRangeToVisible:NSMakeRange(self.logTextView.text.length, 0)];
+        });
+    }
+    NSLog(@"[PLCrashView] Task263: full log %s (in-place, no suspend path)", expand ? "expanded" : "collapsed");
+}
+
+/// ★ Task263：完整日志装载（展开态）：latestlog 尾窗 256KB + fatal_trace
+///   全量 + hs_err 头 4KB（复用 Task274 ame274_readFileTail 尾读与
+///   +fatalEvidenceText 同源证据链——主线程点按钮不做数 MB 整读）。
+- (void)ame263_loadFullLogContent {
+    NSMutableString *out = [NSMutableString string];
+    NSString *latestlogPath = [NSString stringWithFormat:@"%s/latestlog.txt", getenv("POJAV_HOME")];
+    NSString *logContent = ame274_readFileTail(latestlogPath, 256 * 1024);
+    if (logContent.length > 0) {
+        NSArray *lines = [logContent componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+        NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:latestlogPath error:nil];
+        NSUInteger firstIdx = (attrs && [attrs fileSize] > 256 * 1024) ? 1 : 0;   // 尾窗首行截断残行裁掉
+        [out appendString:@"----- latestlog.txt (tail) -----\n"];
+        for (NSUInteger i = firstIdx; i < lines.count; i++) {
+            [out appendFormat:@"%@\n", lines[i]];
+        }
+    } else {
+        [out appendString:@"(latestlog.txt 为空或不可读)\n"];   // task250 口径：不裸上键名
+    }
+    // fatal_trace.txt 全量 + 最新 hs_err 头 4KB（与 readLatestLogForAnalysis 同源）
+    NSString *extra = [PLCrashView fatalEvidenceText];
+    if (extra.length > 0) {
+        [out appendString:extra];
+    }
+    self.logTextView.text = out;
+    _logPlaceholderLabel.hidden = out.length > 0;
 }
 
 - (void)openGitHubIssues {

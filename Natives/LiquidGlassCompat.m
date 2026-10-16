@@ -108,6 +108,30 @@ BOOL LGCIsPseudoGlassStyleActive(void) {
     return LGCResolvedInterfaceStyle() == LGCInterfaceStylePseudoGlass;
 }
 
+#pragma mark - Task263 伪液态玻璃透明度
+
+/// 伪液态玻璃透明度存储键（0-100 整数；缺省 = 50，即既有观感锚点）
+static NSString * const kLGCPrefPseudoGlassTransparencyKey = @"prisma.pseudo_glass_transparency";
+
+CGFloat LGCPseudoGlassTransparency(void) {
+    // 缺省/越界回默认 0.5（objectForKey 判缺省——integerForKey 对未设键返 0，
+    // 而 0 是合法档位"最闷"，不能作缺省哨兵）
+    NSNumber *raw = [[NSUserDefaults standardUserDefaults] objectForKey:kLGCPrefPseudoGlassTransparencyKey];
+    if (![raw isKindOfClass:[NSNumber class]]) return 0.5;
+    NSInteger v = raw.integerValue;
+    if (v < 0 || v > 100) return 0.5;
+    return (CGFloat)v / 100.0;
+}
+
+void LGCSetPseudoGlassTransparency(CGFloat transparency) {
+    NSInteger ame263_v = (NSInteger)round(transparency * 100.0);
+    if (ame263_v < 0) ame263_v = 0;
+    if (ame263_v > 100) ame263_v = 100;
+    [[NSUserDefaults standardUserDefaults] setInteger:ame263_v
+                                               forKey:kLGCPrefPseudoGlassTransparencyKey];
+    NSLog(@"[LGC] Task263: pseudo glass transparency -> %ld%%", (long)ame263_v);
+}
+
 // ★ Task260（清单 2）：游戏会话玻璃安全闸（契约见 .h）。
 // 0 = 无活跃会话（启动器表面，玻璃不受会话闸影响）；>0 = 活跃会话 MC 主版本。
 static NSInteger ame260_liveSessionMCMajor = 0;

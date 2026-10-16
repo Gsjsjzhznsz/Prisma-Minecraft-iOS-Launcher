@@ -597,6 +597,7 @@
 "crash.suggestion" = "Suggested Action";
 "crash.suggestion.oom" = "Crash caused by iOS memory limit. Use GetMoreRam (LiveContainer) to lift the memory limit and retry";
 "crash.view_log" = "View Log Details";
+"crash.collapse_log" = "Collapse Log Details";
 "crash.share_log" = "Share Log";
 "crash.full_log" = "View Full Log";
 "crash.return_launcher" = "Exit Launcher";
@@ -618,6 +619,7 @@
 "crash.reason.java_version" = "Java version mismatch (UnsupportedClassVersionError)";
 "crash.reason.renderer" = "Renderer error (OpenGL/Metal/EGL initialization failed)";
 "crash.reason.mod_loading" = "Mod loading failure (Forge/Fabric/OptiFine)";
+"crash.reason.mod_incompatible" = "Mod version incompatibility (mods demand conflicting versions of the same dependency, or a mod does not match the MC/loader version)";
 // 快速修复建议文案
 "crash.suggestion.oom_ram" = "Reduce memory allocation (recommended 1024-2048MB)";
 "crash.suggestion.oom_getmoream" = "Use GetMoreRam (LiveContainer) to bypass iOS memory limit";
@@ -643,6 +645,9 @@
 "crash.suggestion.modload_remove" = "Remove problematic mod (check log for errors)";
 "crash.suggestion.modload_update" = "Update mod loader (Forge/Fabric/OptiFine)";
 "crash.suggestion.modload_version" = "Check if mod supports current MC version";
+"crash.suggestion.incompat_fabric_plan" = "Follow Fabric's suggested fix: %@";
+"crash.suggestion.incompat_align" = "In the mod manager, update/downgrade the mods named in the report to matching versions, or remove the extra one";
+"crash.suggestion.incompat_pack_update" = "Common after a modpack update mixes old and new mods: follow the version pairs listed in the report";
 "crash.suggestion.java_log" = "View full log for exception stack trace";
 "crash.suggestion.java_mods" = "Check mod compatibility (remove recently added mods)";
 "crash.suggestion.java_restart" = "Restart launcher and retry";
@@ -2890,10 +2895,12 @@
 "ame225.mods.shared_note" = "Mods are installed to the shared instance folder. Enable version isolation in version settings to give this version its own mods and saves.";
 "ame225.mods.open_settings" = "Open version settings";
 "preference.title.ui_scale" = "Interface scale";
+"preference.title.pseudo_glass_transparency" = "Glass transparency";
 "preference.title.text_scale" = "Text scale";
 "preference.title.text_auto_contrast" = "Dynamic text contrast";
 "preference.detail.interface_style" = "Auto follows the system (Liquid Glass on iOS 26+). Native keeps the classic look. Liquid Glass uses layered glass surfaces.";
 "preference.detail.ui_scale" = "Scales panels and cards (85–125%). Text size is controlled separately by text scale.";
+"preference.detail.pseudo_glass_transparency" = "Adjusts how see-through pseudo glass panels are: 0% is the most frosted, 100% is the most transparent. Default 50%.";
 "preference.detail.text_scale" = "Scales all interface fonts (85–130%) without changing panel sizes.";
 "preference.detail.text_auto_contrast" = "Automatically flips text color based on wallpaper brightness so text stays readable on any background.";
 "welcome.intro.f5.title" = "Appearance system";

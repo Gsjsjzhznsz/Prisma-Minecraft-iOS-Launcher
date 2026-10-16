@@ -15,6 +15,7 @@
 //
 
 #import "AmeLiquidGlassView.h"
+#import "LiquidGlassCompat.h"  // ★ Task263：LGCPseudoGlassTransparency()（伪玻璃透明度设置）
 #import <QuartzCore/QuartzCore.h>
 #import <objc/runtime.h>   // ★ Task252 CI r1：Method/class_getClassMethod/method_getImplementation 未声明编译雷（Task248 同款陷阱；本文件私有 API imp 直调全家桶依赖它）
 
@@ -691,14 +692,20 @@ NSArray *AME252GlassFiltersInternal(void) {
 
     // TG .panel 填充（浅 white@0.70 / 深 11%white@0.85，generateLegacyGlassImage
     // .panel 分支值）——玻璃激活时面板可读性由它独立承载。
+    // ★ Task263（反馈 5：伪玻璃透明度设置项，iOS 27 式可调）：填充 alpha 按
+    //   LGCPseudoGlassTransparency() 线性映射——默认 0.5 精确回到既有锚点
+    //   （深 0.85 / 浅 0.70）；1.0 最透 / 0.0 最闷，两端不越可读性底座。
     _ame252_fillView = [[UIView alloc] initWithFrame:self.bounds];
     _ame252_fillView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _ame252_fillView.userInteractionEnabled = NO;
+    CGFloat ame263_t = LGCPseudoGlassTransparency();
+    CGFloat ame263_darkFillA = 0.95 - 0.20 * ame263_t;   // 0.75(最透)..0.95(最闷)，0.5→0.85
+    CGFloat ame263_lightFillA = 0.90 - 0.40 * ame263_t;  // 0.50..0.90，0.5→0.70
     _ame252_fillView.backgroundColor = [UIColor colorWithDynamicProvider:
         ^UIColor * (UITraitCollection *tc) {
             return (tc.userInterfaceStyle == UIUserInterfaceStyleDark)
-                ? [UIColor colorWithWhite:0.11 alpha:0.85]
-                : [UIColor colorWithWhite:1.0 alpha:0.70];
+                ? [UIColor colorWithWhite:0.11 alpha:ame263_darkFillA]
+                : [UIColor colorWithWhite:1.0 alpha:ame263_lightFillA];
         }];
     [self addSubview:_ame252_fillView];
 

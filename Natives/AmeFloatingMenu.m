@@ -206,11 +206,17 @@ static BOOL Ame244SnapshotLooksValid(UIImage *ame244_img) {
 /// ★ Task244：快照磨砂上的可读性 tint——快照不透明，panel 底色被它盖住
 ///   无法再压暗，压暗层必须浮在快照【之上】、内容之下。深色 = 黑 0.40
 ///   （暗玻璃）；浅色 = 白 0.42（奶白玻璃，labelColor 黑字可读）。
+///   ★ Task263（反馈 5：伪玻璃透明度设置项）：tint alpha 随
+///   LGCPseudoGlassTransparency() 线性映射——默认 0.5 精确回到既有
+///   锚点（深 0.40 / 浅 0.42）；1.0 最透 / 0.0 最闷。
 static UIColor *Ame244SnapshotTint(void) {
+    CGFloat ame263_t = LGCPseudoGlassTransparency();
+    CGFloat ame263_darkA = 0.55 - 0.30 * ame263_t;    // 0.25(最透)..0.55(最闷)，0.5→0.40
+    CGFloat ame263_lightA = 0.62 - 0.40 * ame263_t;   // 0.22..0.62，0.5→0.42
     return [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull tc) {
         return (tc.userInterfaceStyle == UIUserInterfaceStyleDark)
-            ? [UIColor colorWithWhite:0.0 alpha:0.40]
-            : [UIColor colorWithWhite:1.0 alpha:0.42];
+            ? [UIColor colorWithWhite:0.0 alpha:ame263_darkA]
+            : [UIColor colorWithWhite:1.0 alpha:ame263_lightA];
     }];
 }
 
@@ -1209,6 +1215,28 @@ static UIColor *Ame244SnapshotTint(void) {
 
 #pragma mark - 中央路由钩子（安装于 UIKit+hook.m）
 
+/// ★ Task263：呈现者是否处于游戏内渲染面（Metal）域——沿
+/// presentingViewController/parentViewController 双链上溯（呈现不改变
+/// parent，呈现链用 presenting；容器嵌入用 parent），命中
+/// SurfaceViewController/JavaGUIViewController 族即游戏域。
+/// 与 AmeNativeMenu.ame245_anchorInsideGameSurface（视图 responder 链）
+/// 同语义、不同入口：本钩子手里是呈现者 VC 而非锚点视图。
++ (BOOL)ame263_presenterInsideGameSurface:(UIViewController *)vc {
+    UIViewController *ame263_r = vc;
+    int ame263_hop = 0;
+    while (ame263_r != nil && ame263_hop++ < 8) {
+        NSString *ame263_cls = NSStringFromClass(ame263_r.class);
+        if ([ame263_cls hasPrefix:@"SurfaceViewController"] ||
+            [ame263_cls hasPrefix:@"JavaGUIViewController"]) {
+            return YES;
+        }
+        UIViewController *ame263_next = ame263_r.presentingViewController ?: ame263_r.parentViewController;
+        if (ame263_next == ame263_r) break;
+        ame263_r = ame263_next;
+    }
+    return NO;
+}
+
 @implementation UIViewController (Ame237FloatingMenuRouter)
 
 - (void)ame237_hook_presentViewController:(UIViewController *)viewControllerToPresent
@@ -1216,7 +1244,21 @@ static UIColor *Ame244SnapshotTint(void) {
                                completion:(nullable void (^)(void))completion {
     if ([viewControllerToPresent isKindOfClass:[UIAlertController class]] && LGCIsGlassStyleActive()) {
         @try {
-            if ([AmeFloatingMenu presentGlassMenuForAlert:(UIAlertController *)viewControllerToPresent
+            // ★ Task263（反馈 4："液态玻璃的情况下连点多次还是触发伪液态玻璃"）
+            //   接管域收窄——装机日志 1015 23:35 实锤：真玻璃档下启动器内确认
+            //   弹窗（确认删除/版本隔离，alertStyle=1 无输入框）也被本 hook
+            //   整体替换成魔改磨砂面板（= 用户口中的"伪液态玻璃"），与
+            //   Task245/IMG_0380 定案（选择项/弹窗 = 系统原生液态玻璃）冲突。
+            //   收窄后真玻璃档仅剩两个接管域：
+            //   ① Metal 游戏面（系统磨砂在 Metal 上不合成，Task228/230/236 同族）
+            //   ② 输入类弹窗（含 textFields，如内存数值输入）
+            //   伪玻璃档（pseudo_glass）维持全接管不动（该档定义如此）。
+            UIAlertController *ame263_alert = (UIAlertController *)viewControllerToPresent;
+            BOOL ame263_shouldReplace = LGCIsPseudoGlassStyleActive() ||
+                                        ame263_alert.textFields.count > 0 ||
+                                        [AmeFloatingMenu ame263_presenterInsideGameSurface:self];
+            if (ame263_shouldReplace &&
+                [AmeFloatingMenu presentGlassMenuForAlert:ame263_alert
                                             fromPresenter:self
                                                  animated:flag
                                                completion:completion]) {

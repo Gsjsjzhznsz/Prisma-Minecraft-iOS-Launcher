@@ -169,11 +169,16 @@ static BOOL ame244_snapshotLooksValid(UIImage *ame244_img) {
 
 /// ★ Task244：快照磨砂上的可读性 tint（快照不透明，menuView 底色被盖住
 ///   无法压暗）。深色 = 黑 0.40（暗玻璃）；浅色 = 白 0.42（奶白玻璃）。
+///   ★ Task263（反馈 5）：alpha 随伪玻璃透明度设置线性映射，默认 0.5 =
+///   既有锚点；1.0 最透 / 0.0 最闷（与 AmeFloatingMenu 同款映射）。
 static UIColor *ame244_snapshotTint(void) {
+    CGFloat ame263_t = LGCPseudoGlassTransparency();
+    CGFloat ame263_darkA = 0.55 - 0.30 * ame263_t;    // 0.25(最透)..0.55(最闷)，0.5→0.40
+    CGFloat ame263_lightA = 0.62 - 0.40 * ame263_t;   // 0.22..0.62，0.5→0.42
     return [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull tc) {
         return (tc.userInterfaceStyle == UIUserInterfaceStyleDark)
-            ? [UIColor colorWithWhite:0.0 alpha:0.40]
-            : [UIColor colorWithWhite:1.0 alpha:0.42];
+            ? [UIColor colorWithWhite:0.0 alpha:ame263_darkA]
+            : [UIColor colorWithWhite:1.0 alpha:ame263_lightA];
     }];
 }
 

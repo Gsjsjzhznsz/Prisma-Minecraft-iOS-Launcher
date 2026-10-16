@@ -594,6 +594,7 @@
 "crash.suggestion" = "建议操作";
 "crash.suggestion.oom" = "iOS 内存限制导致崩溃，建议使用 GetMoreRam (LiveContainer) 解除内存限制后重试";
 "crash.view_log" = "查看日志详情";
+"crash.collapse_log" = "收起日志";
 "crash.share_log" = "分享日志";
 "crash.full_log" = "查看完整日志";
 "crash.return_launcher" = "退出启动器";
@@ -615,6 +616,7 @@
 "crash.reason.java_version" = "Java 版本不匹配（UnsupportedClassVersionError）";
 "crash.reason.renderer" = "渲染器错误（OpenGL/Vulkan 初始化失败）";
 "crash.reason.mod_loading" = "Mod 加载失败（Mod 加载器错误）";
+"crash.reason.mod_incompatible" = "Mod 版本不兼容（多个 mod 对同一依赖的版本要求冲突，或 mod 与 MC/加载器版本不匹配）";
 // 快速修复建议文案
 "crash.suggestion.oom_ram" = "降低内存分配（建议 1024-2048MB）";
 "crash.suggestion.oom_getmoream" = "使用 GetMoreRam (LiveContainer) 解除 iOS 内存限制";
@@ -640,6 +642,9 @@
 "crash.suggestion.modload_remove" = "移除问题 Mod（查看日志中的错误行）";
 "crash.suggestion.modload_update" = "更新 Mod 加载器";
 "crash.suggestion.modload_version" = "检查 Mod 是否支持当前 MC 版本";
+"crash.suggestion.incompat_fabric_plan" = "按 Fabric 给出的方案：%@";
+"crash.suggestion.incompat_align" = "在 Mod 管理中把报告点名的 mod 更新/降级到匹配版本，或移除多余一方";
+"crash.suggestion.incompat_pack_update" = "整合包更新后新旧 mod 混装常见此崩：以报告列出的版本对为准";
 "crash.suggestion.java_log" = "查看完整日志定位异常堆栈";
 "crash.suggestion.java_mods" = "检查 Mod 是否兼容（移除最近添加的 Mod）";
 "crash.suggestion.java_restart" = "重启启动器后重试";
@@ -2885,10 +2890,12 @@
 "ame225.mods.shared_note" = "模组安装到共享的实例目录。在版本设置中开启版本隔离，即可让该版本拥有独立的模组与存档。";
 "ame225.mods.open_settings" = "前往版本设置";
 "preference.title.ui_scale" = "界面缩放";
+"preference.title.pseudo_glass_transparency" = "玻璃透明度";
 "preference.title.text_scale" = "文字缩放";
 "preference.title.text_auto_contrast" = "文字动态反色";
 "preference.detail.interface_style" = "自动跟随系统（iOS 26+ 液态玻璃）；原生保持经典外观；液态玻璃使用分层玻璃表面。";
 "preference.detail.ui_scale" = "缩放面板与卡片（85–125%）。文字大小由“文字缩放”单独控制。";
+"preference.detail.pseudo_glass_transparency" = "调节伪玻璃面板的通透程度：0% 最朦胧，100% 最通透（背景折光最清楚）。默认 50%。";
 "preference.detail.text_scale" = "缩放界面文字（85–130%），不改变面板尺寸。";
 "preference.detail.text_auto_contrast" = "根据壁纸亮度自动翻转文字颜色，任何背景上都清晰可读。";
 "welcome.intro.f5.title" = "外观体系";

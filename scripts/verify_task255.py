@@ -100,7 +100,12 @@ check("Ann:pinned 混写清零", all("pinned" not in a for a in ann["announcemen
 en = read("Natives/resources/en.lproj/Localizable.strings")
 credits = [l for l in en.split("\n") if '"about.credits.body"' in l]
 check("Brand:credits 上游署名保留", len(credits) == 1 and "Amethyst-iOS-MyRemastered" in credits[0])
-body_no_credits = "\n".join(l for l in en.split("\n") if '"about.credits.body"' not in l)
+# ★ Task263 重放版：ame267.jit.legacy_stik（Task267-net 入表）里的
+#   "Amethyst-MeloNX.js" 是旧 sideload 构建包内脚本文件的【事实文件名】
+#   （老 StikDebug 用户靠它认文件），与 credits 同属"非品牌自称"豁免类。
+legacy_jit = [l for l in en.split("\n") if '"ame267.jit.legacy_stik"' in l]
+check("Brand:legacy JIT 历史文件名事实引用保留", len(legacy_jit) == 1 and "Amethyst-MeloNX.js" in legacy_jit[0])
+body_no_credits = "\n".join(l for l in en.split("\n") if '"about.credits.body"' not in l and '"ame267.jit.legacy_stik"' not in l)
 check("Brand:en 表展示层零 Amethyst", "Amethyst" not in body_no_credits)
 app = read("Natives/AppDelegate.m") + read("Natives/JavaLauncher.m") + read("Natives/LauncherPreferences.m") + read("Natives/main_hook.m")
 check("Brand:日志前缀 [Prisma]", "[Amethyst]" not in app and "[Prisma]" in app)
