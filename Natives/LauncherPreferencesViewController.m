@@ -822,7 +822,14 @@ if ([section isEqualToString:@"general"]) {
     self.hasDetail = YES;
     self.prefDetailVisible = self.navigationController == nil;
     
-    self.prefSections = @[@"general", @"download", @"video", @"mobileglues", @"control", @"java", @"debug", @"ai"];
+    self.prefSections = @[@"general", @"video", @"mobileglues", @"control", @"java", @"download", @"ai", @"debug"];
+    // ★ Task267（用户："设置界面设置项全部重新排序，解决新用户无法找到可以使用的功能"）：
+    //   分组默认【展开】——旧默认全折叠时新用户打开设置只看到 8 行组头，
+    //   完全不知道里面有什么（可发现性第一杀手）。展开后组头仍可点击
+    //   折叠（会话内记忆），搜索照常可用。组间/组内顺序同轮重排：
+    //   语言/外观 → 视频 → 渲染器 → 控制 → 内存与 Java → 下载源 → AI → 调试。
+    self.prefSectionsVisible = YES;
+
 
     // Task224（#19）：「界面缩放」行右侧显示当前百分比。typeButton 基类
     // 块不写 detailTextLabel——在 prefContents 构建之前包装基类块并只对
@@ -884,13 +891,50 @@ if ([section isEqualToString:@"general"]) {
 
     self.prefContents = @[
         @[
-            // General settings
             @{@"icon": @"cube"},
-            // ★ Task226（反馈 #17：取消 appearance 独立分区——外观三行内联
-            // 进启动器设置；反色开关随 #16 一并退役）：从旧 appearance 分区
-            // 原位投迁（getPreference/setPreference 的键处理同步改挂
-            // general 分区，存储仍走 LiquidGlassCompat 的 NSUserDefaults
-            // 键 prisma.interface_style / prisma.ui_scale / prisma.text_scale）。
+            @{@"key": @"app_language",
+              @"title": localize(@"i18n_str_2068", nil),
+              @"hasDetail": @YES,
+              @"icon": @"globe",
+              @"type": self.typePickField,
+              @"enableCondition": whenNotInGame,
+              // Task202（G）：system + 全部内置语言（bundle 实测 54 个
+              // .lproj 表）。localize() 的 en→zh-Hans 回退链对任意码
+              // 通用（utils.m），缺键语言显示回退内容 + "部分翻译"标记。
+              @"pickKeys": ame202_langKeys,
+              @"pickList": ame202_langNames,
+              @"action": ^(NSString *value){
+                  // 语言切换后发送通知，让界面重新加载以应用新语言
+                  [[NSNotificationCenter defaultCenter] postNotificationName:@"AppLanguageChanged" object:value];
+                  [self.tableView reloadData];
+              }
+            },
+            @{@"key": @"ui_theme",
+              @"title": localize(@"i18n_str_379", nil),
+              @"hasDetail": @YES,
+              @"icon": @"circle.lefthalf.filled",
+              @"type": self.typePickField,
+              @"enableCondition": whenNotInGame,
+              @"pickKeys": @[
+                  @"dark",
+                  @"light",
+                  @"auto"
+              ],
+              @"pickList": @[
+                  localize(@"i18n_str_380", nil),
+                  localize(@"i18n_str_381", nil),
+                  localize(@"i18n_str_382", nil)
+              ],
+              @"action": ^(NSString *value){
+                  // 实时应用主题，发通知由 SceneDelegate 处理。
+                  // 不调用 loadPreferences(YES) 等会重置账号偏好的操作，
+                  // 仅设置 window.overrideUserInterfaceStyle，账号数据不受影响。
+                  // Task161：显式选择标记——SceneDelegate 的一次性迁移
+                  // （历史默认 dark/light → auto）从此对本设备免疫。
+                  setPrefBool(@"general.ui_theme_explicit", YES);
+                  [[NSNotificationCenter defaultCenter] postNotificationName:@"UIThemeChanged" object:value];
+              }
+            },
             @{@"key": @"interface_style",
               @"title": localize(@"preference.title.interface_style", nil),
               @"hasDetail": @YES,
@@ -924,6 +968,18 @@ if ([section isEqualToString:@"general"]) {
                   });
               }
             },
+            @{@"key": @"launcher_background",
+              @"hasDetail": @YES,
+              @"icon": @"photo.fill.on.rectangle.fill",
+              @"type": self.typeButton,
+              @"enableCondition": whenNotInGame,
+              @"action": ^void(){
+                  BackgroundSettingsViewController *bgVC = [[BackgroundSettingsViewController alloc] init];
+                  UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:bgVC];
+                  nav.modalPresentationStyle = UIModalPresentationFormSheet;
+                  [self presentViewController:nav animated:YES completion:nil];
+              }
+            },
             @{@"key": @"ui_scale",
               @"title": localize(@"preference.title.ui_scale", nil),
               @"hasDetail": @YES,
@@ -942,17 +998,6 @@ if ([section isEqualToString:@"general"]) {
               @"max": @(130),
               @"enableCondition": whenNotInGame
             },
-            @{@"key": @"check_sha",
-              @"hasDetail": @YES,
-              @"icon": @"lock.shield",
-              @"type": self.typeSwitch,
-              @"enableCondition": whenNotInGame
-            },
-            // 旧"下载源"行已移除：general.download_source 已由启动时的
-            // migrateDownloadSourcePreferences 迁移到下方"下载镜像策略"分组的 4 个分类键。
-            // Task138：模组镜像源行也移入"下载镜像策略"分区（用户指令），
-            // 成为搜索+下载两键的统一粗控（见 download 分区新行与
-            // getPreference/setPreference 的 mod_mirror 分支）。
             @{@"key": @"ui_layout",
               @"title": localize(@"i18n_str_376", nil),
               @"hasDetail": @YES,
@@ -968,48 +1013,11 @@ if ([section isEqualToString:@"general"]) {
                   localize(@"i18n_str_378", nil)
               ]
             },
-            @{@"key": @"ui_theme",
-              @"title": localize(@"i18n_str_379", nil),
+            @{@"key": @"hidden_sidebar",
               @"hasDetail": @YES,
-              @"icon": @"circle.lefthalf.filled",
-              @"type": self.typePickField,
-              @"enableCondition": whenNotInGame,
-              @"pickKeys": @[
-                  @"dark",
-                  @"light",
-                  @"auto"
-              ],
-              @"pickList": @[
-                  localize(@"i18n_str_380", nil),
-                  localize(@"i18n_str_381", nil),
-                  localize(@"i18n_str_382", nil)
-              ],
-              @"action": ^(NSString *value){
-                  // 实时应用主题，发通知由 SceneDelegate 处理。
-                  // 不调用 loadPreferences(YES) 等会重置账号偏好的操作，
-                  // 仅设置 window.overrideUserInterfaceStyle，账号数据不受影响。
-                  // Task161：显式选择标记——SceneDelegate 的一次性迁移
-                  // （历史默认 dark/light → auto）从此对本设备免疫。
-                  setPrefBool(@"general.ui_theme_explicit", YES);
-                  [[NSNotificationCenter defaultCenter] postNotificationName:@"UIThemeChanged" object:value];
-              }
-            },
-            @{@"key": @"app_language",
-              @"title": localize(@"i18n_str_2068", nil),
-              @"hasDetail": @YES,
-              @"icon": @"globe",
-              @"type": self.typePickField,
-              @"enableCondition": whenNotInGame,
-              // Task202（G）：system + 全部内置语言（bundle 实测 54 个
-              // .lproj 表）。localize() 的 en→zh-Hans 回退链对任意码
-              // 通用（utils.m），缺键语言显示回退内容 + "部分翻译"标记。
-              @"pickKeys": ame202_langKeys,
-              @"pickList": ame202_langNames,
-              @"action": ^(NSString *value){
-                  // 语言切换后发送通知，让界面重新加载以应用新语言
-                  [[NSNotificationCenter defaultCenter] postNotificationName:@"AppLanguageChanged" object:value];
-                  [self.tableView reloadData];
-              }
+              @"icon": @"sidebar.leading",
+              @"type": self.typeSwitch,
+              @"enableCondition": whenNotInGame
             },
             @{@"key": @"custom_accent_color",
               @"title": localize(@"i18n_str_383", nil),
@@ -1052,47 +1060,6 @@ if ([section isEqualToString:@"general"]) {
                   setPrefObject(@"general.card_color", @"");
                   [[NSNotificationCenter defaultCenter] postNotificationName:@"LauncherAppearanceChanged" object:nil];
                   [self.tableView reloadData];
-              }
-            },
-            @{@"key": @"multi_threaded",
-              @"title": localize(@"i18n_str_387", nil),
-              @"hasDetail": @YES,
-              @"icon": @"bolt.fill",
-              @"type": self.typeSwitch,
-              @"enableCondition": whenNotInGame
-            },
-            @{@"key": @"curseforge_api_key",
-              @"hasDetail": @YES,
-              @"icon": @"key.fill",
-              @"type": self.typeButton,
-              @"enableCondition": whenNotInGame,
-              @"action": ^void(){
-                  CurseForgeAPIKeyViewController *vc = [[CurseForgeAPIKeyViewController alloc] init];
-                  UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
-                  nav.modalPresentationStyle = UIModalPresentationFormSheet;
-                  [self presentViewController:nav animated:YES completion:nil];
-              }
-            },
-            @{@"key": @"cosmetica",
-              @"hasDetail": @YES,
-              @"icon": @"eyeglasses",
-              @"type": self.typeSwitch,
-              @"enableCondition": whenNotInGame
-            },
-            @{@"key": @"debug_logging",
-              @"hasDetail": @YES,
-              @"icon": @"doc.badge.gearshape",
-              @"type": self.typeSwitch,
-              // Task205：本行升格为全局日志等级开关——除原有启动器侧
-              // NSDebugLog 外，JavaLauncher 读 general.debug_logging 向
-              // 游戏会话导出 AMETHYST_LOG_LEVEL=debug（vgpu 探针放宽限频
-              // + realize 属性装配 tracer、tinygl4angle 观察器扩容、
-              // 预编译 gl4es 开 LIBGL_LOGSHADERERROR）。用户需求原文：
-              // "能不能添加日志等级，比如 debug 等级，可以让渲染器错误
-              // 更为详细的显示错误，放在启动器设置"。设置下次会话生效。
-              @"action": ^(BOOL enabled){
-                  debugLogEnabled = enabled;
-                  NSLog(@"[Debugging] Debug log enabled: %@ (renderer diagnostics verbose from next game session)", enabled ? @"YES" : @"NO");
               }
             },
             @{@"key": @"appicon",
@@ -1153,23 +1120,52 @@ if ([section isEqualToString:@"general"]) {
                   [self openImagePicker];
               }
             },
-            @{@"key": @"launcher_background",
+            @{@"key": @"cosmetica",
               @"hasDetail": @YES,
-              @"icon": @"photo.fill.on.rectangle.fill",
+              @"icon": @"eyeglasses",
+              @"type": self.typeSwitch,
+              @"enableCondition": whenNotInGame
+            },
+            @{@"key": @"check_sha",
+              @"hasDetail": @YES,
+              @"icon": @"lock.shield",
+              @"type": self.typeSwitch,
+              @"enableCondition": whenNotInGame
+            },
+            @{@"key": @"multi_threaded",
+              @"title": localize(@"i18n_str_387", nil),
+              @"hasDetail": @YES,
+              @"icon": @"bolt.fill",
+              @"type": self.typeSwitch,
+              @"enableCondition": whenNotInGame
+            },
+            @{@"key": @"curseforge_api_key",
+              @"hasDetail": @YES,
+              @"icon": @"key.fill",
               @"type": self.typeButton,
               @"enableCondition": whenNotInGame,
               @"action": ^void(){
-                  BackgroundSettingsViewController *bgVC = [[BackgroundSettingsViewController alloc] init];
-                  UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:bgVC];
+                  CurseForgeAPIKeyViewController *vc = [[CurseForgeAPIKeyViewController alloc] init];
+                  UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
                   nav.modalPresentationStyle = UIModalPresentationFormSheet;
                   [self presentViewController:nav animated:YES completion:nil];
               }
             },
-            @{@"key": @"hidden_sidebar",
+            @{@"key": @"debug_logging",
               @"hasDetail": @YES,
-              @"icon": @"sidebar.leading",
+              @"icon": @"doc.badge.gearshape",
               @"type": self.typeSwitch,
-              @"enableCondition": whenNotInGame
+              // Task205：本行升格为全局日志等级开关——除原有启动器侧
+              // NSDebugLog 外，JavaLauncher 读 general.debug_logging 向
+              // 游戏会话导出 AMETHYST_LOG_LEVEL=debug（vgpu 探针放宽限频
+              // + realize 属性装配 tracer、tinygl4angle 观察器扩容、
+              // 预编译 gl4es 开 LIBGL_LOGSHADERERROR）。用户需求原文：
+              // "能不能添加日志等级，比如 debug 等级，可以让渲染器错误
+              // 更为详细的显示错误，放在启动器设置"。设置下次会话生效。
+              @"action": ^(BOOL enabled){
+                  debugLogEnabled = enabled;
+                  NSLog(@"[Debugging] Debug log enabled: %@ (renderer diagnostics verbose from next game session)", enabled ? @"YES" : @"NO");
+              }
             },
             @{@"key": @"announcement_preview_level",
               @"hasDetail": @YES,
@@ -1187,26 +1183,6 @@ if ([section isEqualToString:@"general"]) {
                   localize(@"i18n_str_392", nil)
               ]
             },
-            @{@"key": @"reset_warnings",
-              @"icon": @"exclamationmark.triangle",
-              @"type": self.typeButton,
-              @"enableCondition": whenNotInGame,
-              @"action": ^void(){
-                  resetWarnings();
-              }
-            },
-            @{@"key": @"reset_settings",
-              @"icon": @"trash",
-              @"type": self.typeButton,
-              @"enableCondition": whenNotInGame,
-              @"requestReload": @YES,
-              @"showConfirmPrompt": @YES,
-              @"destructive": @YES,
-              @"action": ^void(){
-                  loadPreferences(YES);
-                  [self.tableView reloadData];
-              }
-            },
             @{@"key": @"memory_limit_help",
               @"hasDetail": @YES,
               @"icon": @"memorychip",
@@ -1214,6 +1190,34 @@ if ([section isEqualToString:@"general"]) {
               @"enableCondition": whenNotInGame,
               @"action": ^void(){
                   [self showMemoryLimitHelp];
+              }
+            },
+            @{@"key": @"data_export",
+              @"hasDetail": @YES,
+              @"icon": @"square.and.arrow.up",
+              @"type": self.typeButton,
+              @"enableCondition": whenNotInGame,
+              @"action": ^void(){
+                  DataExportViewController *vc = [[DataExportViewController alloc] init];
+                  [self.navigationController pushViewController:vc animated:YES];
+              }
+            },
+            @{@"key": @"data_import",
+              @"hasDetail": @YES,
+              @"icon": @"square.and.arrow.down",
+              @"type": self.typeButton,
+              @"enableCondition": whenNotInGame,
+              @"action": ^void(){
+                  [[DataTransferService sharedService] importDataFromViewController:self];
+              }
+            },
+            @{@"key": @"data_sibling_import",
+              @"hasDetail": @YES,
+              @"icon": @"arrow.triangle.branch",
+              @"type": self.typeButton,
+              @"enableCondition": whenNotInGame,
+              @"action": ^void(){
+                  [self ame261_siblingImportTapped];
               }
             },
             @{@"key": @"erase_demo_data",
@@ -1242,47 +1246,26 @@ if ([section isEqualToString:@"general"]) {
                   }
               }
             },
-            // Task217：数据导出（包名迁移配套——旧容器数据全量备份到 zip，
-            // 落点由用户经系统文件选择器决定）。
-            // ★ Task223（清单第 12 项）：改为二级入口页（抛弃压缩等级悬浮
-            //   菜单；进度借用版本下载任务体系，可离开页面后台继续）。
-            @{@"key": @"data_export",
-              @"hasDetail": @YES,
-              @"icon": @"square.and.arrow.up",
+            @{@"key": @"reset_warnings",
+              @"icon": @"exclamationmark.triangle",
               @"type": self.typeButton,
               @"enableCondition": whenNotInGame,
               @"action": ^void(){
-                  DataExportViewController *vc = [[DataExportViewController alloc] init];
-                  [self.navigationController pushViewController:vc animated:YES];
+                  resetWarnings();
               }
             },
-            // Task217：从备份导入（新包名容器直接恢复 zip 备份，重启生效）。
-            @{@"key": @"data_import",
-              @"hasDetail": @YES,
-              @"icon": @"square.and.arrow.down",
+            @{@"key": @"reset_settings",
+              @"icon": @"trash",
               @"type": self.typeButton,
               @"enableCondition": whenNotInGame,
+              @"requestReload": @YES,
+              @"showConfirmPrompt": @YES,
+              @"destructive": @YES,
               @"action": ^void(){
-                  [[DataTransferService sharedService] importDataFromViewController:self];
+                  loadPreferences(YES);
+                  [self.tableView reloadData];
               }
             },
-            // ★ Task261（用户："导入air旧数据能不能在启动器设置里面也搞个入口"）：
-            // Task260 的 LC 兄弟数据一键迁移此前只在欢迎向导数据步出现；
-            // 向导时跳过或事后想迁移就无处可找。设置 → 通用补常驻入口，
-            // 与向导同一套扫描/迁移 API（scanSiblingLauncherHomes /
-            // migrateFromSiblingHome），随时可用。
-            @{@"key": @"data_sibling_import",
-              @"hasDetail": @YES,
-              @"icon": @"arrow.triangle.branch",
-              @"type": self.typeButton,
-              @"enableCondition": whenNotInGame,
-              @"action": ^void(){
-                  [self ame261_siblingImportTapped];
-              }
-            },
-            // Task217：关于页入口（二级菜单）。启动器更新的两个选项
-            //（check_update / auto_update_check）已随本项迁往关于页
-            //（用户指令："将启动器更新功能的 2 个选项移动到关于页面"）。
             @{@"key": @"about",
               @"hasDetail": @YES,
               @"icon": @"info.circle",
@@ -1292,107 +1275,9 @@ if ([section isEqualToString:@"general"]) {
                   [self.navigationController pushViewController:aboutVC animated:YES];
               }
             }
-        ], @[
-            // Download mirror policy settings（分类镜像策略，由 PLMirrorCenter 统一读取）
-            // Task138：全部行新增加载速度快优先（speed_first，参考 FCL 测速策略，
-            // PLMirrorCenter 官方 vs 镜像竞速、24 小时缓存）并设为默认。
-            @{@"icon": @"arrow.down.circle"},
-            // 模组镜像源（Task138 从启动器设置分区移入，用户指令）：统一粗控，
-            // 选择同时写入 assetSearchSource + assetDownloadSource 两键（模组的
-            // API 搜索与文件下载本就同属 MCIM 体系）；细粒度仍可用下方两行单独调整
-            @{@"key": @"mod_mirror",
-              @"hasDetail": @YES,
-              @"icon": @"network",
-              @"type": self.typePickField,
-              @"enableCondition": whenNotInGame,
-              @"pickKeys": @[
-                  @"official_first",
-                  @"mirror_first",
-                  @"speed_first"
-              ],
-              @"pickList": @[
-                  localize(@"preference.title.mod_mirror-official", nil),
-                  localize(@"preference.title.mod_mirror-mcim", nil),
-                  localize(@"preference.title.mirror_policy-speed_first", nil)
-              ]
-            },
-            @{@"key": @"fileSource",
-              @"hasDetail": @YES,
-              @"icon": @"arrow.down.circle",
-              @"type": self.typePickField,
-              @"enableCondition": whenNotInGame,
-              @"pickKeys": @[
-                  @"official_first",
-                  @"mirror_first",
-                  @"speed_first"
-              ],
-              @"pickList": @[
-                  localize(@"preference.title.mirror_policy-official_first", nil),
-                  localize(@"preference.title.mirror_policy-mirror_first", nil),
-                  localize(@"preference.title.mirror_policy-speed_first", nil)
-              ]
-            },
-            @{@"key": @"assetSearchSource",
-              @"hasDetail": @YES,
-              @"icon": @"magnifyingglass",
-              @"type": self.typePickField,
-              @"enableCondition": whenNotInGame,
-              @"pickKeys": @[
-                  @"official_first",
-                  @"mirror_first",
-                  @"speed_first"
-              ],
-              @"pickList": @[
-                  localize(@"preference.title.mirror_policy-official_first", nil),
-                  localize(@"preference.title.mirror_policy-mirror_first", nil),
-                  localize(@"preference.title.mirror_policy-speed_first", nil)
-              ]
-            },
-            @{@"key": @"assetDownloadSource",
-              @"hasDetail": @YES,
-              @"icon": @"square.and.arrow.down",
-              @"type": self.typePickField,
-              @"enableCondition": whenNotInGame,
-              @"pickKeys": @[
-                  @"official_first",
-                  @"mirror_first",
-                  @"speed_first"
-              ],
-              @"pickList": @[
-                  localize(@"preference.title.mirror_policy-official_first", nil),
-                  localize(@"preference.title.mirror_policy-mirror_first", nil),
-                  localize(@"preference.title.mirror_policy-speed_first", nil)
-              ]
-            },
-            @{@"key": @"modLoaderSource",
-              @"hasDetail": @YES,
-              @"icon": @"wrench.and.screwdriver",
-              @"type": self.typePickField,
-              @"enableCondition": whenNotInGame,
-              @"pickKeys": @[
-                  @"official_first",
-                  @"mirror_first",
-                  @"speed_first"
-              ],
-              @"pickList": @[
-                  localize(@"preference.title.mirror_policy-official_first", nil),
-                  localize(@"preference.title.mirror_policy-mirror_first", nil),
-                  localize(@"preference.title.mirror_policy-speed_first", nil)
-              ]
-            }
-        ], @[
-            // Video and renderer settings
+        ],
+        @[
             @{@"icon": @"video"},
-            // Task159（[可撤销] 分辨率缩放实例化）：全局分辨率缩放行退役——
-            // 与 Task150 渲染器同款迁移：每个实例在实例设置页"渲染器"行下
-            // 单独设置（profile 键 resolution，25~100 数字输入框 + 右侧 %）。
-            // 全局键 video.resolution 保留：PLProfiles prefDefaults 回退链
-            // （profile 无键 → 全局存量值）+ 游戏内菜单/Java GUI 仍走全局。
-            // 撤销 = 恢复本行字典（typeSlider 25-150）+ 实例页行。
-            // Task 83（FSR 独立化）：FSR 档位从 MobileGlues 分区移到视频分区
-            // ——它现在是多渲染器功能（MG 内置 FSR1 / zink EASU / Vulkan 渲染器
-            // 的 GL 路径）。存储键经上方 get/set 重映射仍写
-            // mobileglues.fsr1_setting（历史键名兼容）。
             @{@"key": @"fsr1_setting",
               @"hasDetail": @YES,
               @"icon": @"square.grid.3x2",
@@ -1412,11 +1297,6 @@ if ([section isEqualToString:@"general"]) {
                   localize(@"preference.title.mg_fsr1_setting-4", nil)
               ]
             },
-            // Task 130：FSR1 RCAS 锐化强度（mpv 口径 [0,1] 越大越锐，默认 0.2；
-            // -1 = 关闭仅 EASU）。EASU 档位并排，悬浮 pick 直接切换。
-            // pickKeys 是存储值（字符串）；默认值 0.2 来自 PLPreferences
-            // 默认表（NSNumber 0.2）——stringValue 与 pickKey @"0.2" 相等，
-            // ✓ 标记对齐（Task121 存储值比较口径）。
             @{@"key": @"fsr_rcas_sharpness",
               @"hasDetail": @YES,
               @"icon": @"wand.and.rays",
@@ -1433,11 +1313,6 @@ if ([section isEqualToString:@"general"]) {
                   localize(@"preference.title.mg_fsr_rcas-6", nil)
               ]
             },
-            // 帧率限制选项已移除：CADisplayLink 始终采用 30-120Hz 自适应范围，
-            // 由屏幕硬件能力决定实际帧率（60Hz 设备仍为 60，120Hz ProMotion 设备可达 120）。
-            // 不再提供"最大帧率限制 60FPS"开关，避免用户误关闭导致帧率被人为锁死。
-            // 解锁帧率（关闭垂直同步）：三层联动关闭 VSync，让游戏帧率可超过屏幕刷新率。
-            // 不限制 ProMotion 设备：60Hz 设备同样会被 VSync 锁在 60，也需要解锁。
             @{@"key": @"disable_game_vsync",
               @"hasDetail": @YES,
               @"icon": @"hare",
@@ -1480,28 +1355,10 @@ if ([section isEqualToString:@"general"]) {
               @"hasDetail": @YES,
               @"icon": @"mic",
               @"type": self.typeSwitch
-            },
-        ], @[
-            // MobileGlues settings
-            // 当渲染器选择为 MobileGlues 或 Vulkan 时，init_loadMobileGluesConfig()
-            // 写入的 <POJAV_HOME>/MG/config.json 会被 MobileGlues 读取并生效。
-            // Vulkan 渲染器的 OpenGL 回退使用 MobileGlues（对齐 Ynnyny 仓库）。
-            // Auto 渲染器会被解析为 ANGLE，不会加载 MobileGlues。
-            // Task 133：独立 "ANGLE ES 驱动" 开关已删除（用户指出与 GLES 后端
-            // 重复冲突——且 MG 源码 iOS 分支的 ES 路径无视该配置、永远用内置
-            // ANGLE 框架，属死配置）。ES/ANGLE 路径的唯一入口就是下面的
-            // renderer_backend 选 "GLES 后端"，文案里已写明其经 ANGLE 翻译。
+            }
+        ],
+        @[
             @{@"icon": @"cpu"},
-            // Task 132（MG 三端合并，用户明令的统一入口 + 原地悬浮浮窗）：
-            // MobileGL 三后端（Vulkan 直连 / GLES 后端 / OpenGL 4.0 实验性）
-            // 合并为本分区唯一的 pick 行——typePickField 点击原地弹出
-            // UIAlertController actionSheet/popover 悬浮浮窗（openPicker
-            // AtIndexPath，与 FSR 档位/下载源同款形态，绝不跳转二级页面）。
-            // 读取经 getPreference 映射（有效渲染器为家族键原样返回，否则
-            // 默认 Vulkan 直连）；写入经 setPreference 映射直写 video.renderer
-            // （与渲染器行同一存储层，显式选择永远优先）。渲染器悬浮菜单里
-            // 的三条独立后端条目已随本行退役（见 LauncherPreferences.m
-            // rendererCandidates 的 Task132 注释）。
             @{@"key": @"renderer_backend",
               @"hasDetail": @YES,
               @"icon": @"cpu",
@@ -1582,35 +1439,10 @@ if ([section isEqualToString:@"general"]) {
                   localize(@"preference.title.mg_custom_gl_version-4.5", nil),
                   localize(@"preference.title.mg_custom_gl_version-4.6", nil)
               ]
-            },
-            // Task 83：fsr1_setting 行已移入上方"视频设置"分区（多渲染器通用
-            // 化；存储键经重映射保持 mobileglues.fsr1_setting 不变）。
-        ], @[
-            // Control settings
+            }
+        ],
+        @[
             @{@"icon": @"gamecontroller"},
-            
-            // --- [Task 134] TouchController 模组支持（二级页面恢复） ---
-            // Task 132 曾按当时的“严禁二级菜单”指令把本行改成 pick 浮窗；
-            // 用户 Task 134 反馈该指令属于误判——恢复 43ef4ae 之前的原始
-            // typeChildPane 形态（推入 TouchControllerPreferencesViewController，
-            // 通信方式选择/震动/移动视角/关于等全部伴随行回到 pane 内，
-            // 新增屏蔽控件开关也位于 pane 内）。存储键与读写路径不变。
-            @{@"key": @"mod_touch_enable",
-              @"icon": @"hand.point.up.left",
-              @"hasDetail": @YES,
-              @"type": self.typeChildPane,
-              @"enableCondition": whenNotInGame,
-              @"canDismissWithSwipe": @NO,
-              @"class": NSClassFromString(@"TouchControllerPreferencesViewController")
-            },
-            // ------------------------------------------
-
-            // --- [Task 134] 键位调整：二级页面入口恢复 ---
-            // Task 133 曾按"严禁二级页面"指令改为 pick 浮窗；用户反馈该
-            // 指令属于误判——恢复 typeChildPane 原始形态。推入动作经
-            // openChildPaneAtIndexPath 的 custom_controls 特例（OverFullScreen
-            // 全屏画布编辑器，Task62 同款含 setDefaultCtrl/getDefaultCtrl
-            // 回调），与启动器主页/游戏内两个入口零差异。
             @{@"key": @"custom_controls",
               @"icon": @"gamecontroller.fill",
               @"hasDetail": @YES,
@@ -1619,12 +1451,39 @@ if ([section isEqualToString:@"general"]) {
               @"canDismissWithSwipe": @NO,
               @"class": CustomControlsViewController.class
             },
-
-            // ---------------------------------------------
-
-            // --- [Task 134] 手柄配置：二级页面入口恢复 ---
-            // 同上误判恢复：typeChildPane 推入 LauncherPrefContCfgViewController
-            // 按键映射编辑器（与 43ef4ae 之前完全一致）。
+            @{@"key": @"mod_touch_enable",
+              @"icon": @"hand.point.up.left",
+              @"hasDetail": @YES,
+              @"type": self.typeChildPane,
+              @"enableCondition": whenNotInGame,
+              @"canDismissWithSwipe": @NO,
+              @"class": NSClassFromString(@"TouchControllerPreferencesViewController")
+            },
+            @{@"key": @"slideable_hotbar",
+                @"hasDetail": @YES,
+                @"icon": @"slider.horizontal.below.rectangle",
+                @"type": self.typeSwitch,
+                // --- [修改] 添加禁用条件 ---
+                @"enableCondition": ^BOOL(){
+                    // 当 TouchController 启用时，禁用此选项（返回 NO 表示禁用/变灰）
+                    return ![self.getPreference(@"control", @"mod_touch_enable") boolValue];
+                }
+            },
+            @{@"key": @"gesture_mouse",
+                @"icon": @"cursorarrow.click",
+                @"hasDetail": @YES,
+                @"type": self.typeSwitch,
+            },
+            @{@"key": @"gesture_hotbar",
+                @"icon": @"hand.tap",
+                @"hasDetail": @YES,
+                @"type": self.typeSwitch,
+            },
+            @{@"key": @"virtmouse_enable",
+                @"hasDetail": @YES,
+                @"icon": @"cursorarrow.rays",
+                @"type": self.typeSwitch
+            },
             @{@"key": @"default_gamepad_ctrl",
                 @"icon": @"hammer",
                 @"type": self.typeChildPane,
@@ -1632,40 +1491,34 @@ if ([section isEqualToString:@"general"]) {
                 @"canDismissWithSwipe": @NO,
                 @"class": LauncherPrefContCfgViewController.class
             },
-            @{@"key": @"custom_mouse_pointer",
-                @"icon": @"cursorarrow",
+            @{@"key": @"button_scale",
                 @"hasDetail": @YES,
-                @"type": self.typeButton,
-                @"enableCondition": whenNotInGame,
-                @"action": ^void(){
-                    [self openMousePointerPicker];
-                }
+                @"icon": @"aspectratio",
+                @"type": self.typeSlider,
+                @"min": @(50), // 80?
+                @"max": @(500)
             },
-            @{@"key": @"hardware_hide",
-                @"icon": @"eye.slash",
+            @{@"key": @"mouse_scale",
                 @"hasDetail": @YES,
-                @"type": self.typeSwitch,
+                @"icon": @"arrow.up.left.and.arrow.down.right.circle",
+                @"type": self.typeSlider,
+                @"min": @(25),
+                @"max": @(300)
             },
-            @{@"key": @"reset_mouse_pointer",
-                @"icon": @"arrow.counterclockwise",
+            @{@"key": @"mouse_speed",
                 @"hasDetail": @YES,
-                @"type": self.typeButton,
-                @"enableCondition": whenNotInGame,
-                @"action": ^void(){
-                    NSString *path = [NSString stringWithFormat:@"%s/controlmap/mouse_pointer.png", getenv("POJAV_HOME")];
-                    [NSFileManager.defaultManager removeItemAtPath:path error:nil];
-                    [NSNotificationCenter.defaultCenter postNotificationName:@"MousePointerUpdated" object:nil];
-                    [self showSuccessMessage:localize(@"i18n_str_393", nil)];
-                }
+                @"icon": @"cursorarrow.motionlines",
+                @"type": self.typeSlider,
+                @"min": @(25),
+                @"max": @(300)
             },
-            @{@"key": @"recording_hide",
-                @"icon": @"eye.slash",
+            @{@"key": @"press_duration",
                 @"hasDetail": @YES,
-                @"type": self.typeSwitch,
+                @"icon": @"cursorarrow.click.badge.clock",
+                @"type": self.typeSlider,
+                @"min": @(100),
+                @"max": @(1000),
             },
-            
-            // --- [重构] 双指呼出键盘控制 ---
-            // 同样改为按钮+弹窗模式，彻底解决开关回弹问题
             @{@"key": @"two_finger_keyboard", 
               @"icon": @"keyboard", // 键盘图标
               @"hasDetail": @YES,
@@ -1711,13 +1564,6 @@ if ([section isEqualToString:@"general"]) {
                   [weakSelf presentViewController:alert animated:YES completion:nil];
               }
             },
-                        // Task229 (feedback #7, FCL-style auto-open input method switch,
-            // SDL builds): when on, the FIRST StartTextInput of a game
-            // session (the game-side text request: title-screen search box,
-            // chat focus) auto-opens the launcher keyboard. Later
-            // open/close cycles still run the full latch rules including
-            // the #6 hard-suppression window after an explicit dismissal,
-            // so this switch cannot resurrect the unclosable-keyboard bug.
             @{@"key": @"auto_keyboard_sdl",
               @"hasDetail": @YES,
               @"icon": @"keyboard.badge.ellipsis",
@@ -1728,21 +1574,68 @@ if ([section isEqualToString:@"general"]) {
               //   能触达本开关的场景（游戏内设置）恰好被锁死 = "开关功能无效"
               //   的直接体感之一。写键零重启面（无会话级缓存）。
             },
-            // ★ Task255（清单 8）：自动检查控件更新——ON=启动后静默拉控件仓库
-            //   index.json，与本地 controlmap/<id>.json 的 version 字段对比，
-            //   可更新时 toast 提示（入口=控件仓库页，不自动下载）。消费端
-            //   ControlRepoViewController.autoCheckControlUpdatesOnce（启动链
-            //   LauncherRootViewController.ame125 同款静态一次性守卫）。
-            @{@"key": @"auto_control_update_check",
-              @"hasDetail": @YES,
-              @"icon": @"arrow.triangle.2.circlepath.circle",
-              @"type": self.typeSwitch
+            @{@"key": @"disable_haptics",
+                @"icon": @"wave.3.left",
+                @"hasDetail": @YES,
+                @"type": self.typeSwitch,
             },
-            // Task229 (feedback #2: sprint has no effect): vanilla's own
-            // accessibility switch -- toggleSprint:true in options.txt makes
-            // the sprint key latch (press once = keep running). The button
-            // reads the current state from every instance options.txt and
-            // writes the toggle to all of them (idempotent, instant).
+            @{@"key": @"gyroscope_enable",
+                @"hasDetail": @YES,
+                @"icon": @"gyroscope",
+                @"type": self.typeSwitch,
+                @"enableCondition": ^BOOL(){
+                    return realUIIdiom != UIUserInterfaceIdiomTV;
+                }
+            },
+            @{@"key": @"gyroscope_invert_x_axis",
+                @"hasDetail": @YES,
+                @"icon": @"arrow.left.and.right",
+                @"type": self.typeSwitch,
+                @"enableCondition": ^BOOL(){
+                    return realUIIdiom != UIUserInterfaceIdiomTV;
+                }
+            },
+            @{@"key": @"gyroscope_sensitivity",
+                @"hasDetail": @YES,
+                @"icon": @"move.3d",
+                @"type": self.typeSlider,
+                @"min": @(50),
+                @"max": @(300),
+                @"enableCondition": ^BOOL(){
+                    return realUIIdiom != UIUserInterfaceIdiomTV;
+                }
+            },
+            @{@"key": @"custom_mouse_pointer",
+                @"icon": @"cursorarrow",
+                @"hasDetail": @YES,
+                @"type": self.typeButton,
+                @"enableCondition": whenNotInGame,
+                @"action": ^void(){
+                    [self openMousePointerPicker];
+                }
+            },
+            @{@"key": @"reset_mouse_pointer",
+                @"icon": @"arrow.counterclockwise",
+                @"hasDetail": @YES,
+                @"type": self.typeButton,
+                @"enableCondition": whenNotInGame,
+                @"action": ^void(){
+                    NSString *path = [NSString stringWithFormat:@"%s/controlmap/mouse_pointer.png", getenv("POJAV_HOME")];
+                    [NSFileManager.defaultManager removeItemAtPath:path error:nil];
+                    [NSNotificationCenter.defaultCenter postNotificationName:@"MousePointerUpdated" object:nil];
+                    [self showSuccessMessage:localize(@"i18n_str_393", nil)];
+                }
+            },
+            @{@"key": @"hardware_hide",
+                @"icon": @"eye.slash",
+                @"hasDetail": @YES,
+                @"type": self.typeSwitch,
+            },
+            @{@"key": @"recording_hide",
+                @"icon": @"eye.slash",
+                @"hasDetail": @YES,
+                @"type": self.typeSwitch,
+            },
             @{@"key": @"mc_toggle_sprint",
               @"hasDetail": @YES,
               @"icon": @"figure.run",
@@ -1784,13 +1677,6 @@ if ([section isEqualToString:@"general"]) {
                   [self presentViewController:alert animated:YES completion:nil];
               }
             },
-            // Task229 (feedback #2: right shift relapsed): instance isolation
-            // split options.txt per instance -- the 1.20.1 instance carries the
-            // user's key_key.sneak:right.shift binding while the 26.3 instance
-            // was born with vanilla defaults (left.shift), so the right-SHIFT
-            // button stopped working there. One-way sync: the binding-richest
-            // options.txt donates its key_key.* rows to every other instance
-            // (only fills MISSING keys, never overwrites an explicit rebind).
             @{@"key": @"keybind_sync",
               @"hasDetail": @YES,
               @"icon": @"arrow.triangle.2.circlepath",
@@ -1800,98 +1686,14 @@ if ([section isEqualToString:@"general"]) {
                   [self ame229_syncKeybindsAcrossInstances];
               }
             },
-// -----------------------------
-            
-            @{@"key": @"gesture_mouse",
-                @"icon": @"cursorarrow.click",
-                @"hasDetail": @YES,
-                @"type": self.typeSwitch,
-            },
-            @{@"key": @"gesture_hotbar",
-                @"icon": @"hand.tap",
-                @"hasDetail": @YES,
-                @"type": self.typeSwitch,
-            },
-            @{@"key": @"disable_haptics",
-                @"icon": @"wave.3.left",
-                @"hasDetail": @YES,
-                @"type": self.typeSwitch,
-            },
-            @{@"key": @"slideable_hotbar",
-                @"hasDetail": @YES,
-                @"icon": @"slider.horizontal.below.rectangle",
-                @"type": self.typeSwitch,
-                // --- [修改] 添加禁用条件 ---
-                @"enableCondition": ^BOOL(){
-                    // 当 TouchController 启用时，禁用此选项（返回 NO 表示禁用/变灰）
-                    return ![self.getPreference(@"control", @"mod_touch_enable") boolValue];
-                }
-            },
-            @{@"key": @"press_duration",
-                @"hasDetail": @YES,
-                @"icon": @"cursorarrow.click.badge.clock",
-                @"type": self.typeSlider,
-                @"min": @(100),
-                @"max": @(1000),
-            },
-            @{@"key": @"button_scale",
-                @"hasDetail": @YES,
-                @"icon": @"aspectratio",
-                @"type": self.typeSlider,
-                @"min": @(50), // 80?
-                @"max": @(500)
-            },
-            @{@"key": @"mouse_scale",
-                @"hasDetail": @YES,
-                @"icon": @"arrow.up.left.and.arrow.down.right.circle",
-                @"type": self.typeSlider,
-                @"min": @(25),
-                @"max": @(300)
-            },
-            @{@"key": @"mouse_speed",
-                @"hasDetail": @YES,
-                @"icon": @"cursorarrow.motionlines",
-                @"type": self.typeSlider,
-                @"min": @(25),
-                @"max": @(300)
-            },
-            @{@"key": @"virtmouse_enable",
-                @"hasDetail": @YES,
-                @"icon": @"cursorarrow.rays",
-                @"type": self.typeSwitch
-            },
-            @{@"key": @"gyroscope_enable",
-                @"hasDetail": @YES,
-                @"icon": @"gyroscope",
-                @"type": self.typeSwitch,
-                @"enableCondition": ^BOOL(){
-                    return realUIIdiom != UIUserInterfaceIdiomTV;
-                }
-            },
-            @{@"key": @"gyroscope_invert_x_axis",
-                @"hasDetail": @YES,
-                @"icon": @"arrow.left.and.right",
-                @"type": self.typeSwitch,
-                @"enableCondition": ^BOOL(){
-                    return realUIIdiom != UIUserInterfaceIdiomTV;
-                }
-            },
-            @{@"key": @"gyroscope_sensitivity",
-                @"hasDetail": @YES,
-                @"icon": @"move.3d",
-                @"type": self.typeSlider,
-                @"min": @(50),
-                @"max": @(300),
-                @"enableCondition": ^BOOL(){
-                    return realUIIdiom != UIUserInterfaceIdiomTV;
-                }
+            @{@"key": @"auto_control_update_check",
+              @"hasDetail": @YES,
+              @"icon": @"arrow.triangle.2.circlepath.circle",
+              @"type": self.typeSwitch
             }
-        ], @[
-        // Java tweaks
+        ],
+        @[
             @{@"icon": @"sparkles"},
-            // --- [Task 134] 运行时管理：二级页面入口恢复 ---
-            // 同上误判恢复：typeChildPane 推入 LauncherPrefManageJREViewController
-            // （canDismissWithSwipe=YES 沿袭 43ef4ae 之前的原始形态）。
             @{@"key": @"manage_runtime",
                 @"hasDetail": @YES,
                 @"icon": @"cube",
@@ -1937,104 +1739,92 @@ if ([section isEqualToString:@"general"]) {
                 @"icon": @"terminal",
                 @"type": self.typeTextField,
                 @"enableCondition": whenNotInGame
-            },
-            // Task141：全局内存两行（java.auto_ram「自动调整内存分配」开关 +
-            // java.allocated_memory「内存分配(MB)」滑条）按用户指令删除——
-            // 启动内存现由当前实例的内存分配拉条决定
-            //（实例管理 > 高级设置 > 内存分配；JavaLauncher/SurfaceVC 经
-            // ame141_currentLaunchAllocMem 读取），全局行不再参与决策。
-        ], @[
-            // Debug settings - only recommended for developer use
-            @{@"icon": @"ladybug"},
-            // --- [Task 134] JIT 开启工具（LiveContainer 多工具方案） ---
-            // 部分用户没有安装 StikDebug 而使用 SideStore/StosDebug/JITStreamer
-            // 等其它工具——此前启动器固定跳 stikjit:// 导致"点了没反应、JIT
-            // 永远开不了"。现提供工具选择：auto 沿用原自动判定（TrollStore
-            // 检测 → apple-magnifier；iOS>=17.4 → stikjit；16.7-17.3.1 →
-            // sidestore），其余选项强制走对应工具的 URL scheme
-            // （waitJITEnabled 消费）。
-            @{@"key": @"jit_enabler",
-                @"hasDetail": @YES,
-                @"icon": @"bolt.badge.clock",
-                @"type": self.typePickField,
-                @"enableCondition": whenNotInGame,
-                @"pickKeys": @[
-                    @"auto",
-                    @"stikjit",
-                    @"sidestore",
-                    @"stosdebug",
-                    @"jitstreamer",
-                    @"trollstore",
-                    @"manual"
-                ],
-                @"pickList": @[
-                    localize(@"preference.debug.jit_enabler.auto", nil),
-                    localize(@"preference.debug.jit_enabler.stikjit", nil),
-                    localize(@"preference.debug.jit_enabler.sidestore", nil),
-                    localize(@"preference.debug.jit_enabler.stosdebug", nil),
-                    localize(@"preference.debug.jit_enabler.jitstreamer", nil),
-                    localize(@"preference.debug.jit_enabler.trollstore", nil),
-                    localize(@"preference.debug.jit_enabler.manual", nil)
-                ]
-            },
-            // --- [Task 134] iOS 26 JS 脚本 JIT 开关 ---
-            // 用户点名：提供关闭"iOS 26+ 启动游戏走 js 文件获取 JIT"的
-            // 选项。关闭后 stikjit:// 请求不再附带 UniversalJIT26.js 的
-            // script-data（纯调试器附加式 JIT）。注意：TXM 设备（系统级
-            // 内存映射依赖脚本服务 brk）关闭后可能无法启动游戏，详情见
-            // 行说明文案。
-            @{@"key": @"jit26_script_disable",
-                @"hasDetail": @YES,
-                @"icon": @"scroll",
-                @"type": self.typeSwitch,
-                @"enableCondition": whenNotInGame,
-                @"requestReload": @YES
-            },
-            @{@"key": @"debug_universal_script_jit",
-                @"icon": @"scroll",
-                @"type": self.typeSwitch,
-                @"requestReload": @YES,
-                @"enableCondition": ^BOOL(){
-                    return DeviceHasJITFlags(JIT_FLAG_FORCE_MIRRORED | JIT_FLAG_HAS_TXM) && whenNotInGame();
-                },
-            },
-            @{@"key": @"debug_always_attached_jit",
-                @"hasDetail": @YES,
-                @"icon": @"app.connected.to.app.below.fill",
-                @"type": self.typeSwitch,
-                @"enableCondition": ^BOOL(){
-                    return getPrefBool(@"debug.debug_universal_script_jit") && whenNotInGame();
-                },
-            },
-            @{@"key": @"debug_skip_wait_jit",
-                @"hasDetail": @YES,
-                @"icon": @"forward",
-                @"type": self.typeSwitch,
-                @"enableCondition": whenNotInGame
-            },
-            @{@"key": @"debug_hide_home_indicator",
-                @"hasDetail": @YES,
-                @"icon": @"iphone.and.arrow.forward",
-                @"type": self.typeSwitch,
-                @"enableCondition": ^BOOL(){
-                    return
-                        self.splitViewController.view.safeAreaInsets.bottom > 0 ||
-                        self.view.safeAreaInsets.bottom > 0;
-                }
-            },
-            @{@"key": @"debug_ipad_ui",
-                @"hasDetail": @YES,
-                @"icon": @"ipad",
-                @"type": self.typeSwitch,
-                @"enableCondition": whenNotInGame
-            },
-            @{@"key": @"debug_auto_correction",
-                @"hasDetail": @YES,
-                @"icon": @"textformat.abc.dottedunderline",
-                @"type": self.typeSwitch
             }
-        ], @[
-            // AI 助手 settings（Prisma AI Agent Phase 2）
+        ],
+        @[
+            @{@"icon": @"arrow.down.circle"},
+            @{@"key": @"mod_mirror",
+              @"hasDetail": @YES,
+              @"icon": @"network",
+              @"type": self.typePickField,
+              @"enableCondition": whenNotInGame,
+              @"pickKeys": @[
+                  @"official_first",
+                  @"mirror_first",
+                  @"speed_first"
+              ],
+              @"pickList": @[
+                  localize(@"preference.title.mod_mirror-official", nil),
+                  localize(@"preference.title.mod_mirror-mcim", nil),
+                  localize(@"preference.title.mirror_policy-speed_first", nil)
+              ]
+            },
+            @{@"key": @"fileSource",
+              @"hasDetail": @YES,
+              @"icon": @"arrow.down.circle",
+              @"type": self.typePickField,
+              @"enableCondition": whenNotInGame,
+              @"pickKeys": @[
+                  @"official_first",
+                  @"mirror_first",
+                  @"speed_first"
+              ],
+              @"pickList": @[
+                  localize(@"preference.title.mirror_policy-official_first", nil),
+                  localize(@"preference.title.mirror_policy-mirror_first", nil),
+                  localize(@"preference.title.mirror_policy-speed_first", nil)
+              ]
+            },
+            @{@"key": @"assetSearchSource",
+              @"hasDetail": @YES,
+              @"icon": @"magnifyingglass",
+              @"type": self.typePickField,
+              @"enableCondition": whenNotInGame,
+              @"pickKeys": @[
+                  @"official_first",
+                  @"mirror_first",
+                  @"speed_first"
+              ],
+              @"pickList": @[
+                  localize(@"preference.title.mirror_policy-official_first", nil),
+                  localize(@"preference.title.mirror_policy-mirror_first", nil),
+                  localize(@"preference.title.mirror_policy-speed_first", nil)
+              ]
+            },
+            @{@"key": @"assetDownloadSource",
+              @"hasDetail": @YES,
+              @"icon": @"square.and.arrow.down",
+              @"type": self.typePickField,
+              @"enableCondition": whenNotInGame,
+              @"pickKeys": @[
+                  @"official_first",
+                  @"mirror_first",
+                  @"speed_first"
+              ],
+              @"pickList": @[
+                  localize(@"preference.title.mirror_policy-official_first", nil),
+                  localize(@"preference.title.mirror_policy-mirror_first", nil),
+                  localize(@"preference.title.mirror_policy-speed_first", nil)
+              ]
+            },
+            @{@"key": @"modLoaderSource",
+              @"hasDetail": @YES,
+              @"icon": @"wrench.and.screwdriver",
+              @"type": self.typePickField,
+              @"enableCondition": whenNotInGame,
+              @"pickKeys": @[
+                  @"official_first",
+                  @"mirror_first",
+                  @"speed_first"
+              ],
+              @"pickList": @[
+                  localize(@"preference.title.mirror_policy-official_first", nil),
+                  localize(@"preference.title.mirror_policy-mirror_first", nil),
+                  localize(@"preference.title.mirror_policy-speed_first", nil)
+              ]
+            }
+        ],
+        @[
             @{@"icon": @"sparkles"},
             @{@"key": @"provider_config",
               @"title": localize(@"ame193.misc.7", @"提供商配置"),
@@ -2090,6 +1880,83 @@ if ([section isEqualToString:@"general"]) {
                   nav.modalPresentationStyle = UIModalPresentationFormSheet;
                   [self presentViewController:nav animated:YES completion:nil];
               }
+            }
+        ],
+        @[
+            @{@"icon": @"ladybug"},
+            @{@"key": @"jit_enabler",
+                @"hasDetail": @YES,
+                @"icon": @"bolt.badge.clock",
+                @"type": self.typePickField,
+                @"enableCondition": whenNotInGame,
+                @"pickKeys": @[
+                    @"auto",
+                    @"stikjit",
+                    @"sidestore",
+                    @"stosdebug",
+                    @"jitstreamer",
+                    @"trollstore",
+                    @"manual"
+                ],
+                @"pickList": @[
+                    localize(@"preference.debug.jit_enabler.auto", nil),
+                    localize(@"preference.debug.jit_enabler.stikjit", nil),
+                    localize(@"preference.debug.jit_enabler.sidestore", nil),
+                    localize(@"preference.debug.jit_enabler.stosdebug", nil),
+                    localize(@"preference.debug.jit_enabler.jitstreamer", nil),
+                    localize(@"preference.debug.jit_enabler.trollstore", nil),
+                    localize(@"preference.debug.jit_enabler.manual", nil)
+                ]
+            },
+            @{@"key": @"jit26_script_disable",
+                @"hasDetail": @YES,
+                @"icon": @"scroll",
+                @"type": self.typeSwitch,
+                @"enableCondition": whenNotInGame,
+                @"requestReload": @YES
+            },
+            @{@"key": @"debug_universal_script_jit",
+                @"icon": @"scroll",
+                @"type": self.typeSwitch,
+                @"requestReload": @YES,
+                @"enableCondition": ^BOOL(){
+                    return DeviceHasJITFlags(JIT_FLAG_FORCE_MIRRORED | JIT_FLAG_HAS_TXM) && whenNotInGame();
+                },
+            },
+            @{@"key": @"debug_always_attached_jit",
+                @"hasDetail": @YES,
+                @"icon": @"app.connected.to.app.below.fill",
+                @"type": self.typeSwitch,
+                @"enableCondition": ^BOOL(){
+                    return getPrefBool(@"debug.debug_universal_script_jit") && whenNotInGame();
+                },
+            },
+            @{@"key": @"debug_skip_wait_jit",
+                @"hasDetail": @YES,
+                @"icon": @"forward",
+                @"type": self.typeSwitch,
+                @"enableCondition": whenNotInGame
+            },
+            @{@"key": @"debug_hide_home_indicator",
+                @"hasDetail": @YES,
+                @"icon": @"iphone.and.arrow.forward",
+                @"type": self.typeSwitch,
+                @"enableCondition": ^BOOL(){
+                    return
+                        self.splitViewController.view.safeAreaInsets.bottom > 0 ||
+                        self.view.safeAreaInsets.bottom > 0;
+                }
+            },
+            @{@"key": @"debug_ipad_ui",
+                @"hasDetail": @YES,
+                @"icon": @"ipad",
+                @"type": self.typeSwitch,
+                @"enableCondition": whenNotInGame
+            },
+            @{@"key": @"debug_auto_correction",
+                @"hasDetail": @YES,
+                @"icon": @"textformat.abc.dottedunderline",
+                @"type": self.typeSwitch
             }
         ]
     ];

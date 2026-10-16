@@ -337,3 +337,4 @@
 "download.modpack.retry_failed" = "Modpack download failed (retried %ld times): %@";
 "download.empty_data" = "Download returned empty data";
 "common.unknown_error" = "Unknown error";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";

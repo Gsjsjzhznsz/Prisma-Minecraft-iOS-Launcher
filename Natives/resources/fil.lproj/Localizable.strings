@@ -64,6 +64,7 @@
 "launcher.menu.install_jar" = "Install .jar";
 
 "launcher.wait_jit.title" = "Naghihintay ng JIT";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
 "launcher.wait_jit.message" = "Umaasa ang Prisma sa Just-in-time na compilation para gumana ang Java sa maximum na performance.";
 
 "login.error.username.outOfRange" = "Dapat ang username ay may 3 na characters na hindi dapat lalampas sa 16 na characters";

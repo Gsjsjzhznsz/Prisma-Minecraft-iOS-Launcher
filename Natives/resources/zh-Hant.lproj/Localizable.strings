@@ -96,6 +96,7 @@
 "launcher.wait_jit.message" = "Prisma依賴即時編譯令Java以最大性能執行。";
 "launcher.wait_jit_trollstore.message" = "如果仍然看到此消息，请在 TrollStore 中启用 URL Scheme。";
 "launcher.jit.stikjit_unhandled" = "stikjit:// 無回應（未安裝 StikDebug？）。請安裝 StikDebug 後重試，或改用其它 JIT 開啟方式。";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// 無回應（TrollStore JIT 助手未接管，常見於 TrollStore 版本過舊）。請更新 TrollStore，或在設定的 JIT 開啟工具改用 stikjit / SideStore / StosDebug 後重試。";
 
 "login.error.username.outOfRange" = "用戶名必須是在3至16個字元之間。";
 "login.error.fields.empty" = "请填写所有字段";
@@ -187,10 +188,10 @@
 "preference.section.mobileglues" = "MobileGlues 渲染器";
 "preference.section.footer.mobileglues" = "这些设置在渲染器选择为 MobileGlues 或 Vulkan 时生效。Vulkan 渲染器的 OpenGL 回退使用 MobileGlues（对齐 Ynnyny 仓库），config.json 会被读取。Auto 渲染器会被解析为 ANGLE，不会加载 MobileGlues，设置不生效。配置将在游戏启动时写入 <POJAV_HOME>/MG/config.json。";
 "preference.section.control" = "自定控制鍵";
-"preference.section.debug" = "用戶界面除錯選項";
+"preference.section.debug" = "除錯與 JIT";
 "preference.section.footer.debug" = "除了除錯外，這些選項可能對自定義控制鍵有用。你可能需要重新啟動啟動器來讓更變生效。";
 //"preference.section.footer.control" = "";
-"preference.section.java" = "Java 選項";
+"preference.section.java" = "記憶體與 Java";
 //"preference.section.footer.java" = "";
 
 "preference.title.confirm" = "你確定嗎？";

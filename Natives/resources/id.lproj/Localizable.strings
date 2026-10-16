@@ -67,6 +67,7 @@
 "launcher.menu.install_jar" = "Install .jar";
 
 "launcher.wait_jit.title" = "Menunggu JIT";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
 "launcher.wait_jit.message" = "Prisma membutuhkan compilation Just-in-Time agar Java dapat bekerja dalam perfoma maksimal.";
 
 "login.error.username.outOfRange" = "Nama pengguna harus minimal mempunyai 3 karakter dan maksimal 16 karakter";

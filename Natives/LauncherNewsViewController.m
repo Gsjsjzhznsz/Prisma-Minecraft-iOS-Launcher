@@ -298,6 +298,20 @@ static UIColor *colorFromHex(NSString *hex) {
     ame259_dl.accentColorHex = @"#3B82F6";
     [tiles addObject:ame259_dl];
 
+    // 12. 快捷入口: 版本管理 (半宽) —— ★ Task267（用户：解决新用户无法找到
+    //    可以使用的功能）：版本管理此前只能从侧栏进入，主页默认磁贴一直缺席
+    //    （kShortcutActionVersions 在自定义磁贴池里但不在默认布局）。
+    HomeTileConfig *ame267_vm = [[HomeTileConfig alloc] init];
+    ame267_vm.tileId = @"shortcut_versions";
+    ame267_vm.tileType = HomeTileTypeShortcut;
+    ame267_vm.tileSize = HomeTileSizeCompact;
+    ame267_vm.visible = YES;
+    ame267_vm.customTitle = localize(@"i18n_str_279", nil);
+    ame267_vm.iconName = @"square.stack.3d.up.fill";
+    ame267_vm.shortcutAction = kShortcutActionVersions;
+    ame267_vm.accentColorHex = @"#6366F1";
+    [tiles addObject:ame267_vm];
+
     return tiles;
 }
 
@@ -397,6 +411,34 @@ static UIColor *colorFromHex(NSString *hex) {
         result = ame259_injected;
         [self saveConfigs:result];
         NSLog(@"[HomeTile] Task259 download-center shortcut injected into saved layout");
+    }
+
+    // ★ Task267（用户：解决新用户无法找到可以使用的功能）：老用户布局一次性
+    //    补"版本管理"磁贴（同 Task235/256/259 注入语义：缺失才加，不覆盖用户
+    //    自定义；落盘后由用户自行增删）。
+    BOOL ame267_hasVm = NO;
+    for (HomeTileConfig *c in result) {
+        if (c.tileType == HomeTileTypeShortcut &&
+            [c.shortcutAction isEqualToString:kShortcutActionVersions]) {
+            ame267_hasVm = YES;
+            break;
+        }
+    }
+    if (!ame267_hasVm) {
+        NSMutableArray<HomeTileConfig *> *ame267_injected = [result mutableCopy];
+        HomeTileConfig *ame267_vm = [[HomeTileConfig alloc] init];
+        ame267_vm.tileId = @"shortcut_versions";
+        ame267_vm.tileType = HomeTileTypeShortcut;
+        ame267_vm.tileSize = HomeTileSizeCompact;
+        ame267_vm.visible = YES;
+        ame267_vm.customTitle = localize(@"i18n_str_279", nil);
+        ame267_vm.iconName = @"square.stack.3d.up.fill";
+        ame267_vm.shortcutAction = kShortcutActionVersions;
+        ame267_vm.accentColorHex = @"#6366F1";
+        [ame267_injected addObject:ame267_vm];
+        result = ame267_injected;
+        [self saveConfigs:result];
+        NSLog(@"[HomeTile] Task267 versions shortcut injected into saved layout");
     }
     return result;
 }

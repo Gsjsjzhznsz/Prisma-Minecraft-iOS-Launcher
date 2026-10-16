@@ -67,6 +67,7 @@
 "launcher.menu.install_jar" = "Instalovat .jar";
 
 "launcher.wait_jit.title" = "Čekám na JIT";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
 "launcher.wait_jit.message" = "Prisma potřebuje kompilaci Just-in-time, aby Java mohla fungovat maximální rychlostí.";
 
 "login.error.username.outOfRange" = "Uživatelské jméno musí být dlouhé alespoň 3 znaky a nanejvýše 16 znaků";

@@ -710,6 +710,7 @@
 "launcher.menu.import_modpack" = "Импортировать модпак";
 "launcher.wait_jit_trollstore.message" = "Если вы всё ещё видите это сообщение, включите URL Scheme в TrollStore.";
 "launcher.jit.stikjit_unhandled" = "Схема stikjit:// не обработана (StikDebug не установлен?). Установите StikDebug и повторите попытку или используйте другой способ включения JIT.";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
 "login.error.fields.empty" = "Заполните все поля";
 "login.error.invalid_credentials" = "Неверное имя пользователя или пароль";
 "login.error.token_missing" = "Отсутствует токен доступа или клиентский токен";

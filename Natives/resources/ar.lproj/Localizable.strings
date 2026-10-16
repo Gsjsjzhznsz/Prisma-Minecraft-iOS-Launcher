@@ -67,6 +67,7 @@
 "launcher.menu.install_jar" = "تثبيت ملف .jar";
 
 "launcher.wait_jit.title" = "انتظر JIT";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
 "launcher.wait_jit.message" = "يعتمد Prisma على تجميع Just-in-time لـ Java للعمل بأقصى قدر من الأداء.";
 
 "login.error.username.outOfRange" = "يجب أن يكون إسم المستخدم بين 3 و 16 حرف";

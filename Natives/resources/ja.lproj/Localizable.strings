@@ -2293,6 +2293,7 @@
 /* Task271 translations */
 "game.menu.resolution.next_launch" = "保存しました。ゲームの再起動後に有効になります。";
 "launcher.jit.stikjit_unhandled" = "stikjit:// が処理されませんでした（StikDebug 未インストール？）。StikDebug をインストールして再試行するか、別の JIT 有効化方法を選択してください。";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
 "login.thirdparty.servers.title" = "保存済みサーバー";
 "login.thirdparty.servers.remove.title" = "このサーバーを削除しますか？";
 "login.thirdparty.servers.remove.confirm" = "削除";

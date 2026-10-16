@@ -96,6 +96,7 @@
 "launcher.wait_jit.message" = "Prisma relies on JIT(Just-in-time) compilation for Java to work at maximum performance";
 "launcher.wait_jit_trollstore.message" = "If you still see this message, please enable URL Scheme in TrollStore.";
 "launcher.jit.stikjit_unhandled" = "stikjit:// was not handled (StikDebug not installed?). Install StikDebug and retry, or switch to another JIT enabler.";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
 
 "login.error.username.outOfRange" = "Username must be at least 3 characters and a maximum of 16 characters";
 "login.error.fields.empty" = "Please fill in all fields";
@@ -187,10 +188,10 @@
 "preference.section.mobileglues" = "MobileGlues Renderer";
 "preference.section.footer.mobileglues" = "These settings take effect when the renderer is set to MobileGlues or Vulkan. The Vulkan renderer's OpenGL fallback uses MobileGlues, so config.json is read. The Auto renderer resolves to ANGLE and does not load MobileGlues, so settings do not apply. The config is written to <POJAV_HOME>/MG/config.json at game launch.";
 "preference.section.control" = "Control customization";
-"preference.section.debug" = "UI Debugging settings";
+"preference.section.debug" = "Debug & JIT";
 "preference.section.footer.debug" = "In addition to debugging these settings may be useful for custom controls. You may need to restart the launcher to make the changes effective.";
 //"preference.section.footer.control" = "";
-"preference.section.java" = "Java Tweaks";
+"preference.section.java" = "Memory & Java";
 //"preference.section.footer.java" = "";
 
 "preference.title.confirm" = "Are you sure?";

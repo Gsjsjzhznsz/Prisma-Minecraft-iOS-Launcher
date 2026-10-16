@@ -463,6 +463,7 @@
 "launcher.menu.import_modpack" = "Importar modpack";
 "launcher.wait_jit_trollstore.message" = "Si sigue viendo este mensaje, active URL Scheme en TrollStore.";
 "launcher.jit.stikjit_unhandled" = "stikjit:// no obtuvo respuesta (¿no está instalado StikDebug?). Instale StikDebug e inténtelo de nuevo, o use otro método para activar JIT.";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
 "login.error.fields.empty" = "Rellene todos los campos";
 "login.error.invalid_credentials" = "Nombre de usuario o contraseña incorrectos";
 "login.error.token_missing" = "Falta el token de acceso o el token de cliente";

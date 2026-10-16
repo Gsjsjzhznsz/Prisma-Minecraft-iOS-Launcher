@@ -67,6 +67,7 @@
 "launcher.menu.install_jar" = "Cài đặt tệp .jar";
 
 "launcher.wait_jit.title" = "Đang đợi JIT";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
 "launcher.wait_jit.message" = "Prisma phụ thuộc vào JIT để Java hoạt động ở mức tối đa hiệu năng.";
 
 "login.error.username.outOfRange" = "Tên người dùng phải có từ 3 đến 16 kí tự";

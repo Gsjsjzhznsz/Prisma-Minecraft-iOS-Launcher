@@ -64,6 +64,7 @@
 "launcher.menu.install_jar" = ".jar kur";
 
 "launcher.wait_jit.title" = "JIT için bekleniyor";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
 "launcher.wait_jit.message" = "Prisma, Java'nın maksimum performansta çalışması için Just-in-time derlemeye dayanır.";
 
 "login.error.username.outOfRange" = "Kullanıcı adı en az 3 en fazla da 16 karakter olmalıdır";

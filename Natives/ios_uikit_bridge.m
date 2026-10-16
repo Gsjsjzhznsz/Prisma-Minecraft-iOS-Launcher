@@ -24,9 +24,14 @@ void internal_showDialog(NSString* title, NSString* message) {
     // 但 level-1000 的新 window 泄漏在场并占着 key window，用户被迫"手动删
     // 系统弹窗"（5.1.0 实测反馈：正版登录提示弹窗关不掉）。修复：记下原
     // key window，OK 时隐藏弹窗 window 并把 key 交还原窗口。
+    // ★ Task267（屎山优化·保留环）：action→handler 强引用 alert 构成
+    //   alert→action→block→alert 环，每次弹窗泄漏一个 alert + 关联
+    //   level-1000 window（Task126 只修了 key 归还，环未断）。改 weak：
+    //   handler 触发时 alert 必然存活（alert 持有 action），取关联对象无悬空风险。
     UIWindow *previousKeyWindow = UIWindow.mainWindow;
+    __weak UIAlertController *ame267_weakAlert = alert;
     UIAlertAction* okAction = [UIAlertAction actionWithTitle:localize(@"OK", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
-        UIWindow *w = objc_getAssociatedObject(alert, @selector(alertWindow));
+        UIWindow *w = objc_getAssociatedObject(ame267_weakAlert, @selector(alertWindow));
         if (w) {
             w.hidden = YES;
             if (previousKeyWindow && previousKeyWindow != w) {
@@ -67,6 +72,8 @@ void ame187_showAccountRepairDialog(NSString *username, NSString *accountId, NSS
                 username ?: @"?", username ?: @"?"]
                       preferredStyle:UIAlertControllerStyleAlert];
         UIWindow *previousKeyWindow = UIWindow.mainWindow;
+        // ★ Task267：同 internal_showDialog——两处 handler 改 weak 断保留环。
+        __weak UIAlertController *ame267_weakAlert = alert;
         [alert addAction:[UIAlertAction actionWithTitle:localize(@"i18n_str_2071", nil)
                                                   style:UIAlertActionStyleDefault
                                                 handler:^(UIAlertAction *action) {
@@ -93,7 +100,7 @@ void ame187_showAccountRepairDialog(NSString *username, NSString *accountId, NSS
                 [BaseAuthenticator setCurrent:nil];
             }
             // 关闭承载 window 并还原 key window
-            UIWindow *w = objc_getAssociatedObject(alert, @selector(alertWindow));
+            UIWindow *w = objc_getAssociatedObject(ame267_weakAlert, @selector(alertWindow));
             if (w) {
                 w.hidden = YES;
                 if (previousKeyWindow && previousKeyWindow != w) {
@@ -107,7 +114,7 @@ void ame187_showAccountRepairDialog(NSString *username, NSString *accountId, NSS
         [alert addAction:[UIAlertAction actionWithTitle:localize(@"Cancel", nil)
                                                   style:UIAlertActionStyleCancel
                                                 handler:^(UIAlertAction *action) {
-            UIWindow *w = objc_getAssociatedObject(alert, @selector(alertWindow));
+            UIWindow *w = objc_getAssociatedObject(ame267_weakAlert, @selector(alertWindow));
             if (w) {
                 w.hidden = YES;
                 if (previousKeyWindow && previousKeyWindow != w) {
@@ -143,11 +150,13 @@ void ame173_showJvmUsedRestartDialog(NSString *profileName) {
             preferredStyle:UIAlertControllerStyleAlert];
         // Task173 CI 修复：previousKeyWindow 必须在 action 捕获之前声明
         //（旧顺序：Cancel handler 引用后才声明 = undeclared identifier）。
+        // ★ Task267：同 internal_showDialog——Cancel handler 改 weak 断保留环。
         UIWindow *previousKeyWindow = UIWindow.mainWindow;
+        __weak UIAlertController *ame267_weakAlert = alert;
         [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
                                                   style:UIAlertActionStyleCancel
                                                 handler:^(UIAlertAction *action) {
-            UIWindow *w = objc_getAssociatedObject(alert, @selector(alertWindow));
+            UIWindow *w = objc_getAssociatedObject(ame267_weakAlert, @selector(alertWindow));
             if (w) {
                 w.hidden = YES;
                 if (previousKeyWindow && previousKeyWindow != w) {

@@ -1881,7 +1881,8 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
                 NSLog(@"[JIT] [RightPanel] Task176 openURL stikjit:// -> %d", ame176_ok);
                 if (!ame176_ok) {
                     dispatch_async(dispatch_get_main_queue(), ^{
-                        showDialog(localize(@"Error", nil), @"stikjit:// 无响应（未安装 StikDebug？）。请在设置的 JIT 开启工具改用 SideStore/StosDebug/JITStreamer，或安装 StikDebug 后重试。");
+                        // ★ Task267：与 DownloadVC 同键收敛（stikjit 未接管指引）。
+                        showDialog(localize(@"Error", nil), localize(@"launcher.jit.stikjit_unhandled", nil));
                     });
                 }
             }];

@@ -750,7 +750,8 @@ static void *ProgressObserverContext = &ProgressObserverContext;
             NSLog(@"[JIT] [NavCtrl] Task185 openURL apple-magnifier:// -> %d", ame185_ok);
             if (!ame185_ok) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    showDialog(localize(@"Error", nil), @"apple-magnifier:// 无响应（TrollStore JIT 助手未接管，常见于 TrollStore 版本过旧）。请更新 TrollStore，或在设置的 JIT 开启工具改用 stikjit / SideStore / StosDebug 后重试。\napple-magnifier:// not handled. Update TrollStore or switch the JIT enabler in Settings.");
+                    // ★ Task267：中英硬编码混排文案 → i18n 键（54 表注入）。
+                    showDialog(localize(@"Error", nil), localize(@"launcher.jit.trollstore_unhandled", nil));
                 });
             }
         }];
@@ -859,7 +860,8 @@ static void *ProgressObserverContext = &ProgressObserverContext;
         NSLog(@"[JIT] [NavCtrl] Task185 openURL %@ -> %d", tool, ok);
         if (!ok) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                showDialog(localize(@"Error", nil), [NSString stringWithFormat:@"%@ 未接管启动请求（未安装或版本过旧？）。请在设置的 JIT 开启工具中换用其它工具后重试。\n%@ did not handle the request. Switch the JIT enabler in Settings and retry.", tool, tool]);
+                // ★ Task267：与 RightPanel/DownloadVC 同键收敛（此前三处三种写法漂移）。
+                showDialog(localize(@"Error", nil), [NSString stringWithFormat:localize(@"ame193.misc.jit_not_handled", nil), tool]);
             });
         }
     }];

@@ -391,6 +391,7 @@
 "launcher.wait_jit.message" = "Prisma가 Java를 최대 성능으로 실행하려면 JIT(Just-in-time) 컴파일이 필요합니다";
 "launcher.wait_jit_trollstore.message" = "이 메시지가 계속 표시되면 TrollStore에서 URL Scheme을 활성화해 주세요.";
 "launcher.jit.stikjit_unhandled" = "stikjit://가 처리되지 않았습니다(StikDebug가 설치되지 않았나요?). StikDebug를 설치한 후 다시 시도하거나 다른 JIT 활성화 방법을 사용해 주세요.";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
 "login.error.username.outOfRange" = "사용자 이름은 3~16자여야 합니다";
 "login.error.fields.empty" = "모든 필드를 입력해 주세요";
 "login.error.invalid_credentials" = "사용자 이름 또는 비밀번호가 올바르지 않습니다";

@@ -64,6 +64,7 @@
 "launcher.menu.install_jar" = "نصب .jar";
 
 "launcher.wait_jit.title" = "در انتظار JIT";
+"launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
 "launcher.wait_jit.message" = "Prisma متکی به تدوین در زمان مناسب برای جاوا برای کار در حداکثر عملکرد است.";
 
 "login.error.username.outOfRange" = "نام کاربری باید حداقل 3 کاراکتر و حداکثر 16 کاراکتر باشد";
