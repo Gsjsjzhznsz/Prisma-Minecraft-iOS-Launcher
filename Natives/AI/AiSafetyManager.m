@@ -1,6 +1,6 @@
 //
 //  AiSafetyManager.m
-//  Amethyst
+//  Prisma
 //
 //  约定：
 //  - 传统中括号语法 + Objective-C ARC。

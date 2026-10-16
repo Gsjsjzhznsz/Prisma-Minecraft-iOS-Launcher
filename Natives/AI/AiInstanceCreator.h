@@ -1,6 +1,6 @@
 //
 //  AiInstanceCreator.h
-//  Amethyst
+//  Prisma
 //
 //  create_instance 工具（enhance-ai-agent Task 12.2）：
 //  在 <POJAV_HOME>/instances/ 下创建同名目录、切换为当前游戏目录（复刻

@@ -1,6 +1,6 @@
 //
 //  AiToolRegistry.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiToolRegistry.h"

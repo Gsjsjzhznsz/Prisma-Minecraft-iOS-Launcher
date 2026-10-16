@@ -1,6 +1,6 @@
 //
 //  AISystemPromptEditorViewController.h
-//  Amethyst
+//  Prisma
 //
 //  AI 系统提示词编辑页：多行文本编辑 AiSettings.systemPrompt，
 //  支持「恢复默认」与「保存」。

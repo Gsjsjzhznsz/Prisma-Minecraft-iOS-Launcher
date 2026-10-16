@@ -1,6 +1,6 @@
 //
 //  AiProviderStore.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiProviderStore.h"

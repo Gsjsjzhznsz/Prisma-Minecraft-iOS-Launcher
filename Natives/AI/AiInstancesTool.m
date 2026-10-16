@@ -1,6 +1,6 @@
 //
 //  AiInstancesTool.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiInstancesTool.h"

@@ -1,6 +1,6 @@
 //
 //  AiLogReader.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiLogReader.h"

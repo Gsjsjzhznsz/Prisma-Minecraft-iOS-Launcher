@@ -1,6 +1,6 @@
 //
 //  AiMessage.h
-//  Amethyst
+//  Prisma
 //
 //  对话消息数据模型：role + content。
 //  tool_calls / function_call 等字段留待 Phase 3 扩展，本期仅保留 role/content。

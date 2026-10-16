@@ -1,6 +1,6 @@
 //
 //  AISystemPromptEditorViewController.m
-//  Amethyst
+//  Prisma
 //
 //  AI 系统提示词编辑页实现。
 //

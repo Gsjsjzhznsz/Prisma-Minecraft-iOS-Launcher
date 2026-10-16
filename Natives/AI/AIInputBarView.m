@@ -1,6 +1,6 @@
 //
 //  AIInputBarView.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AIInputBarView.h"

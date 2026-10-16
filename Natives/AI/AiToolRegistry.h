@@ -1,6 +1,6 @@
 //
 //  AiToolRegistry.h
-//  Amethyst
+//  Prisma
 //
 //  Prisma AI Agent 工具注册表：登记所有内置工具，向 LLM 暴露 OpenAI 风格 schema，
 //  并把 LLM 传来的参数规范化后分发给对应工具执行。

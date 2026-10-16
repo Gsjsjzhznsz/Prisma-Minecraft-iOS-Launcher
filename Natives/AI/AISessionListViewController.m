@@ -1,6 +1,6 @@
 //
 //  AISessionListViewController.m
-//  Amethyst
+//  Prisma
 //
 //  AI 会话列表页实现：UITableView + UISearchController。
 //

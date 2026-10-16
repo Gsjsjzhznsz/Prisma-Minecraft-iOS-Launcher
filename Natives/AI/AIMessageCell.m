@@ -1,6 +1,6 @@
 //
 //  AIMessageCell.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AIMessageCell.h"

@@ -1,6 +1,6 @@
 //
 //  AiAgent.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiAgent.h"

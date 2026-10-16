@@ -1,6 +1,6 @@
 //
 //  AiSessionStore.h
-//  Amethyst
+//  Prisma
 //
 //  AI 会话存储：单例。sessions 读写 Documents/AI/sessions.json（按 updatedAt 倒序），
 //  最近会话 id 存 NSUserDefaults（ai.last_session_id）。

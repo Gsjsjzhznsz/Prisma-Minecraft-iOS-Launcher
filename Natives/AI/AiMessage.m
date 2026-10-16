@@ -1,6 +1,6 @@
 //
 //  AiMessage.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiMessage.h"

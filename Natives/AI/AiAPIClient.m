@@ -1,6 +1,6 @@
 //
 //  AiAPIClient.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiAPIClient.h"

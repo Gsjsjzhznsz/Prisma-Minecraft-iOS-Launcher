@@ -1,6 +1,6 @@
 //
 //  AiTodoTool.h
-//  Amethyst
+//  Prisma
 //
 //  to-do 清单工具（enhance-ai-agent Task 11）：
 //  - todo_create（CONTROLLED_WRITE）：创建条目

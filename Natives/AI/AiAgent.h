@@ -1,6 +1,6 @@
 //
 //  AiAgent.h
-//  Amethyst
+//  Prisma
 //
 //  AI 会话编排（Phase 1 简化版）：负责拼装 system + 历史 + 新用户消息，
 //  调用 AiAPIClient 发起流式请求，将增量写入 session 并持久化。

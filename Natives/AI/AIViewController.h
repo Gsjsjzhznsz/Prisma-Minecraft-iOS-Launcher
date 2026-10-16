@@ -1,6 +1,6 @@
 //
 //  AIViewController.h
-//  Amethyst
+//  Prisma
 //
 //  AI 聊天主界面。展示会话消息、输入栏，负责与 AiAgent 交互与流式刷新。
 //

@@ -1,6 +1,6 @@
 //
 //  AiSafetyManager.h
-//  Amethyst
+//  Prisma
 //
 //  Prisma AI Agent 安全机制：根据 AiSettings.safetyMode 判断某权限级别是否需用户确认，
 //  并在主线程弹出确认框；同时提供安全模式切换的中文提示。

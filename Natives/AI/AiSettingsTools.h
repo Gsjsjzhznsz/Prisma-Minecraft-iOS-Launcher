@@ -1,6 +1,6 @@
 //
 //  AiSettingsTools.h
-//  Amethyst
+//  Prisma
 //
 //  设置读写工具（enhance-ai-agent Task 10）：
 //  - list_settings（READ_ONLY）：返回可用设置键/取值说明表

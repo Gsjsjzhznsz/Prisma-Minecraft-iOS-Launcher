@@ -1,6 +1,6 @@
 //
 //  AiCrashAnalyzer.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiCrashAnalyzer.h"

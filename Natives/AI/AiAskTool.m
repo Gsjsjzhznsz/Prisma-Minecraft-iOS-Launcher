@@ -1,6 +1,6 @@
 //
 //  AiAskTool.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiAskTool.h"

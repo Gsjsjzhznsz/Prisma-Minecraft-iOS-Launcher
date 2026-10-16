@@ -1,6 +1,6 @@
 //
 //  AiSettings.h
-//  Amethyst
+//  Prisma
 //
 //  AI 相关偏好：单例，读取/写入 NSUserDefaults 的 ai.* 键。
 //  setters/getters 直接读写 UserDefaults，不做内存缓存。
@@ -27,6 +27,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// 默认系统提示词（中文），约定 Prisma 行为
 + (NSString *)defaultSystemPrompt;
+
+/// ★ Task267：上游旧默认提示词全文（仅作迁移逐字比对基准，不对用户下发）
++ (NSString *)legacyAmethystSystemPrompt;
 
 @end
 

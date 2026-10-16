@@ -1,6 +1,6 @@
 //
 //  AiDownloadProbe.h
-//  Amethyst
+//  Prisma
 //
 //  下载进度查询工具（check_downloads）：遍历 DownloadTaskManager 全部任务，
 //  返回名称/资源类型/状态/进度/速度/下载源。

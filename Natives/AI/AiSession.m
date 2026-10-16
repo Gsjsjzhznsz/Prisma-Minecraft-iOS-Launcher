@@ -1,6 +1,6 @@
 //
 //  AiSession.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiSession.h"

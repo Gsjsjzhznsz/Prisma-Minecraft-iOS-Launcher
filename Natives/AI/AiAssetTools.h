@@ -1,6 +1,6 @@
 //
 //  AiAssetTools.h
-//  Amethyst
+//  Prisma
 //
 //  Prisma AI Agent 资源/网络工具（Phase 3b）：
 //  - AiAssetSearchTool：Modrinth 搜索类（search_mods / search_resourcepacks / search_shaders /

@@ -1,6 +1,6 @@
 //
 //  AiSleepTool.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiSleepTool.h"

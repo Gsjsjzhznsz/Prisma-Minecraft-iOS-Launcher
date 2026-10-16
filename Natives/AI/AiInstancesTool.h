@@ -1,6 +1,6 @@
 //
 //  AiInstancesTool.h
-//  Amethyst
+//  Prisma
 //
 //  Prisma AI Agent 实例/版本工具：
 //    - list_instances（只读）：列出启动器的游戏实例（游戏目录/版本）及其资源数量。

@@ -1,6 +1,6 @@
 //
 //  AiCrashAnalyzer.h
-//  Amethyst
+//  Prisma
 //
 //  Prisma AI Agent 崩溃分析工具（只读）：match_known_errors。
 //  对传入的日志/崩溃报告做内置规则关键词匹配，返回结构化分析结果。

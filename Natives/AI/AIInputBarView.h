@@ -1,6 +1,6 @@
 //
 //  AIInputBarView.h
-//  Amethyst
+//  Prisma
 //
 //  AI 聊天底部输入栏：胶囊输入框 + 发送/停止切换按钮 + 模型名标签。
 //  键盘与底部安全区适配由外部（AIViewController）通过 bottomInset 与键盘通知拉动。

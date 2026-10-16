@@ -1,6 +1,6 @@
 //
 //  AiProvider.h
-//  Amethyst
+//  Prisma
 //
 //  AI 提供商数据模型：描述一个 OpenAI 兼容的 LLM 服务端点。
 //  支持系列化到/从 JSON（NSJSONSerialization 友好），供 AiProviderStore 持久化。

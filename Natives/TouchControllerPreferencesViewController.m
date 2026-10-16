@@ -62,8 +62,11 @@ typedef NS_ENUM(NSInteger, TouchControllerCommMode) {
 - (void)initViewCreation {
     __weak typeof(self) weakSelf = self;
 
-    // 确保所有选项都可见
-    self.prefSectionsVisible = YES;
+    // ★ Task267（用户："设置不应该全部展开"）：删除 prefSectionsVisible=YES，
+    //   本子页回归 PLPrefTable 基类的分组折叠形态（默认收起，点表头行展开）。
+    //   配套：prefContents row0 补占位表头字典（基类对 row0 的表头渲染约定）、
+    //   didSelect 对 row0 交还 super（基类翻转可见性；本类原重写不调 super
+    //   会把表头行当 mod_touch_mode 弹窗处理 = 单行死页）。
 
     // 设置偏好获取和保存块
     self.getPreference = ^id(NSString *section, NSString *key){
@@ -158,9 +161,11 @@ typedef NS_ENUM(NSInteger, TouchControllerCommMode) {
     // 设置偏好设置部分
     self.prefSections = @[@"control"];
 
-    // 配置设置内容
+    // 配置设置内容（row0 = 占位表头，与主设置页 LauncherPreferencesVC 的
+    // @{@"icon": ...} 约定一致；折叠形态下 row0 即分组表头行）
     self.prefContents = @[
         @[
+            @{@"icon": @"antenna.radiowaves.left.and.right"},
             @{@"key": @"mod_touch_mode",
               @"icon": @"antenna.radiowaves.left.and.right",
               @"hasDetail": @YES,
@@ -405,7 +410,16 @@ typedef NS_ENUM(NSInteger, TouchControllerCommMode) {
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 
-    NSString *key = self.prefContents[indexPath.section][indexPath.row][@"key"];
+    // ★ Task267：row0 = 分组表头占位行——交还基类翻转折叠可见性。
+    //   本类重写不调 super，若不在此放行，折叠后表头行会被下方 key 路由
+    //   误当设置项处理（prefContents 偏移 +1 后 row0 命中表头字典无 key，
+    //   且点击永远无法展开 = 单行死页）。
+    if (indexPath.row == 0 && self.prefSections && self.prefSections.count > 0) {
+        [super tableView:tableView didSelectRowAtIndexPath:indexPath];
+        return;
+    }
+
+    NSString *key = self.prefContents[indexPath.section][indexPath.row - 1][@"key"];
     if ([key isEqualToString:@"mod_touch_mode"]) {
         [self showModeSelectionAlert];
     } else if ([key isEqualToString:@"mod_touch_about"]) {

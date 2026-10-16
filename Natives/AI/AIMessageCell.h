@@ -1,6 +1,6 @@
 //
 //  AIMessageCell.h
-//  Amethyst
+//  Prisma
 //
 //  聊天消息气泡 Cell：用户消息右对齐（accent 色调底），助手消息左对齐（毛玻璃气泡），
 //  助手内容用 MarkdownParser 渲染。提供静态高度估算方法供自动行高使用。

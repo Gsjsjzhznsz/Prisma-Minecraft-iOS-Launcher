@@ -1,6 +1,6 @@
 //
 //  AiFileTools.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiFileTools.h"

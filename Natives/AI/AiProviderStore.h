@@ -1,6 +1,6 @@
 //
 //  AiProviderStore.h
-//  Amethyst
+//  Prisma
 //
 //  AI 提供商存储：单例。providers 读写 Documents/AI/providers.json，
 //  selectedProviderId 存 NSUserDefaults（ai.selected_provider_id）。

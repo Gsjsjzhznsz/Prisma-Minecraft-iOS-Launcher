@@ -1,6 +1,6 @@
 //
 //  AiTodoTool.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiTodoTool.h"

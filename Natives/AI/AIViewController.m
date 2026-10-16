@@ -1,6 +1,6 @@
 //
 //  AIViewController.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AIViewController.h"

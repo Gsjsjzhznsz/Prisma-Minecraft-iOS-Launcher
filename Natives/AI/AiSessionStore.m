@@ -1,6 +1,6 @@
 //
 //  AiSessionStore.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiSessionStore.h"

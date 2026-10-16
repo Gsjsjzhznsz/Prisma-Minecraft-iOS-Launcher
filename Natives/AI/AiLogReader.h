@@ -1,6 +1,6 @@
 //
 //  AiLogReader.h
-//  Amethyst
+//  Prisma
 //
 //  Prisma AI Agent 日志读取工具（只读）：
 //    - read_latest_log：读取当前选中实例的 logs/latest.log（截断末尾 4000 字符）。

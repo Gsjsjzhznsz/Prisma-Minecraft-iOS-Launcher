@@ -1,6 +1,6 @@
 //
 //  AiAPIClient.h
-//  Amethyst
+//  Prisma
 //
 //  OpenAI 兼容流式 Chat Completions 客户端。
 //  支持 SSE 流式返回，节流 onChunk 回调（≤200ms），block 一律回主线程。

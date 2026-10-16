@@ -1,6 +1,6 @@
 //
 //  AiToolBootstrapper.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiToolBootstrapper.h"

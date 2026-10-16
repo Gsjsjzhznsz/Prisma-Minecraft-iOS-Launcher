@@ -1,6 +1,6 @@
 //
 //  AiDownloadProbe.m
-//  Amethyst
+//  Prisma
 //
 
 #import "AiDownloadProbe.h"

@@ -1,6 +1,6 @@
 //
 //  AiSession.h
-//  Amethyst
+//  Prisma
 //
 //  AI 会话数据模型：包含消息列表与元信息，支持 JSON 系列化以便持久化。
 //

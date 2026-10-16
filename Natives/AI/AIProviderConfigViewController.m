@@ -1,6 +1,6 @@
 //
 //  AIProviderConfigViewController.m
-//  Amethyst
+//  Prisma
 //
 //  AI 提供商配置页 + 提供商编辑表单（同文件私有类）+ 连通性测试。
 //

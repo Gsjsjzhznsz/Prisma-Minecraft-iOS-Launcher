@@ -1,6 +1,6 @@
 //
 //  AISessionListViewController.h
-//  Amethyst
+//  Prisma
 //
 //  AI 会话列表页：展示全部历史会话（按更新时间排序，置顶会话优先），
 //  支持搜索、侧滑删除、新建会话；点击会话通过回调返回给调用方。

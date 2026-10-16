@@ -54,6 +54,11 @@
     self = [super initWithFrame:frame];
     self.layer.drawsAsynchronously = YES;
     self.layer.opaque = YES;
+    // ★ Task267：drawable 失效/窗口换形间隙的背景兜底——CAMetalLayer 的
+    //   backgroundColor 默认 nil，短暂无内容呈现时透出窗口第 0 层壁纸
+    //   （用户反馈"切小窗露出底下的壁纸"的次级暴露面）。取 touchView
+    //   同款深色，观感与启动期一致。
+    self.layer.backgroundColor = [UIColor colorWithRed:0.05 green:0.06 blue:0.09 alpha:1.0].CGColor;
 
     return self;
 }
