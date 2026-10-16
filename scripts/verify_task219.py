@@ -209,7 +209,7 @@ print("== J. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"J-{lang} 唯一键 3075（Task267 重锚实测：Task275 三新键 +1 launcher.jit.trollstore_unhandled；顺带修正 Task275 未重锚的 3071→3074 失配）", len(keys) == 3075, f"got {len(keys)}")
+    check(f"J-{lang} 唯一键 3081（Task267-net 重锚实测：Task267 重放版 3075 + Task267-net ame267.* 六键 = 3081）", len(keys) == 3081, f"got {len(keys)}")
 check("J-公告 6 条（Task255 清单 13 精简：pin 2 + 版本史 3 + 最新总攻 1）",
       len(ann) == 6
       and ann[0]["id"] == "server-recommend-2026-09-24"

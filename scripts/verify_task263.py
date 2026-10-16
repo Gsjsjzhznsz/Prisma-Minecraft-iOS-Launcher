@@ -5,7 +5,7 @@
   A. agent 源码锚点（门控类名 / 4 个改写值 / 绝对拼接字节码序列 / premain 取证行）
   B. ASM 内嵌件存在性 + class 版本（major<=52，全会话可加载）
   C. JavaApp/Makefile 打包规则（asm 解嵌 + module-info 剔除 + jar -cfm）
-  D. 根 Makefile 拷贝行 + TAB 保形（671 前导 TAB）+ 无空格缩进回归
+  D. 根 Makefile 拷贝行 + TAB 保形（654 前导 TAB）+ 无空格缩进回归
   E. JavaLauncher.m 挂载点（-javaagent + -Dame.showdown.home + 双日志锚）
   F. manifest Premain-Class
   G. Tools.java 相位2 驻停即落栈探针（post-window-parked / parkedDumped / state 变量）
@@ -107,7 +107,7 @@ root = open(f'{REPO}/Makefile', encoding='utf-8').read()
 check('D1 拷贝行含 showdown_agent.jar',
       'JavaApp/build/showdown_agent.jar $(WORKINGDIR)/AngelAuraAmethyst.app/libs/' in root)
 tabs = sum(1 for l in root.split('\n') if l.startswith('\t'))
-check('D2 前导 TAB 保形（671）', tabs == 671, f'tabs={tabs}')
+check('D2 前导 TAB 保形（654）', tabs == 654, f'tabs={tabs}')
 bad_indent = [l for l in root.split('\n') if l.startswith('    ') and not l.startswith('\t')]
 check('D3 无空格缩进回归', len(bad_indent) == 0)
 
