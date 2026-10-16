@@ -3450,3 +3450,24 @@ Work Log:
 
 Stage Summary:
 - Task 275 全链闭环：v6.5.5 Beta（prerelease）+ 六路审查 P0×1/P1×13/P2×12/P3×17 批量根修 107 文件 + CI 一轮终绿 + Beta 资产就绪待装机验证；遗留清单（launchJVM 拆分/Java 死码删除/46 长尾表全量翻译/website 版本收敛/ame225 缓存）逐项在案列下轮
+
+
+---
+Task ID: 267(重放版)
+Agent: main (Super Z)
+Task: 用户指令四件套(继续优化屎山/UX 轻改/设置项全量重排/测试指引)——设置页全量重排+弹窗保留环+JIT 文案键化+主页版本管理磁贴;重放于 origin/main(f9e4db7,Task 263-275 基线)
+
+Work Log:
+- 状态核查:远端已推进到 Task 275(第四轮六路审查+v6.5.5 转 Beta 已闭环);首轮本地实现(bug① 四通道/JIT 可取消/自愈迁移)与远端 Task 265/267/270/271 大面积重叠(远端连 ame267_cancelled 同名机制都已落地且跟随模式架构更优)——rebase 冲突 39 文件后决策:重叠全部放弃采用远端,backup/task267-local 留档,只重放远端真正缺失的四件
+- ①设置页全量重排(用户:设置项全部重新排序,解决新用户找不到功能):分组默认展开(旧默认全折叠=新用户只见 8 行组头,可发现性第一杀手;组头仍可点击折叠)+组间重排 general→video→mobileglues→control→java→download→ai→debug+general 28 行/control 24 行按使用频率重排(语言/主题/风格/背景→缩放/布局→颜色→图标→开关→数据→重置/关于)+零存储键变化(跨组移行一律不做,用户既有设置零丢失)+组名语义修正(debug 'UI设置'→'调试与 JIT'、java 'Java 调整'→'内存与 Java',en/zh-Hans/zh-Hant/zh-CN);脚本 task267_reorder_settings.py(括号/字符串/注释感知扫描器,8 组哨兵键+92 键全量+无重复三重校验)
+- ②ios_uikit_bridge 弹窗保留环 5 block(internal_showDialog/ame187×2/ame173,ame267_weakAlert):alert→action→handler→alert 环=每次弹窗泄漏 alert+level-1000 window(Task126 只修 key 归还未断环);weak 取关联对象(handler 触发时 alert 必存活,无悬空)
+- ③JIT 文案三处漂移键化:NavCtrl trollstore 中英硬编码→新键 launcher.jit.trollstore_unhandled(54 表注入,四主语言实译长尾 en 回退)+NavCtrl 工具未接管→复用 ame193.misc.jit_not_handled+RightPanel stikjit 未响应→复用 launcher.jit.stikjit_unhandled(同语义三种写法收敛)
+- ④主页'版本管理'磁贴(默认布局第 12 块 square.stack.3d.up.fill #6366F1+老用户缺失注入,Task235/256/259 同语义:缺失才加不覆盖自定义);新用户版本管理/隔离/模组管理从此主页一级可达
+- verify_task219 锚修正:3071→3075(+1 新键;顺带修正 Task275 三新键未重锚的遗留失配——远端 HEAD 实测 3074 vs 锚 3071)
+- 门禁:task139/240 all balanced;task191 54 表 3075 OK;task248 缺键0/硬编码0/动态键0;task250 全零;verify219 81/81 ALL GREEN;verify255 全绿;verify269 28/28
+- 事故两件:工具显示层吞字第五例(heroCard→eroCard 四连,Python 布尔+HEAD 字节对照证文件完好未改);MultiEdit 非原子教训(顺序编辑中途失败时已落盘部分需逐个核对,本案 #1/#2 已落 #3-#5 未落)
+- 提交 bf9753c 推送 main;CI run 38879259546(#868)一轮终绿;v6.5.5 Beta 资产静默替换(ipa/tipa 224.9MB 同名保链,构建=bf9753c)
+
+Stage Summary:
+- 装机验证锚点:①设置页 8 组默认全展开+新顺序(语言/主题最上,内存与 Java 紧随控制,下载源/AI/调试靠后)②组头点击折叠/展开会话内记忆③设置搜索照常④主页新增'版本管理'磁贴(点击直达版本管理+模组管理)⑤多次弹窗(登录提示/JVM 重启弹窗等)后内存不涨⑥TrollStore JIT 拉起失败提示跟随 App 语言显示
+- 遗留转介:下载页目标实例名展示(评估后本轮放弃,下一轮候选);Task 275 P1 未修清单在案
