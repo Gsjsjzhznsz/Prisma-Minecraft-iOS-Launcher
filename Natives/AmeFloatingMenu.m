@@ -1211,16 +1211,15 @@ static UIColor *Ame244SnapshotTint(void) {
     return YES;
 }
 
-@end
-
-#pragma mark - 中央路由钩子（安装于 UIKit+hook.m）
-
 /// ★ Task263：呈现者是否处于游戏内渲染面（Metal）域——沿
 /// presentingViewController/parentViewController 双链上溯（呈现不改变
 /// parent，呈现链用 presenting；容器嵌入用 parent），命中
 /// SurfaceViewController/JavaGUIViewController 族即游戏域。
 /// 与 AmeNativeMenu.ame245_anchorInsideGameSurface（视图 responder 链）
 /// 同语义、不同入口：本钩子手里是呈现者 VC 而非锚点视图。
+/// （★ CI r1 修正：方法必须在 AmeFloatingMenu @implementation 内——远端
+///   文件结构里 '#pragma mark - 中央路由钩子' 在 @end 之后，照旧基线插在
+///   pragma 与 @implementation 之间会游离在任何 implementation 外 = 编译雷）
 + (BOOL)ame263_presenterInsideGameSurface:(UIViewController *)vc {
     UIViewController *ame263_r = vc;
     int ame263_hop = 0;
@@ -1236,6 +1235,10 @@ static UIColor *Ame244SnapshotTint(void) {
     }
     return NO;
 }
+
+@end
+
+#pragma mark - 中央路由钩子（安装于 UIKit+hook.m）
 
 @implementation UIViewController (Ame237FloatingMenuRouter)
 

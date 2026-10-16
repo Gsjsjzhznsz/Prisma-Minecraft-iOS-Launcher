@@ -3492,3 +3492,16 @@ Stage Summary:
 - 装机验证锚点：①组头折叠后只剩表头行（灰字墙消失，展开恢复）②Fabric 不兼容崩卡显示"Mod 版本不兼容"+Fabric 方案行居建议首条③"查看日志详情"卡内展开全量日志并变"收起日志"，不退桌面、重启不卡等待画面④启动器内确认删除/版本隔离弹窗=系统原生液态玻璃，游戏内 Metal 面板仍自绘⑤设置→通用"玻璃透明度"滑条即改即生效（0% 最闷 100% 最透，默认 50%）
 - 重复实现存档：14b342a 留 reflog（旧基线全量版含 hs_err 追加与小窗第三洞修，远端缺相应能力时可参照）
 - 移交远端：verify255 品牌闸豁免域修正随本提交入树，远端下轮直拉即绿
+
+---
+Task ID: 263(重放版)-r1
+Agent: main (Super Z)
+Task: CI run 38936587301 编译红修复
+
+Work Log:
+- 红因：ame263_presenterInsideGameSurface: 落在 AmeFloatingMenu @end 之后、UIViewController category @implementation 之前的空档——远端文件结构里 '#pragma mark - 中央路由钩子' 在 @end 外（旧基线在 implementation 内），照旧基线锚点插入即游离在任何 implementation 外（error: missing context for method declaration + no known class method for selector，连坐一处）；旧实现 14b342a 从未过 CI 故此雷未爆
+- 修法：helper 移入 AmeFloatingMenu @implementation 内（@end 之前，同 TU 先定义 implementation 方法对后文调用点可见），锚点差异注释留痕
+- 教训：跨基线移植锚点必须核 '@end/@implementation 结构' 而非仅注释行；task139 括号平衡闸对方法上下文不设防，CI 才是真编译器
+
+Stage Summary:
+- r1 修复提交，CI 复跑验证中
