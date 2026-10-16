@@ -3523,3 +3523,16 @@ Work Log:
 
 Stage Summary:
 - 四项反馈全修提交 11e660e 推送 main；CI run 38947624603 轮询中；装机锚点：①设置打开默认全折叠 ②真玻璃档启动器内任意 alert（含输入类）原生直通 ③小窗内触摸点击与光标位置逐点对齐（不再向右下放大偏移）④伪玻璃档拖滑条在屏面板 ≤1 拖动 tick 内可见透明度变化、真玻璃档 Metal 域弹窗同享
+
+---
+Task ID: 276(闭环补记)
+Agent: main (Super Z)
+Task: CI 终绿 + v6.5.5 Beta 资产静默替换（Task 276 构建 = c7b5878）
+
+Work Log:
+- CI run 38947624603（11e660e）被 cancel-in-progress 取代 → run 38947798717（c7b5878，代码+worklog 同点）completed success
+- 资产替换（push token 具 release 写权限，任务276 轮首次在侧）：artifact 12068050965(tipa)/12067781282(ipa) 下载→替换 v6.5.5 release 双资产（删旧 204/传新 201，同名保链 updated_at=2026-10-16T18:51/18:52，sha256 3c2cd51b…/a7a1a98d…）
+- 上屏前验证：新 tipa 内 Task263 重放版符号 3 处 + Task276 符号（ame263_applyFillTransparency/LGCPseudoGlassTransparencyChanged）6 处 + pseudo_glass_transparency i18n 键齐——六项修复+四项反馈修复全部在资产内
+
+Stage Summary:
+- v6.5.5 Beta 资产首次完整对齐 main HEAD（此前 bf9753c 点）——用户重装 tipa/ipa 即获 Task263 重放版六项 + Task276 四项全量修复；装机锚点见 Task 276 条目
