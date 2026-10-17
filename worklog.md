@@ -3629,3 +3629,19 @@ Work Log:
 Stage Summary:
 - 提交 fc5f169a 推送 main（bf11dd11..fc5f169a）；CI 出包后装机验证
 - 装机锚点：①真玻璃档开选择器立即弹出——沉降窗内出现磨砂玻璃面板、窗外出现系统原生液态玻璃，两类均零延迟（日志 [AmeNativeMenu] Task281: settling window -- instant glass-panel takeover）②等待 JIT 弹窗在玻璃档下呈磨砂玻璃面板（日志 Task281: system alert mirrored to glass panel）③小窗若仍漂移：抓一份包含【进入游戏后小窗内触摸】段落的完整 latestlog（Task277 七元组行 loc/out/adaptive/belief/win/phys 必在），即可在映射/信念/视觉三域一锤定音；竖持/FaceUp 用小窗的场景垫片已禁入（日志 Task281: windowed scene -- rotation shim disengaged）
+
+---
+Task ID: 282
+Agent: main (Super Z)
+Task: 71faf87 构建 latestlog 三项定案：连点多下出现伪液态玻璃弹窗（旧问题重现）/ 切小窗游戏窗口偏移+界面被遮 / 最新议题收尾
+
+Work Log:
+- 日志取证：用户设备构建 == 本地 HEAD（71faf872=Task 281）——历轮修复确已进构建；①AmeMenu 段 00:14:41-45 语言选择器连点 4 次全部落 "Task281: settling window -- instant glass-panel takeover" + "glass panel route (snapshot frost)" = 连点恒出磨砂面板（伪玻璃乱入本体）；②GLGeo Task51 hierarchy #2000 实锤 551x486 窗口下 rootView(581x486) 滞留全屏 center (605,410) 其余层全部 (276,243)——frame.origin 漂移 (314.5,167) 游戏内容整栈位移出窗口矩形；③Task237 menu shown panel={{420,0},{400,1180}} 实锤齿轮菜单在 551x486 窗口内按全屏竖屏口径 820x1180 铺排
+- ①连点伪玻璃根修：ame273_systemMenuReentryLikely 收窄为 ame273_systemMenuSessionLive（仅会话真实存活：delegate 已询问未收尾+5s 自过期门；Task273 病历本体=动作 handler 内再呈现），沉降窗两子窗（didEnd 后 0.6s/动作后 1.2s）并入 Task245 原生直出支；ame245_presentViaSystemMenu 双入口拒收（Task267 实锤=dismiss 动画未完成抛可捕获异常）改 0.32s 单次原生快速重试（代次防陈旧/presentRequestAt 刷新保看门狗语义/仍败才 fallback）——连点全程真液态玻璃，磨砂面板仅剩会话内改道与真实静默丢弃兜底
+- ②小窗整栈位移根修：ame267_rescaleViewStackToCurrentBounds + viewWillTransitionToSize 历史只写 rootView.bounds 不重设 frame（全屏时代 landscape 锁定尺寸恒定 center 终身有效；iPadOS 27 自由窗口逐 tick 变更首次踩雷）——两处改写 frame origin 钉回 (0,0)
+- ③齿轮菜单几何源根修：menuView 宿主=self.view，创建/showMenu/dismissMenu 三处 [ScreenUtils screenSize]（UIScreen 全屏口径随界面方向，窗口模式被系统接管返回竖屏值）改 self.view.bounds（全屏 window==screen 值不变，窗口模式按实况铺排）
+- 门禁：task139 all balanced；task240 syntax OK（import sweep WARN 为基线预存实测在案）；task248 缺键0/硬编码0/动态键0；task250 全零；verify219 81/81 ALL GREEN；verify255 0 FAIL；task191 四表 3088——零新增文案
+
+Stage Summary:
+- 提交 7911e3d 推送 main（71faf872..7911e3d）；CI 出包后装机验证
+- 装机锚点：①真玻璃档连点选择器→全程系统原生液态玻璃（日志 Task282: presentMenu rejected -- single native retry / native retry accepted；伪玻璃面板仅剩会话内改道一种形态）②切小窗/窗口内缩放→游戏画面满窗无偏移无裁切（日志 [SurfaceVC] Task267: scale-mode stack resync 照旧 + GLGeo hierarchy 中 rootView 位置随窗口重定位 (w+30)/2,h/2）③小窗内点齿轮→菜单按窗口实况铺排（日志 Task237 menu shown panel 宽高 ≤ 窗口尺寸）
