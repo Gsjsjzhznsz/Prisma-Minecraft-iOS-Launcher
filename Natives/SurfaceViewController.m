@@ -1849,6 +1849,34 @@ static NSInteger ame283_lastLandscapeDev = 0;
         self.rootView.center = CGPointMake(ame267_w / 2.0 + 15.0 * cosf(ame283_angle),
                                            ame267_h / 2.0 + 15.0 * sinf(ame283_angle));
     }
+    // ★ Task284（"调节方向后占用信息与齿轮保持原来的方向" + "调节小窗下
+    //   左上角的控件会消失"根修）：悬浮栏宿主 = self.view（rootView 之外）
+    //   ——⊥ 旋转只转游戏栈时，齿轮/统计条滞留窗口坐标系：内容已转向而
+    //   悬浮件不跟（"保持原来的方向"本体）；内容坐标系的新左上角空置，
+    //   统计条却钉在窗口旧左上角（"左上角控件会消失"同源）。同参数同步
+    //   转向：⊥ 时 overlay 施加同角 transform + 逻辑口径 bounds（overlay
+    //   无 +30pt 溢出约定，逻辑尺寸 = 转置前视图尺寸）+ center 对齐视图
+    //   中心；非 ⊥ 复位 identity + frame 铺回当前视图。UIKit 命中测试自动
+    //   走逆变换，overlay 内部百分比持久化/吸边/拖拽/Task250 restore 数
+    //   学全在逻辑坐标系运转——与游戏内容同形同向，无需任何坐标换算改动。
+    {
+        UIView *ame284_overlay = self.gameMenuOverlay;
+        if ([ame284_overlay isKindOfClass:[GameMenuOverlayView class]]) {
+            if (ame283_angle == 0.0) {
+                if (!CGAffineTransformIsIdentity(ame284_overlay.transform)) {
+                    ame284_overlay.transform = CGAffineTransformIdentity;   // ⊥ 消失先复位
+                }
+                CGRect ame284_frame = CGRectMake(0, 0, ame267_w, ame267_h);
+                if (!CGRectEqualToRect(ame284_overlay.frame, ame284_frame)) {
+                    ame284_overlay.frame = ame284_frame;
+                }
+            } else {
+                ame284_overlay.transform = ame283_want;
+                ame284_overlay.bounds = CGRectMake(0, 0, ame267_lw, ame267_lh);
+                ame284_overlay.center = CGPointMake(ame267_w / 2.0, ame267_h / 2.0);
+            }
+        }
+    }
     // touchView/ctrlView 均为 rootView 子视图：一律逻辑口径（ rootView 空间）
     CGRect ame267_frame = CGRectMake(0, 0, ame267_lw, ame267_lh);
     self.touchView.frame = ame267_frame;

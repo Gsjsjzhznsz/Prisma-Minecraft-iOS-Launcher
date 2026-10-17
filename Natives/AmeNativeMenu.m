@@ -146,6 +146,12 @@ static int ame273_openGeneration = 0;                ///< 呈现代次（防陈�
 /// ★ Task283：活会话交互实例（delegate 询问时登记/didEnd 注销，weak 防
 ///   悬垂——视图释放后自动落 nil，dismissMenu 不可用自然落玻璃面板保底）。
 static __weak UIContextMenuInteraction *ame283_liveSessionInteraction = nil;
+
+/// ★ Task284（"优化连点悬浮菜单延迟"）：dismissMenu 收口后的重开请求块——
+///   didEnd 完成回调前触发（0.12s 沉降）+ 0.45s 后备定时器双通道；块内
+///   捕获代次，ame284_representFiredGen 防双火（早触发后后备定时器空转）。
+static dispatch_block_t ame284_pendingRepresent = nil;
+static int ame284_representFiredGen = 0;
 /// ★ Task281：Task278 重试代次退役——延迟重试链整体移除后不存在并发链
 ///   （见 ame242_presentStyleRoutedWithMenu 分轨注释）。
 
@@ -659,13 +665,18 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
             //   代次先行推进：0.45s 等待窗内更晚请求会 gen++ 顶替本块（连
             //   点不排队，只保最新一次重开）；ame273_presentRequestAt 同步
             //   刷新保看门狗语义连续。
+            //   ★ Task284（延迟优化）：上述固定 0.45s 拆双通道——主通道 =
+            //   didEndMenuForConfiguration 收尾完成回调前触发（0.12s 沉降
+            //   后即重开，较固定 0.45s 提前 ~0.2-0.3s，连点重开即点即达）；
+            //   后备定时器降级为 0.45s 极端兑底（didEnd 未达时才生效）；
+            //   ame284_representFiredGen 同代次只放行一次防双火。
             UIContextMenuInteraction *ame283_live = ame283_liveSessionInteraction;
             BOOL ame283_dismissed = NO;
             if (ame283_live != nil && [ame283_live respondsToSelector:@selector(dismissMenu)]) {
                 @try {
                     [ame283_live dismissMenu];
                     ame283_dismissed = YES;
-                    NSLog(@"[AmeNativeMenu] Task283: live session dismissed via dismissMenu -- native re-present in 0.45s");
+                    NSLog(@"[AmeNativeMenu] Task283/284: live session dismissed via dismissMenu -- re-present armed (didEnd-early + 0.45s backstop)");
                 } @catch (NSException *ame283_e) {
                     NSLog(@"[AmeNativeMenu] Task283: dismissMenu exception (%@) -- glass panel fallback", ame283_e.name);
                 }
@@ -678,14 +689,19 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
                 UIView *ame283_src = sourceView;
                 NSArray *ame283_dicts = dicts;
                 void (^ame283_onDismiss)(void) = onDismiss;
-                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.45 * NSEC_PER_SEC)),
-                               dispatch_get_main_queue(), ^{
+                dispatch_block_t ame284_represent = ^{
                     if (ame283_gen != ame273_openGeneration) return; // 已被更新请求取代
+                    if (ame284_representFiredGen == ame283_gen) return; // didEnd 早触发已完成
+                    ame284_representFiredGen = ame283_gen;
+                    ame284_pendingRepresent = nil;
                     [self ame245_presentViaSystemMenu:ame283_menu
                                            sourceView:ame283_src
                                                 dicts:ame283_dicts
                                            onDismiss:ame283_onDismiss];
-                });
+                };
+                ame284_pendingRepresent = [ame284_represent copy];
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.45 * NSEC_PER_SEC)),
+                               dispatch_get_main_queue(), ame284_represent);
             } else {
                 NSLog(@"[AmeNativeMenu] Task283: dismissMenu unavailable (live=%@) -- instant glass-panel takeover (legacy fallback)",
                       ame283_live != nil ? @"nil" : @"no-sel");
@@ -897,6 +913,15 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
     ame273_lastSessionEndAt = CFAbsoluteTimeGetCurrent();
     if (ame283_liveSessionInteraction == interaction) {
         ame283_liveSessionInteraction = nil;            // ★ Task283：会话收尾注销
+    }
+    // ★ Task284：会话收尾 = dismissal 完成回调 → 待重开请求主通道前触发
+    //   （0.12s 沉降让收尾动画落定，早于固定 0.45s 窗口 ~0.2-0.3s）；
+    //   无待重开请求（正常选中/外部点按收尾）零成本直落。
+    if (ame284_pendingRepresent != nil) {
+        dispatch_block_t ame284_early = ame284_pendingRepresent;
+        ame284_pendingRepresent = nil;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.12 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ame284_early);
     }
     if (!ame240_actionFired && ame240_onDismiss) {
         ame240_onDismiss();

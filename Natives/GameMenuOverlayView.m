@@ -386,6 +386,12 @@ static BOOL ame227_g_dockedLeft = NO;
         self.statsLabel.center = CGPointMake(defaultLabelX, defaultLabelY);
     }
 
+    // ★ Task284（"调节小窗下左上角的控件会消失"防御层）：位置重放后可见
+    //   性再断言——转场/重排竞态可能留下 stale hidden（展示语义以
+    //   statsLabelVisible/overlayHidden 为准），重放即校正，杜绝
+    //   "件在但不可见"。
+    [self applyStatsLabelVisibility];
+
     [self clampViewsToScreen];
 }
 

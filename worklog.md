@@ -3664,3 +3664,22 @@ Stage Summary:
 - 提交 e1483e63 推送 main（28a08acd..e1483e63）；CI 出包后装机验证
 - 装机锚点：①真玻璃档连点选择器→全程原生液态玻璃（日志 [AmeNativeMenu] Task283: live session dismissed via dismissMenu -- native re-present in 0.45s；磨砂面板仅剩 dismissMenu 不可用兜底一形态）②小窗+设备旋转→游戏内容 ±90° 跟手满窗（日志 [SurfaceVC] Task267/283: scale-mode stack resync (view ... rot=+90/-90deg logical ...）；同形窗口 rot=0deg 与 Task282 版一致）③MC 26.x+Zink 会话（日志 [ZinkConfig] Task283: MC major 26 detected -- GL floor raised 4.1 -> 4.5 + MC 侧 "4.5 (Compatibility Profile)"）→ 议题 #15 报告者升级 v6.5.5 后复测
 - 议题答复稿见共享 worklog 会话记录（#15 给出根因+升级路径；#12/#13 已有仓主补 log 限期留言，预诊断归因：#12 疑似大陆镜像源缺索引/加载器过滤，#13 CurseForge 需 API 票据，均待日志实锤）
+
+---
+Task ID: 284
+Agent: main (Super Z)
+Task: c2db755 构建装机反馈四项（性能优先 JVM 预设升格+CodeCache 调大 / 调节小窗左上角控件消失 / 旋转后占用信息与齿轮保持旧方向 / 连点悬浮菜单延迟）
+
+Work Log:
+- 基线确认：用户设备构建 == 本地 HEAD（c2db7557=Task 283），历轮修复确已进构建（上轮 H1/H4 分叉疑云正式关闭）
+- ①性能优先 JVM 预设升格（JavaLauncher ame256_effectiveJvmPreset）：装机日志实锤 "Task256: profile-level jvm_preset override active: memory" → Java8 SerialGC 独占——用户全局 java.jvm_preset=performance（日志无该键 getter miss = 键存在）被实例值按旧序压制；修后 performance 档升格最高优先（custom 除外：任一层显式自管仍最优先），global=performance 直接盖过实例非定制值并打 Task284 日志，其余档位保持 profile → global → normal 原序
+- ②CodeCache 分轨放大（launchJVM + launchHeadlessJVM 双点）：iOS < 26 非镜像路径 64m→256m（Initial 16→32m / Expansion 4→8m），杜绝 "CodeCache is full. Compiler has been disabled." 退化解释执行（大整合包 Forge 1.12.2 + 17 coremods 装机会话体量余量）；iOS 26+ 镜像映射路径维持 64m 硬边界不动——A15 非 TXM SIGBUS 病历的铁律：StikDebug 授予的 RX 映射恒 64MB（装机日志 "Requesting 64 MB for JIT mapping" 为外部工具定值，全仓 grep 确认本仓库不可调），预留超出 = 镜像越界不可靠页间歇 SIGBUS 复发
+- ③悬浮栏 ⊥ 跟转根修（SurfaceViewController ame267_rescaleViewStackToSize）：Task283 的 ±90° 只转 rootView（游戏栈），齿轮/统计条宿主=self.view 滞留窗口坐标系——"旋转后保持原来的方向"本体 + 内容新左上角空置而统计条钉在窗口旧左上角（"调节小窗左上角控件消失"同源：件没丢，是钉错了角落）；修法 = overlay 同参数同步转向：⊥ 时同角 transform + 逻辑口径 bounds（无 +30pt 约定，逻辑尺寸=转置前视图尺寸）+ center 对齐视图中心，非 ⊥ 复位 identity + frame 铺回；命中测试自动逆变换，overlay 内百分比持久化/吸边/拖拽/Task250 restore 全在逻辑坐标系运转零换算改动
+- ④可见性防御层（GameMenuOverlayView.restorePositions）：位置重放后 applyStatsLabelVisibility 再断言，杜绝转场竞态 stale hidden（件在但不可见）
+- ⑤连点悬浮菜单延迟优化（AmeNativeMenu）：Task283 固定 0.45s 拆双通道——主通道 = didEndMenuForConfiguration 收尾完成回调前触发（0.12s 沉降，较固定 0.45s 提前 ~0.2-0.3s 即点即达）+ 0.45s 后备定时器降级极端兜底；ame284_representFiredGen 同代次只放行一次防双火，代次守卫继续拦截陈旧重开；正常选中/外部点按收尾零成本直落
+- 门禁：task139 all balanced / task240 all balanced / task158 balance PASS ×4（JavaLauncher/SurfaceViewController/AmeNativeMenu/GameMenuOverlayView）/ task248 缺键0 硬编码0 动态键0 / import sweep WARN 为基线预存 / task219_syntax 6 FAIL 均为脚本内陈旧基线锚（Makefile TAB 662、bundle id com.air-devs.air、四表键数 2606——与本轮 diff 零交集，未触碰 Makefile/bundle/.strings）；零新增文案
+
+Stage Summary:
+- 提交推送 main（c2db7557..本轮）；CI 出包后装机验证
+- 装机锚点：①全局 JVM 预设=性能优先时（日志 [JavaLauncher] Task284: global jvm_preset=performance outranks profile override 'memory' + Task255 JVM preset=performance (Java 8): ParallelGC）②小窗+设备旋转→齿轮/占用信息随内容 ±90° 同向（日志 [SurfaceVC] Task267/283: scale-mode stack resync 照旧 + 齿轮把手贴内容右缘）③连点悬浮菜单→重开延迟 0.45s→~0.15-0.25s（日志 Task283/284: live session dismissed via dismissMenu -- re-present armed）
+- 悬浮栏菜单面板（menuView）在 ⊥ 态未随转（用户未点名，本轮不扩面，留观察）

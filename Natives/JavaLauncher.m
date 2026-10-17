@@ -439,17 +439,39 @@ void init_loadMobileGluesConfig() {
 ///   设置页"JVM 预设"行，实例级覆写）→ java.jvm_preset（全局设置页）→
 ///   @"normal"。init_loadCustomJvmFlags 的 custom 参数注入与 launchJVM 的
 ///   GC 段注入两处共用，解析永不漂移。
+///   ★ Task284（"优先性能优先 JVM 参数"）：performance 档升格最高优先
+///   （custom 除外）——两层任一显式选 performance 即生效。病历：用户
+///   全局已选性能优先，实例值 memory 按旧序盖过全局（装机日志 c2db755
+///   "profile-level jvm_preset override active: memory" → Java8
+///   SerialGC 独占），性能优先选择被实例值压制；修后 global=performance
+///   直接胜出，其余档位保持 profile → global → normal 原序不变。
 static NSString *ame256_effectiveJvmPreset(void) {
     NSString *ame256_profile = [PLProfiles resolveKeyForCurrentProfile:@"jvm_preset"];
-    if ([ame256_profile isKindOfClass:[NSString class]] && ame256_profile.length > 0) {
+    NSString *ame256_global = getPrefObject(@"java.jvm_preset");
+    BOOL ame284_profileValid = [ame256_profile isKindOfClass:[NSString class]] && ame256_profile.length > 0;
+    BOOL ame284_globalValid = [ame256_global isKindOfClass:[NSString class]] && ame256_global.length > 0;
+    // custom 档 = 用户显式自管参数，保持最高优先（任一层声明即生效）
+    if ([ame256_profile isEqualToString:@"custom"] || [ame256_global isEqualToString:@"custom"]) {
+        return @"custom";
+    }
+    // ★ Task284：performance 升格——global 显式选性能优先生时盖过实例非定制值
+    if ([ame256_global isEqualToString:@"performance"]) {
+        if (ame284_profileValid && ![ame256_profile isEqualToString:@"performance"]) {
+            static dispatch_once_t ame284_once;
+            dispatch_once(&ame284_once, ^{
+                NSLog(@"[JavaLauncher] Task284: global jvm_preset=performance outranks profile override '%@' (performance-first precedence)", ame256_profile);
+            });
+        }
+        return @"performance";
+    }
+    if (ame284_profileValid) {
         static dispatch_once_t ame256_once;
         dispatch_once(&ame256_once, ^{
             NSLog(@"[JavaLauncher] Task256: profile-level jvm_preset override active: %@", ame256_profile);
         });
         return ame256_profile;
     }
-    NSString *ame256_global = getPrefObject(@"java.jvm_preset");
-    if ([ame256_global isKindOfClass:[NSString class]] && ame256_global.length > 0) {
+    if (ame284_globalValid) {
         return ame256_global;
     }
     return @"normal";
@@ -3255,9 +3277,23 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     //   Repro: iOS 27 + A15 (no TXM) + StikDebug + Java 21 (MC 1.21.1).
     //   Java 25 (MC 26.2+) is unaffected - its JIT handles mirror mapping
     //   more robustly and doesn't trigger the crash even with 256m.
-    PUSH_MARGV_LITERAL("-XX:ReservedCodeCacheSize=64m");
-    PUSH_MARGV_LITERAL("-XX:InitialCodeCacheSize=16m");
-    PUSH_MARGV_LITERAL("-XX:CodeCacheExpansionSize=4m");
+    // ★ Task284（"把 CodeCache 调大"）：分轨放大——镜像映射路径（iOS 26+）
+    //   维持 64m：上文 SIGBUS 病历的硬边界，StikDebug 授予的 RX 映射恒
+    //   64MB（装机日志 "Requesting 64 MB for JIT mapping" 为外部工具定值，
+    //   本仓库不可调），预留超出 = 镜像越界到不可靠页，间歇 SIGBUS 复发；
+    //   非镜像路径（iOS < 26：TrollStore/越狱/direct JIT）无此约束放大到
+    //   256m——大整合包（Forge 1.12.2 + 17 coremods 装机会话）JIT 体量
+    //   余量，杜绝 "CodeCache is full. Compiler has been disabled." 退化
+    //   解释执行。
+    if (@available(iOS 26.0, *)) {
+        PUSH_MARGV_LITERAL("-XX:ReservedCodeCacheSize=64m");
+        PUSH_MARGV_LITERAL("-XX:InitialCodeCacheSize=16m");
+        PUSH_MARGV_LITERAL("-XX:CodeCacheExpansionSize=4m");
+    } else {
+        PUSH_MARGV_LITERAL("-XX:ReservedCodeCacheSize=256m");
+        PUSH_MARGV_LITERAL("-XX:InitialCodeCacheSize=32m");
+        PUSH_MARGV_LITERAL("-XX:CodeCacheExpansionSize=8m");
+    }
 
     // On iOS 26, use mirror mapped JIT by default
     if (@available(iOS 26.0, *)) {
@@ -4011,11 +4047,17 @@ int launchHeadlessJVM(NSString *mainClass, NSArray<NSString *> *args, int minJav
     // Workaround random stack guard allocation crashes（对齐 launchJVM）
     PUSH_HARGV_LITERAL("-XX:+UnlockExperimentalVMOptions");
     PUSH_HARGV_LITERAL("-XX:+DisablePrimordialThreadGuardPages");
-    // CodeCache 参数（对齐 launchJVM：避免 CodeCache 满导致 SIGILL；
-    // iOS 26+ mirror mapped JIT 需要 64m 以内避免 SIGBUS）
-    PUSH_HARGV_LITERAL("-XX:ReservedCodeCacheSize=64m");
-    PUSH_HARGV_LITERAL("-XX:InitialCodeCacheSize=16m");
-    PUSH_HARGV_LITERAL("-XX:CodeCacheExpansionSize=4m");
+    // CodeCache 参数（对齐 launchJVM Task284 分轨：iOS 26+ 镜像映射 64m
+    // 硬边界防 SIGBUS；iOS < 26 非镜像路径 256m 防 CodeCache 满退化）
+    if (@available(iOS 26.0, *)) {
+        PUSH_HARGV_LITERAL("-XX:ReservedCodeCacheSize=64m");
+        PUSH_HARGV_LITERAL("-XX:InitialCodeCacheSize=16m");
+        PUSH_HARGV_LITERAL("-XX:CodeCacheExpansionSize=4m");
+    } else {
+        PUSH_HARGV_LITERAL("-XX:ReservedCodeCacheSize=256m");
+        PUSH_HARGV_LITERAL("-XX:InitialCodeCacheSize=32m");
+        PUSH_HARGV_LITERAL("-XX:CodeCacheExpansionSize=8m");
+    }
     if (@available(iOS 26.0, *)) {
         PUSH_HARGV_LITERAL("-XX:+MirrorMappedCodeCache");
     }
