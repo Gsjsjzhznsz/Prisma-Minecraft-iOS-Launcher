@@ -626,12 +626,34 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
             //   兜底不丢：重试 2 次仍在窗内（5s 自过期粘滞等极端场景）→
             //   直走 Task245 路由，Task273 看门狗（1.1s 无 delegate 询问）
             //   继续兜住极端静默丢弃。
+            // ★ Task279（"液态玻璃打开有延迟"根修——窗口口径过宽）：装机
+            //   日志 2309b07 实锤：1.2s actionAt 窗被当硬窗——用户点选动作
+            //   后 0.5-1.2s 内再开任何选择器（上一系统菜单会话早已 didEnd
+            //   收尾、屏上无任何菜单在场）也整段延迟 0.55s×2+兜底 ≈
+            //   1.1-1.65s 才出菜单，而原生/伪玻璃档直出无感。修法：硬窗/
+            //   软窗分治——
+            //   硬窗 = 系统菜单会话真在场（sessionActive <5s 自过期）或
+            //          收尾沉降期（didEnd <0.6s，UIKit 收尾动画窗）→ 维持
+            //          延迟重试；延迟基准只看 sessionEnd（actionAt+1.25s
+            //          从 clears 数学中移除，它正是过宽延迟的来源）。
+            //   软窗 = 仅 actionAt 窗（会话已收尾、屏上无菜单的新用户
+            //          点击）→ 立即 Task245 直出，与原生/伪玻璃档同速。
+            //   极少数静默丢弃仍由 Task273 看门狗（1.1s 无 delegate 询问
+            //   自动转磨砂面板）兜底，不丢菜单。
             CFAbsoluteTime ame278_now = CFAbsoluteTimeGetCurrent();
+            BOOL ame278_hardWindow =
+                (ame273_systemMenuSessionActive && ame273_sessionStartAt > 0.0 &&
+                 (ame278_now - ame273_sessionStartAt) < 5.0) ||
+                (ame273_lastSessionEndAt > 0.0 &&
+                 (ame278_now - ame273_lastSessionEndAt) < 0.6);
+            if (!ame278_hardWindow) {
+                NSLog(@"[AmeNativeMenu] Task279: soft reentry window only (session already ended, screen clear) -- direct system-menu route, zero delay");
+                [self ame245_presentViaSystemMenu:menu
+                                       sourceView:sourceView
+                                            dicts:dicts
+                                        onDismiss:onDismiss];
+            } else {
             double ame278_clears = ame278_now + 0.55;
-            if (ame273_lastMenuActionAt > 0.0) {
-                double ame278_a = ame273_lastMenuActionAt + 1.25;
-                if (ame278_a > ame278_clears) ame278_clears = ame278_a;
-            }
             if (ame273_lastSessionEndAt > 0.0) {
                 double ame278_s = ame273_lastSessionEndAt + 0.65;
                 if (ame278_s > ame278_clears) ame278_clears = ame278_s;
@@ -663,6 +685,7 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
                                             dicts:dicts
                                         onDismiss:onDismiss];
             }
+            }   // ★ Task279：硬窗延迟重试分支收口（软窗直出分支见上）
         } else {
             // ★ Task245（IMG_0380 用户定案）：真液态玻璃档启动器内选择菜单 =
             //   系统原生液态玻璃直出；磨砂面板退役到输入类弹窗专属。

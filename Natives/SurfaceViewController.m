@@ -552,6 +552,10 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
 //   CallbackBridge_nativeSendScreenSize 需在同一旗标下拦截 Java 侧窗口
 //   尺寸回报（小窗漂移根因②，见彼处注释）；extern 声明在 utils.h。
 BOOL g_ame267_freeformScaled = NO;   // YES = 非全屏窗口缩放态（信念冻结中）
+// ★ Task279：rescale 幂等快路径锚点——上次完成视图栈重排时的 view 尺寸。
+//   iPadOS 27 拖拽每 tick 经 updateSavedResolution 闸走到 rescale，同尺寸
+//   重复重排既刷屏又写帧；同尺寸且已在缩放态 = 零工作早退。
+CGSize g_ame267_lastRescaledSize = CGSizeZero;
 
 @implementation SurfaceViewController
 
@@ -1709,6 +1713,7 @@ BOOL g_ame267_freeformScaled = NO;   // YES = 非全屏窗口缩放态（信念�
         g_ame267_freeformScaled = NO;
         ame267_adaptiveScaleX = 1.0f;
         ame267_adaptiveScaleY = 1.0f;
+        g_ame267_lastRescaledSize = CGSizeZero;   // ★ Task279：快路径锚点复位
         NSLog(@"[SurfaceVC] Task267: back to fullscreen -- unfreezing beliefs for full resync");
     }
     NSLog(@"[SurfaceVC] Task261: adaptive geometry resync (view %.0fx%.0f, last-synced %.0fx%.0f)",
@@ -1756,6 +1761,14 @@ BOOL g_ame267_freeformScaled = NO;   // YES = 非全屏窗口缩放态（信念�
     CGFloat ame267_w = self.view.bounds.size.width;
     CGFloat ame267_h = self.view.bounds.size.height;
     if (ame267_w < 1.0 || ame267_h < 1.0) return;
+    // ★ Task279：幂等快路径——同尺寸且已在缩放态时零工作早退（iPadOS 27
+    //   拖拽每 tick 都会走到这里，不设快路径会逐帧重复写 frame + 刷日志）。
+    //   锚点在解冻/武装路径置零，保证状态翻转后必真重排一次。
+    if (g_ame267_freeformScaled &&
+        CGSizeEqualToSize(CGSizeMake(ame267_w, ame267_h), g_ame267_lastRescaledSize)) {
+        return;
+    }
+    g_ame267_lastRescaledSize = CGSizeMake(ame267_w, ame267_h);
 
     // rootView 保留旋转路径的 +30pt 输入坐标系约定（Task59：菜单溢出区）
     self.rootView.bounds = CGRectMake(0, 0, ame267_w + 30.0, ame267_h);
@@ -1928,11 +1941,43 @@ BOOL g_ame267_freeformScaled = NO;   // YES = 非全屏窗口缩放态（信念�
     //   （MC 信念扰动 + ANGLE 冻结 guard 拉锯 + Task82 缩角落家族风险），
     //   scale-mode 语义 = 整帧渲染 + CA 缩放呈现。所有调用点（旋转/
     //   回前台/首触点/偏好变更）经此单一守卫自动豁免。
-    if (g_ame267_freeformScaled) {
+    // ★ Task279（小窗漂移第五轮·结构性根修——检测饿死）：装机日志
+    //   2309b07 实锤：iPadOS 27 窗口模式拖拽缩放【每个 tick】都触发
+    //   viewWillTransitionToSize → 本方法每步全量重算（Task257 日志
+    //   同步 54 次）且 2122 行锚点每步跟随 → 事后防抖重算（ame261）
+    //   因"尺寸已同步"静默返回 → Task267 的 freeform 检测【只在防抖
+    //   重算里存在】→ 永不触发（装机日志 freeform detected 零出现）
+    //   → scale-mode 从未武装 → 信念逐 tick 跟随小窗，拖拽末态
+    //   belief=1178x972 vs view=537x486 持久错位 = 触摸比例漂移。
+    //   修法：freeform 判定前移到本【单点写入者】入口——任何调用路径
+    //   （转场每 tick / 回前台 / 首触点 / 偏好变更）先过闸：
+    //   非全屏 → 首次武装 scale-mode（重排视图栈+冻结信念），之后每
+    //   tick 仅刷新 adaptiveScale 因子与锚点（信念/drawable 全程钉扎
+    //   整帧）；回全屏 → 解冻并落入下方正常重算链。检测与写入同点，
+    //   饿死路径不复存在。会话尚未建立信念（windowWidth==0，如冷启动
+    //   早期）时不过闸，先让正常链建立基准——小窗启动的会话维持
+    //   信念=视图=drawable 自洽小窗口径（触摸映射本就一致），漂移只在
+    //   会话中改窗尺寸时发生，此时信念必已有效。
+    if (![self ame267_isFullscreenWindow] && windowWidth > 0 && windowHeight > 0) {
+        if (!g_ame267_freeformScaled) {
+            g_ame267_freeformScaled = YES;
+            NSLog(@"[SurfaceVC] Task267/279: freeform window detected (win %@ vs screen %@) -> scale-mode engaged at updateSavedResolution entry (belief stays %dx%d)",
+                  NSStringFromCGSize(self.view.window.bounds.size),
+                  NSStringFromCGSize(self.view.window.screen.bounds.size),
+                  (int)windowWidth, (int)windowHeight);
+        }
+        [self ame267_rescaleViewStackToCurrentBounds];
         ame261_lastSyncedViewSize = self.view.bounds.size;
-        NSLog(@"[SurfaceVC] Task267: updateSavedResolution frozen in freeform scale-mode (window stays %dx%d)",
-              (int)windowWidth, (int)windowHeight);
         return;
+    }
+    if (g_ame267_freeformScaled) {
+        g_ame267_freeformScaled = NO;
+        ame267_adaptiveScaleX = 1.0f;
+        ame267_adaptiveScaleY = 1.0f;
+        g_ame267_lastRescaledSize = CGSizeZero;
+        NSLog(@"[SurfaceVC] Task267/279: back to fullscreen -- unfreezing beliefs at updateSavedResolution entry (falls through to full recompute)");
+        // 不 return：落入下方正常重算链。转场当帧 view.frame 可能未落位，
+        // 0.3s 后 ame261 防抖重算按已落位几何再收口一次（幂等）。
     }
     for (UIWindowScene *scene in UIApplication.sharedApplication.connectedScenes.allObjects) {
         self.screenScale = scene.screen.scale;
@@ -5050,13 +5095,28 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
             // buildAvg≈avgGap→停在 CPU 帧构造侧（转译栈逐 draw 优化才有效）。
             unsigned int presAvg = 0, presMax = 0, buildAvg = 0, buildMax = 0;
             ame_egl_swap_phase_stats(&presAvg, &presMax, &buildAvg, &buildMax);
+            // ★ Task279（"kw 渲染器锁 30"归因心跳升级）：判读结论直接入日志，
+            //   免去每轮人工对比。阈值 70%：buildAvg ≥ 0.7×avgGap → 帧预算
+            //   消耗在 CPU 帧构造（MC tick+事件泵+GL 转译税）；presAvg ≥
+            //   0.7×avgGap → 停在呈现/GPU 侧。装机实锤样例：kw 1.8.9 会话
+            //   avgGap=33ms pres=0/0 build=33/35 → BUILD-bound，小窗 1/4
+            //   分辨率依旧 30fps → 排除像素瓶颈，归因 NG-GL4ES 逐 draw 转译
+            //   开销（修在渲染器层，降分辨率/换 present 模式无效）。
+            const char *ame77_verdict = "balanced";
+            if (avgGap > 0) {
+                if (buildAvg * 10 >= (unsigned int)avgGap * 7) {
+                    ame77_verdict = "BUILD-bound(CPU/translate)";
+                } else if (presAvg * 10 >= (unsigned int)avgGap * 7) {
+                    ame77_verdict = "PRESENT-bound(GPU/vsync)";
+                }
+            }
             CALayer *l = self.surfaceView.layer;
             BOOL isMetal = [l isKindOfClass:CAMetalLayer.class];
             CGSize drawable = isMetal ? ((CAMetalLayer *)l).drawableSize : CGSizeZero;
             BOOL inWindow = (self.surfaceView.window != nil);
-            NSLog(@"[RenderDiag] fps=%ld swapOK=%lu swapFail=%lu maxGap=%ums avgGap=%ums pres=%u/%ums build=%u/%ums mem=%.0fMB layer=%p drawable=%.0fx%.0f scale=%.2f bounds=%.0fx%.0f inWindow=%d",
+            NSLog(@"[RenderDiag] fps=%ld swapOK=%lu swapFail=%lu maxGap=%ums avgGap=%ums pres=%u/%ums build=%u/%ums phase=%s mem=%.0fMB layer=%p drawable=%.0fx%.0f scale=%.2f bounds=%.0fx%.0f inWindow=%d",
                   (long)fps, swapOK, swapFail, maxGap, avgGap,
-                  presAvg, presMax, buildAvg, buildMax, memoryMB, (__bridge void *)l,
+                  presAvg, presMax, buildAvg, buildMax, ame77_verdict, memoryMB, (__bridge void *)l,
                   drawable.width, drawable.height, (double)l.contentsScale,
                   l.bounds.size.width, l.bounds.size.height, (int)inWindow);
 
