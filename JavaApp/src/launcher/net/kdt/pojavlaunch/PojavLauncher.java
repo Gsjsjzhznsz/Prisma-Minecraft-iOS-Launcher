@@ -184,12 +184,38 @@ public class PojavLauncher {
         // 装机日志即可一锤定音"写入是否真的落到了 MC 读的文件"。
         // 已知异常现场：26.3 运行期以 AFK 模式跑（SHORT_AFK=30fps 实锤），
         // 而启动器明明写了 minimized —— 分叉点就在这层。
-        if ("1".equals(System.getenv("POJAV_DISABLE_VSYNC"))) {
-            System.out.println("[PojavLauncher] Task104 on-disk verification: "
-                + "inactivityFpsLimit=" + MCOptionUtils.getFromFile("inactivityFpsLimit")
-                + " maxFps=" + MCOptionUtils.getFromFile("maxFps")
-                + " enableVsync=" + MCOptionUtils.getFromFile("enableVsync"));
+        // ★ Task280（kw"锁30"归因收口——fps-cap posture 无条件化+verdict）：
+        //   原块只在 POJAV_DISABLE_VSYNC=1 时打印——而用户关掉解锁偏好时恰是
+        //   maxFps=30 存活的场景（解锁链不跑，整合包自带的 maxFps:30 原样生
+        //   效），日志反而静默。kw 1.8.9 会话 RenderDiag build=33ms/pres=0 的
+        //   两个候选根因（MC 内部 maxFps 上限 vs 逐 draw 转译税）从此行一锤
+        //   定音：maxFps<260 → MC 内部上限在玩（fps≤maxFps 是游戏内 Max
+        //   Framerate 设置的预期行为，非 bug）；maxFps≥260 → 上限不在 MC 设
+        //   置，转渲染器 CPU/GPU 侧（配合 [RenderDiag] phase= 判读）。1.8 的
+        //   视频设置本就有 Max Framerate（滑条 10-260，260=Unlimited），旧注释
+        //   "1.8-1.15 无此键"不成立，随本块无条件化一并修正。
+        String ame280MaxFps = MCOptionUtils.getFromFile("maxFps");
+        String ame280Verdict;
+        if (ame280MaxFps == null) {
+            ame280Verdict = "no-maxFps-key(MC-internal-default) -- cap NOT from options.txt";
+        } else {
+            try {
+                int ame280Fps = Integer.parseInt(ame280MaxFps.trim());
+                ame280Verdict = (ame280Fps >= 260)
+                    ? "unlimited-no-MC-cap -- fps ceiling is CPU/GPU side (see RenderDiag phase=)"
+                    : "MC-INTERNAL-CAP-ACTIVE fps<=" + ame280Fps
+                        + " (in-game Max Framerate setting; raise in-game to unlock)";
+            } catch (NumberFormatException ame280Nfe) {
+                ame280Verdict = "unparsable-maxFps(" + ame280MaxFps + ")";
+            }
         }
+        System.out.println("[PojavLauncher] Task280 fps-cap posture: renderer="
+            + System.getenv("AMETHYST_RENDERER")
+            + " vsyncEnv=" + System.getenv("POJAV_DISABLE_VSYNC")
+            + " maxFps=" + ame280MaxFps
+            + " enableVsync=" + MCOptionUtils.getFromFile("enableVsync")
+            + " inactivityFpsLimit=" + MCOptionUtils.getFromFile("inactivityFpsLimit")
+            + " verdict=" + ame280Verdict);
         // Task 196：落盘校验（必须在 save() 之后 —— getFromFile 直读磁盘，
         // save 前读到的是旧盘值）。装机日志锚点：useVbo=true。
         if (ame196Renderer != null && ame196Renderer.contains("vgpu")) {

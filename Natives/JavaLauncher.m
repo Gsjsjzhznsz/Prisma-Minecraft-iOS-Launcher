@@ -2347,6 +2347,20 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
             }
             NSLog(@"[JavaLauncher] Task206: NG-GL4ES renderer active (NGG_DIR_PATH=%s)",
                   getenv("NGG_DIR_PATH") ?: "<unset>");
+            // ★ Task280（kw"锁30"缓解杠杆——可选小 draw 批量转译）：Task279 装
+            //   机归因 BUILD-bound（NG-GL4ES 逐 draw CPU 转译税；1/4 分辨率仍
+            //   30fps 已排除像素瓶颈）。LIBGL_BATCH=30 = gl4es 官方合并杠杆
+            //   （相邻 glDraw* 首个 ≤3000 顶点即入批，GL state 变化/超限断批
+            //   ——ZL2 USAGE.md §LIBGL_BATCH）——MC1.8.x 实体/粒子级小 draw
+            //   密集场景的标准减税路径。默认关：Task279 的 BUILD-bound 归因
+            //   未排除 MC 内部 maxFps 上限（build 相位含游戏侧 fps limiter 睡
+            //   眠，两边在 pres/build 计量里同貌），归因终审看 Task280 fps-cap
+            //   posture 行；确认 BUILD-bound 的机器打开本偏好验证帧率抬升后
+            //   再评估转默认。plist-only（ame259_quic_guard 同款，无 UI 行）。
+            if (getPrefBool(@"debug.ame280_kw_batch")) {
+                setenv("LIBGL_BATCH", "30", 1);
+                NSLog(@"[JavaLauncher] Task280: LIBGL_BATCH=30 (debug.ame280_kw_batch=ON) -- NG-GL4ES small-draw batching engaged");
+            }
         }
 
         // Apply MobileGL-specific environment variables

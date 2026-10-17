@@ -555,7 +555,14 @@ BOOL g_ame267_freeformScaled = NO;   // YES = 非全屏窗口缩放态（信念�
 // ★ Task279：rescale 幂等快路径锚点——上次完成视图栈重排时的 view 尺寸。
 //   iPadOS 27 拖拽每 tick 经 updateSavedResolution 闸走到 rescale，同尺寸
 //   重复重排既刷屏又写帧；同尺寸且已在缩放态 = 零工作早退。
-CGSize g_ame267_lastRescaledSize = CGSizeZero;
+//   ★ Task280：初值必须写 {0,0} 字面量而非性 CGSizeZero——本文件是 .m
+//   （C 语义），CGSizeZero 是 CoreGraphics 的 extern const CGSize 全局
+//   变量（非宏非字面量），C 要求文件作用域初始化器是编译期常量，引用
+//   const 变量不合法，run#881 实锤 558:36 "initializer element is not a
+//   compile-time constant"（.mm 的 C++ 动态初始化才放行）。
+//   同族警戒：文件作用域聚合初值禁用
+//   CGPoint/Size/Rect Zero/Null/Infinite 与 NSZeroPoint/NSZeroSize/NSZeroRect。
+CGSize g_ame267_lastRescaledSize = {0.0, 0.0};   // 等价 CGSizeZero，常量合法
 
 @implementation SurfaceViewController
 

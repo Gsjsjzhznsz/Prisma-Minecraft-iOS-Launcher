@@ -3594,3 +3594,19 @@ Work Log:
 Stage Summary:
 - 三项处置：①小窗漂移=检测饿死结构性根修（Task267 scale-mode 真正武装，信念全程钉扎整帧+adaptiveScale 映射，漂移类别性消除）②液态玻璃延迟=软窗直出（正常打开与原生/伪玻璃同速，硬窗快速连点仍延迟重试防旧式表）③kw 锁 30=归因定案 NG-GL4ES CPU 转译税+心跳 phase 判读（渲染器层修复另立）——待 CI 出包装机验证
 - 装机锚点：①拖拽缩窗后直接游玩：触点逐点对齐，日志 [SurfaceVC] Task267/279: freeform window detected ... scale-mode engaged（resize 期每 tick 仅 scale-mode stack resync 一次尺寸变化行）②真玻璃档正常速度开选择器：立即弹出（日志 Task279: soft reentry window only ... zero delay；快速连点场景仍见 Task278 deferred retry 但上限 2 次）③任意会话 RenderDiag 心跳出现 phase=BUILD-bound/PRESENT-bound 判读字段
+
+---
+Task ID: 280
+Agent: main (Super Z)
+Task: 用户报告构建失败（run#881）+ 处理两议题（液态玻璃打开延迟 / kw 渲染器锁 30，用户设备无法复现，按日志证据处置）
+
+Work Log:
+- 定位构建失败：run#881（342ff102=Task279 代码树）failure，annotations 实锤 SurfaceViewController.m:558:36 "initializer element is not a compile-time constant" + make native Error 2，唯一失败编译单元；Task279 三项修复（小窗第五轮/液态玻璃延迟/kw 归因心跳）因构建失败从未进可用 IPA——"构建失败"即用户拿不到修复包的直接原因
+- ①编译雷根修：CGSize g_ame267_lastRescaledSize = CGSizeZero（Task279 引入的文件作用域全局）——CGSizeZero 是 CoreGraphics 的 extern const CGSize 全局变量（非宏非字面量），C 语义（.m）要求文件作用域初始化器为编译期常量，引用 const 变量不合法（.mm 的 C++ 动态初始化才放行）；改 {0.0, 0.0} 位置初始化器（等价常量）+同族警戒注释；新工具 task280_scan_const_init.py 全仓 230 个第一方 .m/.c 扫描（文件作用域聚合初始化器禁用 CGPoint/Size/Rect Zero/Null/Infinite、NSZero 族与 Make() 内联函数族）= CLEAN 零同族
+- ②kw 锁 30 处置两件（归因未终审前不盲改默认）：Task279 归因 BUILD-bound（build=33/35 恒定、pres=0/0、1/4 分辨率仍 30），但 build 相位定义（上次 swap 返回→本次进入 swap）同时包含 MC 侧 fps limiter 睡眠与 GL 转译税——两候选同貌不可分：a) MC 内部 maxFps 上限（1.8 视频设置本有 Max Framerate 10-260，260=Unlimited；整合包默认 maxFps:30 常见；解锁链偏好关闭时不写 260 即存活）b) NG-GL4ES 逐 draw 转译税。处置：fps-cap posture 行（PojavLauncher.java launchMinecraft save() 后）无条件化+verdict——原 Task104 落盘校验只在 POJAV_DISABLE_VSYNC=1 打印（用户关解锁偏好的场景反而静默），现每会话必打 renderer/vsyncEnv/maxFps(磁盘真值)/enableVsync/inactivityFpsLimit+自动判读（maxFps<260→MC-INTERNAL-CAP-ACTIVE 属设置预期非 bug；≥260/无键→上限在 CPU/GPU 侧配合 RenderDiag phase= 一锤定音）；旧注释"1.8-1.15 无 maxFps 键"不成立随块修正。LIBGL_BATCH 缓解杠杆：debug.ame280_kw_batch（plist-only，ame259_quic_guard 同款无 UI 行）→ kw 会话 setenv LIBGL_BATCH=30（gl4es 官方小 draw 合并：相邻 glDraw* 首个≤3000 顶点入批、GL state 变化/超限断批，ZL2 USAGE.md §LIBGL_BATCH）——MC1.8.x 实体/粒子级小 draw 密集场景标准减税路径，默认关，posture 终审+装机验证后评估转默认；kw dylib 系本仓 dep_nggl4es 自建（ThirdParty/ZalithLauncher2/src/gl），杠杆面确认在手
+- ③液态玻璃打开延迟：Task279 硬/软窗分治（硬窗=sessionActive<5s 或 didEnd<0.6s 沉降期维持延迟重试；仅 actionAt 软窗=立即 Task245 直出与原生/伪玻璃同速）已在 bbfaf61 代码树内并经本地复核，随本构建首次可装机
+- 门禁：task139 all balanced；task248 缺键0/硬编码0/动态键0；task250 全零；verify219 81/81 ALL GREEN；verify255 无 fail；task191 四表 3088 OK；task280 扫雷 CLEAN——零新增文案（debug 偏好 plist-only 不入 UI）
+
+Stage Summary:
+- run#881 编译雷根修（Task279 三项修复随本构建首次可装机）+kw 锁 30 双候选收口（fps-cap posture 无条件 verdict 行+LIBGL_BATCH=30 可选批量杠杆）+液态玻璃延迟随 Task279 落地——待 CI 绿→装机验证
+- 装机锚点：①任意会话启动日志 [PojavLauncher] Task280 fps-cap posture: ... verdict=（锁 30 报告直接看此行：MC-INTERNAL-CAP-ACTIVE=游戏内设置预期；unlimited-no-MC-cap=转渲染器侧，配合 [RenderDiag] phase=）②kw 锁 30 机器验证杠杆：prefs plist 写 debug.ame280_kw_batch=1 重启会话，日志 [JavaLauncher] Task280: LIBGL_BATCH=30 ... batching engaged，观察 fps 抬升；确认有效后下一轮转默认 ③真玻璃档开选择器立即弹出（Task279 软窗直出）④小窗拖拽缩放触点对齐（Task279 scale-mode 武装）
