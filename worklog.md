@@ -3645,3 +3645,22 @@ Work Log:
 Stage Summary:
 - 提交 7911e3d 推送 main（71faf872..7911e3d）；CI 出包后装机验证
 - 装机锚点：①真玻璃档连点选择器→全程系统原生液态玻璃（日志 Task282: presentMenu rejected -- single native retry / native retry accepted；伪玻璃面板仅剩会话内改道一种形态）②切小窗/窗口内缩放→游戏画面满窗无偏移无裁切（日志 [SurfaceVC] Task267: scale-mode stack resync 照旧 + GLGeo hierarchy 中 rootView 位置随窗口重定位 (w+30)/2,h/2）③小窗内点齿轮→菜单按窗口实况铺排（日志 Task237 menu shown panel 宽高 ≤ 窗口尺寸）
+
+---
+Task ID: 283
+Agent: main (Super Z)
+Task: 28a08ac 构建装机反馈三项（iPad 小窗方向感应 / 依旧多次伪弹窗 / GitHub 议题处理 #15/#13/#12）+ 议题转正
+
+Work Log:
+- 议题转正：fetch GitHub open issues 三个——#15（Renderer bug, 带 latestlog 附件 33598037）/ #13（CurseForge 下载, 无日志）/ #12（Forge/NeoForge 模组页空白, 无日志）；#12/#13 仓主已留言限期补 log，本轮做代码层预诊断并在会话回复中给出可粘贴答复稿
+- #15 日志取证（iPhone XS Max/A12/iOS 18.7.10/c7b5878）：829 行 "Using graphics backend OpenGL, using drivers: 4.1 (Compatibility Profile) Mesa 25.0.7" + 1067 行 "VK_ERROR_FEATURE_NOT_PRESENT: Metal does not support disabling primitive restart"——Zink 会话被本仓 ZinkConfig 硬钉 MESA_GL_VERSION_OVERRIDE=4.1（1.17-1.21.x 管线定案遗留），MC 26.x 新光照引擎（GpuSurfaceBackend 世代）需 GL 4.4+/SSBO = 能进世界但光照数据上传缺失=全黑；LTW（TinyGL4ANGLE ≤3.0 无 SSBO）跑 Sodium 方块消失同源归因
+- ③Zink GL 下限版本感知根修：applyZinkEnvironmentFromPreferencesWithMCMajor:（用户未钉 zink.gl_override 且 MC major>=26 自动抬 4.5；gl_override 新承认 4.3/4.5/4.6；显式钉过永远优先；1.x 谱系零回归）；JavaLauncher 调用点以 ame98_mcMajorFromVersionId(launchTarget.id) 传入
+- ①连点伪弹窗残余根修（AmeNativeMenu）：28a08ac 日志 01:22:15-18 实锤语言选择器连点 5 次全部落【会话存活】分支（Task282 沉降窗收窄后的最后一块）——本支不再直出玻璃面板：iOS16+ dismissMenu 收掉活会话（ame283_liveSessionInteraction weak 登记/注销）→ 0.45s 后 ame245 原生重开（内建 0.32s 重试），代次先行推进；dismissMenu 不可用才落玻璃面板保底
+- ②iPad 小窗方向感应根修（SurfaceViewController）：窗口模式界面方向系统接管（Task281 垫片禁入）→ 设备旋转后视图形状⊥冻结信念形状 = 横屏整帧 CA 硬拉伸进竖形视图；ame267_rescaleViewStackToSize: ⊥ 时游戏栈整体 ±90° 旋转（Task189 哲学下放 rootView：bounds 逻辑口径+center 对齐+15pt 溢出沿逻辑 +x；Task191 同源选向+横向持向记忆），UIKit 命中测试自动逆变换=触摸三条换算路径零改动；viewWillTransition scale-mode 态统一走重排（传转场目标尺寸）；快路径追加变换态对账
+- 事故与虚惊：ame98_mcMajorFromVersionId 显示层疑似 "atch" 吞字（substringWithRange:atch）——od/码点字节级核实为显示层吞 "[m" 序列（吞字现象第五例），真实字节 substringWithRange:[match rangeAtIndex:1] 完好，未动
+- 门禁：task139 all balanced / task240 balanced+retired 0 / task248 缺键0 硬编码0 动态键0 / task250 全零 / task191 四表 3088 / verify219 81/81 ALL GREEN / verify255 52 PASS 0 FAIL；零新增文案
+
+Stage Summary:
+- 提交 e1483e63 推送 main（28a08acd..e1483e63）；CI 出包后装机验证
+- 装机锚点：①真玻璃档连点选择器→全程原生液态玻璃（日志 [AmeNativeMenu] Task283: live session dismissed via dismissMenu -- native re-present in 0.45s；磨砂面板仅剩 dismissMenu 不可用兜底一形态）②小窗+设备旋转→游戏内容 ±90° 跟手满窗（日志 [SurfaceVC] Task267/283: scale-mode stack resync (view ... rot=+90/-90deg logical ...）；同形窗口 rot=0deg 与 Task282 版一致）③MC 26.x+Zink 会话（日志 [ZinkConfig] Task283: MC major 26 detected -- GL floor raised 4.1 -> 4.5 + MC 侧 "4.5 (Compatibility Profile)"）→ 议题 #15 报告者升级 v6.5.5 后复测
+- 议题答复稿见共享 worklog 会话记录（#15 给出根因+升级路径；#12/#13 已有仓主补 log 限期留言，预诊断归因：#12 疑似大陆镜像源缺索引/加载器过滤，#13 CurseForge 需 API 票据，均待日志实锤）
