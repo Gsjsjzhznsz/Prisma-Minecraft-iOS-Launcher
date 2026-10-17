@@ -3536,3 +3536,29 @@ Work Log:
 
 Stage Summary:
 - v6.5.5 Beta 资产首次完整对齐 main HEAD（此前 bf9753c 点）——用户重装 tipa/ipa 即获 Task263 重放版六项 + Task276 四项全量修复；装机锚点见 Task 276 条目
+
+---
+Task ID: 277
+Agent: main (Super Z)
+Task: 装机反馈三项（Task 276 构建实测复核）：小窗还是漂移 / 连点还是卡出伪玻璃 / 伪液态玻璃玻璃感优化
+
+Work Log:
+- ①小窗漂移收尾（Task276 主路径双乘根修后的【同族漏网】清扫）：
+  a.热栏/直发四路径双乘根修——Task276 判"adaptedPoint 系 native 自洽几何不动"有误：sendTouchEvent 滑动热栏/双击 F/长按 Q/touchesBegan 探测四站点全部"先 ×设备 screenScale 再喂 adaptedPoint"，而 ame267_adaptiveScale 定义=视图pt→整帧物理px【完整】因子已含设备尺度，叠乘=小窗态命中越界 deviceScale 倍（iPad 2.0）=热栏手势/双击/长按全打空；新单一事实源 ame277_hotbarPointFromViewPt:（小窗=raw pt×adaptiveScale，全屏=pt×screenScale 原路零变化）收编四站
+  b.抓取态 DOWN 口径修复——updateGrabState 裸 screenScale（Task59 注释自称"与 sendTouchPoint 同口径"但从未跟随 Task78 FSR/Task175 resScale/Task267 小窗三链，历史 FSR=1/res=1 恰好无感）= 小窗抓取瞬间光标跳位 + res≠1 会话同族潜伏；ame277_cursorOutScale 单一事实源（与 sendTouchPoint 逐字节同源）收编，sendTouchPoint 局部副本同步退役
+  c.ame255 真值对账小窗守卫——freeform 期 drawable=整帧钉扎/surfaceView.frame=小窗/信念=冻结整帧三者错位是 scale-mode 设计本体，drawable/frame 比值在此无意义（会把 screenScale 改写成 adaptiveScale 量级并经裸 screenScale 消费者扩散）；守卫只豁免 screenScale 重写，SDL reassert 两态共用
+  d.sendTouchPoint 小窗分支 +5s 限频取证日志（loc/out/adaptive/win/phys/fsr/res 七元组）——若装机仍报漂移，下一轮日志直接定音
+- ②连点卡出伪玻璃双根因：
+  a.桌面侧=Task273 重入窗口整体改道磨砂面板（真液态玻璃档下该面板=用户口中的"伪液态玻璃乱入"，Task267 已收窄"呈现失败落入磨砂"而重入窗口漏网）；Task273 装机证据自身写明"同机 alert #2/#3 handler 内呈现成功实锤"=被丢弃的是 UIMenu context menu 路由不是 UIAlertController——真液态玻璃档重入窗口改直通 stock actionSheet（原生液态玻璃同族观感），磨砂面板保留伪玻璃档与游戏面
+  b.游戏侧=中央路由 hook 缺 Task260 会话闸（ame263_presenterInsideGameSurface 命中即替换，<26 老绘制链会话里菜单面板已按闸回退原生、弹窗却被照旧镜像=同屏双体系混搭且 TG 分支就是 Task260 崩溃面）——shouldReplace 并入 LGCGameSessionGlassAllowed()；Ame237 镜像 viewDidLoad TG 分支同步补闸（防御纵深）
+  c.镜像 busy 守卫——presenter.presentedViewController≠nil 时不再镜像（连点双触发镜像叠镜像=卡死/双面板；回 NO 走原生直通，UIKit 既有语义裁决）
+  d.齿轮连点竞态根修——toggleMenu 读 menuView.hidden 而 dismissMenu 的 hidden=YES 延迟到 0.25s completion：关闭窗口内连点每拍都再 dismiss（永远开不出来），关闭 completion 与新 showMenu 赛跑会把刚打开的面板藏掉（闪没）；ame277_menuOpenState 同步翻转 + 世代令牌（completion 仅世代现任才落 hidden）= 确定性"最后一拍定状态"；ame237_gmRowTouched 行锁存（态关即拒，淡出期残留点击不再二连发）
+- ③伪液态玻璃玻璃感三件（透明度滑条语义 0.5 锚点/1.0 最透逐字节不动）：
+  a.快照磨砂材质化——Ame277MaterializeSnapshot：CIGaussianBlur r6@0.18x（≈33pt 有效半径）+ CIColorControls saturation 1.5/brightness+0.02（Apple 材质"提鲜"特征）+ CIContext 单例复用 + 异常回退旧两次降采样（Ame245SoftenSnapshot 退役为回退层）；AmeFloatingMenu 弹窗首帧/Task246 8Hz tick 与游戏菜单首帧/ame247 8Hz tick 四喂给点统一换装（类方法 ame277_materializeSnapshot: 跨文件导出）
+  b.顶部光泽线——白色线性渐变自顶缘 32%(弹窗)/28%(TG) 高度衰减到零（深 0.08-0.10/浅 0.12-0.16 起点），Ame237 弹窗磨砂容器/游戏菜单 tint 层内嵌（显隐自动跟随）/TG 玻璃 fill 之上三层位各就位
+  c.发丝描边——Ame237 磨砂容器 0.75pt 白描边（深 0.16/浅 0.45，TG rim 同源浓度档）补齐非 TG 路径的玻璃边缘光学定义
+- 门禁：task139 all balanced；task240 syntax+import exit 0（AmeFloatingMenu 注释 mention 修正后 NO-IMPORT 清零）；task248 缺键0/硬编码0/动态键0；task250 全零；verify219 81/81 ALL GREEN（3088）；verify255 52 PASS 0 FAIL；task191 四表 3088 OK——本轮零新增文案，无 i18n 动作
+- 工具事故：显示层吞字虚惊一例（grep 输出 [mirrors 显示为 irrors，od -c 字节级验证文件完好，Task262 第四例同族）；self-inflicted 修正两例（hook 会话闸日志条件恒假自查自纠；材质链类方法误插 @implementation 外自查自纠）
+
+Stage Summary:
+- 三项全修：小窗=热栏四站+抓取DOWN双乘清扫+autoCorrect守卫+取证日志；连点卡伪玻璃=重入窗口改原生sheet+hook会话闸+busy守卫+齿轮世代令牌；玻璃感=材质滤镜链+顶缘光泽+发丝描边三面升级——待 CI 出包装机验证；锚点：①小窗热栏滑动/双击/长按逐点对齐+日志 [SurfaceVC] Task277 mini-window touch forensic ②真玻璃档连点系统菜单/齿轮不再出现磨砂面板、<26 会话弹窗原生 ③伪玻璃面板可见背景提鲜+顶缘受光+边缘描边
