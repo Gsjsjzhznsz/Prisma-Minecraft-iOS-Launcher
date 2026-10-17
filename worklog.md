@@ -3577,3 +3577,20 @@ Work Log:
 Stage Summary:
 - 三项全修：连点重入窗口=延迟重试原生液态玻璃（旧式 sheet 退役）；小窗漂移=信念回写闸（ObjC 映射侧 276/277 已修，MC 归一化基准侧本轮闭合，漂移两半根因全数闭环）；玻璃感=blur 4.0+折射 24pt+双色调受光缘+底部景深+快照提鲜 1.6——待 CI 出包装机验证
 - 装机锚点：①真玻璃档连点选择器→约 0.6-1.3s 后以原生液态玻璃重开（不再出现旧式表；日志 [AmeNativeMenu] Task278: deferred native-menu retry）②小窗内拖动/缩放窗口后触点逐点对齐（日志 [InputDiag] Task278: swallowed foreign window report）③伪玻璃面板顶缘更亮/底缘暗部/底边内影/背景更鲜透
+
+---
+Task ID: 279
+Agent: main (Super Z)
+Task: 装机反馈三项（Task 278 构建 2309b07 实测日志复核）：小窗问题依旧（第 5 轮）/ 液态玻璃打开有延迟（原生与伪玻璃完全正常）/ kw 渲染器锁 30（以前正常）
+
+Work Log:
+- 先行取证：latestlog.txt（3903 行，Commit 2309b07）三条主诉全部实锤——①液态玻璃档每次开菜单走 Task278 重入窗延迟链 0.55s×2+兜底 ≈1.1-1.65s（18:59:32-54 段 10 余次，0.74s/0.55s 变体在案），原生档 Task242 直出、伪玻璃档 glass panel 直出零延迟；②RenderDiag 心跳 fps=30 avgGap=33ms 恒定（全屏 2360x1640 与小窗 1178x972 均 30），Task77 分相 pres=0/0ms build=33/35ms；③小窗会话全程零 Task267/261/278 插桩日志，但 Task250 bounds 1180x820→589x486→537x486 与 Task257 日志 54 次（updateSavedResolution 每 tick 全量重算）在案，末态 drawable=1178x972 vs bounds=537x486 持久错位
+- ①小窗漂移第五轮·结构性根修（检测饿死）：iPadOS 27 窗口模式拖拽缩放每个 tick 都走 viewWillTransitionToSize→updateSavedResolution（信念逐 tick 写成小窗口径），且 2122 行锚点每步跟随 → 事后防抖重算（ame261）因"尺寸已同步"静默返回 → Task267 freeform 检测【只在防抖重算里存在】永不触发 = scale-mode 从未武装 = 历轮"信念冻结+adaptiveScale 映射"架构在真实路径上整体空转；修法 = freeform 判定前移到 updateSavedResolution 单点写入者入口：非全屏且信念已建立（windowWidth>0）首 tick 武装 scale-mode（冻结整帧信念+重排视图栈），之后每 tick 仅刷 adaptiveScale 因子与锚点；回全屏解冻落入正常重算链（转场当帧未落位由 0.3s 防抖再收口，幂等）；rescale 幂等快路径锚点 g_ame267_lastRescaledSize（武装/解冻时归零）防逐帧重排刷屏；冷启动信念未建立时不过闸（小窗启动会话维持信念=视图=drawable 自洽口径）；Task278 input_bridge 信念回写闸随旗标真正武装
+- ②液态玻璃延迟根修（窗口口径过宽）：Task273 的 1.2s actionAt 窗被 Task278 当硬窗——动作后 0.5-1.2s 的正常再开（上一系统菜单早已 didEnd 收尾、屏上无任何菜单）也整段延迟；修法 = 硬/软窗分治：硬窗（sessionActive<5s 自过期内 或 didEnd<0.6s 收尾沉降期）维持延迟重试（clears 只看 sessionEnd，actionAt+1.25s 从延迟数学移除——它正是过宽延迟来源）；仅 actionAt 软窗 = 立即 Task245 直出与原生/伪玻璃同速；Task273 看门狗（1.1s 无 delegate 询问）继续兜住极端静默丢弃
+- ③kw 锁 30 归因定案（不盲修渲染器）：四层解锁全 engaged（eglSwapInterval(0) 强制、pojavSwapInterval 拦截 1→0、-Dmax.fps=260、options enableVsync=false）；Task77 分相 pres=0/0ms=呈现路径零阻塞（三缓冲+异步 present 从不等待）；avgGap=33ms 全由 build 相位消耗；小窗 drawable 1178x972（约 30% 像素量）仍 30fps → 排除像素/GPU 瓶颈 → 结论 = NG-GL4ES 逐 draw CPU 转译开销（MC tick+事件泵+GL 编码 ~33ms/帧恒定），修复面在渲染器层（上游），启动器侧本轮仅升级心跳：RenderDiag 内置 phase= 判读（buildAvg≥0.7×avgGap→BUILD-bound(CPU/translate)；presAvg≥0.7×avgGap→PRESENT-bound(GPU/vsync)），下轮日志一眼定案
+- 门禁：task139 all balanced；task240 syntax+import 清；task248 缺键0/硬编码0/动态键0；task250 全零；verify219 81/81 ALL GREEN；verify255 53 PASS；task191 四表 3088 OK——零新增文案
+- 提交 bbfaf61 推送 main（2309b07..bbfaf61）
+
+Stage Summary:
+- 三项处置：①小窗漂移=检测饿死结构性根修（Task267 scale-mode 真正武装，信念全程钉扎整帧+adaptiveScale 映射，漂移类别性消除）②液态玻璃延迟=软窗直出（正常打开与原生/伪玻璃同速，硬窗快速连点仍延迟重试防旧式表）③kw 锁 30=归因定案 NG-GL4ES CPU 转译税+心跳 phase 判读（渲染器层修复另立）——待 CI 出包装机验证
+- 装机锚点：①拖拽缩窗后直接游玩：触点逐点对齐，日志 [SurfaceVC] Task267/279: freeform window detected ... scale-mode engaged（resize 期每 tick 仅 scale-mode stack resync 一次尺寸变化行）②真玻璃档正常速度开选择器：立即弹出（日志 Task279: soft reentry window only ... zero delay；快速连点场景仍见 Task278 deferred retry 但上限 2 次）③任意会话 RenderDiag 心跳出现 phase=BUILD-bound/PRESENT-bound 判读字段
