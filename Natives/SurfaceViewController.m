@@ -407,7 +407,8 @@ static BOOL ame83_fsr_capable_renderer(NSString *renderer) {
     //   窗口态把视图栈重排到当前 bounds、信念链（windowWidth/drawable
     //   Size/ame_surface*）冻结 → CA 把整帧 drawable 等比缩放进小窗
     //   （"直接缩放"），输入按 视图pt→整帧物理px 比例换算（不错位）。
-    BOOL ame267_freeformScaled;   // YES = 非全屏窗口缩放态（信念冻结中）
+    //   ★ Task278：缩放态旗标升格为文件作用域全局 g_ame267_freeformScaled
+    //   （定义在 @implementation 前；input_bridge_v3.m 信念回写闸同旗标）。
     float ame267_adaptiveScaleX;  // 视图 pt -> 整帧物理 px（x）
     float ame267_adaptiveScaleY;  // 视图 pt -> 整帧物理 px（y）
 }
@@ -545,6 +546,12 @@ extern void *ame_hook_getEmbeddedSDLView(void);
 // ★ Task255：SDL 键盘态/虚拟修饰位会话重置（input_bridge_v3 同名实现）
 extern void CallbackBridge_resetVirtualModifierState(void);
 extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
+
+// ★ Task267：非全屏窗口缩放态（信念冻结中）。原为类扩展 ivar，Task278
+//   升格为文件作用域全局——input_bridge_v3.m 的
+//   CallbackBridge_nativeSendScreenSize 需在同一旗标下拦截 Java 侧窗口
+//   尺寸回报（小窗漂移根因②，见彼处注释）；extern 声明在 utils.h。
+BOOL g_ame267_freeformScaled = NO;   // YES = 非全屏窗口缩放态（信念冻结中）
 
 @implementation SurfaceViewController
 
@@ -1692,14 +1699,14 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
         NSLog(@"[SurfaceVC] Task267: freeform window detected (win %@ vs screen %@) -> scale-mode rescale",
               NSStringFromCGSize(self.view.window.bounds.size),
               NSStringFromCGSize(self.view.window.screen.bounds.size));
-        ame267_freeformScaled = YES;
+        g_ame267_freeformScaled = YES;
         [self ame267_rescaleViewStackToCurrentBounds];
         ame261_lastSyncedViewSize = ame261_now;   // 锚点同步防重复触发
         return;
     }
     // ★ Task267：回全屏——解冻信念链，走原 Task261 全链重算+重宣告。
-    if (ame267_freeformScaled) {
-        ame267_freeformScaled = NO;
+    if (g_ame267_freeformScaled) {
+        g_ame267_freeformScaled = NO;
         ame267_adaptiveScaleX = 1.0f;
         ame267_adaptiveScaleY = 1.0f;
         NSLog(@"[SurfaceVC] Task267: back to fullscreen -- unfreezing beliefs for full resync");
@@ -1784,7 +1791,7 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
 ///   adaptiveScale 映射到整帧物理 px（热栏命中几何以 physicalWidth/Height
 ///   为基准）。全屏态原样返回（零变化）。
 - (CGPoint)ame267_adaptedPoint:(CGPoint)pt {
-    if (!ame267_freeformScaled) return pt;
+    if (!g_ame267_freeformScaled) return pt;
     pt.x *= ame267_adaptiveScaleX;
     pt.y *= ame267_adaptiveScaleY;
     return pt;
@@ -1801,7 +1808,7 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
 ///   坐标越界 deviceScale 倍（iPad 2.0）→ 热栏手势/双击/长按全打空 =
 ///   "小窗还是漂移"的热栏侧根因。全屏态走 screenScale 原路零变化。
 - (CGPoint)ame277_hotbarPointFromViewPt:(CGPoint)pt {
-    if (ame267_freeformScaled) {
+    if (g_ame267_freeformScaled) {
         return CGPointMake(pt.x * (CGFloat)ame267_adaptiveScaleX,
                            pt.y * (CGFloat)ame267_adaptiveScaleY);
     }
@@ -1820,7 +1827,7 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
 ///   逐字节同源：全屏 = screenScale/FSR×resScale；小窗 =
 ///   adaptiveScale×(resScale/FSR)（设备倍率已含在 adaptiveScale 内）。
 - (CGPoint)ame277_cursorOutScale {
-    if (ame267_freeformScaled) {
+    if (g_ame267_freeformScaled) {
         CGFloat ame277_belief = (mgFsrScale > 0.0f) ? resolutionScale / mgFsrScale
                                                     : resolutionScale;
         return CGPointMake((CGFloat)ame267_adaptiveScaleX * ame277_belief,
@@ -1921,7 +1928,7 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
     //   （MC 信念扰动 + ANGLE 冻结 guard 拉锯 + Task82 缩角落家族风险），
     //   scale-mode 语义 = 整帧渲染 + CA 缩放呈现。所有调用点（旋转/
     //   回前台/首触点/偏好变更）经此单一守卫自动豁免。
-    if (ame267_freeformScaled) {
+    if (g_ame267_freeformScaled) {
         ame261_lastSyncedViewSize = self.view.bounds.size;
         NSLog(@"[SurfaceVC] Task267: updateSavedResolution frozen in freeform scale-mode (window stays %dx%d)",
               (int)windowWidth, (int)windowHeight);
@@ -3142,7 +3149,7 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         //   语义下生效；SDL 视图 reassert 两态共用。
         CGFloat ame255_frameW = self.surfaceView.frame.size.width;
         CGFloat ame255_res = (resolutionScale > 0.01f) ? resolutionScale : 1.0f;
-        if (ame267_freeformScaled) {
+        if (g_ame267_freeformScaled) {
             NSLog(@"[SurfaceVC] Task255: auto-correct (%@) drawable=%.0fx%.0f vs surface=%.0fx%.0f -- "
                   @"freeform scale-mode frozen semantics, belief rewrite skipped (Task277)",
                   site, ame255_dw, ame255_dh, ame255_expW, ame255_expH);
@@ -3230,7 +3237,7 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     CGPoint ame277_out = [self ame277_cursorOutScale];
     CGFloat ame267_outX = ame277_out.x;
     CGFloat ame267_outY = ame277_out.y;
-    if (ame267_freeformScaled && event == ACTION_DOWN) {
+    if (g_ame267_freeformScaled && event == ACTION_DOWN) {
         static CFAbsoluteTime ame277_lastForensic = 0;
         CFAbsoluteTime ame277_now = CFAbsoluteTimeGetCurrent();
         if (ame277_now - ame277_lastForensic > 5.0) {
@@ -3337,7 +3344,7 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     // ★ Task267：小窗（scale-mode）态回前台——UIKit 后台往返可能重排过
     //   视图栈，重排一次（updateSavedResolution 的冻结守卫保证信念不被
     //   写坏；全屏态此路不通零变化）。
-    if (ame267_freeformScaled) {
+    if (g_ame267_freeformScaled) {
         [self ame267_rescaleViewStackToCurrentBounds];
     }
     [self updateSavedResolution];

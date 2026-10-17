@@ -452,6 +452,10 @@ void CallbackBridge_nativeSendScreenSizeForced(int width, int height);
 // ★ Task250：应用前台/后台旗标（SurfaceVC WillResignActive/DidBecomeActive
 //   维护）——后台期常规窗口推送被门控（过窗值不再污染 MC 窗口信念）。
 extern BOOL g_ame250_appActive;
+// ★ Task278：freeform scale-mode 旗标（SurfaceVC 定义/维护）——YES 期间
+//   CallbackBridge_nativeSendScreenSize 拦截 Java 侧窗口尺寸回报（真实
+//   小窗尺寸会污染冻结的全帧 MC 窗口信念 = 小窗触点漂移根因②）。
+extern BOOL g_ame267_freeformScaled;
 void CallbackBridge_nativeSendScroll(CGFloat xoffset, CGFloat yoffset);
 void CallbackBridge_sendKeycode(int keycode, jchar keychar, int scancode, int modifiers, BOOL isDown);
 void CallbackBridge_pauseGameIfNeed();

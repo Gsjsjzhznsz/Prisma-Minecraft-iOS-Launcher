@@ -2599,6 +2599,26 @@ void CallbackBridge_nativeSendScreenSizeForced(int width, int height) {
 }
 
 void CallbackBridge_nativeSendScreenSize(int width, int height) {
+    // ★ Task278（"小窗依旧漂移"第二根因·信念回写闸）：freeform scale-mode
+    //   期间本函数被 Java 侧屏幕尺寸回报调用（Task175 注释在案的既有通路）
+    //   时，携带的是真实小窗尺寸——无条件 windowWidth/Height 回写会把
+    //   Task267 冻结的全帧 MC 窗口信念改写成小窗口径，而 ObjC 触点仍按
+    //   全帧口径发送（adaptiveScale×belief）→ MC 以小窗信念归一化全帧
+    //   坐标 = 触点越靠右下偏得越远 = Task276/277 修完 ObjC 映射侧后用户
+    //   仍报"依旧漂移"的另一半根因（MC 侧归一化基准被污染）。旗标期内
+    //   拦截一切外来尺寸（ObjC 自身重申走 windowWidth 全局原值 = 恒同值
+    //   不受影响；强制通道 nativeSendScreenSizeForced 是自家冻结值通道
+    //   同样不设闸），日志限频取证。
+    if (g_ame267_freeformScaled &&
+        !(width == windowWidth && height == windowHeight)) {
+        static int s_ame278_swallowed = 0;
+        s_ame278_swallowed++;
+        if (s_ame278_swallowed <= 5 || s_ame278_swallowed % 50 == 0) {
+            NSLog(@"[InputDiag] Task278: freeform scale-mode swallowed foreign window report %dx%d (frozen belief stays %dx%d #%d)",
+                  width, height, windowWidth, windowHeight, s_ame278_swallowed);
+        }
+        return;
+    }
     windowWidth = width;
     windowHeight = height;
 

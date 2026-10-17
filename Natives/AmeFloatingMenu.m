@@ -188,8 +188,12 @@ static UIImage *Ame277MaterializeSnapshot(UIImage *ame277_img) {
         if (ame277_blurred != nil) {
             CIFilter *ame277_color = [CIFilter filterWithName:@"CIColorControls"];
             [ame277_color setValue:ame277_blurred forKey:kCIInputImageKey];
-            [ame277_color setValue:@1.5 forKey:@"inputSaturation"];
-            [ame277_color setValue:@0.02 forKey:@"inputBrightness"];
+            // ★ Task278：提鲜再抬一档（saturation 1.5→1.6、brightness
+            //   +0.02→+0.03）——装机复核“玻璃感不是很好”：饱和度是玻璃材质
+            //   “透光感”的主载，1.5 在低饱和壁纸上仍偏灰；0.03 亮度抬升补
+            //   足白色填充对背底亮度的吃掉量。
+            [ame277_color setValue:@1.6 forKey:@"inputSaturation"];
+            [ame277_color setValue:@0.03 forKey:@"inputBrightness"];
             [ame277_color setValue:@1.0 forKey:@"inputContrast"];
             ame277_blurred = ame277_color.outputImage;
         }
@@ -590,6 +594,30 @@ static UIColor *Ame244SnapshotTint(void) {
         ame277_sheen.name = @"ame277_sheen";
         [ame277_sheenHost.layer addSublayer:ame277_sheen];
         [ame245_clip addSubview:ame277_sheenHost];
+
+        // ★ Task278（“玻璃感”快照路径同步·底部景深内影）：与 TG 玻璃面
+        //   同配方——黑色渐变自底缘向上 24% 内衰减到零（深 0.14 / 浅 0.08），
+        //   玻璃片厚度暗部线索；autoresizing 宽高随 clip，零维护。
+        {
+            BOOL ame278_dark = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark);
+            UIView *ame278_depthHost = [[UIView alloc] initWithFrame:
+                CGRectMake(0.0, self.panel.bounds.size.height * 0.76,
+                           self.panel.bounds.size.width,
+                           self.panel.bounds.size.height * 0.24)];
+            ame278_depthHost.userInteractionEnabled = NO;
+            ame278_depthHost.autoresizingMask =
+                UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
+            CAGradientLayer *ame278_depth = [CAGradientLayer layer];
+            ame278_depth.frame = ame278_depthHost.bounds;
+            ame278_depth.name = @"ame278_depth";
+            ame278_depth.startPoint = CGPointMake(0.5, 0.0);
+            ame278_depth.endPoint = CGPointMake(0.5, 1.0);
+            ame278_depth.colors = @[(id)[UIColor colorWithWhite:0.0 alpha:0.0].CGColor,
+                (id)[UIColor colorWithWhite:0.0 alpha:(ame278_dark ? 0.14 : 0.08)].CGColor];
+            ame278_depth.locations = @[@0.0, @1.0];
+            [ame278_depthHost.layer addSublayer:ame278_depth];
+            [ame245_clip addSubview:ame278_depthHost];
+        }
 
         self.ame245_frostClip = ame245_clip;
         self.ame245_frostSnap = ame245_snap;

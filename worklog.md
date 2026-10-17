@@ -3562,3 +3562,18 @@ Work Log:
 
 Stage Summary:
 - 三项全修：小窗=热栏四站+抓取DOWN双乘清扫+autoCorrect守卫+取证日志；连点卡伪玻璃=重入窗口改原生sheet+hook会话闸+busy守卫+齿轮世代令牌；玻璃感=材质滤镜链+顶缘光泽+发丝描边三面升级——待 CI 出包装机验证；锚点：①小窗热栏滑动/双击/长按逐点对齐+日志 [SurfaceVC] Task277 mini-window touch forensic ②真玻璃档连点系统菜单/齿轮不再出现磨砂面板、<26 会话弹窗原生 ③伪玻璃面板可见背景提鲜+顶缘受光+边缘描边
+
+---
+Task ID: 278
+Agent: main (Super Z)
+Task: 装机反馈三项（Task 277 构建实测复核 4ccb1e5）：连点选项卡变成旧 iOS 原生选项卡 / 小窗依旧漂移 / 伪液态玻璃玻璃感不佳
+
+Work Log:
+- ①连点旧式 sheet 根修：Task277 重入窗口直通 stock actionSheet 的前提装机失效——iPadOS 27 上 stock actionSheet 渲染为经典旧式表（Task242"原生档=旧版弹窗"的本形），并非 Task277 注释预期的"原生液态玻璃同族观感"，重入窗口内选择器全部掉进旧 UI；改【延迟重试原生液态玻璃路由】：重入窗口（1.2s 动作窗/0.6s 收尾窗）是纯时间窗——等待期无菜单开合=窗口只衰减不再武装，按各窗到期时刻取 max+0.05s 定时器余量调度（钳 0.55-1.30s），唤醒自然出窗走 Task245 系统原生液态玻璃（观感与单击完全一致）；连点多请求 ame278_presentGeneration 代次只保最新链（陈旧重试唤醒即弃，不叠呈现）；重试 2 次仍在窗内（5s 自过期粘滞等极端场景）→直走 Task245，Task273 看门狗（1.1s 无 delegate 询问）继续兜底；stock actionSheet 路由退役（仅原生档保留）
+- ②小窗漂移第二根因（信念回写闸）：CallbackBridge_nativeSendScreenSize 无条件 windowWidth/Height 回写——Java 侧屏幕尺寸回报（Task175 注释在案通路）在小窗期携带真实小窗尺寸，把 Task267 冻结的全帧 MC 窗口信念改写成小窗口径，而 ObjC 触点仍按全帧口径发送（adaptiveScale×belief）→ MC 以小窗信念归一化全帧坐标=越靠右下偏得越远=Task276/277 修完 ObjC 映射侧后用户仍报"依旧漂移"的另一半（MC 侧归一化基准被污染）；g_ame267_freeformScaled 由类扩展 ivar 升格文件作用域全局（12 处改名；utils.h extern，g_ame250_appActive 同族惯例），nativeSendScreenSize 旗标期拦截外来尺寸（同值放行=ObjC 自身重申不受影响；Forced 通道自家冻结值不设闸），限频取证日志
+- ③玻璃感三件：a. TG 滤镜链 blur 2.0→4.0（TG 原方 r=2 在启动器壁纸/游戏画面上背景纹理仍清晰可辨="半透板"观感；4.0 保留透明感把背景细纹压进磨砂域，玻璃"材质体感"成立）+ 折射网格幅度 20→24pt（"透镜缘"更可辨；只作用 backdrop 不碰内容层，可读性零损）；b. 双色调受光边缘——白 rim 保持 TG 原方（深 0.15/浅 0.60），追加黑缘描边（深 0.32/浅 0.16）经渐变掩码只显底部 55%，与顶亮缘合成"上亮下暗"受光轴，顶缘光泽浓度略抬（深 0.08→0.10/浅 0.12→0.16）；c. 底部景深内影——黑渐变自底缘向上 22-24% 衰减到零（深 0.14/浅 0.08），TG 玻璃面与快照磨砂面同配方各就位；快照材质提鲜再抬一档（saturation 1.5→1.6/brightness +0.02→+0.03）
+- 门禁：task139 all balanced；task240 syntax OK+import sweep 清；task248 缺键0/硬编码0/动态键0；task250 全零；verify219 81/81 ALL GREEN；verify255 52 PASS 0 FAIL；task191 四主表 3088 OK——本轮零新增文案，无 i18n 动作
+
+Stage Summary:
+- 三项全修：连点重入窗口=延迟重试原生液态玻璃（旧式 sheet 退役）；小窗漂移=信念回写闸（ObjC 映射侧 276/277 已修，MC 归一化基准侧本轮闭合，漂移两半根因全数闭环）；玻璃感=blur 4.0+折射 24pt+双色调受光缘+底部景深+快照提鲜 1.6——待 CI 出包装机验证
+- 装机锚点：①真玻璃档连点选择器→约 0.6-1.3s 后以原生液态玻璃重开（不再出现旧式表；日志 [AmeNativeMenu] Task278: deferred native-menu retry）②小窗内拖动/缩放窗口后触点逐点对齐（日志 [InputDiag] Task278: swallowed foreign window report）③伪玻璃面板顶缘更亮/底缘暗部/底边内影/背景更鲜透

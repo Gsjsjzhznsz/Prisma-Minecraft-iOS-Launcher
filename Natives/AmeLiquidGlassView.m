@@ -573,7 +573,9 @@ static NSObject * _Nullable AME252CreateGlassMesh(CGSize size, double cornerRadi
         [cache setObject:[NSValue valueWithPointer:tpl] forKey:key];
     }
 
-    double magnitudePoints = 20.0;
+    // ★ Task278：20→24pt——边缘折射幅度略抬（液态玻璃的“透镜缘”更
+    //   可辨）；折射只作用于 backdrop，不碰内容层，可读性零损。
+    double magnitudePoints = 24.0;
     double magnitudeU = magnitudePoints / (double)size.width;
     double magnitudeV = magnitudePoints / (double)size.height;
     return AME252InstantiateMesh(tpl, size, magnitudeU, magnitudeV);
@@ -611,7 +613,11 @@ NSArray *AME252GlassFiltersInternal(void) {
                                                objCType:"{CAColorMatrix=ffffffffffffffffffff}"];
         [colorMatrix setValue:matrixValue forKey:@"inputColorMatrix"];
         [colorMatrix setValue:@YES forKey:@"inputBackdropAware"];
-        [blur setValue:@2.0 forKey:@"inputRadius"];
+        // ★ Task278（“玻璃感不是很好”）：blur 2.0→4.0——TG 原方 r=2 配合
+        //   Telegram 自家内容底色偏暗重，在启动器壁纸/游戏画面上背景纹理
+        //   仍清晰可辨（“半透板”观感）；4.0 保留透明感的同时把背景细纹
+        //   压进磨砂域，玻璃“材质体感”明显成立。成本线性，GPU 链路无感。
+        [blur setValue:@4.0 forKey:@"inputRadius"];
         filters = @[ colorMatrix, blur ];
     });
     return filters;
@@ -624,6 +630,10 @@ NSArray *AME252GlassFiltersInternal(void) {
 @property (nonatomic, strong, nullable) CALayer *ame252_snapshotLayer;
 @property (nonatomic, strong) UIView *ame252_fillView;
 @property (nonatomic, strong) CAShapeLayer *ame252_rimLayer;
+/// ★ Task278：底部暗缘描边（光从顶部来的双色调玻璃边缘：顶亮缘=白 rim，
+///   底暗缘=黑 rim 经渐变掩码只显下半段）+ 底部景深内影宿主。
+@property (nonatomic, strong) CAShapeLayer *ame278_rimShadowLayer;
+@property (nonatomic, strong) UIView *ame278_depthHost;
 @property (nonatomic, strong) AME252GlassLayerDelegate *ame252_layerDelegate;
 @property (nonatomic, strong, nullable) NSObject *ame252_mesh;
 @property (nonatomic, assign) CGSize ame252_meshSize;
@@ -707,6 +717,25 @@ NSArray *AME252GlassFiltersInternal(void) {
     [self ame263_applyFillTransparency];
     [self addSubview:_ame252_fillView];
 
+    // ★ Task278（“玻璃感”三件·底部景深内影）：玻璃片厚度的暗部线索——
+    //   黑色渐变自底缘向上 22% 内衰减到零（深色 0.14 / 浅色 0.08）。
+    //   浮于填充之上、光泽之下；浓度随深浅色档手动重刷。
+    _ame278_depthHost = [[UIView alloc] initWithFrame:CGRectZero];
+    _ame278_depthHost.userInteractionEnabled = NO;
+    _ame278_depthHost.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    {
+        CAGradientLayer *ame278_depth = [CAGradientLayer layer];
+        ame278_depth.name = @"ame278_depth";
+        ame278_depth.startPoint = CGPointMake(0.5, 0.0);
+        ame278_depth.endPoint = CGPointMake(0.5, 1.0);
+        ame278_depth.colors = @[(id)[UIColor colorWithWhite:0.0 alpha:0.0].CGColor,
+                                (id)[UIColor colorWithWhite:0.0 alpha:1.0].CGColor];
+        ame278_depth.locations = @[@0.0, @1.0];
+        [_ame278_depthHost.layer addSublayer:ame278_depth];
+    }
+    [self addSubview:_ame278_depthHost];
+    [self ame278_applyDepthIntensity];   // 浓度首铺（setAme252_dark 复刷）
+
     // ★ Task277（"优化伪液态玻璃的玻璃感"·TG 玻璃顶部光泽线）：iOS 玻璃
     //   材质的顶缘受光特征——白色线性渐变自顶缘快速衰减（面板高 28% 内
     //   衰减到零，深色 0.08/浅色 0.12 起点）。浮于填充之上、rim 描边之下
@@ -734,6 +763,26 @@ NSArray *AME252GlassFiltersInternal(void) {
     _ame252_rimLayer.strokeColor = [UIColor whiteColor].CGColor;
     _ame252_rimLayer.delegate = nil;
     [self.layer addSublayer:_ame252_rimLayer];
+
+    // ★ Task278（“玻璃感”三件·底暗缘）：光自顶部的双色调边缘——白色 rim
+    //   保持 TG 原方，追加黑缘描边经渐变掩码只显底部 55%（顶部完全透明
+    //   渐入），玻璃片底部呈现受光阴影侧，轮廓从“均匀贴纸圈”变“受光
+    //   玻璃片”。几何与浓度由 ame252_rebuildRimPath/layoutSubviews 统一管。
+    _ame278_rimShadowLayer = [CAShapeLayer layer];
+    _ame278_rimShadowLayer.fillColor = nil;
+    _ame278_rimShadowLayer.lineWidth = 1.0;
+    _ame278_rimShadowLayer.delegate = nil;
+    {
+        CAGradientLayer *ame278_mask = [CAGradientLayer layer];
+        ame278_mask.startPoint = CGPointMake(0.5, 0.0);
+        ame278_mask.endPoint = CGPointMake(0.5, 1.0);
+        ame278_mask.colors = @[(id)[UIColor colorWithWhite:1.0 alpha:0.0].CGColor,
+                               (id)[UIColor colorWithWhite:1.0 alpha:0.0].CGColor,
+                               (id)[UIColor colorWithWhite:1.0 alpha:1.0].CGColor];
+        ame278_mask.locations = @[@0.0, @0.45, @1.0];
+        _ame278_rimShadowLayer.mask = ame278_mask;
+    }
+    [self.layer addSublayer:_ame278_rimShadowLayer];
 
     // ★ Task276：透明度变化监听（滑条拖动 → 在屏面板填充即时重铺）。
     //   selector 形式不 retain observer，dealloc 退订成对。
@@ -785,6 +834,7 @@ NSArray *AME252GlassFiltersInternal(void) {
     _ame252_dark = dark;
     [self ame252_rebuildRimPath];
     [self ame277_applySheenIntensity];   // ★ Task277：光泽起点随深浅色档
+    [self ame278_applyDepthIntensity];   // ★ Task278：景深内影随深浅色档
 }
 
 /// ★ Task277：光泽线浓度随深浅色（深色 0.08 / 浅色 0.12）——与 rim 描边
@@ -799,9 +849,27 @@ NSArray *AME252GlassFiltersInternal(void) {
         }
     }
     if (ame277_sheen == nil) return;
-    CGFloat ame277_a = _ame252_dark ? 0.08 : 0.12;
+    // ★ Task278：光泽起点浓度略抬（深 0.08→0.10 / 浅 0.12→0.16）——配合
+    //   底暗缘形成完整“上亮下暗”受光轴，顶缘高光在深色壁纸下也可辨。
+    CGFloat ame277_a = _ame252_dark ? 0.10 : 0.16;
     ame277_sheen.colors = @[(id)[UIColor colorWithWhite:1.0 alpha:ame277_a].CGColor,
                             (id)[UIColor colorWithWhite:1.0 alpha:0.0].CGColor];
+}
+
+/// ★ Task278：底部景深内影浓度随深浅色档（深 0.14 / 浅 0.08）。
+- (void)ame278_applyDepthIntensity {
+    if (_ame278_depthHost == nil) return;
+    CAGradientLayer *ame278_depth = nil;
+    for (CALayer *ame278_sub in _ame278_depthHost.layer.sublayers) {
+        if ([ame278_sub.name isEqualToString:@"ame278_depth"]) {
+            ame278_depth = (CAGradientLayer *)ame278_sub;
+            break;
+        }
+    }
+    if (ame278_depth == nil) return;
+    CGFloat ame278_a = _ame252_dark ? 0.14 : 0.08;
+    ame278_depth.colors = @[(id)[UIColor colorWithWhite:0.0 alpha:0.0].CGColor,
+                            (id)[UIColor colorWithWhite:0.0 alpha:ame278_a].CGColor];
 }
 
 - (void)ame252_rebuildRimPath {
@@ -819,6 +887,19 @@ NSArray *AME252GlassFiltersInternal(void) {
     CGFloat alpha = _ame252_dark ? 0.15 : 0.60;
     _ame252_rimLayer.path = path.CGPath;
     _ame252_rimLayer.strokeColor = [UIColor colorWithWhite:1.0 alpha:alpha].CGColor;
+    // ★ Task278：底暗缘同几何（内缩 0.5pt 同式），浓度深 0.32 / 浅 0.16——
+    //   经渐变掩码只显下半段，与顶亮缘合成受光轴。
+    if (_ame278_rimShadowLayer != nil) {
+        CGFloat ame278_inset = 0.5;
+        CGFloat ame278_r = fmax(0.0, r - ame278_inset);
+        CGRect ame278_rect = CGRectInset(CGRectMake(0.0, 0.0, size.width, size.height),
+                                         ame278_inset, ame278_inset);
+        UIBezierPath *ame278_p = [UIBezierPath bezierPathWithRoundedRect:ame278_rect
+                                                            cornerRadius:ame278_r];
+        _ame278_rimShadowLayer.path = ame278_p.CGPath;
+        _ame278_rimShadowLayer.strokeColor = [UIColor colorWithWhite:0.0
+                                                               alpha:(_ame252_dark ? 0.32 : 0.16)].CGColor;
+    }
 }
 
 - (void)setAme252_backdropSnapshot:(UIImage *)snapshot {
@@ -864,7 +945,17 @@ NSArray *AME252GlassFiltersInternal(void) {
     for (CALayer *ame277_sub in _ame277_sheenHost.layer.sublayers) {
         ame277_sub.frame = _ame277_sheenHost.bounds;
     }
+    // ★ Task278：底部景深内影随面板几何（底部 22% 高度带）。
+    _ame278_depthHost.frame = CGRectMake(0.0, self.bounds.size.height * 0.78,
+                                         self.bounds.size.width,
+                                         self.bounds.size.height * 0.22);
+    for (CALayer *ame278_sub in _ame278_depthHost.layer.sublayers) {
+        ame278_sub.frame = _ame278_depthHost.bounds;
+    }
     _ame252_rimLayer.frame = self.bounds;
+    // ★ Task278：底暗缘描边同面；渐变掩码随其 bounds。
+    _ame278_rimShadowLayer.frame = self.bounds;
+    _ame278_rimShadowLayer.mask.frame = _ame278_rimShadowLayer.bounds;
     [self ame252_rebuildRimPath];
     [self ame252_updateMeshIfNeeded];
 }
