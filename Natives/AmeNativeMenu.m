@@ -585,24 +585,36 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
     ame240_actionFired = NO; // 本轮会话开始，重新计数
     if (LGCIsGlassStyleActive()) {
         if (LGCIsPseudoGlassStyleActive() ||
-            [self ame245_anchorInsideGameSurface:sourceView] ||
-            ame273_systemMenuReentryLikely()) {
+            [self ame245_anchorInsideGameSurface:sourceView]) {
             // ★ Task246：伪液态玻璃档 = 魔改磨砂面板全接管（含启动器内选择
             //   菜单——用户指令把魔改玻璃升格为独立风格档）；真液态玻璃档下
             //   仅 Metal 游戏面保持磨砂面板（系统上下文菜单磨砂在 Metal 上
             //   不合成，Task228/230/236 三轮装机实锤同族）。
-            // ★ Task273：重入窗口（从另一系统菜单的动作 handler 内呈现）
-            //   同样改道磨砂面板——此窗口内系统原生 context menu 路由会被
-            //   UIKit 静默丢弃（装机 f71c88b 实锤：route 日志 10 连发零
-            //   呈现 = "无法切换回隔离"病灶），磨砂面板呈现不受 context
-            //   menu 收尾影响（同机 alert #2/#3 handler 内呈现成功实锤）。
-            NSLog(@"[AmeNativeMenu] Task273: reentry window active (sessionActive=%d actionAt=%.2fs ago) -- glass panel route instead of system menu",
-                  (int)ame273_systemMenuSessionActive,
-                  ame273_lastMenuActionAt > 0 ? CFAbsoluteTimeGetCurrent() - ame273_lastMenuActionAt : -1);
+            NSLog(@"[AmeNativeMenu] Task246/245: glass panel route (pseudo=%d inGame=%d)",
+                  (int)LGCIsPseudoGlassStyleActive(),
+                  (int)[self ame245_anchorInsideGameSurface:sourceView]);
             [self ame242_presentViaGlassMenu:ame242_alert
                                         host:ame242_host
                                        dicts:dicts
                                    onDismiss:onDismiss];
+        } else if (ame273_systemMenuReentryLikely()) {
+            // ★ Task277（用户 2026-10-17："连点还是会从液态玻璃卡出伪液态
+            //   玻璃"桌面侧根因）：Task273 把重入窗口整体改道磨砂面板，但
+            //   真液态玻璃档下该面板 = 用户口中的"伪液态玻璃乱入"（Task267
+            //   已把"呈现失败落入磨砂面板"收窄为伪玻璃档专属，重入窗口是
+            //   同族漏网）。Task273 的装机证据本身写明"同机 alert #2/#3
+            //   handler 内呈现成功实锤"——被静默丢弃的是 UIMenu context
+            //   menu 路由，不是 UIAlertController：重入窗口在真液态玻璃档
+            //   改直通 stock actionSheet（系统原生液态玻璃同族观感，重入
+            //   窗口内可呈现），磨砂面板保留给伪玻璃档与游戏面。
+            NSLog(@"[AmeNativeMenu] Task277: reentry window in liquid-glass -- native actionSheet route (frost panel retired here, pseudo=%d inGame=%d)",
+                  (int)LGCIsPseudoGlassStyleActive(),
+                  (int)[self ame245_anchorInsideGameSurface:sourceView]);
+            [self ame242_presentViaNativeSheet:ame242_alert
+                                          view:sourceView
+                                          host:ame242_host
+                                         dicts:dicts
+                                     onDismiss:onDismiss];
         } else {
             // ★ Task245（IMG_0380 用户定案）：真液态玻璃档启动器内选择菜单 =
             //   系统原生液态玻璃直出；磨砂面板退役到输入类弹窗专属。

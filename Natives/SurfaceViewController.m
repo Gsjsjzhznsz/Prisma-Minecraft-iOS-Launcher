@@ -1790,6 +1790,48 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
     return pt;
 }
 
+/// ★ Task277（"小窗还是漂移"收尾·热栏四路径双乘根修）：视图 pt → 整帧
+///   物理 px 的【热栏/直发命中口径】单一事实源。ame267_adaptiveScale 的
+///   定义 = "视图 pt → 整帧物理 px"【完整】因子（physicalWidth = 整帧
+///   surfaceView 宽 × 设备 screenScale，冻结守卫保持全屏口径）——它本身
+///   已含设备物理尺度；四条热栏/直发命中路径（sendTouchEvent 滑动热栏/
+///   双击 F/长按 Q/touchesBegan 探测）此前"先 ×设备 screenScale 再喂
+///   adaptedPoint" = Task276 在 sendTouchPoint 根修过的同族双乘在热栏
+///   路径的漏网（Task276 判"native 层自洽几何不动"有误）：小窗态命中
+///   坐标越界 deviceScale 倍（iPad 2.0）→ 热栏手势/双击/长按全打空 =
+///   "小窗还是漂移"的热栏侧根因。全屏态走 screenScale 原路零变化。
+- (CGPoint)ame277_hotbarPointFromViewPt:(CGPoint)pt {
+    if (ame267_freeformScaled) {
+        return CGPointMake(pt.x * (CGFloat)ame267_adaptiveScaleX,
+                           pt.y * (CGFloat)ame267_adaptiveScaleY);
+    }
+    CGFloat ame277_s = (self.screenScale > 0.0f) ? self.screenScale
+                                                 : UIScreen.mainScreen.scale;
+    return CGPointMake(pt.x * ame277_s, pt.y * ame277_s);
+}
+
+/// ★ Task277（"小窗还是漂移"收尾·抓取态 DOWN 口径修复）：视图 pt →
+///   MC 窗口 px 的【光标口径】换算因子——sendTouchPoint 与
+///   updateGrabState（抓取瞬间 DOWN）共用的单一事实源。后者此前用裸
+///   screenScale（Task59 注释自称"与 sendTouchPoint 同口径"，但从未跟随
+///   Task78 FSR 除法/Task175 resScale 乘法/Task267 小窗替换三条链）：
+///   小窗态差 adaptiveScale×belief/deviceScale 比例 = 抓取瞬间光标跳位；
+///   全屏 resScale≠1 会话差同比例 = 同族潜伏病灶。本因子与 sendTouchPoint
+///   逐字节同源：全屏 = screenScale/FSR×resScale；小窗 =
+///   adaptiveScale×(resScale/FSR)（设备倍率已含在 adaptiveScale 内）。
+- (CGPoint)ame277_cursorOutScale {
+    if (ame267_freeformScaled) {
+        CGFloat ame277_belief = (mgFsrScale > 0.0f) ? resolutionScale / mgFsrScale
+                                                    : resolutionScale;
+        return CGPointMake((CGFloat)ame267_adaptiveScaleX * ame277_belief,
+                           (CGFloat)ame267_adaptiveScaleY * ame277_belief);
+    }
+    CGFloat ame277_s = self.screenScale;
+    if (mgFsrScale > 0.0f) ame277_s /= mgFsrScale;
+    ame277_s *= resolutionScale;
+    return CGPointMake(ame277_s, ame277_s);
+}
+
 - (void)updateAudioSettings {
     NSError *sessionError = nil;
     AVAudioSessionCategory category;
@@ -2143,8 +2185,14 @@ extern void ame_hook_realSDLGetWindowSize(int *w, int *h);
         // Task59：contentsScale 已被 Task52 呈现对齐钉成 1.0，作输入乘数会缺 ×2
         // （lastVirtualMousePoint 是点，乘 1 后落入 MC 2360 像素空间的 1/4 处）。
         // 与 sendTouchPoint 同口径：用 screenScale（scene.screen.scale，即 2.0）。
-        CGFloat screenScale = self.screenScale > 0 ? self.screenScale : UIScreen.mainScreen.scale;
-        CallbackBridge_nativeSendCursorPos(ACTION_DOWN, lastVirtualMousePoint.x * screenScale, lastVirtualMousePoint.y * screenScale);
+        // ★ Task277：上面那句“同口径”从未真正成立——旧式裸 screenScale 不含
+        //   FSR 除法/resScale 乘法/小窗替换三链（历史恰好 FSR=1/res=1 而无感），
+        //   小窗态差 adaptiveScale×belief/deviceScale = 抓取瞬间光标跳位。
+        //   改用与 sendTouchPoint 逐字节同源的 ame277_cursorOutScale 单一事实源。
+        CGPoint ame277_out = [self ame277_cursorOutScale];
+        CallbackBridge_nativeSendCursorPos(ACTION_DOWN,
+            lastVirtualMousePoint.x * ame277_out.x,
+            lastVirtualMousePoint.y * ame277_out.y);
         virtualMouseFrame.origin.x = self.view.frame.size.width / 2;
         virtualMouseFrame.origin.y = self.view.frame.size.height / 2;
         self.mousePointerView.frame = virtualMouseFrame;
@@ -3085,9 +3133,20 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         ame255_drift = YES;
     }
     if (ame255_drift) {
+        // ★ Task277：小窗态冻结语义豁免——freeform scale-mode 期
+        //   drawable=整帧钉扎、surfaceView.frame=小窗、信念=冻结整帧，
+        //   三者错位是 scale-mode 的【设计本体】而非漂移；drawable/frame
+        //   比值在此无意义（会把 screenScale 改写成 adaptiveScale 量级，
+        //   并经裸 screenScale 消费者扩散；updateSavedResolution 虽被
+        //   冻结守卫挡住，screenScale 本身已被污染）。真值对账只在全屏
+        //   语义下生效；SDL 视图 reassert 两态共用。
         CGFloat ame255_frameW = self.surfaceView.frame.size.width;
         CGFloat ame255_res = (resolutionScale > 0.01f) ? resolutionScale : 1.0f;
-        if (ame255_frameW > 0.5) {
+        if (ame267_freeformScaled) {
+            NSLog(@"[SurfaceVC] Task255: auto-correct (%@) drawable=%.0fx%.0f vs surface=%.0fx%.0f -- "
+                  @"freeform scale-mode frozen semantics, belief rewrite skipped (Task277)",
+                  site, ame255_dw, ame255_dh, ame255_expW, ame255_expH);
+        } else if (ame255_frameW > 0.5) {
             CGFloat ame255_newScale = (ame255_dw / ame255_res) / ame255_frameW;
             if (ame255_newScale >= 0.25 && ame255_newScale <= 8.0 &&
                 fabs(ame255_newScale - self.screenScale) > 0.01) {
@@ -3140,7 +3199,6 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         }
         NSLog(@"[SurfaceVC] Task248/250: first-touch geometry re-sync applied + forced re-announce");
     }
-    CGFloat screenScale = self.screenScale;
     // Task 78（FSR 输入口径）：输入像素空间必须等于 MC 窗口信念
     // windowWidth×windowHeight（Task59 定案：MC 按告知窗口尺寸归一化）。
     // view 点 × screenScale = 物理空间；窗口 = 物理 × resolutionScale
@@ -3150,8 +3208,8 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     // 会话里游戏内触点/视角映射整体偏大 1/resolutionScale 倍（用户实测
     // "更换分辨率后位置偏移"的存活根因之一；历史会话 resScale 恒 1.00
     // 所以从未暴露）。FSR 除法保持原位（Task78 锚点）。
-    if (mgFsrScale > 0.0f) screenScale /= mgFsrScale;
-    screenScale *= resolutionScale;
+    // ★ Task277：上式整体迁入 ame277_cursorOutScale（与抓取态 DOWN 共用
+    //   单一事实源），本函数不再持有局部副本（消除双源漂移土壤）。
     // ★ Task267：自由窗口 scale-mode——触点在小窗视图 pt 空间，按
     //   "整帧物理 / 视图"比例映射回整帧口径。
     // ★ Task276（用户 2026-10-17："小窗依旧漂移"）双乘根修：
@@ -3165,12 +3223,25 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     //   恒偏）。全屏态两因子恒走 screenScale 原路零变化。
     //   （热栏/直发 UI 命中路径 ame267_adaptedPoint 不受影响——那是
     //   native 层整帧物理 px 口径的自洽几何，与 MC 信念换算无关。）
-    CGFloat ame267_outX = screenScale;
-    CGFloat ame267_outY = screenScale;
-    if (ame267_freeformScaled) {
-        CGFloat ame267_belief = (mgFsrScale > 0.0f) ? resolutionScale / mgFsrScale : resolutionScale;
-        ame267_outX = (CGFloat)ame267_adaptiveScaleX * ame267_belief;
-        ame267_outY = (CGFloat)ame267_adaptiveScaleY * ame267_belief;
+    // ★ Task277：因子计算收敛到 ame277_cursorOutScale 单一事实源（与
+    //   updateGrabState 抓取态 DOWN 共用；语义逐字节不变）。小窗分支追加
+    //   限频取证日志：若装机仍报漂移，下一轮日志直接给出 loc/out/
+    //   adaptive/belief/win/phys 七元组定音，不再盲猜。
+    CGPoint ame277_out = [self ame277_cursorOutScale];
+    CGFloat ame267_outX = ame277_out.x;
+    CGFloat ame267_outY = ame277_out.y;
+    if (ame267_freeformScaled && event == ACTION_DOWN) {
+        static CFAbsoluteTime ame277_lastForensic = 0;
+        CFAbsoluteTime ame277_now = CFAbsoluteTimeGetCurrent();
+        if (ame277_now - ame277_lastForensic > 5.0) {
+            ame277_lastForensic = ame277_now;
+            NSLog(@"[SurfaceVC] Task277: mini-window touch forensic: loc=%.1fx%.1f out=%.2fx%.2f adaptive=%.2fx%.2f win=%dx%d phys=%dx%d fsr=%.2f res=%.2f",
+                  location.x, location.y, ame267_outX, ame267_outY,
+                  ame267_adaptiveScaleX, ame267_adaptiveScaleY,
+                  (int)windowWidth, (int)windowHeight,
+                  (int)physicalWidth, (int)physicalHeight,
+                  (double)mgFsrScale, (double)resolutionScale);
+        }
     }
     // Task202（议题 #1）：双指滚动手势进行中——光标移动抑制（虚拟/非虚拟
     // 鼠标同门；ACTION_DOWN/UP 不受影响，点击照常）。锚点照常推进：
@@ -3643,10 +3714,11 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         // 主触点链用 self.screenScale（scene.screen.scale，updateSavedResolution
         // 写入）；Stage Manager/外接屏场景两者不等 → 热栏手势与主触点同一根
         // 触摸两套像素坐标 = 错位存活面之一。
-        CGFloat screenScale = (self.screenScale > 0.0f) ? self.screenScale : [[UIScreen mainScreen] scale];
-        // ★ Task267：scale-mode 坐标适配（视图 pt → 整帧物理 px）
-        CGPoint ame267_hotbarPt = [self ame267_adaptedPoint:
-            CGPointMake(locationInView.x * screenScale, locationInView.y * screenScale)];
+        // ★ Task277：双乘根修——旧式 pt×screenScale 再喂 adaptedPoint 把设备
+        //   倍率叠乘两次（ame267_adaptiveScale 已含设备尺度）；小窗态命中
+        //   越界 deviceScale 倍 = 热栏手势打空。收敛到单一事实源。
+        CGPoint ame267_hotbarPt = [self ame277_hotbarPointFromViewPt:
+            CGPointMake(locationInView.x, locationInView.y)];
         int slot = self.enableHotbarGestures ?
         callback_SurfaceViewController_touchHotbar(ame267_hotbarPt.x, ame267_hotbarPt.y) : -1;
         if (slot != -1 && currentHotbarSlot != slot && (event == ACTION_DOWN || currentHotbarSlot != -1)) {
@@ -3783,11 +3855,10 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         // ★ Task249：口径统一收尾——surfaceOnDoubleClick 漏改的
         // UIScreen.mainScreen.scale（Task247 T2 统一时只改了 touchesBegan/
         // sendTouchEvent 两处，这里和 surfaceOnLongpress 同病）。
-        CGFloat screenScale = (self.screenScale > 0.0f) ? self.screenScale : [[UIScreen mainScreen] scale];
         CGPoint point = [sender locationInView:self.rootView];
         // ★ Task267：scale-mode 坐标适配（视图 pt → 整帧物理 px）
-        CGPoint ame267_hotbarPt = [self ame267_adaptedPoint:
-            CGPointMake(point.x * screenScale, point.y * screenScale)];
+        // ★ Task277：双乘根修（同 sendTouchEvent 热栏路径，见彼处注释）。
+        CGPoint ame267_hotbarPt = [self ame277_hotbarPointFromViewPt:point];
         int hotbarSlot = self.enableHotbarGestures ?
             callback_SurfaceViewController_touchHotbar(ame267_hotbarPt.x, ame267_hotbarPt.y) : -1;
         if (hotbarSlot != -1 && currentHotbarSlot == hotbarSlot) {
@@ -3827,10 +3898,8 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
     if (!self.slideableHotbar) {
         CGPoint location = [sender locationInView:self.rootView];
         // ★ Task249：口径统一（同 surfaceOnDoubleClick，见彼处注释）。
-        CGFloat screenScale = (self.screenScale > 0.0f) ? self.screenScale : UIScreen.mainScreen.scale;
-        // ★ Task267：scale-mode 坐标适配（视图 pt → 整帧物理 px）
-        CGPoint ame267_hotbarPt = [self ame267_adaptedPoint:
-            CGPointMake(location.x * screenScale, location.y * screenScale)];
+        // ★ Task277：双乘根修（同 sendTouchEvent 热栏路径，见彼处注释）。
+        CGPoint ame267_hotbarPt = [self ame277_hotbarPointFromViewPt:location];
         currentHotbarSlot = self.enableHotbarGestures ?
             callback_SurfaceViewController_touchHotbar(ame267_hotbarPt.x, ame267_hotbarPt.y) : -1;
     }
@@ -4774,10 +4843,8 @@ BOOL Amethyst_EnforceSDL3Presentation(void) {
         if (touch.type == UITouchTypeIndirectPointer) continue;
         CGPoint locationInView = [touch locationInView:self.rootView];
         // Task247（T2）：同上——热栏探测与主触点链统一 scene scale 口径。
-        CGFloat screenScale = (self.screenScale > 0.0f) ? self.screenScale : [[UIScreen mainScreen] scale];
-        // ★ Task267：scale-mode 坐标适配（视图 pt → 整帧物理 px）
-        CGPoint ame267_hotbarPt = [self ame267_adaptedPoint:
-            CGPointMake(locationInView.x * screenScale, locationInView.y * screenScale)];
+        // ★ Task277：双乘根修（同 sendTouchEvent 热栏路径，见彼处注释）。
+        CGPoint ame267_hotbarPt = [self ame277_hotbarPointFromViewPt:locationInView];
         currentHotbarSlot = self.enableHotbarGestures ?
             callback_SurfaceViewController_touchHotbar(ame267_hotbarPt.x, ame267_hotbarPt.y) : -1;
         if ([self isTouchInactive:self.hotbarTouch] && currentHotbarSlot != -1) {

@@ -49,6 +49,14 @@ static const void *kAme247RefreshLinkKey = &kAme247RefreshLinkKey;
 /// ★ Task252：TG LegacyGlassView 配方玻璃面板（玻璃家族档 + 支持时接管
 ///   快照磨砂/材质层/描边；快照供料模式由既有 8Hz 机制持续供料）。
 static const void *kAme252GlassKey = &kAme252GlassKey;
+/// ★ Task277（齿轮连点竞态根修）：菜单逻辑态与动画世代令牌。
+///   旧 toggleMenu 读 menuView.hidden 决策，而 dismissMenu 的 hidden=YES
+///   延迟到 0.25s 动画 completion——关闭动画窗口内 hidden 恒 NO，连点每
+///   一拍都再触发一次 dismiss（永远开不出来）；关闭 completion 与新一次
+///   showMenu 赛跑时还会把刚打开的面板隐藏（闪没）。逻辑态同步翻转 +
+///   世代令牌让"最后一拍定状态"成为确定性语义。
+static const void *kAme277MenuOpenKey = &kAme277MenuOpenKey;
+static const void *kAme277MenuGenKey = &kAme277MenuGenKey;
 
 @interface SurfaceViewController(Navigation)
 // FCL 风格菜单的背景遮罩（半透明黑色，点击关闭菜单）
@@ -416,6 +424,29 @@ static UIColor *ame244_snapshotTint(void) {
         }
         ame244_tint.frame = self.menuView.bounds;
         ame244_tint.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        // ★ Task277（玻璃感三件之二·顶部光泽线，游戏菜单侧）：嵌进 tint 层
+        //   —— tint 显隐/退场（TG 接管/原生档）时光泽自动跟随，零额外
+        //   同步状态。tag 277 供幂等重建识别。
+        {
+            UIView *ame277_oldSheen = [ame244_tint viewWithTag:277];
+            [ame277_oldSheen removeFromSuperview];
+            UIView *ame277_sheenHost = [[UIView alloc] initWithFrame:
+                CGRectMake(0.0, 0.0, self.menuView.bounds.size.width,
+                           self.menuView.bounds.size.height * 0.32)];
+            ame277_sheenHost.userInteractionEnabled = NO;
+            ame277_sheenHost.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+            ame277_sheenHost.tag = 277;
+            CAGradientLayer *ame277_sheen = [CAGradientLayer layer];
+            ame277_sheen.frame = ame277_sheenHost.bounds;
+            ame277_sheen.name = @"ame277_sheen";
+            ame277_sheen.colors = @[(id)[UIColor colorWithWhite:1.0 alpha:0.10].CGColor,
+                                    (id)[UIColor colorWithWhite:1.0 alpha:0.0].CGColor];
+            ame277_sheen.locations = @[@0.0, @1.0];
+            ame277_sheen.startPoint = CGPointMake(0.5, 0.0);
+            ame277_sheen.endPoint = CGPointMake(0.5, 1.0);
+            [ame277_sheenHost.layer addSublayer:ame277_sheen];
+            [ame244_tint addSubview:ame277_sheenHost];
+        }
         [self.menuView insertSubview:ame244_tint aboveSubview:ame243_snap];
         ame244_tint.hidden = (ame243_snap.image == nil);
         ame237_blur.hidden = (ame243_snap.image != nil);
@@ -538,6 +569,10 @@ static UIColor *ame244_snapshotTint(void) {
 
 /// Task237：菜单行点击（与旧 tableView:didSelectRowAtIndexPath: 同一动作链）。
 - (void)ame237_gmRowTouched:(Ame237MenuRow *)sender {
+    // ★ Task277（连点锁存）：行点击只在逻辑态开时生效——首拍触发动作链
+    //   （dismissMenu 置态关）后，淡出动画期的残留点击不再二连发（双弹窗
+    //   /双动作根源；与 Ame237 面板 ame237_dismissing 同族锁存语义）。
+    if (!self.ame277_menuOpenState) return;
     [self didSelectMenuItem:(int)sender.tag];
 }
 
@@ -564,12 +599,35 @@ static UIColor *ame244_snapshotTint(void) {
     }
 }
 
+/// ★ Task277：菜单逻辑态读写（关联对象；分类无 ivar）。
+- (BOOL)ame277_menuOpenState {
+    return [objc_getAssociatedObject(self, kAme277MenuOpenKey) boolValue];
+}
+
+- (void)ame277_setMenuOpenState:(BOOL)open {
+    objc_setAssociatedObject(self, kAme277MenuOpenKey, @(open), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (NSInteger)ame277_bumpMenuGeneration {
+    NSInteger ame277_gen = [objc_getAssociatedObject(self, kAme277MenuGenKey) integerValue] + 1;
+    objc_setAssociatedObject(self, kAme277MenuGenKey, @(ame277_gen), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    return ame277_gen;
+}
+
+- (NSInteger)ame277_currentMenuGeneration {
+    return [objc_getAssociatedObject(self, kAme277MenuGenKey) integerValue];
+}
+
 /// 切换菜单显示状态（悬浮按钮点击触发）
+/// ★ Task277：决策源从 menuView.hidden（延迟到关闭动画 completion 才归位
+///   = 关闭窗口内连点永远 dismiss 再 dismiss，开不出来）改为同步翻转的
+///   逻辑态——连点语义变为确定性的"最后一拍定状态"：关动画中点一下立
+///   即重新展开，开动画中点一下立即收起。
 - (void)toggleMenu {
-    if (self.menuView.hidden) {
-        [self showMenu];
-    } else {
+    if (self.ame277_menuOpenState) {
         [self dismissMenu];
+    } else {
+        [self showMenu];
     }
 }
 
@@ -648,7 +706,8 @@ static UIColor *ame244_snapshotTint(void) {
         return;
     }
     if (ame247_fresh != nil) {
-        ame247_snap.image = ame247_fresh;
+        // ★ Task277：8Hz 重抓成品同步材质化（与首帧同配方，零观感跳变）。
+        ame247_snap.image = [AmeFloatingMenu ame277_materializeSnapshot:ame247_fresh];
         // ★ Task248（⑨）：每 tick 同步对位几何（面板挪位/旋转后不脱钩）
         [self ame248_alignMenuFrost];
         if (ame247_snap.hidden) {
@@ -678,6 +737,10 @@ static UIColor *ame244_snapshotTint(void) {
 /// ★ Task227（反馈 #8）：齿轮吸边成把手时，菜单改从吸边侧滑出（侧边栏
 /// 形态）；悬浮球形态保持原底部弹层。
 - (void)showMenu {
+    // ★ Task277：逻辑态置开 + 世代令牌推进（作废在飞的关闭 completion）——
+    //   连点场景下旧关闭动画的 completion 不得把刚重新打开的面板藏掉。
+    [self ame277_setMenuOpenState:YES];
+    __block NSInteger ame277_gen = [self ame277_bumpMenuGeneration];
     BOOL ame227_sideDrawer = NO;
     BOOL ame227_fromLeft = NO;
     if ([self.gameMenuOverlay isKindOfClass:[GameMenuOverlayView class]]) {
@@ -712,7 +775,9 @@ static UIColor *ame244_snapshotTint(void) {
             ame243_img = nil;
         }
         if (ame243_img != nil) {
-            ame243_snap.image = ame243_img;
+            // ★ Task277：磨砂成品统一走材质链（高斯+饱和度，与 AmeFloatingMenu
+            //   弹窗同配方；旧纯降采样的"糊"升级为 Apple 材质观感）。
+            ame243_snap.image = [AmeFloatingMenu ame277_materializeSnapshot:ame243_img];
             [self ame248_alignMenuFrost];   // ★ Task248（⑨）：首帧即对位
             ame243_snap.hidden = NO;
             // ★ Task244：快照成品磨砂到位——系统材质层退场、tint 上岗
@@ -854,6 +919,10 @@ static UIColor *ame244_snapshotTint(void) {
 
 /// FCL 风格：菜单下滑消失（游戏画面不缩小）
 - (void)dismissMenu {
+    // ★ Task277：逻辑态置关 + 世代令牌推进——completion 仅在世代仍现任时
+    //   才落 hidden=YES（否则 = 关闭期间被重新打开，面板交回 showMenu 管）。
+    [self ame277_setMenuOpenState:NO];
+    __block NSInteger ame277_gen = [self ame277_bumpMenuGeneration];
     CGFloat screenWidth = [ScreenUtils screenSize].width;
     CGFloat screenHeight = [ScreenUtils screenSize].height;
 
@@ -902,6 +971,11 @@ static UIColor *ame244_snapshotTint(void) {
         // 背景遮罩淡出
         self.menuDimView.alpha = 0.0;
     } completion:^(BOOL finished) {
+        if ([self ame277_currentMenuGeneration] != ame277_gen) {
+            NSLog(@"[GameMenu] Task277: dismiss completion stale (gen %ld != %ld) -- panel re-shown, skip hide",
+                  (long)ame277_gen, (long)[self ame277_currentMenuGeneration]);
+            return;   // 关闭动画期被重新打开：面板归 showMenu 管，不得藏
+        }
         self.menuView.hidden = YES;
         self.menuDimView.hidden = YES;
         self.menuView.alpha = 1.0;   // ★ Task250：复位透明度（下次 showMenu 零残留）

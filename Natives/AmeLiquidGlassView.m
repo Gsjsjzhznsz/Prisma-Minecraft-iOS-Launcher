@@ -628,6 +628,8 @@ NSArray *AME252GlassFiltersInternal(void) {
 @property (nonatomic, strong, nullable) NSObject *ame252_mesh;
 @property (nonatomic, assign) CGSize ame252_meshSize;
 @property (nonatomic, assign) CGFloat ame252_meshRadius;
+/// ★ Task277：顶部光泽线宿主（iOS 玻璃顶缘受光特征，见 init 注释）。
+@property (nonatomic, strong) UIView *ame277_sheenHost;
 @end
 
 @implementation AmeLiquidGlassView
@@ -705,6 +707,27 @@ NSArray *AME252GlassFiltersInternal(void) {
     [self ame263_applyFillTransparency];
     [self addSubview:_ame252_fillView];
 
+    // ★ Task277（"优化伪液态玻璃的玻璃感"·TG 玻璃顶部光泽线）：iOS 玻璃
+    //   材质的顶缘受光特征——白色线性渐变自顶缘快速衰减（面板高 28% 内
+    //   衰减到零，深色 0.08/浅色 0.12 起点）。浮于填充之上、rim 描边之下
+    //   （rim 是 addSublayer 恒在最后 = 恒在其上），非交互零维护。
+    {
+        _ame277_sheenHost = [[UIView alloc] initWithFrame:CGRectMake(0.0, 0.0, self.bounds.size.width, self.bounds.size.height * 0.28)];
+        _ame277_sheenHost.userInteractionEnabled = NO;
+        _ame277_sheenHost.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        CAGradientLayer *ame277_sheen = [CAGradientLayer layer];
+        ame277_sheen.frame = _ame277_sheenHost.bounds;
+        ame277_sheen.name = @"ame277_sheen";
+        ame277_sheen.colors = @[(id)[UIColor colorWithWhite:1.0 alpha:0.12].CGColor,
+                                (id)[UIColor colorWithWhite:1.0 alpha:0.0].CGColor];
+        ame277_sheen.locations = @[@0.0, @1.0];
+        ame277_sheen.startPoint = CGPointMake(0.5, 0.0);
+        ame277_sheen.endPoint = CGPointMake(0.5, 1.0);
+        [_ame277_sheenHost.layer addSublayer:ame277_sheen];
+        [self addSubview:_ame277_sheenHost];
+        [self ame277_applySheenIntensity];
+    }
+
     _ame252_rimLayer = [CAShapeLayer layer];
     _ame252_rimLayer.fillColor = nil;
     _ame252_rimLayer.lineWidth = 0.8;   // TG generateLegacyGlassImage lineWidth
@@ -761,6 +784,24 @@ NSArray *AME252GlassFiltersInternal(void) {
 - (void)setAme252_dark:(BOOL)dark {
     _ame252_dark = dark;
     [self ame252_rebuildRimPath];
+    [self ame277_applySheenIntensity];   // ★ Task277：光泽起点随深浅色档
+}
+
+/// ★ Task277：光泽线浓度随深浅色（深色 0.08 / 浅色 0.12）——与 rim 描边
+///   同源的浓度档哲学。找子层重建浓度（CAGradientLayer colors 首帧定值）。
+- (void)ame277_applySheenIntensity {
+    if (_ame277_sheenHost == nil) return;
+    CAGradientLayer *ame277_sheen = nil;
+    for (CALayer *ame277_sub in _ame277_sheenHost.layer.sublayers) {
+        if ([ame277_sub.name isEqualToString:@"ame277_sheen"]) {
+            ame277_sheen = (CAGradientLayer *)ame277_sub;
+            break;
+        }
+    }
+    if (ame277_sheen == nil) return;
+    CGFloat ame277_a = _ame252_dark ? 0.08 : 0.12;
+    ame277_sheen.colors = @[(id)[UIColor colorWithWhite:1.0 alpha:ame277_a].CGColor,
+                            (id)[UIColor colorWithWhite:1.0 alpha:0.0].CGColor];
 }
 
 - (void)ame252_rebuildRimPath {
@@ -816,6 +857,12 @@ NSArray *AME252GlassFiltersInternal(void) {
     self.ame252_backdropLayer.frame = self.bounds;
     if (self.ame252_backdropSnapshot == nil) {
         self.ame252_snapshotLayer.frame = self.bounds;
+    }
+    // ★ Task277：光泽线随面板几何（宽随 bounds，高恒 28% 比例）。
+    _ame277_sheenHost.frame = CGRectMake(0.0, 0.0, self.bounds.size.width,
+                                         self.bounds.size.height * 0.28);
+    for (CALayer *ame277_sub in _ame277_sheenHost.layer.sublayers) {
+        ame277_sub.frame = _ame277_sheenHost.bounds;
     }
     _ame252_rimLayer.frame = self.bounds;
     [self ame252_rebuildRimPath];

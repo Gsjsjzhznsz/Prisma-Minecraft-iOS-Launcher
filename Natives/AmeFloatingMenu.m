@@ -28,6 +28,7 @@
 #import "LauncherPreferences.h" // ★ Task250：accentColor()（菜单行符号 tint 跟随主题强调色）
 #import "AmeLiquidGlassView.h"  // ★ Task252：TG LegacyGlassView 配方接管面板玻璃
 #import "SurfaceViewController.h" // ★ Task252：+surface 判定游戏域（快照供料 vs 实况采样）
+#import <CoreImage/CoreImage.h>   // ★ Task277：快照磨砂材质化（高斯+饱和度，Apple 材质观感）
 
 #pragma mark - 前向声明与工具
 
@@ -157,10 +158,67 @@ static UIImage *Ame246PresenterViewSnapshot(UIView *hostView) {
     }
 }
 
+static UIImage *Ame245SoftenSnapshot(UIImage *ame245_img);
+
+/// ★ Task277（"优化伪液态玻璃的玻璃感"·磨砂材质化）：0.18x 抓帧成品再过
+///   【材质滤镜链】——CIGaussianBlur（r≈6 @0.18x ≈ 33pt 有效半径，标准磨砂
+///   观感）+ CIColorControls（saturation 1.5、brightness +0.02，Apple 材质
+///   的"提鲜"特征：玻璃不只是糊，还把背景色彩饱和度抬起来）。旧纯两次降
+///   采样的"糊"没有饱和度与光感 = 用户口中的"伪"。
+///   CIContext 复用（单例，创建成本高）；CoreImage 链任何异常/失败回退旧
+///   两次降采样路径，绝不阻断观感。IMG_0380 的"透视见底"另一半修复位不动。
+static CIContext *Ame277SharedCIContext(void) {
+    static CIContext *ame277_ctx = nil;
+    static dispatch_once_t ame277_once;
+    dispatch_once(&ame277_once, ^{
+        ame277_ctx = [CIContext contextWithOptions:@{kCIContextUseSoftwareRenderer: @NO}];
+    });
+    return ame277_ctx;
+}
+
+static UIImage *Ame277MaterializeSnapshot(UIImage *ame277_img) {
+    if (ame277_img == nil) return nil;
+    @try {
+        CIImage *ame277_ci = [CIImage imageWithCGImage:ame277_img.CGImage];
+        if (ame277_ci == nil) return Ame245SoftenSnapshot(ame277_img);
+        CIFilter *ame277_blur = [CIFilter filterWithName:@"CIGaussianBlur"];
+        [ame277_blur setValue:ame277_ci forKey:kCIInputImageKey];
+        [ame277_blur setValue:@6.0 forKey:kCIInputRadiusKey];
+        CIImage *ame277_blurred = ame277_blur.outputImage;
+        if (ame277_blurred != nil) {
+            CIFilter *ame277_color = [CIFilter filterWithName:@"CIColorControls"];
+            [ame277_color setValue:ame277_blurred forKey:kCIInputImageKey];
+            [ame277_color setValue:@1.5 forKey:@"inputSaturation"];
+            [ame277_color setValue:@0.02 forKey:@"inputBrightness"];
+            [ame277_color setValue:@1.0 forKey:@"inputContrast"];
+            ame277_blurred = ame277_color.outputImage;
+        }
+        if (ame277_blurred != nil) {
+            // 高斯核边缘外扩：裁回原幅面（否则四周发白/整体位移）。
+            ame277_blurred = [ame277_blurred imageByCroppingToRect:ame277_ci.extent];
+            CGImageRef ame277_cg = [Ame277SharedCIContext()
+                createCGImage:ame277_blurred fromRect:ame277_blurred.extent];
+            if (ame277_cg != NULL) {
+                UIImage *ame277_out = [UIImage imageWithCGImage:ame277_cg
+                                                          scale:ame277_img.scale
+                                                    orientation:UIImageOrientationUp];
+                CGImageRelease(ame277_cg);
+                if (ame277_out != nil) return ame277_out;
+            }
+        }
+    } @catch (NSException *ame277_e) {
+        NSLog(@"[AmeMenu] Task277: materialize filter chain failed (%@) -- legacy soften fallback", ame277_e.name);
+    }
+    return Ame245SoftenSnapshot(ame277_img);
+}
+
 /// ★ Task245：二次柔化——0.18x 抓帧成品再半分辨率重渲染一次（位图像素
 ///   再减半），窗口对位 1:1 上采样后背景轮廓不可辨认 = 标准磨砂观感；
 ///   IMG_0380 的“透视见底”一半来自 AspectFill 裁剪几何错位，另一半就
 ///   是柔化不足。失败（理论不可达）退回原快照，不阻断观感。
+///   ★ Task277：本函数退役为 Task277 材质链的【异常回退层】——磨砂成品
+///   统一经 Ame277MaterializeSnapshot（高斯+饱和度材质观感），此处仅保留
+///   纯降采样实现供回退与无 CI 环境兜底。
 static UIImage *Ame245SoftenSnapshot(UIImage *ame245_img) {
     if (ame245_img == nil) return nil;
     @try {
@@ -432,9 +490,14 @@ static UIColor *Ame244SnapshotTint(void) {
     //   启动器域 = 实况模式（CABackdropLayer 直采，零重抓开销）；游戏域 =
     //   快照供料（首帧沿用既有快照，8Hz 内升级 0.5x）。选项零改动：
     //   本分支只换面板渲染材质，呈现路由/命中/动画/动作链全不动。
+    // ★ Task277：会话闸入列（Task260 双闸语义对齐）——<26 会话（老绘制链）
+    //   上 TG backdrop 引擎 = Task260 病历崩溃面；镜像面板此前只查玻璃族
+    //   档不查会话 = 游戏菜单面板有闸、镜像面板没闸的双标。闸内回退
+    //   244/245 快照磨砂（前-252 世代配方，全版本安全）。
     GameSurfaceView *ame252_surface = [SurfaceViewController surface];
     BOOL ame252_overGame = (ame252_surface != nil && ame252_surface.window != nil);
     BOOL ame252_glassActive = LGCIsGlassStyleActive() &&
+                              LGCGameSessionGlassAllowed() &&
                               [AmeLiquidGlassView ame252_isSupported];
     if (ame252_glassActive) {
         BOOL ame252_dark = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark);
@@ -477,11 +540,20 @@ static UIColor *Ame244SnapshotTint(void) {
         ame245_clip.layer.cornerCurve = kCACornerCurveContinuous;
         ame245_clip.layer.masksToBounds = YES;
         ame245_clip.userInteractionEnabled = NO;
+        // ★ Task277（玻璃感三件之三·发丝描边）：玻璃边缘的光学定义——
+        //   面板轮廓从"贴图感"变"玻璃片感"。0.75pt，深色白 0.16 / 浅色白
+        //   0.45（TG rim 同源浓度档；瞬时面板按构建时 trait 取值即可）。
+        {
+            BOOL ame277_dark = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark);
+            ame245_clip.layer.borderWidth = 0.75;
+            ame245_clip.layer.borderColor =
+                [UIColor colorWithWhite:1.0 alpha:(ame277_dark ? 0.16 : 0.45)].CGColor;
+        }
 
         UIImageView *ame245_snap = [[UIImageView alloc] initWithFrame:
             CGRectMake(-self.panel.frame.origin.x, -self.panel.frame.origin.y,
                        self.view.bounds.size.width, self.view.bounds.size.height)];
-        ame245_snap.image = Ame245SoftenSnapshot(ame244_snapImg);
+        ame245_snap.image = Ame277MaterializeSnapshot(ame244_snapImg);
         ame245_snap.contentMode = UIViewContentModeScaleToFill;
         ame245_snap.userInteractionEnabled = NO;
         [ame245_clip addSubview:ame245_snap];
@@ -493,6 +565,31 @@ static UIColor *Ame244SnapshotTint(void) {
         ame244_tint.userInteractionEnabled = NO;
         ame244_tint.tag = 244;   // ★ Task276：通知重铺定位锚（viewWithTag）
         [ame245_clip addSubview:ame244_tint];
+
+        // ★ Task277（玻璃感三件之二·顶部光泽线）：iOS 玻璃材质的顶缘受光
+        //   特征——白色线性渐变自顶部快速衰减，深色 0.10/浅色 0.16 起点，
+        //   32% 高度衰减到零。浮于 tint 之上、内容之下；梯度色随深浅色
+        //   动态提供（dynamic provider CGColor 首帧解析，深浅切换由
+        //   ame244 tint 同款重铺面覆盖；光泽层无状态，零维护成本）。
+        UIView *ame277_sheenHost = [[UIView alloc] initWithFrame:
+            CGRectMake(0.0, 0.0, self.panel.bounds.size.width,
+                       self.panel.bounds.size.height * 0.32)];
+        ame277_sheenHost.userInteractionEnabled = NO;
+        ame277_sheenHost.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        CAGradientLayer *ame277_sheen = [CAGradientLayer layer];
+        ame277_sheen.frame = ame277_sheenHost.bounds;
+        ame277_sheen.colors = @[(id)[UIColor colorWithDynamicProvider:
+                                     ^UIColor * (UITraitCollection *tc) {
+            return [UIColor colorWithWhite:1.0
+                                     alpha:(tc.userInterfaceStyle == UIUserInterfaceStyleDark) ? 0.10 : 0.16];
+        }].CGColor,
+            (id)[UIColor colorWithWhite:1.0 alpha:0.0].CGColor];
+        ame277_sheen.locations = @[@0.0, @1.0];
+        ame277_sheen.startPoint = CGPointMake(0.5, 0.0);
+        ame277_sheen.endPoint = CGPointMake(0.5, 1.0);
+        ame277_sheen.name = @"ame277_sheen";
+        [ame277_sheenHost.layer addSublayer:ame277_sheen];
+        [ame245_clip addSubview:ame277_sheenHost];
 
         self.ame245_frostClip = ame245_clip;
         self.ame245_frostSnap = ame245_snap;
@@ -774,7 +871,7 @@ static UIColor *Ame244SnapshotTint(void) {
     // 全黑帧护栏（Metal 游戏面 drawViewHierarchy 不渲染内容）：保留上一张
     // 有效图，绝不降级为黑磨砂（Task244 家族护栏同源）。
     if (!Ame244SnapshotLooksValid(ame246_fresh)) return;
-    self.ame245_frostSnap.image = Ame245SoftenSnapshot(ame246_fresh);
+    self.ame245_frostSnap.image = Ame277MaterializeSnapshot(ame246_fresh);
 }
 
 #pragma mark - 布局（纯 frame：无 Auto Layout 约束竞态）
@@ -1010,6 +1107,12 @@ static UIColor *Ame244SnapshotTint(void) {
 
 @implementation AmeFloatingMenu
 
+/// ★ Task277：材质链跨文件导出（游戏内菜单 +Navigation 共用同一配方；
+///   Ame277MaterializeSnapshot 为本文件静态函数，见文件头部）。
++ (UIImage *)ame277_materializeSnapshot:(UIImage *)snapshot {
+    return Ame277MaterializeSnapshot(snapshot);
+}
+
 + (NSString *)iconNameForTitle:(NSString *)title {
     if (![title isKindOfClass:[NSString class]] || title.length == 0) return nil;
     // 归一化：剥 ✓ 与空白，小写
@@ -1115,6 +1218,15 @@ static UIColor *Ame244SnapshotTint(void) {
                         onDismiss:(nullable void (^)(void))onDismiss {
     if (![alert isKindOfClass:[UIAlertController class]]) return NO;
     if (presenter == nil) return NO;
+    // ★ Task277（"连点卡出伪玻璃"·busy 守卫）：呈现方顶端已有控制器在屏/
+    //    在收（连点双触发/重入窗口收尾期）时不再镜像——镜像叠镜像 = 面板
+    //    卡死/双面板；回 NO 走中央路由原生直通（UIKit 既有语义自行裁决）。
+    //    Task271 的 AmeNativeMenu（统一菜单呈现器）busy 重试护栏同族，此处是镜像侧对位。
+    if (presenter.presentedViewController != nil) {
+        NSLog(@"[AmeMenu] Task277: presenter busy (presented=%@) -- mirror skipped, native passthrough",
+              NSStringFromClass(presenter.presentedViewController.class));
+        return NO;
+    }
 
     // 镜像动作（UIAlertAction 无公有读取口，走 KVC；任何异常整体回退原生）
     NSMutableArray<Ame237MenuActionMirror *> *mirrors = [NSMutableArray array];
@@ -1276,8 +1388,19 @@ static UIColor *Ame244SnapshotTint(void) {
             //   ① Metal 游戏面（含其中的输入类弹窗——inGame 已全覆盖）
             //   伪玻璃档（pseudo_glass）维持全接管不动（该档定义如此）。
             UIAlertController *ame263_alert = (UIAlertController *)viewControllerToPresent;
-            BOOL ame263_shouldReplace = LGCIsPseudoGlassStyleActive() ||
-                                        [AmeFloatingMenu ame263_presenterInsideGameSurface:self];
+            // ★ Task277（"液态玻璃档卡出伪玻璃"会话闸收口）：ame263_presenter-
+            //    InsideGameSurface 的 in-game 接管此前不受 Task260 会话闸约束
+            //    ——<26 会话（老绘制链）里菜单面板已按闸回退原生，弹窗却被本
+            //    hook 照旧替换成磨砂/玻璃镜像 = 同屏两种体系混搭（用户观感 =
+            //    "从液态玻璃卡出伪液态玻璃"），且镜像的 TG 分支在老绘制链上
+            //    就是 Task260 病历的崩溃面。统一：会话闸不放行 = 一律原生。
+            BOOL ame277_sessionGate = LGCGameSessionGlassAllowed();
+            BOOL ame277_domainHit = LGCIsPseudoGlassStyleActive() ||
+                                    [AmeFloatingMenu ame263_presenterInsideGameSurface:self];
+            if (ame277_domainHit && !ame277_sessionGate) {
+                NSLog(@"[AmeMenu] Task277: in-game alert replacement blocked by session gate (MC major <26) -- native passthrough");
+            }
+            BOOL ame263_shouldReplace = ame277_sessionGate && ame277_domainHit;
             if (ame263_shouldReplace &&
                 [AmeFloatingMenu presentGlassMenuForAlert:ame263_alert
                                             fromPresenter:self

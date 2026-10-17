@@ -106,6 +106,12 @@ NS_ASSUME_NONNULL_BEGIN
 /// 图标名 → 按 19pt/medium 渲染的符号图（带回退链）。
 + (nullable UIImage *)symbolImageForName:(NSString *)name;
 
+/// ★ Task277（伪玻璃玻璃感·磨砂材质化）：0.18x 抓帧成品 → 材质滤镜链
+///   （CIGaussianBlur + CIColorControls 提鲜）——Apple 材质观感的单一
+///   事实源，AmeFloatingMenu 与游戏内菜单（+Navigation）共用；CoreImage
+///   链失败回退纯降采样路径，绝不返回 nil（入参非 nil 时）。
++ (nullable UIImage *)ame277_materializeSnapshot:(nullable UIImage *)snapshot;
+
 @end
 
 /// 中央路由钩子（安装点：UIKit+hook.m 的 init_hookUIKitConstructor，
