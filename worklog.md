@@ -3610,3 +3610,22 @@ Work Log:
 Stage Summary:
 - run#881 编译雷根修（Task279 三项修复随本构建首次可装机）+kw 锁 30 双候选收口（fps-cap posture 无条件 verdict 行+LIBGL_BATCH=30 可选批量杠杆）+液态玻璃延迟随 Task279 落地——待 CI 绿→装机验证
 - 装机锚点：①任意会话启动日志 [PojavLauncher] Task280 fps-cap posture: ... verdict=（锁 30 报告直接看此行：MC-INTERNAL-CAP-ACTIVE=游戏内设置预期；unlimited-no-MC-cap=转渲染器侧，配合 [RenderDiag] phase=）②kw 锁 30 机器验证杠杆：prefs plist 写 debug.ame280_kw_batch=1 重启会话，日志 [JavaLauncher] Task280: LIBGL_BATCH=30 ... batching engaged，观察 fps 抬升；确认有效后下一轮转默认 ③真玻璃档开选择器立即弹出（Task279 软窗直出）④小窗拖拽缩放触点对齐（Task279 scale-mode 武装）
+
+---
+Task ID: 281
+Agent: main (Super Z)
+Task: bf11dd1 装机日志三项定案（用户"先分析这几轮修了什么为什么完全没有影响"——小窗仍漂移/液态玻璃有延迟/LGC 不支持处掉旧式原生而非伪玻璃）
+
+Work Log:
+- 日志取证：用户设备构建 bf11dd1 == 本地 HEAD（Task 280）——历轮修复确实已进构建，"没影响"是修复本身未命中，非交付断链
+- 液态玻璃延迟定案：日志 22:15:57-22:16:03 语言选择器连点 10 次全部走 Task278 延迟路由（0.55s×2+看门狗直出）——自续延循环实锤：Task274-g 5s 自过期粘滞把"不确定会话"当硬窗，且重试耗尽后的看门狗直出会重开真实系统菜单会话刷新 sessionStart → 5s 窗连环再武装；Task279 硬软分治只收窄延迟数学未断循环
+- 修法：Task278 代次/Task279 硬软分治/ame278_retries 变体整体退役（AmeNativeMenu.m）——沉降窗（ame273_systemMenuReentryLikely 语义复用）内改立即玻璃面板接管（零等待，观感即用户本轮定案的"系统玻璃不可用处用伪玻璃"兜底），窗外立即 Task245 直出；两路径零定时器延迟，Task273 看门狗仅留极端竞态兜底
+- "等待 jit 变成原生而非伪玻璃"定案：JIT 等待/重挂/超时重试族 6 处直呈点（RightPanel 3+NavCtrl 3）从未接入中央路由，玻璃档下裸奔旧式原生——玻璃档缺伪玻璃兜底层
+- 修法：AmeNativeMenu ame281_presentSystemAlert:fromHost: 风格分轨助手（.h/.m）——玻璃档（真液态玻璃+伪玻璃）→ presentGlassMenuForAlert 磨砂面板镜像接管（Task275 dismiss 镜像保证后续 dismissViewControllerAnimated 收尾），镜像拒收/原生档回退原生直呈；Task223 无动画契约保留在助手内；NavCtrl 补 AmeNativeMenu.h 导入
+- 小窗漂移垫片侧 hazard 定案：Task189/191 旋转垫片数学以"窗口=整场景"为前提（window.frame=sb/bounds 换整屏/center=屏心），窗口模式 scene bounds 可为竖向（系统接管方向，Task188 geometry 拒绝即该机制）→ 垫片给小窗 ±90° 旋转+bounds 换整屏 = 内容旋出窗口矩形；前五轮全修输入映射/信念侧（Task276 双乘/277 四站/278 回写闸/279 scale-mode），视觉侧窗口 transform 从未被动过 = "完全没有影响"的病因学解释
+- 修法：SceneDelegate ame189_applyLandscapeWindowTransform 头部加窗口模式禁入守卫（window frame≠scene bounds 或 origin≠0 → 垫片整体退役；进窗残留 transform 就地 bbox 复位）；本日志会话 scene 恒横屏垫片未触发，故此修复对"横屏小窗漂移"可能非全解——Task277 七元组触摸取证已常备，下轮日志定音
+- 门禁：task139 all balanced；task191 四表 3088 OK；task248 缺键0/硬编码0；task250 全零；verify219 81/81 ALL GREEN；verify255 无 fail——零新增文案
+
+Stage Summary:
+- 提交 fc5f169a 推送 main（bf11dd11..fc5f169a）；CI 出包后装机验证
+- 装机锚点：①真玻璃档开选择器立即弹出——沉降窗内出现磨砂玻璃面板、窗外出现系统原生液态玻璃，两类均零延迟（日志 [AmeNativeMenu] Task281: settling window -- instant glass-panel takeover）②等待 JIT 弹窗在玻璃档下呈磨砂玻璃面板（日志 Task281: system alert mirrored to glass panel）③小窗若仍漂移：抓一份包含【进入游戏后小窗内触摸】段落的完整 latestlog（Task277 七元组行 loc/out/adaptive/belief/win/phys 必在），即可在映射/信念/视觉三域一锤定音；竖持/FaceUp 用小窗的场景垫片已禁入（日志 Task281: windowed scene -- rotation shim disengaged）
