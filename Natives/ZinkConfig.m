@@ -425,6 +425,21 @@ static AppleGPUGeneration _cachedGPUGeneration = AppleGPUGenerationUnknown;
 }
 
 + (void)applyZinkEnvironmentFromPreferences {
+    [self applyZinkEnvironmentFromPreferencesWithMCMajor:0];
+}
+
+/// ★ Task283（GitHub 议题 #15 "Renderer bug (added log)" 启动器侧根修）：
+///   MC 版本感知的 GL 版本下限。议题装机日志（c7b5878，iPhone XS Max/
+///   A12）实锤：Zink 会话报告 "4.1 (Compatibility Profile) Mesa 25.0.7"
+///   ——本类历史把 MESA_GL_VERSION_OVERRIDE 硬钉 4.1（为 1.17-1.21.x
+///   管线定案），而 MC 26.x 新光照引擎（GpuSurfaceBackend 世代）需要
+///   GL 4.4+/SSBO：4.1 封顶 = 能进世界但光照数据上传路径缺失 = 用户
+///   "光照异常、整个画面一片漆黑"。本方法在用户未显式钉 zink.gl_override
+///   且 MC major >= 26 时自动把下限抬到 4.5（Mesa zink 在 MoltenVK
+///   argument-buffer tier2 设备上实际支持 SSBO，报低是保守默认）；显式
+///   钉过版本（3.3/4.0/4.1 或新承认的 4.3/4.5/4.6）永远优先，行为不
+///   变。1.x 谱系（major=1/0 未知）保持 4.1 原状零回归。
++ (void)applyZinkEnvironmentFromPreferencesWithMCMajor:(NSInteger)mcMajor {
     id rawLevel = getPrefObject(@"zink.optimization_level");
     ZinkOptimizationLevel level = ZinkOptimizationLevelAuto;
     if (rawLevel) {
@@ -458,7 +473,26 @@ static AppleGPUGeneration _cachedGPUGeneration = AppleGPUGenerationUnknown;
         } else if ([verStr isEqualToString:@"4.1"]) {
             setenv("MESA_GL_VERSION_OVERRIDE", "4.1", 1);
             setenv("MESA_GLSL_VERSION_OVERRIDE", "410", 1);
+        } else if ([verStr isEqualToString:@"4.3"]) {
+            // ★ Task283：新承认档位——SSBO 起点（MC 26.x 光照引擎最低需求 4.4 之下的过渡档）
+            setenv("MESA_GL_VERSION_OVERRIDE", "4.3", 1);
+            setenv("MESA_GLSL_VERSION_OVERRIDE", "430", 1);
+        } else if ([verStr isEqualToString:@"4.5"]) {
+            // ★ Task283：MC 26.x 推荐档（SSBO/4.4+ 光照引擎全量可用）
+            setenv("MESA_GL_VERSION_OVERRIDE", "4.5", 1);
+            setenv("MESA_GLSL_VERSION_OVERRIDE", "450", 1);
+        } else if ([verStr isEqualToString:@"4.6"]) {
+            // ★ Task283：上限试探档（zink/MoltenVK 实际能力封顶由 Mesa 自行裁定）
+            setenv("MESA_GL_VERSION_OVERRIDE", "4.6", 1);
+            setenv("MESA_GLSL_VERSION_OVERRIDE", "460", 1);
         }
+    } else if (mcMajor >= 26) {
+        // ★ Task283：MC 26.x 自动抬下限（用户未显式钉版本时）——默认 4.1
+        //   在 26.x 上即议题 #15 的全黑本体；1.x/未知版本不进本支零回归。
+        setenv("MESA_GL_VERSION_OVERRIDE", "4.5", 1);
+        setenv("MESA_GLSL_VERSION_OVERRIDE", "450", 1);
+        NSLog(@"[ZinkConfig] Task283: MC major %ld detected -- GL floor raised 4.1 -> 4.5 (26.x light engine needs GL4.4+/SSBO; pin zink.gl_override to revert)",
+              (long)mcMajor);
     }
 
     id enableGLThread = getPrefObject(@"zink.enable_gl_thread");

@@ -2307,7 +2307,19 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         // shader 等），仅禁用 MoltenVK 支持不佳的 Transform Feedback，不影响 Iris/OptiFine。
         // Task 215：libOSMesaVirgl.dylib（virgl guest）同样命中 libOSMesa 前缀——排除。
         if ([renderer hasPrefix:@"libOSMesa"] && ![renderer isEqualToString:@ RENDERER_NAME_VIRGL]) {
-            [ZinkConfig applyZinkEnvironmentFromPreferences];
+            // ★ Task283（GitHub 议题 #15）：MC 版本感知 GL 下限——26.x 光照
+            //   引擎需要 GL 4.4+/SSBO，旧默认 4.1 封顶 = 能进世界但光照异常
+            //   全黑（A12/Zink+MoltenVK 装机日志实锤 "4.1 (Compatibility
+            //   Profile)"）。MC major 由 launchTarget 版本 id 提取（ame98
+            //   同源提取器），传给 ZinkConfig 做 4.5 自动抬升（显式钉
+            //   zink.gl_override 永远优先）。1.x 谱系行为零变化。
+            NSString *ame283_verId = nil;
+            if ([launchTarget isKindOfClass:NSDictionary.class]) {
+                ame283_verId = [launchTarget[@"id"] description];
+            } else if ([launchTarget isKindOfClass:NSString.class]) {
+                ame283_verId = (NSString *)launchTarget;
+            }
+            [ZinkConfig applyZinkEnvironmentFromPreferencesWithMCMajor:ame98_mcMajorFromVersionId(ame283_verId)];
             NSString *configSummary = [ZinkConfig activeConfigSummary];
             NSLog(@"[ZinkConfig] ========== Zink Renderer Active (Mesa 25) ==========");
             NSLog(@"[ZinkConfig] %@", configSummary);

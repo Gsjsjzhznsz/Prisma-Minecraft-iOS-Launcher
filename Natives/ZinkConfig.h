@@ -55,6 +55,7 @@ typedef NS_ENUM(NSInteger, AppleGPUGeneration) {
 
 + (void)applyZinkEnvironmentForOptimizationLevel:(ZinkOptimizationLevel)level;
 + (void)applyZinkEnvironmentFromPreferences;
++ (void)applyZinkEnvironmentFromPreferencesWithMCMajor:(NSInteger)mcMajor;
 + (void)applyZinkAPIFeatureOverride:(ZinkAPIFeatures)enabledFeatures;
 
 + (NSString *)deviceRecommendationString;

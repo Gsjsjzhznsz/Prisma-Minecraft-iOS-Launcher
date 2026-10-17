@@ -563,6 +563,9 @@ BOOL g_ame267_freeformScaled = NO;   // YES = 非全屏窗口缩放态（信念�
 //   同族警戒：文件作用域聚合初值禁用
 //   CGPoint/Size/Rect Zero/Null/Infinite 与 NSZeroPoint/NSZeroSize/NSZeroRect。
 CGSize g_ame267_lastRescaledSize = {0.0, 0.0};   // 等价 CGSizeZero，常量合法
+/// ★ Task283：最近一次观察到的横向物理持向（±90° 选向记忆，Task191 同源
+///   口径；0 = UIDeviceOrientationUnknown 未观测，默认 +90°）。
+static NSInteger ame283_lastLandscapeDev = 0;
 
 @implementation SurfaceViewController
 
@@ -1758,40 +1761,99 @@ CGSize g_ame267_lastRescaledSize = {0.0, 0.0};   // 等价 CGSizeZero，常量�
     return ame267_match;
 }
 
-/// ★ Task267：scale-mode 视图栈重排——把游戏视图栈按当前 view.bounds
-///   重新铺满（语义对齐旋转路径 viewWillTransitionToSize，含 +30pt
-///   rootView 约定与 ctrlView/inputTextField/SDL 嵌入视图全套随动），
-///   而信念链冻结不动 → CA 把整帧 drawable 等比缩放进小窗，无裁切、
-///   无露壁纸；adaptiveScale 因子供输入换算（sendTouchPoint/热栏）。
-///   回全屏时由 ame261 恢复链解冻并重算归一（因子自动复位 1.0）。
+/// ★ Task267：scale-mode 视图栈重排（当前 bounds 便捷入口；Task283 起为
+///   ame267_rescaleViewStackToSize: 的包装，转场期显式目标尺寸见后者）。
 - (void)ame267_rescaleViewStackToCurrentBounds {
-    CGFloat ame267_w = self.view.bounds.size.width;
-    CGFloat ame267_h = self.view.bounds.size.height;
+    [self ame267_rescaleViewStackToSize:self.view.bounds.size];
+}
+
+/// ★ Task267/283：scale-mode 视图栈重排——把游戏视图栈按目标尺寸重新
+///   铺满（语义对齐旋转路径 viewWillTransitionToSize，含 +30pt rootView
+///   约定与 ctrlView/inputTextField/SDL 嵌入视图全套随动），而信念链冻
+///   结不动 → CA 把整帧 drawable 等比缩放进小窗，无裁切、无露壁纸；
+///   adaptiveScale 因子供输入换算（sendTouchPoint/热栏）。回全屏时由
+///   ame261 恢复链解冻并重算归一（因子自动复位 1.0）。
+///   ★ Task283（用户"在iPad下小窗的方向感应有问题"根修）：自由窗口的
+///   界面方向由系统接管（Task281 垫片禁入），设备旋转后窗口视图形状随
+///   界面方向转置，而 scale-mode 冻结的游戏信念恒为启动口径——视图形
+///   状 ⊥ 信念形状时，横屏整帧被 CA 硬拉伸进竖形视图（或反之）= 方向
+///   感应错误本体（旋转跟手缺失）。修法（Task189 哲学下放到游戏栈，作
+///   用于 rootView 而非窗口）：⊥ 时把游戏视图栈整体 ±90° 旋转（bounds
+///   换逻辑口径 + center 对齐视图中心，15pt 溢出沿逻辑 +x），UIKit 命
+///   中测试自动走逆变换 → locationInView:rootView/touchView 全链拿到的
+///   仍是逻辑坐标，ame267_adaptedPoint/热栏/cursor 三条换算路径零改动；
+///   adaptiveScale 按逻辑口径取值。±90 选向 = Task191 同源口径（设备物
+///   理持向 LandscapeRight→+90/LandscapeLeft→-90；持向非横向的瞬间用
+///   最近一次横向记忆，全程未知默认 +90）。同形（横窗+横信念/竖窗+竖
+///   信念）恒等变换，行为与 Task282 版逐字节一致。
+- (void)ame267_rescaleViewStackToSize:(CGSize)ame283_target {
+    CGFloat ame267_w = ame283_target.width;
+    CGFloat ame267_h = ame283_target.height;
     if (ame267_w < 1.0 || ame267_h < 1.0) return;
-    // ★ Task279：幂等快路径——同尺寸且已在缩放态时零工作早退（iPadOS 27
-    //   拖拽每 tick 都会走到这里，不设快路径会逐帧重复写 frame + 刷日志）。
-    //   锚点在解冻/武装路径置零，保证状态翻转后必真重排一次。
+
+    // ★ Task283：⊥ 判定与 ±90 选向（详见方法头注）
+    BOOL ame283_viewPortrait = (ame267_h > ame267_w * 1.02);
+    BOOL ame283_viewLandscape = (ame267_w > ame267_h * 1.02);
+    BOOL ame283_beliefLandscape = (windowWidth > windowHeight);
+    BOOL ame283_beliefPortrait = (windowHeight > windowWidth);
+    BOOL ame283_perp = g_ame267_freeformScaled &&
+                       ((ame283_viewPortrait && ame283_beliefLandscape) ||
+                        (ame283_viewLandscape && ame283_beliefPortrait));
+    CGFloat ame283_angle = 0.0;
+    CGFloat ame267_lw = ame267_w, ame267_lh = ame267_h;   // 逻辑口径（⊥ 时转置）
+    if (ame283_perp) {
+        UIDeviceOrientation ame283_dev = [UIDevice currentDevice].orientation;
+        if (ame283_dev == UIDeviceOrientationLandscapeRight) {
+            ame283_angle = (CGFloat)M_PI_2;
+            ame283_lastLandscapeDev = (NSInteger)ame283_dev;
+        } else if (ame283_dev == UIDeviceOrientationLandscapeLeft) {
+            ame283_angle = (CGFloat)(-M_PI_2);
+            ame283_lastLandscapeDev = (NSInteger)ame283_dev;
+        } else if (ame283_lastLandscapeDev == (NSInteger)UIDeviceOrientationLandscapeLeft) {
+            ame283_angle = (CGFloat)(-M_PI_2);
+        } else {
+            ame283_angle = (CGFloat)M_PI_2;
+        }
+        ame267_lw = ame267_h;
+        ame267_lh = ame267_w;
+    }
+    CGAffineTransform ame283_want = (ame283_angle == 0.0)
+        ? CGAffineTransformIdentity
+        : CGAffineTransformMakeRotation(ame283_angle);
+
+    // ★ Task279：幂等快路径——同尺寸且已在缩放态且变换态一致时零工作早退
+    //   （iPadOS 27 拖拽每 tick 都会走到这里，不设快路径会逐帧重复写
+    //   frame + 刷日志）。锚点在解冻/武装路径置零，保证状态翻转后必真
+    //   重排一次；Task283 追加变换态对账（⊥ 出现/消失必真重排）。
     if (g_ame267_freeformScaled &&
-        CGSizeEqualToSize(CGSizeMake(ame267_w, ame267_h), g_ame267_lastRescaledSize)) {
+        CGSizeEqualToSize(CGSizeMake(ame267_w, ame267_h), g_ame267_lastRescaledSize) &&
+        CGAffineTransformEqualToTransform(self.rootView.transform, ame283_want)) {
         return;
     }
     g_ame267_lastRescaledSize = CGSizeMake(ame267_w, ame267_h);
 
     // rootView 保留旋转路径的 +30pt 输入坐标系约定（Task59：菜单溢出区）
-    // ★ Task282（用户："切小窗导致游戏窗口往左下角偏移，游戏界面被遮住"
-    //   装机日志 GLGeo Task51 hierarchy #2000 实锤定案）：本方法历史只写
-    //   rootView.bounds 不重设 frame——全屏时代 self.view 尺寸恒定（landscape
-    //   锁定），center 一次算对终身有效；iPadOS 27 自由窗口模式尺寸逐
-    //   tick 变更，bounds 变更而 center 滞留全屏值 (605,410)，frame.origin
-    //   = center - bounds.size/2 漂移至 (314.5,167)，rootView 连同 touchView/
-    //   ctrlView/surfaceView 整栈位移出窗口矩形（游戏界面偏移+被裁）。
-    //   改写 frame（origin 钉回 (0,0)）而非 bounds，幂等且旋转路径同款。
-    self.rootView.frame = CGRectMake(0, 0, ame267_w + 30.0, ame267_h);
-    CGRect ame267_frame = self.view.frame;
-    ame267_frame.size = CGSizeMake(ame267_w, ame267_h);
+    // ★ Task282（"切小窗游戏窗口往左下角偏移"根修）：写 frame（origin 钉
+    //   回 (0,0)）而非 bounds——自由窗口 center 滞留漂移防线。
+    // ★ Task283：⊥ 旋转变换下 frame 语义反转（origin 受 transform 牵引），
+    //   改写 bounds + center：视图中心对齐 + 15pt 溢出沿逻辑 +x（与未旋
+    //   转态 frame(0,0,w+30,h) 的几何中心完全等价）。
+    if (ame283_angle == 0.0) {
+        if (!CGAffineTransformIsIdentity(self.rootView.transform)) {
+            self.rootView.transform = CGAffineTransformIdentity;   // ⊥ 消失先复位
+        }
+        self.rootView.frame = CGRectMake(0, 0, ame267_lw + 30.0, ame267_lh);
+    } else {
+        self.rootView.transform = ame283_want;
+        self.rootView.bounds = CGRectMake(0, 0, ame267_lw + 30.0, ame267_lh);
+        self.rootView.center = CGPointMake(ame267_w / 2.0 + 15.0 * cosf(ame283_angle),
+                                           ame267_h / 2.0 + 15.0 * sinf(ame283_angle));
+    }
+    // touchView/ctrlView 均为 rootView 子视图：一律逻辑口径（ rootView 空间）
+    CGRect ame267_frame = CGRectMake(0, 0, ame267_lw, ame267_lh);
     self.touchView.frame = ame267_frame;
-    self.inputTextField.frame = CGRectMake(0, -32.0, ame267_w, 30.0);
-    self.ctrlView.frame = getSafeArea(self.view.frame);
+    self.inputTextField.frame = CGRectMake(0, -32.0, ame267_lw, 30.0);
+    self.ctrlView.frame = getSafeArea(ame267_frame);
     [self.ctrlView.subviews makeObjectsPerformSelector:@selector(update)];
     // surfaceView 铺满 touchView：drawableSize 保持整帧 → CA 等比缩放
     if (self.surfaceView.superview != nil) {
@@ -1802,16 +1864,18 @@ CGSize g_ame267_lastRescaledSize = {0.0, 0.0};   // 等价 CGSizeZero，常量�
     if (ame267_sv && ame267_sv.superview) {
         ame267_sv.frame = ame267_sv.superview.bounds;
     }
-    // 输入换算因子（视图 pt -> 整帧物理 px）
-    if (physicalWidth > 0 && ame267_w > 0.5) {
-        ame267_adaptiveScaleX = (float)physicalWidth / (float)ame267_w;
+    // 输入换算因子（逻辑视图 pt -> 整帧物理 px；⊥ 时按转置口径取值，
+    // 逻辑宽高与冻结信念同形 → 全屏横屏口径下与 Task282 版数值一致）
+    if (physicalWidth > 0 && ame267_lw > 0.5) {
+        ame267_adaptiveScaleX = (float)physicalWidth / (float)ame267_lw;
     }
-    if (physicalHeight > 0 && ame267_h > 0.5) {
-        ame267_adaptiveScaleY = (float)physicalHeight / (float)ame267_h;
+    if (physicalHeight > 0 && ame267_lh > 0.5) {
+        ame267_adaptiveScaleY = (float)physicalHeight / (float)ame267_lh;
     }
     virtualMouseFrame = self.mousePointerView.frame;   // 旋转路径同款收尾
-    NSLog(@"[SurfaceVC] Task267: scale-mode stack resync (view %.0fx%.0f, adaptive %.2fx%.2f, phys %dx%d, window stays %dx%d)",
-          ame267_w, ame267_h, ame267_adaptiveScaleX, ame267_adaptiveScaleY,
+    NSLog(@"[SurfaceVC] Task267/283: scale-mode stack resync (view %.0fx%.0f rot=%+.0fdeg logical %.0fx%.0f, adaptive %.2fx%.2f, phys %dx%d, window stays %dx%d)",
+          ame267_w, ame267_h, (double)(ame283_angle * 180.0 / M_PI), ame267_lw, ame267_lh,
+          ame267_adaptiveScaleX, ame267_adaptiveScaleY,
           (int)physicalWidth, (int)physicalHeight, (int)windowWidth, (int)windowHeight);
 }
 
@@ -3073,19 +3137,28 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
 {
     [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
-        // ★ Task282：同 ame267_rescaleViewStackToCurrentBounds——写 frame
-        //   而非 bounds（origin 钉回 (0,0)），自由窗口模式 center 滞留
-        //   防御（窗口模式转场同样会走到本路径）。
-        self.rootView.frame = CGRectMake(0, 0, size.width + 30.0, size.height);
+        // ★ Task283（"iPad 小窗方向感应"根修第二翼）：scale-mode（小窗）
+        //   态转场——统一走 Task267/283 重排（含 ⊥ 旋转跟手），不再手写
+        //   frame（手写口径无旋转语义，会把 Task283 旋转态打回未旋转 =
+        //   每次系统转场方向感应归零）。显式传 size：转场 animate 块内
+        //   self.view.bounds 尚未落位，rescale 按目标尺寸铺排，落位后
+        //   ame261 防抖重算按同值幂等收口。
+        //   全屏态原 Task282 手写路径原样保留（origin 钉回 (0,0) 防线不
+        //   变；全屏无 ⊥ 场景，Task283 旋转不参与）。
+        if (g_ame267_freeformScaled) {
+            [self ame267_rescaleViewStackToSize:size];
+        } else {
+            self.rootView.frame = CGRectMake(0, 0, size.width + 30.0, size.height);
 
-        CGRect frame = self.view.frame;
-        frame.size = size;
-        self.touchView.frame = frame;
-        self.inputTextField.frame = CGRectMake(0, -32.0, size.width, 30.0);
-        [self viewWillTransitionToSize_LogView:frame];
-        [self viewWillTransitionToSize_Navigation:frame];
-        self.ctrlView.frame = getSafeArea(self.view.frame);
-        [self.ctrlView.subviews makeObjectsPerformSelector:@selector(update)];
+            CGRect frame = self.view.frame;
+            frame.size = size;
+            self.touchView.frame = frame;
+            self.inputTextField.frame = CGRectMake(0, -32.0, size.width, 30.0);
+            [self viewWillTransitionToSize_LogView:frame];
+            [self viewWillTransitionToSize_Navigation:frame];
+            self.ctrlView.frame = getSafeArea(self.view.frame);
+            [self.ctrlView.subviews makeObjectsPerformSelector:@selector(update)];
+        }
         // ★ Task251（反馈 1 四修：后台过窗值污染全局根修）：
         //   Task250 门控只拦"SDL 事件推送"，但【全局 windowWidth/Height、
         //   ame_windowToPhysRatio、Task166 私有交换层尺寸】三者仍被后台
