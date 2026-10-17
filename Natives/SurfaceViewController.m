@@ -1778,7 +1778,15 @@ CGSize g_ame267_lastRescaledSize = {0.0, 0.0};   // 等价 CGSizeZero，常量�
     g_ame267_lastRescaledSize = CGSizeMake(ame267_w, ame267_h);
 
     // rootView 保留旋转路径的 +30pt 输入坐标系约定（Task59：菜单溢出区）
-    self.rootView.bounds = CGRectMake(0, 0, ame267_w + 30.0, ame267_h);
+    // ★ Task282（用户："切小窗导致游戏窗口往左下角偏移，游戏界面被遮住"
+    //   装机日志 GLGeo Task51 hierarchy #2000 实锤定案）：本方法历史只写
+    //   rootView.bounds 不重设 frame——全屏时代 self.view 尺寸恒定（landscape
+    //   锁定），center 一次算对终身有效；iPadOS 27 自由窗口模式尺寸逐
+    //   tick 变更，bounds 变更而 center 滞留全屏值 (605,410)，frame.origin
+    //   = center - bounds.size/2 漂移至 (314.5,167)，rootView 连同 touchView/
+    //   ctrlView/surfaceView 整栈位移出窗口矩形（游戏界面偏移+被裁）。
+    //   改写 frame（origin 钉回 (0,0)）而非 bounds，幂等且旋转路径同款。
+    self.rootView.frame = CGRectMake(0, 0, ame267_w + 30.0, ame267_h);
     CGRect ame267_frame = self.view.frame;
     ame267_frame.size = CGSizeMake(ame267_w, ame267_h);
     self.touchView.frame = ame267_frame;
@@ -3065,7 +3073,10 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
 {
     [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
-        self.rootView.bounds = CGRectMake(0, 0, size.width + 30.0, size.height);
+        // ★ Task282：同 ame267_rescaleViewStackToCurrentBounds——写 frame
+        //   而非 bounds（origin 钉回 (0,0)），自由窗口模式 center 滞留
+        //   防御（窗口模式转场同样会走到本路径）。
+        self.rootView.frame = CGRectMake(0, 0, size.width + 30.0, size.height);
 
         CGRect frame = self.view.frame;
         frame.size = size;

@@ -221,8 +221,13 @@ static UIColor *ame244_snapshotTint(void) {
     //   保证）。玻璃风格 = 24pt 圆角磨砂面板 + 发丝描边 + SF Symbol 图标行；
     //   原生风格 = 旧版深色 FCL 面板纯文本行。底部弹层/侧滑把手两形态、
     //   全部 11 项动作与遮罩关闭行为全部保留。
-    CGFloat screenWidth = [ScreenUtils screenSize].width;
-    CGFloat screenHeight = [ScreenUtils screenSize].height;
+    // ★ Task282：菜单几何源从 [ScreenUtils screenSize]（UIScreen 全屏口径
+    //   ——自由窗口模式界面方向被系统接管后返回竖屏 820x1180，与窗口实
+    //   况 551x486 完全脱钩，装机日志 panel={{420,0},{400,1180}} 实锤）
+    //   改为 self.view.bounds（menuView 的宿主坐标系本源）：全屏时与旧值
+    //   完全一致（window==screen），窗口模式菜单按窗口实况铺排不再溢出。
+    CGFloat screenWidth = self.view.bounds.size.width;
+    CGFloat screenHeight = self.view.bounds.size.height;
     CGFloat menuWidth = MIN(screenWidth * 0.7, 400);
     CGFloat menuMaxHeight = screenHeight * 0.6;
     CGFloat menuEstimatedHeight = self.menuArray.count * 48 + 20;
@@ -827,8 +832,10 @@ static UIColor *ame244_snapshotTint(void) {
               (int)LGCIsGlassStyleActive());
     });
 
-    CGFloat screenWidth = [ScreenUtils screenSize].width;
-    CGFloat screenHeight = [ScreenUtils screenSize].height;
+    // ★ Task282：几何源同创建处改 self.view.bounds（窗口模式实况口径），
+    //   抽屉/悬浮两形态均不再引用全屏口径尺寸。
+    CGFloat screenWidth = self.view.bounds.size.width;
+    CGFloat screenHeight = self.view.bounds.size.height;
     self.menuView.transform = CGAffineTransformIdentity;
 
     if (ame227_sideDrawer) {
@@ -923,8 +930,9 @@ static UIColor *ame244_snapshotTint(void) {
     //   才落 hidden=YES（否则 = 关闭期间被重新打开，面板交回 showMenu 管）。
     [self ame277_setMenuOpenState:NO];
     __block NSInteger ame277_gen = [self ame277_bumpMenuGeneration];
-    CGFloat screenWidth = [ScreenUtils screenSize].width;
-    CGFloat screenHeight = [ScreenUtils screenSize].height;
+    // ★ Task282：同 showMenu——几何源改 self.view.bounds（窗口模式实况口径）
+    CGFloat screenWidth = self.view.bounds.size.width;
+    CGFloat screenHeight = self.view.bounds.size.height;
 
     // ★ Task250（反馈 10：恢复关闭动画）：摘掉 Task249 的“起步即摘快照”——
     //   快照瞬间消失 = 面板内容跳变（用户感知“动画没了”）。改为：磨砂快照

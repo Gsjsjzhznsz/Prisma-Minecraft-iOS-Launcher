@@ -67,6 +67,13 @@
 //      iOS 26.2 SDK 为编译错误（Task241 CI r1 :79 双雷实证），KVC
 //      反取属 Task239 炸弹家族禁忌。字典快照经呈现链 dictsForFallback:
 //      下传（37 处调用点全部走字典便捷入口）。
+//    - ★ Task282（用户："连点多下出现伪液态玻璃弹窗"第三轮定案）：真玻
+//      璃档启动器内路由的沉降窗改道撤收为【仅会话真实存活】——装机日志
+//      00:14:41-45 实锤连点重开全部落沉降窗 = 恒出磨砂面板（伪玻璃乱入
+//      本体）；连点重开窗内 presentMenu 的真实失败形态是可捕获异常
+//      （Task267 装机实锤），ame245_presentViaSystemMenu 新增 0.32s 单次
+//      原生快速重试消化之，连点全程真液态玻璃，磨砂面板仅剩会话内改道
+//      （Task273 病历本体）与真实静默丢弃兜底两处。
 //
 
 #import "AmeNativeMenu.h"
@@ -132,22 +139,23 @@ static int ame273_openGeneration = 0;                ///< 呈现代次（防陈�
 /// ★ Task281：Task278 重试代次退役——延迟重试链整体移除后不存在并发链
 ///   （见 ame242_presentStyleRoutedWithMenu 分轨注释）。
 
-/// Task273：是否处于"从菜单动作内再呈现"的重入窗口（此时系统原生
-/// 菜单路由会被 UIKit 静默丢弃，必须改道磨砂面板）。纯 C 函数（本文件
-/// 内部消费，无需 ObjC 派发）。
-static BOOL ame273_systemMenuReentryLikely(void) {
-    CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
-    if (ame273_systemMenuSessionActive) {
-        // ★ Task274-g（G3）：5s 自过期——didEndMenuForConfiguration 一次不达
-        //   （UIKit 偶发不回调）不再永久粘滞（粘滞 = 此后所有系统菜单恒
-        //   改道磨砂面板直至重启）。超窗后按"会话已收尾"处理；
-        //   真实重入场景（动作 handler 内再呈现）由 1.2s actionAt
-        //   窗与 0.6s lastSessionEndAt 窗继续覆盖。
-        if (ame273_sessionStartAt > 0 && (now - ame273_sessionStartAt) < 5.0) return YES;
-    }
-    if (ame273_lastMenuActionAt > 0 && (now - ame273_lastMenuActionAt) < 1.2) return YES;
-    if (ame273_lastSessionEndAt > 0 && (now - ame273_lastSessionEndAt) < 0.6) return YES;
-    return NO;
+/// ★ Task282（用户："连点多下出现伪液态玻璃弹窗"第三轮定案）：会话
+///   活性判定收窄——只有【系统 context menu 会话真实存活】（delegate
+///   已询问未收尾，5s 自过期门内）才认定"系统直出必被静默丢弃"（Task273
+///   病历本体 = 动作 handler 内再呈现，此刻 didEnd 未回调）。沉降窗两个
+///   子窗（动作后 1.2s / didEnd 后 0.6s）不再改道磨砂面板：连点重开窗
+///   内 presentMenu 的实际失败形态是【可捕获异常】（Task267 装机实锤
+///   = dismiss 动画未完成），不是静默丢弃——改走原生路由 + Task282
+///   0.32s 单次快速重试（见 ame245_presentViaSystemMenu），连点全程
+///   真液态玻璃，伪玻璃面板仅在真实静默丢弃时兜底。
+///   纯 C 函数（本文件内部消费，无需 ObjC 派发）。
+static BOOL ame273_systemMenuSessionLive(void) {
+    if (!ame273_systemMenuSessionActive) return NO;
+    // ★ Task274-g（G3）：5s 自过期——didEndMenuForConfiguration 一次不达
+    //   （UIKit 偶发不回调）不再永久粘滞（粘滞 = 此后所有系统菜单恒
+    //   改道磨砂面板直至重启）。超窗后按"会话已收尾"处理。
+    if (ame273_sessionStartAt <= 0) return NO;
+    return (CFAbsoluteTimeGetCurrent() - ame273_sessionStartAt) < 5.0;
 }
 
 /// Task273：静默丢弃看门狗（系统路由 1.1s 无 delegate 询问且无呈现迹象 → 兜底；Task274-g 宽限+再探）。
@@ -538,8 +546,30 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
         }
     });
     if (!ame240_openInteractionMenu(ame245_ix)) {
-        ame273_systemMenuOpenExpected = NO; // 双私有入口缺失：fallback 自行兜底，看门狗不再介入
-        ame240_actionSheetFallback(ame245_ix, menu, dicts, onDismiss);
+        // ★ Task282（"连点多下出现伪液态玻璃弹窗"根修）：openInteractionMenu
+        //   返回 NO 的主体形态是双入口【抛异常】（Task267 装机实锤：上一
+        //   次菜单 dismiss 动画未完成时 presentMenu 抛 UIKit 内部异常，可
+        //   捕获）——不等于双入口缺失。旧实现立即落 fallback（磨砂面板/
+        //   stock sheet）= 连点重开恒出伪玻璃乱入。改：单次 0.32s 原生
+        //   重试（dismiss 动画时长量级）后仍失败才落 fallback；重试期间
+        //   看门狗语义保留（presentRequestAt 刷新，不会提前误兜底）。代次
+        //   防陈旧重试与新请求互踩；双入口真缺失（理论路径）多付 0.32s
+        //   换连点真玻璃，可接受。
+        ame273_systemMenuOpenExpected = NO;
+        int ame282_gen = ame273_openGeneration;
+        NSLog(@"[AmeNativeMenu] Task282: presentMenu rejected (dismiss window?) -- single native retry in 0.32s");
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.32 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            if (ame282_gen != ame273_openGeneration) return; // 已被新请求取代
+            if (ame240_openInteractionMenu(ame245_ix)) {
+                ame273_systemMenuOpenExpected = YES; // 重试已上路，看门狗继续值守
+                ame273_presentRequestAt = CFAbsoluteTimeGetCurrent();
+                NSLog(@"[AmeNativeMenu] Task282: native retry accepted -- real liquid glass on rapid re-tap");
+                return;
+            }
+            NSLog(@"[AmeNativeMenu] Task282: native retry rejected -- fallback");
+            ame240_actionSheetFallback(ame245_ix, menu, dicts, onDismiss);
+        });
     }
 }
 
@@ -601,22 +631,19 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
                                         host:ame242_host
                                        dicts:dicts
                                    onDismiss:onDismiss];
-        } else if (ame273_systemMenuReentryLikely()) {
-            // ★ Task281（"液态玻璃打开有延迟"终局根修——bf11dd1 装机日志
-            //   22:15:57-22:16:03 定案）：旧 Task278/279 在沉降窗内预防性
-            //   延迟 0.55s×2+兜底 ≈ 1.1-1.65s 后才直出系统菜单；而 Task274-g
-            //   的 5s 自过期粘滞 + 重试耗尽后的看门狗直出会重开真实系统
-            //   菜单会话（sessionStart 刷新）→ 5s 窗连环再武装 = 自续延循
-            //   环。装机日志实锤：连续菜单操作（正常的设置浏览节奏，语言
-            //   选择器连点 10 次）每次都落窗，液态玻璃档开任何选择器恒延
-            //   迟，原生/伪玻璃档直出无感。终局方案：延迟重试链整体退役
-            //   （Task278 代次 / Task279 硬软分治一并移除）——沉降窗内系统
-            //   直出必被 UIKit 静默丢弃（Task273 病历），改【立即玻璃面板
-            //   接管】= 零等待，观感即用户本轮定案的"系统玻璃不可用处用
-            //   伪玻璃"兜底；窗外立即 Task245 系统原生液态玻璃直出。两条
-            //   路径均无任何 sleep/定时器延迟；Task273 看门狗仅作直出路径
-            //   极端静默丢弃的兜底（罕见竞态），不再参与常规开菜单时序。
-            NSLog(@"[AmeNativeMenu] Task281: settling window -- instant glass-panel takeover (defer ladder retired, pseudo=%d inGame=%d)",
+        } else if (ame273_systemMenuSessionLive()) {
+            // ★ Task281/282：仅【系统菜单会话真实存活】（delegate 已询问未
+            //   收尾，Task273 病历 = 动作 handler 内再呈现，此刻系统直出必
+            //   被静默丢弃）→ 立即玻璃面板接管（零等待，用户定案的"系统
+            //   玻璃不可用处用伪玻璃"兜底）。★ Task282：原 Task281 版的
+            //   沉降窗全口径（didEnd 后 0.6s / 动作后 1.2s 也改道）撤收——
+            //   装机日志 00:14:41-45 实锤连点重开全部落窗 = 用户主诉的
+            //   "连点多下出现伪液态玻璃弹窗"本体；连点重开的真实失败形态
+            //   是可捕获异常（Task267 实锤）而非静默丢弃，改走下支原生
+            //   直出 + ame245 内 Task282 0.32s 快速重试，连点全程真液态
+            //   玻璃。两路径均无 sleep/长定时器延迟；Task273 看门狗仅作
+            //   直出路径极端静默丢弃的兜底（罕见竞态）。
+            NSLog(@"[AmeNativeMenu] Task281/282: live menu session -- instant glass-panel takeover (rapid re-tap moved to native fast-retry, pseudo=%d inGame=%d)",
                   (int)LGCIsPseudoGlassStyleActive(),
                   (int)[self ame245_anchorInsideGameSurface:sourceView]);
             [self ame242_presentViaGlassMenu:ame242_alert
@@ -626,8 +653,10 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
         } else {
             // ★ Task245（IMG_0380 用户定案）：真液态玻璃档启动器内选择菜单 =
             //   系统原生液态玻璃直出；磨砂面板退役到输入类弹窗专属。
-            //   ★ Task281：不再经任何重入窗延迟（沉降窗已在上支即时玻璃
-            //   面板接管，历史病灶见上支注释）。
+            //   ★ Task282：沉降窗两子窗（didEnd 后 0.6s / 动作后 1.2s）并
+            //   入本支——dismiss 动画窗口内的 presentMenu 异常由
+            //   ame245_presentViaSystemMenu 的 0.32s 单次原生重试消化，
+            //   连点重开零伪玻璃乱入（Task281 用户定案保序）。
             [self ame245_presentViaSystemMenu:menu
                                    sourceView:sourceView
                                         dicts:dicts
