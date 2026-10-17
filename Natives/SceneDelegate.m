@@ -452,6 +452,34 @@ static void AmeFGLogSwapStats(NSString *phase) {
     CGRect sb = scene.coordinateSpace.bounds;
     if (sb.size.width <= 0 || sb.size.height <= 0) return;
 
+    // ★ Task281（"小窗还是漂移"垫片侧 hazard 根除）：本垫片的全部数学以
+    //   "窗口 = 整个场景"为前提（window.frame=sb / bounds 换成整屏口径 /
+    //   center=屏心）。iPadOS 26+ 自由窗口模式下窗口只是场景的一个子矩
+    //   形——而窗口模式的界面方向由系统接管（Task188 geometry 请求被拒
+    //   正是该机制），scene.coordinateSpace.bounds 完全可以是竖向（设备
+    //   竖持/FaceUp 时）：此时 portraitWindow 判定按【场景】口径成立，垫
+    //   片给小窗执行 ±90° 旋转 + bounds 换整屏 + center 挪屏心 = 内容被
+    //   旋出窗口矩形并按整屏口径排版 = 用户看到的"小窗漂移"（前五轮全
+    //   部修在输入映射/信念侧，视觉侧的窗口 transform 从未被动过 = "完
+    //   全没有影响"）。窗口模式下系统自管方向呈现，垫片整体禁入；若
+    //   全屏期已挂 transform 后进窗，就地复位（bbox = 系统给的窗口矩形）。
+    CGSize ame281_wsz = self.window.frame.size;
+    BOOL ame281_windowed =
+        (fabs(ame281_wsz.width - sb.size.width) > 0.5) ||
+        (fabs(ame281_wsz.height - sb.size.height) > 0.5) ||
+        (fabs(self.window.frame.origin.x) > 0.5) ||
+        (fabs(self.window.frame.origin.y) > 0.5);
+    if (ame281_windowed) {
+        if (!CGAffineTransformIsIdentity(self.window.transform)) {
+            CGRect ame281_bbox = self.window.frame;   // 变换下 bbox = 系统窗口矩形
+            self.window.transform = CGAffineTransformIdentity;
+            self.window.frame = ame281_bbox;          // bounds/center 一并复位
+            NSLog(@"[SceneDelegate] Task281: windowed scene -- rotation shim disengaged, stale transform reset (frame=%@)",
+                  NSStringFromCGRect(ame281_bbox));
+        }
+        return;
+    }
+
     UIDeviceOrientation dev = [UIDevice currentDevice].orientation;
 
     // 仅在"明显竖向"的窗口旋转（1.02 死区：近方形窗口旋转无收益反而扰动）

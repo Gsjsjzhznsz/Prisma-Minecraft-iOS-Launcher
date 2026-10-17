@@ -1910,7 +1910,10 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     // ★ Task223（“版本设置启动游戏，JIT 有概率卡死”根修层 1/2）：进度型弹窗
     //   无动画呈现——stikjit:// 切后台转场瞬间的 animated present 是主线程
     //   楔死头号嫌疑类（同 NavCtrl 病历注释）。
-    [self presentViewController:alert animated:NO completion:nil];
+    // ★ Task281：玻璃档（真液态玻璃 + 伪玻璃）改走磨砂玻璃面板镜像接管
+    //   （等待 JIT 不再裸奔旧式原生；Task275 dismiss 镜像保证后续
+    //   dismissViewControllerAnimated 仍能收掉面板），镜像拒收回退原生。
+    [AmeNativeMenu ame281_presentSystemAlert:alert fromHost:self];
     
     // Task172：后台任务断言。stikjit:// 必然把 App 切到后台（切去 StikJIT），
     // 无断言时 iOS 立即挂起本进程——760c07c 装机日志实锤等待循环被冻结
@@ -2043,7 +2046,7 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         retry.popoverPresentationController.sourceView = self.view;
         retry.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(self.view.bounds), CGRectGetMidY(self.view.bounds), 0, 0);
     }
-    [self presentViewController:retry animated:YES completion:nil];
+    [AmeNativeMenu ame281_presentSystemAlert:retry fromHost:self];   // ★ Task281：玻璃档镜像接管（原 animated:YES 直呈退役）
 }
 
 // Task172：JIT26 调试器重挂统一助手（stikjit:// + 有界等待 + 前台等待 +
@@ -2069,7 +2072,7 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         ame267_cancelled = YES;
         NSLog(@"[JIT] [RightPanel] Task267: user cancelled JIT wait (reattach)");
     }]];
-    [self presentViewController:alert animated:NO  /* Task223: JIT progress alert presented un-animated (background-transition present is the main-thread wedge suspect) */ completion:nil];
+    [AmeNativeMenu ame281_presentSystemAlert:alert fromHost:self];   // ★ Task281：玻璃档镜像接管（Task223 无动画契约在助手内保留）
     
     __block UIBackgroundTaskIdentifier ame172_bgt = [UIApplication.sharedApplication beginBackgroundTaskWithName:@"ame172-jit26-reattach" expirationHandler:^{
         // 同上：宽限期到由系统挂起，恢复后继续。

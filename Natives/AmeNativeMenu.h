@@ -91,6 +91,16 @@ NS_ASSUME_NONNULL_BEGIN
                           dictItems:(NSArray<NSDictionary *> *)items
                          sourceView:(UIView *)sourceView;
 
+/// ★ Task281：玻璃档系统弹窗呈现路由——未经中央路由的直呈 UIAlertController
+///   （JIT 等待/重挂/超时重试族）按界面风格分轨：玻璃档（真液态玻璃 + 伪
+///   玻璃）→ 磨砂玻璃面板镜像接管（Task275 dismiss 镜像保证后续
+///   dismissViewControllerAnimated 仍能收掉面板）；镜像拒收/原生档 →
+///   原生直呈（animated:NO 契约保留，Task223 后台转场安全）。
+///   修复"选择液态玻璃时，等待 JIT 等系统弹窗显示为旧式原生而非伪液态
+///   玻璃"——玻璃档自此具备伪玻璃兜底层。
++ (void)ame281_presentSystemAlert:(UIAlertController *)alert
+                         fromHost:(UIViewController *)host;
+
 /// 一站式便捷入口（带消失回调，语义同 ame240_presentMenu:onDismiss:）。
 + (void)ame240_presentMenuWithTitle:(nullable NSString *)title
                           dictItems:(NSArray<NSDictionary *> *)items

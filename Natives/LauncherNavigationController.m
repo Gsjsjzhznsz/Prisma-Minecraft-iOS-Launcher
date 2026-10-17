@@ -24,6 +24,7 @@
 #import "UIKit+hook.h"
 #import "ios_uikit_bridge.h"
 #import "utils.h"
+#import "AmeNativeMenu.h"       // ★ Task281：JIT 等待族弹窗玻璃档镜像接管
 #import "installer/modpack/ModrinthAPI.h"
 
 #include <sys/time.h>
@@ -795,7 +796,10 @@ static void *ProgressObserverContext = &ProgressObserverContext;
     //   presentViewController:animated:YES 正是主线程阻塞的头号嫌疑类；
     //   动画时钟冻结 + present 半途 = 主线程不再回 runloop）。进度型弹窗
     //   改无动画呈现/消失，后台态零风险，前台态视觉差异可忽略。
-    [self presentViewController:alert animated:NO completion:nil];
+    // ★ Task281：玻璃档（真液态玻璃 + 伪玻璃）改走磨砂玻璃面板镜像接管
+    //   （等待 JIT 不再裸奔旧式原生；Task275 dismiss 镜像保证后续收尾），
+    //   镜像拒收回退原生；无动画契约在助手内保留。
+    [AmeNativeMenu ame281_presentSystemAlert:alert fromHost:self];
 
     // Task172：后台任务断言（同 RightPanel，见其病历）：stikjit:// 切后台后
     // 防 iOS 立即挂起冻结等待循环。
@@ -883,7 +887,8 @@ static void *ProgressObserverContext = &ProgressObserverContext;
         NSLog(@"[JIT] [NavCtrl] Task267: user cancelled JIT wait (reattach)");
     }]];
     // Task223：同主等待路径——重挂弹窗也无动画（后台态 present 安全）。
-    [self presentViewController:alert animated:NO completion:nil];
+    // ★ Task281：玻璃档镜像接管（同主等待路径）。
+    [AmeNativeMenu ame281_presentSystemAlert:alert fromHost:self];
 
     __block UIBackgroundTaskIdentifier ame172_bgt = [UIApplication.sharedApplication beginBackgroundTaskWithName:@"ame172-jit26-reattach" expirationHandler:^{
         // 同上：宽限期到由系统挂起，恢复后继续。
@@ -971,7 +976,7 @@ static void *ProgressObserverContext = &ProgressObserverContext;
         retry.popoverPresentationController.sourceView = self.view;
         retry.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(self.view.bounds), CGRectGetMidY(self.view.bounds), 0, 0);
     }
-    [self presentViewController:retry animated:YES completion:nil];
+    [AmeNativeMenu ame281_presentSystemAlert:retry fromHost:self];   // ★ Task281：玻璃档镜像接管（原 animated:YES 直呈退役）
 }
 
 #pragma mark - UIPopoverPresentationControllerDelegate

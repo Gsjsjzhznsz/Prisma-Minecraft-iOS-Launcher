@@ -129,9 +129,8 @@ static CFAbsoluteTime ame273_lastSessionEndAt = 0;   ///< 上一会话收尾时�
 static CFAbsoluteTime ame273_presentRequestAt = 0;   ///< 最近一次系统路由请求时刻（Task274-g G4：兜底前再探基准）
 static BOOL ame273_systemMenuOpenExpected = NO;      ///< 已请求系统开菜单但 delegate 尚未确认
 static int ame273_openGeneration = 0;                ///< 呈现代次（防陈旧定时器误兜底）
-/// ★ Task278：重入窗口延迟重试代次（新请求使旧重试作废——连点时只保留
-///   最新一链，多链并发不再叠呈现）。
-static int ame278_presentGeneration = 0;
+/// ★ Task281：Task278 重试代次退役——延迟重试链整体移除后不存在并发链
+///   （见 ame242_presentStyleRoutedWithMenu 分轨注释）。
 
 /// Task273：是否处于"从菜单动作内再呈现"的重入窗口（此时系统原生
 /// 菜单路由会被 UIKit 静默丢弃，必须改道磨砂面板）。纯 C 函数（本文件
@@ -545,21 +544,12 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
 }
 
 /// Task242/245 分轨调度：host/alert 装配 → 按界面风格与锚点域选择呈现路径。
-/// ★ Task278：外壳入口（每次用户驱动的新请求 +1 代次，旧链重试自动作废）；
-///   实体在 ame278_retries 变体（重入窗口延迟重试携带代次与余量）。
+/// ★ Task281：Task278 外壳/代次与 ame278_retries 重试变体退役——延迟重试
+///   链移除后不再存在并发重试链，单一入口直达分轨（历史病灶见分轨注释）。
 + (void)ame242_presentStyleRoutedWithMenu:(UIMenu *)menu
                                sourceView:(UIView *)sourceView
                                     dicts:(NSArray<NSDictionary *> *)dicts
                                 onDismiss:(void (^)(void))onDismiss {
-    ame278_presentGeneration++;
-    [self ame242_presentStyleRoutedWithMenu:menu sourceView:sourceView dicts:dicts onDismiss:onDismiss retries:0];
-}
-
-+ (void)ame242_presentStyleRoutedWithMenu:(UIMenu *)menu
-                               sourceView:(UIView *)sourceView
-                                    dicts:(NSArray<NSDictionary *> *)dicts
-                                onDismiss:(void (^)(void))onDismiss
-                                  retries:(int)ame278_retries {
     UIViewController *ame242_host = [self ame242_hostViewControllerForView:sourceView];
     UIAlertController *ame242_alert = [self ame242_actionSheetFromDicts:dicts
                                                               menuTitle:menu.title];
@@ -612,83 +602,32 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
                                        dicts:dicts
                                    onDismiss:onDismiss];
         } else if (ame273_systemMenuReentryLikely()) {
-            // ★ Task278（用户 2026-10-17："连点选项卡…变成了旧 iOS 原生选项
-            //   卡"）：Task277 的重入窗口直通 stock actionSheet 前提装机失
-            //   效——iPadOS 27 上 stock actionSheet 渲染为经典旧式表（Task242
-            //   契约"原生档 = 旧版弹窗"的本形），并非 Task277 注释预期的
-            //   "原生液态玻璃同族观感"，重入窗口内的选择器全部掉进旧 UI。
-            //   改【延迟重试原生液态玻璃路由】：重入窗口（1.2s 动作窗 /
-            //   0.6s 收尾窗）是纯时间窗——重试等待期无菜单开合 = 窗口只
-            //   衰减不再武装，按各窗到期时刻取 max 再加 0.05s 定时器余量
-            //   调度，唤醒即自然出窗走 Task245 系统原生液态玻璃，观感与
-            //   单击完全一致；连点多请求由 ame278_presentGeneration 只保
-            //   最新一链。stock actionSheet 路由退役（仅原生档保留）。
-            //   兜底不丢：重试 2 次仍在窗内（5s 自过期粘滞等极端场景）→
-            //   直走 Task245 路由，Task273 看门狗（1.1s 无 delegate 询问）
-            //   继续兜住极端静默丢弃。
-            // ★ Task279（"液态玻璃打开有延迟"根修——窗口口径过宽）：装机
-            //   日志 2309b07 实锤：1.2s actionAt 窗被当硬窗——用户点选动作
-            //   后 0.5-1.2s 内再开任何选择器（上一系统菜单会话早已 didEnd
-            //   收尾、屏上无任何菜单在场）也整段延迟 0.55s×2+兜底 ≈
-            //   1.1-1.65s 才出菜单，而原生/伪玻璃档直出无感。修法：硬窗/
-            //   软窗分治——
-            //   硬窗 = 系统菜单会话真在场（sessionActive <5s 自过期）或
-            //          收尾沉降期（didEnd <0.6s，UIKit 收尾动画窗）→ 维持
-            //          延迟重试；延迟基准只看 sessionEnd（actionAt+1.25s
-            //          从 clears 数学中移除，它正是过宽延迟的来源）。
-            //   软窗 = 仅 actionAt 窗（会话已收尾、屏上无菜单的新用户
-            //          点击）→ 立即 Task245 直出，与原生/伪玻璃档同速。
-            //   极少数静默丢弃仍由 Task273 看门狗（1.1s 无 delegate 询问
-            //   自动转磨砂面板）兜底，不丢菜单。
-            CFAbsoluteTime ame278_now = CFAbsoluteTimeGetCurrent();
-            BOOL ame278_hardWindow =
-                (ame273_systemMenuSessionActive && ame273_sessionStartAt > 0.0 &&
-                 (ame278_now - ame273_sessionStartAt) < 5.0) ||
-                (ame273_lastSessionEndAt > 0.0 &&
-                 (ame278_now - ame273_lastSessionEndAt) < 0.6);
-            if (!ame278_hardWindow) {
-                NSLog(@"[AmeNativeMenu] Task279: soft reentry window only (session already ended, screen clear) -- direct system-menu route, zero delay");
-                [self ame245_presentViaSystemMenu:menu
-                                       sourceView:sourceView
-                                            dicts:dicts
-                                        onDismiss:onDismiss];
-            } else {
-            double ame278_clears = ame278_now + 0.55;
-            if (ame273_lastSessionEndAt > 0.0) {
-                double ame278_s = ame273_lastSessionEndAt + 0.65;
-                if (ame278_s > ame278_clears) ame278_clears = ame278_s;
-            }
-            double ame278_delay = ame278_clears - ame278_now;
-            if (ame278_delay < 0.55) ame278_delay = 0.55;
-            if (ame278_delay > 1.30) ame278_delay = 1.30;
-            int ame278_gen = ame278_presentGeneration;
-            if (ame278_retries < 2) {
-                NSLog(@"[AmeNativeMenu] Task278: reentry window in liquid-glass -- deferred native-menu retry in %.2fs (attempt %d, stock sheet retired, pseudo=%d inGame=%d)",
-                      ame278_delay, ame278_retries + 1,
-                      (int)LGCIsPseudoGlassStyleActive(),
-                      (int)[self ame245_anchorInsideGameSurface:sourceView]);
-                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(ame278_delay * NSEC_PER_SEC)),
-                               dispatch_get_main_queue(), ^{
-                    if (ame278_gen != ame278_presentGeneration) return;   // 新请求已接管
-                    [self ame242_presentStyleRoutedWithMenu:menu
-                                                 sourceView:sourceView
-                                                      dicts:dicts
-                                                  onDismiss:onDismiss
-                                                    retries:ame278_retries + 1];
-                });
-            } else {
-                NSLog(@"[AmeNativeMenu] Task278: reentry window persists after retries -- direct system-menu route (watchdog nets, pseudo=%d inGame=%d)",
-                      (int)LGCIsPseudoGlassStyleActive(),
-                      (int)[self ame245_anchorInsideGameSurface:sourceView]);
-                [self ame245_presentViaSystemMenu:menu
-                                       sourceView:sourceView
-                                            dicts:dicts
-                                        onDismiss:onDismiss];
-            }
-            }   // ★ Task279：硬窗延迟重试分支收口（软窗直出分支见上）
+            // ★ Task281（"液态玻璃打开有延迟"终局根修——bf11dd1 装机日志
+            //   22:15:57-22:16:03 定案）：旧 Task278/279 在沉降窗内预防性
+            //   延迟 0.55s×2+兜底 ≈ 1.1-1.65s 后才直出系统菜单；而 Task274-g
+            //   的 5s 自过期粘滞 + 重试耗尽后的看门狗直出会重开真实系统
+            //   菜单会话（sessionStart 刷新）→ 5s 窗连环再武装 = 自续延循
+            //   环。装机日志实锤：连续菜单操作（正常的设置浏览节奏，语言
+            //   选择器连点 10 次）每次都落窗，液态玻璃档开任何选择器恒延
+            //   迟，原生/伪玻璃档直出无感。终局方案：延迟重试链整体退役
+            //   （Task278 代次 / Task279 硬软分治一并移除）——沉降窗内系统
+            //   直出必被 UIKit 静默丢弃（Task273 病历），改【立即玻璃面板
+            //   接管】= 零等待，观感即用户本轮定案的"系统玻璃不可用处用
+            //   伪玻璃"兜底；窗外立即 Task245 系统原生液态玻璃直出。两条
+            //   路径均无任何 sleep/定时器延迟；Task273 看门狗仅作直出路径
+            //   极端静默丢弃的兜底（罕见竞态），不再参与常规开菜单时序。
+            NSLog(@"[AmeNativeMenu] Task281: settling window -- instant glass-panel takeover (defer ladder retired, pseudo=%d inGame=%d)",
+                  (int)LGCIsPseudoGlassStyleActive(),
+                  (int)[self ame245_anchorInsideGameSurface:sourceView]);
+            [self ame242_presentViaGlassMenu:ame242_alert
+                                        host:ame242_host
+                                       dicts:dicts
+                                   onDismiss:onDismiss];
         } else {
             // ★ Task245（IMG_0380 用户定案）：真液态玻璃档启动器内选择菜单 =
             //   系统原生液态玻璃直出；磨砂面板退役到输入类弹窗专属。
+            //   ★ Task281：不再经任何重入窗延迟（沉降窗已在上支即时玻璃
+            //   面板接管，历史病灶见上支注释）。
             [self ame245_presentViaSystemMenu:menu
                                    sourceView:sourceView
                                         dicts:dicts
@@ -701,6 +640,34 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
                                      dicts:dicts
                                  onDismiss:onDismiss];
     }
+}
+
+/// ★ Task281：玻璃档系统弹窗呈现路由——未经中央路由的直呈 UIAlertController
+///   （JIT 等待/重挂/超时重试族）在玻璃风格下此前恒为旧式原生外观（用户
+///   2026-10-17："等待 jit 变成了原生，而不是伪液态玻璃"——系统玻璃在不
+///   支持呈现的弹窗类/场景上不可用，而玻璃档此前没有伪玻璃兜底层，直接
+///   裸奔旧式原生）。本助手按界面风格分轨：玻璃档（真液态玻璃 + 伪玻璃）
+///   → 磨砂玻璃面板镜像接管（Task237 组件；Task275 dismiss 镜像保证后续
+///   代码对源 alert 的 dismissViewControllerAnimated 仍能收掉面板）；镜像
+///   拒收（原生档/host 忙/动作 KVC 镜像失败）→ 保持原生直呈零变化。
+///   animated:NO 契约保留（Task223：后台转场瞬间的动画 present 是主线程
+///   楔死头号嫌疑类——JIT 等待弹窗恰在该窗口内呈现）。
++ (void)ame281_presentSystemAlert:(UIAlertController *)alert
+                         fromHost:(UIViewController *)host {
+    if (alert == nil || host == nil) return;
+    if (LGCIsGlassStyleActive()) {
+        BOOL ok = [AmeFloatingMenu presentGlassMenuForAlert:alert
+                                              fromPresenter:host
+                                                   animated:NO
+                                                 completion:nil];
+        if (ok) {
+            NSLog(@"[AmeNativeMenu] Task281: system alert mirrored to glass panel (title=%@)",
+                  alert.title ?: @"");
+            return;
+        }
+        NSLog(@"[AmeNativeMenu] Task281: glass mirror declined -- native passthrough");
+    }
+    [host presentViewController:alert animated:NO completion:nil];
 }
 
 #pragma mark - Public
