@@ -1404,31 +1404,31 @@ static UIColor *Ame244SnapshotTint(void) {
                                completion:(nullable void (^)(void))completion {
     if ([viewControllerToPresent isKindOfClass:[UIAlertController class]] && LGCIsGlassStyleActive()) {
         @try {
-            // ★ Task263（反馈 4）接管域收窄 + ★ Task276（用户 2026-10-17：
-            //   "在选择为液态玻璃的情况下多次点击会卡出伪液态玻璃"）最终
-            //   收窄——装机日志 1015 23:35 实锤真玻璃档下启动器内确认弹窗
-            //   （确认删除/版本隔离）被整体替换成魔改磨砂面板（= 用户口中
-            //   的"伪液态玻璃"），Task263 首轮收窄保留的 textFields>0 全局
-            //   条件仍是残留缺口：启动器内带输入框的 alert（版本隔离命名/
-            //   添加服务器等）同样被替换。系统磨砂不合成实锤（Task228/230/
-            //   236）全部在 Metal 域——输入类弹窗的接管价值只在游戏内存在。
-            //   收窄后真玻璃档接管域仅剩：
-            //   ① Metal 游戏面（含其中的输入类弹窗——inGame 已全覆盖）
-            //   伪玻璃档（pseudo_glass）维持全接管不动（该档定义如此）。
+            // ★ Task263/276/277（接管域收窄史，现役口径见下方 Task289 条）：
+            //   三轮收窄曾把真玻璃档接管域压到仅剩 Metal 游戏面（启动器域
+            //   弹窗原生直通），动因是当时镜像材质与页面材质不同源（页面
+            //   SystemThinMaterial vs 镜像 TG 磨砂 = "混杂出伪玻璃"）。
+            //   ★ Task288 把全部全局容器页面统一成 TG 磨砂后，该前提失效；
+            //   ★ Task289 据用户指令（"大部分菜单还是原生"）把接管域推广
+            //   回两档玻璃风格全域，收窄史保留作决策链存档。
             UIAlertController *ame263_alert = (UIAlertController *)viewControllerToPresent;
-            // ★ Task277（"液态玻璃档卡出伪玻璃"会话闸收口）：ame263_presenter-
-            //    InsideGameSurface 的 in-game 接管此前不受 Task260 会话闸约束
-            //    ——<26 会话（老绘制链）里菜单面板已按闸回退原生，弹窗却被本
-            //    hook 照旧替换成磨砂/玻璃镜像 = 同屏两种体系混搭（用户观感 =
-            //    "从液态玻璃卡出伪液态玻璃"），且镜像的 TG 分支在老绘制链上
-            //    就是 Task260 病历的崩溃面。统一：会话闸不放行 = 一律原生。
-            BOOL ame277_sessionGate = LGCGameSessionGlassAllowed();
-            BOOL ame277_domainHit = LGCIsPseudoGlassStyleActive() ||
-                                    [AmeFloatingMenu ame263_presenterInsideGameSurface:self];
-            if (ame277_domainHit && !ame277_sessionGate) {
-                NSLog(@"[AmeMenu] Task277: in-game alert replacement blocked by session gate (MC major <26) -- native passthrough");
+            // ★ Task277（会话闸，语义不变）：游戏域 <26 会话（老绘制链）一律
+            //   原生——TG backdrop 引擎在老绘制链上是 Task260 病历崩溃面。
+            // ★ Task289（装机三报"大部分菜单还是原生"）：接管域推广回
+            //   【两档玻璃风格全域接管】。Task263/276/277 收窄的历史前提
+            //   （真玻璃档页面 = "真玻璃"、TG 镜像 = "混杂出伪玻璃"）已被
+            //   Task288 推翻——全部全局容器页面已统一 TG 伪液态玻璃磨砂，
+            //   镜像面板材质（AmeLiquidGlassView，ame252 同源）与页面完全
+            //   一致，"混杂"前提消失；真玻璃档下启动器域弹窗从"原生直通"
+            //   改回镜像接管（伪玻璃档本就全域接管，行为不变）。会话闸只
+            //   约束游戏域：启动器域无活跃会话（ame260==0 恒放行），不受
+            //   残留会话计数误伤。
+            BOOL ame289_inGame = [AmeFloatingMenu ame263_presenterInsideGameSurface:self];
+            BOOL ame289_sessionGate = (!ame289_inGame) || LGCGameSessionGlassAllowed();
+            if (ame289_inGame && !ame289_sessionGate) {
+                NSLog(@"[AmeMenu] Task289: in-game alert replacement blocked by session gate (MC major <26) -- native passthrough");
             }
-            BOOL ame263_shouldReplace = ame277_sessionGate && ame277_domainHit;
+            BOOL ame263_shouldReplace = ame289_sessionGate;
             if (ame263_shouldReplace &&
                 [AmeFloatingMenu presentGlassMenuForAlert:ame263_alert
                                             fromPresenter:self

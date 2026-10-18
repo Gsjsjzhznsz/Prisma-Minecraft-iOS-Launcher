@@ -80,6 +80,15 @@ NS_ASSUME_NONNULL_BEGIN
 /// 不采样 backdrop，无合成问题）。
 + (nullable NSArray *)ame252_glassFilters;
 
+/// ★ Task289：整页壁纸磨砂滤镜（BackgroundManager TG 层专用，按强度定制）。
+/// 与面板配方 ame252_glassFilters 两点本质区别：
+/// ① 无 colorMatrix——TG 面板饱和度矩阵服务小面积面板的"玻璃体感"，
+///    作用在全幅壁纸上 = 整页色彩漂移（装机实锤"壁纸看起来很奇怪"）；
+/// ② gaussianBlur 半径随磨砂强度线性缩放（强度 0 已由调用方整层跳过；
+///    本函数半径下限 1.5 防止"装了层却零模糊"的空转档）。
+/// 每次调用新建 CAFilter 实例（滑杆逐 tick 重铺各自持有，不共享缓存）。
++ (nullable NSArray *)ame252_frostFiltersWithIntensity:(CGFloat)intensity;
+
 @end
 
 NS_ASSUME_NONNULL_END

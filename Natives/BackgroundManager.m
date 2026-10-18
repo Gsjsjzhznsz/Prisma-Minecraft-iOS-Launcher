@@ -571,67 +571,68 @@ static UIColor *ame250_globalTextFillColor(void);
     UIView *existingDim = [container viewWithTag:kBackgroundDimTag];
     if (existingDim) [existingDim removeFromSuperview];
 
-    /* ★ Task256（清单 4：模糊程度调到最低 = 背景完全透明）：
-       Task255 的“磨砂层恒装”语义被用户指令推翻——强度最低档（≤1%）的
-       用户预期是【壁纸全锐利直出、无磨砂无压暗】（IMG_0400 装机实锤：
-       最低档时全屏白雾）。Task254 的 alpha<1 不渲染定律不变，所以中间
-       档位仍是“全磨砂 + dim 随强度递增”（二档语义，OS 限制如此）；
-       最低档从“恒装磨砂”改为“整层不装”。历史 blur=0 存档（非用户意图）
-       已由加载路径 Task255 自愈 + Task256 blurUserSet 标记双闸挡住，
-       不会再踩回 IMG_0399 全锐利平涂的旧病灶。 */
     /* ★ Task288（装机实锤："有一大堆都还在使用原生UI，而不是伪液态玻璃"）：
-       两处修正——
-       ① 玻璃风格档（prisma.interface_style=glass）下 blur≤0.01 不再整层
-         不装：伪液态玻璃风格本身就承诺"磨砂玻璃页面"观感，恒全透明背景
-         与风格选择自相矛盾（用户当前抱怨的直接来源——存档 blur=0 时全
-         部 BackgroundManager 页面裸奔成原生表格）。最低档=完全透明的语义
-         保留给非玻璃档（原生/伪玻璃关闭时行为零变化）。
-       ② 玻璃风格档 + TG 滤镜可用 + 图片壁纸时：磨砂材料整体升格为 TG
-         伪液态玻璃（MultiplayerViewController/TerracottaViewController
-         Task252 同模式——colorMatrix 玻璃矩阵 + gaussianBlur(2) 内容滤镜
-         直接作用于壁纸快照图层自身内容，不采样 backdrop，无 Metal 合成
-         问题），替代 SystemThinMaterial 原生毛玻璃。所有走全局背景容器
-         的页面（模组/数据包/资源包/光影/世界/下载/账户等）一处升级全部
-         生效。视频壁纸无静态帧可挂滤镜，维持系统磨砂（罕见路径零风险）。 */
-    BOOL ame288_glassStyle = LGCIsGlassStyleActive() && [AmeLiquidGlassView ame252_isSupported];
-    if (self.uiEffect == BackgroundUIEffectBlur && self.blurIntensity <= 0.01 && !ame288_glassStyle) {
-        NSLog(@"[BackgroundManager] Task256: blur intensity at minimum -- frost+dim layers skipped (fully transparent background)");
+       玻璃风格档 + TG 滤镜可用 + 图片壁纸时：磨砂材料整体升格为 TG
+       伪液态玻璃（MultiplayerViewController/TerracottaViewController
+       Task252 同模式——内容滤镜直接作用于壁纸快照图层自身内容，不采样
+       backdrop，无 Metal 合成问题），替代 SystemThinMaterial 原生毛玻璃。
+       所有走全局背景容器的页面（模组/数据包/资源包/光影/世界/下载/账户
+       等）一处升级全部生效。视频壁纸无静态帧可挂滤镜，维持系统磨砂
+       （罕见路径零风险）。
+       ★ Task289（装机三报"壁纸无法不模糊 / 壁纸看起来很奇怪"）再修两点——
+       ① Task288-r1 的"玻璃档 blur≤0.01 仍装磨砂"让步被用户本轮指令再次
+         推翻（"壁纸无法不模糊"实锤 = 用户要的就是锐利壁纸）：玻璃档一并
+         恢复 Task256 最低档语义，任何风格一律整层不装（TG 旧层同路径拆
+         退）。页面"玻璃感"由磨砂档位本身承担，与"锐利壁纸"两权分立；
+         历史 blur=0 非用户意图存档仍由加载路径 re-armable 自愈治回 0.75，
+         不受本条影响。
+       ② 整页磨砂滤镜改按强度定制（ame252_frostFiltersWithIntensity:）：
+         固定 gaussianBlur(4.0) 退役——磨砂半径跟随 blurIntensity 线性
+         缩放，滑杆全程连续可控；colorMatrix 玻璃矩阵从整页层退役——TG
+         面板饱和度配方作用在全幅壁纸上 = 整页色彩漂移，即"壁纸看起来
+         很奇怪"的直接来源。小面积面板配方 ame252_glassFilters 不动。 */
+    if (self.uiEffect == BackgroundUIEffectBlur && self.blurIntensity <= 0.01) {
+        NSLog(@"[BackgroundManager] Task289: blur intensity at minimum -- frost+dim layers skipped (fully transparent background, all styles)");
+        UIView *ame289_staleGlass = [container viewWithTag:kBackgroundGlassTag];
+        if (ame289_staleGlass) [ame289_staleGlass removeFromSuperview];
         return;
     }
 
-    // Task288：玻璃风格档——TG 伪液态玻璃磨砂层（壁纸快照 + TG 滤镜）。
-    // 壁纸缺失（解码失败/视频壁纸）时回落系统磨砂管线，不阻断。
+    // Task288/289：玻璃风格档——TG 伪液态玻璃磨砂层（壁纸快照 + 强度定制滤镜）。
+    // 壁纸缺失（解码失败/视频壁纸）或滤镜构造失败时回落系统磨砂管线，不阻断。
     UIImageView *ame288_wallpaper = (UIImageView *)[container viewWithTag:kBackgroundImageTag];
+    BOOL ame288_glassStyle = LGCIsGlassStyleActive() && [AmeLiquidGlassView ame252_isSupported];
     if (ame288_glassStyle && [ame288_wallpaper isKindOfClass:[UIImageView class]]
         && ame288_wallpaper.image != nil) {
-        UIView *existingGlass = [container viewWithTag:kBackgroundGlassTag];
-        if (existingGlass) [existingGlass removeFromSuperview];
-        UIView *existingBlur = [container viewWithTag:kBackgroundBlurTag];
-        if (existingBlur) [existingBlur removeFromSuperview];
+        NSArray *ame289_filters = [AmeLiquidGlassView ame252_frostFiltersWithIntensity:self.blurIntensity];
+        if (ame289_filters != nil) {
+            UIView *existingGlass = [container viewWithTag:kBackgroundGlassTag];
+            if (existingGlass) [existingGlass removeFromSuperview];
 
-        UIImageView *glassView = [[UIImageView alloc] initWithImage:ame288_wallpaper.image];
-        glassView.tag = kBackgroundGlassTag;
-        glassView.contentMode = UIViewContentModeScaleAspectFill;
-        glassView.clipsToBounds = YES;
-        glassView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        glassView.frame = container.bounds;
-        glassView.userInteractionEnabled = NO;   // Task161：装饰层不参与命中测试
-        glassView.alpha = 1.0;                   // Task254：恒 1.0（alpha<1 不渲染定律）
-        NSArray *ame288_filters = [AmeLiquidGlassView ame252_glassFilters];
-        if (ame288_filters != nil) glassView.layer.filters = ame288_filters;
-        [container addSubview:glassView];
+            UIImageView *glassView = [[UIImageView alloc] initWithImage:ame288_wallpaper.image];
+            glassView.tag = kBackgroundGlassTag;
+            glassView.contentMode = UIViewContentModeScaleAspectFill;
+            glassView.clipsToBounds = YES;
+            glassView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            glassView.frame = container.bounds;
+            glassView.userInteractionEnabled = NO;   // Task161：装饰层不参与命中测试
+            glassView.alpha = 1.0;                   // Task254：恒 1.0（alpha<1 不渲染定律）
+            glassView.layer.filters = ame289_filters;
+            [container addSubview:glassView];
 
-        // dim 层语义照旧（压暗随强度递增；blur=0 的玻璃档 dim=0 = 纯 TG 磨砂）
-        UIView *dimView = [[UIView alloc] initWithFrame:container.bounds];
-        dimView.tag = kBackgroundDimTag;
-        dimView.backgroundColor = [UIColor labelColor];
-        dimView.alpha = self.blurIntensity * 0.2;
-        dimView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        dimView.userInteractionEnabled = NO;
-        [container addSubview:dimView];
+            // dim 层语义照旧（压暗随强度递增；blur=0 已整层跳过走不到这里）
+            UIView *dimView = [[UIView alloc] initWithFrame:container.bounds];
+            dimView.tag = kBackgroundDimTag;
+            dimView.backgroundColor = [UIColor labelColor];
+            dimView.alpha = self.blurIntensity * 0.2;
+            dimView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            dimView.userInteractionEnabled = NO;
+            [container addSubview:dimView];
 
-        NSLog(@"[BackgroundManager] Task288: TG pseudo-liquid-glass frost installed (wallpaper snapshot + glassFilters, blur=%.2f) -- pages upgraded", self.blurIntensity);
-        return;
+            NSLog(@"[BackgroundManager] Task289: TG pseudo-liquid-glass frost installed (wallpaper snapshot + intensity-scaled filters, blur=%.2f) -- pages upgraded", self.blurIntensity);
+            return;
+        }
+        NSLog(@"[BackgroundManager] Task289: frost filter construction failed -- fall back to system blur pipeline");
     }
     // Task288：非玻璃档从 TG 磨砂切回时拆旧层（风格切换幂等清理）
     {

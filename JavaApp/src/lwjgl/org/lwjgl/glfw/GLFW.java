@@ -1102,6 +1102,39 @@ public class GLFW
     public static void glfwShowWindow(long window) {
         nglfwSetShowingWindow(window);
     }
+
+    // ★ Task289：Neolectrum (wgpu_mc) EarlyWindow.takeOverForGame 调
+    //   GLFW.glfwHideWindow —— 装机实锤 NoSuchMethodError 崩溃
+    //   （crash report db8fcbcf：EarlyWindow.kt:150，MC 26.1.2 + NeoForge
+    //   26.1.2.122 + wgpu_mc 2612.0.8-android.36）。本 overlay 类整体替换
+    //   真 LWJGL 的 GLFW 绑定（JavaApp/Makefile 双版本 jar 合成链），缺一个
+    //   方法 = 运行期 NoSuchMethodError。iOS 单窗口语义下"隐藏窗口"无安全
+    //   实现（游戏面 = 主窗口内容层，真隐藏 = 黑屏），且 iOS 侧 early
+    //   loading screen 由启动器自身管理——按记日志 no-op 处理（glfwShow-
+    //   Window 原生桥语义不受影响，游戏窗口照常接管前台）。
+    //   同族窗口管理 API（focus/maximize/iconify/restore）一并补齐，防
+    //   wgpu/vanilla 后续调用点连环 NoSuchMethodError（均为单窗口语义下
+    //   无意义或由系统接管的操作，no-op 无副作用）。
+    public static void glfwHideWindow(long window) {
+        System.out.println("[GLFWBridge] Task289: glfwHideWindow(" + window + ") no-op (iOS single-window semantics)");
+    }
+
+    public static void glfwFocusWindow(@NativeType("GLFWwindow *") long window) {
+        // iOS 单窗口恒聚焦，no-op
+    }
+
+    public static void glfwMaximizeWindow(@NativeType("GLFWwindow *") long window) {
+        // iOS 单窗口无最大化概念，no-op
+    }
+
+    public static void glfwIconifyWindow(@NativeType("GLFWwindow *") long window) {
+        // iOS 单窗口不支持最小化，no-op
+    }
+
+    public static void glfwRestoreWindow(@NativeType("GLFWwindow *") long window) {
+        // iOS 单窗口无还原语义，no-op
+    }
+
     public static void glfwWindowHint(int hint, int value) {
         long __functionAddress = Functions.SetWindowHint;
         invokeV(hint, value, __functionAddress);

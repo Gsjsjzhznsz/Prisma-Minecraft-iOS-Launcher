@@ -3772,3 +3772,15 @@ Stage Summary:
 - run#896（d10ad938）Success——Task 288 三报根修 + 移植批次零编译问题一轮通过（对比 run#890/892 两轮 r1 历史）；agent-browser 直读 actions 列表取证（API 限流期既定手段）
 - 装机验证锚点承接 Task 288 条目四条：①NeoForge 隔离实例启动日志不再出现 Task287 "real: Application Support"（FML Game directory 应为 versions/NeoForge-26.1.2.122/game，游戏读隔离 mods/ 的 2 jar）②启动器全页面壁纸 TG 磨砂（日志 Task288: TG pseudo-liquid-glass frost installed）③模组管理页 Fabric mod 于 NeoForge 实例显橙 ⚠ + "加载器不兼容（NeoForge 实例）"④blur 存档若为 0 则启动日志 Task288 healing to 0.75 (re-armable)
 - PocketJ 批次记账（下一轮候选）：原生资源中心浏览 UI / 内置 JIT 工作流（StikJIT AGPL-3.0 评估先行）/ 同名账户共存 / Java 侧 tasks/*.java Range 续传
+
+---
+## Task 289（装机三报根修：壁纸怪+无法不模糊 / 大部分菜单仍原生 / GLFW NoSuchMethodError）
+
+- 取证①"壁纸看起来很奇怪，而且壁纸无法不模糊"：装机 latestlog 实锤 blurIntensity 滑杆逐 tick 全页重铺（Task252 resolved blur=0.00 用户明确要锐利壁纸）+ Task288-r1"玻璃档 blur≤0.01 仍装磨砂"让步与用户指令正面冲突 + TG 整页磨砂层挂的是面板配方 ame252_glassFilters（colorMatrix 饱和度矩阵 2.67/-1.1 系作用全幅壁纸=整页色彩漂移"看起来很奇怪"；gaussianBlur 固定 4.0 与强度完全解耦=blur 0 也恒模糊"无法不模糊"）
+- 修复①BackgroundManager.m：最低档语义恢复 Task256 全风格一律整层不装（玻璃档让步退役；skip 路径补 TG 旧层拆退防跨档滞留）+ 整页磨砂改挂新厂 ame252_frostFiltersWithIntensity:（无 colorMatrix 保色彩真实 + gaussianBlur 半径=10×强度线性缩放、下限 1.5 防空转档；滑杆全程连续可控）+ 滤镜构造失败回落系统磨砂管线（不挂无滤镜重复壁纸层）
+- 取证②"大部分菜单还是使用原生"：Task237 路由 Task263/276/277 三轮收窄后 ame277_domainHit = pseudo || inGame——真玻璃档启动器域弹窗一律原生直通（仅游戏域镜像）；Task276"混杂出伪玻璃"的历史前提（页面 SystemThinMaterial vs 镜像 TG 不同源）已被 Task288 页面全面 TG 化推翻
+- 修复②AmeFloatingMenu.m：接管域推广回两档玻璃风格全域（ame289_sessionGate = !inGame || LGCGameSessionGlassAllowed()，会话闸只约束游戏域；启动器域 ame260==0 恒放行不受残留会话计数误伤）；镜像面板材质 ame252 与页面同源，收窄史注释保留作决策链存档
+- 取证③"glfw缺失方法异常"：crash db8fcbcf = NoSuchMethodError 'void org.lwjgl.glfw.GLFW.glfwHideWindow(long)' @ wgpu_mc (Neolectrum 2612.0.8-android.36) EarlyWindow.takeOverForGame EarlyWindow.kt:150（MC 26.1.2+NeoForge 26.1.2.122）；根因=JavaApp/Makefile 双版本 jar 合成链中 src/lwjgl GLFW.java overlay 整体替换真 LWJGL 3.4.1 同名类，wgpu_mc 需要的方法不在 overlay = 缺一崩一
+- 修复③GLFW.java：glfwHideWindow（记日志 no-op——iOS 单窗口语义真隐藏=黑屏，early screen 由启动器自管）+ 同族 glfwFocusWindow/glfwMaximizeWindow/glfwIconifyWindow/glfwRestoreWindow 一并补齐防连环 NoSuchMethodError（单窗口语义下均无副作用）
+- 门禁：task139/240 balanced / task240 import sweep WARN currentMenu 基线预存 / task191 四表 3093 OK / task248 缺键0硬编码0动态键0 / task250 全零 / verify255 53 PASS / verify219 81/81 ALL GREEN / GLFW.java 花括号平衡+5 方法在位（本机无 javac，CI javac 终验）
+- 装机锚点：①设置→背景模糊强度拖到 0%→壁纸全锐利直出（日志 Task289: blur intensity at minimum -- skipped all styles；不再出现 TG frost installed）②中等档位壁纸呈真实色彩轻磨砂（日志 Task289: ... intensity-scaled filters, blur=0.50，色彩不再漂移）③玻璃风格下启动器任意确认弹窗/菜单呈 TG 玻璃镜像（不再原生；日志不再出现 Task277 native passthrough，会话闸行仅 MC<26 游戏内出现）④NeoForge 26.1.2 隔离实例启动过 EarlyWindow（日志 [GLFWBridge] Task289: glfwHideWindow no-op，不再 NoSuchMethodError 崩溃）

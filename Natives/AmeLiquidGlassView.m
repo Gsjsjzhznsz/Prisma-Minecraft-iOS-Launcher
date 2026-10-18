@@ -1000,4 +1000,18 @@ NSArray *AME252GlassFiltersInternal(void) {
     return AME252GlassFiltersInternal();
 }
 
+/// ★ Task289：整页壁纸磨砂滤镜（按强度定制，契约见 .h）。
+/// 每次调用新建 gaussianBlur 实例：滑杆逐 tick 重铺时各玻璃层持有各自的
+/// 半径档，互不串扰（dispatch_once 共享缓存与本需求天然互斥）。
++ (nullable NSArray *)ame252_frostFiltersWithIntensity:(CGFloat)intensity {
+    NSObject *blur = AME252CAFilterNamed(@"gaussianBlur");
+    if (blur == nil) return nil;
+    // 线性映射：10%→1.0..1.5 轻磨砂，50%→5.0 中磨砂，100%→10.0 重磨砂。
+    // 下限 1.5：强度>0 却零模糊 = "装了层却什么都磨不动"的空转档。
+    CGFloat ame289_t = MIN(1.0, MAX(0.0, intensity));
+    CGFloat ame289_radius = MAX(1.5, 10.0 * ame289_t);
+    [blur setValue:@(ame289_radius) forKey:@"inputRadius"];
+    return @[ blur ];
+}
+
 @end
