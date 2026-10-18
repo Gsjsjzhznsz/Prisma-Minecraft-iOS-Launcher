@@ -3765,3 +3765,10 @@ Stage Summary:
 - 门禁：task139/240 balanced / task158_objc exit0 / task191 四表 3093 OK / task248 缺键0硬编码0动态键0 / task250 全零 / verify255 53 PASS（BG 自愈锚重锚 blurHealDone→re-armable）/ verify219 重锚 3092→3093 后 81/81 ALL GREEN / task158_baseline_compare 环境性 SyntaxError 为基线预存（上游路径缺失）
 - 装机锚点：①NeoForge 隔离实例启动日志不再出现 Task287 "real: Application Support"（应见 Task288 alias residue restored 或零 Task287 行）且 FML Game directory=versions/NeoForge-26.1.2.122/game、游戏加载隔离 mods/ 的 2 jar ②启动器各页面壁纸呈 TG 磨砂（日志 Task288: TG pseudo-liquid-glass frost installed）③模组管理 Fabric mod 于 NeoForge 实例显橙色 ⚠ + "加载器不兼容（NeoForge 实例）"④blur 存档若再为 0，启动日志 Task288 healing to 0.75 (re-armable)
 - PocketJ 批次记账（继承 Task 287 批次2）：原生资源中心浏览 UI / 内置 JIT 工作流（StikJIT AGPL-3.0 评估先行）/ 同名账户共存 / Java 侧 tasks/*.java Range 续传（ObjC 侧已有 resumeData）
+
+---
+## Task 288-ci（run#896 一轮终绿）
+
+- run#896（d10ad938）Success——Task 288 三报根修 + 移植批次零编译问题一轮通过（对比 run#890/892 两轮 r1 历史）；agent-browser 直读 actions 列表取证（API 限流期既定手段）
+- 装机验证锚点承接 Task 288 条目四条：①NeoForge 隔离实例启动日志不再出现 Task287 "real: Application Support"（FML Game directory 应为 versions/NeoForge-26.1.2.122/game，游戏读隔离 mods/ 的 2 jar）②启动器全页面壁纸 TG 磨砂（日志 Task288: TG pseudo-liquid-glass frost installed）③模组管理页 Fabric mod 于 NeoForge 实例显橙 ⚠ + "加载器不兼容（NeoForge 实例）"④blur 存档若为 0 则启动日志 Task288 healing to 0.75 (re-armable)
+- PocketJ 批次记账（下一轮候选）：原生资源中心浏览 UI / 内置 JIT 工作流（StikJIT AGPL-3.0 评估先行）/ 同名账户共存 / Java 侧 tasks/*.java Range 续传
