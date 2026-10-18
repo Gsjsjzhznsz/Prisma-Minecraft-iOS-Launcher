@@ -3842,3 +3842,24 @@ Work Log:
 
 Stage Summary:
 - Task 291 三指令全闭环：网站版本检查三链修上线验证通过；内置 JIT 第一阶段四段管理页 + FCL 聚合搜索全量随 run#903 绿入包；装机锚点 8 条见 Task 291 条目
+
+---
+Task ID: 293
+Agent: main (Super Z)
+Task: 装机四指令（①JIT 获取仍跳转 StikDebug → 内置轨第二阶段 ②加载更多无动画 ③切换源缺失需重置筛选 ④IPA 精简）
+
+Work Log:
+- ①内置 JIT 第二阶段全链落地：pocketj-ref 重新浅克隆（EricoEC/PocketJLauncher），JITIntegration 三件（Shared XPC/Host Coordinator+ExtensionPoint/Helper appex）+ Vendor/StikJIT（11 Swift 源+idevice FFI 静态库 93MB+universal/legacy 脚本，MPL-2.0）逐文件读毕定案移植路径——上游 appex 轨 = iOS 26 AppExtensionProcess 独立 Helper 进程跑 StikJIT.enableJIT（RSD 探测→DDI 下载挂载→debugserver vAttach 宿主 PID→universal 脚本协议），同进程自附加被上游 #if 0 定案死锁，深链 StikDebug = 第一阶段让位给内置轨的正确终态
+- Vendor 入库 Natives/stikjit/（Sources/idevice/iokit/Resources/integration 四层），integration 四件 Swift 改命名空间 PrismaJIT*（host=com.prisma-devs.prisma，EXExtensionPointIdentifier=com.prisma-devs.prisma.PrismaJITHelper，appex 包型 XPC!）
+- Makefile jit_helper 轨：swiftc 直编双产物（libPrismaJITCoordinator.dylib min26.0 + PrismaJITHelper appex 可执行，-force_load idevice 对齐上游 project.yml，-dead_strip），payload 前置依赖+尾部嵌入 PlugIns/PrismaJITHelper.appex（脚本资源置 bundle 根对齐 BundledScript 的 Bundle(for:) 查找）+ Frameworks/；单独 ldid -S 不走 METHOD_MACHO vtool 重打标保 26.0 minos；非 Darwin/无 swiftc/无 SDK 三级跳过回落深链不阻塞构建
+- StikDebugViewController 开启动作重写：INTEGRATION.md 门禁序（iOS26+ → get-task-allow SecTask dlsym 弱接入自检 → 配对文件）→ 内置轨（dlopen+NSClassFromString 弱接入+100ms isJITEnabled 轮询提前交付 PocketJ 同款）→ 失败显式弹窗征求同意才降级 stikjit://（上游 Do not silently fall through 遵约）；深链体保留 ame291_handoffToStikDebug；i18n 四表 +8 键 ame293.jit.* + 补齐 Task291 遗漏 preference.detail/title.done.ame291_builtin_jit 2 键（task250 HEAD 实测预存 MISS）
+- ②加载更多动画：六 tab 共用 ame293_loadingCellWithBusy——isLoadingMore* 时该行挂 UIActivityIndicatorView，修"点击后弱网数秒零反馈像死机"
+- ③切换源缺失双根因：parseVersionId 补 UI 路径 "NeoForge-{loader}" 形态（"NeoForge-26.1.2.122" 旧解析整串当 MC 版本进筛选 → Modrinth facets 0 结果=装机 DLForensics 实锤 version="NeoForge-26.1.2.122"→0 items；反推表对齐 inferJavaMajorVersionFromVersionId：47.x→1.20.1/20.M→1.20.M/21-25→1.x.y/26+年份制除末段=build 号）+ ame293_listEpoch 请求代际号（reloadCurrentList 自增+清 isLoadingMore 位——旧响应占位令新源首翻页被 if(isLoadingMore) return 整段跳过=根因①；12 条 load 路径入口快照回包代际不匹配整包丢弃=根因②迟到旧响应跨源写新列表）
+- ④IPA 瘦身第一刀：git rm Natives/resources/Frameworks/libvirgl_test_server.dylib（virglrenderer meson 测试服务器二进制，全仓零 dlopen/链接引用=纯误打包，-2.4MB/份）；Mach-O LC_LOAD_DYLIB 自写解析器核 libOSMesa 不依赖 libglapi（meson shared-glapi=disabled）但保守不动记账；JRE 内部 jmods/man/src.zip 裁剪记后续（依赖 CI 下载态验证）；libMobileGL 85.7MB 单份无重复（cp -R 合并+构建覆盖同路径）
+- Edit 工具空格化 Makefile TAB 险情：首次 Makefile 编辑全文件 720 行 TAB→空格漂移（git diff 抓获，od -c + git show HEAD 对照实锤），git checkout 回滚后改用 python 脚本逐字面 \t 重放（task293_makefile_patch.py 留档 scripts/）
+- 门禁全绿：139/240 balanced、191 四表 3155、248/250 全零、verify255 53、verify219 重锚 81/81（J 锚 3145→3155=+8 ame293+2 门禁补齐、K3 TAB 锚 654→713 实测）
+
+Stage Summary:
+- 提交 780bf744 推送（35 文件 +9985/−46，含 93MB libidevice_ffi.a 低于 GitHub 100MB blob 限），CI run#905 验证中
+- 装机锚点（下轮验证）：①设置→调试→内置 JIT 管理：导入配对文件+LocalDevVPN 连接后点"开启 JIT"→ 状态行"正在通过内置 Helper 开启 JIT…"→ 成功"内置 JIT 已开启"绿/失败弹窗可选"交给 StikDebug"（不再无感跳转）②下载页任一 tab 触底点"加载更多…"→ 行内转圈 ③NeoForge 实例（NeoForge-26.1.2.122 型 id）进入资源包等 tab 自动预选版本=26.1.2 且出结果，切换源不空列 ④IPA 体积 -2.4MB
+- 风险记账：appex 运行面（ExtensionKit 发现/EX 点生成元数据）首包装机才能实证，失败路径已兜底（深链弹窗降级）；StikJIT force_load 体积待 CI 产物实测
