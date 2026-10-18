@@ -930,7 +930,7 @@ static NSString *ame287_configureForgeUriSafeRoot(NSString *versionId, NSString 
     NSString *ame287_alias = [@(ame287_homeC) stringByAppendingPathComponent:@".ame287_forge_root"];
     NSString *ame287_target = [ame287_fm destinationOfSymbolicLinkAtPath:ame287_alias error:nil];
     if (![ame287_target isEqualToString:ame287_realRoot]) {
-        if ([[@ame287_fm attributesOfItemAtPath:ame287_alias error:nil][NSFileType]
+        if ([[ame287_fm attributesOfItemAtPath:ame287_alias error:nil][NSFileType]
                 isEqualToString:NSFileTypeSymbolicLink]) {
             [ame287_fm removeItemAtPath:ame287_alias error:nil];
         }
