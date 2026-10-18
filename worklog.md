@@ -3721,3 +3721,11 @@ Work Log:
 Stage Summary:
 - 提交推送 main（42839aa9..本轮）；CI 出包后装机验证
 - 装机锚点：①游戏内改 鼠标速度/按钮大小/虚拟鼠标/手势/触感/陀螺仪/性能HUD/音频/自动纠错 → 关设置页立即生效（日志 [SurfaceVC] Task286: button_scale ... hot-reloaded）②iOS 27 会话 17+ 启动不再受 1GiB 类空间预留拒绝（无专项日志，属启动失败面消除）③新实例首启 options.txt 即带均衡档（日志 [JavaLauncher] Task286: first-launch options.txt performance seed written）④远古版本启动走小内存轨（日志 [JavaLauncher] Task286: legacy version 'a1.x' -- heap clamped to 192 MB）⑤连点菜单延迟以 Task285 构建复测定音
+
+---
+## Task 286-ci（run#890 失败根修 + r1 终绿）
+
+- run#890（c1588d25）failed 7m28s："Build for ios" 步 11 errors——SurfaceViewController.m:2111/2112/2117/2119 `use of undeclared identifier 'ame286_lastAppliedButtonScale'`（did you mean '_ame286_lastAppliedButtonScale'）×4 + make 级联；病因=Task286 提交在 applyInGamePreferenceChanges 内以裸标识符访问类扩展 property（合成 ivar 实名带下划线前缀，方法体不可见），e7632b3 同族教训；本地门禁（task240/139 语法平衡、verify219 内容锚点）不含真编译故全绿漏网
+- 修复 e404f491：4 处裸引用改 self. 属性访问 + 3 行教训注释（Task286 r1）；全仓扫描确认零残留裸 ame286 引用；门禁复跑 task240 OK / task139 balanced / verify219 81/81 ALL GREEN
+- 【闭环】r1 run#891（39102424215）一轮终绿 12m13s，ipa/tipa/dSYM 三产物在位；取证手段备忘：GitHub API 限流时经 agent-browser 无头浏览器直读 run 页注解（annotations 服务端渲染免登录）
+- 装机验证锚点承接 Task 286 Stage Summary 五条（游戏内设置热生效 / iOS 27 类空间 / options.txt 播种 / 远古版内存轨 / 连点复测）
