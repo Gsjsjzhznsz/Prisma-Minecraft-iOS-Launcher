@@ -3895,3 +3895,15 @@ Work Log:
 Stage Summary:
 - JIT 三修 + 瘦包第二轮全量交付待 CI：显示异常根修（按钮复用泄漏）、"启动器自带"选项落地（显式/自动双语义）、内置轨三处共用+分层取证（下轮装机日志直接回答"无法开启"卡在哪层）、IPA 预期 -50MB 级（strip -x）+ jmods + 死重清理
 - 装机锚点（下轮验证）：①JIT 管理页无漂浮按钮 ②设置 JIT 开启工具选"启动器自带"→启动→日志 "Task134 enabler=... builtin=1"→ 成功进局或失败弹窗带 [stage] 前缀 ③auto 语义 iOS 26+ 不再无条件跳 StikDebug ④IPA 体积对照 run#907 产物（日志行 "Task294 strip -x done (Frameworks NKB -> MKB)" 直接给瘦身数）
+
+---
+Task ID: 294-ci
+Agent: main (Super Z)
+Task: Task 294 CI 闭环（run#909 一轮终绿）
+
+Work Log:
+- run#909（5b896627）一轮 completed success，无 r1：jit_helper 双 swiftc（Coordinator+Helper 含新增取证代码）/payload strip 步/jmods 裁剪/libglapi 删除全链首跑即过
+- 门禁与 CI 互证：139/240 balanced、191 四表 3157、248/250 全零、verify219 81/81（J 3157/K3 724）、verify255
+
+Stage Summary:
+- Task 294 四指令闭环随 run#909 绿入包：JIT 页显示根修 + "启动器自带"选项落地 + 内置轨三处共用+分层取证 + IPA 瘦身第二轮（strip -x/jmods/死重/libglapi）；装机锚点见 Task 294 条目 4 条（"无法开启 JIT"具体卡层待下轮装机 latestlog 的 Task294 分层日志定音）
