@@ -947,10 +947,10 @@ payload: native dep_mg java jre assets dep_shader_shims dep_openal_shim dep_mith
 	# 构建不失败）。appex 落 PlugIns/（脚本资源置 bundle 根，BundledScript
 	# 的 Bundle(for:) 命中 appex 主 bundle），协调器 dylib 落 Frameworks/。
 	# 此处单独 ldid -S——不走 METHOD_MACHO 的 vtool 重打标，保住 26.0 minos。
+	# ★ Task295：泛用 ExtensionFoundation appex 落 Extensions/（非 PlugIns/，
+	#   上游 build_pocketj.sh "Generic ExtensionFoundation extensions live
+	#   in Extensions/" 同款）+ 扩展点定义 .appexpt 同目嵌入。
 	if [ -f '$(JIT_STAGING)/PrismaJITHelper' ] && [ -f '$(JIT_STAGING)/libPrismaJITCoordinator.dylib' ]; then \
-		# ★ Task295：泛用 ExtensionFoundation appex 落 Extensions/（非 PlugIns/，
-		#   上游 build_pocketj.sh "Generic ExtensionFoundation extensions live
-		#   in Extensions/" 同款）+ 扩展点定义 .appexpt 同目嵌入。
 		mkdir -p $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks; \
 		cp $(JIT_STAGING)/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper || exit 1; \
 		cp $(SOURCEDIR)/Natives/stikjit/integration/Helper/Info.plist $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/Info.plist || exit 1; \

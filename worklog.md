@@ -3962,3 +3962,20 @@ Work Log:
 Stage Summary:
 - 修复落点：RightPanel 3 处（声明上移/else 残留删除/注释改口），SurfaceViewController 零改动（Registry 调用已随 296 退场）
 - run#914 两族 7 错全部闭环（①由 297 退场消解 ②由本轮根修），推送后 CI 复验
+
+---
+Task ID: 297-ci-r2
+Agent: main (Super Z)
+Task: run#916 二轮热修——payload 阶段 bash "line 2: syntax error: unexpected end of file"（Makefile:923 payload Error 2）
+
+Work Log:
+- run#916 复盘：编译阶段全绿（r1 的 ame267 修复生效 + 静态过审文件全部编译通过），失败点推进到 payload 打包——`/bin/bash -c: line 2: syntax error: unexpected end of file`，gmake 定位 Makefile:923 payload
+- 根因（task295_makefile_patch.py 引入的第三族雷）：Task295 补丁把 3 行注释插在 `if [...]; then \` 反斜杠续行链内部（951-953）——make 续行链在首条无尾反斜杠行闭合，bash 收到 `if...then #注释` 单行残缺块（then 分支=注释、无 fi）→ -c 第 2 行 EOF 炸；该块自 c2a64b99 加入后从未跑到 payload（#911-913 cancelled / #914 编译中止），#916 首次执行即爆
+- 修法（scripts/task297ci_makefile_comment_fix.py 字节级搬移）：3 行注释整体上移 if 行之前（单 TAB 独立注释行，与 Task293 注释段同款），shell 结构恢复平衡；语义零变化
+- 本地实测：按 make→shell 真实语义重建 if 块（$(VAR) 替换）跑 bash -n = exit 0；续行链扫描器（注释行落点检测）全 Makefile 复扫=仅剩 294 行 Task74 注释（良性实锤：续行拼入注释行被 # 吞、命令自闭合、历史全绿）+ JavaApp/Makefile 零命中
+- K3 TAB 锚（724→738）为 Task297 已记账存量、独立任务，本轮 3 行原地搬移零净变化不加重
+- 门禁：task139/240 all balanced；Makefile 续行链扫描干净
+
+Stage Summary:
+- run#914 两族编译雷（r1 修）+ run#916 payload 续行雷（r2 修）全闭环；三族雷同源于"补丁脚本插入行未按 make 续行语义落位"
+- 家法续记：Makefile recipe 续行链内禁插注释行——独立 recipe 注释必须落链外（单 TAB）；CI"编译过"≠"打包过"，首次触达的 recipe 段=新雷区
