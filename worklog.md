@@ -3863,3 +3863,16 @@ Stage Summary:
 - 提交 780bf744 推送（35 文件 +9985/−46，含 93MB libidevice_ffi.a 低于 GitHub 100MB blob 限），CI run#905 验证中
 - 装机锚点（下轮验证）：①设置→调试→内置 JIT 管理：导入配对文件+LocalDevVPN 连接后点"开启 JIT"→ 状态行"正在通过内置 Helper 开启 JIT…"→ 成功"内置 JIT 已开启"绿/失败弹窗可选"交给 StikDebug"（不再无感跳转）②下载页任一 tab 触底点"加载更多…"→ 行内转圈 ③NeoForge 实例（NeoForge-26.1.2.122 型 id）进入资源包等 tab 自动预选版本=26.1.2 且出结果，切换源不空列 ④IPA 体积 -2.4MB
 - 风险记账：appex 运行面（ExtensionKit 发现/EX 点生成元数据）首包装机才能实证，失败路径已兜底（深链弹窗降级）；StikJIT force_load 体积待 CI 产物实测
+
+---
+Task ID: 293-ci
+Agent: main (Super Z)
+Task: Task 293 CI 闭环（run#906 failure → r1 6584e044 run#907 一轮终绿）
+
+Work Log:
+- run#906 failure 实锤：PrismaJITHelper.swift:3 "no such module 'StikJIT'"——StikJIT 11 源与 Helper 同一 swiftc 编译单元，无独立 module 可 import（PocketJ 走 xcodebuild framework 模块体系，本仓 swiftc 直编单管时 import 语句失效）；r1 删 import StikJIT，同模块内 StikJIT.enableJIT 直接可见（内嵌注释记账误因）
+- 其余全链首跑即过：jit_helper 双 swiftc（Coordinator dylib + appex force_load 93MB FFI）、payload 嵌入、63MB 级 vendor 提交均无二话；编前全绿门禁与 run#907 互证
+- run#907 一轮 completed success（约 12 分钟）；产物含 PlugIns/PrismaJITHelper.appex + Frameworks/libPrismaJITCoordinator.dylib
+
+Stage Summary:
+- Task 293 四指令全闭环随 run#907 绿入包：内置 JIT 第二阶段（appex 独立进程轨）+ 加载更多转圈 + 切换源双根因修复（NeoForge-{loader} 解析 + 请求代际号）+ IPA -2.4MB；装机锚点 4 条见 Task 293 条目（appex 运行面待设备实证，失败路径已兜底深链降级）
