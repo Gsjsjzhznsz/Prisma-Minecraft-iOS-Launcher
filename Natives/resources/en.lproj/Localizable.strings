@@ -3355,3 +3355,21 @@
 "ame293.jit.gettask_fail" = "This installation does not carry the get-task-allow entitlement, so the debugger cannot grant JIT to this app. Reinstall with a signing method that keeps get-task-allow."; 
 "preference.detail.ame291_builtin_jit" = "Pairing file, LocalDevVPN status and built-in JIT enablement (iOS 26+ helper track).";
 "preference.title.done.ame291_builtin_jit" = "Built-in JIT Manager";
+
+// ===== Task296: third-party privilege plugin (ame296.pp.*) =====
+"ame296.pp.card.title" = "Privilege Plugin";
+"ame296.pp.state.ts" = "Entitled (TrollStore)";
+"ame296.pp.state.absent" = "Not installed";
+"ame296.pp.state.noconsent" = "Found · not authorized";
+"ame296.pp.state.ready" = "Ready";
+"ame296.pp.state.acquired" = "Active";
+"ame296.pp.state.failed" = "Failed";
+"ame296.pp.state.invalid" = "Invalid plugin";
+"ame296.pp.err.unsupported" = "Plugin reports this environment is unsupported";
+"ame296.pp.err.nocaps" = "Plugin exposes no consumable capabilities";
+"ame296.pp.alert.title" = "Privilege Plugin";
+"ame296.pp.alert.body" = "A third-party privilege plugin (a dylib you injected while signing) was detected. If enabled, it will be loaded during game sessions and may grant system-level capabilities such as cross-container file access, IOKit GPU access and memory-wall relaxation. Risks: the plugin runs with elevated privileges and a failed attempt can crash the whole device. This app contains no exploit code; the plugin alone decides which iOS versions it supports, and it can be removed by re-signing without it. Enable only if you fully trust the plugin source.";
+"ame296.pp.alert.lasterror" = "Last error";
+"ame296.pp.alert.enable" = "Enable plugin";
+"ame296.pp.alert.disable" = "Disable plugin";
+"ame296.pp.alert.close" = "Close";

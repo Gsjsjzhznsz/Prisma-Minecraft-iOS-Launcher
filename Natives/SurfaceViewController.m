@@ -15,6 +15,7 @@
 #import "LauncherPreferences.h"
 #import "MinecraftResourceUtils.h"
 #import "PLProfiles.h"
+#import "PrivilegePluginRegistry.h"   // Task296：第三方权限插件宿主（会话挂载）
 #import "SurfaceViewController.h"
 #import "utils.h"
 #import "GameMenuOverlayView.h"
@@ -2603,6 +2604,12 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 
         NSLog(@"[SurfaceViewController] Launching Minecraft with accountId: %@, version: %d, size: %dx%d",
               accountId, minVersion, windowWidth, windowHeight);
+
+        // ★ Task296：第三方权限插件会话挂载——单次/进程、明示同意门、失败零
+        //   阻塞零重试（内核态操作重试=整机 panic 风险，契约红线）。TrollStore
+        //   （no-sandbox 已足）内部短路 no-op；未同意/未安装/不支持时直接返回，
+        //   启动链行为与无插件时完全一致。详情见 PrivilegePluginRegistry。
+        [[PrivilegePluginRegistry sharedRegistry] acquireForGameSession];
 
         // Launch JVM（args[0] 传 accountId，Java 端 MinecraftAccount.load(accountId) 据此加载账户）
         int launchResult = launchJVM(accountId, self.metadata, windowWidth, windowHeight, minVersion);

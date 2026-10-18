@@ -3218,3 +3218,21 @@
 "download.modpack.retry_failed" = "モッドパックのダウンロードに失敗しました（再試行 %ld 回）：%@";
 "download.empty_data" = "ダウンロードが空のデータを返しました";
 "common.unknown_error" = "不明なエラー";
+
+// ===== Task296: third-party privilege plugin (ame296.pp.*) =====
+"ame296.pp.card.title" = "権限プラグイン";
+"ame296.pp.state.ts" = "権限付与済み (TrollStore)";
+"ame296.pp.state.absent" = "未インストール";
+"ame296.pp.state.noconsent" = "検出済み · 未許可";
+"ame296.pp.state.ready" = "準備完了";
+"ame296.pp.state.acquired" = "許可済み";
+"ame296.pp.state.failed" = "失敗";
+"ame296.pp.state.invalid" = "無効なプラグイン";
+"ame296.pp.err.unsupported" = "プラグインがこの環境を非対応と判定しました";
+"ame296.pp.err.nocaps" = "プラグインが利用可能な能力を宣言していません";
+"ame296.pp.alert.title" = "権限プラグイン";
+"ame296.pp.alert.body" = "サードパーティ製の権限プラグイン（署名時に自分で注入した dylib）を検出しました。有効にするとゲームセッション中に読み込まれ、コンテナ外ファイルアクセス、IOKit GPU 直接アクセス、メモリウォール緩和などのシステムレベル能力が付与される可能性があります。リスク：プラグインは高権限で動作し、マウントに失敗すると端末全体が再起動することがあります。本アプリ自体はいかなる悪用コードも含みません。対応する iOS バージョンはプラグイン側が判断し、再署名時に注入しなければ削除できます。提供元を完全に信頼できる場合のみ有効にしてください。";
+"ame296.pp.alert.lasterror" = "前回のエラー";
+"ame296.pp.alert.enable" = "プラグインを有効化";
+"ame296.pp.alert.disable" = "プラグインを無効化";
+"ame296.pp.alert.close" = "閉じる";
