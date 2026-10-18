@@ -5,11 +5,22 @@
 // ③下载区自动识别最新版（GitHub Releases API + 1h 本地缓存 + 构建期
 // 兜底常量）+ 国内 gh 加速源前缀组 + GitHub 发行版直达。
 // 公告数据：构建期 scripts/sync-announcements.mjs 从仓库 main 同步。
+// ★ Task291 发行版版本检测根修：构建期兜底常量不再手写——website.yml
+// 在 npm build 前用 GITHUB_TOKEN 服务端探测最新“非预发布”发行版注入
+// PUBLIC_LATEST_TAG（工作流另加 schedule 每日刷新），探测失败回落
+// 静态 v6.5.0。旧静态值 v6.5.5 是预发布 Beta（GitHub Latest 实际是
+// v6.5.0），国内 API 不可达时页面把 Beta 当正式版展示 = 版本检查
+// 问题直接来源。
 import '../styles/global.css';
 import announcements from '../data/announcements.json';
 
 const REPO = 'https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher';
-const FALLBACK_TAG = 'v6.5.5';
+const ame291EnvTag = (import.meta.env.PUBLIC_LATEST_TAG || '').trim();
+const ame291TagOk = /^v?\d+(\.\d+)*(-[A-Za-z0-9.]+)?$/.test(ame291EnvTag);
+const FALLBACK_TAG = ame291TagOk
+  ? (ame291EnvTag.charAt(0) === 'v' ? ame291EnvTag : 'v' + ame291EnvTag)
+  : 'v6.5.0';
+const FALLBACK_TAG_SHORT = FALLBACK_TAG.replace(/^v/, '');
 const releaseUrl = (tag) => `${REPO}/releases/tag/${tag}`;
 const assetUrl = (tag, name) => `${REPO}/releases/download/${tag}/${name}`;
 const IPA = (tag) => assetUrl(tag, `com.prisma-devs.prisma-${tag.replace(/^v/, '')}-ios.ipa`);
@@ -119,7 +130,7 @@ const quickstart = {
       } catch (e) {}
     </script>
   </head>
-  <body>
+  <body data-build-tag={FALLBACK_TAG}>
     <div class="aurora"></div>
     <div class="grain"></div>
 
@@ -133,7 +144,7 @@ const quickstart = {
           <a href="#community"><span class="lang-zh">交流与支持</span><span class="lang-en">Community</span></a>
           <a href="#announcements"><span class="lang-zh">公告</span><span class="lang-en">News</span></a>
           <a href={REPO} target="_blank" rel="noopener">GitHub</a>
-          <a class="cta" href="#download"><span class="lang-zh">下载 6.5.5</span><span class="lang-en">Download</span></a>
+          <a class="cta" href="#download"><span class="lang-zh" id="nav-cta-zh">下载 {FALLBACK_TAG_SHORT}</span><span class="lang-en" id="nav-cta-en">Download</span></a>
           <button id="langToggle" class="lang-btn" type="button" aria-label="切换语言 / Switch language">EN</button>
         </nav>
       </div>
@@ -141,7 +152,7 @@ const quickstart = {
 
     <section class="hero wrap">
       <img class="hero-icon" src={`${BASE}/icon-192.png`} alt="Prisma launcher icon" width="128" height="128" />
-      <span class="chip"><span class="dot"></span><span class="lang-zh">v6.5.5 正式版 · 包名迁移至 com.prisma-devs.prisma</span><span class="lang-en">v6.5.5 stable · bundle id moved to com.prisma-devs.prisma</span></span>
+      <span class="chip"><span class="dot"></span><span class="lang-zh">{FALLBACK_TAG} 正式版 · 包名迁移至 com.prisma-devs.prisma</span><span class="lang-en">{FALLBACK_TAG} stable · bundle id moved to com.prisma-devs.prisma</span></span>
       <h1>Prisma</h1>
       <p class="lead">
         <span class="lang-zh">
@@ -338,8 +349,8 @@ const quickstart = {
       <div class="glass dl-card">
         <h2 class="sec"><span class="lang-zh">下载 Prisma</span><span class="lang-en">Download Prisma</span></h2>
         <p class="sec-sub">
-          <span class="lang-zh">当前展示：<b id="dl-tag">v6.5.5</b>（页面自动识别最新发行版，识别失败时回退此构建期版本）</span>
-          <span class="lang-en">Showing: <b id="dl-tag-en">v6.5.5</b> (auto-detected latest release; falls back to this build-time version offline)</span>
+          <span class="lang-zh">当前展示：<b id="dl-tag">{FALLBACK_TAG}</b>（页面自动识别最新正式版，识别失败时回退此构建期版本）</span>
+          <span class="lang-en">Showing: <b id="dl-tag-en">{FALLBACK_TAG}</b> (auto-detected latest stable release; falls back to this build-time version offline)</span>
         </p>
         <div class="row">
           <a class="btn primary" id="dl-ipa-btn" href={IPA(FALLBACK_TAG)}>⬇ <span class="lang-zh">IPA（AltStore / SideStore / 爱思）</span><span class="lang-en">IPA (AltStore / SideStore / i4)</span></a>
@@ -422,19 +433,34 @@ const quickstart = {
       })();
 
       // ★ Task261 ⑩：自动识别最新发行版（GitHub Releases API；1h localStorage
-      // 缓存；失败静默回退构建期 v6.5.5 —— 国内网络无代理时 API 常不可达，
+      // 缓存；失败静默回退构建期版本 —— 国内网络无代理时 API 常不可达，
       // 页面主体此时仍展示构建期版本与加速源链接，零阻断）。
+      // ★ Task291 版本检测链路加固：
+      //   ① API 挂了不再丢自己的缓存——过期缓存照样上（老版本也比错版本强），
+      //      只有连缓存都没有才停在构建期兜底标签；
+      //   ② 显式校验 prerelease/draft（/releases/latest 理论上已排除，双保险）；
+      //   ③ 403/429（限流）与网络错误同路处理，不重试轰炸；
+      //   ④ 导航 CTA 与 hero 徽章版本文案随检测结果一并更新（旧版只更新
+      //      dl-tag，检测成功后导航还写着旧版本号）。
       (function () {
         var REPO_API = 'https://api.github.com/repos/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/latest';
         var KEY = 'prisma-latest-release';
         var TAG_RE = /^v?\d+(\.\d+)*(-\S+)?$/;
+        var BUILD_TAG = (document.body && document.body.getAttribute('data-build-tag')) || 'v6.5.0';
         function tag(v) { return v && typeof v === 'string' && TAG_RE.test(v) ? (v.charAt(0) === 'v' ? v : 'v' + v) : null; }
         function ipa(t) { return 'https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/download/' + t + '/com.prisma-devs.prisma-' + t.slice(1) + '-ios.ipa'; }
         function tipa(t) { return 'https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/download/' + t + '/com.prisma-devs.prisma-' + t.slice(1) + '-ios-trollstore.tipa'; }
         function rel(t) { return 'https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/tag/' + t; }
+        function setText(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
         function apply(t) {
-          ['dl-tag'].forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = t; });
-          ['dl-tag-en'].forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = t; });
+          setText('dl-tag', t);
+          setText('dl-tag-en', t);
+          setText('nav-cta-zh', '下载 ' + t.slice(1));
+          setText('nav-cta-en', 'Download ' + t.slice(1));
+          var chipZh = document.querySelector('.hero .chip .lang-zh');
+          var chipEn = document.querySelector('.hero .chip .lang-en');
+          if (chipZh) chipZh.textContent = t + ' 正式版 · 包名迁移至 com.prisma-devs.prisma';
+          if (chipEn) chipEn.textContent = t + ' stable · bundle id moved to com.prisma-devs.prisma';
           var map = { 'hero-ipa-btn': ipa(t), 'hero-tipa-btn': tipa(t), 'hero-release-btn': rel(t),
                       'dl-ipa-btn': ipa(t), 'dl-tipa-btn': tipa(t), 'dl-release-btn': rel(t) };
           Object.keys(map).forEach(function (id) {
@@ -447,26 +473,35 @@ const quickstart = {
               chip.href = chip.getAttribute('data-mirror') + asset;
             });
           }
-          var chip = document.querySelector('.hero .chip .dot');
-          if (chip) { /* 保持原视觉，不做动作 */ }
         }
-        var cached = null;
-        try {
-          cached = JSON.parse(localStorage.getItem(KEY) || 'null');
-          if (cached && cached.ts && (Date.now() - cached.ts < 3600 * 1000) && tag(cached.tag)) {
-            apply(tag(cached.tag));
-            return;
-          }
-        } catch (e) {}
+        function readCache() {
+          try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; }
+        }
+        // 回退链：过期缓存 → 构建期兜底标签（静态链接本就指向它，此处仅对齐文案）
+        function fallbackAfterFailure() {
+          var cached = readCache();
+          var stale = cached && tag(cached.tag);
+          if (stale) { apply(stale); return; }
+          apply(BUILD_TAG);
+        }
+        var cached = readCache();
+        if (cached && cached.ts && (Date.now() - cached.ts < 3600 * 1000) && tag(cached.tag)) {
+          apply(tag(cached.tag));
+          return;
+        }
         fetch(REPO_API, { headers: { Accept: 'application/vnd.github+json' } })
-          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (r) {
+            // 403/429 = 限流（共享出口 IP 常态）：走回退链，不打重试
+            if (r.status === 403 || r.status === 429) return null;
+            return r.ok ? r.json() : null;
+          })
           .then(function (j) {
-            var t = j && tag(j.tag_name);
-            if (!t) return;
+            var t = j && !j.draft && !j.prerelease && tag(j.tag_name);
+            if (!t) { fallbackAfterFailure(); return; }
             try { localStorage.setItem(KEY, JSON.stringify({ ts: Date.now(), tag: t })); } catch (e) {}
             apply(t);
           })
-          .catch(function () { /* 回退构建期版本 */ });
+          .catch(fallbackAfterFailure);
       })();
     </script>
   </body>

@@ -127,6 +127,8 @@
         <string>public.app-category.games</string>
         <key>LSApplicationQueriesSchemes</key>
         <array>
+                <string>stikjit</string>
+                <string>stikdebug</string>
                 <string>filza</string>
                 <string>santander</string>
                 <string>shareddocuments</string>

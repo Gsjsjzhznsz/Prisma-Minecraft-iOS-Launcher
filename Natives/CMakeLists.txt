@@ -543,6 +543,9 @@ add_executable(AngelAuraAmethyst
   VersionManagerViewController.m
   ProfileSettingsViewController.m
   DownloadViewController.m
+  # Task291: built-in JIT (PocketJ port phase 1)
+  StikDebugEngine.m
+  StikDebugViewController.m
   LauncherPreferences.m
   LauncherPreferencesViewController.m
   LauncherPrefContCfgViewController.m

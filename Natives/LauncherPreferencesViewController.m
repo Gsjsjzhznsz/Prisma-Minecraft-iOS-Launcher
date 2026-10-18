@@ -30,6 +30,7 @@
 #import "DataExportViewController.h"  // Task223：数据导出二级入口   // Task217：数据导出/导入（包名迁移配套）
 #import "AboutViewController.h"   // Task217：关于页二级菜单入口
 #import "CurseForgeAPIKeyViewController.h"
+#import "StikDebugViewController.h"
 #import "CustomControlsViewController.h"
 #import "AI/AIProviderConfigViewController.h"
 #import "AI/AISessionListViewController.h"
@@ -1955,6 +1956,21 @@ if ([section isEqualToString:@"general"]) {
                     localize(@"preference.debug.jit_enabler.trollstore", nil),
                     localize(@"preference.debug.jit_enabler.manual", nil)
                 ]
+            },
+            @{@"key": @"ame291_builtin_jit",
+              @"title": localize(@"ame291.jit.pref_row", nil),
+              @"hasDetail": @YES,
+              @"icon": @"wrench.and.screwdriver.fill",
+              @"type": self.typeButton,
+              @"enableCondition": whenNotInGame,
+              @"action": ^void(){
+                  // Task291: built-in JIT manager (pairing file + LocalDevVPN
+                  // probe + stikjit:// deep-link enable; PocketJ phase-1 port)
+                  StikDebugViewController *jitVC = [[StikDebugViewController alloc] init];
+                  UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:jitVC];
+                  nav.modalPresentationStyle = UIModalPresentationFormSheet;
+                  [self presentViewController:nav animated:YES completion:nil];
+              }
             },
             @{@"key": @"jit26_script_disable",
                 @"hasDetail": @YES,

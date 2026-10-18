@@ -3810,3 +3810,21 @@ Work Log:
 Stage Summary:
 - PocketJ 继承清单收敛闭环：资源中心=超集结案、Range 续传=笔误撤销、同名账户共存=两刀落地（本地同名复用 update-in-place + 微软同类身份残留清理）、JIT=许可证放行+构建手术定案三阶段方案（待用户点名启动）
 - 装机验证锚点：①重复添加同名离线账户 → 列表单条目（日志 [Task290] reusing existing local account id ...），账户设置立即生效 ②同名微软+离线账户共存于列表（类型标签本地/Microsoft 可区分）③微软重登后历史 username 命名遗留副本自动清除（日志 [Task290] removed stale duplicate Microsoft identity file ...），自定义头像随迁不丢 ④下载中心六 tab 双源浏览不回归（本轮零触碰自证）
+
+---
+Task ID: 291
+Agent: main (Super Z)
+Task: 网站发行版版本检查根修 + PocketJ 内置 JIT 第一阶段移植（参考 StikDebug）+ FCL 聚合搜索对标移植下载中心
+
+Work Log:
+- 【吞字谜案根因破译】复检 website.yml "branches: ain]" 误报——python hex 逐字节拆解 `6272616e636865733a205b6d61696e5d`=`branches: [main]`，文件从未损坏；机制=`[m` 两字节(5b 6d)被工具显示层当 ANSI SGR 序列片段吞掉（历史四例"显示层吞字"同源：[main]/[0m/[m 族）；git status 干净自证。教训升级：凡含 [字母] 模式的显示内容必须 hex 复核，Edit 锚点避开 [m 邻域
+- 【网站根修】真实问题三件：①FALLBACK_TAG 硬编码 v6.5.5 而该版实为 Pre-release Beta（GitHub Latest 实测=v6.5.0 正式版，releases 页 agent 取证）——国内 API 不可达时把 Beta 当正式版展示+下载直达 ②website.yml 触发器其实完好但缺 schedule，构建期数据只随 push 刷新 ③客户端回退链薄弱：1h 缓存过期即丢、403/429 限流无专路、nav CTA/hero 徽章版本文案不随检测更新。修法：构建期 gh release list --jq 取首个非预发布非草稿注入 PUBLIC_LATEST_TAG（GITHUB_TOKEN 1000req/h 免限流）+ schedule '30 21 * * *' 每日重建 + 前端 data-build-tag 回退链（过期缓存优先→构建期标签）+ apply() 统一更新 dl-tag/nav CTA/hero chip 双语文案 + prerelease/draft 显式校验
+- 【PocketJ 内置 JIT 第一阶段落地】StikDebugEngine.h/.m + StikDebugViewController.h/.m（PocketJ Natives/stikdebug 对标移植，AGPL-3.0 与本仓 LICENSE 同谱）：配对文件双副本管理（App Support/Pairing 权威 + Documents 落地，plist 字典校验+0600 权限+security-scoped 导入+导出/删除）+ LocalDevVPN 探针（10.7.0.1:49152 socket 600ms 试连）+ 四段式管理页（JIT 状态/连接准备/配对管理/开启按钮，isJITEnabled(YES)+iOS 17.4 门）。FFI 隧道（idevice.h 7593 行+libidevice_ffi 291KB×2）不入第一阶段；进程内自附加按 PocketJ 上游 #if 0 定案不移植（debugserver vAttach 即挂起=同进程自锁死），"开启"动作=stikjit://enable-jit?bundle-id=&pid=&script-data=(UniversalJIT26.js b64) 与 ame139 家法同构深链交外部 StikDebug；LPVC 调试区新增"内置 JIT 管理"入口行（typeButton+whenNotInGame）；Info.plist LSApplicationQueriesSchemes += stikjit/stikdebug；appex/StikJIT framework 留第二阶段
+- 【FCL 聚合搜索对标移植】参考 FCL-Team/FoldCraftLauncher DownloadPage.searchAggregated 全算法：侧栏源选择器二态→三态（聚合|Modrinth|CurseForge，三按钮 1/3 宽+滑块居中位约束+蓝色聚合档）+ ame291_aggregateFetchWithFilters 双源并行（dispatch_group 两路同 filters）+ 交错合并（同序号 CF 前置）+ 保守去重（slug/标题 alphanumeric 归一化键 + ≤7 天更新窗才合并，PCL 策略 FCL 同值）+ 单源失败降级（InlineMessageView 提示哪源败展哪源）+ 双源失败报错 + 分页双源同步推进 30/页。五 tab（mod/shader/modpack/resourcepack/datapack）聚合装配（filters 与单源路径逐键一致），world 保持 CF 单源（FCL 同语义）；ModrinthAPI/CF 解析补 slug 字段（CF 另补 dateModified→lastUpdated）；逐条目来源路由根修（downloadAtIndexPath 五处页面级 apiSourceForType → 条目级 apiSource 字段——聚合混排下页面级会把 CF 条目错发给 Modrinth 拉版本）+ 聚合模式 cell descLabel 逐条目标注来源平台（FCL getSourceLabel 同语义）
+- 门禁：task139 all balanced / task240 双门 balanced+retired refs=0+import sweep WARN currentMenu 基线预存 / task191 四表 3145 OK（+52 键） / task248 缺键0硬编码0动态键0 / task250 全零 / verify255 53 PASS 零 FAIL / verify219 重锚 3093→3145 后 81/81 ALL GREEN
+- 事故两件：①website.yml 补丁首版块标量内嵌多行 python -c 缩进炸 YAML（换 gh --jq 单行重写）②task291 脚本 \xNN 转义在 str 字面量按码点解析再 UTF-8 编码=双字节乱码（latin-1→utf-8 往返修复器自动鉴别，纯 ASCII 锚重写双保险）
+
+Stage Summary:
+- 网站版本检测三链修全（构建期探测+每日重建+客户端回退链），下一轮 CI 自动部署验证
+- 内置 JIT 第一阶段装机锚点：①设置→调试→内置 JIT 管理：四段页状态如实（JIT 运行/系统支持/配对导入/LocalDevVPN 探针）②导入本机 pairingFile.plist → "已导入"绿态 ③LocalDevVPN 连接后点"开启 JIT"→ 跳转 StikDebug 自动附脚本 ④偏好页新入口行游戏中禁用
+- 聚合搜索装机锚点：①侧栏源选择器三态（聚合居中蓝色）②聚合模式模组/整合包等五 tab 混排双源结果+条目尾"Modrinth/CurseForge"标注 ③点击任一条目版本页来源正确（CF 条目走 CF API）④断网单源→另一源可用+顶部提示条

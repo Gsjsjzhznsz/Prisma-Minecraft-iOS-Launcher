@@ -359,6 +359,8 @@ static NSString *MRAMirrorResolvedURL(NSString *urlString) {
             modData[@"isModpack"] = @([item[@"project_type"] isEqualToString:@"modpack"]);
             modData[@"projectType"] = item[@"project_type"] ?: projectType;
             modData[@"id"] = item[@"project_id"] ?: item[@"slug"] ?: @"";
+            // Task291: slug 暴露给聚合搜索的跨平台保守去重
+            modData[@"slug"] = item[@"slug"] ?: @"";
             modData[@"title"] = item[@"title"] ?: @"Unknown";
             modData[@"description"] = item[@"description"] ?: @"";
             modData[@"author"] = item[@"author"] ?: @"Unknown";

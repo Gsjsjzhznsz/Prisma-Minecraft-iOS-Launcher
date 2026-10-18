@@ -574,6 +574,9 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
 @property (nonatomic, strong) UIView *sidebarSourceContainer;
 @property (nonatomic, strong) UIButton *sidebarModrinthButton;
 @property (nonatomic, strong) UIButton *sidebarCurseforgeButton;
+// Task291: 聚合源三态选择器（聚合 | Modrinth | CurseForge）
+@property (nonatomic, strong) UIButton *sidebarAggregateButton;
+@property (nonatomic, strong) NSLayoutConstraint *sidebarSliderMiddleConstraint;
 @property (nonatomic, strong) NSLayoutConstraint *sidebarSliderLeftConstraint;
 @property (nonatomic, strong) NSLayoutConstraint *sidebarSliderRightConstraint;
 @property (nonatomic, strong) UIView *sidebarSourceTrack;
@@ -1308,12 +1311,27 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     [self.sidebarCurseforgeButton setTitle:@"CF" forState:UIControlStateNormal];
     self.sidebarCurseforgeButton.titleLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightSemibold];
     [self.sidebarCurseforgeButton addTarget:self action:@selector(sidebarCurseforgeClicked:) forControlEvents:UIControlEventTouchUpInside];
+    // Task291: 聚合源点击（内含 CF 可用性门）
+    [self.sidebarAggregateButton addTarget:self action:@selector(sidebarAggregateClicked:) forControlEvents:UIControlEventTouchUpInside];
     [self.sidebarSourceTrack addSubview:self.sidebarCurseforgeButton];
+
+    // 聚合源按钮（Task291：FCL 下载页聚合搜索同款三态源选择）
+    self.sidebarAggregateButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    self.sidebarAggregateButton.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.sidebarAggregateButton setTitle:localize(@"ame291.dl.source_aggregate", nil) forState:UIControlStateNormal];
+    self.sidebarAggregateButton.titleLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightSemibold];
+    self.sidebarAggregateButton.titleLabel.adjustsFontSizeToFitWidth = YES;
+    self.sidebarAggregateButton.titleLabel.minimumScaleFactor = 0.75;
+    [self.sidebarAggregateButton addTarget:self action:@selector(sidebarAggregateClicked:) forControlEvents:UIControlEventTouchUpInside];
+    [self.sidebarSourceTrack addSubview:self.sidebarAggregateButton];
 
     // 下载源滑块位置约束
     self.sidebarSliderLeftConstraint = [self.sidebarSourceSlider.leadingAnchor constraintEqualToAnchor:self.sidebarSourceTrack.leadingAnchor constant:2];
     self.sidebarSliderRightConstraint = [self.sidebarSourceSlider.trailingAnchor constraintEqualToAnchor:self.sidebarSourceTrack.trailingAnchor constant:-2];
     self.sidebarSliderRightConstraint.active = NO;
+    // Task291: 聚合源滑块居中位
+    self.sidebarSliderMiddleConstraint = [self.sidebarSourceSlider.centerXAnchor constraintEqualToAnchor:self.sidebarSourceTrack.centerXAnchor];
+    self.sidebarSliderMiddleConstraint.active = NO;
 
     [NSLayoutConstraint activateConstraints:@[
         // 下载源标题
@@ -1336,19 +1354,25 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
         // 滑块
         [self.sidebarSourceSlider.topAnchor constraintEqualToAnchor:self.sidebarSourceTrack.topAnchor constant:2],
         [self.sidebarSourceSlider.bottomAnchor constraintEqualToAnchor:self.sidebarSourceTrack.bottomAnchor constant:-2],
-        [self.sidebarSourceSlider.widthAnchor constraintEqualToAnchor:self.sidebarSourceTrack.widthAnchor multiplier:0.5 constant:-2],
+        [self.sidebarSourceSlider.widthAnchor constraintEqualToAnchor:self.sidebarSourceTrack.widthAnchor multiplier:(1.0 / 3.0) constant:-2],
         self.sidebarSliderLeftConstraint,
 
         // 两个按钮各占一半
         [self.sidebarModrinthButton.topAnchor constraintEqualToAnchor:self.sidebarSourceTrack.topAnchor],
         [self.sidebarModrinthButton.bottomAnchor constraintEqualToAnchor:self.sidebarSourceTrack.bottomAnchor],
         [self.sidebarModrinthButton.leadingAnchor constraintEqualToAnchor:self.sidebarSourceTrack.leadingAnchor],
-        [self.sidebarModrinthButton.widthAnchor constraintEqualToAnchor:self.sidebarSourceTrack.widthAnchor multiplier:0.5],
+        [self.sidebarModrinthButton.widthAnchor constraintEqualToAnchor:self.sidebarSourceTrack.widthAnchor multiplier:(1.0 / 3.0)],
 
         [self.sidebarCurseforgeButton.topAnchor constraintEqualToAnchor:self.sidebarSourceTrack.topAnchor],
         [self.sidebarCurseforgeButton.bottomAnchor constraintEqualToAnchor:self.sidebarSourceTrack.bottomAnchor],
         [self.sidebarCurseforgeButton.trailingAnchor constraintEqualToAnchor:self.sidebarSourceTrack.trailingAnchor],
-        [self.sidebarCurseforgeButton.widthAnchor constraintEqualToAnchor:self.sidebarSourceTrack.widthAnchor multiplier:0.5]
+        [self.sidebarCurseforgeButton.widthAnchor constraintEqualToAnchor:self.sidebarSourceTrack.widthAnchor multiplier:(1.0 / 3.0)],
+
+        // 聚合源按钮居中三分之一（Task291）
+        [self.sidebarAggregateButton.topAnchor constraintEqualToAnchor:self.sidebarSourceTrack.topAnchor],
+        [self.sidebarAggregateButton.bottomAnchor constraintEqualToAnchor:self.sidebarSourceTrack.bottomAnchor],
+        [self.sidebarAggregateButton.centerXAnchor constraintEqualToAnchor:self.sidebarSourceTrack.centerXAnchor],
+        [self.sidebarAggregateButton.widthAnchor constraintEqualToAnchor:self.sidebarSourceTrack.widthAnchor multiplier:(1.0 / 3.0)]
     ]];
 
     // ===== 2. 游戏版本选择按钮 =====
@@ -1719,6 +1743,26 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     } completion:nil];
 
     // 记录当前类型到侧边栏按钮的 tag，用于点击事件中获取类型
+    // ===== Task291: 侧边栏三态同步（聚合 | Modrinth | CurseForge）=====
+    BOOL isAggregate = [currentSource isEqualToString:@"aggregate"];
+    BOOL sidebarMr = !isAggregate && isModrinth;
+    [self.sidebarAggregateButton setTitleColor:isAggregate ? [UIColor whiteColor] : [UIColor labelColor] forState:UIControlStateNormal];
+    [self.sidebarModrinthButton setTitleColor:sidebarMr ? [UIColor whiteColor] : [UIColor labelColor] forState:UIControlStateNormal];
+    [self.sidebarCurseforgeButton setTitleColor:(!isAggregate && sidebarMr == NO) ? [UIColor whiteColor] : [UIColor labelColor] forState:UIControlStateNormal];
+
+    self.sidebarSliderLeftConstraint.active = sidebarMr;
+    self.sidebarSliderMiddleConstraint.active = isAggregate;
+    self.sidebarSliderRightConstraint.active = (!isAggregate && sidebarMr == NO);
+    UIColor *sidebarSliderColor = isAggregate ? [UIColor systemBlueColor]
+                            : (sidebarMr ? [UIColor systemGreenColor] : [UIColor systemOrangeColor]);
+
+    [UIView animateWithDuration:0.25 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+        self.sidebarSourceSlider.backgroundColor = sidebarSliderColor;
+        [self.sidebarSourceTrack layoutIfNeeded];
+    } completion:nil];
+
+    // 记录当前类型到侧边栏按钮的 tag，用于点击事件中获取类型
+    self.sidebarAggregateButton.tag = [self tagForType:type];
     self.sidebarModrinthButton.tag = [self tagForType:type];
     self.sidebarCurseforgeButton.tag = [self tagForType:type];
 }
@@ -1894,6 +1938,407 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     }
 }
 
+#pragma mark - Task291 聚合搜索（参考 FCL DownloadPage.searchAggregated / PCL ResourceSearcher）
+
+/// 当前 tab 是否处于聚合源（world 强制 CurseForge，永不聚合——FCL 同语义）
+- (BOOL)ame291_isAggregateForType:(NSString *)type {
+    if ([type isEqualToString:@"world"]) return NO;
+    return [[PLPreferences currentDownloadSourceForType:type] isEqualToString:@"aggregate"];
+}
+
+/// 聚合模式逐条目来源标注（FCL getSourceLabel 同语义）；单源模式返回空串
+- (NSString *)ame291_sourceLabelForItem:(NSDictionary *)item tabType:(NSString *)type {
+    if (![self ame291_isAggregateForType:type]) return @"";
+    return ([item[@"apiSource"] integerValue] == 2)
+        ? localize(@"ame291.dl.source_curseforge", nil)
+        : localize(@"ame291.dl.source_modrinth", nil);
+}
+
+/// 条目唯一键：仅保留字母数字并转小写（FCL normalizeKey 同语义；空串返回 nil 不参与去重）
+- (NSString *)ame291_normalizeKey:(NSString *)value {
+    if (value.length == 0) return nil;
+    NSMutableString *normalized = [NSMutableString stringWithCapacity:value.length];
+    for (NSUInteger i = 0; i < value.length; i++) {
+        unichar c = [value characterAtIndex:i];
+        if ([[NSCharacterSet alphanumericCharacterSet] characterIsMember:c]) {
+            [normalized appendFormat:@"%C", c];
+        }
+    }
+    NSString *key = normalized.lowercaseString;
+    return key.length > 0 ? key : nil;
+}
+
+/// ISO8601 时间戳解析（Modrinth date_modified / CurseForge dateModified 同构；失败返回 0）
+- (NSTimeInterval)ame291_parseISO8601:(NSString *)value {
+    if (value.length == 0) return 0;
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
+        formatter.timeZone = [NSTimeZone timeZoneForSecondsFromGMT:0];
+        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'";
+    });
+    NSDate *date = [formatter dateFromString:value];
+    if (!date) {
+        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
+        date = [formatter dateFromString:value];
+        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'";
+    }
+    return date ? [date timeIntervalSince1970] : 0;
+}
+
+/// 跨平台保守合并窗口：最近更新时间相差 ≤7 天才视为同一工程的同步数据（PCL 策略，FCL 同值）
+static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
+
+- (void)ame291_addIfDistinct:(NSDictionary *)item
+                   toMerged:(NSMutableArray<NSDictionary *> *)merged
+                       seen:(NSMutableDictionary<NSString *, NSNumber *> *)seen {
+    NSString *slugKey = [self ame291_normalizeKey:item[@"slug"]];
+    NSString *titleKey = [self ame291_normalizeKey:item[@"title"]];
+    NSString *hitKey = nil;
+    if (slugKey.length > 0 && seen[[@"slug:" stringByAppendingString:slugKey]] != nil) {
+        hitKey = [@"slug:" stringByAppendingString:slugKey];
+    } else if (titleKey.length > 0 && seen[[@"title:" stringByAppendingString:titleKey]] != nil) {
+        hitKey = [@"title:" stringByAppendingString:titleKey];
+    }
+    NSTimeInterval modified = [self ame291_parseISO8601:item[@"lastUpdated"]];
+    if (hitKey != nil) {
+        NSTimeInterval existing = [seen[hitKey] doubleValue];
+        // 时间不可得或差超窗口 → 两平台条目都显示（数据不同步时的保守策略）
+        NSTimeInterval delta = (existing > modified) ? (existing - modified) : (modified - existing);
+        if (existing <= 0 || modified <= 0 || delta > kAme291MergeWindowSeconds) {
+            [merged addObject:item];
+        }
+        return;
+    }
+    if (slugKey.length > 0) seen[[@"slug:" stringByAppendingString:slugKey]] = @(modified);
+    if (titleKey.length > 0) seen[[@"title:" stringByAppendingString:titleKey]] = @(modified);
+    [merged addObject:item];
+}
+
+/// 交错合并（同序号 CurseForge 前置，FCL 同语义）
+- (NSMutableArray<NSDictionary *> *)ame291_mergeCurse:(NSArray *)curse withModrinth:(NSArray *)modrinth {
+    NSMutableArray *merged = [NSMutableArray arrayWithCapacity:curse.count + modrinth.count];
+    NSMutableDictionary *seen = [NSMutableDictionary dictionary];
+    NSUInteger count = MAX(curse.count, modrinth.count);
+    for (NSUInteger i = 0; i < count; i++) {
+        if (i < curse.count) [self ame291_addIfDistinct:curse[i] toMerged:merged seen:seen];
+        if (i < modrinth.count) [self ame291_addIfDistinct:modrinth[i] toMerged:merged seen:seen];
+    }
+    return merged;
+}
+
+/// 单源降级提示（InlineMessageView 信息条，3s 自动消退）
+- (void)ame291_showPartialWarning:(NSString *)message {
+    if (message.length == 0) return;
+    InlineMessageView *notice = [InlineMessageView showInViewController:self
+                                                                 title:localize(@"ame291.dl.aggregate_partial_title", nil)
+                                                               message:message
+                                                                  type:InlineMessageTypeInfo];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [notice dismiss];
+    });
+}
+
+/// 双源并行检索（同 filters 打 Modrinth + CurseForge 两路），交错合并 + 保守去重；
+/// 单源失败降级另一源（warning 带来源名），双源失败 error 返回。
+/// completion 主线程回调：merged（双源全失败时为 nil）、cfCount/mrCount（分页推进）、
+/// error、warning（单源降级提示，nil 表示无降级）。
+- (void)ame291_aggregateFetchWithFilters:(NSDictionary *)filters
+                              completion:(void (^)(NSArray *merged, NSInteger cfCount, NSInteger mrCount, NSError *error, NSString *warning))completion {
+    NSMutableDictionary *cfFilters = [filters mutableCopy];
+    NSMutableDictionary *mrFilters = [filters mutableCopy];
+    __block NSArray *cfResults = nil;
+    __block NSArray *mrResults = nil;
+    __block NSError *cfError = nil;
+    __block NSError *mrError = nil;
+    dispatch_group_t group = dispatch_group_create();
+    dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+
+    dispatch_group_enter(group);
+    dispatch_async(queue, ^{
+        [[CurseForgeAPI sharedInstance] searchModWithFilters:cfFilters completion:^(NSArray *results, NSError *error) {
+            cfResults = results;
+            cfError = error;
+            dispatch_group_leave(group);
+        }];
+    });
+    dispatch_group_enter(group);
+    dispatch_async(queue, ^{
+        [[ModrinthAPI sharedInstance] searchModWithFilters:mrFilters completion:^(NSArray *results, NSError *error) {
+            mrResults = results;
+            mrError = error;
+            dispatch_group_leave(group);
+        }];
+    });
+
+    dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+        NSArray *cf = [cfResults isKindOfClass:NSArray.class] ? cfResults : nil;
+        NSArray *mr = [mrResults isKindOfClass:NSArray.class] ? mrResults : nil;
+        if (cf == nil && mr == nil) {
+            NSError *error = cfError ?: mrError
+                ?: [NSError errorWithDomain:@"DownloadVCError" code:-291
+                                   userInfo:@{NSLocalizedDescriptionKey: localize(@"ame291.dl.aggregate_failed", nil)}];
+            if (completion) completion(nil, 0, 0, error, nil);
+            return;
+        }
+        NSMutableArray *merged = [self ame291_mergeCurse:cf withModrinth:mr];
+        NSString *warning = nil;
+        if (cf == nil && mr != nil) {
+            warning = [NSString stringWithFormat:localize(@"ame291.dl.aggregate_partial", nil),
+                       localize(@"ame291.dl.source_curseforge", nil),
+                       localize(@"ame291.dl.source_modrinth", nil)];
+        } else if (mr == nil && cf != nil) {
+            warning = [NSString stringWithFormat:localize(@"ame291.dl.aggregate_partial", nil),
+                       localize(@"ame291.dl.source_modrinth", nil),
+                       localize(@"ame291.dl.source_curseforge", nil)];
+        }
+        if (completion) completion(merged, (NSInteger)cf.count, (NSInteger)mr.count, nil, warning);
+    });
+}
+
+- (void)sidebarAggregateClicked:(UIButton *)sender {
+    NSString *type = [self typeForTag:sender.tag];
+    NSString *currentSource = [PLPreferences currentDownloadSourceForType:type];
+    if ([currentSource isEqualToString:@"aggregate"]) return;
+
+    // 聚合含 CurseForge 分支：与 CF 单源点击同门槛（免 key 镜像回落放行）
+    if (![CurseForgeAPI isSourceAvailable]) {
+        InlineMessageView *msgView = [InlineMessageView showInViewController:self
+                                                                      title:localize(@"i18n_str_171", nil)
+                                                                   message:localize(@"i18n_str_172", nil)
+                                                                      type:InlineMessageTypeInfo];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [msgView dismiss];
+            [self openCurseForgeAPIKeySettings];
+        });
+        return;
+    }
+
+    NSLog(@"[DownloadVC] Task291 source switch: type=%@ %@ -> aggregate", type, currentSource);
+    [PLPreferences setDownloadSource:@"aggregate" forType:type];
+    [self updateSourceSwitchButtonsForType:type];
+    [self reloadCurrentList];
+}
+
+
+#pragma mark - Task291 聚合模式各 tab 装配（filters 与单源路径逐键一致）
+
+- (void)ame291_loadModListAggregate {
+    if (self.isLoadingMoreMods) return;
+    self.isLoadingMoreMods = YES;
+    NSString *requestedQuery = self.modSearchQuery ?: @"";
+    if (self.currentModOffset == 0) [self.loadingIndicator startAnimating];
+
+    NSMutableDictionary *filters = [NSMutableDictionary dictionary];
+    filters[@"limit"] = @30;
+    filters[@"offset"] = @(self.currentModOffset);
+    if (self.modSearchQuery.length > 0) filters[@"query"] = self.modSearchQuery;
+    if (self.currentGameVersion.length > 0) filters[@"version"] = self.currentGameVersion;
+    if (self.currentModLoader.length > 0) filters[@"loader"] = self.currentModLoader;
+    if (self.currentSortField.length > 0) filters[@"sort"] = self.currentSortField;
+
+    __weak typeof(self) weakSelf = self;
+    [self ame291_aggregateFetchWithFilters:filters completion:^(NSArray *merged, NSInteger cfCount, NSInteger mrCount, NSError *error, NSString *warning) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        if (![(strongSelf.modSearchQuery ?: @"") isEqualToString:requestedQuery]) {
+            strongSelf.isLoadingMoreMods = NO;
+            return;
+        }
+        [strongSelf.loadingIndicator stopAnimating];
+        [strongSelf.modTableView.refreshControl endRefreshing];
+        strongSelf.isLoadingMoreMods = NO;
+        if (merged) {
+            if (strongSelf.currentModOffset == 0) [strongSelf.modList removeAllObjects];
+            [strongSelf.modList addObjectsFromArray:merged];
+            strongSelf.hasMoreMods = (cfCount >= 30 || mrCount >= 30);
+            strongSelf.currentModOffset += 30;
+            [strongSelf.modTableView reloadData];
+            strongSelf.emptyLabel.hidden = (strongSelf.modList.count > 0);
+            if (strongSelf.modList.count == 0) {
+                strongSelf.emptyLabel.text = localize(@"i18n_str_180", nil);
+                strongSelf.emptyLabel.hidden = NO;
+            }
+        } else if (error) {
+            [strongSelf showError:error.localizedDescription];
+        }
+        if (warning.length > 0) [strongSelf ame291_showPartialWarning:warning];
+    }];
+}
+
+- (void)ame291_loadShaderListAggregate {
+    if (self.isLoadingMoreShaders) return;
+    self.isLoadingMoreShaders = YES;
+    NSString *requestedQuery = self.shaderSearchQuery ?: @"";
+    if (self.currentShaderOffset == 0) [self.loadingIndicator startAnimating];
+
+    NSMutableDictionary *filters = [NSMutableDictionary dictionary];
+    filters[@"limit"] = @30;
+    filters[@"offset"] = @(self.currentShaderOffset);
+    filters[@"projectType"] = @"shader";
+    if (self.shaderSearchQuery.length > 0) filters[@"query"] = self.shaderSearchQuery;
+    if (self.currentGameVersion.length > 0) filters[@"version"] = self.currentGameVersion;
+
+    __weak typeof(self) weakSelf = self;
+    [self ame291_aggregateFetchWithFilters:filters completion:^(NSArray *merged, NSInteger cfCount, NSInteger mrCount, NSError *error, NSString *warning) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        if (![(strongSelf.shaderSearchQuery ?: @"") isEqualToString:requestedQuery]) {
+            strongSelf.isLoadingMoreShaders = NO;
+            return;
+        }
+        [strongSelf.loadingIndicator stopAnimating];
+        [strongSelf.shaderTableView.refreshControl endRefreshing];
+        strongSelf.isLoadingMoreShaders = NO;
+        if (merged) {
+            if (strongSelf.currentShaderOffset == 0) [strongSelf.shaderList removeAllObjects];
+            [strongSelf.shaderList addObjectsFromArray:merged];
+            strongSelf.hasMoreShaders = (cfCount >= 30 || mrCount >= 30);
+            strongSelf.currentShaderOffset += 30;
+            [strongSelf.shaderTableView reloadData];
+            strongSelf.emptyLabel.hidden = (strongSelf.shaderList.count > 0);
+            if (strongSelf.shaderList.count == 0) {
+                strongSelf.emptyLabel.text = localize(@"i18n_str_181", nil);
+                strongSelf.emptyLabel.hidden = NO;
+            }
+        } else if (error) {
+            [strongSelf showError:error.localizedDescription];
+        }
+        if (warning.length > 0) [strongSelf ame291_showPartialWarning:warning];
+    }];
+}
+
+- (void)ame291_loadModpackListAggregate {
+    if (self.isLoadingModpacks) return;
+    self.isLoadingModpacks = YES;
+    NSString *requestedQuery = self.modpackSearchQuery ?: @"";
+    if (self.currentModpackOffset == 0) [self.loadingIndicator startAnimating];
+
+    NSMutableDictionary *filters = [NSMutableDictionary dictionary];
+    filters[@"isModpack"] = @YES;
+    filters[@"projectType"] = @"modpack";
+    filters[@"limit"] = @30;
+    filters[@"offset"] = @(self.currentModpackOffset);
+    if (self.modpackSearchQuery.length > 0) filters[@"query"] = self.modpackSearchQuery;
+    if (self.currentGameVersion.length > 0) filters[@"version"] = self.currentGameVersion;
+    if (self.currentSortField.length > 0) filters[@"sort"] = self.currentSortField;
+    if (self.currentModLoader.length > 0) filters[@"loader"] = self.currentModLoader;
+
+    __weak typeof(self) weakSelf = self;
+    [self ame291_aggregateFetchWithFilters:filters completion:^(NSArray *merged, NSInteger cfCount, NSInteger mrCount, NSError *error, NSString *warning) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        if (![(strongSelf.modpackSearchQuery ?: @"") isEqualToString:requestedQuery]) {
+            strongSelf.isLoadingModpacks = NO;
+            return;
+        }
+        [strongSelf.loadingIndicator stopAnimating];
+        [strongSelf.modpackTableView.refreshControl endRefreshing];
+        strongSelf.isLoadingModpacks = NO;
+        if (merged) {
+            if (strongSelf.currentModpackOffset == 0) [strongSelf.modpackList removeAllObjects];
+            [strongSelf.modpackList addObjectsFromArray:merged];
+            strongSelf.hasMoreModpacks = (cfCount >= 30 || mrCount >= 30);
+            strongSelf.currentModpackOffset += 30;
+            [strongSelf.modpackTableView reloadData];
+            strongSelf.emptyLabel.hidden = (strongSelf.modpackList.count > 0);
+            if (strongSelf.modpackList.count == 0) {
+                strongSelf.emptyLabel.text = localize(@"i18n_str_182", nil);
+                strongSelf.emptyLabel.hidden = NO;
+            }
+        } else if (error) {
+            [strongSelf showError:error.localizedDescription];
+        }
+        if (warning.length > 0) [strongSelf ame291_showPartialWarning:warning];
+    }];
+}
+
+- (void)ame291_loadResourcepackListAggregate {
+    if (self.isLoadingResourcepacks) return;
+    self.isLoadingResourcepacks = YES;
+    NSString *requestedQuery = self.resourcepackSearchQuery ?: @"";
+    if (self.currentResourcepackOffset == 0) [self.loadingIndicator startAnimating];
+
+    NSMutableDictionary *filters = [NSMutableDictionary dictionary];
+    filters[@"limit"] = @30;
+    filters[@"offset"] = @(self.currentResourcepackOffset);
+    filters[@"projectType"] = @"resourcepack";
+    if (self.resourcepackSearchQuery.length > 0) filters[@"query"] = self.resourcepackSearchQuery;
+    if (self.currentGameVersion.length > 0) filters[@"version"] = self.currentGameVersion;
+
+    __weak typeof(self) weakSelf = self;
+    [self ame291_aggregateFetchWithFilters:filters completion:^(NSArray *merged, NSInteger cfCount, NSInteger mrCount, NSError *error, NSString *warning) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        if (![(strongSelf.resourcepackSearchQuery ?: @"") isEqualToString:requestedQuery]) {
+            strongSelf.isLoadingResourcepacks = NO;
+            return;
+        }
+        [strongSelf.loadingIndicator stopAnimating];
+        [strongSelf.resourcepackTableView.refreshControl endRefreshing];
+        strongSelf.isLoadingResourcepacks = NO;
+        if (merged) {
+            if (strongSelf.currentResourcepackOffset == 0) [strongSelf.resourcepackList removeAllObjects];
+            [strongSelf.resourcepackList addObjectsFromArray:merged];
+            strongSelf.hasMoreResourcepacks = (cfCount >= 30 || mrCount >= 30);
+            strongSelf.currentResourcepackOffset += 30;
+            [strongSelf.resourcepackTableView reloadData];
+            strongSelf.emptyLabel.hidden = (strongSelf.resourcepackList.count > 0);
+            if (strongSelf.resourcepackList.count == 0) {
+                strongSelf.emptyLabel.text = localize(@"i18n_str_183", nil);
+                strongSelf.emptyLabel.hidden = NO;
+            }
+        } else if (error) {
+            [strongSelf showError:error.localizedDescription];
+        }
+        if (warning.length > 0) [strongSelf ame291_showPartialWarning:warning];
+    }];
+}
+
+- (void)ame291_loadDatapackListAggregate {
+    if (self.isLoadingDatapacks) return;
+    self.isLoadingDatapacks = YES;
+    NSString *requestedQuery = self.datapackSearchQuery ?: @"";
+    if (self.currentDatapackOffset == 0) [self.loadingIndicator startAnimating];
+
+    NSMutableDictionary *filters = [NSMutableDictionary dictionary];
+    filters[@"limit"] = @30;
+    filters[@"offset"] = @(self.currentDatapackOffset);
+    filters[@"projectType"] = @"datapack";
+    if (self.datapackSearchQuery.length > 0) filters[@"query"] = self.datapackSearchQuery;
+    if (self.currentGameVersion.length > 0) filters[@"version"] = self.currentGameVersion;
+
+    __weak typeof(self) weakSelf = self;
+    [self ame291_aggregateFetchWithFilters:filters completion:^(NSArray *merged, NSInteger cfCount, NSInteger mrCount, NSError *error, NSString *warning) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        if (![(strongSelf.datapackSearchQuery ?: @"") isEqualToString:requestedQuery]) {
+            strongSelf.isLoadingDatapacks = NO;
+            return;
+        }
+        [strongSelf.loadingIndicator stopAnimating];
+        [strongSelf.datapackTableView.refreshControl endRefreshing];
+        strongSelf.isLoadingDatapacks = NO;
+        if (merged) {
+            if (strongSelf.currentDatapackOffset == 0) [strongSelf.datapackList removeAllObjects];
+            [strongSelf.datapackList addObjectsFromArray:merged];
+            strongSelf.hasMoreDatapacks = (cfCount >= 30 || mrCount >= 30);
+            strongSelf.currentDatapackOffset += 30;
+            [strongSelf.datapackTableView reloadData];
+            strongSelf.emptyLabel.hidden = (strongSelf.datapackList.count > 0);
+            if (strongSelf.datapackList.count == 0) {
+                strongSelf.emptyLabel.text = localize(@"i18n_str_184", nil);
+                strongSelf.emptyLabel.hidden = NO;
+            }
+        } else if (error) {
+            [strongSelf showError:error.localizedDescription];
+        }
+        if (warning.length > 0) [strongSelf ame291_showPartialWarning:warning];
+    }];
+}
+
 - (id)currentAPIForTabType:(NSString *)type {
     // Modrinth 不支持 project_type:world facet (其 project_type 仅 mod/modpack/shader/resourcepack/plugin)
     // 世界 tab 强制走 CurseForge (classID 17 = Worlds 真实存在)
@@ -2046,6 +2491,8 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
 }
 
 - (void)loadModList {
+    // Task291: 聚合源→ 双源并行合并检索
+    if ([self ame291_isAggregateForType:@"mod"]) { [self ame291_loadModListAggregate]; return; }
     if (self.isLoadingMoreMods) return;
     self.isLoadingMoreMods = YES;
 
@@ -2132,6 +2579,8 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
 }
 
 - (void)loadShaderList {
+    // Task291: 聚合源→ 双源并行合并检索
+    if ([self ame291_isAggregateForType:@"shader"]) { [self ame291_loadShaderListAggregate]; return; }
     if (self.isLoadingMoreShaders) return;
     self.isLoadingMoreShaders = YES;
 
@@ -2212,6 +2661,8 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
 }
 
 - (void)loadModpackList {
+    // Task291: 聚合源→ 双源并行合并检索
+    if ([self ame291_isAggregateForType:@"modpack"]) { [self ame291_loadModpackListAggregate]; return; }
     if (self.isLoadingModpacks) return;
     self.isLoadingModpacks = YES;
     
@@ -2294,6 +2745,8 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
 }
 
 - (void)loadResourcePackList {
+    // Task291: 聚合源→ 双源并行合并检索
+    if ([self ame291_isAggregateForType:@"resourcepack"]) { [self ame291_loadResourcepackListAggregate]; return; }
     if (self.isLoadingResourcepacks) return;
     self.isLoadingResourcepacks = YES;
 
@@ -2371,6 +2824,8 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
 }
 
 - (void)loadDataPackList {
+    // Task291: 聚合源→ 双源并行合并检索
+    if ([self ame291_isAggregateForType:@"datapack"]) { [self ame291_loadDatapackListAggregate]; return; }
     if (self.isLoadingDatapacks) return;
     self.isLoadingDatapacks = YES;
 
@@ -4788,7 +5243,9 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     versionVC.delegate = self;
     versionVC.title = modItem.displayName;
     // 修复（来源丢失）：沿用 modpack 搜索时的 API 来源，避免拿 CurseForge 数字 ID 请求 Modrinth
-    versionVC.apiSource = [self apiSourceForType:@"modpack"];
+    // Task291: 逐条目来源路由（聚合模式条目混排，页面级来源会把 CF 条目错发给 Modrinth；单源下与页面级值恒等）
+    NSInteger ame291_itemSource_modpack = [modpack[@"apiSource"] integerValue];
+    versionVC.apiSource = (ame291_itemSource_modpack == 2) ? 2 : 1;
     // FCL 风格：传入当前 profile 的偏好版本和加载器，自动选中匹配 chip 并置顶
     versionVC.preferredGameVersion = [self currentProfileMinecraftVersion];
     versionVC.preferredLoader = [self currentProfileLoader];
@@ -5184,24 +5641,44 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
         cell = [tableView dequeueReusableCellWithIdentifier:@"ModCell" forIndexPath:indexPath];
         NSDictionary *mod = self.modList[indexPath.row];
         [cell configureWithMod:mod];
+        // Task291: 聚合模式逐条目标注来源平台（FCL getSourceLabel 同语义）
+        NSString *ame291_cellSrc_mod = [self ame291_sourceLabelForItem:mod tabType:@"mod"];
+        if (ame291_cellSrc_mod.length > 0) {
+            cell.descLabel.text = [cell.descLabel.text stringByAppendingFormat:@" · %@", ame291_cellSrc_mod];
+        }
         [cell.downloadButton addTarget:self action:@selector(downloadMod:) forControlEvents:UIControlEventTouchUpInside];
         cell.downloadButton.tag = indexPath.row;
     } else if (tableView == self.shaderTableView) {
         cell = [tableView dequeueReusableCellWithIdentifier:@"ShaderCell" forIndexPath:indexPath];
         NSDictionary *shader = self.shaderList[indexPath.row];
         [cell configureWithShader:shader];
+        // Task291: 聚合模式逐条目标注来源平台（FCL getSourceLabel 同语义）
+        NSString *ame291_cellSrc_shader = [self ame291_sourceLabelForItem:shader tabType:@"shader"];
+        if (ame291_cellSrc_shader.length > 0) {
+            cell.descLabel.text = [cell.descLabel.text stringByAppendingFormat:@" · %@", ame291_cellSrc_shader];
+        }
         [cell.downloadButton addTarget:self action:@selector(downloadShader:) forControlEvents:UIControlEventTouchUpInside];
         cell.downloadButton.tag = indexPath.row;
     } else if (tableView == self.resourcepackTableView) {
         cell = [tableView dequeueReusableCellWithIdentifier:@"ResourcepackCell" forIndexPath:indexPath];
         NSDictionary *resourcepack = self.resourcepackList[indexPath.row];
         [cell configureWithResourcepack:resourcepack];
+        // Task291: 聚合模式逐条目标注来源平台（FCL getSourceLabel 同语义）
+        NSString *ame291_cellSrc_resourcepack = [self ame291_sourceLabelForItem:resourcepack tabType:@"resourcepack"];
+        if (ame291_cellSrc_resourcepack.length > 0) {
+            cell.descLabel.text = [cell.descLabel.text stringByAppendingFormat:@" · %@", ame291_cellSrc_resourcepack];
+        }
         [cell.downloadButton addTarget:self action:@selector(downloadResourcepack:) forControlEvents:UIControlEventTouchUpInside];
         cell.downloadButton.tag = indexPath.row;
     } else if (tableView == self.datapackTableView) {
         cell = [tableView dequeueReusableCellWithIdentifier:@"DatapackCell" forIndexPath:indexPath];
         NSDictionary *datapack = self.datapackList[indexPath.row];
         [cell configureWithDatapack:datapack];
+        // Task291: 聚合模式逐条目标注来源平台（FCL getSourceLabel 同语义）
+        NSString *ame291_cellSrc_datapack = [self ame291_sourceLabelForItem:datapack tabType:@"datapack"];
+        if (ame291_cellSrc_datapack.length > 0) {
+            cell.descLabel.text = [cell.descLabel.text stringByAppendingFormat:@" · %@", ame291_cellSrc_datapack];
+        }
         [cell.downloadButton addTarget:self action:@selector(downloadDatapack:) forControlEvents:UIControlEventTouchUpInside];
         cell.downloadButton.tag = indexPath.row;
     } else if (tableView == self.worldTableView) {
@@ -5214,6 +5691,11 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
         cell = [tableView dequeueReusableCellWithIdentifier:@"ModpackCell" forIndexPath:indexPath];
         NSDictionary *modpack = self.modpackList[indexPath.row];
         [cell configureWithModpack:modpack];
+        // Task291: 聚合模式逐条目标注来源平台（FCL getSourceLabel 同语义）
+        NSString *ame291_cellSrc_modpack = [self ame291_sourceLabelForItem:modpack tabType:@"modpack"];
+        if (ame291_cellSrc_modpack.length > 0) {
+            cell.descLabel.text = [cell.descLabel.text stringByAppendingFormat:@" · %@", ame291_cellSrc_modpack];
+        }
         [cell.downloadButton addTarget:self action:@selector(installModpack:) forControlEvents:UIControlEventTouchUpInside];
         cell.downloadButton.tag = indexPath.row;
     }
@@ -5350,7 +5832,9 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     versionVC.delegate = self;
     versionVC.title = modItem.displayName;
     // 修复（来源丢失）：沿用 mod 搜索时的 API 来源，避免拿 CurseForge 数字 ID 请求 Modrinth
-    versionVC.apiSource = [self apiSourceForType:@"mod"];
+    // Task291: 逐条目来源路由（聚合模式条目混排，页面级来源会把 CF 条目错发给 Modrinth；单源下与页面级值恒等）
+    NSInteger ame291_itemSource_mod = [mod[@"apiSource"] integerValue];
+    versionVC.apiSource = (ame291_itemSource_mod == 2) ? 2 : 1;
     // FCL 风格：传入当前 profile 的偏好版本和加载器，自动选中匹配 chip 并置顶
     versionVC.preferredGameVersion = [self currentProfileMinecraftVersion];
     versionVC.preferredLoader = [self currentProfileLoader];
@@ -5374,7 +5858,9 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     versionVC.delegate = self;
     versionVC.title = shaderItem.displayName;
     // 修复（来源丢失）：沿用 shader 搜索时的 API 来源，避免拿 CurseForge 数字 ID 请求 Modrinth
-    versionVC.apiSource = [self apiSourceForType:@"shader"];
+    // Task291: 逐条目来源路由（聚合模式条目混排，页面级来源会把 CF 条目错发给 Modrinth；单源下与页面级值恒等）
+    NSInteger ame291_itemSource_shader = [shader[@"apiSource"] integerValue];
+    versionVC.apiSource = (ame291_itemSource_shader == 2) ? 2 : 1;
     // FCL 风格：传入当前 profile 的偏好版本和加载器，自动选中匹配 chip 并置顶匹配版本
     // 补齐与 ModVersionViewController 不对称的 preferred 传参（阶段3统一）
     versionVC.preferredGameVersion = [self currentProfileMinecraftVersion];
@@ -5401,7 +5887,9 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     versionVC.assetType = AssetVersionTypeResourcePack;
     versionVC.projectID = item.onlineID;
     // 修复（来源丢失）：沿用 resourcepack 搜索时的 API 来源，避免拿 CurseForge 数字 ID 请求 Modrinth
-    versionVC.apiSource = [self apiSourceForType:@"resourcepack"];
+    // Task291: 逐条目来源路由（聚合模式条目混排，页面级来源会把 CF 条目错发给 Modrinth；单源下与页面级值恒等）
+    NSInteger ame291_itemSource_resourcepack = [resourcepack[@"apiSource"] integerValue];
+    versionVC.apiSource = (ame291_itemSource_resourcepack == 2) ? 2 : 1;
     versionVC.projectDisplayName = item.displayName;
     versionVC.delegate = self;
     versionVC.title = item.displayName;
@@ -5437,7 +5925,9 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     versionVC.assetType = AssetVersionTypeDataPack;
     versionVC.projectID = item.onlineID;
     // 修复（来源丢失）：沿用 datapack 搜索时的 API 来源，避免拿 CurseForge 数字 ID 请求 Modrinth
-    versionVC.apiSource = [self apiSourceForType:@"datapack"];
+    // Task291: 逐条目来源路由（聚合模式条目混排，页面级来源会把 CF 条目错发给 Modrinth；单源下与页面级值恒等）
+    NSInteger ame291_itemSource_datapack = [datapack[@"apiSource"] integerValue];
+    versionVC.apiSource = (ame291_itemSource_datapack == 2) ? 2 : 1;
     versionVC.projectDisplayName = item.displayName;
     versionVC.delegate = self;
     versionVC.title = item.displayName;

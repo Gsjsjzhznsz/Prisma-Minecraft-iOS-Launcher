@@ -593,6 +593,9 @@ static NSString *CFA169NormalizeGameVersion(NSString *v) {
         // curl åè¯ï¼downloadCount ä¸ç´å¨ååºéï¼çº¯å±å­æ®µåæ­å±ã
         @"downloads": [project[@"downloadCount"] isKindOfClass:NSNumber.class]
             ? project[@"downloadCount"] : @0,
+        // Task291: slug + dateModified 暴露给聚合搜索的跨平台保守去重
+        @"slug": [project[@"slug"] isKindOfClass:NSString.class] ? project[@"slug"] : @"",
+        @"lastUpdated": [project[@"dateModified"] isKindOfClass:NSString.class] ? project[@"dateModified"] : @"",
         @"imageUrl": [self imageURLForProject:project]
     }.mutableCopy;
 }

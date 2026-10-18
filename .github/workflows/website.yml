@@ -8,6 +8,10 @@ on:
     branches: [main]
     paths: ['website/**', 'announcements.json', '.github/workflows/website.yml']
   workflow_dispatch:
+  # Task291: daily rebuild keeps the build-time latest-release tag and
+  # announcements fresh even when main is quiet.
+  schedule:
+    - cron: '30 21 * * *'
 
 permissions:
   contents: read
@@ -28,6 +32,25 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: website/package-lock.json
+      # Task291: detect the latest STABLE release (non-prerelease, non-draft)
+      # server-side with gh (authenticated 1000 req/h, immune to the
+      # client-side rate-limit pain) and bake it into the Astro build as
+      # PUBLIC_LATEST_TAG. index.astro falls back to the static v6.5.0
+      # when detection fails. The old static v6.5.5 was a prerelease beta
+      # -- root cause of the site advertising a beta as the stable pick.
+      - name: Detect latest stable release tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=$(gh release list -R "$GITHUB_REPOSITORY" --limit 100 \
+            --json tagName,isDraft,isPrerelease \
+            --jq '[.[] | select(.isDraft == false and .isPrerelease == false)][0].tagName' 2>/dev/null || true)
+          if [ -n "$TAG" ]; then
+            echo "PUBLIC_LATEST_TAG=$TAG" >> "$GITHUB_ENV"
+            echo "Baked latest stable release tag: $TAG"
+          else
+            echo "Detection failed; Astro falls back to the baked static v6.5.0"
+          fi
       - name: Install & build
         working-directory: website
         run: |
