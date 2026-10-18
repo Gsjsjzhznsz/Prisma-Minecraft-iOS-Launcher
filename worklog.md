@@ -3702,3 +3702,22 @@ Stage Summary:
 - 提交推送 main（a94669c2..本轮）；CI 出包后装机验证
 - 装机锚点：①版本设置 JVM 预设选"性能优先"即生效（日志 [JavaLauncher] Task285: JVM preset='performance' (source=profile/版本设置) + Task255 JVM preset=performance (Java 8): ParallelGC）②连点悬浮菜单停止连点后菜单立即开最新内容（日志 Task285: rapid re-tap coalesced into armed request + armed re-present fired）③菜单面板随设备方向与游戏内容同向（⊥ 态面板/遮罩随 canvas 转置）④小窗控件消失下轮日志以 Task285 reassert 三元组定音
 - CodeCache 硬上限说明：iOS 26+ 镜像路径 64MB 是 StikDebug 外部工具授予的 RX 映射定值，本仓库不可调；已做预算内 Initial 48m 一次到位 + 非镜像轨 256m；若需突破须上游 StikDebug 放开映射请求大小
+
+---
+Task ID: 286
+Agent: main (Super Z)
+Task: 用户装机反馈三项 + PocketJ 对标深度优化（游戏内设置不立即生效 / 连点仍延迟 / 查看 EricoEC/PocketJLauncher 以此深度优化本项目）
+
+Work Log:
+- 基线：git 同步 42839aa9（Task285，本地==origin/main）；上游对标仓库 PocketJLauncher v1.4（EricoEC，同谱系 PojavLauncher→Amethyst-iOS fork，GPL-3.0）浅克隆至仓外 /home/z/my-project/pocketj-ref 做代码级盘点（两仓同名文件 diff + 专项探查），产出 TOP10 可移植优化清单（存共享 worklog 会话记录）
+- ①游戏内设置热生效（LPVC+SurfaceVC+Navigation 三点，本仓真 bug 非对标项）：根因=viewWillDisappear 刷新桥 self.navigationController==null 恒 NO——游戏内设置页被 Navigation 包装呈现（Task224 actionOpenPreferences）后 updatePreferenceChanges 全仓仅 SurfaceViewController viewDidLoad 一处调用，mouse_speed/mouse_scale/virtmouse/手势/热栏滑动/触感/长按时长/陀螺仪三键/录制隐藏/性能HUD/音频三键/自动纠错全部滞留"下次进游戏"生效；修后对齐上游 PocketJ 同名机制：actionOpenPreferences 置 vc.presentedInGame=YES → viewWillDisappear 回调 presenter 新方法 applyInGamePreferenceChanges（=旧链剥 updateSavedResolution——Task187 分辨率/FSR"下次启动"语义保持，防会话内 drawable 重排触摸错位）+ button_scale 实际变化时 Task64 恢复默认控件同款 removeAllButtons+loadCustomControls 热重载（ame286_lastAppliedButtonScale 基线比对防 viewDidLoad 路径双重建）+ home indicator setNeedsUpdate 补齐（旧链只在菜单开合 completion 调）； PocketJ 反向印证：其 SurfaceViewController+Navigation.m:150 presentedInGame + LPVC:452 同构桥——两边同源，上游修了本仓漏修
+- ②iOS 27 CompressedClassSpace 兼容（launchJVM+launchHeadlessJVM 双点，PocketJ JavaLauncher.m:588 同款移植）：majorVersion>=27 无条件追加 -XX:-UseCompressedClassPointers——iOS 27 拒绝 HotSpot 默认 1GiB compressed class space 预留，即使持有 extended-virtual-addressing entitlement；本仓旧条件仅查 entitlement（:3572/:4076），带权包在 iOS 27（用户实机 iPadOS 27）17+ 会话存在 Metaspace 初始化期失败面；代价 klass 指针 64 位换确定性可启动
+- ③新实例 options.txt 首启性能播种（launchJVM ame286_seedFirstLaunchPerformanceOptions，PocketJ MinecraftOptionUtils 同思路）：仅 options.txt 缺席时写均衡档 mipmapLevels:0 / particleStatus:1 / renderDistance:8 / simulationDistance:6 / fullscreen:false——MC 首启默认档（mipmap 4/粒子全量/视距 12）对移动端过重，首启即"掉帧+烫"；视距较 PocketJ 的 2 放宽（其超低端定标，本仓取 iOS 均衡 8）；已有实例玩家选择零触碰；置于 ame261 sneak 修复之前（播种档无 sneak 行时其默认态判定与文件缺席同语义）
+- ④远古版本内存兼容轨（launchJVM+PLPreferences+LPVC+四表，PocketJ legacy path 同款移植）：general.legacy_compatibility 默认 ON——rd-*/c0.*/inf-*/indev-*/in-/a1.*/b1.* 前缀与 old_alpha/old_beta type 双通道识别，命中即堆帽 192MB（PocketJ compatibilityLimit 同值）+ Xms64M + CodeCache 2M/16M（Java 8 默认 128MB 编译堆连续预留对远古版纯属浪费，iOS 虚拟地址空间受限设备直接启动失败）；设置 general 区新开关行（hourglass 图标）+ preference.title/detail.legacy_compatibility 双键四表 3088→3090
+- ⑤连点链复核定音（零改动）：AmeNativeMenu Task285 合并链端到端核查——didEnd-early 主通道与 0.45s 后备均经 ame284_early 块读 ame285_pending 容器（armed 窗内连点只更新容器不顶替）；用户"还是延迟"与 Task285 装机日志时间线吻合（12:03 报障日志=a94669c 即 Task284 构建，合并修复在其后推送）=修复未进用户构建，待 CI 出包装机复测再评估；UIKit 系统菜单路由的 dismiss+re-present 已是公开 API 下限（无 live 内容替换 API）
+- PocketJ 盘点记账（本轮未移植，后续批次候选）：Fluid 八方向 WASD 移动垫（其 SurfaceViewController:1115-1230 约 250 行自包含，高价值中难度）/ Forge URI-safe 根符号链接（防空格路径打崩 processor）/ IMBlocker Java17+ 自动禁用 / 启动链字节级续传 .resume sidecar / 内置 JIT 工作流（StikJIT AGPL-3.0 许可证义务需评估，战略价值最高）；反向结论：内存钳制/渲染器决策链/下载镜像故障转移/CodeCache 分轨为本仓独有优势勿倒灌
+- 门禁：task139 all balanced / task158 PASS ×6 / task240 balanced+retired 0 / import sweep WARN 基线预存 / task248 缺键0 硬编码0 动态键0 / task250 全零 / task191 四表 3090 OK / verify219 81/81 ALL GREEN（J 锚按惯例重锚 3088→3090）/ task219_syntax 6 FAIL 均脚本陈旧基线锚（Makefile TAB 662/bundle id/l10n 2606 旧锚，与本轮 diff 零交集，Task285 同口径）；新增文案 2 键×四表
+
+Stage Summary:
+- 提交推送 main（42839aa9..本轮）；CI 出包后装机验证
+- 装机锚点：①游戏内改 鼠标速度/按钮大小/虚拟鼠标/手势/触感/陀螺仪/性能HUD/音频/自动纠错 → 关设置页立即生效（日志 [SurfaceVC] Task286: button_scale ... hot-reloaded）②iOS 27 会话 17+ 启动不再受 1GiB 类空间预留拒绝（无专项日志，属启动失败面消除）③新实例首启 options.txt 即带均衡档（日志 [JavaLauncher] Task286: first-launch options.txt performance seed written）④远古版本启动走小内存轨（日志 [JavaLauncher] Task286: legacy version 'a1.x' -- heap clamped to 192 MB）⑤连点菜单延迟以 Task285 构建复测定音

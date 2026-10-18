@@ -416,6 +416,9 @@ static BOOL ame83_fsr_capable_renderer(NSString *renderer) {
 // ame139_fsr_heal_reset_input_scale 经主线程转发到本方法；ivar 私有，
 // 类扩展外的 C 函数不可直接访问——e7632b3 CI 教训）。
 - (void)ame139_resetFsrInputScale;
+// ★ Task286：button_scale 热重载链终点（实现见 SurfaceViewController+Navigation.m，
+//   Task64 恢复默认控件同款：removeAllButtons + loadCustomControls）
+- (void)loadCustomControls;
 
 // FPS/内存监控相关（FPS 在 native pojavSwapBuffers 中计数，参照 FCL/ZL2）
 @property(nonatomic) NSTimer *statsTimer;                 // 低频定时器，1s 一次
@@ -453,6 +456,10 @@ static BOOL ame83_fsr_capable_renderer(NSString *renderer) {
 // Began/Changed 置位，Ended/Cancelled 异步清除（手势 Ended 先于同批
 // touchesEnded 派发，同步清会让尾批 MOVE 逃逸出抑制窗）。
 @property(nonatomic) BOOL ame202ScrollGestureActive;
+
+// ★ Task286：button_scale 热重载基线（0=未记录；首调用只记录不重载，
+//   防 viewDidLoad 初始化路径与 loadCustomControls 双重建）
+@property(nonatomic, assign) CGFloat ame286_lastAppliedButtonScale;
 
 @property(nonatomic) UIImpactFeedbackGenerator *lightHaptic;
 @property(nonatomic) UIImpactFeedbackGenerator *mediumHaptic;
@@ -2037,7 +2044,26 @@ static NSInteger ame283_lastLandscapeDev = 0;
     }
 }
 
+/// ★ Task286：完整刷新链（UI 安全面 + 分辨率/FSR 重算）。保持 viewDidLoad
+///   初始化路径语义不变（分辨率链属首建语义，无会话内重排风险）。
 - (void)updatePreferenceChanges {
+    [self applyInGamePreferenceChanges];
+    [self updateSavedResolution];
+}
+
+/// ★ Task286（"游戏过程中调节启动器设置不会立即生效"根修）：游戏内设置页
+///   关闭后的 UI 安全面热应用，由 LauncherPreferencesViewController
+///   viewWillDisappear 在 presentedInGame 时回调（对齐上游 PocketJ 同名
+///   机制；旧刷新桥 navigationController == nil 恒 NO——游戏内设置页被
+///   Navigation 包装（Task224）后本链全仓仅 viewDidLoad 一处调用，游戏内
+///   改设置全部滞留"下次进游戏"生效）。
+///   与 updatePreferenceChanges 的唯一差异：不调 updateSavedResolution——
+///   Task187 决策：分辨率/FSR 改动保持"下次启动"语义（会话内重排
+///   surface/drawable 有触摸错位风险，game.menu.resolution.next_launch
+///   Toast 已向用户明示该口径）；updateSavedResolution 内部本有
+///   Task267/279 全屏闸保护信念冻结，但 FSR 档位变化在会话内重算
+///   drawable 仍属未验证面，谨慎起见整链跳过。
+- (void)applyInGamePreferenceChanges {
     if (getPrefBool(@"debug.debug_auto_correction")) {
         self.inputTextField.autocorrectionType = UITextAutocorrectionTypeDefault;
     } else {
@@ -2071,13 +2097,30 @@ static NSInteger ame283_lastLandscapeDev = 0;
     self.longPressGesture.minimumPressDuration = getPrefFloat(@"control.press_duration") / 1000.0;
 
     [self updateAudioSettings];
-    [self updateSavedResolution];
     if (@available(iOS 16, tvOS 16, *)) {
         if ([self.surfaceView.layer isKindOfClass:CAMetalLayer.class]) {
             BOOL perfHUDEnabled = getPrefBool(@"video.performance_hud");
             ((CAMetalLayer *)self.surfaceView.layer).developerHUDProperties = perfHUDEnabled ? @{@"mode": @"default"} : nil;
         }
     }
+    // ★ Task286：button_scale 热重载——设置页滑块调整后立即重建控件
+    //   （loadControlLayout 读 control.button_scale 完成缩放；仅实际变化时
+    //   执行，首调用只记录基线防初始化路径双重建；设置页以模态呈现时
+    //   用户不可能正按住控件，重建窗口安全）。
+    CGFloat ame286_btnScale = getPrefFloat(@"control.button_scale");
+    if (ame286_btnScale > 0 && ame286_lastAppliedButtonScale > 0
+        && ame286_btnScale != ame286_lastAppliedButtonScale
+        && self.ctrlView.subviews.count > 0) {
+        [self.ctrlView removeAllButtons];
+        [self loadCustomControls];
+        NSLog(@"[SurfaceVC] Task286: button_scale %.0f%% -> %.0f%% -- controls hot-reloaded",
+              ame286_lastAppliedButtonScale, ame286_btnScale);
+    }
+    if (ame286_btnScale > 0) ame286_lastAppliedButtonScale = ame286_btnScale;
+    // ★ Task286：home indicator 跟随 debug.debug_hide_home_indicator——
+    //   getter 本为活读，但 setNeedsUpdateOfHomeIndicatorAutoHidden 只在
+    //   菜单开合 completion 调用（设置页关闭后不刷新，补齐）。
+    [self setNeedsUpdateOfHomeIndicatorAutoHidden];
     [self setNeedsUpdateOfPrefersPointerLocked];
 }
 

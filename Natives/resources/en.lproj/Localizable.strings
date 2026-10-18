@@ -2832,6 +2832,8 @@
 "folderbrowser.empty.retrying" = "Waiting for files…";
 "folderbrowser.empty.title" = "This folder is empty";
 "preference.title.interface_style" = "Interface Style";
+// Task286: legacy version memory compatibility track (title)
+"preference.title.legacy_compatibility" = "Legacy Version Compatibility";
 "preference.title.ui_zoom" = "Interface Zoom";
 "prisma.interface_style.auto" = "Auto";
 "prisma.interface_style.liquid_glass" = "Liquid Glass";
@@ -2899,6 +2901,8 @@
 "preference.title.text_scale" = "Text scale";
 "preference.title.text_auto_contrast" = "Dynamic text contrast";
 "preference.detail.interface_style" = "Auto follows the system (Liquid Glass on iOS 26+). Native keeps the classic look. Liquid Glass uses layered glass surfaces.";
+// Task286: legacy version memory compatibility track (detail)
+"preference.detail.legacy_compatibility" = "Use a slim memory profile for Classic/Indev/Alpha/Beta versions (192 MB heap, 64 MB initial heap, 16 MB code cache) so they can still start on memory-limited iOS devices. Turn off to treat them like modern versions.";
 "preference.detail.ui_scale" = "Scales panels and cards (85–125%). Text size is controlled separately by text scale.";
 "preference.detail.pseudo_glass_transparency" = "Adjusts how see-through pseudo glass panels are: 0% is the most frosted, 100% is the most transparent. Default 50%.";
 "preference.detail.text_scale" = "Scales all interface fonts (85–130%) without changing panel sizes.";

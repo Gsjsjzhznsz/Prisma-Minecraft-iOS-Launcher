@@ -1125,6 +1125,11 @@ static UIColor *ame244_snapshotTint(void) {
     // 二级页的推入依赖 navigationController，裸呈现时全部静默失效）；
     // PageSheet 呈现保持系统动画（侧栏到目标页的标准模态语言）。
     LauncherPreferencesViewController *vc = [[LauncherPreferencesViewController alloc] init];
+    // ★ Task286：游戏内标记——设置页 viewWillDisappear 据此回调 presenter
+    //   的 applyInGamePreferenceChanges（UI 安全面热应用；分辨率/FSR 保持
+    //   "下次启动"语义）。旧刷新桥以 navigationController == nil 为前提，
+    //   而本入口 Task224 起恒包 Navigation = 刷新桥在游戏内死路案发现场。
+    vc.presentedInGame = YES;
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
     nav.modalPresentationStyle = UIModalPresentationPageSheet;
     [self presentViewController:nav animated:YES completion:nil];

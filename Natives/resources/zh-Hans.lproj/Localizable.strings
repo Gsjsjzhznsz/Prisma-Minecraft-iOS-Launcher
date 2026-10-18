@@ -2830,6 +2830,8 @@
 "folderbrowser.empty.retrying" = "等待文件写入…";
 "folderbrowser.empty.title" = "此文件夹为空";
 "preference.title.interface_style" = "界面风格";
+// Task286: legacy version memory compatibility track (title)
+"preference.title.legacy_compatibility" = "远古版本兼容轨";
 "preference.title.ui_zoom" = "界面缩放";
 "prisma.interface_style.auto" = "自动";
 "prisma.interface_style.liquid_glass" = "液态玻璃";
@@ -2897,6 +2899,8 @@
 "preference.title.text_scale" = "文字缩放";
 "preference.title.text_auto_contrast" = "文字动态反色";
 "preference.detail.interface_style" = "自动跟随系统（iOS 26+ 液态玻璃）；原生保持经典外观；液态玻璃使用分层玻璃表面。";
+// Task286: legacy version memory compatibility track (detail)
+"preference.detail.legacy_compatibility" = "为 Classic/Indev/Alpha/Beta 等远古版本启用小内存档（192MB 堆上限、64MB 初始堆、16MB 代码缓存），避免在内存受限的 iOS 设备上无法启动。关闭后与现役版本同等对待。";
 "preference.detail.ui_scale" = "缩放面板与卡片（85–125%）。文字大小由“文字缩放”单独控制。";
 "preference.detail.pseudo_glass_transparency" = "调节伪玻璃面板的通透程度：0% 最朦胧，100% 最通透（背景折光最清楚）。默认 50%。";
 "preference.detail.text_scale" = "缩放界面文字（85–130%），不改变面板尺寸。";

@@ -29,6 +29,12 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
             @"debug_logging": @(!CONFIG_RELEASE),
             // Task 125：启动时自动检测更新（默认开；关闭后仅保留手动检查入口）
             @"auto_update_check": @YES,
+            // ★ Task286（PocketJ 对标）：经典/远古版本（rd-/c0./inf-/indev-/
+            //   a1./b1.）独立内存兼容轨总开关——ON=192MB 堆帽 + 64M Xms +
+            //   16M CodeCache，防 iOS 虚拟地址空间受限设备上远古版启动
+            //   失败（Java 8 默认 128MB 编译堆连续预留对远古版纯属浪费）；
+            //   OFF=与现役版本同参。
+            @"legacy_compatibility": @YES,
             // Task 130：公告源改为本仓库托管的 announcements.json（旧上游
             // air-api.vercel.app 已 404；AnnouncementService 的 raw + jsDelivr
             // 源级联见同文件常量，此默认值同时是"未自定义"识别基准之一）

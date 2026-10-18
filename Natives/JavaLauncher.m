@@ -1998,6 +1998,30 @@ static NSString *ame217_autoRendererDecide(NSInteger minVersion) {
 
 // ==================== Task 217 结束 ====================
 
+// ★ Task286（PocketJ 对标移植）：新实例 options.txt 首启性能播种——
+//   MC 首启生成的默认档（mipmap 4 / 粒子全量 / 视距 12 / 模拟距离 12）
+//   对移动端过重，首启即"掉帧+烫"的差评窗口。JVM 启动前、MC
+//   Options.load 之前写入一份均衡档（仅 options.txt 不存在时 = 新实例
+//   首启；已有实例的玩家选择零触碰）。取值与上游 PocketJ
+//   MinecraftOptionUtils 同思路但视距放宽（其 2 为超低端定标，本仓取 8
+//   作 iOS 均衡默认；游戏内均可再调）。
+static void ame286_seedFirstLaunchPerformanceOptions(NSString *gameDir) {
+    if (gameDir.length == 0) return;
+    NSString *ame286_optPath = [gameDir stringByAppendingPathComponent:@"options.txt"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:ame286_optPath]) return;
+    NSString *ame286_seed = @"mipmapLevels:0\n"
+                            @"particleStatus:1\n"
+                            @"renderDistance:8\n"
+                            @"simulationDistance:6\n"
+                            @"fullscreen:false\n";
+    if ([ame286_seed writeToFile:ame286_optPath atomically:YES encoding:NSUTF8StringEncoding error:nil]) {
+        NSLog(@"[JavaLauncher] Task286: first-launch options.txt performance seed written (%@)",
+              gameDir.lastPathComponent);
+    } else {
+        NSLog(@"[JavaLauncher] Task286: first-launch options.txt seed write failed, MC defaults will apply");
+    }
+}
+
 int launchJVM(NSString *accountId, id launchTarget, int width, int height, int minVersion) {
     NSLog(@"[JavaLauncher] Beginning JVM launch");
 
@@ -2579,6 +2603,10 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         // ★ Task261（右 Shift"又出问题了"根修——新实例默认键位家族）：
         // 活动布局含右SHIFT(344) 按钮而当前实例 options.txt 的 sneak 仍是
         // 原版默认（左 Shift）时，启动前改绑 right.shift（详见函数头病历）。
+        // ★ Task286：新实例首启性能播种（仅 options.txt 缺席时写均衡档，
+        //   已有实例零触碰；置于 ame261 之前——其 sneak 修复读该文件，
+        //   播种档无 sneak 行时其"默认态"判定与文件缺席同语义）。
+        ame286_seedFirstLaunchPerformanceOptions(gameDir);
         ame261_repairSneakBindingForRightShiftLayout(gameDir);
 
         // Task181：老 Forge（1.x）SplashProgress 线程禁用——splash 线程与主线程
@@ -2636,6 +2664,31 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     // （Task68 教训：Jetsam 上限与 Xmx 错位 = 启动期 SIGKILL，从结构上消除漂移）。
     int allocmem = ame141_currentLaunchAllocMem();
     NSLog(@"[JavaLauncher] Max RAM allocation is set to %d MB", allocmem);
+    // ★ Task286（PocketJ 对标移植）：经典/远古版本独立内存兼容轨——
+    //   rd-*/c0.*/inf-*/indev-*/a1.*/b1.*（Classic/Indev/Infdev/Alpha/Beta）
+    //   世代按现代大堆跑极易在 iOS 虚拟地址空间受限设备上直接启动失败
+    //   （Java 8 默认连续预留 128MB 编译堆，远古版只需几 MB，预留过大
+    //   在 iOS 上直接失败——上游 PocketJ legacy path 同款结论）。
+    //   general.legacy_compatibility 默认 ON，设置页可关。堆帽 192MB
+    //   （PocketJ compatibilityLimit 同值）。
+    BOOL ame286_legacyVersion = NO;
+    if (!launchJar && getPrefBool(@"general.legacy_compatibility")
+        && [launchTarget isKindOfClass:NSDictionary.class]) {
+        NSString *ame286_vid = [launchTarget[@"id"] isKindOfClass:NSString.class]
+            ? [launchTarget[@"id"] lowercaseString] : @"";
+        NSString *ame286_vtype = [launchTarget[@"type"] isKindOfClass:NSString.class]
+            ? [launchTarget[@"type"] lowercaseString] : @"";
+        ame286_legacyVersion =
+            [ame286_vid hasPrefix:@"rd-"] || [ame286_vid hasPrefix:@"c0."]
+            || [ame286_vid hasPrefix:@"inf-"] || [ame286_vid hasPrefix:@"indev-"] || [ame286_vid hasPrefix:@"in-"]
+            || [ame286_vid hasPrefix:@"a1."] || [ame286_vid hasPrefix:@"b1."]
+            || [ame286_vtype isEqualToString:@"old_alpha"] || [ame286_vtype isEqualToString:@"old_beta"];
+        if (ame286_legacyVersion) {
+            if (allocmem > 192) allocmem = 192;
+            NSLog(@"[JavaLauncher] Task286: legacy version '%@' (type=%@) -- heap clamped to %d MB + slim CodeCache",
+                  launchTarget[@"id"], launchTarget[@"type"], allocmem);
+        }
+    }
     if (!validateVirtualMemorySpace(allocmem)) {
         UIKit_returnToSplitView();
         if (getEntitlementValue(@"com.apple.developer.kernel.increased-memory-limit")) {
@@ -2698,7 +2751,13 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     if (!launchJar) {
         PUSH_MARGV_LITERAL("-Djava.system.class.loader=net.kdt.pojavlaunch.PojavClassLoader");
     }
-    PUSH_MARGV_LITERAL("-Xms128M");
+    if (ame286_legacyVersion) {
+        // ★ Task286：远古版 Xms 收小——启动即触发全堆 GC 扫描，大 Xms
+        //   徒增启动停顿（PocketJ legacy path 同值 64M）。
+        PUSH_MARGV_LITERAL("-Xms64M");
+    } else {
+        PUSH_MARGV_LITERAL("-Xms128M");
+    }
     PUSH_MARGV_FORMAT(@"-Xmx%dM", allocmem);
     // ============================================================================
     // Task68: GC / safepoint 停顿观测（「加载区块卡顿」归因层）
@@ -3296,7 +3355,13 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     //   类加载 JIT 编译高峰期不再经历多次堆扩张（每次扩张 = RX 映射内
     //   mprotect 页翻转 + 锁窗口），commit 是虚拟预留、物理页按需分配，
     //   驻留零增加；总预算仍锁死 64m 外部硬边界。
-    if (@available(iOS 26.0, *)) {
+    if (ame286_legacyVersion) {
+        // ★ Task286：远古版 JIT 体量极小（PocketJ legacy path 同值
+        //   2M/16M）——小预留降低 iOS 虚拟地址空间压力，Classic/Alpha
+        //   无大 CodeCache 需求；镜像轨 64m 硬边界内富余。
+        PUSH_MARGV_LITERAL("-XX:ReservedCodeCacheSize=16m");
+        PUSH_MARGV_LITERAL("-XX:InitialCodeCacheSize=2m");
+    } else if (@available(iOS 26.0, *)) {
         PUSH_MARGV_LITERAL("-XX:ReservedCodeCacheSize=64m");
         PUSH_MARGV_LITERAL("-XX:InitialCodeCacheSize=48m");
         PUSH_MARGV_LITERAL("-XX:CodeCacheExpansionSize=8m");
@@ -3569,7 +3634,14 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     // stub-surface-manager.jar 已删除（见上方注释）。不再使用 --patch-module。
     // CTCPreloadClassLoader.<clinit> 抛出的 ClassNotFoundException 被吞掉，不影响启动。
 
-    if (!getEntitlementValue(@"com.apple.developer.kernel.extended-virtual-addressing")) {
+    // ★ Task286（PocketJ 对标移植）：iOS 27 拒绝 HotSpot 默认 1GiB
+    //   compressed class space 预留——即使持有 extended-virtual-addressing
+    //   entitlement 也可能在 Metaspace 初始化期失败（上游 PocketJ
+    //   JavaLauncher.m 同款 workaround：majorVersion >= 27 无条件降级）。
+    //   代价：klass 指针 64 位、Metaspace 略增，换 iOS 27 上 Java 17+ 的
+    //   确定性可启动。
+    BOOL ame286_ios27Plus = NSProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27;
+    if (!getEntitlementValue(@"com.apple.developer.kernel.extended-virtual-addressing") || ame286_ios27Plus) {
         // In jailed environment, where extended virtual addressing entitlement isn't
         // present (for free dev account), allocating compressed space fails.
         // FIXME: does extended VA allow allocating compressed class space?
@@ -4073,7 +4145,10 @@ int launchHeadlessJVM(NSString *mainClass, NSArray<NSString *> *args, int minJav
     if (@available(iOS 26.0, *)) {
         PUSH_HARGV_LITERAL("-XX:+MirrorMappedCodeCache");
     }
-    if (!getEntitlementValue(@"com.apple.developer.kernel.extended-virtual-addressing")) {
+    // ★ Task286：iOS 27 compressed class space 兼容（launchJVM 同款，见彼处
+    //   注释）——装机 processors 会话同受 iOS 27 1GiB 类空间预留拒绝影响。
+    if (!getEntitlementValue(@"com.apple.developer.kernel.extended-virtual-addressing")
+        || NSProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27) {
         PUSH_HARGV_LITERAL("-XX:-UseCompressedClassPointers");
     }
 

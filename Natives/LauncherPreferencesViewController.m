@@ -950,6 +950,13 @@ if ([section isEqualToString:@"general"]) {
                   [[NSNotificationCenter defaultCenter] postNotificationName:@"UIThemeChanged" object:value];
               }
             },
+            @{@"key": @"legacy_compatibility",
+              // ★ Task286（PocketJ 对标）：远古版本内存兼容轨总开关
+              //   （JavaLauncher launchJVM 消费；默认 ON 见 PLPreferences）
+              @"hasDetail": @YES,
+              @"icon": @"hourglass",
+              @"type": self.typeSwitch,
+            },
             @{@"key": @"interface_style",
               @"title": localize(@"preference.title.interface_style", nil),
               @"hasDetail": @YES,
@@ -2367,8 +2374,22 @@ if ([section isEqualToString:@"general"]) {
         self.navigationController.presentingViewController == nil) {
         self.navigationController.navigationBarHidden = NO;
     }
-    if (self.navigationController == nil) {
-        [self.presentingViewController performSelector:@selector(updatePreferenceChanges)];
+    // ★ Task286（"游戏过程中调节启动器设置不会立即生效"根修）：旧条件
+    //   self.navigationController == nil 恒 NO——游戏内设置页被 Navigation
+    //   包装呈现（Task224 actionOpenPreferences），刷新桥自此死路
+    //   （updatePreferenceChanges 全仓仅 SurfaceViewController viewDidLoad
+    //   一处调用，游戏内改设置全部滞留"下次进游戏"）。对齐上游 PocketJ
+    //   的 presentedInGame 语义：游戏内（含子页 push/pop 中途的
+    //   viewWillDisappear，幂等无害）→ 回调 presenter 的
+    //   applyInGamePreferenceChanges（UI 安全面热应用；分辨率/FSR 保持
+    //   "下次启动"，见 SurfaceViewController Task286 注释）；非游戏路径
+    //   保持旧 updatePreferenceChanges 语义。
+    UIViewController *ame286_presenter = self.presentingViewController;
+    SEL ame286_sel = self.presentedInGame
+        ? @selector(applyInGamePreferenceChanges)
+        : @selector(updatePreferenceChanges);
+    if (ame286_presenter != nil && [ame286_presenter respondsToSelector:ame286_sel]) {
+        [ame286_presenter performSelector:ame286_sel];
     }
 }
 
