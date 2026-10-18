@@ -3791,3 +3791,22 @@ Stage Summary:
 - run#898（70f29d0e）Success——Task 289 三报根修零编译问题一轮通过（GLFW.java overlay 5 方法 javac 终验 OK；对比 run#890/892 两轮 r1 历史）
 - 装机验证锚点承接 Task 289 条目四条：①模糊强度 0%→壁纸全锐利直出（日志 Task289: blur intensity at minimum -- skipped all styles）②中档位壁纸真实色彩轻磨砂（Task289: ... intensity-scaled filters, blur=0.50）③玻璃风格下启动器弹窗/菜单 TG 玻璃镜像全域接管（不再原生）④NeoForge 26.1.2 过 EarlyWindow（[GLFWBridge] Task289: glfwHideWindow no-op，不再 NoSuchMethodError）
 - PocketJ 批次记账（下一轮候选，继承）：原生资源中心浏览 UI / 内置 JIT 工作流（StikJIT AGPL-3.0 评估先行）/ 同名账户共存 / Java 侧 tasks/*.java Range 续传
+
+---
+## Task 290（PocketJ 剩余清单收敛移植：同名账户共存两刀落地 + 两项记账对账撤销 + 内置 JIT 工作流评估定案）
+
+日期：2026-10-18　构建：10677a10（main）
+
+Work Log:
+- 基线：git 同步 14318340（Task 289-ci，本地==origin/main）；pocketj-ref（EricoEC/PocketJLauncher，GPL-3.0，同谱系 Amethyst fork）随沙箱丢失后重新浅克隆至仓外 /home/z/my-project/pocketj-ref 对齐四项继承记账（Task 287→288→289 批次候选：资源中心 / JIT 工作流 / 同名账户共存 / Java 侧 Range 续传）
+- 【对账撤销①资源中心浏览 UI】PocketJ v1.4 现树逐文件核对（Natives/PocketJResourceLibraryViewController.m 277 行单页：三类资源 kinds 表 + 本地 .disabled toggle + 文档导入 + Modrinth facets 搜索 / CurseForge classId 6552/12/6945 搜索 + 首版本直下）→ 本仓 DownloadViewController（6147 行）已超集覆盖：Modrinth+CurseForge 双源（currentAPIForTabType 按类型源偏好、world tab 强制 CF classID 17）+ 六 tab 分页（limit/offset 30）+ Task267 目标实例锁定 + Task269 迁移对账 + Task275 profile gameDir 实例化落点（ShaderService 解析链）+ PLMirrorCenter 双 API 镜像（modrinth/curseforge→mcim）+ API Key 配置页。PocketJ 版无分页无镜像无实例锁定——按"参考仓库特有观感不回灌"规则零改动结案
+- 【对账撤销②Java 侧 tasks/*.java Range 续传】两仓 JavaApp 全量核对（grep setRequestProperty/Range/openConnection/HttpURLConnection）：PocketJ v1.4 现树不存在任何 Java 侧 HTTP 下载器（Tools.java 仅 import java.net.HttpURLConnection 未使用 + library.downloads 字段引用；无 tasks/ 目录无 .resume sidecar），本仓同构——ObjC 侧 DownloadTaskManager resumeData 续传已有（Task 287 对账已录）。判读：记账条目为盘点期笔误（疑混入 PojavLauncher-Android 谱系 net.kdt.pojavlaunch.tasks.DownloadTask 的 Range 续传记忆），撤销不移植
+- 【同名账户共存·本地复用】缺口实证：本仓 LocalAuthenticator.loginWithCallback 每次 `[[NSUUID UUID] UUIDString]` 铸新 accountId（注释自称"使同名本地账户可共存"实为反义——同用户名重复添加=列表多条同身份条目）；PocketJ local__<username> 身份键=同名复用。移植（BaseAuthenticator+LocalAuthenticator）：+ame290_existingLocalAccountIdForUsername: 扫 accounts/*.json 仅匹配本地类型候选（accountType 显式 @"local" 优先，旧文件 expiresAt==0 且无 clientToken/xuid/xboxGamertag 嗅探回退=loadSavedName/AccountList 标签同口径）、username 精确匹配（PocketJ sanitize 整串相等不折叠大小写）、命中复用既有 accountId 原地更新；旧式 username 命名无 accountId 文件按文件名即身份收养（saveChanges 补写 accountId=文件名，loadSavedName 迁移链天然接管）；未命中回退 UUID。同名微软/第三方账户身份键天然不同，共存本体不受影响
+- 【同名账户共存·微软残留清理】缺口实证：Task180 双保险①只清同实例 accountId 漂移（ame180_savedAccountId≠accountId），读侧②按 accountId/文件名 key——同一微软身份的 username 命名遗留副本/早期命名副本与 xuid 副本 key 天然不等 → 列表同身份多行。移植 PocketJ BaseAuthenticator.saveChanges isMicrosoft 分支：写盘成功后扫 accounts 目录，候选同为微软类（accountType 显式或 xuid/xboxGamertag/expiresAt 嗅探，PocketJ 同口径；clientToken 即跳过）且与本次身份同源（xuid 或 profileId 相等；profileId 全零串排除）才删除；本地/第三方永不进入清理路径；删除前 AvatarManager ame180_migrateAvatarFromAccount 迁移候选头像（旧副本可能持唯一自定义头像，幂等防覆盖）；刚写文件自身跳过；Task290 锚点日志
+- 【内置 JIT 工作流·评估定案】StikJIT AGPL-3.0 许可证维：无障碍——本仓 LICENSE 已是 AGPL-3.0（非 GPL-3.0，worklog 早期"义务评估"前提失效），PocketJ NOTICE.md 亦为 GPL-3.0 主许可+StikDebug AGPL 单列 THIRD_PARTY_LICENSES 组合分发先例。构建系统维：真障碍——PocketJ JIT 栈三件套=Natives/stikdebug ObjC 引擎（StikDebugEngine 263 行+idevice.h 7593 行+libidevice_ffi 双静态库）+ Vendor/StikJIT 94MB Swift framework（嵌入）+ JITIntegration iOS26 AppExtensionProcess XPC helper（.appex 扩展目标+CodeSignOnCopy 嵌入+宿主 dlopen PocketJJITCoordinator.framework 反射调用+isJITEnabled 轮询短路），本仓主程序走 CMake（Makefile native: cmake）非 pbxproj，无既有 appex/framework 构建路径，加目标属构建系统手术且本地无 Xcode 只能 CI 实证——按 Task255"半成品不入库"家法本轮零代码，分阶段方案：阶段1=仅移植 stikdebug ObjC 引擎进程内轨（ TrollStore 包 extended entitlements 下可用，xcodebuild 无关）验证 DDI 链路；阶段2=CI 迭代 appex 管道（独立轮次预留多轮 CI 预算）；阶段3=XPC helper 接线（对齐 PocketJ StikDebugViewController setupState 三态+isJITEnabled 轮询短路语义）
+- 门禁：task139 all balanced / task240 双门（balanced+retired refs=0）+ import sweep WARN currentMenu 基线预存 / task191 四表 3093 OK / task248 缺键0硬编码0动态键0 / task250 全零 / verify255 52 PASS 零 FAIL / verify219 81/81 ALL GREEN——本轮零新增 l10n 键（新增仅 NSLog 锚点，无用户可见文案）
+- CI：run#900（10677a10）一轮 completed success（agent-browser 直读 actions 列表取证，API 限流期既定手段）；对比 run#890/892 两轮 r1 历史，authenticator 单文件族零编译问题
+
+Stage Summary:
+- PocketJ 继承清单收敛闭环：资源中心=超集结案、Range 续传=笔误撤销、同名账户共存=两刀落地（本地同名复用 update-in-place + 微软同类身份残留清理）、JIT=许可证放行+构建手术定案三阶段方案（待用户点名启动）
+- 装机验证锚点：①重复添加同名离线账户 → 列表单条目（日志 [Task290] reusing existing local account id ...），账户设置立即生效 ②同名微软+离线账户共存于列表（类型标签本地/Microsoft 可区分）③微软重登后历史 username 命名遗留副本自动清除（日志 [Task290] removed stale duplicate Microsoft identity file ...），自定义头像随迁不丢 ④下载中心六 tab 双源浏览不回归（本轮零触碰自证）
