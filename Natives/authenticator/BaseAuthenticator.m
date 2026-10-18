@@ -58,6 +58,55 @@ static BaseAuthenticator *current = nil;
     return [[NSUUID UUID] UUIDString];
 }
 
++ (NSString *)ame290_existingLocalAccountIdForUsername:(NSString *)username {
+    // Task290（PocketJ 同名账户共存）：语义对齐 PocketJ BaseAuthenticator 的
+    // local__<username> 身份键——同用户名的离线账户重复添加时复用既有记录，
+    // 不再每次铸造新 UUID 造成同身份多条目。只接受本地类型候选：
+    //   accountType 显式 @"local"，或旧文件回退（expiresAt==0 且无 clientToken
+    //   且无 xuid/xboxGamertag——与 loadSavedName/AccountList 标签判别同口径）；
+    // 微软/第三方账户即使 username 相同也绝不命中（身份键不同，共存本体）。
+    // username 精确匹配（PocketJ 同款：sanitize 后整串相等，不折叠大小写）。
+    if (username.length == 0) return nil;
+    NSString *accountsPath =
+        [NSString stringWithFormat:@"%s/accounts", getenv("POJAV_HOME")];
+    NSArray *files =
+        [[NSFileManager defaultManager] contentsOfDirectoryAtPath:accountsPath error:nil];
+    for (NSString *file in files) {
+        if (![file hasSuffix:@".json"]) continue;
+        NSString *path = [accountsPath stringByAppendingPathComponent:file];
+        NSDictionary *data = parseJSONFromFile(path);
+        if (data == nil || data[@"NSErrorObject"] != nil) continue;
+        NSString *candidateName = data[@"username"];
+        if (![candidateName isKindOfClass:NSString.class] ||
+            ![candidateName isEqualToString:username]) continue;
+        // 本地类型判别：显式 accountType 优先，旧文件键位嗅探回退
+        NSString *type = data[@"accountType"];
+        BOOL isLocal;
+        if ([type isKindOfClass:NSString.class] && type.length > 0) {
+            isLocal = [type isEqualToString:@"local"];
+        } else {
+            isLocal = ([data[@"expiresAt"] longLongValue] == 0 &&
+                       data[@"clientToken"] == nil &&
+                       [data[@"xuid"] length] == 0 &&
+                       [data[@"xboxGamertag"] length] == 0);
+        }
+        if (!isLocal) continue;
+        NSString *accountId = data[@"accountId"];
+        if ([accountId isKindOfClass:NSString.class] && accountId.length > 0) {
+            NSLog(@"[Task290] reusing existing local account id for username '%@' (%@.json)",
+                  username, file);
+            return accountId;
+        }
+        // 旧式本地账户（无 accountId、按 username 命名）：按文件名即身份复用，
+        // saveChanges 将原地更新该文件（补写 accountId=文件名），下次 loadSavedName
+        // 走既有迁移链；避免"遗留副本 + 新 UUID 副本"双行。
+        NSLog(@"[Task290] adopting legacy username-named local account file for '%@' (%@.json)",
+              username, file);
+        return [file stringByDeletingPathExtension];
+    }
+    return nil;
+}
+
 + (id)loadSavedName:(NSString *)accountId {
     // accountId 可能是新格式的 accountId，也可能是旧格式的 username（迁移场景）
     NSString *path = [NSString stringWithFormat:@"%s/accounts/%@.json", getenv("POJAV_HOME"), accountId];
@@ -236,6 +285,63 @@ static BaseAuthenticator *current = nil;
             NSLog(@"[Task180] account file migrated after accountId drift: %@ -> %@", ame180_old, accountId);
         }
         self.ame180_savedAccountId = accountId;
+
+        // Task290（PocketJ 同名账户共存移植）：微软登录后的同类身份残留清理。
+        // 对齐 PocketJ BaseAuthenticator.saveChanges 的 isMicrosoft 分支：同一微软
+        // 身份可能因历史原因存在多份文件（旧版按 username 命名的遗留副本、早期
+        // 命名习惯副本），读侧 Task180 双保险②按 accountId/文件名去重无法合并
+        // （key 天然不等）→ 列表同一身份多行。写盘成功后扫描 accounts 目录：
+        // 仅当候选文件同为微软类（accountType 显式或 xuid/xboxGamertag/expiresAt
+        // 嗅探，PocketJ 同口径）且与本次身份同源（xuid 或 profileId 相等）才删除；
+        // 本地/第三方账户永不进入清理路径（同名共存的本体），刚写入文件自身跳过；
+        // 删除前先迁移候选头像（旧副本可能持有该身份唯一自定义头像，幂等防覆盖）。
+        NSString *ame290_type = self.authData[@"accountType"];
+        NSString *ame290_xuid = self.authData[@"xuid"];
+        NSString *ame290_profileId = self.authData[@"profileId"];
+        BOOL ame290_typeIsString = [ame290_type isKindOfClass:NSString.class];
+        BOOL ame290_isMicrosoft =
+            (ame290_typeIsString && [ame290_type isEqualToString:@"microsoft"]) ||
+            (!ame290_typeIsString && ame290_xuid.length > 0);
+        BOOL ame290_profileIdUsable = (ame290_profileId.length > 0 &&
+            ![ame290_profileId isEqualToString:@"00000000-0000-0000-0000-000000000000"]);
+        BOOL ame290_hasIdentity = (ame290_xuid.length > 0 || ame290_profileIdUsable);
+        if (ame290_isMicrosoft && ame290_hasIdentity) {
+            NSString *ame290_dir = [newPath stringByDeletingLastPathComponent];
+            NSArray *ame290_files =
+                [[NSFileManager defaultManager] contentsOfDirectoryAtPath:ame290_dir error:nil];
+            for (NSString *ame290_file in ame290_files) {
+                if (![ame290_file hasSuffix:@".json"] ||
+                    [ame290_file isEqualToString:newPath.lastPathComponent]) continue;
+                NSString *ame290_candPath =
+                    [ame290_dir stringByAppendingPathComponent:ame290_file];
+                NSDictionary *ame290_cand = parseJSONFromFile(ame290_candPath);
+                if (ame290_cand == nil || ame290_cand[@"NSErrorObject"] != nil) continue;
+                // 第三方（clientToken）与本地账户永不清理——同名共存本体
+                if (ame290_cand[@"clientToken"] != nil) continue;
+                NSString *ame290_candType = ame290_cand[@"accountType"];
+                BOOL ame290_candTypeIsString = [ame290_candType isKindOfClass:NSString.class];
+                BOOL ame290_candIsMicrosoft =
+                    (ame290_candTypeIsString && [ame290_candType isEqualToString:@"microsoft"]) ||
+                    (!ame290_candTypeIsString &&
+                        ([ame290_cand[@"xuid"] length] > 0 ||
+                         [ame290_cand[@"xboxGamertag"] length] > 0 ||
+                         [ame290_cand[@"expiresAt"] longLongValue] > 0));
+                if (!ame290_candIsMicrosoft) continue;
+                NSString *ame290_candXuid = ame290_cand[@"xuid"];
+                NSString *ame290_candProfileId = ame290_cand[@"profileId"];
+                BOOL ame290_sameIdentity =
+                    (ame290_xuid.length > 0 && [ame290_candXuid isKindOfClass:NSString.class] &&
+                        [ame290_candXuid isEqualToString:ame290_xuid]) ||
+                    (ame290_profileIdUsable && [ame290_candProfileId isKindOfClass:NSString.class] &&
+                        [ame290_candProfileId isEqualToString:ame290_profileId]);
+                if (!ame290_sameIdentity) continue;
+                NSString *ame290_candKey = [ame290_file stringByDeletingPathExtension];
+                [[AvatarManager sharedManager] ame180_migrateAvatarFromAccount:ame290_candKey
+                                                                     toAccount:accountId];
+                [[NSFileManager defaultManager] removeItemAtPath:ame290_candPath error:nil];
+                NSLog(@"[Task290] removed stale duplicate Microsoft identity file: %@", ame290_file);
+            }
+        }
     }
     return error == nil;
 }

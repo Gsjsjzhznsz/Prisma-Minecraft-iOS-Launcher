@@ -14,6 +14,14 @@ typedef void(^Callback)(id status, BOOL success);
 // 根据账户数据生成唯一 accountId。微软账户用 xuid，第三方账户用 profileId，本地账户生成 UUID。
 + (NSString *)generateAccountIdForData:(NSMutableDictionary *)authData;
 
+// ★ Task290（PocketJ 同名账户共存移植）：按用户名查找已存在的本地账户 accountId。
+// 语义对齐 PocketJ BaseAuthenticator.storageKeyForAuthData 的 local__<username> 身份键：
+// 重复添加同名离线账户应更新既有记录（文件不复制、列表不重复），而不是每次都铸造新 UUID
+// 铸出多条同身份条目；同时严格只匹配本地类型候选——离线账户与同名微软/第三方账户
+// （身份键天然不同）继续共存，这正是"同名账户共存"的本体。
+// 未命中返回 nil（调用方回退 UUID 生成）。
++ (NSString *)ame290_existingLocalAccountIdForUsername:(NSString *)username;
+
 - (id)initWithData:(NSMutableDictionary *)data;
 - (id)initWithInput:(NSString *)string;
 - (void)loginWithCallback:(Callback)callback;
