@@ -2108,15 +2108,18 @@ static NSInteger ame283_lastLandscapeDev = 0;
     //   执行，首调用只记录基线防初始化路径双重建；设置页以模态呈现时
     //   用户不可能正按住控件，重建窗口安全）。
     CGFloat ame286_btnScale = getPrefFloat(@"control.button_scale");
-    if (ame286_btnScale > 0 && ame286_lastAppliedButtonScale > 0
-        && ame286_btnScale != ame286_lastAppliedButtonScale
+    // ★ Task286 r1（run#890 CI 教训，e7632b3 同族）：类扩展 property 的合成
+    //   ivar 实名带下划线前缀（_ame286_lastAppliedButtonScale），裸标识符
+    //   在方法体内不可见——一律经 self. 属性访问。
+    if (ame286_btnScale > 0 && self.ame286_lastAppliedButtonScale > 0
+        && ame286_btnScale != self.ame286_lastAppliedButtonScale
         && self.ctrlView.subviews.count > 0) {
         [self.ctrlView removeAllButtons];
         [self loadCustomControls];
         NSLog(@"[SurfaceVC] Task286: button_scale %.0f%% -> %.0f%% -- controls hot-reloaded",
-              ame286_lastAppliedButtonScale, ame286_btnScale);
+              self.ame286_lastAppliedButtonScale, ame286_btnScale);
     }
-    if (ame286_btnScale > 0) ame286_lastAppliedButtonScale = ame286_btnScale;
+    if (ame286_btnScale > 0) self.ame286_lastAppliedButtonScale = ame286_btnScale;
     // ★ Task286：home indicator 跟随 debug.debug_hide_home_indicator——
     //   getter 本为活读，但 setNeedsUpdateOfHomeIndicatorAutoHidden 只在
     //   菜单开合 completion 调用（设置页关闭后不刷新，补齐）。
