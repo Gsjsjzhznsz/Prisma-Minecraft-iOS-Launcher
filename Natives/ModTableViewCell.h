@@ -40,6 +40,12 @@ typedef NS_ENUM(NSInteger, ModTableViewCellDisplayMode) {
 /// 显示/隐藏更新徽章（arrow.up.circle.fill accent 色，由管理页检测更新后传入）
 - (void)setUpdateAvailable:(BOOL)available;
 
+/// ★ Task288（PocketJ 对标移植·实例级模组管理：加载器不兼容标记）：
+/// 本地模组与生效实例加载器错配时显示橙色警告徽章（exclamationmark.
+/// triangle.fill），并把说明文本追加到元信息行尾（如"加载器不兼容
+/// （NeoForge 实例）"）。detail 传 nil 清除标记（复用/错配解除路径）。
+- (void)setLoaderIncompatibleDetail:(nullable NSString *)detail;
+
 @property (nonatomic, weak) id<ModTableViewCellDelegate> delegate;
 
 @end

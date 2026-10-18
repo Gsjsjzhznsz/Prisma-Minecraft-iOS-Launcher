@@ -847,6 +847,7 @@
 "resman.mods.filter.all" = "全部";
 "resman.mods.filter.enabled" = "已啟用";
 "resman.mods.filter.disabled" = "已停用";
+"resman.mods.badge.loader_mismatch" = "載入器不相容（%@ 實例）";
 "resman.mods.sort.name" = "名稱";
 "resman.mods.sort.modified" = "修改時間";
 "resman.mods.empty" = "還沒有 Mod";

@@ -850,6 +850,7 @@
 "resman.mods.filter.all" = "All";
 "resman.mods.filter.enabled" = "Enabled";
 "resman.mods.filter.disabled" = "Disabled";
+"resman.mods.badge.loader_mismatch" = "Incompatible with %@ profile";
 "resman.mods.sort.name" = "Name";
 "resman.mods.sort.modified" = "Date Modified";
 "resman.mods.empty" = "No mods yet";

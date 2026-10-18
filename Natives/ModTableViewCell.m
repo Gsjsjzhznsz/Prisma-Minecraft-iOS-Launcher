@@ -23,6 +23,8 @@
 // 在线模式专属 accessory（懒加载，本地列表不创建）
 @property (nonatomic, strong, nullable) UIButton *downloadButton;
 @property (nonatomic, strong, nullable) UIButton *openLinkButton;
+// ★ Task288：加载器错配警告徽章（懒加载，accessory 插槽 stack 自动收起隐藏项）
+@property (nonatomic, strong, nullable) UIImageView *loaderBadge;
 @end
 
 @implementation ModTableViewCell
@@ -189,6 +191,42 @@
     self.updateBadge.hidden = !available;
 }
 
+#pragma mark - Task288：加载器不兼容标记
+
+- (UIImageView *)loaderBadge {
+    if (!_loaderBadge) {
+        _loaderBadge = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"exclamationmark.triangle.fill"]];
+        _loaderBadge.translatesAutoresizingMaskIntoConstraints = NO;
+        _loaderBadge.contentMode = UIViewContentModeScaleAspectFit;
+        _loaderBadge.tintColor = [UIColor systemOrangeColor];
+        _loaderBadge.hidden = YES;
+        [_loaderBadge setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
+        [_loaderBadge setContentCompressionResistancePriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
+        [self.accessoryStack addArrangedSubview:_loaderBadge];
+        [NSLayoutConstraint activateConstraints:@[
+            [_loaderBadge.widthAnchor constraintEqualToConstant:16],
+            [_loaderBadge.heightAnchor constraintEqualToConstant:16],
+        ]];
+    }
+    return _loaderBadge;
+}
+
+- (void)setLoaderIncompatibleDetail:(NSString *)detail {
+    if (detail.length > 0) {
+        // configureWithMod 每次重置 detailLabel 后才走到这里（cellForRow 装配序），
+        // 追加安全；无元信息时独占该行。
+        if (self.detailLabel.text.length > 0) {
+            self.detailLabel.text = [self.detailLabel.text stringByAppendingFormat:@" · %@", detail];
+        } else {
+            self.detailLabel.text = detail;
+        }
+        self.detailLabel.hidden = NO;
+        self.loaderBadge.hidden = NO;
+    } else {
+        if (_loaderBadge) _loaderBadge.hidden = YES;
+    }
+}
+
 #pragma mark - Trait Collection（深浅色切换重载加载器 PNG 图标）
 
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
@@ -207,6 +245,7 @@
     self.contentView.alpha = 1.0;
     if (self.downloadButton) self.downloadButton.hidden = YES;
     if (self.openLinkButton) self.openLinkButton.hidden = YES;
+    if (_loaderBadge) _loaderBadge.hidden = YES;
     self.currentMod = nil;
 }
 

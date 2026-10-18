@@ -907,21 +907,43 @@ static int ame287_disableUnsupportedInputMods(NSString *gameDir) {
 //   空格路径的 URL/引号处理存在炸面（上游 PocketJ 同款防御，其 alias 命名
 //   .pocketj-loader-runtime 同构）。非命中条件时执行还原（env 回真实根），
 //   幂等可重入。iOS 常规容器路径无空格 = 本防御平时零行为变化。
+//
+// ★ Task288-r1（装机实锤："版本隔离出现异常，打开模组管理都没有这几个
+//   fabric 模组"；gamelog 双锚：ModsManager Task265 扫描隔离目录
+//   versions/NeoForge-26.1.2.122/game/mods jars=2，而 Task287 日志
+//   "real: .../Library/Application Support/minecraft"＝共享根）：
+//   旧实现 realRoot 优先取 getenv("POJAV_GAME_DIR")——该 env 是 main.m
+//   启动期设定的【全局共享根】（含空格 "Application Support"），而启动链
+//   传入的 gameDir 才是本次启动的生效目录（Task275/Task225 已解析出隔离
+//   实例目录）。对隔离实例的 forge 启动：env(共享根,含空格) 命中 forge+
+//   空格双条件 → 别名重指共享根 → chdir/POJAV_GAME_DIR 全部落共享根 →
+//   游戏读共享 mods/（管理页扫隔离 mods/）＝ 两张皮，隔离静默失效。
+//   修复：realRoot 一律取入参 gameDir（生效目录）；env 仅用于识别
+//   "上次 forge 命中遗留的别名指针"以做还原。隔离目录无空格时本函数
+//   自然零行为（ forge 版本装在默认共享布局才需要别名）。
 static NSString *ame287_configureForgeUriSafeRoot(NSString *versionId, NSString *gameDir) {
     if (gameDir.length == 0) {
         return gameDir;
     }
-    const char *ame287_realRootC = getenv("POJAV_GAME_DIR");
-    NSString *ame287_realRoot = (ame287_realRootC && strstr(ame287_realRootC, "ame287_forge") == NULL)
-        ? @(ame287_realRootC) : gameDir;
+    const char *ame287_envC = getenv("POJAV_GAME_DIR");
+    BOOL ame287_envIsAlias = (ame287_envC && strstr(ame287_envC, "ame287_forge") != NULL);
     BOOL ame287_forge = [versionId.lowercaseString containsString:@"forge"];
-    if (!ame287_forge || ![ame287_realRoot containsString:@" "]) {
-        // 未命中：确保 env 指向真实根（同进程前序会话别名过则还原）
-        if (ame287_realRoot.length > 0) {
-            setenv("POJAV_GAME_DIR", ame287_realRoot.UTF8String, 1);
+    if (!ame287_forge || ![gameDir containsString:@" "]) {
+        // 未命中：若 env 还指着别名（上次 forge 命中遗留），还原到别名目标
+        //（= 当时的真实根，通常为共享根）；否则 env 不动（全局语义由
+        //  main.m 维护，禁止把本次生效目录写回全局 env——隔离启动会毒化
+        //  ModService 等以 env 为共享根基准的解析）。
+        if (ame287_envIsAlias) {
+            NSString *ame287_prev = [NSFileManager.defaultManager
+                destinationOfSymbolicLinkAtPath:@(ame287_envC) error:nil];
+            if (ame287_prev.length > 0) {
+                setenv("POJAV_GAME_DIR", ame287_prev.UTF8String, 1);
+                NSLog(@"[JavaLauncher] Task288: POJAV_GAME_DIR alias residue restored -> %@", ame287_prev);
+            }
         }
         return gameDir;
     }
+    NSString *ame287_realRoot = gameDir;
     const char *ame287_homeC = getenv("POJAV_HOME");
     if (!ame287_homeC) {
         return gameDir;

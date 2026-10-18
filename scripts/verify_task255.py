@@ -36,7 +36,8 @@ check("Cleanup:latestlog.crash 前缀", '"latestlog.crash"' in cl)
 bm = read("Natives/BackgroundManager.m")
 check("BG:0.01 跳层分支（Task256 定向复活：最低档=完全透明，须带自愈护栏）",
       "blurIntensity <= 0.01" in bm and "ame256.blurUserSet" in bm)
-check("BG:自愈第一刀在位", "ame255.blurHealDone" in bm)
+check("BG:自愈第一刀在位（Task288 重锚：re-armable——blurUserSet 护栏在位、blurHealDone 一次性标志退役）",
+      "ame256.blurUserSet" in bm and "re-armable" in bm)
 check("BG:blurView 恒 alpha 1.0", "blurView.alpha = 1.0" in bm)
 
 # ─── 3. JVM 预设消费端 ───

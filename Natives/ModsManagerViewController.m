@@ -175,6 +175,43 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
     return self.profileName.length > 0 ? self.profileName : @"default";
 }
 
+#pragma mark - Task288：实例加载器错配标记（PocketJ 对标移植）
+
+/// ★ Task288（PocketJ 移植·实例级模组管理第三件）：从生效实例的
+///   lastVersionId 推断实例加载器族（NeoForge/Forge/Fabric/Quilt；
+///   vanilla/未知返回 nil 不标记）。PocketJ 的 loader 来自显式选择器，
+///   本仓 profile 表无 loader 字段，版本 id 启发式同源推断（实例名
+///   "NeoForge-26.1.2.122"/"fabric-loader-*" 形态覆盖全部加载器实例）。
+- (nullable NSString *)ame288_profileLoaderForDisplay {
+    NSString *ame288_profName = [self ame265_effectiveProfileName];
+    NSDictionary *ame288_prof = [[PLProfiles current] profiles][ame288_profName];
+    NSString *ame288_vid = [ame288_prof isKindOfClass:[NSDictionary class]]
+        ? ame288_prof[@"lastVersionId"] : nil;
+    if (![ame288_vid isKindOfClass:[NSString class]] || ame288_vid.length == 0) return nil;
+    NSString *ame288_lower = ame288_vid.lowercaseString;
+    if ([ame288_lower containsString:@"neoforge"]) return @"NeoForge";
+    if ([ame288_lower containsString:@"forge"]) return @"Forge";
+    if ([ame288_lower containsString:@"quilt"]) return @"Quilt";
+    if ([ame288_lower containsString:@"fabric"]) return @"Fabric";
+    return nil;
+}
+
+/// mod 加载器族 vs 实例加载器错配判定（本地列表标记用；装机实锤：
+/// NeoForge 实例共享目录里的 fabric-api/beryl/VulkanMod 被 FML
+/// "Skipping jar ... is a Fabric mod" 整包跳过 = 装了等于没装）。
+- (BOOL)ame288_mod:(ModItem *)mod mismatchesProfileLoader:(NSString *)loader {
+    if (loader.length == 0) return NO;
+    NSString *ame288_l = loader.lowercaseString;
+    BOOL ame288_forgFamily = mod.isForge || mod.isNeoForge;
+    if ([ame288_l isEqualToString:@"fabric"] || [ame288_l isEqualToString:@"quilt"]) {
+        return ame288_forgFamily;   // Fabric/Quilt 实例不装 Forge 系 mod
+    }
+    if ([ame288_l isEqualToString:@"forge"] || [ame288_l isEqualToString:@"neoforge"]) {
+        return mod.isFabric;        // Forge/NeoForge 实例不装 Fabric mod
+    }
+    return NO;
+}
+
 #pragma mark - Init
 
 - (instancetype)init {
@@ -1000,6 +1037,16 @@ static NSString *ModsManagerSHA1ForFile(NSString *path) {
 
     // 更新徽章：检测命中（可更新）的 Mod 显示 arrow.up.circle.fill
     [cell setUpdateAvailable:(self.updateResultsByPath[mod.filePath] != nil)];
+
+    // ★ Task288（PocketJ 移植）：实例加载器错配标记——错配时橙色警告徽章
+    //   + 元信息行尾说明；不错配传 nil 清除复用残留。
+    NSString *ame288_loader = [self ame288_profileLoaderForDisplay];
+    if (ame288_loader.length > 0 && [self ame288_mod:mod mismatchesProfileLoader:ame288_loader]) {
+        [cell setLoaderIncompatibleDetail:
+            [NSString stringWithFormat:localize(@"resman.mods.badge.loader_mismatch", nil), ame288_loader]];
+    } else {
+        [cell setLoaderIncompatibleDetail:nil];
+    }
 
     // 选择模式下隐藏启用开关（避免与勾选视觉冲突），普通模式恢复
     cell.toggleSwitch.hidden = self.selectModeEnabled;

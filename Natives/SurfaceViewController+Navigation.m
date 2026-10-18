@@ -517,8 +517,12 @@ static UIColor *ame244_snapshotTint(void) {
             ame237_row.showsIcon = YES;
             [ame237_row setNeedsLayout];
         }
-        NSLog(@"[GameMenu] Task237 glass panel applied (frosted + defensive dark base + hairline; rows above blur; icon rows) [Task239 material: %@]",
-              LGCNativeGlassEngaged() ? @"native UIGlassEffect" : @"SystemMaterialDark fallback");
+        // ★ Task288：材质名不再误导——TG 玻璃接管（ame252）后旧文案仍打
+        //   "SystemMaterialDark fallback"，装机日志判档会被带偏。如实三态。
+        NSLog(@"[GameMenu] Task237 glass panel applied (frosted + defensive dark base + hairline; rows above blur; icon rows) [material: %@]",
+              LGCNativeGlassEngaged() ? @"native UIGlassEffect"
+              : ([AmeLiquidGlassView ame252_isSupported] ? @"TG pseudo-liquid-glass (ame252 takeover)"
+                                                         : @"SystemMaterialDark fallback"));
     } else {
         // 原生 = 旧版 FCL 面板（深色半透明、纯文本行）
         // ★ Task243：风格切回原生时同步隐藏快照磨砂层（幂等清理）。

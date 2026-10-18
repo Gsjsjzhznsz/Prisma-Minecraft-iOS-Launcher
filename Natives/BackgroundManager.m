@@ -10,6 +10,7 @@
 #import "BackgroundManager.h"
 #import "UIKit+NativeSurface.h"
 #import "LiquidGlassCompat.h"   // Task224（#4）：界面风格（液态玻璃/原生）解析与分层玻璃安装
+#import "AmeLiquidGlassView.h"  // Task288：TG 伪液态玻璃滤镜（整页磨砂材料升级，MVC/TVC 同模式）
 #import <Photos/Photos.h>
 #import <ImageIO/ImageIO.h>   // Task223：CGImageSource 降采样直取壁纸
 
@@ -33,6 +34,8 @@ static const NSInteger kBackgroundDimTag = 99996;
 static const NSInteger kDefaultBackgroundTag = 99995;
 // Task160：模态弹窗页面级毛玻璃底层的 tag（防重复添加/便于移除重铺）
 static const NSInteger kAme160GlassBackdropTag = 99994;
+// Task288：玻璃风格 TG 磨砂层 tag（与 blur 层互斥安装，重建时先拆旧层）
+static const NSInteger kBackgroundGlassTag = 99993;
 
 @interface BackgroundManager ()
 @property (nonatomic, strong) AVPlayer *videoPlayer;
@@ -211,23 +214,29 @@ static UIColor *ame250_globalTextFillColor(void);
     //   IMG_0391 设置页壁纸全锐利。同屏 opacity/effect 均为默认值（用户
     //   未动过背景设置）唯独 blur=0 → 存档被历史路径写坏（0 是范围内
     //   合法值，2023 时代的 "范围检查抓不住 0.0" 注释正是这一病灶的自
-    //   白）。修法：一次性自愈——存档恰为 0.0 且效果档=毛玻璃且自愈标
-    //   志未写时，恢复用户定稿默认 0.75 并落标志；标志已写后用户再次
-    //   主动设 0 照常尊重（设置页语义不变）。effect=Translucent 时不自
-    //   愈（半透明档与模糊强度无观感关联，0 无自相矛盾）。
+    //   白）。修法：自愈——存档恰为 0.0 且效果档=毛玻璃且用户从未主动
+    //   拖过滑杆时，恢复用户定稿默认 0.75；用户再次主动设 0 照常尊重
+    //   （设置页语义不变）。effect=Translucent 时不自愈（半透明档与模糊
+    //   强度无观感关联，0 无自相矛盾）。
+    // ★ Task288（自愈闸再修）：原实现是一次性（ame255.blurHealDone 落标
+    //   志后永不再愈）——装机 latestlog（fae9b4c 构建）实证存档 blur=0
+    //   复发而自愈线缺失 = 损坏路径在标志落位后再次写 0，档案永久滞留
+    //   0 = Task256 整层不装 = 全部页面裸奔成原生观感。改为：blurUserSet
+    //   （用户主动拖过滑杆）未落位时，0 存档每次加载都治回 0.75——
+    //   已损坏档案自愈后 archive=0.75，本闸自然静默；再损坏再治，直到
+    //   用户真实意图落位（拖滑杆）为止。blurHealDone 标志退役不再读取
+    //   （历史落位不阻断再愈）。
     if (_blurIntensity <= 0.001 && _uiEffect == BackgroundUIEffectBlur &&
-        ![defaults boolForKey:@"ame255.blurHealDone"] &&
         ![defaults boolForKey:@"ame256.blurUserSet"]) {
-        NSLog(@"[BackgroundManager] Task255: stored blurIntensity=0 with effect=Blur (legacy-damaged archive) -- healing to 0.75 (one-time)");
+        NSLog(@"[BackgroundManager] Task288: stored blurIntensity=0 with effect=Blur and no user-set mark -- healing to 0.75 (re-armable)");
         _blurIntensity = 0.75;
         [defaults setFloat:_blurIntensity forKey:kBackgroundBlurIntensityKey];
-        [defaults setBool:YES forKey:@"ame255.blurHealDone"];
         [defaults synchronize];
     }
-    /* ★ Task256：自愈闸新增 ame256.blurUserSet 条件——用户在设置页主动拖过
+    /* ★ Task256：自愈闸 ame256.blurUserSet 条件——用户在设置页主动拖过
        模糊滑杆（任意档位）即落此标志；此后存档 0 = 用户真实意图（清单 4
        “最低档=完全透明”），自愈永不覆盖。无标志的 0 仍是历史写坏档案，
-       照旧一次性治回 0.75（Task255 病历不回退）。 */
+       每次加载治回 0.75（Task288 起 re-armable，见上）。 */
     // ★ Task252（反馈"毛玻璃效果失效"取证）：装机截图（IMG_0399）卡片=
     //   锐利壁纸穿透暗色平涂、零磨砂——与本文件 Blur 分支（SystemThin
     //   Material frost）的预期观感不符，与 Translucent 分支（半透明平涂）
@@ -570,9 +579,64 @@ static UIColor *ame250_globalTextFillColor(void);
        最低档从“恒装磨砂”改为“整层不装”。历史 blur=0 存档（非用户意图）
        已由加载路径 Task255 自愈 + Task256 blurUserSet 标记双闸挡住，
        不会再踩回 IMG_0399 全锐利平涂的旧病灶。 */
-    if (self.uiEffect == BackgroundUIEffectBlur && self.blurIntensity <= 0.01) {
+    /* ★ Task288（装机实锤："有一大堆都还在使用原生UI，而不是伪液态玻璃"）：
+       两处修正——
+       ① 玻璃风格档（prisma.interface_style=glass）下 blur≤0.01 不再整层
+         不装：伪液态玻璃风格本身就承诺"磨砂玻璃页面"观感，恒全透明背景
+         与风格选择自相矛盾（用户当前抱怨的直接来源——存档 blur=0 时全
+         部 BackgroundManager 页面裸奔成原生表格）。最低档=完全透明的语义
+         保留给非玻璃档（原生/伪玻璃关闭时行为零变化）。
+       ② 玻璃风格档 + TG 滤镜可用 + 图片壁纸时：磨砂材料整体升格为 TG
+         伪液态玻璃（MultiplayerViewController/TerracottaViewController
+         Task252 同模式——colorMatrix 玻璃矩阵 + gaussianBlur(2) 内容滤镜
+         直接作用于壁纸快照图层自身内容，不采样 backdrop，无 Metal 合成
+         问题），替代 SystemThinMaterial 原生毛玻璃。所有走全局背景容器
+         的页面（模组/数据包/资源包/光影/世界/下载/账户等）一处升级全部
+         生效。视频壁纸无静态帧可挂滤镜，维持系统磨砂（罕见路径零风险）。 */
+    BOOL ame288_glassStyle = LGCIsGlassStyleActive() && [AmeLiquidGlassView ame252_isSupported];
+    if (self.uiEffect == BackgroundUIEffectBlur && self.blurIntensity <= 0.01 && !ame288_glassStyle) {
         NSLog(@"[BackgroundManager] Task256: blur intensity at minimum -- frost+dim layers skipped (fully transparent background)");
         return;
+    }
+
+    // Task288：玻璃风格档——TG 伪液态玻璃磨砂层（壁纸快照 + TG 滤镜）。
+    // 壁纸缺失（解码失败/视频壁纸）时回落系统磨砂管线，不阻断。
+    UIImageView *ame288_wallpaper = (UIImageView *)[container viewWithTag:kBackgroundImageTag];
+    if (ame288_glassStyle && [ame288_wallpaper isKindOfClass:[UIImageView class]]
+        && ame288_wallpaper.image != nil) {
+        UIView *existingGlass = [container viewWithTag:kBackgroundGlassTag];
+        if (existingGlass) [existingGlass removeFromSuperview];
+        UIView *existingBlur = [container viewWithTag:kBackgroundBlurTag];
+        if (existingBlur) [existingBlur removeFromSuperview];
+
+        UIImageView *glassView = [[UIImageView alloc] initWithImage:ame288_wallpaper.image];
+        glassView.tag = kBackgroundGlassTag;
+        glassView.contentMode = UIViewContentModeScaleAspectFill;
+        glassView.clipsToBounds = YES;
+        glassView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        glassView.frame = container.bounds;
+        glassView.userInteractionEnabled = NO;   // Task161：装饰层不参与命中测试
+        glassView.alpha = 1.0;                   // Task254：恒 1.0（alpha<1 不渲染定律）
+        NSArray *ame288_filters = [AmeLiquidGlassView ame252_glassFilters];
+        if (ame288_filters != nil) glassView.layer.filters = ame288_filters;
+        [container addSubview:glassView];
+
+        // dim 层语义照旧（压暗随强度递增；blur=0 的玻璃档 dim=0 = 纯 TG 磨砂）
+        UIView *dimView = [[UIView alloc] initWithFrame:container.bounds];
+        dimView.tag = kBackgroundDimTag;
+        dimView.backgroundColor = [UIColor labelColor];
+        dimView.alpha = self.blurIntensity * 0.2;
+        dimView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        dimView.userInteractionEnabled = NO;
+        [container addSubview:dimView];
+
+        NSLog(@"[BackgroundManager] Task288: TG pseudo-liquid-glass frost installed (wallpaper snapshot + glassFilters, blur=%.2f) -- pages upgraded", self.blurIntensity);
+        return;
+    }
+    // Task288：非玻璃档从 TG 磨砂切回时拆旧层（风格切换幂等清理）
+    {
+        UIView *staleGlass = [container viewWithTag:kBackgroundGlassTag];
+        if (staleGlass) [staleGlass removeFromSuperview];
     }
 
     // 修复：使用 SystemThinMaterial（自适应浅色/深色，且较通透）替代硬编码 Dark。

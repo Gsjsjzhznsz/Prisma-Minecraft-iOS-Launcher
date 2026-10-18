@@ -3751,3 +3751,17 @@ Stage Summary:
 - 修复 fae9b4cb：删 `@`；全量 '@ame287/@[' 误植扫描仅合法数组字面量残留；门禁复跑 task139/240 balanced + verify219 81/81
 - 【闭环】r1 run#893（39107867977）Success，ipa/tipa/dSYM 产物在位
 - 装机锚点：①rd-132211 再启动不再 ~2s 闪退（日志 [Ame287] pre-classic ... skip mc-main-returned marker；退游走自然链）②实例设置页分节标题单层不再叠印 ③设置→控制→"八方向流畅移动垫"开启后 W/A/S/D 构成滑动垫（游戏内开关关页即生效，日志 Task287 fluid_button_slide ... hot-applied）④含 imblocker mod 的 Java17+ 会话启动前自动 .disabled（日志 [ModCompat] Task287）⑤Forge+空格路径会话日志 Task287 Forge URI-safe game root
+
+---
+## Task 288（装机 latestlog fae9b4c 三报根修 + PocketJ 移植：隔离根修/伪液态玻璃推广/实例 loader 错配标记）
+
+- 取证①版本隔离异常（用户："打开模组管理都没有这几个fabric模组"）：gamelog 双锚——ModsManager Task265 扫描隔离目录 versions/NeoForge-26.1.2.122/game/mods jars=2，而 Task287 日志 "real: .../Library/Application Support/minecraft"＝共享根；FML Game directory=.ame287_forge_root + 三个 Fabric jar（beryl/fabric-api/VulkanMod）在共享 mods/ 被 FML WARN Skipping（NeoForge 不认 Fabric mod）。根因=ame287_configureForgeUriSafeRoot 优先读 getenv("POJAV_GAME_DIR")（main.m 启动期设定的全局共享根，含空格 "Application Support"）而非启动链传入的生效 gameDir（隔离实例目录无空格）→ 隔离 forge 启动命中 forge+空格双条件 → 别名/chdir/env 全部落共享根 = 管理页/下载在隔离目录、游戏读共享目录两张皮
+- ①JavaLauncher.m Task288-r1：realRoot 一律取入参 gameDir（生效目录）；env 仅用于识别上次 forge 命中遗留的别名指针以还原（还原目标=别名 destination，禁止把本次生效目录写回全局 env 毒化 ModService 基准）；隔离目录无空格时零行为
+- 取证②"一大堆都还在使用原生UI，而不是伪液态玻璃"：装机存档 blurIntensity=0.00 + Task256 blur≤0.01 整层不装 = 全部 BackgroundManager 页面（模组/数据包/资源包/光影/世界/下载/账户）裸奔成原生表格；且 Task255 自愈是一次性（blurHealDone 落标志后存档再损坏永久滞留 0，本轮 gamelog 复发实证）；TG 伪液态玻璃仅 6 文件采用，模组管理页连 BackgroundManager 磨砂触点都没有
+- ②BackgroundManager.m：loadUISettings 自愈改 re-armable（blurUserSet 未落位时每次加载治回 0.75，blurHealDone 一次性标志退役）+ addBlurEffectToContainer 玻璃风格档（LGCIsGlassStyleActive + ame252_isSupported）双改——blur≤0.01 不再整层不装（伪玻璃风格承诺磨砂观感，最低档=完全透明语义保留给非玻璃档）+ TG 伪液态玻璃磨砂层（壁纸快照 + ame252_glassFilters 内容滤镜，MVC/TVC Task252 同模式）替代 SystemThinMaterial，一处升级覆盖全部全局容器页面；视频壁纸/解码失败回落系统磨砂
+- ③SurfaceViewController+Navigation.m：Task237 面板材质日志三态如实（native UIGlassEffect / TG pseudo-liquid-glass ame252 takeover / SystemMaterialDark fallback）——旧文案在 TG 接管后仍打 "SystemMaterialDark fallback" 带偏装机日志判档
+- ④PocketJ 移植·实例级模组管理第三件（启停 toggle/batch+更新检查 Task270 已有 = parity 跳过；本地列表 loader 错配标记=缺口）：ModItem 已有 isFabric/isForge/isNeoForge + .disabled 扫描；ModsManager ame288_profileLoaderForDisplay（lastVersionId 启发式：neoforge/forge/fabric/quilt，PocketJ loader 来自显式选择器、本仓 profile 表无 loader 字段故同源推断）+ ame288_mod:mismatchesProfileLoader:（Fabric/Quilt 实例×Forge 系 mod、Forge/NeoForge 实例×Fabric mod）；ModTableViewCell setLoaderIncompatibleDetail:（exclamationmark.triangle.fill 橙徽章 + 元信息行尾"加载器不兼容（%@ 实例）"）
+- l10n：resman.mods.badge.loader_mismatch 四表 3092→3093（en/zh-Hans/zh-Hant/zh-CN 锁步）
+- 门禁：task139/240 balanced / task158_objc exit0 / task191 四表 3093 OK / task248 缺键0硬编码0动态键0 / task250 全零 / verify255 53 PASS（BG 自愈锚重锚 blurHealDone→re-armable）/ verify219 重锚 3092→3093 后 81/81 ALL GREEN / task158_baseline_compare 环境性 SyntaxError 为基线预存（上游路径缺失）
+- 装机锚点：①NeoForge 隔离实例启动日志不再出现 Task287 "real: Application Support"（应见 Task288 alias residue restored 或零 Task287 行）且 FML Game directory=versions/NeoForge-26.1.2.122/game、游戏加载隔离 mods/ 的 2 jar ②启动器各页面壁纸呈 TG 磨砂（日志 Task288: TG pseudo-liquid-glass frost installed）③模组管理 Fabric mod 于 NeoForge 实例显橙色 ⚠ + "加载器不兼容（NeoForge 实例）"④blur 存档若再为 0，启动日志 Task288 healing to 0.75 (re-armable)
+- PocketJ 批次记账（继承 Task 287 批次2）：原生资源中心浏览 UI / 内置 JIT 工作流（StikJIT AGPL-3.0 评估先行）/ 同名账户共存 / Java 侧 tasks/*.java Range 续传（ObjC 侧已有 resumeData）
