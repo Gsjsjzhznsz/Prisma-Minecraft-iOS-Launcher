@@ -3743,3 +3743,11 @@ Stage Summary:
 - "我们是有的"对账（用户提醒）：自定义背景图=BackgroundManager user+bing 双源已有 / 启动链字节续传=ObjC DownloadTaskManager resumeData 已有 / 皮肤头像缓存=AvatarManager 已有——三项跳过不移植
 - PocketJ 批次2 记账：原生资源中心浏览 UI（Modrinth+CurseForge 按实例筛选）/ 实例级模组管理（启停/更新检查/不兼容标记）/ 内置 JIT 工作流（StikJIT AGPL-3.0 许可证义务评估先行）/ 同名账户共存
 - 门禁：task139/240 balanced / task191 四表 3092 OK / task248 缺键0硬编码0动态键0 / task250 全零 / verify255 53 PASS / verify219 重锚 3090→3092 后 81/81 ALL GREEN / task219_l10n welcome.back FATAL 为基线预存（stash 对照）/ import sweep WARN currentMenu 基线预存
+
+---
+## Task 287-ci（run#892 失败根修 + r1 终绿）
+
+- run#892（82733a5f）failed：JavaLauncher.m:933:15 `error: unexpected '@' in program`——ame287_configureForgeUriSafeRoot 内 `[[@ame287_fm attributesOfItemAtPath:...]]` stray '@'（本轮手误非显示层吞字，933 od -c 字节级实锤）
+- 修复 fae9b4cb：删 `@`；全量 '@ame287/@[' 误植扫描仅合法数组字面量残留；门禁复跑 task139/240 balanced + verify219 81/81
+- 【闭环】r1 run#893（39107867977）Success，ipa/tipa/dSYM 产物在位
+- 装机锚点：①rd-132211 再启动不再 ~2s 闪退（日志 [Ame287] pre-classic ... skip mc-main-returned marker；退游走自然链）②实例设置页分节标题单层不再叠印 ③设置→控制→"八方向流畅移动垫"开启后 W/A/S/D 构成滑动垫（游戏内开关关页即生效，日志 Task287 fluid_button_slide ... hot-applied）④含 imblocker mod 的 Java17+ 会话启动前自动 .disabled（日志 [ModCompat] Task287）⑤Forge+空格路径会话日志 Task287 Forge URI-safe game root
