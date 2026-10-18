@@ -1729,20 +1729,6 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     self.modrinthSourceButton.tag = [self tagForType:type];
     self.curseforgeSourceButton.tag = [self tagForType:type];
 
-    // ===== 同步更新侧边栏的下载源选择器 =====
-    [self.sidebarModrinthButton setTitleColor:isModrinth ? [UIColor whiteColor] : [UIColor labelColor] forState:UIControlStateNormal];
-    [self.sidebarCurseforgeButton setTitleColor:isModrinth ? [UIColor labelColor] : [UIColor whiteColor] forState:UIControlStateNormal];
-
-    self.sidebarSliderLeftConstraint.active = isModrinth;
-    self.sidebarSliderRightConstraint.active = !isModrinth;
-    UIColor *sidebarSliderColor = isModrinth ? [UIColor systemGreenColor] : [UIColor systemOrangeColor];
-
-    [UIView animateWithDuration:0.25 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
-        self.sidebarSourceSlider.backgroundColor = sidebarSliderColor;
-        [self.sidebarSourceTrack layoutIfNeeded];
-    } completion:nil];
-
-    // 记录当前类型到侧边栏按钮的 tag，用于点击事件中获取类型
     // ===== Task291: 侧边栏三态同步（聚合 | Modrinth | CurseForge）=====
     BOOL isAggregate = [currentSource isEqualToString:@"aggregate"];
     BOOL sidebarMr = !isAggregate && isModrinth;
