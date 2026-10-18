@@ -36,6 +36,12 @@ NS_ASSUME_NONNULL_BEGIN
 /// 从偏好加载持久化的位置
 - (void)restorePositions;
 
+/// ★ Task285（"调节小窗后左上角的控件会消失"确定性防御）：位置重放 +
+///   可见性再断言 + 边界钳制一步到位——rescale/转置往返后由宿主显式调
+///   用，不再依赖 layoutSubviews 的尺寸变化检测（⊥ 转置往返同尺寸时该
+///   检测失效）。幂等，可在任意时机重复调用。
+- (void)ame285_reassertVisiblePositions;
+
 /// 保存当前位置到偏好
 - (void)savePositions;
 

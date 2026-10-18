@@ -1825,10 +1825,24 @@ static NSInteger ame283_lastLandscapeDev = 0;
     //   （iPadOS 27 拖拽每 tick 都会走到这里，不设快路径会逐帧重复写
     //   frame + 刷日志）。锚点在解冻/武装路径置零，保证状态翻转后必真
     //   重排一次；Task283 追加变换态对账（⊥ 出现/消失必真重排）。
-    if (g_ame267_freeformScaled &&
-        CGSizeEqualToSize(CGSizeMake(ame267_w, ame267_h), g_ame267_lastRescaledSize) &&
-        CGAffineTransformEqualToTransform(self.rootView.transform, ame283_want)) {
-        return;
+    //   ★ Task285：对账范围扩到 overlay/menuCanvas——两宿主若被历史路径
+    //   遗留成与 rootView 不一致的变换态（=“控件消失/滞留旧方向”的残留
+    //   形态之一），快路径不得早退，必须落到下方跟转块纠正。
+    {
+        UIView *ame285_ov = self.gameMenuOverlay;
+        BOOL ame285_ovOk = (ame285_ov == nil) ||
+            CGAffineTransformEqualToTransform(ame285_ov.transform, ame283_want);
+        UIView *ame285_cv = self.menuCanvas;
+        BOOL ame285_cvOk = (ame285_cv == nil) ||
+            CGAffineTransformEqualToTransform(ame285_cv.transform, ame283_want);
+        if (!(g_ame267_freeformScaled &&
+              CGSizeEqualToSize(CGSizeMake(ame267_w, ame267_h), g_ame267_lastRescaledSize) &&
+              CGAffineTransformEqualToTransform(self.rootView.transform, ame283_want) &&
+              ame285_ovOk && ame285_cvOk)) {
+            // 落到重排（快路径失效：尺寸/任一变换态不一致）
+        } else {
+            return;
+        }
     }
     g_ame267_lastRescaledSize = CGSizeMake(ame267_w, ame267_h);
 
@@ -1874,6 +1888,31 @@ static NSInteger ame283_lastLandscapeDev = 0;
                 ame284_overlay.transform = ame283_want;
                 ame284_overlay.bounds = CGRectMake(0, 0, ame267_lw, ame267_lh);
                 ame284_overlay.center = CGPointMake(ame267_w / 2.0, ame267_h / 2.0);
+            }
+            // ★ Task285（“调节小窗后左上角的控件会消失”确定性防御）：重排
+            //   真发生时对 overlay 显式重放位置+可见性+钳制——不再依赖
+            //   layoutSubviews 的尺寸变化检测（⊥ 转置往返同尺寸时失效）。
+            [(GameMenuOverlayView *)ame284_overlay ame285_reassertVisiblePositions];
+        }
+        // ★ Task285（“菜单设置不会跟随方向”根修）：menuView/menuDimView 的
+        //   宿主 menuCanvas 与 overlay 同参跟转——⊥ 时菜单容器与游戏内容
+        //   同向（面板在容器内按逻辑口径铺排），非 ⊥ 恒等复位 + frame 铺
+        //   回当前视图（全屏语义与直挂 self.view 逐字节一致）。菜单关闭
+        //   态也同步跟转（下次打开即新方向，无残留窗口）。
+        UIView *ame285_canvas = self.menuCanvas;
+        if (ame285_canvas != nil) {
+            if (ame283_angle == 0.0) {
+                if (!CGAffineTransformIsIdentity(ame285_canvas.transform)) {
+                    ame285_canvas.transform = CGAffineTransformIdentity;
+                }
+                CGRect ame285_cFrame = CGRectMake(0, 0, ame267_w, ame267_h);
+                if (!CGRectEqualToRect(ame285_canvas.frame, ame285_cFrame)) {
+                    ame285_canvas.frame = ame285_cFrame;
+                }
+            } else {
+                ame285_canvas.transform = ame283_want;
+                ame285_canvas.bounds = CGRectMake(0, 0, ame267_lw, ame267_lh);
+                ame285_canvas.center = CGPointMake(ame267_w / 2.0, ame267_h / 2.0);
             }
         }
     }

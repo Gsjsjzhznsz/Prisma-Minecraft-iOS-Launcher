@@ -395,6 +395,21 @@ static BOOL ame227_g_dockedLeft = NO;
     [self clampViewsToScreen];
 }
 
+- (void)ame285_reassertVisiblePositions {
+    // ★ Task285：rescale/转置往返后的确定性校正链——位置重放（吸边态重贴
+    //   当前边、标签重取百分比位）→ 可见性再断言（转场/重排竞态可能留下
+    //   stale hidden，展示语义以 statsLabelVisible/overlayHidden 为准）→
+    //   边界钳制（旧尺寸残留 frame 钳回当前 bounds）。幂等零漂移。
+    [self restorePositions];
+    [self applyStatsLabelVisibility];
+    [self clampViewsToScreen];
+    NSLog(@"[GameMenu] Task285: reassert visible positions (bounds=%@ gear=%@ gearHidden=%d stats=%@ statsHidden=%d overlayHidden=%d)",
+          NSStringFromCGRect(self.bounds),
+          NSStringFromCGRect(self.menuButton.frame), (int)self.menuButton.hidden,
+          NSStringFromCGRect(self.statsLabel.frame), (int)self.statsLabel.hidden,
+          (int)self.overlayHidden);
+}
+
 - (void)savePositions {
     CGFloat bw = self.bounds.size.width;
     CGFloat bh = self.bounds.size.height;

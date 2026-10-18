@@ -40,6 +40,12 @@ CGPoint lastVirtualMousePoint;
 // ★ Task237：游戏内菜单面板重写为自定义 UIView（原 UITableView + “往表里
 // 塞玻璃层”的补丁路线退役——分层自控：底色永不清空、内容恒在磨砂之上）。
 @property(nonatomic) UIView *menuView;
+// ★ Task285：游戏内菜单转置容器——menuView/menuDimView 的宿主，⊥ 旋转态
+//   由 ame267_rescaleViewStackToSize 与 gameMenuOverlay 同参跟转（同角
+//   transform + 转置逻辑 bounds + center 对齐），菜单面板在容器内按逻辑
+//   口径铺排 = 与游戏内容同向（"菜单设置不跟随方向"根修）；非 ⊥ 恒等
+//   复位 + frame 铺满，全屏语义与直挂 self.view 逐字节一致。
+@property(nonatomic) UIView *menuCanvas;
 @property(nonatomic) UIScreenEdgePanGestureRecognizer* edgeGesture;
 @property(nonatomic) UIView *gameMenuOverlay; // FCL 风格悬浮按钮 + FPS/内存显示
 

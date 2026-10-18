@@ -439,12 +439,15 @@ void init_loadMobileGluesConfig() {
 ///   设置页"JVM 预设"行，实例级覆写）→ java.jvm_preset（全局设置页）→
 ///   @"normal"。init_loadCustomJvmFlags 的 custom 参数注入与 launchJVM 的
 ///   GC 段注入两处共用，解析永不漂移。
-///   ★ Task284（"优先性能优先 JVM 参数"）：performance 档升格最高优先
-///   （custom 除外）——两层任一显式选 performance 即生效。病历：用户
-///   全局已选性能优先，实例值 memory 按旧序盖过全局（装机日志 c2db755
-///   "profile-level jvm_preset override active: memory" → Java8
-///   SerialGC 独占），性能优先选择被实例值压制；修后 global=performance
-///   直接胜出，其余档位保持 profile → global → normal 原序不变。
+///   ★ Task285（用户定案"肯定是版本设置的jvm预设优先"）：Task284 的
+///   performance 升格【撤销】——global=performance 不再盖过实例非定制
+///   值，恢复 profile → global → normal 原序（custom 任一层声明仍最高）。
+///   病历复盘：Task284 误判"用户全局选了性能优先被实例压制"，装机日志
+///   (a94669c) 实锤全局 java.jvm_preset 根本不存在（"Getter could not
+///   find preference java.jvm_preset"）——用户是在版本设置里选了 memory，
+///   版本设置优先本就是既定设计；要性能优先应在 版本设置 → 高级 → JVM
+///   预设 选"性能优先"（Task256 已提供该档，选中即生效）。本轮另加
+///   来源日志：生效预设 + 来源层 + 双层冲突提示，下轮日志一眼定音。
 static NSString *ame256_effectiveJvmPreset(void) {
     NSString *ame256_profile = [PLProfiles resolveKeyForCurrentProfile:@"jvm_preset"];
     NSString *ame256_global = getPrefObject(@"java.jvm_preset");
@@ -454,24 +457,27 @@ static NSString *ame256_effectiveJvmPreset(void) {
     if ([ame256_profile isEqualToString:@"custom"] || [ame256_global isEqualToString:@"custom"]) {
         return @"custom";
     }
-    // ★ Task284：performance 升格——global 显式选性能优先生时盖过实例非定制值
-    if ([ame256_global isEqualToString:@"performance"]) {
-        if (ame284_profileValid && ![ame256_profile isEqualToString:@"performance"]) {
-            static dispatch_once_t ame284_once;
-            dispatch_once(&ame284_once, ^{
-                NSLog(@"[JavaLauncher] Task284: global jvm_preset=performance outranks profile override '%@' (performance-first precedence)", ame256_profile);
-            });
-        }
-        return @"performance";
-    }
+    // ★ Task285：恢复 profile（版本设置）优先原序——Task284 performance
+    //   升格撤销（用户定案"版本设置的jvm预设优先"）。
     if (ame284_profileValid) {
         static dispatch_once_t ame256_once;
         dispatch_once(&ame256_once, ^{
-            NSLog(@"[JavaLauncher] Task256: profile-level jvm_preset override active: %@", ame256_profile);
+            NSLog(@"[JavaLauncher] Task285: JVM preset='%@' (source=profile/版本设置; global=%@%@" ,
+                  ame256_profile,
+                  ame284_globalValid ? ame256_global : @"<unset>",
+                  ame284_globalValid ? @", unused -- 版本设置优先)" : @")");
+            if (ame284_globalValid && ![ame256_global isEqualToString:ame256_profile]) {
+                NSLog(@"[JavaLauncher] Task285: preset conflict profile='%@' vs global='%@' -- profile wins (版本设置优先); switch in 版本设置→高级→JVM 预设 if intended",
+                      ame256_profile, ame256_global);
+            }
         });
         return ame256_profile;
     }
     if (ame284_globalValid) {
+        static dispatch_once_t ame285_once;
+        dispatch_once(&ame285_once, ^{
+            NSLog(@"[JavaLauncher] Task285: JVM preset='%@' (source=global/全局设置)", ame256_global);
+        });
         return ame256_global;
     }
     return @"normal";
@@ -3285,10 +3291,15 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     //   256m——大整合包（Forge 1.12.2 + 17 coremods 装机会话）JIT 体量
     //   余量，杜绝 "CodeCache is full. Compiler has been disabled." 退化
     //   解释执行。
+    //   ★ Task285（"性能优先扩大CodeCache"装机追平）：镜像轨 64m 预算内
+    //   Initial 16m→48m / Expansion 4m→8m 一次到位——Forge 17+ coremods
+    //   类加载 JIT 编译高峰期不再经历多次堆扩张（每次扩张 = RX 映射内
+    //   mprotect 页翻转 + 锁窗口），commit 是虚拟预留、物理页按需分配，
+    //   驻留零增加；总预算仍锁死 64m 外部硬边界。
     if (@available(iOS 26.0, *)) {
         PUSH_MARGV_LITERAL("-XX:ReservedCodeCacheSize=64m");
-        PUSH_MARGV_LITERAL("-XX:InitialCodeCacheSize=16m");
-        PUSH_MARGV_LITERAL("-XX:CodeCacheExpansionSize=4m");
+        PUSH_MARGV_LITERAL("-XX:InitialCodeCacheSize=48m");
+        PUSH_MARGV_LITERAL("-XX:CodeCacheExpansionSize=8m");
     } else {
         PUSH_MARGV_LITERAL("-XX:ReservedCodeCacheSize=256m");
         PUSH_MARGV_LITERAL("-XX:InitialCodeCacheSize=32m");
@@ -4047,12 +4058,13 @@ int launchHeadlessJVM(NSString *mainClass, NSArray<NSString *> *args, int minJav
     // Workaround random stack guard allocation crashes（对齐 launchJVM）
     PUSH_HARGV_LITERAL("-XX:+UnlockExperimentalVMOptions");
     PUSH_HARGV_LITERAL("-XX:+DisablePrimordialThreadGuardPages");
-    // CodeCache 参数（对齐 launchJVM Task284 分轨：iOS 26+ 镜像映射 64m
-    // 硬边界防 SIGBUS；iOS < 26 非镜像路径 256m 防 CodeCache 满退化）
+    // CodeCache 参数（对齐 launchJVM Task284 分轨 + Task285 镜像轨 Initial
+    // 一次到位：iOS 26+ 镜像映射 64m 硬边界防 SIGBUS；iOS < 26 非镜像路
+    // 径 256m 防 CodeCache 满退化）
     if (@available(iOS 26.0, *)) {
         PUSH_HARGV_LITERAL("-XX:ReservedCodeCacheSize=64m");
-        PUSH_HARGV_LITERAL("-XX:InitialCodeCacheSize=16m");
-        PUSH_HARGV_LITERAL("-XX:CodeCacheExpansionSize=4m");
+        PUSH_HARGV_LITERAL("-XX:InitialCodeCacheSize=48m");
+        PUSH_HARGV_LITERAL("-XX:CodeCacheExpansionSize=8m");
     } else {
         PUSH_HARGV_LITERAL("-XX:ReservedCodeCacheSize=256m");
         PUSH_HARGV_LITERAL("-XX:InitialCodeCacheSize=32m");

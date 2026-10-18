@@ -148,10 +148,22 @@ static int ame273_openGeneration = 0;                ///< 呈现代次（防陈�
 static __weak UIContextMenuInteraction *ame283_liveSessionInteraction = nil;
 
 /// ★ Task284（"优化连点悬浮菜单延迟"）：dismissMenu 收口后的重开请求块——
-///   didEnd 完成回调前触发（0.12s 沉降）+ 0.45s 后备定时器双通道；块内
+///   didEnd 完成回调前触发（沉降后即重开）+ 0.45s 后备定时器双通道；块内
 ///   捕获代次，ame284_representFiredGen 防双火（早触发后后备定时器空转）。
 static dispatch_block_t ame284_pendingRepresent = nil;
 static int ame284_representFiredGen = 0;
+/// ★ Task285（"连点菜单延迟太高"根修）：armed 窗内最新请求参数容器——
+///   Task284 的 gen 顶替语义在连点序列下自吞：每次点击都 gen++ 作废上一
+///   armed 块再重新 dismiss+armed，菜单在连点期间永不落地（装机日志
+///   a94669c 12:03:46-58 连 12 次 dismissed/re-present armed 无一落地）。
+///   修后 armed 窗内后续连点只【更新容器参数】，不顶替不作废；armed 块
+///   触发时读容器 = "最后一次点击的菜单"开一次即达。容器生命周期 =
+///   armed 窗（≤0.45s），strong 持有源视图防中途释放（menu 打开期间
+///   cell/按钮必然存活，窗内窗口极短，无悬垂风险）。
+static UIMenu *ame285_pendingMenu = nil;
+static UIView *ame285_pendingSrc = nil;
+static NSArray *ame285_pendingDicts = nil;
+static void (^ame285_pendingOnDismiss)(void) = nil;
 /// ★ Task281：Task278 重试代次退役——延迟重试链整体移除后不存在并发链
 ///   （见 ame242_presentStyleRoutedWithMenu 分轨注释）。
 
@@ -666,12 +678,29 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
             //   点不排队，只保最新一次重开）；ame273_presentRequestAt 同步
             //   刷新保看门狗语义连续。
             //   ★ Task284（延迟优化）：上述固定 0.45s 拆双通道——主通道 =
-            //   didEndMenuForConfiguration 收尾完成回调前触发（0.12s 沉降
-            //   后即重开，较固定 0.45s 提前 ~0.2-0.3s，连点重开即点即达）；
-            //   后备定时器降级为 0.45s 极端兑底（didEnd 未达时才生效）；
+            //   didEndMenuForConfiguration 收尾完成回调前触发（沉降后即重
+            //   开，较固定 0.45s 提前 ~0.2-0.3s，连点重开即点即达）；后备
+            //   定时器降级为 0.45s 极端兑底（didEnd 未达时才生效）；
             //   ame284_representFiredGen 同代次只放行一次防双火。
+            //   ★ Task285（"连点菜单延迟太高"根修）：armed 窗内后续连点
+            //   【合并】而非【顶替】——下方入口先查 ame284_pendingRepresent
+            //   存活即更新容器参数直接 return（不 dismissMenu 不 gen++），
+            //   armed 块触发时读容器 = 最后一次点击的菜单开一次；连点序列
+            //   从"开 N-1 次×关 N-1 次"变"只开 1 次（最新）"，全程零吞并。
             UIContextMenuInteraction *ame283_live = ame283_liveSessionInteraction;
             BOOL ame283_dismissed = NO;
+            // ★ Task285：armed 窗内连点合并——已有待重开请求在飞时，本请求
+            //   只刷新容器参数与看门狗时点，不再 dismissMenu/gen++ 顶替
+            //   （连点不互相作废，菜单最终一次开最新内容）。
+            if (ame284_pendingRepresent != nil) {
+                ame285_pendingMenu = menu;
+                ame285_pendingSrc = sourceView;
+                ame285_pendingDicts = dicts;
+                ame285_pendingOnDismiss = onDismiss;
+                ame273_presentRequestAt = CFAbsoluteTimeGetCurrent();
+                NSLog(@"[AmeNativeMenu] Task285: rapid re-tap coalesced into armed request (no dismiss/re-arm)");
+                return;
+            }
             if (ame283_live != nil && [ame283_live respondsToSelector:@selector(dismissMenu)]) {
                 @try {
                     [ame283_live dismissMenu];
@@ -685,19 +714,30 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
                 ame273_openGeneration++;
                 int ame283_gen = ame273_openGeneration;
                 ame273_presentRequestAt = CFAbsoluteTimeGetCurrent();
-                UIMenu *ame283_menu = menu;
-                UIView *ame283_src = sourceView;
-                NSArray *ame283_dicts = dicts;
-                void (^ame283_onDismiss)(void) = onDismiss;
+                // ★ Task285：参数入容器（armed 块触发时读最新值）
+                ame285_pendingMenu = menu;
+                ame285_pendingSrc = sourceView;
+                ame285_pendingDicts = dicts;
+                ame285_pendingOnDismiss = onDismiss;
                 dispatch_block_t ame284_represent = ^{
                     if (ame283_gen != ame273_openGeneration) return; // 已被更新请求取代
                     if (ame284_representFiredGen == ame283_gen) return; // didEnd 早触发已完成
                     ame284_representFiredGen = ame283_gen;
                     ame284_pendingRepresent = nil;
-                    [self ame245_presentViaSystemMenu:ame283_menu
-                                           sourceView:ame283_src
-                                                dicts:ame283_dicts
-                                           onDismiss:ame283_onDismiss];
+                    // ★ Task285：读容器最新参数（armed 窗内后续连点合并的终点）
+                    UIMenu *ame285_menu = ame285_pendingMenu ?: menu;
+                    UIView *ame285_src = ame285_pendingSrc ?: sourceView;
+                    NSArray *ame285_dicts = ame285_pendingDicts ?: dicts;
+                    void (^ame285_onDismiss)(void) = ame285_pendingOnDismiss ?: onDismiss;
+                    ame285_pendingMenu = nil;
+                    ame285_pendingSrc = nil;
+                    ame285_pendingDicts = nil;
+                    ame285_pendingOnDismiss = nil;
+                    NSLog(@"[AmeNativeMenu] Task285: armed re-present fired (gen=%d) -- opening latest coalesced menu", ame283_gen);
+                    [self ame245_presentViaSystemMenu:ame285_menu
+                                           sourceView:ame285_src
+                                                dicts:ame285_dicts
+                                           onDismiss:ame285_onDismiss];
                 };
                 ame284_pendingRepresent = [ame284_represent copy];
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.45 * NSEC_PER_SEC)),
@@ -915,13 +955,14 @@ static void ame240_actionSheetFallback(UIContextMenuInteraction *ix,
         ame283_liveSessionInteraction = nil;            // ★ Task283：会话收尾注销
     }
     // ★ Task284：会话收尾 = dismissal 完成回调 → 待重开请求主通道前触发
-    //   （0.12s 沉降让收尾动画落定，早于固定 0.45s 窗口 ~0.2-0.3s）；
+    //   （didEnd 本身即收尾动画完成后的回调，无需再沉降——★ Task285：
+    //   0.12s 沉降降到下一 runloop 即发，present 若撞收尾残帧由 ame245
+    //   的 0.32s 单次原生重试兜底，比白等 0.12s 更快且不劣化）；
     //   无待重开请求（正常选中/外部点按收尾）零成本直落。
     if (ame284_pendingRepresent != nil) {
         dispatch_block_t ame284_early = ame284_pendingRepresent;
         ame284_pendingRepresent = nil;
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.12 * NSEC_PER_SEC)),
-                       dispatch_get_main_queue(), ame284_early);
+        dispatch_async(dispatch_get_main_queue(), ame284_early);
     }
     if (!ame240_actionFired && ame240_onDismiss) {
         ame240_onDismiss();

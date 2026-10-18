@@ -3683,3 +3683,22 @@ Stage Summary:
 - 提交推送 main（c2db7557..本轮）；CI 出包后装机验证
 - 装机锚点：①全局 JVM 预设=性能优先时（日志 [JavaLauncher] Task284: global jvm_preset=performance outranks profile override 'memory' + Task255 JVM preset=performance (Java 8): ParallelGC）②小窗+设备旋转→齿轮/占用信息随内容 ±90° 同向（日志 [SurfaceVC] Task267/283: scale-mode stack resync 照旧 + 齿轮把手贴内容右缘）③连点悬浮菜单→重开延迟 0.45s→~0.15-0.25s（日志 Task283/284: live session dismissed via dismissMenu -- re-present armed）
 - 悬浮栏菜单面板（menuView）在 ⊥ 态未随转（用户未点名，本轮不扩面，留观察）
+
+---
+Task ID: 285
+Agent: main (Super Z)
+Task: a94669c 构建装机反馈四项（版本设置 JVM 预设优先回归 + 性能档 CodeCache / 连点菜单延迟太高 / 小窗控件就是会消失 / 菜单设置不跟随方向）
+
+Work Log:
+- 基线确认：git fetch 快进 f13bfe6→a94669c2（远端 Task 284），用户设备构建 == 远端 HEAD（历轮修复确已进构建）
+- ①JVM 预设优先级回归（JavaLauncher ame256_effectiveJvmPreset）：Task284 的 performance 升格【撤销】——用户定案"肯定是版本设置的jvm预设优先"；装机日志复盘实锤 Task284 病历误判：a94669c 会话 "Getter could not find preference java.jvm_preset" = 全局键【不存在】而非"键存在被压制"（Task284 worklog 反向误读），用户是在版本设置里选了 memory，profile 优先本就是既定设计；修后恢复 custom（任一层）→ profile → global → normal 原序，另加来源日志（Task285: JVM preset='X' (source=profile/版本设置; global=Y, unused)）+ 双层冲突提示，下轮日志一眼定音谁生效；要性能优先进 版本设置→高级→JVM 预设 选"性能优先"（Task256 档位已有：ParallelGC/大年轻代 G1）
+- ②CodeCache 镜像轨 Initial 一次到位（launchJVM + launchHeadlessJVM 双点）：iOS 26+ 镜像轨 ReservedCodeCacheSize 维持 64m 硬边界（StikDebug 授予的 RX 映射恒 64MB 外部定值，全仓 grep 确认不可调——用户 iPadOS 27 会话 "JIT26 Requesting 64 MB" 即此），预算内 InitialCodeCacheSize 16m→48m / Expansion 4m→8m：Forge 17+ coremods 类加载 JIT 编译高峰期不再多次堆扩张（每次扩张 = RX 映射内 mprotect 页翻转+锁窗口）；commit 是虚拟预留物理页按需分配，驻留零增加；非镜像轨 256m（Task284）不变
+- ③连点菜单延迟根修（AmeNativeMenu）：Task284 的 gen 顶替语义在连点序列下【自吞】——每次点击都 gen++ 作废上一 armed 块再重新 dismiss+armed，菜单在连点期间永不落地（a94669c 装机日志 12:03:46-58 连 12 次 "live session dismissed -- re-present armed" 无一落地实锤）；修后 armed 窗内后续连点【合并】而非【顶替】：ame285_pendingMenu/Src/Dicts/OnDismiss 容器存活期内新请求只更新容器参数+刷新看门狗时点直接 return（不 dismissMenu 不 gen++），armed 块触发时读容器 = "最后一次点击的菜单"开一次即达，连点序列从"开 N-1 次×关 N-1 次"变"只开 1 次（最新）"；didEnd-early 沉降 0.12s→0（didEnd 本身即收尾动画完成后的回调，dispatch_async 下一 runloop 即发，撞收尾残帧由 ame245 0.32s 单次原生重试兜底）；合并路径丢弃被合并请求的 onDismiss 与 Task284 顶替语义等价（只保最新）无回归
+- ④菜单设置跟随方向根修（SurfaceViewController+Navigation + SurfaceViewController rescale）：menuView/menuDimView 宿主从 self.view 迁入新转置容器 menuCanvas——⊥ 旋转态由 ame267_rescaleViewStackToSize 与 gameMenuOverlay 同参跟转（同角 transform + 转置逻辑 bounds + center 对齐），菜单面板/遮罩在容器内按逻辑口径铺排 = 与游戏内容同向（"菜单设置不跟随方向"本体：showMenu 839 行无条件 transform=Identity + 宿主 self.view 滞留窗口坐标系，⊥ 后面板与已转向的内容垂直）；非 ⊥ 容器恒等复位 + frame 铺满 self.view，全屏语义与直挂逐字节一致零回归；几何源三处（showMenu/dismissMenu/viewWillTransitionToSize_Navigation）self.view.bounds→menuCanvas.bounds；容器 userInteractionEnabled 跟随菜单开闭（开启 YES/关闭 NO——空容器不拦截触摸防 hitTest 挡死 overlay）；ame248_alignMenuFrost 走 convertRect:toView: 自动含 transform 链零改动；ame238_raiseGameMenuAboveLaunchMask 改以 canvas 为单位提升（bringSubviewToFront 只作用直接子视图）
+- ⑤小窗控件消失确定性防御（SurfaceViewController rescale + GameMenuOverlayView）：快路径对账扩到 overlay/menuCanvas 两宿主——变换态与 rootView 不一致（残留态="控件消失/滞留旧方向"形态之一）时不得早退必真重排；重排真发生时对 overlay 显式调 ame285_reassertVisiblePositions（restorePositions+applyStatsLabelVisibility+clampViewsToScreen 复合，不再依赖 layoutSubviews 尺寸变化检测——⊥ 转置往返同尺寸时失效）；取证日志 Task285: reassert visible positions（bounds/gear/stats 三元组 frame+hidden+overlayHidden 全量落日志，下轮"消失"日志定音确切形态）
+- 门禁：task139 all balanced / task240 all balanced+syntax OK / task158 balance PASS / task248 缺键0 硬编码0 动态键0 / task250 全零 / verify219 81 passed ALL GREEN / task219_syntax 6 FAIL 均脚本陈旧基线锚（Makefile TAB 662/bundle id/四表键数 2606，与本轮 diff 零交集）；零新增文案
+
+Stage Summary:
+- 提交推送 main（a94669c2..本轮）；CI 出包后装机验证
+- 装机锚点：①版本设置 JVM 预设选"性能优先"即生效（日志 [JavaLauncher] Task285: JVM preset='performance' (source=profile/版本设置) + Task255 JVM preset=performance (Java 8): ParallelGC）②连点悬浮菜单停止连点后菜单立即开最新内容（日志 Task285: rapid re-tap coalesced into armed request + armed re-present fired）③菜单面板随设备方向与游戏内容同向（⊥ 态面板/遮罩随 canvas 转置）④小窗控件消失下轮日志以 Task285 reassert 三元组定音
+- CodeCache 硬上限说明：iOS 26+ 镜像路径 64MB 是 StikDebug 外部工具授予的 RX 映射定值，本仓库不可调；已做预算内 Initial 48m 一次到位 + 非镜像轨 256m；若需突破须上游 StikDebug 放开映射请求大小
