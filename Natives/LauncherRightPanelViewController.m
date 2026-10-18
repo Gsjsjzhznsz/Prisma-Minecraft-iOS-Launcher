@@ -20,7 +20,6 @@
 #import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "AboutViewController.h"   // Task217：启动器版本卡 about 路由
 #import "StikDebugViewController.h" // Task294：内置 JIT 轨（jit_enabler=builtin / auto 优先）
-#import "PrivilegePluginRegistry.h" // Task296：第三方权限插件状态卡
 #import "ios_uikit_bridge.h"
 #import "utils.h"
 #import "AvatarManager.h"
@@ -69,7 +68,6 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
 @property(nonatomic, strong) UILabel *jitCardValue;            // JIT（兔子图标卡）
 @property(nonatomic, strong) UILabel *memLimitCardValue;       // 内存上限提升
 @property(nonatomic, strong) UILabel *extVMCardValue;          // 扩展虚拟寻址
-@property(nonatomic, strong) UILabel *ppCardValue;             // 权限插件（Task296）
 
 // 下载相关属性
 @property(nonatomic, strong) MinecraftResourceDownloadTask *task;
@@ -229,12 +227,6 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
                                              selector:@selector(updateMemoryEntitlementStatus)
                                                  name:UIApplicationDidBecomeActiveNotification
                                                object:nil];
-
-    // Task296：权限插件卡与 JIT/内存卡同刷新时机（插件可在运行中被重签/删除）。
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(updatePrivilegePluginStatus)
-                                                 name:UIApplicationDidBecomeActiveNotification
-                                               object:nil];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -244,7 +236,6 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     [self updateLaunchButtonState];
     [self updateJITStatus];
     [self updateMemoryEntitlementStatus];
-    [self updatePrivilegePluginStatus];
     [self applyCustomAppearance];
     [self updateDownloadCenterButton];
 }
@@ -514,7 +505,6 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     UIColor *cardBlue = [UIColor systemBlueColor];
     UIColor *cardOrange = [UIColor colorWithRed:1.0 green:0.584 blue:0.0 alpha:1.0];                          // #FF9500
     UIColor *cardAmber = [UIColor colorWithRed:0.906 green:0.635 blue:0.0 alpha:1.0];                         // #E7A200（黄系加深保可读）
-    UIColor *cardPurple = [UIColor systemPurpleColor];                                                        // Task296：权限插件卡专属色
 
     // 设备图标按机型选 iPad/iPhone 轮廓；系统卡沿用苹果标
     NSString *deviceIconName = [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad
@@ -534,8 +524,6 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     UIView *jitCard = [self makeInfoCardWithIcon:@"hare" accent:cardOrange title:@"JIT" valueLabel:&_jitCardValue];
     UIView *memLimitCard = [self makeInfoCardWithIcon:@"memorychip.fill" accent:cardOrange title:localize(@"ame189.rp.mem_limit", nil) valueLabel:&_memLimitCardValue];
     UIView *extVMCard = [self makeInfoCardWithIcon:@"memorychip" accent:cardAmber title:localize(@"ame189.rp.ext_vm", nil) valueLabel:&_extVMCardValue];
-    // Task296：第三方权限插件状态卡（点击 = 知情同意流，见 ame296_handlePPCardTap）
-    UIView *ppCard = [self makeInfoCardWithIcon:@"puzzlepiece.extension" accent:cardPurple title:localize(@"ame296.pp.card.title", nil) valueLabel:&_ppCardValue];
 
     // Task156：信息卡点击直达对应入口（用户反馈"右边侧边栏的信息能不能点击
     // 直达对应的入口"）。映射：启动器版本→设置·检查更新（深链）、游戏版本→
@@ -560,10 +548,6 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     [self.infoStackView addArrangedSubview:jitCard];
     [self.infoStackView addArrangedSubview:memLimitCard];
     [self.infoStackView addArrangedSubview:extVMCard];
-    [self.infoStackView addArrangedSubview:ppCard];
-    // Task296：插件卡可点击（同意/停用流自持弹窗，不进 LPVC 避撞并行编辑区）
-    ppCard.userInteractionEnabled = YES;
-    [ppCard addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(ame296_handlePPCardTap)]];
 
     // 启动器版本卡：App 版本号 + 构建号双读（用户指定 "5.0.0 (build)" 格式；
     // 两者相同时只显示一个，避免 "5.0.0 (5.0.0)" 冗余）
@@ -1179,60 +1163,6 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
 
     self.memLimitCardValue.text = memLimit ? localize(@"ame189.common.on", nil) : localize(@"ame189.common.off", nil);
     self.extVMCardValue.text = extVM ? localize(@"ame189.common.on", nil) : localize(@"ame189.common.off", nil);
-}
-
-#pragma mark - 第三方权限插件状态显示（Task296）
-
-/// 刷新「权限插件」卡正文。宿主状态机见 PrivilegePluginRegistry：
-/// TrollStore 已足 / 未安装 / 未授权 / 就绪 / 已授权 / 失败 / 无效。
-/// 与 JIT/内存卡同刷新时机（become-active + viewWillAppear）。
-- (void)updatePrivilegePluginStatus {
-    if (!self.ppCardValue) return;
-    PrivilegePluginRegistry *reg = [PrivilegePluginRegistry sharedRegistry];
-    [reg probePluginPresence];
-    self.ppCardValue.text = [reg localizedStateSummary];
-}
-
-/// Task296：点击插件卡 → 知情同意弹窗（默认关闭；无同意永不加载插件代码）。
-/// 弹窗正文完整披露：第三方 dylib 以系统级权限运行 / 内核 panic 风险 /
-/// 仅限非 TrollStore 安装且由插件自检版本窗口 / 主仓库不含任何利用代码 /
-/// 移除方式 = 重签时不再注入。刻意不进 LPVC：该区是并行 AI 高频编辑区
-/// （Task294 刚动 jit_enabler 行），信息卡自持弹窗零碰撞。
-- (void)ame296_handlePPCardTap {
-    PrivilegePluginRegistry *reg = [PrivilegePluginRegistry sharedRegistry];
-    [reg probePluginPresence];
-    [self updatePrivilegePluginStatus];
-
-    NSString *body = localize(@"ame296.pp.alert.body", nil);
-    if (reg.state == PPHostStateFailed && reg.lastError.length > 0) {
-        body = [body stringByAppendingFormat:@"\n\n%@: %@", localize(@"ame296.pp.alert.lasterror", nil), reg.lastError];
-    }
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"ame296.pp.alert.title", nil)
-                                                                   message:body
-                                                            preferredStyle:UIAlertControllerStyleAlert];
-    BOOL canConsent = (reg.state == PPHostStateNoConsent || reg.state == PPHostStateReady ||
-                       reg.state == PPHostStateFailed || reg.state == PPHostStateInvalid);
-    if (canConsent) {
-        if (!reg.userConsented) {
-            [alert addAction:[UIAlertAction actionWithTitle:localize(@"ame296.pp.alert.enable", nil)
-                                                      style:UIAlertActionStyleDefault
-                                                    handler:^(UIAlertAction *a) {
-                [reg setUserConsented:YES];
-                [self updatePrivilegePluginStatus];
-            }]];
-        } else {
-            [alert addAction:[UIAlertAction actionWithTitle:localize(@"ame296.pp.alert.disable", nil)
-                                                      style:UIAlertActionStyleDestructive
-                                                    handler:^(UIAlertAction *a) {
-                [reg setUserConsented:NO];
-                [self updatePrivilegePluginStatus];
-            }]];
-        }
-    }
-    [alert addAction:[UIAlertAction actionWithTitle:localize(@"ame296.pp.alert.close", nil)
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
-    [self presentViewController:alert animated:YES completion:nil];
 }
 
 #pragma mark - 自定义外观（字体颜色）

@@ -3350,21 +3350,3 @@
 "ame293.jit.gettask_fail" = "目前安裝未攜帶 get-task-allow 權限，除錯器無法為應用授予 JIT。請使用保留 get-task-allow 的簽名方式重裝後再試。";
 "preference.detail.ame291_builtin_jit" = "配對檔案、LocalDevVPN 狀態與內建 JIT 開啟（iOS 26+ Helper 軌）。";
 "preference.title.done.ame291_builtin_jit" = "內建 JIT 管理";
-
-// ===== Task296: third-party privilege plugin (ame296.pp.*) =====
-"ame296.pp.card.title" = "權限外掛";
-"ame296.pp.state.ts" = "權限已足 (TrollStore)";
-"ame296.pp.state.absent" = "未安裝";
-"ame296.pp.state.noconsent" = "已發現 · 未授權";
-"ame296.pp.state.ready" = "就緒";
-"ame296.pp.state.acquired" = "已授權";
-"ame296.pp.state.failed" = "失敗";
-"ame296.pp.state.invalid" = "外掛無效";
-"ame296.pp.err.unsupported" = "外掛自檢判定目前環境不受支援";
-"ame296.pp.err.nocaps" = "外掛未宣告任何可用能力";
-"ame296.pp.alert.title" = "權限外掛";
-"ame296.pp.alert.body" = "偵測到第三方權限外掛（簽名安裝階段由你自行注入的 dylib）。啟用後將在遊戲會話期載入，並可能授予系統級能力（跨容器檔案存取、IOKit GPU 直訪、記憶體牆放寬）。風險：外掛以高權限執行，掛載失敗可能導致整機重啟。本應用不包含任何利用程式碼；支援哪些系統版本由外掛自行判定，重簽時不再注入即可移除。僅在完全信任外掛來源時啟用。";
-"ame296.pp.alert.lasterror" = "上次錯誤";
-"ame296.pp.alert.enable" = "啟用外掛";
-"ame296.pp.alert.disable" = "停用外掛";
-"ame296.pp.alert.close" = "關閉";

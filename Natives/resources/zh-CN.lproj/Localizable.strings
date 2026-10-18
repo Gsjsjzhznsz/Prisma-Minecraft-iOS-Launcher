@@ -3350,21 +3350,3 @@
 "ame293.jit.gettask_fail" = "当前安装未携带 get-task-allow 权限，调试器无法为应用授予 JIT。请使用保留 get-task-allow 的签名方式重装后再试。";
 "preference.detail.ame291_builtin_jit" = "配对文件、LocalDevVPN 状态与内置 JIT 开启（iOS 26+ Helper 轨）。";
 "preference.title.done.ame291_builtin_jit" = "内置 JIT 管理";
-
-// ===== Task296: third-party privilege plugin (ame296.pp.*) =====
-"ame296.pp.card.title" = "权限插件";
-"ame296.pp.state.ts" = "权限已足 (TrollStore)";
-"ame296.pp.state.absent" = "未安装";
-"ame296.pp.state.noconsent" = "已发现 · 未授权";
-"ame296.pp.state.ready" = "就绪";
-"ame296.pp.state.acquired" = "已授权";
-"ame296.pp.state.failed" = "失败";
-"ame296.pp.state.invalid" = "插件无效";
-"ame296.pp.err.unsupported" = "插件自检判定当前环境不受支持";
-"ame296.pp.err.nocaps" = "插件未声明任何可用能力";
-"ame296.pp.alert.title" = "权限插件";
-"ame296.pp.alert.body" = "检测到第三方权限插件（签名安装阶段由你自行注入的 dylib）。启用后将在游戏会话期加载，并可能授予系统级能力（跨容器文件访问、IOKit GPU 直访、内存墙放宽）。风险：插件以高权限运行，挂载失败可能导致整机重启。本应用不包含任何利用代码；支持哪些系统版本由插件自行判定，重签时不再注入即可移除。仅在完全信任插件来源时启用。";
-"ame296.pp.alert.lasterror" = "上次错误";
-"ame296.pp.alert.enable" = "启用插件";
-"ame296.pp.alert.disable" = "停用插件";
-"ame296.pp.alert.close" = "关闭";

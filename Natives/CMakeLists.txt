@@ -562,7 +562,6 @@ add_executable(AngelAuraAmethyst
   PLPreferences.m
   PLPrefTableViewController.m
   PLProfiles.m
-  PrivilegePluginRegistry.m
   SceneDelegate.m
   SceneExternalDelegate.m
   SurfaceViewController.m
