@@ -3784,3 +3784,10 @@ Stage Summary:
 - 修复③GLFW.java：glfwHideWindow（记日志 no-op——iOS 单窗口语义真隐藏=黑屏，early screen 由启动器自管）+ 同族 glfwFocusWindow/glfwMaximizeWindow/glfwIconifyWindow/glfwRestoreWindow 一并补齐防连环 NoSuchMethodError（单窗口语义下均无副作用）
 - 门禁：task139/240 balanced / task240 import sweep WARN currentMenu 基线预存 / task191 四表 3093 OK / task248 缺键0硬编码0动态键0 / task250 全零 / verify255 53 PASS / verify219 81/81 ALL GREEN / GLFW.java 花括号平衡+5 方法在位（本机无 javac，CI javac 终验）
 - 装机锚点：①设置→背景模糊强度拖到 0%→壁纸全锐利直出（日志 Task289: blur intensity at minimum -- skipped all styles；不再出现 TG frost installed）②中等档位壁纸呈真实色彩轻磨砂（日志 Task289: ... intensity-scaled filters, blur=0.50，色彩不再漂移）③玻璃风格下启动器任意确认弹窗/菜单呈 TG 玻璃镜像（不再原生；日志不再出现 Task277 native passthrough，会话闸行仅 MC<26 游戏内出现）④NeoForge 26.1.2 隔离实例启动过 EarlyWindow（日志 [GLFWBridge] Task289: glfwHideWindow no-op，不再 NoSuchMethodError 崩溃）
+
+---
+## Task 289-ci（run#898 一轮终绿）
+
+- run#898（70f29d0e）Success——Task 289 三报根修零编译问题一轮通过（GLFW.java overlay 5 方法 javac 终验 OK；对比 run#890/892 两轮 r1 历史）
+- 装机验证锚点承接 Task 289 条目四条：①模糊强度 0%→壁纸全锐利直出（日志 Task289: blur intensity at minimum -- skipped all styles）②中档位壁纸真实色彩轻磨砂（Task289: ... intensity-scaled filters, blur=0.50）③玻璃风格下启动器弹窗/菜单 TG 玻璃镜像全域接管（不再原生）④NeoForge 26.1.2 过 EarlyWindow（[GLFWBridge] Task289: glfwHideWindow no-op，不再 NoSuchMethodError）
+- PocketJ 批次记账（下一轮候选，继承）：原生资源中心浏览 UI / 内置 JIT 工作流（StikJIT AGPL-3.0 评估先行）/ 同名账户共存 / Java 侧 tasks/*.java Range 续传
