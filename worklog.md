@@ -3946,3 +3946,19 @@ Work Log:
 Stage Summary:
 - Task 296 全量退场（代码/文案/锚点/外部 kit），origin/main 待 push 后回 295 等价基线
 - K3 断锚记账：295 遗留，与 297 零交集
+
+---
+Task ID: 297-ci
+Agent: main (Super Z)
+Task: 朋友报 CI 错误（trace 1a14ff29b39a3995）——run#914（d1feb885）Development build 失败，编译根因热修；与 Task 297 撤销潮并行，rebase 冲突合流
+
+Work Log:
+- 取证链：gh CLI 缺位 → git remote token + GitHub API（run 列表：#914 failure / #913-911 cancelled / #910 最后绿 bafcd0d5 → job 117726198029 全量日志落 scripts/ci914_job.log）→ 7 处 error 全在 RightPanel：①no known class method 'sharedRegistry' ×2 ②undeclared identifier 'ame267_cancelled'/'ame267_builtinDialogShowing' ×4 ③block 签名级联错 void(^)(void)→BOOL(^)(void) ×1（②的从属错）
+- 两族定性：①=Task296 调用点写岔（头声明 +shared）；②=Task295 声明作用域误放（注释谎称"已上移"，实际只到 Task134 else 块内缩进 8 格，方法层级等待弹窗 cancel handler/等待条件/弃启判定四闭包够不着）——①族随 Task 297 撤销退场自动消解（PrivilegePlugin* 三文件+全部调用点退场，grep 零残留实证），②族撤销不涉及、下轮必复炸，本轮在 297 基线上重施加：声明真上移 invokeAfterJITEnabled: 方法顶端 + else 块内残留删除 + 谎报注释改口
+- 静态排雷（防热修后再炸）：run#914 gmake 82% 中止 → bafcd0d5 绿点后从未编译的存活文件逐行过审：StikDebugViewController.m(595 行)/StikDebugEngine.m(153 行)——ame294_* 三类方法/Engine 八 API/Ame291JITSetupState 四值/ame294_showJITActionDialogEx 全部与头文件对账零缺位，三调用方 import 确认；PrivilegePluginRegistry 已随 296 退场出局；PrismaJITCoordinator.swift 无法本地验 Swift，风险记账待 CI
+- 家法续记（rebase 语义雷）：git rebase 期间 --theirs=正在回放的本地提交、--ours=上游基线——首次取反（--theirs 拿回含已退场 PrivilegePluginRegistry 调用的本地版）靠 grep PrivilegePluginRegistry 复查逮住纠正；冲突合流后必须以"目标基线内容+重施加最小修复"为唯一正典
+- 门禁：task139 all balanced、task240 all balanced（合流后复跑）
+
+Stage Summary:
+- 修复落点：RightPanel 3 处（声明上移/else 残留删除/注释改口），SurfaceViewController 零改动（Registry 调用已随 296 退场）
+- run#914 两族 7 错全部闭环（①由 297 退场消解 ②由本轮根修），推送后 CI 复验

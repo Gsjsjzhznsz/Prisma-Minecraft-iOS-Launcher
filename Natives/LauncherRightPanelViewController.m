@@ -1760,6 +1760,15 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
 - (void)invokeAfterJITEnabled:(void(^)(void))handler {
     [[UIApplication sharedApplication] sendAction:@selector(resignFirstResponder) to:nil from:nil forEvent:nil];
 
+    // ★ Task297-ci（run#914 编译热修）：等待环取消语义双通道的两个 __block 位
+    //   （ame267_cancelled / ame267_builtinDialogShowing）必须活在方法作用域
+    //   ——Task134 分发 else 分支内的 ame294_builtinFailure 闭包置位，下方
+    //   方法层级的等待弹窗 cancel handler / 等待条件 / 弃启判定同读同写。
+    //   Task295 首版把声明放进 else 块内，等待闭包在其外 = undeclared
+    //   identifier ×4 + block 签名级联错（run#914 实锤），本版上移方法顶端。
+    __block BOOL ame267_cancelled = NO;
+    __block BOOL ame267_builtinDialogShowing = NO;
+
     // Task91：entitlement AND 磁盘标记双确认（同 LauncherNavigationController，
     // 防止普通侧载包里的预写标记把流程导入 apple-magnifier:// 死路）
     BOOL hasTrollStoreJIT = getEntitlementValue(@"jb.pmap_cs.custom_trust") && isTrollStoreInstall();
@@ -1866,8 +1875,6 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         //   ② 失败弹窗真取消（cancelBlock）→ 置 ame267_cancelled 终止等待；
         //     点"交给 StikDebug"→ 只发深链、不置取消位，等待环继续等 JIT
         //     经 StikJIT 到位（旧版此路径被①误杀 = 交给后必弃启）。
-        __block BOOL ame267_cancelled = NO;
-        __block BOOL ame267_builtinDialogShowing = NO;
         void (^ame294_fireStikjitFallback)(void) = ^{
             if (@available(iOS 17.4, *)) {
                 NSString *scriptPart = @"";
@@ -1971,8 +1978,8 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     
     // Task267：等待期可取消——旧版 120s（Task226 自动重试后最长 240s）弹窗
     //   零 action，想退出只能杀进程 = 「JIT 未响应」观感的直接来源。
-    //   （ame267_cancelled/builtinDialogShowing 声明已上移至 builtin 弹窗闭包
-    //   之前——Task295 取消语义双通道需两处闭包共享，见上方注释。）
+    //   （ame267_cancelled/builtinDialogShowing 声明在方法顶端——取消语义
+    //   双通道两闭包共享；Task295 首版误放 else 块内，run#914 热修上移。）
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_437", nil)
                                                                    message:hasTrollStoreJIT ? localize(@"i18n_str_2054", nil) : localize(@"i18n_str_439", nil)
                                                             preferredStyle:UIAlertControllerStyleAlert];
