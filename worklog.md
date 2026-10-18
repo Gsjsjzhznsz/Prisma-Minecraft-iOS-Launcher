@@ -3928,3 +3928,25 @@ Stage Summary:
 - 提交 c2a64b99 推送（9 文件：Makefile/AmeFloatingMenu/RightPanel/StikDebugVC/bridge.h/.m/Coordinator.swift + 新增 .appexpt + 2 补丁脚本留档），CI 验证中
 - 装机锚点（下轮验证）：①JIT 管理页/启动流点开启 → 日志序 "Task295 bundle fs: Extensions=[PrismaJITHelper.appex, PrismaJITHelper.appexpt]" → "monitor: 1 helper identity(ies) discovered" → Helper 进程 [PrismaJIT] prepare 阶段日志 → 成功进局；②若仍失败：弹窗/日志必带 [discovery]/[spawn]/[check-reachability]/[ddi]/[attach]/[script] 阶段前缀直达卡点 + bundle fs 清单对单；③失败弹窗"交给 StikDebug"无伪转圈、点取消即终止等待、点交给后等待环不再误弃启
 - 风险记账：.appexpt 内容形态按上游 .appextensionpoint 老格式手作（swiftc 是否自产新格式文件待 CI/装机日志实证——jit_helper 已做自产优先收集）；签名工具须保留 Extensions/ 目录（重签剥离 = discovery 空/Code=19 复发，指引文案已内置）
+
+---
+## Task 296 条目（第三方权限插件宿主 PP-ABI v1；dsplugin-kit 外部配套；门禁全绿重锚）
+
+**Task**: 右栏新增"权限插件"宿主——主仓库零漏洞代码纪律下的能力协商契约层：发现→符号校验→知情同意→会话挂载→零阻塞降级。真能力核心由用户签名注入的第三方 dylib（FilzaEscapedDS 同形态）提供，宿主对其实现不可知。
+
+**Work Log**:
+- 调研先行（对话定案）：DarkSword/FilzaEscapedDS 路线核实 + 版本窗口表 + "主仓库不可内嵌 KEV 武器"判定 → 外挂 dylib 架构；Task 295 号被并行任务（appex JIT 修复）占用，重编为 Task 296，标识符 ame296.*
+- ①`Natives/PrivilegePlugin.h`：PP-ABI v1 契约头（pp_plugin_* 六函数；pp_caps_t 能力位 FILESYSTEM/IOKIT_GPU/MEM_WALL + JIT 保留位——StikJIT 深链已覆盖不消费；PP_STATUS 五态）
+- ②`Natives/PrivilegePluginRegistry.h/.m`：白名单发现（bundle 根+Frameworks，privilegeplugin*/dsplugin* 前缀；无同意阶段仅 Mach-O 64 魔数+MH_DYLIB 存在性校验零代码执行）→ dlopen(RTLD_LOCAL|RTLD_LAZY)+dlsym 六符号强校验+ABI 比对 → 同意门 privilege_plugin.enabled（默认 NO）→ acquireForGameSession 单次/进程（ame296_acquireAttempted 闸；内核态操作重试=panic 风险契约明禁）→ 失败零阻塞续走 launchJVM；TrollStore（getEntitlementValue no-sandbox）短路 no-op；[ame296] 前缀全链诊断日志落 latestlog
+- ③挂载点：SurfaceViewController.m launchJVM 调用前单点（后台线程语境，UI 不阻塞）
+- ④LauncherRightPanelViewController：第八张信息卡「权限插件」（cardPurple=systemPurple + puzzlepiece.extension 图标，Task96 卡族同规格）；点击=知情同意弹窗（披露：高权限运行/panic 风险/版本窗口插件自判/主仓库零利用代码/移除方式=重签不注入），自持弹窗不进 LPVC 避撞并行编辑区；刷新时机与 JIT/内存卡同（become-active + viewWillAppear + 点击）
+- ⑤l10n：四表+16 键 ame296.pp.*（en/zh-CN/zh-Hans/zh-Hant/ja，其余语言英文回退）
+- 外部配套（不入库）：dsplugin-kit（include/dsplugin_abi.h 契约同源 + src/dsplugin_stub.c 骨架（环境自检恒 0/acquire 恒 UNSUPPORTED）+ Makefile（arm64 min14.0）+ docs/CONTRACT.md 状态机与对接清单），独立 zip 分发
+- 门禁：task139/240 balanced、task248 缺键0硬编码0动态键0、task250 全零、task191 OK（3173 entries）、verify219 J 锚重锚 3157→3173 后 81/81 ALL GREEN、verify255 PASS；task219_l10n（welcome.back 预存重名）/task219_syntax（6 陈旧锚）为 main 存量基线，干净 main 复现与本轮零交集（Task286 同款甄别法）
+- 防撞号记录：施工期间 origin/main 三度推进（bafcd0d5→b3e870d1），Task 294/295 相继被并行任务占用，本任务重编 295→296（sed 全标识符改名后门禁复跑全绿）再 rebase 推送
+
+**Stage Summary**:
+- 提交 7da25052 推送 main，触发 CI（run 号顺延 #910+，API 限流暂无法轮询，下轮核验）
+- 契约面：六函数 ABI + 能力位 + 状态机七态（TSFull/Absent/NoConsent/Ready/Acquired/Failed/Invalid）
+- 安全面：默认关 + 明示同意 + 单次挂载 + 零重试 + 零阻塞 + 主仓库零利用代码（KEV 在册漏洞链永不入库）
+- 待办：CI 绿后闭环；能力核心对接由外部 dsplugin-kit 承接（CONTRACT.md 第 5 节清单）
