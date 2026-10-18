@@ -128,6 +128,10 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
             @"gesture_mouse": @YES,
             @"gesture_hotbar": @YES,
             @"disable_haptics": @NO,
+            // ★ Task287（PocketJ 对标移植）：Fluid 八方向 WASD 移动垫总开关
+            //   （SurfaceViewController ame287_* 消费；默认 OFF 与上游一致，
+            //   开启后 W/A/S/D 四键中心构成八方向连续滑动垫）
+            @"fluid_button_slide": @NO,
             @"slideable_hotbar": @NO,
             @"press_duration": @(400),
             @"button_scale": @(100),

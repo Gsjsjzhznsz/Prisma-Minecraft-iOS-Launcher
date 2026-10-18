@@ -348,6 +348,8 @@
 "preference.detail.gesture_mouse" = "Enables gestures, such as tap to place block, hold to break block, scrolling with 2 fingers";
 "preference.title.gesture_hotbar" = "Hotbar gestures";
 "preference.detail.gesture_hotbar" = "Enables gestures, such as touch the hotbar slot, swap items between hand, throw items";
+"preference.title.fluid_button_slide" = "Fluid eight-direction movement pad";
+"preference.detail.fluid_button_slide" = "When enabled, the W/A/S/D keys form a continuous eight-direction slide pad: slide from the center outward (diagonals press two keys at once) instead of tapping each key separately. Applies immediately in-game when the settings page closes.";
 "preference.title.disable_haptics" = "Disable on-screen haptics";
 "preference.detail.disable_haptics" = "Disable haptic feedback (vibration) effects in the game to save battery.";
 "preference.title.press_duration" = "Long-press duration (ms)";

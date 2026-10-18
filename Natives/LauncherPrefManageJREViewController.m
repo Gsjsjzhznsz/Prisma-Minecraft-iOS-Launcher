@@ -261,8 +261,11 @@ static NSString *currentImportTaskId;
     return self.sortedJavaVersions.count;
 }
 
-- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-    NSNumber *version = self.sortedJavaVersions[section];
+// ★ Task287：改私有 helper（原 UITableViewDataSource 方法已删）——
+//   iPadOS 27 下与 viewForHeaderInSection 并存时系统会把 title 再灌进
+//   header 默认 content（ProfileSettings 同族双写病历，IMG_0434）。
+//   本页 header 走 header.textLabel 自写路径，系统层不再有标题可灌。
+- (NSString *)ame287_jreSectionTitle:(NSInteger)section {
     switch (self.sortedJavaVersions[section].intValue) {
         case DEFAULT_JRE: return localize(@"preference.manage_runtime.header.default", nil);
         case INVALID_JRE: return localize(@"preference.manage_runtime.header.invalid", nil);
@@ -272,7 +275,7 @@ static NSString *currentImportTaskId;
 
 /// section header：透明背景，与界面背景一致（可看到背景图）。
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
-    NSString *title = [self tableView:tableView titleForHeaderInSection:section];
+    NSString *title = [self ame287_jreSectionTitle:section];
     UITableViewHeaderFooterView *header = [tableView dequeueReusableHeaderFooterViewWithIdentifier:@"JRESectionHeader"];
     if (!header) {
         header = [[UITableViewHeaderFooterView alloc] initWithReuseIdentifier:@"JRESectionHeader"];
@@ -445,7 +448,7 @@ static NSString *currentImportTaskId;
             self.sortedJavaVersions[i].intValue == INVALID_JRE) {
             continue;
         }
-        NSString *version = [self tableView:tableView titleForHeaderInSection:i];
+        NSString *version = [self ame287_jreSectionTitle:i];
         [versionTitles addObject:version];
         [versionNumbers addObject:self.sortedJavaVersions[i]];
     }

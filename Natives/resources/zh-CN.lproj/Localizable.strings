@@ -346,6 +346,8 @@
 "preference.detail.gesture_mouse" = "启用手势，例如点击放置方块、按住破坏方块、用两根手指转动视角";
 "preference.title.gesture_hotbar" = "快捷栏手势";
 "preference.detail.gesture_hotbar" = "启用手势，例如点击快捷栏物品槽、双手交换物品、丢弃物品";
+"preference.title.fluid_button_slide" = "八方向流畅移动垫";
+"preference.detail.fluid_button_slide" = "开启后 W/A/S/D 四键构成八方向连续滑动移动垫：从垫中心向任一方向滑动即可移动（对角方向同时按住相邻两键），无需逐个点按方向键。游戏内设置页关闭后立即生效。";
 "preference.title.disable_haptics" = "禁用屏幕触觉反馈";
 "preference.detail.disable_haptics" = "关闭游戏中的触觉反馈（震动）效果。";
 "preference.title.press_duration" = "长按延迟（毫秒）";

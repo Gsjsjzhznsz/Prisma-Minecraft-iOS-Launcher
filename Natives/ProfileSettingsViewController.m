@@ -934,8 +934,18 @@ static NSString * localizeProfileTitle(NSString *title) {
     return [self.sections[globalSection] count];
 }
 
-- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-    NSInteger globalSection = [self globalSectionForTableView:tableView localSection:section];
+// ★ Task287（“字体重叠自适应又坏了”根修）：分节标题改私有 helper，
+//   删除 UITableViewDataSource 的 tableView:titleForHeaderInSection:。
+//   病历（IMG_0434 装机截图实锤）：本页所有分节标题双写叠印（大字自定
+//   义 26701 标签 + 小字系统默认 content 并存）。iPadOS 27 的
+//   UITableView 在 tableView:viewForHeaderInSection: 与
+//   tableView:titleForHeaderInSection: 同时实现时，会把 title 再灌进
+//   dequeued UITableViewHeaderFooterView 的默认 content（经典契约
+//   “view 优先则 title 被忽略”失效）——自定义标签与系统 content 标签
+//   同时可见。根治 = 系统侧不再有标题可灌：数据源方法改名私有 helper，
+//   自定义 header 独占标题来源（footer 仍走系统 title 路径，无自建
+//   view，不受影响）。
+- (NSString *)ame267_sectionTitleForGlobalSection:(NSInteger)globalSection {
     switch (globalSection) {
         case 0: return localize(@"i18n_str_289", nil);
         case 1: return localize(@"i18n_str_877", nil);
@@ -946,8 +956,9 @@ static NSString * localizeProfileTitle(NSString *title) {
     }
 }
 
-// ★ Task267：可点击折叠分组表头（viewForHeaderInSection 优先于
-//   titleForHeaderInSection；self-sizing 不可靠 → 固定 40pt）。
+// ★ Task267：可点击折叠分组表头（self-sizing 不可靠 → 固定 40pt）。
+//   ★ Task287：标题来源改 ame267_sectionTitleForGlobalSection:（原
+//   tableView:titleForHeaderInSection: 已删除，防 iPadOS 27 双灌）。
 //   右侧折叠指示：折叠 ▸ / 展开 ▾（系统性字符，无需图片资源）。
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
     return 40.0;
@@ -955,7 +966,7 @@ static NSString * localizeProfileTitle(NSString *title) {
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
     NSInteger globalSection = [self globalSectionForTableView:tableView localSection:section];
-    NSString *ame267_title = [self tableView:tableView titleForHeaderInSection:section] ?: @"";
+    NSString *ame267_title = [self ame267_sectionTitleForGlobalSection:globalSection] ?: @"";
     BOOL ame267_collapsed = (globalSection >= 0 &&
                              globalSection < (NSInteger)self.ame267_sectionCollapsed.count &&
                              self.ame267_sectionCollapsed[globalSection].boolValue);

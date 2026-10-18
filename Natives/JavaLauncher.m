@@ -853,6 +853,101 @@ static int ame87_disableDesktopDialogMods(NSString *gameDir) {
     return disabled;
 }
 
+// ★ Task287（PocketJ 对标移植）：IMBlocker / InputMethodBlocker 桌面输入法
+//   阻断类 mod 自动禁用——此类 mod 携带 macOS 桌面 JNA 输入监听库，iOS
+//   App 内 ffi closure 非可执行（Task138 controlify 同域结论），Java 17+
+//   会话加载即 UnsatisfiedLinkError/NoClassDef 打崩启动。改名 .jar.disabled
+//   保留可恢复（改名回即还原）。上游 PocketJ 同款门（Java>=17，其 8 会话
+//   存量路径不触碰）。
+static int ame287_disableUnsupportedInputMods(NSString *gameDir) {
+    if (gameDir.length == 0) {
+        return 0;
+    }
+    NSString *modsDir = [gameDir stringByAppendingPathComponent:@"mods"];
+    BOOL isDir = NO;
+    NSFileManager *fileMgr = [NSFileManager defaultManager];
+    if (![fileMgr fileExistsAtPath:modsDir isDirectory:&isDir] || !isDir) {
+        return 0;
+    }
+    NSArray<NSString *> *files = [fileMgr contentsOfDirectoryAtPath:modsDir error:nil];
+    if (files.count == 0) {
+        return 0;
+    }
+    int disabled = 0;
+    for (NSString *file in files) {
+        NSString *lower = file.lowercaseString;
+        if (![lower hasSuffix:@".jar"]) {
+            continue; // 已是 .disabled / 非 jar 一律跳过
+        }
+        if (![lower containsString:@"imblocker"] &&
+            ![lower containsString:@"inputmethodblocker"]) {
+            continue;
+        }
+        NSString *srcPath = [modsDir stringByAppendingPathComponent:file];
+        NSString *dstPath = [srcPath stringByAppendingString:@".disabled"];
+        NSUInteger duplicateIndex = 2;
+        while ([fileMgr fileExistsAtPath:dstPath]) {
+            dstPath = [srcPath stringByAppendingFormat:@".%lu.disabled",
+                (unsigned long)duplicateIndex++];
+        }
+        NSError *error = nil;
+        if ([fileMgr moveItemAtPath:srcPath toPath:dstPath error:&error]) {
+            disabled++;
+            NSLog(@"[ModCompat] Task287: disabled desktop input-method mod \"%@\" (renamed to .disabled) -- its macOS JNA library cannot run inside an iOS app (PocketJ 同款防御)", file);
+        } else {
+            NSLog(@"[ModCompat] Task287: FAILED to disable \"%@\": %@", file, error.localizedDescription);
+        }
+    }
+    return disabled;
+}
+
+// ★ Task287（PocketJ 对标移植）：Forge URI-safe 游戏根——版本 id 含
+//   "forge" 且游戏目录路径含空格时，把启动 gameDir/POJAV_GAME_DIR 重指到
+//   POJAV_HOME 下无空格符号链接别名；Forge 工具链（processor/安装器）对
+//   空格路径的 URL/引号处理存在炸面（上游 PocketJ 同款防御，其 alias 命名
+//   .pocketj-loader-runtime 同构）。非命中条件时执行还原（env 回真实根），
+//   幂等可重入。iOS 常规容器路径无空格 = 本防御平时零行为变化。
+static NSString *ame287_configureForgeUriSafeRoot(NSString *versionId, NSString *gameDir) {
+    if (gameDir.length == 0) {
+        return gameDir;
+    }
+    const char *ame287_realRootC = getenv("POJAV_GAME_DIR");
+    NSString *ame287_realRoot = (ame287_realRootC && strstr(ame287_realRootC, "ame287_forge") == NULL)
+        ? @(ame287_realRootC) : gameDir;
+    BOOL ame287_forge = [versionId.lowercaseString containsString:@"forge"];
+    if (!ame287_forge || ![ame287_realRoot containsString:@" "]) {
+        // 未命中：确保 env 指向真实根（同进程前序会话别名过则还原）
+        if (ame287_realRoot.length > 0) {
+            setenv("POJAV_GAME_DIR", ame287_realRoot.UTF8String, 1);
+        }
+        return gameDir;
+    }
+    const char *ame287_homeC = getenv("POJAV_HOME");
+    if (!ame287_homeC) {
+        return gameDir;
+    }
+    NSFileManager *ame287_fm = NSFileManager.defaultManager;
+    NSString *ame287_alias = [@(ame287_homeC) stringByAppendingPathComponent:@".ame287_forge_root"];
+    NSString *ame287_target = [ame287_fm destinationOfSymbolicLinkAtPath:ame287_alias error:nil];
+    if (![ame287_target isEqualToString:ame287_realRoot]) {
+        if ([[@ame287_fm attributesOfItemAtPath:ame287_alias error:nil][NSFileType]
+                isEqualToString:NSFileTypeSymbolicLink]) {
+            [ame287_fm removeItemAtPath:ame287_alias error:nil];
+        }
+        if (![ame287_fm fileExistsAtPath:ame287_alias]) {
+            [ame287_fm createSymbolicLinkAtPath:ame287_alias
+                          withDestinationPath:ame287_realRoot error:nil];
+        }
+    }
+    if ([[ame287_fm destinationOfSymbolicLinkAtPath:ame287_alias error:nil]
+            isEqualToString:ame287_realRoot]) {
+        setenv("POJAV_GAME_DIR", ame287_alias.UTF8String, 1);
+        NSLog(@"[JavaLauncher] Task287: Forge URI-safe game root -> %@ (real: %@)", ame287_alias, ame287_realRoot);
+        return ame287_alias;
+    }
+    return gameDir;
+}
+
 // Task 95：整合包完整性提醒门 ----------------------------------------------
 // 病历（96c527f latestlog.txt，1ee7111 构建，BMC2 [FABRIC] 1.20.1，536 mods）：
 //   实例 mods 目录缺失 FTB 全家桶 + balm + terrablender + kleeslabs 等 8+ 个
@@ -2533,11 +2628,30 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
             }
         }
 
+        // ★ Task287（PocketJ 对标移植）：Forge URI-safe 游戏根——先于全部
+        //   mods 目录扫描与 chdir（Task97 CwdAlign 消费本 gameDir），命中
+        //   时同步重指 POJAV_GAME_DIR（headless/JVM 侧消费者同口径）。
+        {
+            NSString *ame287_vid = [launchTarget isKindOfClass:[NSDictionary class]]
+                ? launchTarget[@"id"] : @"";
+            gameDir = ame287_configureForgeUriSafeRoot(ame287_vid, gameDir);
+        }
+
         // Task 87：桌面弹窗类 mod 预检（病历见 ame87_disableDesktopDialogMods 函数头）
         // ——实证案犯自动禁用（改名 .jar.disabled），Fabric 忽略非 .jar 文件。
         int ame87_disabledDialogMods = ame87_disableDesktopDialogMods(gameDir);
         if (ame87_disabledDialogMods > 0) {
             NSLog(@"[ModDialogGuard] Task87: %d desktop dialog mod(s) auto-disabled in %@/mods (rename .disabled -> .jar to restore)", ame87_disabledDialogMods, gameDir.lastPathComponent);
+        }
+
+        // ★ Task287：IMBlocker/InputMethodBlocker 自动禁用（Java 17+ 会话门，
+        //   PocketJ 同款；8 会话存量路径不触碰）
+        if (minVersion >= 17) {
+            int ame287_disabledInputMods = ame287_disableUnsupportedInputMods(gameDir);
+            if (ame287_disabledInputMods > 0) {
+                NSLog(@"[ModCompat] Task287: %d input-method mod(s) auto-disabled in %@/mods (rename .disabled -> .jar to restore)",
+                      ame287_disabledInputMods, gameDir.lastPathComponent);
+            }
         }
 
         // Task225（#2）：资源完整性预检 + 自动补齐（assets 缺个体文件 = MC

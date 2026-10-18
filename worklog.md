@@ -3729,3 +3729,17 @@ Stage Summary:
 - 修复 e404f491：4 处裸引用改 self. 属性访问 + 3 行教训注释（Task286 r1）；全仓扫描确认零残留裸 ame286 引用；门禁复跑 task240 OK / task139 balanced / verify219 81/81 ALL GREEN
 - 【闭环】r1 run#891（39102424215）一轮终绿 12m13s，ipa/tipa/dSYM 三产物在位；取证手段备忘：GitHub API 限流时经 agent-browser 无头浏览器直读 run 页注解（annotations 服务端渲染免登录）
 - 装机验证锚点承接 Task 286 Stage Summary 五条（游戏内设置热生效 / iOS 27 类空间 / options.txt 播种 / 远古版内存轨 / 连点复测）
+
+---
+## Task 287（装机 latestlog 2ff716d/IMG_0434 三报 + PocketJ 剩余高价值项全量移植第一批）
+
+- 取证①远古版崩溃：latestlog 三实锤（异常栈底帧 Thread.run / "MC main returned" 时间戳早于 GLFW 窗口创建 / native 2s flag-wait 后 _exit(0)）= rd-132211（RubyDung）main() 是"spawn 游戏线程即返回"结构，Task254"main 返回即写关机标记→native _exit(0)"对该谱系 = 开局 2s 自杀（渲染 58fps 正常后被杀）
+- 取证②字体重叠自适应又坏了：IMG_0434 实锤实例设置页全部分节标题双写叠印（自定义 26701 标签 + 系统默认 content 并存）——iPadOS 27 的 UITableView 在 viewForHeaderInSection 与 titleForHeaderInSection 并存时把 title 再灌进 dequeued header 默认 content（经典"view 优先则 title 被忽略"契约失效）
+- ①Tools.java：rd-* 谱系跳过 mc-main-returned 标记（退出交回自然链：游戏线程结束→JVM halt→shutdown hooks（PatchSVC 已注册同标记）→native _exit(0)）；c0./a1./b1. 等阻塞型 main 语义不动
+- ②ProfileSettingsViewController：titleForHeaderInSection 数据源方法删除、改私有 ame267_sectionTitleForGlobalSection:（系统侧无标题可灌=根治）；LauncherPrefManageJREViewController 同族防御（ame287_jreSectionTitle:）
+- ③Fluid 八方向 WASD 移动垫（PocketJ SurfaceViewController 同款移植，GPL-3.0 同谱系）：方向环+八等分扇区（tan(π/8) 阈值）+对角双键并集+宽化命中区（±14pt）+10pt 中心死区+对角 SF Symbol 指示器；control.fluid_button_slide 默认 OFF；LPVC 控制区新开关行；游戏内热应用（applyInGamePreferenceChanges 基线比对实变才 updateFluidButtonSlideState+loadCustomControls）；executebtn_up:isOutside: 捕获期守护防键态去同步
+- ④IMBlocker/InputMethodBlocker 自动禁用（ame287_disableUnsupportedInputMods，minVersion>=17 门=PocketJ 同款；.jar→.disabled 可恢复）
+- ⑤Forge URI-safe 游戏根（ame287_configureForgeUriSafeRoot：版本含 forge 且路径含空格 → POJAV_HOME/.ame287_forge_root 符号链接别名 + POJAV_GAME_DIR 重指；未命中还原 env；平时零行为变化）
+- "我们是有的"对账（用户提醒）：自定义背景图=BackgroundManager user+bing 双源已有 / 启动链字节续传=ObjC DownloadTaskManager resumeData 已有 / 皮肤头像缓存=AvatarManager 已有——三项跳过不移植
+- PocketJ 批次2 记账：原生资源中心浏览 UI（Modrinth+CurseForge 按实例筛选）/ 实例级模组管理（启停/更新检查/不兼容标记）/ 内置 JIT 工作流（StikJIT AGPL-3.0 许可证义务评估先行）/ 同名账户共存
+- 门禁：task139/240 balanced / task191 四表 3092 OK / task248 缺键0硬编码0动态键0 / task250 全零 / verify255 53 PASS / verify219 重锚 3090→3092 后 81/81 ALL GREEN / task219_l10n welcome.back FATAL 为基线预存（stash 对照）/ import sweep WARN currentMenu 基线预存

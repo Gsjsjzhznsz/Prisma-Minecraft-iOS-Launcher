@@ -461,6 +461,19 @@ static BOOL ame83_fsr_capable_renderer(NSString *renderer) {
 //   防 viewDidLoad 初始化路径与 loadCustomControls 双重建）
 @property(nonatomic, assign) CGFloat ame286_lastAppliedButtonScale;
 
+// ★ Task287（PocketJ 对标移植）：Fluid 八方向 WASD 移动垫——W/A/S/D
+//   四键中心为圆心的八等分扇区连续滑动移动（对角=相邻双键同时按住），
+//   替代矩形四键逐次点击。自包含于本文件（上游 SurfaceViewController
+//   同名实现，GPL-3.0 同谱系）。
+@property(nonatomic) UILongPressGestureRecognizer *ame287_fluidPanGesture;
+@property(nonatomic) NSMutableArray<ControlButton *> *ame287_fluidActiveButtons;
+@property(nonatomic) BOOL ame287_fluidMovementCaptured;
+@property(nonatomic) CGPoint ame287_fluidGestureOrigin;
+@property(nonatomic) NSMutableDictionary<NSString *, UIView *> *ame287_diagonalIndicators;
+@property(nonatomic) CAShapeLayer *ame287_directionRingLayer;
+// 游戏内设置页热应用基线（-1=未记录；0/1=上次已应用值；实变才热重载）
+@property(nonatomic, assign) NSInteger ame287_lastFluidSlideEnabled;
+
 @property(nonatomic) UIImpactFeedbackGenerator *lightHaptic;
 @property(nonatomic) UIImpactFeedbackGenerator *mediumHaptic;
 
@@ -1551,6 +1564,11 @@ static NSInteger ame283_lastLandscapeDev = 0;
     }
 
     self.swipeableButtons = [[NSMutableArray alloc] init];
+    // ★ Task287：Fluid 垫容器初始化（开关联动见 loadCustomControls 与
+    //   applyInGamePreferenceChanges）
+    self.ame287_fluidActiveButtons = [NSMutableArray array];
+    self.ame287_diagonalIndicators = [NSMutableDictionary dictionary];
+    self.ame287_lastFluidSlideEnabled = -1;
 
     [KeyboardInput initKeycodeTable];
     // Task270 P0：同上，块内弱引用化（死实例不再响应硬件连接通知）。
@@ -2120,6 +2138,18 @@ static NSInteger ame283_lastLandscapeDev = 0;
               self.ame286_lastAppliedButtonScale, ame286_btnScale);
     }
     if (ame286_btnScale > 0) self.ame286_lastAppliedButtonScale = ame286_btnScale;
+    // ★ Task287：fluid_button_slide 游戏内热应用——实变才走
+    //   updateFluidButtonSlideState + loadCustomControls 重建（基线比对防
+    //   viewDidLoad 初始化路径双重建；-1 = 首调用只记录）。
+    NSInteger ame287_fluidNow = getPrefBool(@"control.fluid_button_slide") ? 1 : 0;
+    if (self.ame287_lastFluidSlideEnabled >= 0
+        && ame287_fluidNow != self.ame287_lastFluidSlideEnabled) {
+        [self ame287_updateFluidButtonSlideState];
+        [self loadCustomControls];
+        NSLog(@"[SurfaceVC] Task287: fluid_button_slide %ld -> %ld -- movement pad hot-applied",
+              (long)self.ame287_lastFluidSlideEnabled, (long)ame287_fluidNow);
+    }
+    self.ame287_lastFluidSlideEnabled = ame287_fluidNow;
     // ★ Task286：home indicator 跟随 debug.debug_hide_home_indicator——
     //   getter 本为活读，但 setNeedsUpdateOfHomeIndicatorAutoHidden 只在
     //   菜单开合 completion 调用（设置页关闭后不刷新，补齐）。
@@ -3121,6 +3151,14 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
 - (void)loadCustomControls {
     self.edgeGesture.enabled = YES;
     [self.swipeableButtons removeAllObjects];
+    // ★ Task287：Fluid 垫指示器/方向环随重建清扫（上游同款；开关联动在
+    //   ame287_updateFluidButtonSlideState）
+    for (UIView *ame287_ind in self.ame287_diagonalIndicators.allValues) {
+        [ame287_ind removeFromSuperview];
+    }
+    [self.ame287_diagonalIndicators removeAllObjects];
+    [self.ame287_directionRingLayer removeFromSuperlayer];
+    self.ame287_directionRingLayer = nil;
     NSString *controlFile = [PLProfiles resolveKeyForCurrentProfile:@"defaultTouchCtrl"];
     [self.ctrlView loadControlFile:controlFile];
 
@@ -3145,9 +3183,14 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             }
         }
 
-        [button addTarget:self action:@selector(executebtn_down:) forControlEvents:UIControlEventTouchDown];
-        [button addTarget:self action:@selector(executebtn_up_inside:) forControlEvents:UIControlEventTouchUpInside];
-        [button addTarget:self action:@selector(executebtn_up_outside:) forControlEvents:UIControlEventTouchUpOutside];
+        BOOL ame287_fluidMovementButton =
+            getPrefBool(@"control.fluid_button_slide") &&
+            [self ame287_isFluidMovementButton:button];
+        if (!ame287_fluidMovementButton) {
+            [button addTarget:self action:@selector(executebtn_down:) forControlEvents:UIControlEventTouchDown];
+            [button addTarget:self action:@selector(executebtn_up_inside:) forControlEvents:UIControlEventTouchUpInside];
+            [button addTarget:self action:@selector(executebtn_up_outside:) forControlEvents:UIControlEventTouchUpOutside];
+        }
         // Task262（②配套）：触摸被系统手势/横幅抢走时按 UP 处理——修饰键
         // 若收不到 UP 会逻辑上永久按住（潜行卡死），Task262 按住高亮也
         // 会卡色。非保持型按钮 cancel 走 up_outside 同路径 = ACTION_UP
@@ -3161,9 +3204,18 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             [button addGestureRecognizer:panRecognizerButton];
             [self.swipeableButtons addObject:button];
         }
+        // ★ Task287：Fluid 垫注册——非开关型非抽屉型的 W/A/S/D 键均纳入
+        //   movementButtonForKeycode 搜索域（hidden/enabled 门槛在搜索时
+        //   实时过滤，此处仅收编）
+        if (getPrefBool(@"control.fluid_button_slide") &&
+            ![button.properties[@"isToggle"] boolValue] &&
+            ![button isKindOfClass:ControlDrawer.class]) {
+            [self.swipeableButtons addObject:button];
+        }
     }
 
     [self updateControlHiddenState:self.toggleHidden];
+    [self ame287_updateFluidButtonSlideState];
 
     // ★ Task233（反馈 #1 纠偏）取证：抽屉子按钮 × 可交互主控件的重叠清单。
     //   出厂布局里 F5 与 CTRL 同一水平带仅差 2.3pt、右SHIFT 与右键仅差 5pt
@@ -4559,6 +4611,13 @@ static NSMapTable<ControlButton *, UIColor *> *s_ame261_modLatchColors = nil;
 
 - (void)executebtn_up:(ControlButton *)sender isOutside:(BOOL)isOutside
 {
+    // ★ Task287：Fluid 垫捕获期守护——UIKit 会在垫内滑动时补发
+    //   TouchUpOutside/UpInside，若照常派发 UP 会把 Minecraft 键态与
+    //   ame287_fluidActiveButtons 去同步（满圈滑动经 W/A/S/D 时提前
+    //   松键）。Fluid 手势独占四键的释放直至手指真实抬起。
+    if (self.ame287_fluidMovementCaptured && [self ame287_isFluidMovementButton:sender]) {
+        return;
+    }
     if (self.swipingButton == sender) {
         [self executebtn:self.swipingButton withAction:ACTION_UP];
         self.swipingButton = nil;
@@ -4671,6 +4730,226 @@ static NSMapTable<ControlButton *, UIColor *> *s_ame261_modLatchColors = nil;
     if (held) return;
     self.toggleHidden = !self.toggleHidden;
     [self updateControlHiddenState:self.toggleHidden];
+}
+
+#pragma mark - Task287: Fluid eight-direction WASD movement pad (PocketJ port)
+
+// 开关联动：安装/启用手势；关闭时清空活动键集与视觉残留。
+// 调用点：loadCustomControls 尾部（初始 + 控件重建）与游戏内设置页
+// 热应用（applyInGamePreferenceChanges 实变路径）。
+- (void)ame287_updateFluidButtonSlideState {
+    BOOL ame287_enabled = getPrefBool(@"control.fluid_button_slide");
+    if (ame287_enabled && !self.ame287_fluidPanGesture) {
+        self.ame287_fluidPanGesture = [[UILongPressGestureRecognizer alloc]
+            initWithTarget:self action:@selector(ame287_handleFluidButtonPan:)];
+        self.ame287_fluidPanGesture.minimumPressDuration = 0;
+        self.ame287_fluidPanGesture.allowableMovement = CGFLOAT_MAX;
+        self.ame287_fluidPanGesture.allowedTouchTypes = @[@(UITouchTypeDirect)];
+        self.ame287_fluidPanGesture.numberOfTouchesRequired = 1;
+        self.ame287_fluidPanGesture.cancelsTouchesInView = NO;
+        self.ame287_fluidPanGesture.delegate = self;
+        [self.rootView addGestureRecognizer:self.ame287_fluidPanGesture];
+    }
+    self.ame287_fluidPanGesture.enabled = ame287_enabled;
+    if (!ame287_enabled) {
+        [self ame287_applyFluidButtons:@[]];
+        self.ame287_fluidMovementCaptured = NO;
+        [self ame287_setVisibleDiagonalIndicator:nil];
+        self.ame287_directionRingLayer.opacity = 0;
+    }
+}
+
+// 键位搜索：仅在可滑动集合内找 W/A/S/D（隐藏/禁用按钮实时过滤）。
+- (ControlButton *)ame287_movementButtonForKeycode:(int)keycode {
+    for (ControlButton *button in self.swipeableButtons) {
+        if (button.hidden || !button.enabled) continue;
+        for (NSNumber *value in button.properties[@"keycodes"]) {
+            if (value.intValue == keycode) return button;
+        }
+    }
+    return nil;
+}
+
+- (BOOL)ame287_isFluidMovementButton:(ControlButton *)button {
+    if (!button) return NO;
+    for (NSNumber *value in button.properties[@"keycodes"]) {
+        int keycode = value.intValue;
+        if (keycode == GLFW_KEY_W || keycode == GLFW_KEY_A ||
+            keycode == GLFW_KEY_S || keycode == GLFW_KEY_D) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+// 活动键集合语义（上游同款）：desired 差集发 UP、并集差发 DOWN，保持
+// 已按住的键不重复触发；每次新按键附轻触感。
+- (void)ame287_applyFluidButtons:(NSArray<ControlButton *> *)desired {
+    for (ControlButton *button in self.ame287_fluidActiveButtons.copy) {
+        if (![desired containsObject:button]) {
+            [self executebtn:button withAction:ACTION_UP];
+            [self.ame287_fluidActiveButtons removeObject:button];
+        }
+    }
+    for (ControlButton *button in desired) {
+        if (![self.ame287_fluidActiveButtons containsObject:button]) {
+            if (button != self.swipingButton) {
+                [self executebtn:button withAction:ACTION_DOWN];
+            }
+            [self.ame287_fluidActiveButtons addObject:button];
+            if (self.shouldTriggerHaptic) [self.lightHaptic impactOccurred];
+        }
+    }
+}
+
+- (void)ame287_updateDirectionRingAtCenter:(CGPoint)center radius:(CGFloat)radius {
+    if (!self.ame287_directionRingLayer) {
+        self.ame287_directionRingLayer = [CAShapeLayer layer];
+        self.ame287_directionRingLayer.fillColor = UIColor.clearColor.CGColor;
+        self.ame287_directionRingLayer.strokeColor =
+            [UIColor.whiteColor colorWithAlphaComponent:0.42].CGColor;
+        self.ame287_directionRingLayer.lineWidth = 2.0;
+        self.ame287_directionRingLayer.lineCap = kCALineCapRound;
+        self.ame287_directionRingLayer.opacity = 0;
+        [self.ctrlView.layer insertSublayer:self.ame287_directionRingLayer atIndex:0];
+    }
+    self.ame287_directionRingLayer.path =
+        [UIBezierPath bezierPathWithArcCenter:center radius:radius
+            startAngle:0 endAngle:(CGFloat)(M_PI * 2.0) clockwise:YES].CGPath;
+}
+
+- (void)ame287_setVisibleDiagonalIndicator:(UIView *)visible {
+    for (UIView *indicator in self.ame287_diagonalIndicators.allValues) {
+        CGFloat target = indicator == visible ? 1.0 : 0.0;
+        if (indicator.alpha != target) {
+            [UIView animateWithDuration:0.1 animations:^{ indicator.alpha = target; }];
+        }
+    }
+}
+
+- (UIView *)ame287_diagonalIndicatorNamed:(NSString *)name
+                                    first:(ControlButton *)first
+                                   second:(ControlButton *)second {
+    UIView *indicator = self.ame287_diagonalIndicators[name];
+    if (!indicator) {
+        UIVisualEffectView *glass = [[UIVisualEffectView alloc]
+            initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterialDark]];
+        glass.userInteractionEnabled = NO;
+        glass.layer.cornerRadius = 11.0;
+        glass.clipsToBounds = YES;
+        UIImageView *icon = [[UIImageView alloc]
+            initWithImage:[UIImage systemImageNamed:name]];
+        icon.tintColor = UIColor.whiteColor;
+        icon.frame = CGRectMake(4, 4, 14, 14);
+        [glass.contentView addSubview:icon];
+        glass.bounds = CGRectMake(0, 0, 22, 22);
+        glass.alpha = 0;
+        [self.ctrlView addSubview:glass];
+        self.ame287_diagonalIndicators[name] = glass;
+        indicator = glass;
+    }
+    return indicator;
+}
+
+// 垫主逻辑：起点落在 W/A/S/D 任意一键的宽化命中区（±14pt）内即捕获；
+// 四键中心为圆心画方向环，触点角度按八等分扇区（tan(π/8) 阈值）映射到
+// 相邻 1-2 键（对角 = 双键并集）；10pt 中心死区防方向抖动；对角激活时
+// 亮起对应 SF Symbol 箭头指示器。
+- (void)ame287_handleFluidButtonPan:(UIGestureRecognizer *)gesture {
+    if (gesture.state == UIGestureRecognizerStateEnded ||
+        gesture.state == UIGestureRecognizerStateCancelled ||
+        gesture.state == UIGestureRecognizerStateFailed) {
+        [self ame287_applyFluidButtons:@[]];
+        self.ame287_fluidMovementCaptured = NO;
+        [self ame287_setVisibleDiagonalIndicator:nil];
+        self.ame287_directionRingLayer.opacity = 0;
+        return;
+    }
+    if (gesture.state != UIGestureRecognizerStateBegan &&
+        gesture.state != UIGestureRecognizerStateChanged) return;
+
+    CGPoint point = [gesture locationInView:self.ctrlView];
+    ControlButton *up = [self ame287_movementButtonForKeycode:GLFW_KEY_W];
+    ControlButton *left = [self ame287_movementButtonForKeycode:GLFW_KEY_A];
+    ControlButton *down = [self ame287_movementButtonForKeycode:GLFW_KEY_S];
+    ControlButton *right = [self ame287_movementButtonForKeycode:GLFW_KEY_D];
+    NSArray<ControlButton *> *movementButtons =
+        (up && left && down && right) ? @[up, left, down, right] : @[];
+
+    if (gesture.state == UIGestureRecognizerStateBegan) {
+        self.ame287_fluidGestureOrigin = point;
+        self.ame287_fluidMovementCaptured = NO;
+        for (ControlButton *button in movementButtons) {
+            CGRect generousHitArea = CGRectInset(button.frame, -14.0, -14.0);
+            if (!button.hidden && button.enabled &&
+                CGRectContainsPoint(generousHitArea, self.ame287_fluidGestureOrigin)) {
+                self.ame287_fluidMovementCaptured = YES;
+                break;
+            }
+        }
+    }
+
+    // 起点不在移动键上 = 本手势不归 Fluid 管，清空集合让原矩形按钮命中测试接管。
+    if (!self.ame287_fluidMovementCaptured) {
+        [self ame287_applyFluidButtons:@[]];
+        return;
+    }
+
+    CGPoint center = CGPointMake(
+        (up.center.x + left.center.x + down.center.x + right.center.x) / 4.0,
+        (up.center.y + left.center.y + down.center.y + right.center.y) / 4.0);
+    CGFloat radius = (
+        hypot(up.center.x - center.x, up.center.y - center.y) +
+        hypot(left.center.x - center.x, left.center.y - center.y) +
+        hypot(down.center.x - center.x, down.center.y - center.y) +
+        hypot(right.center.x - center.x, right.center.y - center.y)) / 4.0;
+    radius = MAX(radius, 30.0);
+    [self ame287_updateDirectionRingAtCenter:center radius:radius];
+
+    CGFloat dx = point.x - center.x;
+    CGFloat dy = point.y - center.y;
+    CGFloat distance = hypot(dx, dy);
+    if (distance < 10.0) {
+        // 中心死区：手指穿越圆心时保持上次方向，防抖。
+        return;
+    }
+
+    // 八等分 45° 扇区：对角 = 同时按住相邻两键（右上 = W + D）。
+    CGFloat diagonalThreshold = tan((CGFloat)M_PI / 8.0);
+    CGFloat absX = fabs(dx), absY = fabs(dy);
+    NSMutableArray<ControlButton *> *desired = [NSMutableArray arrayWithCapacity:2];
+    BOOL useHorizontal = absY == 0 || absX / absY > diagonalThreshold;
+    BOOL useVertical = absX == 0 || absY / absX > diagonalThreshold;
+    if (useVertical) [desired addObject:(dy < 0 ? up : down)];
+    if (useHorizontal) [desired addObject:(dx < 0 ? left : right)];
+    [self ame287_applyFluidButtons:desired];
+
+    NSArray *pairs = @[
+        @[up ?: NSNull.null, left ?: NSNull.null, @"arrow.up.left"],
+        @[up ?: NSNull.null, right ?: NSNull.null, @"arrow.up.right"],
+        @[down ?: NSNull.null, left ?: NSNull.null, @"arrow.down.left"],
+        @[down ?: NSNull.null, right ?: NSNull.null, @"arrow.down.right"]
+    ];
+    for (NSArray *pair in pairs) {
+        if (pair[0] == NSNull.null || pair[1] == NSNull.null) continue;
+        ControlButton *first = pair[0], *second = pair[1];
+        UIView *indicator = [self ame287_diagonalIndicatorNamed:pair[2]
+                                                          first:first
+                                                         second:second];
+        BOOL pointsLeft = [pair[2] containsString:@"left"];
+        BOOL pointsUp = [pair[2] containsString:@"up"];
+        CGFloat diagonal = radius / sqrt(2.0);
+        indicator.center = CGPointMake(
+            center.x + (pointsLeft ? -diagonal : diagonal),
+            center.y + (pointsUp ? -diagonal : diagonal));
+        if ([desired containsObject:first] && [desired containsObject:second]) {
+            [self ame287_setVisibleDiagonalIndicator:indicator];
+            self.ame287_directionRingLayer.opacity = 1;
+            return;
+        }
+    }
+    [self ame287_setVisibleDiagonalIndicator:nil];
+    self.ame287_directionRingLayer.opacity = 1;
 }
 
 #pragma mark - Input: On-screen touch events (TouchController Mod Integration)

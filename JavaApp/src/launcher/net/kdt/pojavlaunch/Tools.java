@@ -156,7 +156,28 @@ public final class Tools {
         //   仅记日志（PatchSVC shutdown hook 路径原样保留为兜底）；MC
         //   main 若异常退出（崩溃），invoke 直接抛异常不经过此处，原
         //   崩溃 → System.exit → hooks 兜底链零回归。
-        ame251_writeShutdownMarkerNow("mc-main-returned");
+        //
+        //   ★ Task287（装机 latestlog 2ff716d 取证："远古版本崩溃"根修）：
+        //   pre-classic rd-*（RubyDung，rd-132211/rd-131655 等）的 main()
+        //   是"spawn 游戏线程即返回"结构——本次装机日志三实锤：①异常栈
+        //   底帧 = java.lang.Thread.run（游戏循环在自建线程，非 main）；
+        //   ②"[Ame251/Task254] MC main returned"时间戳早于 GLFWBridge
+        //   窗口创建（stdout 同流保序 = main 秒退）；③native"(flag still
+        //   absent after 2s flag-wait window) -> _exit(0)"= 2s 后游戏被
+        //   看门狗杀掉（用户视角：渲染 58fps 正常 → 数秒后闪退）。本标记
+        //   语义（main 返回 = 客户端完全停止）仅对"main 阻塞到退游"的
+        //   现代谱系成立；rd-* 跳过标记，退出交回自然链：游戏线程结束 →
+        //   JVM halt → shutdown hooks（PatchSVC 已注册同标记写入）→
+        //   native _exit(0)。c0./a1./b1. 等其余远古谱系 main 均阻塞
+        //   （窗口循环在主线程），Task254 语义保留不动。
+        String ame287_vidLower = versionInfo.id == null ? "" : versionInfo.id.toLowerCase();
+        if (ame287_vidLower.startsWith("rd-")) {
+            System.out.println("[Ame287] pre-classic '" + versionInfo.id
+                    + "' main() is fire-and-forget (game thread spawned) -- skip"
+                    + " mc-main-returned marker; exit handled by shutdown-hook chain");
+        } else {
+            ame251_writeShutdownMarkerNow("mc-main-returned");
+        }
     }
 
     /**

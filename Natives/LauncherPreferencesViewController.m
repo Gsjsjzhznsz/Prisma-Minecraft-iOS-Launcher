@@ -1519,6 +1519,14 @@ if ([section isEqualToString:@"general"]) {
                 @"hasDetail": @YES,
                 @"type": self.typeSwitch,
             },
+            @{@"key": @"fluid_button_slide",
+                // ★ Task287（PocketJ 对标移植）：Fluid 八方向 WASD 移动垫
+                //   （游戏内设置页关闭后热生效，见 SurfaceViewController
+                //   applyInGamePreferenceChanges ame287 段）
+                @"hasDetail": @YES,
+                @"icon": @"arrow.up.and.down.and.arrow.left.and.right",
+                @"type": self.typeSwitch,
+            },
             @{@"key": @"virtmouse_enable",
                 @"hasDetail": @YES,
                 @"icon": @"cursorarrow.rays",
