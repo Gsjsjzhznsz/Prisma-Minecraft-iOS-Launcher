@@ -3828,3 +3828,17 @@ Stage Summary:
 - 网站版本检测三链修全（构建期探测+每日重建+客户端回退链），下一轮 CI 自动部署验证
 - 内置 JIT 第一阶段装机锚点：①设置→调试→内置 JIT 管理：四段页状态如实（JIT 运行/系统支持/配对导入/LocalDevVPN 探针）②导入本机 pairingFile.plist → "已导入"绿态 ③LocalDevVPN 连接后点"开启 JIT"→ 跳转 StikDebug 自动附脚本 ④偏好页新入口行游戏中禁用
 - 聚合搜索装机锚点：①侧栏源选择器三态（聚合居中蓝色）②聚合模式模组/整合包等五 tab 混排双源结果+条目尾"Modrinth/CurseForge"标注 ③点击任一条目版本页来源正确（CF 条目走 CF API）④断网单源→另一源可用+顶部提示条
+
+---
+Task ID: 291-ci
+Agent: main (Super Z)
+Task: Task 291 CI 闭环（run#902 failure → r1 0ab5ac54 run#903 一轮终绿 + 网站 deploy/build 首轮即绿且线上六项验证全中）
+
+Work Log:
+- run#902 failure 实锤：DownloadViewController.m:1756 redefinition of 'sidebarSliderColor'——Task291 三态替换锚在旧 tag 尾两行，旧二态侧栏段（titleColor/约束/动画/sidebarSliderColor 声明）整体残留与新块同函数并存；r1 删旧段（锚字节 \xa5→\xae 转义错字复核一次）保 Task291 块，14 行纯删除
+- 门禁复绿：139/240 balanced、248 缺键0、verify219 81/81；提交 0ab5ac54 推送
+- run#903 一轮 completed success；网站 deploy+build（Astro）首轮即绿：线上页面 data-build-tag=v6.5.0 / dl-tag v6.5.0×2 / v6.5.5 零残留 / nav CTA "下载 6.5.0" / hero chip "v6.5.0 正式版" / IPA 链指 v6.5.0 正式版资产，检测脚本（prisma-latest-release 缓存键+releases/latest 端点）内联在位
+- API 限流期间取证改走仓库远端自带 token 的 actions/jobs/{id}/logs 端点（2.2MB 全量日志直取，注解+make-fail 全链定位）
+
+Stage Summary:
+- Task 291 三指令全闭环：网站版本检查三链修上线验证通过；内置 JIT 第一阶段四段管理页 + FCL 聚合搜索全量随 run#903 绿入包；装机锚点 8 条见 Task 291 条目
