@@ -3907,3 +3907,24 @@ Work Log:
 
 Stage Summary:
 - Task 294 四指令闭环随 run#909 绿入包：JIT 页显示根修 + "启动器自带"选项落地 + 内置轨三处共用+分层取证 + IPA 瘦身第二轮（strip -x/jmods/死重/libglapi）；装机锚点见 Task 294 条目 4 条（"无法开启 JIT"具体卡层待下轮装机 latestlog 的 Task294 分层日志定音）
+
+---
+Task ID: 295
+Agent: main (Super Z)
+Task: 装机单指令（trace 1a14fa9f04e6aaa5）：jit开启失败——装机 latestlog（Code=19 Failed to add observer）+ IMG_0440（失败弹窗伪转圈）
+
+Work Log:
+- 根因定案（装机 latestlog 实锤 + PocketJ 上游 build_pocketj.sh 注释双证）：builtin 轨 Monitor 初始化即抛 extensionKit Code=19 "Failed to add observer"（日志无 "monitor: N identity(ies)" 行 = discovery 前置失败）——ExtensionKit 自定义扩展点要求宿主包 Extensions/ 内有扩展点定义 <点>.appexpt（Xcode 构建由 Swift 编译器直写 wrapper Extensions/，"without it ExtensionFoundation reports Failed to add observer" 上游注释原话）+ 泛用 ExtensionFoundation appex 正确落位 Extensions/（"Generic ExtensionFoundation extensions live in Extensions/"）。本仓 Makefile 两处全错：appex 塞 PlugIns/ + swiftc 直编从未产出 appexpt → extensionkitd 无法解析扩展点 → builtin 轨必失败
+- 根修（Makefile 字节级补丁 scripts/task295_makefile_patch.py）：①jit_helper 尾部 .appexpt 收集（staging 自产优先/库内手作版 Natives/stikjit/integration/Host/PrismaJITHelper.appexpt 兜底，老 .appextensionpoint content-keyed 形态顶层键=com.prisma-devs.prisma.PrismaJITHelper 与 appex EXExtensionPointIdentifier 对齐）②payload 嵌入 PlugIns/ → Extensions/（appex + .appexpt 同目，PlugIns 残留清零，ldid -S 保 26.0 minos 不变）
+- 等待环误取消链根修（装机日志：失败弹窗出现同一毫秒打 "user cancelled JIT wait"，3.7s 后等待环被 cancelled 满足→abandoning launch）：level-1000 失败弹窗呈现级联 dismiss 等待弹窗 → UIKit 对程序性 dismiss 也回调 cancel action → ame267_cancelled 误置位。修：ame267_cancelled/builtinDialogShowing 声明上移双闭包共享 + cancel handler 见 builtinDialogShowing 即忽略 + ame294_showJITActionDialogEx 新增 cancelBlock（弹窗真取消才终止等待；"交给 StikDebug"只发深链保持等待——旧版此路径被误杀=交给后必弃启）
+- 失败弹窗伪转圈根修（IMG_0440 实锤）：AmeFloatingMenu 镜像行未命中关键词的 default 动作强塞 circle.dotted（蓝色点环=转圈观感）→ 无图标退化（行组件 nil 图标已有正确路径：隐藏图区标题占满）；destructive/cancel 样式语义图标保留
+- Coordinator 加固：Monitor 3 次重试（300ms 间隔，extensionkitd 偶发未就绪）+ [discovery]/[spawn] 阶段前缀错误 + 打包缺口指引（"host bundle must embed Extensions/PrismaJITHelper.appexpt + .appex"）
+- 取证三件（下轮装机直达）：builtin gate 落 Extensions/PlugIns 目录清单入 latestlog + 配对文件 plist 健全性（非 plist 拒启 "[pairing] not a plist"，plist 落键清单——装机 pairing=501 bytes 病历：真实 .mobiledevicepairing 是多 KB 含证书键 plist）+ Helper 侧 lastStage 沿用
+- 附带实证：jit_enabler 选项卡分发链健康（日志 "Task134 enabler=builtin builtin=1" + "debug.jit_enabler (8 options)" = Task294 落地正常，无需改动）
+- 门禁：139/240 all balanced、191 四表 3157 OK、248/250 全零、task219_fleet 静默全过（exit 0）；task219_syntax 6 FAIL 为旧基线硬编码（TAB 662/bundle id com.air-devs.air/l10n 2606）与本轮无关（活跃门禁=重锚后 fleet 81/81）
+- Edit 工具不可见字节病历（家法续记）：RightPanel 注释 "// 零 action" 实为单空格（Read 渲染成三空格误导）+ "旧版 120s" 单空格——锚点四连败后 python repr 提取真实字节定音，scripts/task295_rightpanel_patch.py 留档
+
+Stage Summary:
+- 提交 c2a64b99 推送（9 文件：Makefile/AmeFloatingMenu/RightPanel/StikDebugVC/bridge.h/.m/Coordinator.swift + 新增 .appexpt + 2 补丁脚本留档），CI 验证中
+- 装机锚点（下轮验证）：①JIT 管理页/启动流点开启 → 日志序 "Task295 bundle fs: Extensions=[PrismaJITHelper.appex, PrismaJITHelper.appexpt]" → "monitor: 1 helper identity(ies) discovered" → Helper 进程 [PrismaJIT] prepare 阶段日志 → 成功进局；②若仍失败：弹窗/日志必带 [discovery]/[spawn]/[check-reachability]/[ddi]/[attach]/[script] 阶段前缀直达卡点 + bundle fs 清单对单；③失败弹窗"交给 StikDebug"无伪转圈、点取消即终止等待、点交给后等待环不再误弃启
+- 风险记账：.appexpt 内容形态按上游 .appextensionpoint 老格式手作（swiftc 是否自产新格式文件待 CI/装机日志实证——jit_helper 已做自产优先收集）；签名工具须保留 Extensions/ 目录（重签剥离 = discovery 空/Code=19 复发，指引文案已内置）
