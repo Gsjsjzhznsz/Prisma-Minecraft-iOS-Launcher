@@ -12,6 +12,14 @@
 //  100ms 轮询 isJITEnabled 提前交付成功态）；门禁序遵 INTEGRATION.md
 //  （get-task-allow → 配对文件）；内置轨失败不静默回退深链，显式弹窗
 //  征求同意后再走 stikjit://（上游 "Do not silently fall through"）。
+//  ★ Task294：①内置轨提取为类方法 +ame294_enableBuiltinJITWithCompletion
+//  （PocketJ 同款全局入口）——JIT 页 / RightPanel Task134 / JavaLauncher
+//  Task139 三处共用，jit_enabler 选项新增 builtin（启动器自带）后按选择
+//  分发；②会话级祝福标记 +ame294_scriptCompletedThisSession 供 JIT26
+//  重挂启发式区分“完成的内置祝福”与“中断式半附加”；③显示根修：开启
+//  按钮 subview 曾只在按钮行分支摘除，复用池把旧按钮 cell 发给普通行时
+//  绿色“开启 JIT”漂浮在配对/删除等行上（装机 IMG_0439 实锤）——改为
+//  每条 cellForRow 路径先摘除。
 //
 
 #import "StikDebugViewController.h"
@@ -39,6 +47,13 @@
 @end
 
 @implementation StikDebugViewController
+
+/// Task294：会话级内置轨祝福标记（见头文件注释）
+static BOOL ame294_builtinScriptCompleted = NO;
+
+/// 前置声明：+ame294_enableBuiltinJITWithCompletion / +ame294_builtinTrackAvailable
+/// 在文件前部调用（定义在下方 #pragma mark 开启 JIT 区）——C 静态函数先声明后用。
+static BOOL ame293_hasGetTaskAllow(void);
 
 + (Ame291JITSetupState)ame291_setupState {
     if (@available(iOS 17.4, *)) {
@@ -102,6 +117,121 @@
     }];
 }
 
+#pragma mark - 内置轨共享助手（Task294）
+
+/// 协调器加载（dispatch_once 幂等，成功后不 dlclose——后续调用复用）。失败
+/// 带 dlerror 取证进 latestlog（宿主进程内 NSLog 直接可见，下轮装机可定位
+/// “无法开启 JIT”卡在 dlopen 还是发现还是 XPC）。
++ (Class)ame294_coordinatorClass {
+    static Class klass;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        if (@available(iOS 26.0, *)) {} else { return; }
+        NSString *frameworkPath = [NSBundle.mainBundle.bundlePath
+            stringByAppendingPathComponent:@"Frameworks/libPrismaJITCoordinator.dylib"];
+        void *handle = dlopen(frameworkPath.fileSystemRepresentation, RTLD_NOW | RTLD_LOCAL);
+        if (!handle) {
+            NSString *altPath = [NSBundle.mainBundle.privateFrameworksPath
+                stringByAppendingPathComponent:@"libPrismaJITCoordinator.dylib"];
+            handle = dlopen(altPath.fileSystemRepresentation, RTLD_NOW | RTLD_LOCAL);
+        }
+        if (!handle) {
+            NSLog(@"[JIT] Task294 dlopen libPrismaJITCoordinator.dylib failed: %s", dlerror());
+            return;
+        }
+        klass = NSClassFromString(@"PrismaJITCoordinator");
+        if (!klass) {
+            NSLog(@"[JIT] Task294 dylib loaded but PrismaJITCoordinator class missing (swift projection not registered)");
+        } else {
+            NSLog(@"[JIT] Task294 coordinator loaded -- builtin track ready");
+        }
+    });
+    return klass;
+}
+
++ (BOOL)ame294_builtinTrackAvailable {
+    if (@available(iOS 26.0, *)) {
+        if (!ame293_hasGetTaskAllow()) return NO;
+        [StikDebugEngine.sharedEngine synchronizePairingFileFromDocuments:nil];
+        if (!StikDebugEngine.sharedEngine.hasPairingFile) return NO;
+        return [self ame294_coordinatorClass] != nil;
+    }
+    return NO;
+}
+
++ (BOOL)ame294_scriptCompletedThisSession {
+    return ame294_builtinScriptCompleted;
+}
+
++ (void)ame294_enableBuiltinJITWithCompletion:(void (^)(BOOL success, NSString *message))completion {
+    // 门禁序（INTEGRATION.md）：① iOS 26+ ② get-task-allow ③ 配对文件
+    // ④ 协调器。①②③④ 任一不过立即回包（caller 决定是否降级深链）。
+    if (@available(iOS 26.0, *)) {
+        if (!ame293_hasGetTaskAllow()) {
+            NSLog(@"[JIT] Task294 gate: get-task-allow missing");
+            completion(NO, localize(@"ame293.jit.gettask_fail", nil));
+            return;
+        }
+        [StikDebugEngine.sharedEngine synchronizePairingFileFromDocuments:nil];
+        NSData *pairingData = [NSData dataWithContentsOfFile:
+            StikDebugEngine.sharedEngine.pairingFilePath];
+        if (pairingData.length == 0) {
+            NSLog(@"[JIT] Task294 gate: pairing file missing/empty");
+            completion(NO, localize(@"ame291.jit.pairing_empty", nil));
+            return;
+        }
+        Class<PrismaJITCoordinatorAPI> coordinator =
+            (Class<PrismaJITCoordinatorAPI>)[self ame294_coordinatorClass];
+        if (!coordinator) {
+            NSLog(@"[JIT] Task294 gate: coordinator unavailable");
+            completion(NO, localize(@"ame293.jit.builtin_missing", nil));
+            return;
+        }
+
+        NSLog(@"[JIT] Task294 builtin track start (pid=%d, pairing=%zu bytes)", getpid(), (unsigned long)pairingData.length);
+        __block BOOL delivered = NO;
+        __block dispatch_source_t stateTimer = dispatch_source_create(
+            DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+        void (^deliver)(BOOL, NSString *) = ^(BOOL success, NSString *message) {
+            if (delivered) return;
+            delivered = YES;
+            if (stateTimer) {
+                dispatch_source_cancel(stateTimer);
+                stateTimer = nil;
+            }
+            // 回包迟到时目标可能已被 100ms 轮询判定成功（StikJIT 完成收尾
+            // 前目标已可执行）——以进程实际状态为准。
+            BOOL effectiveSuccess = success || isJITEnabled(YES);
+            if (effectiveSuccess) {
+                ame294_builtinScriptCompleted = YES;
+                NSLog(@"[JIT] Task294 builtin track OK (response=%d, script blessed)", success);
+            } else {
+                NSLog(@"[JIT] Task294 builtin track FAILED: %@", message ?: @"(no message)");
+            }
+            completion(effectiveSuccess, message ?: @"");
+        };
+        // PocketJ 同款 100ms 轮询：StikJIT 回包可能晚于目标已可执行
+        dispatch_source_set_timer(stateTimer, DISPATCH_TIME_NOW,
+            100 * NSEC_PER_MSEC, 20 * NSEC_PER_MSEC);
+        dispatch_source_set_event_handler(stateTimer, ^{
+            if (isJITEnabled(YES)) deliver(YES, localize(@"ame293.jit.builtin_ok", nil));
+        });
+        dispatch_resume(stateTimer);
+
+        [coordinator enableJITWithTargetPID:getpid()
+                                pairingData:pairingData
+                                 completion:^(BOOL success, NSString *message) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSLog(@"[JIT] Task294 coordinator response: success=%d message=%@", success, message);
+                deliver(success, message ?: @"");
+            });
+        }];
+        return;
+    }
+    NSLog(@"[JIT] Task294 gate: iOS < 26");
+    completion(NO, localize(@"ame293.jit.builtin_missing", nil));
+}
+
 #pragma mark - Table 数据源
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 4; }
@@ -128,6 +258,11 @@
     static NSString *cellId = @"Ame291JITCell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellId];
     if (!cell) cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:cellId];
+    // Task294 显示根修：开启按钮（tag 8291）曾只在按钮行分支摘除——复用池
+    // 把旧按钮 cell 发给普通行时旧按钮滞留 contentView（约束仍钉在该 cell
+    // 的 margins 上），绿色“开启 JIT”/“正在开启 JIT…”漂浮在配对文件/删除
+    // 等行上（装机 IMG_0439 实锤）。移到公共路径：每行先摘再装配。
+    [[cell.contentView viewWithTag:8291] removeFromSuperview];
     cell.textLabel.numberOfLines = 2;
     cell.detailTextLabel.numberOfLines = 0;
     cell.textLabel.textColor = UIColor.labelColor;
@@ -199,11 +334,10 @@
             ? UITableViewCellSelectionStyleDefault : UITableViewCellSelectionStyleNone;
         cell.textLabel.textColor = UIColor.systemRedColor;
     } else {
-        // 开启 JIT 按钮行
+        // 开启 JIT 按钮行（tag 8291 已在公共路径摘除，见 cellForRow 顶部）
         cell.textLabel.text = nil;
         cell.detailTextLabel.text = nil;
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
-        [[cell.contentView viewWithTag:8291] removeFromSuperview];
 
         NSString *title;
         if (state == Ame291JITSetupStateEnabled) title = localize(@"ame291.jit.action_enabled", nil);
@@ -332,9 +466,11 @@ static BOOL ame293_hasGetTaskAllow(void) {
 - (void)ame291_enableJIT {
     if (self.enabling || self.jitEnabled) return;
 
-    // Task293 门禁序（INTEGRATION.md）：① iOS 26+（builtin 轨前提）
-    // ② get-task-allow ③ 配对文件。③ 缺失时不拦截——外部 StikDebug
-    // 有自己的配对导入，深链轨仍可用。
+    // Task293/294 门禁序（INTEGRATION.md）：① iOS 26+（builtin 轨前提）
+    // ② get-task-allow ③ 配对文件。②失败是签名问题→专用指引弹窗（无降级
+    // 项）；③缺失时不拦截——外部 StikDebug 有自己的配对导入，深链轨仍可用。
+    // 实际开启动作统一走 +ame294_enableBuiltinJITWithCompletion（与启动链
+    // Task134/139 共用同一实现，页内仅维护 enabling 状态与弹窗）。
     if (@available(iOS 26.0, *)) {
         if (!ame293_hasGetTaskAllow()) {
             [self ame291_showDialog:localize(@"ame293.jit.gettask_fail_title", nil)
@@ -342,74 +478,29 @@ static BOOL ame293_hasGetTaskAllow(void) {
             return;
         }
         [StikDebugEngine.sharedEngine synchronizePairingFileFromDocuments:nil];
-        NSData *pairingData = [NSData dataWithContentsOfFile:
-            StikDebugEngine.sharedEngine.pairingFilePath];
-        if (pairingData.length > 0) {
-            [self ame291_enableBuiltinJITWithPairingData:pairingData];
+        if (StikDebugEngine.sharedEngine.hasPairingFile) {
+            self.enabling = YES;
+            self.lastStatus = localize(@"ame293.jit.builtin_enabling", nil);
+            [self.tableView reloadData];
+            __weak typeof(self) weakSelf = self;
+            [StikDebugViewController ame294_enableBuiltinJITWithCompletion:^(BOOL success, NSString *message) {
+                weakSelf.enabling = NO;
+                weakSelf.jitEnabled = isJITEnabled(YES);
+                weakSelf.lastStatus = success
+                    ? localize(@"ame293.jit.builtin_ok", nil)
+                    : (message.length ? message : localize(@"ame293.jit.builtin_fail_title", nil));
+                [weakSelf.tableView reloadData];
+                if (!success) [weakSelf ame291_offerStikDebugFallback:weakSelf.lastStatus];
+            }];
             return;
         }
     }
     [self ame291_handoffToStikDebug];
 }
 
-/// Task293：内置 Helper 轨（iOS 26 AppExtensionProcess 独立进程）。协调器以
-/// dlopen 弱接入（iOS 26 以下不加载、未打包时不崩）；PocketJ 同款 100ms
-/// 轮询 isJITEnabled 提前交付成功态（StikJIT 回包可能晚于目标已可执行）。
-- (void)ame291_enableBuiltinJITWithPairingData:(NSData *)pairingData {
-    self.enabling = YES;
-    self.lastStatus = localize(@"ame293.jit.builtin_enabling", nil);
-    [self.tableView reloadData];
-
-    NSString *frameworkPath = [NSBundle.mainBundle.bundlePath
-        stringByAppendingPathComponent:@"Frameworks/libPrismaJITCoordinator.dylib"];
-    void *handle = dlopen(frameworkPath.fileSystemRepresentation, RTLD_NOW | RTLD_LOCAL);
-    if (!handle) {
-        NSString *altPath = [NSBundle.mainBundle.privateFrameworksPath
-            stringByAppendingPathComponent:@"libPrismaJITCoordinator.dylib"];
-        handle = dlopen(altPath.fileSystemRepresentation, RTLD_NOW | RTLD_LOCAL);
-    }
-    Class<PrismaJITCoordinatorAPI> coordinator =
-        (Class<PrismaJITCoordinatorAPI>)NSClassFromString(@"PrismaJITCoordinator");
-    if (!handle || !coordinator) {
-        if (handle) dlclose(handle);
-        [self ame291_offerStikDebugFallback:localize(@"ame293.jit.builtin_missing", nil)];
-        return;
-    }
-
-    __weak typeof(self) weakSelf = self;
-    __block BOOL delivered = NO;
-    __block dispatch_source_t stateTimer = dispatch_source_create(
-        DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
-    void (^deliver)(BOOL, NSString *) = ^(BOOL success, NSString *message) {
-        if (delivered) return;
-        delivered = YES;
-        if (stateTimer) {
-            dispatch_source_cancel(stateTimer);
-            stateTimer = nil;
-        }
-        weakSelf.enabling = NO;
-        weakSelf.jitEnabled = isJITEnabled(YES);
-        weakSelf.lastStatus = success
-            ? localize(@"ame293.jit.builtin_ok", nil)
-            : (message.length ? message : localize(@"ame293.jit.builtin_fail_title", nil));
-        [weakSelf.tableView reloadData];
-        if (!success) [weakSelf ame291_offerStikDebugFallback:weakSelf.lastStatus];
-    };
-    dispatch_source_set_timer(stateTimer, DISPATCH_TIME_NOW,
-        100 * NSEC_PER_MSEC, 20 * NSEC_PER_MSEC);
-    dispatch_source_set_event_handler(stateTimer, ^{
-        if (isJITEnabled(YES)) deliver(YES, localize(@"ame293.jit.builtin_ok", nil));
-    });
-    dispatch_resume(stateTimer);
-
-    [coordinator enableJITWithTargetPID:getpid()
-                            pairingData:pairingData
-                             completion:^(BOOL success, NSString *message) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            deliver(success, message ?: @"");
-        });
-    }];
-}
+// Task294：原实例方法 ame291_enableBuiltinJITWithPairingData: 已删除——
+// 职责并入 +ame294_enableBuiltinJITWithCompletion（JIT 页 / Task134 / Task139
+// 三处共用同一实现，避免双份轮询/门禁逻辑漂移）。
 
 /// Task293：内置轨失败后的显式降级弹窗（不静默回退——上游
 /// "Do not silently fall through to a different method after a failure"）。

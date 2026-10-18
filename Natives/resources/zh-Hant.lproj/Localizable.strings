@@ -559,6 +559,7 @@
 "preference.touchcontroller.about.message" = "TouchController 是一个为 Minecraft Java 版添加触摸控制的模组。本启动器支持两种通信模式：\n\n• UDP 协议：基于网络的通信\n• 静态库：高性能本地通信\n\n访问 GitHub 获取更多信息。";
 // Task 134: JIT enabler pick + iOS 26 script toggle + TouchController hide-controls
 "preference.debug.jit_enabler.auto" = "自動（建議）";
+"preference.debug.jit_enabler.builtin" = "啟動器內建（內建 JIT 工具）";
 "preference.debug.jit_enabler.stikjit" = "StikDebug / StikJIT";
 "preference.debug.jit_enabler.sidestore" = "SideStore";
 "preference.debug.jit_enabler.stosdebug" = "StosDebug";
@@ -566,7 +567,7 @@
 "preference.debug.jit_enabler.trollstore" = "TrollStore";
 "preference.debug.jit_enabler.manual" = "手動（自行附加除錯器）";
 "preference.title.jit_enabler" = "JIT 開啟工具";
-"preference.detail.jit_enabler" = "選擇用於開啟 JIT 的工具。沒有安裝 StikDebug 的使用者請改選 SideStore、StosDebug、JitStreamer-EB 或 TrollStore，否則點擊啟動可能沒有任何反應。預設自動：依裝置狀態依序嘗試 TrollStore、StikDebug、SideStore。";
+"preference.detail.jit_enabler" = "選擇用於開啟 JIT 的應用。啟動器內建使用啟動器內建的 JIT 助手（需 iOS 26+）。若未安裝 StikDebug，請改選 SideStore、StosDebug、JitStreamer-EB 或 TrollStore，否則點啟動沒有反應。自動（預設）在內建工具可用時優先使用，否則按裝置依次嘗試 TrollStore、StikDebug、SideStore。";
 "preference.title.jit26_script_disable" = "停用 iOS 26 JS 指令碼 JIT";
 "preference.detail.jit26_script_disable" = "啟動遊戲時不再向 JIT 工具傳送 UniversalJIT26.js 指令碼（純除錯器附加式 JIT）。僅當你的工具不支援指令碼、或指令碼導致異常時才需要開啟；依賴系統級記憶體映射的裝置（TXM）開啟後可能無法啟動遊戲。";
 "preference.touchcontroller.hide_controls" = "遮蔽啟動器控制項（保留模組按鈕）";
@@ -3299,10 +3300,11 @@
 "ame291.jit.on" = "已開啟";
 "ame291.jit.off" = "未開啟";
 "ame291.jit.support_state" = "系統支援狀態";
-"ame291.jit.support_ok" = "系統支援 StikDebug 隧道";
+"ame291.jit.support_ok" = "系統支援內建 JIT 隧道（LocalDevVPN）";
 "ame291.jit.support_bad" = "需要 iOS 17.4 或更高版本";
 "ame291.jit.prep_header" = "連線準備";
-"ame291.jit.prep_footer" = "完成配對檔案和 LocalDevVPN 兩項準備後，點擊下方按鈕交給 StikDebug 開啟 JIT。";
+"ame291.jit.prep_footer" = "完成配對檔案和 LocalDevVPN 兩項準備後，點擊下方按鈕由啟動器內建工具開啟 JIT（無需跳轉其他應用）。";
+"ame294.jit.localdevvpn_hint" = "若反覆失敗，請確認 LocalDevVPN 已開啟並處於連線狀態後重試。";
 "ame291.jit.import_pairing" = "① 匯入配對檔案";
 "ame291.jit.imported" = "已匯入";
 "ame291.jit.not_imported" = "未匯入";

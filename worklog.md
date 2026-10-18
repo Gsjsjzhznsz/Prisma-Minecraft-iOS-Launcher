@@ -3876,3 +3876,22 @@ Work Log:
 
 Stage Summary:
 - Task 293 四指令全闭环随 run#907 绿入包：内置 JIT 第二阶段（appex 独立进程轨）+ 加载更多转圈 + 切换源双根因修复（NeoForge-{loader} 解析 + 请求代际号）+ IPA -2.4MB；装机锚点 4 条见 Task 293 条目（appex 运行面待设备实证，失败路径已兜底深链降级）
+
+---
+Task ID: 294
+Agent: main (Super Z)
+Task: 装机四指令（trace 1a14f71e38eba861）：①JIT 开启页显示异常 ②无法开启 JIT ③JIT 逻辑跟随 jit_enabler 选项（补"启动器自带"）④继续瘦包
+
+Work Log:
+- 装机 latestlog+IMG_0439 取证定案：①显示异常=开启按钮（tag 8291）只在按钮行分支摘除，复用池把旧按钮 cell 发给普通行时旧按钮滞留 contentView（约束钉在原 cell margins），绿色"开启 JIT"/"正在开启 JIT…"漂浮在配对文件/删除等行上——修法：摘除移到 cellForRow 公共路径每行先摘 ②"无法开启"实锤走 builtin_fail_title 弹窗（get-task-allow 门禁已过、配对已载、协调器链失败但 Helper 进程 NSLog 不进宿主日志=取证盲区）③Task134/139 分发无 builtin 选项，auto 恒走 stikjit:// 深链（日志 "Task176 openURL stikjit:// -> 1" 实锤），且 JIT26 重挂启发式把已内置祝福的会话再拖回 StikDebug ④sandbox_extension_issue_file 噪音=App Store 跳转系统层，非本仓
+- PocketJ 上游对齐（pocketj-ref Example/iOS27测试 14 图实锤其 iOS 27 真机可进 Fabric 55 mods 局）：启动流 invokeAfterJITEnabled 在 iOS 26+ 有配对文件即直走 +enableEmbeddedJITWithCompletion，失败弹错误+LocalDevVPN 提示；本仓照此把内置轨提为类方法 +ame294_enableBuiltinJITWithCompletion（门禁序+100ms isJITEnabled 轮询提前交付+会话级祝福标记 +ame294_scriptCompletedThisSession），JIT 页/Task134/Task139 三处共用（删 ame291_enableBuiltinJITWithPairingData 双份实现）
+- jit_enabler 选项 +builtin（四表 i18n 3155→3157）：显式 builtin=内置轨唯一轨（失败弹窗双选"交给 StikDebug/取消"不擅自跳第三方）；auto=非巨魔环境内置轨可用时优先、失败同款弹窗征求同意才降级深链（PocketJ "Do not silently fall through" 遵约）；重挂启发式两处（RightPanel 入口+等待成功分支）+headless 一处加 scriptCompletedThisSession 豁免（内置轨 universal 祝福完即脱，无需再附——误重挂即用户点名的"逻辑还是 StikDebug"）
+- 取证三件套：宿主侧 dlopen dlerror/monitor identities 计数/XPC 回包与失败全 NSLog 进 latestlog；Helper 侧 lastStage 阶段感知错误回包（check-reachability→ddi→attach→script 四层定位，"无法开启 JIT"下轮日志直达卡点）；ios_uikit_bridge 新增 ame294_showJITActionDialog 专用 level-1000 window 双选弹窗（JIT 等待环存续期间可弹，Task267 家法 weak 断环）
+- 去 StikDebug 化文案：ame291.jit.support_ok/prep_footer 四表改内置轨语义（"由启动器内置工具开启 JIT（无需跳转其他应用）"），preference.detail.jit_enabler 三中文表整行改写说明 builtin 优先
+- IPA 瘦身第二刀：①payload 发行 dylib strip -x（libMobileGL 实锤 __TEXT 24.5MB/__LINKEDIT 60.6MB=上游同步未 post-strip，本地符号表占 70%；自写 Mach-O LC_SEGMENT_64 扫描器核 OSMesa/shaderc/MoltenVK/openal 同病；导出符号/ObjC 类元数据全保留运行时零差异，预期 -50MB 级）②JRE rm 清单补 jmods（jlink 专用运行时无用；rm 无条件执行故缓存命中也生效，无需升 Task257 缓存 key）③TouchController .a 拷贝块移除（静态归档运行时不可加载=上游遗留死重）④git rm libglapi.0.dylib（-500KB，OSMesa LC_LOAD_DYLIB 自写解析核无依赖）
+- Makefile 三刀走 python 字节级编辑（\t 重放，Task293 TAB 险情家法）；lwjgl.jar（9.5MB）核实为 JavaApp 构建输入保留不动
+- 门禁全绿：139/240 balanced、191 四表 3157、248/250 全零、verify255、verify219 重锚 81/81（J 锚 3155→3157=+builtin+localdevvpn_hint、K3 TAB 锚 713→724 实测）
+
+Stage Summary:
+- JIT 三修 + 瘦包第二轮全量交付待 CI：显示异常根修（按钮复用泄漏）、"启动器自带"选项落地（显式/自动双语义）、内置轨三处共用+分层取证（下轮装机日志直接回答"无法开启"卡在哪层）、IPA 预期 -50MB 级（strip -x）+ jmods + 死重清理
+- 装机锚点（下轮验证）：①JIT 管理页无漂浮按钮 ②设置 JIT 开启工具选"启动器自带"→启动→日志 "Task134 enabler=... builtin=1"→ 成功进局或失败弹窗带 [stage] 前缀 ③auto 语义 iOS 26+ 不再无条件跳 StikDebug ④IPA 体积对照 run#907 产物（日志行 "Task294 strip -x done (Frameworks NKB -> MKB)" 直接给瘦身数）

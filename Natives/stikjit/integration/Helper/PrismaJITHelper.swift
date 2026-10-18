@@ -22,25 +22,47 @@ private struct PrismaJITMessageHandler: XPCPeerHandler {
         let root = manager.urls(for: .libraryDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("PrismaJIT", isDirectory: true)
         let pairingURL = root.appendingPathComponent("pairingFile.plist")
+        // Task294 取证：阶段感知的错误回包。Helper 进程的 NSLog 不进宿主
+        // latestlog，失败只有最终 localizedDescription——装机“无法开启 JIT”
+        // 无法定位卡在可达性/DDI/附加/脚本哪一层。现在把最后阶段拼进回包
+        // message（宿主弹窗与 NSLog 都能看到），progress 行同步落 Helper 日志。
+        var lastStage = "init"
         do {
             try manager.createDirectory(at: root, withIntermediateDirectories: true)
             try message.pairingData.write(to: pairingURL, options: .atomic)
             defer { try? manager.removeItem(at: pairingURL) }
 
             let paths = DDIPaths.default(in: root)
+            lastStage = "prepare(reachability/ddi)"
             try StikJIT.enableJIT(
                 targetPID: message.targetPID,
                 pairingFile: pairingURL,
                 ddiPaths: paths,
                 script: .universal,
-                progress: { NSLog("[PrismaJIT] %@", $0) })
+                preparationProgress: { stage in
+                    switch stage {
+                    case .checkingReachability: lastStage = "check-reachability(LocalDevVPN 10.7.0.1:49152)"
+                    case .checkingDDI: lastStage = "check-ddi"
+                    case .downloadingDDI(let fraction, _): lastStage = String(format: "download-ddi(%.0f%%)", fraction * 100)
+                    case .mountingDDI(let fraction): lastStage = String(format: "mount-ddi(%.0f%%)", fraction * 100)
+                    case .verifyingDDI: lastStage = "verify-ddi"
+                    case .ready: lastStage = "device-ready"
+                    }
+                    NSLog("[PrismaJIT] prepare: %@", lastStage)
+                },
+                progress: { line in
+                    lastStage = "script: \(line)"
+                    NSLog("[PrismaJIT] %@", line)
+                })
+            NSLog("[PrismaJIT] JIT enabled for pid %d", message.targetPID)
             return PrismaJITMessage.Response(
                 success: true,
                 message: "JIT enabled by the built-in Prisma JIT Helper.")
         } catch {
+            NSLog("[PrismaJIT] FAILED at stage '\(lastStage)': \(error)")
             return PrismaJITMessage.Response(
                 success: false,
-                message: error.localizedDescription)
+                message: "[\(lastStage)] \(error.localizedDescription)")
         }
     }
 }

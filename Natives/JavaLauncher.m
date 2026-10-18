@@ -20,6 +20,7 @@
 // 鬼知道为什么copilot要把这玩意加里头……
 
 #import "ios_uikit_bridge.h"
+#import "StikDebugViewController.h" // Task294：内置 JIT 轨（jit_enabler=builtin / auto 优先）
 #import "JavaLauncher.h"
 #import "LauncherPreferences.h"
 #import "PLLogOutputView.h"
@@ -4039,9 +4040,51 @@ int launchHeadlessJVM(NSString *mainClass, NSArray<NSString *> *args, int minJav
                 }
                 BOOL ame139_noScript = getPrefBool(@"debug.jit26_script_disable");
                 NSString *ame139_bundleId = NSBundle.mainBundle.bundleIdentifier;
-                NSLog(@"[JIT] [Headless] Task139 enabler=%@ noScript=%d", ame139_enabler, ame139_noScript);
+                // Task294：与 RightPanel Task134 同口径——builtin 显式选项 +
+                // auto 非巨魔环境内置轨可用时优先；显式 builtin 失败不擅自跳
+                // 第三方工具（仅报错），auto 失败降级 stikjit:// 深链继续等。
+                BOOL ame294_isTrollStore = getEntitlementValue(@"jb.pmap_cs.custom_trust") && isTrollStoreInstall();
+                BOOL ame294_builtinAvail = [StikDebugViewController ame294_builtinTrackAvailable];
+                BOOL ame294_useBuiltin = NO;
+                if ([ame139_enabler isEqualToString:@"builtin"]) {
+                    ame294_useBuiltin = YES;
+                } else if ([ame139_enabler isEqualToString:@"auto"] && !ame294_isTrollStore) {
+                    ame294_useBuiltin = ame294_builtinAvail;
+                }
+                NSLog(@"[JIT] [Headless] Task139 enabler=%@ noScript=%d builtin=%d (avail=%d ts=%d)",
+                      ame139_enabler, ame139_noScript, ame294_useBuiltin, ame294_builtinAvail, ame294_isTrollStore);
                 NSURL *ame139_url = nil;
-                if ([ame139_enabler isEqualToString:@"trollstore"]) {
+                if (ame294_useBuiltin) {
+                    // Task294：内置轨（PocketJ +enableEmbeddedJIT 同构）。等待环
+                    // 不变——内置轨成功后 isJITEnabled 轮询即继续主流程。
+                    [StikDebugViewController ame294_enableBuiltinJITWithCompletion:^(BOOL success, NSString *message) {
+                        if (success || isJITEnabled(YES)) {
+                            NSLog(@"[JIT] [Headless] Task294 builtin track OK");
+                            return;
+                        }
+                        NSLog(@"[JIT] [Headless] Task294 builtin track failed: %@", message);
+                        NSString *detail = message.length ? message : localize(@"ame293.jit.builtin_fail_title", nil);
+                        if ([detail localizedCaseInsensitiveContainsString:@"Timed out connecting"] ||
+                            [detail localizedCaseInsensitiveContainsString:@"not ready for JIT"]) {
+                            detail = [detail stringByAppendingFormat:@"\n\n%@", localize(@"ame294.jit.localdevvpn_hint", nil)];
+                        }
+                        if ([ame139_enabler isEqualToString:@"builtin"]) {
+                            // 显式 builtin：报错不跳第三方（等环可取消/超时）
+                            showDialog(localize(@"ame293.jit.builtin_fail_title", nil), detail);
+                        } else if (@available(iOS 17.4, *)) {
+                            // auto：降级 stikjit:// 深链，等待环继续轮询
+                            NSString *sd = @"";
+                            if (!ame139_noScript) {
+                                NSData *s = [NSData dataWithContentsOfFile:
+                                    [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"UniversalJIT26.js"]];
+                                if (s) sd = [@"&script-data=" stringByAppendingString:[s base64EncodedStringWithOptions:0]];
+                            }
+                            [UIApplication.sharedApplication openURL:[NSURL URLWithString:
+                                [NSString stringWithFormat:@"stikjit://enable-jit?bundle-id=%@&pid=%d%@", ame139_bundleId, getpid(), sd]]
+                                options:@{} completionHandler:nil];
+                        }
+                    }];
+                } else if ([ame139_enabler isEqualToString:@"trollstore"]) {
                     ame139_url = [NSURL URLWithString:[NSString stringWithFormat:
                         @"apple-magnifier://enable-jit?bundle-id=%@", ame139_bundleId]];
                 } else if ([ame139_enabler isEqualToString:@"sidestore"]) {
@@ -4119,6 +4162,9 @@ int launchHeadlessJVM(NSString *mainClass, NSArray<NSString *> *args, int minJav
     // 再附并等待（用户诉求：">26 系统不管有没有开启都自动申请 JIT"）。
     if (requiresTXMWorkaround &&
         !JIT26IsLikelyDebuggerKeepAttached() &&
+        // Task294：本会话内置轨祝福完成（祝福完即脱）不再附——headless 与
+        // RightPanel 同口径，不把用户拖回外部 StikDebug。
+        ![StikDebugViewController ame294_scriptCompletedThisSession] &&
         !getPrefBool(@"debug.jit26_script_disable")) {
         NSLog(@"[JIT] [Headless] Task139: CS_DEBUGGED set but no live JIT26 debugger (ppid=%d) — re-attaching script via stikjit://",
               getppid());

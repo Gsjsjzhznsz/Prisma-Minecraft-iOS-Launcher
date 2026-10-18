@@ -19,6 +19,7 @@
 #import "LiquidGlassCompat.h"   // Task224（#19）：界面缩放（右栏字号/间距）
 #import "AmeNativeMenu.h"       // ★ Task240：菜单全面系统原生 UIMenu 化
 #import "AboutViewController.h"   // Task217：启动器版本卡 about 路由
+#import "StikDebugViewController.h" // Task294：内置 JIT 轨（jit_enabler=builtin / auto 优先）
 #import "ios_uikit_bridge.h"
 #import "utils.h"
 #import "AvatarManager.h"
@@ -1792,6 +1793,10 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         // reports the persistent CS_DEBUGGED state, not debugger liveness.
         if (DeviceHasJITFlags(JIT_FLAG_FORCE_MIRRORED | JIT_FLAG_HAS_TXM) &&
             !JIT26IsLikelyDebuggerKeepAttached() &&
+            // Task294：本会话内置轨已完成 universal 祝福（祝福完即脱）无需
+            // 再附；仅 stikjit:// 中断式半附加才需重挂。内置轨被误重挂会
+            // 把用户拖回外部 StikDebug（用户点名问题：逻辑仍大多 StikDebug）。
+            ![StikDebugViewController ame294_scriptCompletedThisSession] &&
             !getPrefBool(@"debug.jit26_script_disable")) {
             NSLog(@"[JIT] [RightPanel] CS_DEBUGGED set but no live JIT26 debugger (ppid=%d traced=%d exn=%d) — re-attaching script via stikjit://",
                   getppid(), JIT26DebuggerAttachedViaPtrace(), JIT26DebuggerViaExceptionPorts());
@@ -1829,17 +1834,71 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         // → apple-magnifier；iOS>=17.4 → stikjit；16.7-17.3.1 → sidestore）。
         // debug.jit26_script_disable（用户点名）：关闭后 stikjit:// 请求不再
         // 附带 UniversalJIT26.js 的 script-data（纯调试器附加式 JIT）。
+        // ★ Task294：选项新增 builtin（启动器自带）——iOS 26+
+        // AppExtensionProcess 独立进程轨（PocketJ 上游同构）；auto 在非巨魔
+        // 环境下内置轨可用时优先（失败显式弹窗征求同意再降级，不静默切
+        // 后台深链）。显式 builtin 失败同口径弹窗，绝不擅自跳第三方工具。
         NSString *ame134_enabler = getPrefObject(@"debug.jit_enabler");
         if (![ame134_enabler isKindOfClass:NSString.class] || ame134_enabler.length == 0) {
             ame134_enabler = @"auto";
         }
         BOOL ame134_noScript = getPrefBool(@"debug.jit26_script_disable");
         NSString *ame134_bundleId = NSBundle.mainBundle.bundleIdentifier;
-        NSLog(@"[JIT] [RightPanel] Task134 enabler=%@ noScript=%d", ame134_enabler, ame134_noScript);
+        BOOL ame294_builtinAvail = [StikDebugViewController ame294_builtinTrackAvailable];
+        BOOL ame134_isTrollStore = getEntitlementValue(@"jb.pmap_cs.custom_trust") && isTrollStoreInstall();
+        BOOL ame294_useBuiltin = NO;
+        if ([ame134_enabler isEqualToString:@"builtin"]) {
+            ame294_useBuiltin = YES;
+        } else if ([ame134_enabler isEqualToString:@"auto"] && !ame134_isTrollStore) {
+            ame294_useBuiltin = ame294_builtinAvail;
+        }
+        NSLog(@"[JIT] [RightPanel] Task134 enabler=%@ noScript=%d builtin=%d (avail=%d ts=%d)",
+              ame134_enabler, ame134_noScript, ame294_useBuiltin, ame294_builtinAvail, ame134_isTrollStore);
 
-        if ([ame134_enabler isEqualToString:@"manual"]) {
+        // Task294：builtin 失败后的显式降级弹窗（专用 window 双选：交给
+        // StikDebug / 取消）。LocalDevVPN 超时类错误附开启提示（PocketJ 同款）。
+        void (^ame294_fireStikjitFallback)(void) = ^{
+            if (@available(iOS 17.4, *)) {
+                NSString *scriptPart = @"";
+                if (!ame134_noScript) {
+                    NSData *script = [NSData dataWithContentsOfFile:
+                        [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"UniversalJIT26.js"]];
+                    if (script) {
+                        scriptPart = [@"&script-data=" stringByAppendingString:[script base64EncodedStringWithOptions:0]];
+                    }
+                }
+                NSURL *fallbackURL = [NSURL URLWithString:[NSString stringWithFormat:
+                    @"stikjit://enable-jit?bundle-id=%@&pid=%d%@", ame134_bundleId, getpid(), scriptPart]];
+                [UIApplication.sharedApplication openURL:fallbackURL options:@{} completionHandler:^(BOOL ok) {
+                    NSLog(@"[JIT] [RightPanel] Task294 fallback openURL stikjit:// -> %d", ok);
+                }];
+            }
+        };
+        void (^ame294_builtinFailure)(NSString *) = ^(NSString *failureMessage) {
+            NSString *detail = failureMessage.length ? failureMessage
+                : localize(@"ame293.jit.builtin_fail_title", nil);
+            if ([detail localizedCaseInsensitiveContainsString:@"Timed out connecting"] ||
+                [detail localizedCaseInsensitiveContainsString:@"not ready for JIT"]) {
+                detail = [detail stringByAppendingFormat:@"\n\n%@", localize(@"ame294.jit.localdevvpn_hint", nil)];
+            }
+            ame294_showJITActionDialog(localize(@"ame293.jit.builtin_fail_title", nil), detail,
+                localize(@"ame293.jit.fallback_ok", nil), ame294_fireStikjitFallback);
+        };
+
+        if (ame294_useBuiltin) {
+            [StikDebugViewController ame294_enableBuiltinJITWithCompletion:^(BOOL success, NSString *message) {
+                if (success || isJITEnabled(YES)) {
+                    NSLog(@"[JIT] [RightPanel] Task294 builtin track OK -- wait loop will proceed");
+                    return;
+                }
+                NSLog(@"[JIT] [RightPanel] Task294 builtin track failed: %@", message);
+                ame294_builtinFailure(message);
+            }];
+            // 不 return——继续走下方 isJITEnabled 等待环（内置轨成功即启动）
+        } else if ([ame134_enabler isEqualToString:@"manual"]) {
             // 手动：不跳任何工具，等用户自己附加调试器（显示等待弹窗）
-        } else if ([ame134_enabler isEqualToString:@"trollstore"]) {
+        } else if ([ame134_enabler isEqualToString:@"trollstore"]
+                   || ([ame134_enabler isEqualToString:@"auto"] && ame134_isTrollStore)) {
             [self ame185_openJITEnablerURL:[NSURL URLWithString:
                 [NSString stringWithFormat:@"apple-magnifier://enable-jit?bundle-id=%@", ame134_bundleId]]
                 toolLabel:@"apple-magnifier://"];
@@ -1867,7 +1926,7 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
                 [NSString stringWithFormat:@"http://[fd00::]:9172/launch_app/%@", ame134_bundleId]]
                 toolLabel:@"jitstreamer"];
         } else if (@available(iOS 17.4, *)) {
-            // auto / stikjit 共用 stikjit://（显式选择时无视系统版本）
+            // auto（内置轨不可用/巨魔） / stikjit 共用 stikjit://（显式选择时无视系统版本）
             NSString *scriptDataString = @"";
             if (!ame134_noScript &&
                 ([ame134_enabler isEqualToString:@"stikjit"] ||
@@ -1980,8 +2039,11 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
                 // 服务 brk #0x69 —— 旧代码直接跑 handler 即用户实测的
                 // "二级菜单启动卡 JIT 等待 120s 后闪退"。与入口
                 // CS_DEBUGGED 分支同款存活性复查：需要重挂就重挂。
+                // ★ Task294：本会话内置轨已完成 universal 祝福（祝福完即脱）
+                // 则跳过重挂——祝福页/启动期内置轨成功后不再拖用户去 StikDebug。
                 if (DeviceHasJITFlags(JIT_FLAG_FORCE_MIRRORED | JIT_FLAG_HAS_TXM) &&
                     !JIT26IsLikelyDebuggerKeepAttached() &&
+                    ![StikDebugViewController ame294_scriptCompletedThisSession] &&
                     !getPrefBool(@"debug.jit26_script_disable")) {
                     NSLog(@"[JIT] [RightPanel] Task172 wait satisfied but JIT26 debugger is gone — re-attaching before launch");
                     [self ame172_reattachJIT26ThenLaunch:handler];

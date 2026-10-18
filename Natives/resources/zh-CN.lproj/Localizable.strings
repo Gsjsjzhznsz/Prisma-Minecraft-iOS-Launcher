@@ -559,6 +559,7 @@
 "preference.touchcontroller.about.message" = "TouchController 是一个为 Minecraft Java 版添加触摸控制的模组。本启动器支持两种通信模式：\n\n• UDP 协议：基于网络的通信\n• 静态库：高性能本地通信\n\n访问 GitHub 获取更多信息。";
 // Task 134: JIT enabler pick + iOS 26 script toggle + TouchController hide-controls
 "preference.debug.jit_enabler.auto" = "自动（推荐）";
+"preference.debug.jit_enabler.builtin" = "启动器自带（内置 JIT 工具）";
 "preference.debug.jit_enabler.stikjit" = "StikDebug / StikJIT";
 "preference.debug.jit_enabler.sidestore" = "SideStore";
 "preference.debug.jit_enabler.stosdebug" = "StosDebug";
@@ -566,7 +567,7 @@
 "preference.debug.jit_enabler.trollstore" = "TrollStore";
 "preference.debug.jit_enabler.manual" = "手动（自行附加调试器）";
 "preference.title.jit_enabler" = "JIT 开启工具";
-"preference.detail.jit_enabler" = "选择用于开启 JIT 的工具。没有安装 StikDebug 的用户请改选 SideStore、StosDebug、JitStreamer-EB 或 TrollStore，否则点击启动可能没有任何反应。默认自动：按设备状态依次尝试 TrollStore、StikDebug、SideStore。";
+"preference.detail.jit_enabler" = "选择用于开启 JIT 的应用。启动器自带使用启动器内置的 JIT 助手（需 iOS 26+）。若未安装 StikDebug，请改选 SideStore、StosDebug、JitStreamer-EB 或 TrollStore，否则点启动没有反应。自动（默认）在内置工具可用时优先使用，否则按设备依次尝试 TrollStore、StikDebug、SideStore。";
 "preference.title.jit26_script_disable" = "禁用 iOS 26 JS 脚本 JIT";
 "preference.detail.jit26_script_disable" = "启动游戏时不再向 JIT 工具发送 UniversalJIT26.js 脚本（纯调试器附加式 JIT）。仅当你的工具不支持脚本、或脚本导致异常时才需要开启；依赖系统级内存映射的设备（TXM）开启后可能无法启动游戏。";
 "preference.touchcontroller.hide_controls" = "屏蔽启动器控件（保留模组按钮）";
@@ -3299,10 +3300,11 @@
 "ame291.jit.on" = "已开启";
 "ame291.jit.off" = "未开启";
 "ame291.jit.support_state" = "系统支持状态";
-"ame291.jit.support_ok" = "系统支持 StikDebug 隧道";
+"ame291.jit.support_ok" = "系统支持内置 JIT 隧道（LocalDevVPN）";
 "ame291.jit.support_bad" = "需要 iOS 17.4 或更高版本";
 "ame291.jit.prep_header" = "连接准备";
-"ame291.jit.prep_footer" = "完成配对文件和 LocalDevVPN 两项准备后，点击下方按钮交给 StikDebug 开启 JIT。";
+"ame291.jit.prep_footer" = "完成配对文件和 LocalDevVPN 两项准备后，点击下方按钮由启动器内置工具开启 JIT（无需跳转其他应用）。";
+"ame294.jit.localdevvpn_hint" = "如反复失败，请确认 LocalDevVPN 已开启并处于连接状态后重试。";
 "ame291.jit.import_pairing" = "① 导入配对文件";
 "ame291.jit.imported" = "已导入";
 "ame291.jit.not_imported" = "未导入";

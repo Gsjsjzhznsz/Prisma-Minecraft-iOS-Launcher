@@ -562,6 +562,7 @@
 "preference.touchcontroller.about.message" = "TouchController is a Minecraft mod that adds touch controls to Java Edition. This launcher supports two communication modes:\n\n• UDP Protocol: Network-based communication\n• Static Library: High-performance local communication\n\nVisit GitHub for more information.";
 // Task 134: JIT enabler pick + iOS 26 script toggle + TouchController hide-controls
 "preference.debug.jit_enabler.auto" = "Auto (recommended)";
+"preference.debug.jit_enabler.builtin" = "Built-in (launcher JIT tool)";
 "preference.debug.jit_enabler.stikjit" = "StikDebug / StikJIT";
 "preference.debug.jit_enabler.sidestore" = "SideStore";
 "preference.debug.jit_enabler.stosdebug" = "StosDebug";
@@ -569,7 +570,7 @@
 "preference.debug.jit_enabler.trollstore" = "TrollStore";
 "preference.debug.jit_enabler.manual" = "Manual (attach a debugger yourself)";
 "preference.title.jit_enabler" = "JIT Enabler";
-"preference.detail.jit_enabler" = "Choose the app used to enable JIT. If you don't have StikDebug installed, pick SideStore, StosDebug, JitStreamer-EB or TrollStore instead, otherwise tapping Launch does nothing. Auto (default) tries TrollStore, then StikDebug, then SideStore depending on your device.";
+"preference.detail.jit_enabler" = "Choose the app used to enable JIT. Built-in uses the launcher's own JIT helper (iOS 26+). If you don't have StikDebug installed, pick SideStore, StosDebug, JitStreamer-EB or TrollStore instead, otherwise tapping Launch does nothing. Auto (default) prefers the built-in helper when available, then tries TrollStore, StikDebug, then SideStore depending on your device.";
 "preference.title.jit26_script_disable" = "Disable iOS 26 JS-Script JIT";
 "preference.detail.jit26_script_disable" = "Stop sending UniversalJIT26.js to the JIT tool when launching the game (plain debugger-attach JIT). Only turn this on if your tool doesn't support scripts or the script misbehaves; devices that need system-level memory mapping (TXM) may fail to launch the game with this enabled.";
 "preference.touchcontroller.hide_controls" = "Hide Launcher Controls (keep mod buttons)";
@@ -3304,10 +3305,11 @@
 "ame291.jit.on" = "Enabled";
 "ame291.jit.off" = "Not enabled";
 "ame291.jit.support_state" = "System Support";
-"ame291.jit.support_ok" = "System supports the StikDebug tunnel";
+"ame291.jit.support_ok" = "System supports the built-in JIT tunnel (LocalDevVPN)";
 "ame291.jit.support_bad" = "Requires iOS 17.4 or later";
 "ame291.jit.prep_header" = "Connection Prep";
-"ame291.jit.prep_footer" = "After importing the pairing file and connecting LocalDevVPN, tap the button below to hand over to StikDebug for JIT.";
+"ame291.jit.prep_footer" = "After importing the pairing file and connecting LocalDevVPN, tap the button below to enable JIT with the launcher's built-in tool (no app switching needed).";
+"ame294.jit.localdevvpn_hint" = "If this keeps failing, make sure LocalDevVPN is running and connected, then retry.";
 "ame291.jit.import_pairing" = "1. Import Pairing File";
 "ame291.jit.imported" = "Imported";
 "ame291.jit.not_imported" = "Not imported";

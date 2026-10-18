@@ -1940,6 +1940,7 @@ if ([section isEqualToString:@"general"]) {
                 @"enableCondition": whenNotInGame,
                 @"pickKeys": @[
                     @"auto",
+                    @"builtin",
                     @"stikjit",
                     @"sidestore",
                     @"stosdebug",
@@ -1949,6 +1950,7 @@ if ([section isEqualToString:@"general"]) {
                 ],
                 @"pickList": @[
                     localize(@"preference.debug.jit_enabler.auto", nil),
+                    localize(@"preference.debug.jit_enabler.builtin", nil),
                     localize(@"preference.debug.jit_enabler.stikjit", nil),
                     localize(@"preference.debug.jit_enabler.sidestore", nil),
                     localize(@"preference.debug.jit_enabler.stosdebug", nil),

@@ -209,7 +209,7 @@ print("== J. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"J-{lang} 唯一键 3155（Task293 重锚实测：Task291 锚 3145 + ame293 JIT 内置轨 8 键 + ame291_builtin_jit 门禁补齐 2 键 = 3155）", len(keys) == 3155, f"got {len(keys)}")
+    check(f"J-{lang} 唯一键 3157（Task294 重锚实测：Task293 锚 3155 + builtin 选项 1 键 + localdevvpn_hint 1 键 = 3157）", len(keys) == 3157, f"got {len(keys)}")
 check("J-公告 6 条（Task255 清单 13 精简：pin 2 + 版本史 3 + 最新总攻 1）",
       len(ann) == 6
       and ann[0]["id"] == "server-recommend-2026-09-24"
@@ -229,8 +229,8 @@ check("K1 身份已迁移（Task259 com.prisma-devs.prisma——262 重锚）",
 check("K2 REVISION 保持 22 + Task219 附录在位（无 identity 变更不 bump）",
       "#define REVISION 22" in vh and "Task 219, no bump" in vh)
 mk = open("Makefile", "rb").read()
-check("K3 Makefile TAB 基线 713（Task293 重锚实测：Task274 锚 654 + jit_helper 轨 + payload 嵌入块 TAB 行实测 713）",
-      sum(1 for line in mk.split(b"\n") if line.startswith(b"\t")) == 713)
+check("K3 Makefile TAB 基线 724（Task294 重锚实测：strip 步新增 + TouchController .a 块移除后 TAB 行实测 724）",
+      sum(1 for line in mk.split(b"\n") if line.startswith(b"\t")) == 724)
 yml = open(".github/workflows/development.yml", "rb").read()
 check("K4 工作流 CRLF 完整", yml.count(b"\r\n") == yml.count(b"\n"))
 

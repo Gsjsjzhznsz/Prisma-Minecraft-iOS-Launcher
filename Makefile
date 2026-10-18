@@ -290,7 +290,7 @@ jre: native
 	$(call METHOD_JAVA_UNPACK,25,'https://assets.angelauramc.dev/openjdk/ios-arm64/jre25-ios-aarch64.zip'); \
 	if [ -f "$(ls jre*.tar.xz)" ]; then rm $(SOURCEDIR)/depends/jre*.tar.xz; fi; \
 	cd $(SOURCEDIR); \
-	rm -rf $(SOURCEDIR)/depends/java-{8,17,21,25}-openjdk/{ASSEMBLY_EXCEPTION,bin,include,jre,legal,LICENSE,man,THIRD_PARTY_README,lib/{ct.sym,jspawnhelper,libjsig.dylib,src.zip,tools.jar}}; \
+	rm -rf $(SOURCEDIR)/depends/java-{8,17,21,25}-openjdk/{ASSEMBLY_EXCEPTION,bin,include,jre,legal,LICENSE,man,THIRD_PARTY_README,lib/{ct.sym,jspawnhelper,libjsig.dylib,src.zip,tools.jar},jmods}; \
 	# Task 74: FFM upcall stub mirror translation fix. UpcallStub::create in the
 	# bundled JRE 21/25 forgets mirrored_find_rw() after CodeCache::allocate(),
 	# so the first CodeBlob header store writes the RX-only debugger JIT region
@@ -878,6 +878,26 @@ payload: native dep_mg java jre assets dep_shader_shims dep_openal_shim dep_mith
 	if [ -f "$(WORKINGDIR)/AngelAuraAmethyst.app/Frameworks/libspirv-cross-c-shared.0.dylib" ] && [ ! -f "$(WORKINGDIR)/AngelAuraAmethyst.app/Frameworks/libspirv-cross.dylib" ]; then \
 		ln -sf libspirv-cross-c-shared.0.dylib $(WORKINGDIR)/AngelAuraAmethyst.app/Frameworks/libspirv-cross.dylib; \
 	fi
+	# ★ Task294（IPA 瘦身第二轮）：发行 dylib 剥本地符号（strip -x）。
+	# 实锤：libMobileGL.dylib __TEXT 24.5MB / __LINKEDIT 60.6MB（上游同步
+	# 未 post-strip，本地符号+strtab 占 70%），OSMesa/shaderc/openal 同病。
+	# strip -x 仅删非全局符号（导出符号/ObjC 类元数据全保留），运行时零
+	# 行为差异；预期 -50MB 级。无 strip 环境跳过不阻塞；单文件失败保持原样。
+	if command -v strip >/dev/null 2>&1; then \
+		strip_total_before=0; strip_total_after=0; \
+		for f in $(WORKINGDIR)/AngelAuraAmethyst.app/Frameworks/*.dylib \
+			$(WORKINGDIR)/AngelAuraAmethyst.app/Frameworks/*.framework/*; do \
+			if [ -f "$$f" ] && file "$$f" 2>/dev/null | grep -q 'Mach-O'; then \
+				sb=$$(stat -f%z "$$f" 2>/dev/null || stat -c%s "$$f" 2>/dev/null); \
+				strip -x "$$f" 2>/dev/null || true; \
+				sa=$$(stat -f%z "$$f" 2>/dev/null || stat -c%s "$$f" 2>/dev/null); \
+				strip_total_before=$$((strip_total_before + sb)); strip_total_after=$$((strip_total_after + sa)); \
+			fi; \
+		done; \
+		echo "[Prisma v$(VERSION)] payload - Task294 strip -x done (Frameworks $$((strip_total_before/1024))KB -> $$((strip_total_after/1024))KB)"; \
+	else \
+		echo '[Prisma v$(VERSION)] payload - strip not found, Task294 strip skipped'; \
+	fi
 		cp -R $(SOURCEDIR)/JavaApp/libs/others/* $(WORKINGDIR)/AngelAuraAmethyst.app/libs/ || exit 1
 	cp $(SOURCEDIR)/JavaApp/build/launcher.jar $(SOURCEDIR)/JavaApp/build/patchjna_agent.jar $(SOURCEDIR)/JavaApp/build/patchsvc.jar $(SOURCEDIR)/JavaApp/build/mojang-stubs.jar $(SOURCEDIR)/JavaApp/build/showdown_agent.jar $(WORKINGDIR)/AngelAuraAmethyst.app/libs/ || exit 1
 	# LWJGL 以双版本 jar 发布，由启动器按 MC 版本在运行时选择其一（26.x+ -> 341，其余 -> 333）。
@@ -889,18 +909,9 @@ payload: native dep_mg java jre assets dep_shader_shims dep_openal_shim dep_mith
 	cp $(SOURCEDIR)/JavaApp/build/lwjgl-341.jar $(WORKINGDIR)/AngelAuraAmethyst.app/libs/lwjgl-341/lwjgl.jar || exit 1
 	cp -R $(SOURCEDIR)/JavaApp/libs/caciocavallo/* $(WORKINGDIR)/AngelAuraAmethyst.app/libs_caciocavallo || exit 1
 	cp -R $(SOURCEDIR)/JavaApp/libs/caciocavallo17/* $(WORKINGDIR)/AngelAuraAmethyst.app/libs_caciocavallo17 || exit 1
-	# Copy TouchController static library if available
-	if [ -f "$(SOURCEDIR)/TouchController/libproxy_server_ios.a" ]; then \
-		mkdir -p $(WORKINGDIR)/AngelAuraAmethyst.app/Frameworks; \
-		cp $(SOURCEDIR)/TouchController/libproxy_server_ios.a $(WORKINGDIR)/AngelAuraAmethyst.app/Frameworks/ || exit 1; \
-		echo '[Amethyst v$(VERSION)] Copied TouchController device library'; \
-	elif [ -f "$(SOURCEDIR)/TouchController/libproxy_server_ios_simulator.a" ]; then \
-		mkdir -p $(WORKINGDIR)/AngelAuraAmethyst.app/Frameworks; \
-		cp $(SOURCEDIR)/TouchController/libproxy_server_ios_simulator.a $(WORKINGDIR)/AngelAuraAmethyst.app/Frameworks/ || exit 1; \
-		echo '[Amethyst v$(VERSION)] Copied TouchController simulator library'; \
-	else \
-		echo '[Amethyst v$(VERSION)] TouchController library not found, skipping'; \
-	fi
+	# Task294（IPA 瘦身第二轮）：移除 TouchController 静态库拷贝——.a 是
+	# 静态归档，运行时不可 dlopen/加载，拷进 .app/Frameworks 纯属上游遗留
+	# 死重（TouchController 源码已随 native 目标编译进主二进制）。
 	$(call METHOD_DIRCHECK,$(OUTPUTDIR)/Payload)
 	cp -R $(WORKINGDIR)/AngelAuraAmethyst.app $(OUTPUTDIR)/Payload
 	if [ '$(SLIMMED_ONLY)' != '1' ]; then \

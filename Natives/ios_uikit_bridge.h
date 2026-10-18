@@ -14,6 +14,11 @@ void ame173_showJvmUsedRestartDialog(NSString *profileName);
 // Task187：keychain 凭据丢失一键修复弹窗——删除账号（.json + keychain 残留）
 // 并拉起账号管理页登录入口（登录成功后启动链自动接续）。
 void ame187_showAccountRepairDialog(NSString *username, NSString *accountId, NSString *xuid);
+// Task294：内置 JIT 失败双选弹窗（专用 level-1000 window 承载，JIT 等待环
+// 存续期间也可弹出）。fallbackTitle 为空则只显示 OK（同 showDialog）；
+// 否则展示「fallbackTitle / Cancel」双 action，点 fallback 执行 fallbackBlock。
+void ame294_showJITActionDialog(NSString *title, NSString *message,
+                                NSString *fallbackTitle, void (^fallbackBlock)(void));
 jstring UIKit_accessClipboard(JNIEnv* env, jint action, jstring copySrc);
 void UIKit_launchMinecraftSurfaceVC(UIWindow *window, NSDictionary *metadata);
 void UIKit_returnToSplitView();

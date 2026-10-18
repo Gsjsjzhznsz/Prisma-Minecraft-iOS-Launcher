@@ -186,6 +186,49 @@ void ame173_showJvmUsedRestartDialog(NSString *profileName) {
     });
 }
 
+// Task294：内置 JIT 失败双选弹窗（声明见 ios_uikit_bridge.h）。专用
+// level-1000 window 承载——JIT 等待环的系统弹窗（Task281 玻璃镜像）在场时
+// 也能弹出；降级 action 交给 caller（如 fire stikjit:// 深链），本函数不硬
+// 编码任何工具语义。Cancel/降级两条 handler 均按 Task267 家法 weak 断环。
+void ame294_showJITActionDialog(NSString *title, NSString *message,
+                                NSString *fallbackTitle, void (^fallbackBlock)(void)) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:title
+            message:message preferredStyle:UIAlertControllerStyleAlert];
+        UIWindow *previousKeyWindow = UIWindow.mainWindow;
+        __weak UIAlertController *ame267_weakAlert = alert;
+        void (^dismissWindow)(void) = ^{
+            UIWindow *w = objc_getAssociatedObject(ame267_weakAlert, @selector(alertWindow));
+            if (w) {
+                w.hidden = YES;
+                if (previousKeyWindow && previousKeyWindow != w) {
+                    [previousKeyWindow makeKeyAndVisible];
+                }
+            }
+        };
+        if (fallbackTitle.length > 0 && fallbackBlock) {
+            [alert addAction:[UIAlertAction actionWithTitle:fallbackTitle
+                style:UIAlertActionStyleDefault
+                handler:^(UIAlertAction *action) {
+                    dismissWindow();
+                    fallbackBlock();
+                }]];
+        }
+        [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+            style:UIAlertActionStyleCancel
+            handler:^(UIAlertAction *action) {
+                dismissWindow();
+            }]];
+        UIWindow *alertWindow = [[UIWindow alloc] initWithWindowScene:UIWindow.mainWindow.windowScene];
+        alertWindow.frame = UIScreen.mainScreen.bounds;
+        alertWindow.rootViewController = [UIViewController new];
+        alertWindow.windowLevel = 1000;
+        [alertWindow makeKeyAndVisible];
+        objc_setAssociatedObject(alert, @selector(alertWindow), alertWindow, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        [alertWindow.rootViewController presentViewController:alert animated:YES completion:nil];
+    });
+}
+
 JNIEXPORT void JNICALL Java_net_kdt_pojavlaunch_uikit_UIKit_showError(JNIEnv* env, jclass clazz, jstring title, jstring message, jboolean exitIfOk) {
     const char *title_c = (*env)->GetStringUTFChars(env, title, 0);
     const char *message_c = (*env)->GetStringUTFChars(env, message, 0);

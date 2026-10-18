@@ -28,7 +28,12 @@ public final class PrismaJITCoordinator: NSObject {
             do {
                 let monitor = try await AppExtensionPoint.Monitor(
                     appExtensionPoint: .prismaJITHelper)
-                guard let identity = monitor.identities.first else {
+                // Task294 取证：装机“无法开启 JIT”分层定位（discovery 层）。
+                // identities 为空最常见于签名工具未重签 PlugIns 内 appex。
+                let identities = monitor.identities
+                let firstID = identities.first?.bundleIdentifier ?? "none"
+                NSLog("[JIT] Task294 monitor: \(identities.count) helper identity(ies) discovered, first=\(firstID)")
+                guard let identity = identities.first else {
                     throw NSError(domain: "PrismaJIT", code: 1,
                                   userInfo: [NSLocalizedDescriptionKey:
                                     "Prisma JIT Helper was not found in this installation."])
@@ -39,6 +44,7 @@ public final class PrismaJITCoordinator: NSObject {
                     onInterruption: { activeSession = nil }))
                 let xpcSession = try process.makeXPCSession()
                 try xpcSession.activate()
+                NSLog("[JIT] Task294 helper process launched + XPC activated")
                 activeSession = PrismaJITSession(process: process, session: xpcSession)
                 let request = PrismaJITMessage(targetPID: targetPID,
                                                pairingData: pairingData)
@@ -47,16 +53,21 @@ public final class PrismaJITCoordinator: NSObject {
                     activeSession = nil
                     switch result {
                     case .success(let response):
+                        NSLog("[JIT] Task294 XPC response: success=\(response.success) msg=\(response.message)")
                         DispatchQueue.main.async {
                             completion(response.success, response.message)
                         }
                     case .failure(let error):
+                        // Task294 取证：XPC 层失败（Helper 中途退出/编码失败等）
+                        NSLog("[JIT] Task294 XPC send failed: \(error)")
                         DispatchQueue.main.async {
                             completion(false, error.localizedDescription)
                         }
                     }
                 }
             } catch {
+                // Task294 取证：discovery/spawn/activate 层失败进 latestlog
+                NSLog("[JIT] Task294 coordinator error: \(error)")
                 activeSession = nil
                 completion(false, error.localizedDescription)
             }
