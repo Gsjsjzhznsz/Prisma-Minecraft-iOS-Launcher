@@ -3338,3 +3338,13 @@
 "ame291.jit.handing" = "正在交給 StikDebug…";
 "ame291.jit.handed_ok" = "已交給 StikDebug。請在開啟的介面確認開啟 JIT，完成後返回啟動器。";
 "ame291.jit.handed_fail" = "未找到可用的獨立 StikDebug。同一 iOS 程序不能安全地附加自己，否則會永久卡死。";
+"ame293.jit.builtin_enabling" = "正在透過內建 Helper 開啟 JIT…";
+"ame293.jit.builtin_ok" = "內建 JIT 已開啟";
+"ame293.jit.builtin_fail_title" = "內建 JIT 開啟失敗";
+"ame293.jit.builtin_missing" = "內建 JIT Helper 未就緒。內建 JIT 需要 iOS 26 及以上系統，且 Helper 已隨本應用安裝。";
+"ame293.jit.fallback_hint" = "可以重試，或改為交給獨立 StikDebug 應用開啟。";
+"ame293.jit.fallback_ok" = "交給 StikDebug";
+"ame293.jit.gettask_fail_title" = "目前安裝無法開啟 JIT";
+"ame293.jit.gettask_fail" = "目前安裝未攜帶 get-task-allow 權限，除錯器無法為應用授予 JIT。請使用保留 get-task-allow 的簽名方式重裝後再試。";
+"preference.detail.ame291_builtin_jit" = "配對檔案、LocalDevVPN 狀態與內建 JIT 開啟（iOS 26+ Helper 軌）。";
+"preference.title.done.ame291_builtin_jit" = "內建 JIT 管理";

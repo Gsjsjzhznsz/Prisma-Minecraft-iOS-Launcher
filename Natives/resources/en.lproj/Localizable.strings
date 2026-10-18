@@ -3343,3 +3343,13 @@
 "ame291.jit.handing" = "Handing over to StikDebug…";
 "ame291.jit.handed_ok" = "Handed to StikDebug. Confirm JIT in the opened screen, then return to the launcher.";
 "ame291.jit.handed_fail" = "No standalone StikDebug found. An iOS process cannot safely attach to itself — that would deadlock permanently.";
+"ame293.jit.builtin_enabling" = "Enabling JIT via the built-in helper…";
+"ame293.jit.builtin_ok" = "Built-in JIT enabled";
+"ame293.jit.builtin_fail_title" = "Built-in JIT failed";
+"ame293.jit.builtin_missing" = "Built-in JIT helper is not ready. Built-in JIT requires iOS 26 or later with the helper installed in this app."; 
+"ame293.jit.fallback_hint" = "You can retry, or hand over to the standalone StikDebug app instead."; 
+"ame293.jit.fallback_ok" = "Hand over to StikDebug";
+"ame293.jit.gettask_fail_title" = "JIT unavailable for this install";
+"ame293.jit.gettask_fail" = "This installation does not carry the get-task-allow entitlement, so the debugger cannot grant JIT to this app. Reinstall with a signing method that keeps get-task-allow."; 
+"preference.detail.ame291_builtin_jit" = "Pairing file, LocalDevVPN status and built-in JIT enablement (iOS 26+ helper track).";
+"preference.title.done.ame291_builtin_jit" = "Built-in JIT Manager";

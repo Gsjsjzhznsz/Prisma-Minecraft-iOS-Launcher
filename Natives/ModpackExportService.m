@@ -1050,6 +1050,45 @@ static NSString *ame222_stripBuildHash(NSString *version) {
         return @{@"loader": @"neoforge", @"loaderVersion": loaderVersion, @"minecraft": ame222_stripBuildHash(mcVersion), @"minecraftRaw": mcVersion};
     }
 
+    // ★ Task293：UI 路径 NeoForge 实例 ID（"NeoForge-{loader}"，NeoForgeDirectInstaller
+    //   写入的形态，如 "NeoForge-47.1.0"、"NeoForge-21.5.75"、"NeoForge-26.1.2.122"）。
+    //   病历（装机实测"切换源会出现缺失，要重置筛选正常"）：旧代码落入纯版本分支，
+    //   minecraft 原样返回 "NeoForge-26.1.2.122" → autoApplyProfileFiltersIfNeeded
+    //   把整串当 MC 版本写进筛选 → Modrinth facets versions=["NeoForge-26.1.2.122"]
+    //   / CF gameVersion 同串 → 0 结果（DLForensics 实锤：resourcepack 查询
+    //   version="NeoForge-26.1.2.122" -> 0 items）。重置筛选（清空版本）才恢复。
+    //   解析规则与 NeoForgeDirectInstaller.inferJavaMajorVersionFromVersionId 的
+    //   loader→MC 反推表同源：
+    //     47.x          → MC 1.20.1（legacy forge artifactId）
+    //     20.M.K        → MC 1.20.M（20.2-20.6 系列）
+    //     21.x-25.x     → MC 1.x.y（"21.5.75" → "1.21.5"）
+    //     26.x 及以上   → MC 年份制，取前 3 段（"26.1.2.122" → "26.1.2"）
+    //     其余/解析失败 → 保守回退 stripBuildHash(rest)（与旧行为一致）
+    NSRange neoforgeUIRange = [versionId rangeOfString:@"neoforge-"
+                                               options:NSCaseInsensitiveSearch];
+    if (neoforgeUIRange.location == 0) {
+        NSString *rest = [versionId substringFromIndex:neoforgeUIRange.length];
+        NSString *mcVersion = nil;
+        NSArray *buildParts = [rest componentsSeparatedByString:@"."];
+        NSInteger buildMajor = (buildParts.count > 0) ? [buildParts[0] integerValue] : 0;
+        NSInteger buildMinor = (buildParts.count > 1) ? [buildParts[1] integerValue] : 0;
+        if (buildMajor >= 26 && buildParts.count >= 3) {
+            // 年份制（MC 26.x+）：loader 版本 = {MC 各段}.{build}，末段恒为
+            // NeoForge build 号，MC 版本取"除末段外全部"（"26.1.2.122"→"26.1.2"，
+            // "26.2.5"→"26.2"）
+            mcVersion = [[buildParts subarrayWithRange:NSMakeRange(0, buildParts.count - 1)]
+                         componentsJoinedByString:@"."];
+        } else if (buildMajor == 47) {
+            mcVersion = @"1.20.1"; // legacy forge artifactId 固定映射
+        } else if (buildMajor == 20 && buildParts.count >= 2 && buildMinor >= 2 && buildMinor <= 6) {
+            mcVersion = [NSString stringWithFormat:@"1.20.%ld", (long)buildMinor];
+        } else if (buildMajor >= 21 && buildMajor <= 25 && buildParts.count >= 2) {
+            mcVersion = [NSString stringWithFormat:@"1.%ld.%ld", (long)buildMajor, (long)buildMinor];
+        }
+        if (mcVersion.length == 0) mcVersion = ame222_stripBuildHash(rest);
+        return @{@"loader": @"neoforge", @"loaderVersion": rest, @"minecraft": mcVersion, @"minecraftRaw": versionId};
+    }
+
     // 纯 mc 版本（无 loader）★ Task222：尾部构建哈希剥离（"26.2-db6fa7a3" -> "26.2"）
     return @{@"minecraft": ame222_stripBuildHash(versionId), @"minecraftRaw": versionId};
 }

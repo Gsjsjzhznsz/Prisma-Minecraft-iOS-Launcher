@@ -498,6 +498,11 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
 // return 拦截，或一个分类的旧响应把另一个分类的查询状态覆盖。参照 ZL2 按分类隔离状态。
 @property (nonatomic, assign) BOOL isLoadingMoreMods;
 @property (nonatomic, assign) BOOL isLoadingMoreShaders;
+// ★ Task293：请求代际号——reloadCurrentList 与各 load 入口自增；回包时代际
+//   不匹配即整包丢弃。修复"切换源会出现缺失"的双根因：①旧响应占着
+//   isLoadingMore 位令新源首翻页被整段跳过（列表清空后永不加载）；②迟到
+//   旧响应跨源/跨筛选写入新列表（写错内容+双 reload 竞态）
+@property (nonatomic, assign) NSInteger ame293_listEpoch;
 @property (nonatomic, assign) BOOL hasMoreMods;
 @property (nonatomic, assign) BOOL hasMoreShaders;
 @property (nonatomic, strong) NSString *modSearchQuery;
@@ -2114,6 +2119,7 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
 - (void)ame291_loadModListAggregate {
     if (self.isLoadingMoreMods) return;
     self.isLoadingMoreMods = YES;
+    NSInteger ame293_epoch = ++self.ame293_listEpoch; // Task293：本代快照
     NSString *requestedQuery = self.modSearchQuery ?: @"";
     if (self.currentModOffset == 0) [self.loadingIndicator startAnimating];
 
@@ -2133,6 +2139,9 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
             strongSelf.isLoadingMoreMods = NO;
             return;
         }
+        // Task293：代际不匹配 = 源切换/重载后的迟到旧响应，整包丢弃
+        // （不动新代际的 isLoading 位，新代际自持状态）
+        if (ame293_epoch != strongSelf.ame293_listEpoch) return;
         [strongSelf.loadingIndicator stopAnimating];
         [strongSelf.modTableView.refreshControl endRefreshing];
         strongSelf.isLoadingMoreMods = NO;
@@ -2157,6 +2166,7 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
 - (void)ame291_loadShaderListAggregate {
     if (self.isLoadingMoreShaders) return;
     self.isLoadingMoreShaders = YES;
+    NSInteger ame293_epoch = ++self.ame293_listEpoch; // Task293：本代快照
     NSString *requestedQuery = self.shaderSearchQuery ?: @"";
     if (self.currentShaderOffset == 0) [self.loadingIndicator startAnimating];
 
@@ -2175,6 +2185,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
             strongSelf.isLoadingMoreShaders = NO;
             return;
         }
+        // Task293：代际不匹配 = 迟到旧响应整包丢弃（不动新代际的 isLoading 位）
+        if (ame293_epoch != strongSelf.ame293_listEpoch) return;
         [strongSelf.loadingIndicator stopAnimating];
         [strongSelf.shaderTableView.refreshControl endRefreshing];
         strongSelf.isLoadingMoreShaders = NO;
@@ -2199,6 +2211,7 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
 - (void)ame291_loadModpackListAggregate {
     if (self.isLoadingModpacks) return;
     self.isLoadingModpacks = YES;
+    NSInteger ame293_epoch = ++self.ame293_listEpoch; // Task293：本代快照
     NSString *requestedQuery = self.modpackSearchQuery ?: @"";
     if (self.currentModpackOffset == 0) [self.loadingIndicator startAnimating];
 
@@ -2220,6 +2233,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
             strongSelf.isLoadingModpacks = NO;
             return;
         }
+        // Task293：代际不匹配 = 迟到旧响应整包丢弃（不动新代际的 isLoading 位）
+        if (ame293_epoch != strongSelf.ame293_listEpoch) return;
         [strongSelf.loadingIndicator stopAnimating];
         [strongSelf.modpackTableView.refreshControl endRefreshing];
         strongSelf.isLoadingModpacks = NO;
@@ -2244,6 +2259,7 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
 - (void)ame291_loadResourcepackListAggregate {
     if (self.isLoadingResourcepacks) return;
     self.isLoadingResourcepacks = YES;
+    NSInteger ame293_epoch = ++self.ame293_listEpoch; // Task293：本代快照
     NSString *requestedQuery = self.resourcepackSearchQuery ?: @"";
     if (self.currentResourcepackOffset == 0) [self.loadingIndicator startAnimating];
 
@@ -2262,6 +2278,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
             strongSelf.isLoadingResourcepacks = NO;
             return;
         }
+        // Task293：代际不匹配 = 迟到旧响应整包丢弃（不动新代际的 isLoading 位）
+        if (ame293_epoch != strongSelf.ame293_listEpoch) return;
         [strongSelf.loadingIndicator stopAnimating];
         [strongSelf.resourcepackTableView.refreshControl endRefreshing];
         strongSelf.isLoadingResourcepacks = NO;
@@ -2286,6 +2304,7 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
 - (void)ame291_loadDatapackListAggregate {
     if (self.isLoadingDatapacks) return;
     self.isLoadingDatapacks = YES;
+    NSInteger ame293_epoch = ++self.ame293_listEpoch; // Task293：本代快照
     NSString *requestedQuery = self.datapackSearchQuery ?: @"";
     if (self.currentDatapackOffset == 0) [self.loadingIndicator startAnimating];
 
@@ -2304,6 +2323,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
             strongSelf.isLoadingDatapacks = NO;
             return;
         }
+        // Task293：代际不匹配 = 迟到旧响应整包丢弃（不动新代际的 isLoading 位）
+        if (ame293_epoch != strongSelf.ame293_listEpoch) return;
         [strongSelf.loadingIndicator stopAnimating];
         [strongSelf.datapackTableView.refreshControl endRefreshing];
         strongSelf.isLoadingDatapacks = NO;
@@ -2481,6 +2502,7 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
     if ([self ame291_isAggregateForType:@"mod"]) { [self ame291_loadModListAggregate]; return; }
     if (self.isLoadingMoreMods) return;
     self.isLoadingMoreMods = YES;
+    NSInteger ame293_epoch = ++self.ame293_listEpoch; // Task293：本代快照
 
     // 快照发起时的搜索词：响应返回后若搜索词已变化（用户又搜了新词或切走），
     // 丢弃该旧响应，避免"旧响应覆盖新结果"（问题4 反馈点之一）
@@ -2519,6 +2541,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
                 strongSelf.isLoadingMoreMods = NO;
                 return;
             }
+            // Task293：代际不匹配 = 迟到旧响应整包丢弃（不动新代际的 isLoading 位）
+            if (ame293_epoch != strongSelf.ame293_listEpoch) return;
 
             [strongSelf.loadingIndicator stopAnimating];
             [strongSelf.modTableView.refreshControl endRefreshing];
@@ -2569,6 +2593,7 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
     if ([self ame291_isAggregateForType:@"shader"]) { [self ame291_loadShaderListAggregate]; return; }
     if (self.isLoadingMoreShaders) return;
     self.isLoadingMoreShaders = YES;
+    NSInteger ame293_epoch = ++self.ame293_listEpoch; // Task293：本代快照
 
     // 快照发起时的搜索词：响应返回后若搜索词已变化，丢弃该旧响应（问题4 修复，同 loadModList）
     NSString *requestedQuery = self.shaderSearchQuery ?: @"";
@@ -2601,6 +2626,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
                 strongSelf.isLoadingMoreShaders = NO;
                 return;
             }
+            // Task293：代际不匹配 = 迟到旧响应整包丢弃（不动新代际的 isLoading 位）
+            if (ame293_epoch != strongSelf.ame293_listEpoch) return;
 
             [strongSelf.loadingIndicator stopAnimating];
             [strongSelf.shaderTableView.refreshControl endRefreshing];
@@ -2651,6 +2678,7 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
     if ([self ame291_isAggregateForType:@"modpack"]) { [self ame291_loadModpackListAggregate]; return; }
     if (self.isLoadingModpacks) return;
     self.isLoadingModpacks = YES;
+    NSInteger ame293_epoch = ++self.ame293_listEpoch; // Task293：本代快照
     
     if (self.currentModpackOffset == 0) {
         [self.loadingIndicator startAnimating];
@@ -2686,6 +2714,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
         dispatch_async(dispatch_get_main_queue(), ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
+            // Task293：代际不匹配 = 迟到旧响应整包丢弃（不动新代际的 isLoading 位）
+            if (ame293_epoch != strongSelf.ame293_listEpoch) return;
             [strongSelf.loadingIndicator stopAnimating];
             [strongSelf.modpackTableView.refreshControl endRefreshing];
             strongSelf.isLoadingModpacks = NO;
@@ -2735,6 +2765,7 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
     if ([self ame291_isAggregateForType:@"resourcepack"]) { [self ame291_loadResourcepackListAggregate]; return; }
     if (self.isLoadingResourcepacks) return;
     self.isLoadingResourcepacks = YES;
+    NSInteger ame293_epoch = ++self.ame293_listEpoch; // Task293：本代快照
 
     if (self.currentResourcepackOffset == 0) {
         [self.loadingIndicator startAnimating];
@@ -2765,6 +2796,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
         dispatch_async(dispatch_get_main_queue(), ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
+            // Task293：代际不匹配 = 迟到旧响应整包丢弃（不动新代际的 isLoading 位）
+            if (ame293_epoch != strongSelf.ame293_listEpoch) return;
             [strongSelf.loadingIndicator stopAnimating];
             [strongSelf.resourcepackTableView.refreshControl endRefreshing];
             strongSelf.isLoadingResourcepacks = NO;
@@ -2814,6 +2847,7 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
     if ([self ame291_isAggregateForType:@"datapack"]) { [self ame291_loadDatapackListAggregate]; return; }
     if (self.isLoadingDatapacks) return;
     self.isLoadingDatapacks = YES;
+    NSInteger ame293_epoch = ++self.ame293_listEpoch; // Task293：本代快照
 
     if (self.currentDatapackOffset == 0) {
         [self.loadingIndicator startAnimating];
@@ -2837,6 +2871,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
         dispatch_async(dispatch_get_main_queue(), ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
+            // Task293：代际不匹配 = 迟到旧响应整包丢弃（不动新代际的 isLoading 位）
+            if (ame293_epoch != strongSelf.ame293_listEpoch) return;
             [strongSelf.loadingIndicator stopAnimating];
             [strongSelf.datapackTableView.refreshControl endRefreshing];
             strongSelf.isLoadingDatapacks = NO;
@@ -2884,6 +2920,7 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
 - (void)loadWorldList {
     if (self.isLoadingWorlds) return;
     self.isLoadingWorlds = YES;
+    NSInteger ame293_epoch = ++self.ame293_listEpoch; // Task293：本代快照
 
     if (self.currentWorldOffset == 0) {
         [self.loadingIndicator startAnimating];
@@ -2920,6 +2957,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
         dispatch_async(dispatch_get_main_queue(), ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
+            // Task293：代际不匹配 = 迟到旧响应整包丢弃（不动新代际的 isLoading 位）
+            if (ame293_epoch != strongSelf.ame293_listEpoch) return;
             [strongSelf.loadingIndicator stopAnimating];
             [strongSelf.worldTableView.refreshControl endRefreshing];
             strongSelf.isLoadingWorlds = NO;
@@ -3242,6 +3281,16 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
 }
 
 - (void)reloadCurrentList {
+    // Task293：每次重载即新一代请求——清空在途标记（否则旧响应占位令新源
+    // 首翻页被 if (isLoadingMore) return 整段跳过 = "切换源后列表缺失"），
+    // 迟到旧响应由各 completion 的代际检查整包丢弃。
+    self.ame293_listEpoch++;
+    self.isLoadingMoreMods = NO;
+    self.isLoadingMoreShaders = NO;
+    self.isLoadingModpacks = NO;
+    self.isLoadingResourcepacks = NO;
+    self.isLoadingDatapacks = NO;
+    self.isLoadingWorlds = NO;
     NSInteger tabIndex = self.tabSegment.selectedSegmentIndex;
     // Task212：筛选链路锚点日志（用户报"CF 筛选功能无法使用"，99d8122e
     // 装机日志无下载页活动、无法直接取证）——每次列表重载时打印
@@ -5550,6 +5599,28 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
 
 #pragma mark - UITableView DataSource
 
+/// Task293：「加载更多」行统一构造——分页请求进行中（isLoadingMore*）在该行
+/// 挂转圈动画；空闲时仅显示可点文案（点击行为由 didSelectRowAtIndexPath 保持）。
+/// 修"点击加载更多没有加载动画"：此前该行是纯静态文案，点击后到响应返回
+/// 之间无任何可视反馈，弱网下数秒无响应像死机。
+- (UITableViewCell *)ame293_loadingCellWithBusy:(BOOL)busy {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"LoadingCell"];
+    cell.backgroundColor = [UIColor clearColor];
+    cell.textLabel.text = localize(@"i18n_str_264", nil);
+    cell.textLabel.textAlignment = NSTextAlignmentCenter;
+    cell.textLabel.textColor = [UIColor secondaryLabelColor];
+
+    UIActivityIndicatorView *spinner = (UIActivityIndicatorView *)cell.accessoryView;
+    if (!spinner) {
+        spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
+        spinner.color = [UIColor secondaryLabelColor];
+        spinner.hidesWhenStopped = YES;
+        cell.accessoryView = spinner;
+    }
+    if (busy) [spinner startAnimating]; else [spinner stopAnimating];
+    return cell;
+}
+
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     if (tableView == self.modTableView) {
         return self.modList.count + (self.hasMoreMods ? 1 : 0);
@@ -5569,57 +5640,27 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     if (tableView == self.modTableView && indexPath.row == self.modList.count && self.hasMoreMods) {
-        UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"LoadingCell"];
-        cell.textLabel.text = localize(@"i18n_str_264", nil);
-        cell.textLabel.textAlignment = NSTextAlignmentCenter;
-        cell.textLabel.textColor = [UIColor secondaryLabelColor];
-        cell.backgroundColor = [UIColor clearColor];
-        return cell;
+        return [self ame293_loadingCellWithBusy:self.isLoadingMoreMods];
     }
 
     if (tableView == self.shaderTableView && indexPath.row == self.shaderList.count && self.hasMoreShaders) {
-        UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"LoadingCell"];
-        cell.textLabel.text = localize(@"i18n_str_264", nil);
-        cell.textLabel.textAlignment = NSTextAlignmentCenter;
-        cell.textLabel.textColor = [UIColor secondaryLabelColor];
-        cell.backgroundColor = [UIColor clearColor];
-        return cell;
+        return [self ame293_loadingCellWithBusy:self.isLoadingMoreShaders];
     }
 
     if (tableView == self.modpackTableView && indexPath.row == self.modpackList.count && self.hasMoreModpacks) {
-        UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"LoadingCell"];
-        cell.textLabel.text = localize(@"i18n_str_264", nil);
-        cell.textLabel.textAlignment = NSTextAlignmentCenter;
-        cell.textLabel.textColor = [UIColor secondaryLabelColor];
-        cell.backgroundColor = [UIColor clearColor];
-        return cell;
+        return [self ame293_loadingCellWithBusy:self.isLoadingModpacks];
     }
 
     if (tableView == self.resourcepackTableView && indexPath.row == self.resourcepackList.count && self.hasMoreResourcepacks) {
-        UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"LoadingCell"];
-        cell.textLabel.text = localize(@"i18n_str_264", nil);
-        cell.textLabel.textAlignment = NSTextAlignmentCenter;
-        cell.textLabel.textColor = [UIColor secondaryLabelColor];
-        cell.backgroundColor = [UIColor clearColor];
-        return cell;
+        return [self ame293_loadingCellWithBusy:self.isLoadingResourcepacks];
     }
 
     if (tableView == self.datapackTableView && indexPath.row == self.datapackList.count && self.hasMoreDatapacks) {
-        UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"LoadingCell"];
-        cell.textLabel.text = localize(@"i18n_str_264", nil);
-        cell.textLabel.textAlignment = NSTextAlignmentCenter;
-        cell.textLabel.textColor = [UIColor secondaryLabelColor];
-        cell.backgroundColor = [UIColor clearColor];
-        return cell;
+        return [self ame293_loadingCellWithBusy:self.isLoadingDatapacks];
     }
 
     if (tableView == self.worldTableView && indexPath.row == self.worldList.count && self.hasMoreWorlds) {
-        UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"LoadingCell"];
-        cell.textLabel.text = localize(@"i18n_str_264", nil);
-        cell.textLabel.textAlignment = NSTextAlignmentCenter;
-        cell.textLabel.textColor = [UIColor secondaryLabelColor];
-        cell.backgroundColor = [UIColor clearColor];
-        return cell;
+        return [self ame293_loadingCellWithBusy:self.isLoadingWorlds];
     }
 
     ModernAssetCell *cell;

@@ -793,7 +793,68 @@ dep_sdl3_guard:
 		$(SOURCEDIR)/Natives/resources/Frameworks/libSDL3.dylib || exit 1
 	echo '[Amethyst v$(VERSION)] dep_sdl3_guard - end'
 
-payload: native dep_mg java jre assets dep_shader_shims dep_openal_shim dep_mithril_glshim dep_nggl4es dep_gl4eszl2 dep_virgl dep_angle_freeze dep_sdl3_guard
+# ===== Task293：内置 JIT Helper（StikJIT appex 轨，第二阶段）=====
+# iOS 26 AppExtensionProcess 独立进程轨：①宿主侧协调器 libPrismaJITCoordinator.dylib
+# （min target 26.0，ObjC 侧 @available(26) 才 dlopen 弱接入）；②Helper appex
+# 可执行（StikJIT Swift 全源 + idevice FFI 静态库 force_load，上游 project.yml
+# 同法）。swiftc 直编不依赖 pbxproj；非 Darwin / 无 swiftc / 无 SDK 时跳过
+# （运行时自动回落 stikjit:// 深链轨，构建不阻塞）。产物嵌入在 payload 尾部。
+JIT_SDK       ?= $(shell xcrun --sdk iphoneos --show-sdk-path 2>/dev/null)
+JIT_SWIFTC    ?= $(shell command -v swiftc 2>/dev/null)
+JIT_STAGING    = $(WORKINGDIR)/jit-staging
+JIT_APP_SRC    = $(SOURCEDIR)/Natives/stikjit
+
+.PHONY: jit_helper
+jit_helper:
+	echo '[Prisma v$(VERSION)] jit_helper - start'
+ifneq ($(DETECTPLAT),Darwin)
+	echo '[Prisma v$(VERSION)] jit_helper - non-Darwin host, skipped (deep-link JIT fallback)'
+else ifeq ($(JIT_SWIFTC),)
+	echo '[Prisma v$(VERSION)] jit_helper - swiftc not found, skipped (deep-link JIT fallback)'
+else ifeq ($(JIT_SDK),)
+	echo '[Prisma v$(VERSION)] jit_helper - iphoneos SDK not found, skipped (deep-link JIT fallback)'
+else
+	rm -rf $(JIT_STAGING); mkdir -p $(JIT_STAGING)
+	# ① 宿主侧协调器 dylib（AppExtensionProcess + XPC 会话编排）
+	$(JIT_SWIFTC) -parse-as-library -emit-library -O \
+		-sdk '$(JIT_SDK)' -target arm64-apple-ios26.0 \
+		-framework ExtensionFoundation \
+		-o $(JIT_STAGING)/libPrismaJITCoordinator.dylib \
+		$(JIT_APP_SRC)/integration/Shared/PrismaJITXPC.swift \
+		$(JIT_APP_SRC)/integration/Host/PrismaJITExtensionPoint.swift \
+		$(JIT_APP_SRC)/integration/Host/PrismaJITCoordinator.swift \
+		|| exit 1
+	# ② Helper appex 可执行（StikJIT.enableJIT 全链：RSD 探测/DDI 下载挂载/
+	#    debugserver vAttach/universal 脚本协议；idevice FFI force_load 对齐上游）
+	$(JIT_SWIFTC) -O \
+		-sdk '$(JIT_SDK)' -target arm64-apple-ios26.0 \
+		-I $(JIT_APP_SRC)/idevice -I $(JIT_APP_SRC)/iokit \
+		-Xlinker -force_load -Xlinker $(JIT_APP_SRC)/idevice/libidevice_ffi.a \
+		-Xlinker -dead_strip \
+		-framework JavaScriptCore -framework Network -framework Security \
+		-framework CFNetwork -framework SystemConfiguration -framework IOKit \
+		-framework ExtensionFoundation \
+		-o $(JIT_STAGING)/PrismaJITHelper \
+		$(JIT_APP_SRC)/Sources/BundledScript.swift \
+		$(JIT_APP_SRC)/Sources/DDISession.swift \
+		$(JIT_APP_SRC)/Sources/DeveloperDiskImageService.swift \
+		$(JIT_APP_SRC)/Sources/EndpointProbe.swift \
+		$(JIT_APP_SRC)/Sources/IdeviceFFI.swift \
+		$(JIT_APP_SRC)/Sources/JITSession.swift \
+		$(JIT_APP_SRC)/Sources/ProcessInfo+TXM.swift \
+		$(JIT_APP_SRC)/Sources/ScriptRunner.swift \
+		$(JIT_APP_SRC)/Sources/StikJIT.swift \
+		$(JIT_APP_SRC)/Sources/StikJITError.swift \
+		$(JIT_APP_SRC)/Sources/SynchronousDDIDownloader.swift \
+		$(JIT_APP_SRC)/integration/Shared/PrismaJITXPC.swift \
+		$(JIT_APP_SRC)/integration/Helper/PrismaJITHelper.swift \
+		|| exit 1
+	mkdir -p $(JIT_STAGING)/Resources
+	cp $(JIT_APP_SRC)/Resources/universal.js $(JIT_APP_SRC)/Resources/legacy.js $(JIT_STAGING)/Resources/ || exit 1
+	echo '[Prisma v$(VERSION)] jit_helper - build ok'
+endif
+
+payload: native dep_mg java jre assets dep_shader_shims dep_openal_shim dep_mithril_glshim dep_nggl4es dep_gl4eszl2 dep_virgl dep_angle_freeze dep_sdl3_guard jit_helper
 	echo '[Amethyst v$(VERSION)] payload - start'
 	$(call METHOD_DIRCHECK,$(WORKINGDIR)/AngelAuraAmethyst.app/libs)
 	$(call METHOD_DIRCHECK,$(WORKINGDIR)/AngelAuraAmethyst.app/libs_caciocavallo)
@@ -861,6 +922,23 @@ payload: native dep_mg java jre assets dep_shader_shims dep_openal_shim dep_mith
 	# 这个假设在同步 Ynnyny 顶层 dylib 时被打破。
 	$(call METHOD_MACHO,$(OUTPUTDIR)/Payload/AngelAuraAmethyst.app,$(call METHOD_CHANGE_PLAT,$(PLATFORM),$$file)); \
 	$(call METHOD_MACHO,$(OUTPUTDIR)/java_runtimes,$(call METHOD_CHANGE_PLAT,$(PLATFORM),$$file));
+	# ★ Task293：内置 JIT 产物嵌入（jit_helper 产物在位才嵌；缺失=深链降级，
+	# 构建不失败）。appex 落 PlugIns/（脚本资源置 bundle 根，BundledScript
+	# 的 Bundle(for:) 命中 appex 主 bundle），协调器 dylib 落 Frameworks/。
+	# 此处单独 ldid -S——不走 METHOD_MACHO 的 vtool 重打标，保住 26.0 minos。
+	if [ -f '$(JIT_STAGING)/PrismaJITHelper' ] && [ -f '$(JIT_STAGING)/libPrismaJITCoordinator.dylib' ]; then \
+		mkdir -p $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks; \
+		cp $(JIT_STAGING)/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITHelper || exit 1; \
+		cp $(SOURCEDIR)/Natives/stikjit/integration/Helper/Info.plist $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/Info.plist || exit 1; \
+		cp $(JIT_STAGING)/Resources/universal.js $(JIT_STAGING)/Resources/legacy.js $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/ || exit 1; \
+		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITHelper; \
+		cp $(JIT_STAGING)/libPrismaJITCoordinator.dylib $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/ || exit 1; \
+		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
+		chmod 755 $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
+		echo '[Prisma v$(VERSION)] payload - JIT helper embedded (PlugIns/PrismaJITHelper.appex)'; \
+	else \
+		echo '[Prisma v$(VERSION)] payload - JIT helper staging missing, embedding skipped (deep-link fallback)'; \
+	fi
 	echo '[Amethyst v$(VERSION)] payload - end'
 
 deploy:

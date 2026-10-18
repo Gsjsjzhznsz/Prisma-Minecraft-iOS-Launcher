@@ -10,9 +10,9 @@
 //  + LocalDevVPN 连通性探针（10.7.0.1:49152 socket 试连）。
 //  进程内自附加被 PocketJ 上游 #if 0 定案（debugserver vAttach 即挂起
 //  目标进程，同进程无法应答 = 确定性自锁死），独立执行进程轨（iOS 26
-//  AppExtensionProcess helper + StikJIT framework）属第二阶段构建系统
-//  手术，本阶段"开启 JIT"动作走 stikjit:// 深链交给外部 StikDebug
-//  （与 JavaLauncher ame139 自动 enabler 同一条 URL 家法）。
+//  AppExtensionProcess helper + StikJIT framework）已于 Task293 第二阶段
+//  落地（Natives/stikjit/ + Makefile jit_helper 轨）；本引擎继续负责
+//  配对文件生命周期与 VPN 探针，"开启 JIT"动作内置轨优先、深链降级。
 //
 
 #import <Foundation/Foundation.h>
