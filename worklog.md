@@ -3928,3 +3928,21 @@ Stage Summary:
 - 提交 c2a64b99 推送（9 文件：Makefile/AmeFloatingMenu/RightPanel/StikDebugVC/bridge.h/.m/Coordinator.swift + 新增 .appexpt + 2 补丁脚本留档），CI 验证中
 - 装机锚点（下轮验证）：①JIT 管理页/启动流点开启 → 日志序 "Task295 bundle fs: Extensions=[PrismaJITHelper.appex, PrismaJITHelper.appexpt]" → "monitor: 1 helper identity(ies) discovered" → Helper 进程 [PrismaJIT] prepare 阶段日志 → 成功进局；②若仍失败：弹窗/日志必带 [discovery]/[spawn]/[check-reachability]/[ddi]/[attach]/[script] 阶段前缀直达卡点 + bundle fs 清单对单；③失败弹窗"交给 StikDebug"无伪转圈、点取消即终止等待、点交给后等待环不再误弃启
 - 风险记账：.appexpt 内容形态按上游 .appextensionpoint 老格式手作（swiftc 是否自产新格式文件待 CI/装机日志实证——jit_helper 已做自产优先收集）；签名工具须保留 Extensions/ 目录（重签剥离 = discovery 空/Code=19 复发，指引文案已内置）
+
+---
+Task ID: 297
+Agent: main (Super Z)
+Task: 撤销 Task 296（第三方权限插件宿主 PP-ABI v1）——用户判定空壳契约无用，路线改向"现成 DS 工具直接逃逸"
+
+Work Log:
+- fetch 防撞号（origin/main 钉 d1feb885 无并行推进，Task 297 无撞号）
+- git revert 双提交：cbecfd29（回滚 docs d1feb885，worklog 296 条目移除）+ 14066069（回滚 feat 7da25052，PrivilegePlugin.h/PrivilegePluginRegistry.h.m/挂载点/右栏第八卡/l10n 16键×5表/verify219 锚 3173→3157 全部退场）
+- 回滚完整性实证：git diff b3e870d1 HEAD 为空 = 逐字节回到 Task 295 收尾基线
+- 外部配套同步撤销：workspace/dsplugin-kit/ 目录与 download/dsplugin-kit-abi1.zip 删除（能力核心本就不由本项目提供，契约壳已无存在必要）
+- 门禁对账（全部与 296 收尾记录一致，纯回滚零副作用）：verify255 53/53 PASS；task219_l10n FATAL welcome.back 重名=存量；task219_syntax 6 failed=存量陈旧锚；verify219 80/81
+- 新发现存量断锚（另立任务不混本轮）：verify219 K3 Makefile TAB 基线锚 724，实测 738——Task 295（c2a64b99 jit_helper .appexpt 收集，Makefile +28 行）改锚后未重锚 K3；Task 296 轮 worklog"81/81 ALL GREEN"记录不实（K3 当时已 fail 未被发现）。修法：重锚 724→738 一行，待独立任务号
+- 结论钉死：主仓库回到零插件层、零漏洞代码状态；DS 能力获取改走用户自持现成工具（lara/cyandie 同形态）直接逃逸，启动器不做任何宿主/契约适配
+
+Stage Summary:
+- Task 296 全量退场（代码/文案/锚点/外部 kit），origin/main 待 push 后回 295 等价基线
+- K3 断锚记账：295 遗留，与 297 零交集
