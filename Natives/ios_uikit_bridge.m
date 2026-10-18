@@ -192,6 +192,13 @@ void ame173_showJvmUsedRestartDialog(NSString *profileName) {
 // 编码任何工具语义。Cancel/降级两条 handler 均按 Task267 家法 weak 断环。
 void ame294_showJITActionDialog(NSString *title, NSString *message,
                                 NSString *fallbackTitle, void (^fallbackBlock)(void)) {
+    // Task295：旧四参变体转发（取消语义缺省为空）。
+    ame294_showJITActionDialogEx(title, message, fallbackTitle, fallbackBlock, nil);
+}
+
+void ame294_showJITActionDialogEx(NSString *title, NSString *message,
+                                  NSString *fallbackTitle, void (^fallbackBlock)(void),
+                                  void (^cancelBlock)(void)) {
     dispatch_async(dispatch_get_main_queue(), ^{
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:title
             message:message preferredStyle:UIAlertControllerStyleAlert];
@@ -218,6 +225,8 @@ void ame294_showJITActionDialog(NSString *title, NSString *message,
             style:UIAlertActionStyleCancel
             handler:^(UIAlertAction *action) {
                 dismissWindow();
+                // Task295：取消语义出线（JIT 等待环终止由调用方决断）。
+                if (cancelBlock) cancelBlock();
             }]];
         UIWindow *alertWindow = [[UIWindow alloc] initWithWindowScene:UIWindow.mainWindow.windowScene];
         alertWindow.frame = UIScreen.mainScreen.bounds;

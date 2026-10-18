@@ -26,22 +26,57 @@ public final class PrismaJITCoordinator: NSObject {
 
         Task { @MainActor in
             do {
-                let monitor = try await AppExtensionPoint.Monitor(
-                    appExtensionPoint: .prismaJITHelper)
-                // Task294 取证：装机“无法开启 JIT”分层定位（discovery 层）。
-                // identities 为空最常见于签名工具未重签 PlugIns 内 appex。
-                let identities = monitor.identities
+                // ★ Task295（装机 latestlog 实锤 Code=19 "Failed to add observer"）：
+                //   Monitor 初始化即抛——extensionkitd 拒绝注册观察者。PocketJ 上游
+                //   build_pocketj.sh 注释定案同款病历：宿主包缺 Extensions/*.appexpt
+                //   （扩展点定义，Xcode 构建由 Swift 编译器写入，swiftc 直编需自嵌）。
+                //   构建侧已补 appexpt + appex 落 Extensions/；此处加固：①Monitor
+                //   三次重试（extensionkitd 偶发未就绪）②失败错误带 [discovery]
+                //   阶段前缀 + 指向打包缺口，装机弹窗/日志直达卡点。
+                var identities: [AppExtensionIdentity] = []
+                var monitorError: Error?
+                for attempt in 1...3 {
+                    do {
+                        let monitor = try await AppExtensionPoint.Monitor(
+                            appExtensionPoint: .prismaJITHelper)
+                        // Task294 取证：装机"无法开启 JIT"分层定位（discovery 层）。
+                        // identities 为空最常见于签名工具未重签 appex / 定义缺失。
+                        identities = monitor.identities
+                        monitorError = nil
+                        break
+                    } catch {
+                        monitorError = error
+                        NSLog("[JIT] Task295 monitor attempt \(attempt)/3 failed: \(error)")
+                        if attempt < 3 {
+                            try? await Task.sleep(nanoseconds: 300_000_000)
+                        }
+                    }
+                }
+                if identities.isEmpty && monitorError != nil {
+                    NSLog("[JIT] Task295 monitor path exhausted -- discovery failed")
+                    throw NSError(domain: "PrismaJIT", code: 19,
+                                  userInfo: [NSLocalizedDescriptionKey:
+                                    "[discovery] \(monitorError!.localizedDescription) -- host bundle must embed Extensions/PrismaJITHelper.appexpt + Extensions/PrismaJITHelper.appex (reinstall a build with the extension definition, or re-sign keeping Extensions/)"])
+                }
                 let firstID = identities.first?.bundleIdentifier ?? "none"
                 NSLog("[JIT] Task294 monitor: \(identities.count) helper identity(ies) discovered, first=\(firstID)")
                 guard let identity = identities.first else {
                     throw NSError(domain: "PrismaJIT", code: 1,
                                   userInfo: [NSLocalizedDescriptionKey:
-                                    "Prisma JIT Helper was not found in this installation."])
+                                    "[discovery] Prisma JIT Helper was not found in this installation (Extensions/ embedding or re-sign issue)."])
                 }
 
-                let process = try await AppExtensionProcess(configuration: .init(
-                    appExtensionIdentity: identity,
-                    onInterruption: { activeSession = nil }))
+                let process: AppExtensionProcess
+                do {
+                    process = try await AppExtensionProcess(configuration: .init(
+                        appExtensionIdentity: identity,
+                        onInterruption: { activeSession = nil }))
+                } catch {
+                    NSLog("[JIT] Task295 spawn failed: \(error)")
+                    throw NSError(domain: "PrismaJIT", code: 2,
+                                  userInfo: [NSLocalizedDescriptionKey:
+                                    "[spawn] \(error.localizedDescription)"])
+                }
                 let xpcSession = try process.makeXPCSession()
                 try xpcSession.activate()
                 NSLog("[JIT] Task294 helper process launched + XPC activated")

@@ -188,6 +188,34 @@ static BOOL ame293_hasGetTaskAllow(void);
             return;
         }
 
+        // ★ Task295：扩展发现取证——ExtensionKit 要求宿主包 Extensions/ 内
+        //   同时有 <点>.appexpt（扩展点定义）与 <点>.appex（泛用 appex 落位，
+        //   PocketJ 上游 build_pocketj.sh 注释点名：缺 appexpt 即 "Failed to
+        //   add observer"）。目录清单直落 latestlog，再失败可直接对单。
+        NSString *ame295_extDir = [NSBundle.mainBundle.bundlePath
+            stringByAppendingPathComponent:@"Extensions"];
+        NSString *ame295_plugDir = [NSBundle.mainBundle.bundlePath
+            stringByAppendingPathComponent:@"PlugIns"];
+        NSFileManager *ame295_fm = [NSFileManager defaultManager];
+        NSLog(@"[JIT] Task295 bundle fs: Extensions=%@ PlugIns=%@",
+              [ame295_fm contentsOfDirectoryAtPath:ame295_extDir error:NULL] ?: @"(absent)",
+              [ame295_fm contentsOfDirectoryAtPath:ame295_plugDir error:NULL] ?: @"(absent)");
+        // ★ Task295：配对文件健全性——装机 latestlog 出现 pairing=501 bytes
+        //   （真实 .mobiledevicepairing 是多 KB plist，含证书键）。非 plist
+        //   直接拒启（StikJIT 下游必卡），是 plist 则把键清单落日志（缺证书
+        //   键只警告放行，下游 stage 错误回包定音）。
+        if (pairingData.length) {
+            NSDictionary *ame295_pairing = [NSPropertyListSerialization
+                propertyListWithData:pairingData options:0 format:NULL error:NULL];
+            if (!ame295_pairing) {
+                NSLog(@"[JIT] Task295 pairing sanity: NOT a plist (%zu bytes) -- rejecting (StikJIT cannot consume this file)",
+                      (unsigned long)pairingData.length);
+                completion(NO, @"[pairing] not a plist -- re-import a real .mobiledevicepairing file");
+                return;
+            }
+            NSLog(@"[JIT] Task295 pairing sanity: bytes=%zu plist-keys=%@",
+                  (unsigned long)pairingData.length, ame295_pairing.allKeys);
+        }
         NSLog(@"[JIT] Task294 builtin track start (pid=%d, pairing=%zu bytes)", getpid(), (unsigned long)pairingData.length);
         __block BOOL delivered = NO;
         __block dispatch_source_t stateTimer = dispatch_source_create(

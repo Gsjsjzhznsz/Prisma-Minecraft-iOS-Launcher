@@ -852,6 +852,16 @@ else
 	mkdir -p $(JIT_STAGING)/Resources
 	cp $(JIT_APP_SRC)/Resources/universal.js $(JIT_APP_SRC)/Resources/legacy.js $(JIT_STAGING)/Resources/ || exit 1
 	echo '[Prisma v$(VERSION)] jit_helper - build ok'
+	# ③ 宿主扩展点定义（.appexpt）：ExtensionFoundation @Definition 展开在 Xcode 下由
+	#   Swift 编译器直写 wrapper 的 Extensions/ 目录；swiftc 直编不落盘——若本次
+	#   编译在 staging 自产了 .appexpt 则优先采用，否则用库内手作版（老
+	#   .appextensionpoint content-keyed 形态，与 appex 的
+	#   EXExtensionPointIdentifier 对齐）。缺此文件 extensionkitd 即报
+	#   "Failed to add observer"（PocketJ 上游 build_pocketj.sh 同款病历
+	#   定案；装机 run#909 产物 Code=19 实锤）。
+	appexpt_src=$$(find $(JIT_STAGING) $(SOURCEDIR) -maxdepth 1 -name '*.appexpt' 2>/dev/null | head -1); \
+	if [ -n "$$appexpt_src" ]; then cp -p "$$appexpt_src" $(JIT_STAGING)/PrismaJITHelper.appexpt; \
+	else cp $(JIT_APP_SRC)/integration/Host/PrismaJITHelper.appexpt $(JIT_STAGING)/PrismaJITHelper.appexpt; fi
 endif
 
 payload: native dep_mg java jre assets dep_shader_shims dep_openal_shim dep_mithril_glshim dep_nggl4es dep_gl4eszl2 dep_virgl dep_angle_freeze dep_sdl3_guard jit_helper
@@ -938,15 +948,19 @@ payload: native dep_mg java jre assets dep_shader_shims dep_openal_shim dep_mith
 	# 的 Bundle(for:) 命中 appex 主 bundle），协调器 dylib 落 Frameworks/。
 	# 此处单独 ldid -S——不走 METHOD_MACHO 的 vtool 重打标，保住 26.0 minos。
 	if [ -f '$(JIT_STAGING)/PrismaJITHelper' ] && [ -f '$(JIT_STAGING)/libPrismaJITCoordinator.dylib' ]; then \
-		mkdir -p $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks; \
-		cp $(JIT_STAGING)/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITHelper || exit 1; \
-		cp $(SOURCEDIR)/Natives/stikjit/integration/Helper/Info.plist $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/Info.plist || exit 1; \
-		cp $(JIT_STAGING)/Resources/universal.js $(JIT_STAGING)/Resources/legacy.js $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/ || exit 1; \
-		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITHelper; \
+		# ★ Task295：泛用 ExtensionFoundation appex 落 Extensions/（非 PlugIns/，
+		#   上游 build_pocketj.sh "Generic ExtensionFoundation extensions live
+		#   in Extensions/" 同款）+ 扩展点定义 .appexpt 同目嵌入。
+		mkdir -p $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks; \
+		cp $(JIT_STAGING)/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper || exit 1; \
+		cp $(SOURCEDIR)/Natives/stikjit/integration/Helper/Info.plist $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/Info.plist || exit 1; \
+		cp $(JIT_STAGING)/Resources/universal.js $(JIT_STAGING)/Resources/legacy.js $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/ || exit 1; \
+		cp $(JIT_STAGING)/PrismaJITHelper.appexpt $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appexpt || exit 1; \
+		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper; \
 		cp $(JIT_STAGING)/libPrismaJITCoordinator.dylib $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/ || exit 1; \
 		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
-		chmod 755 $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
-		echo '[Prisma v$(VERSION)] payload - JIT helper embedded (PlugIns/PrismaJITHelper.appex)'; \
+		chmod 755 $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
+		echo '[Prisma v$(VERSION)] payload - JIT helper embedded (Extensions/PrismaJITHelper.appex + .appexpt)'; \
 	else \
 		echo '[Prisma v$(VERSION)] payload - JIT helper staging missing, embedding skipped (deep-link fallback)'; \
 	fi

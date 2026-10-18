@@ -701,10 +701,14 @@ static UIColor *Ame244SnapshotTint(void) {
         BOOL checked = (m.title.length > 0 && [m.title hasPrefix:@"\u2713"]);
         NSString *norm = [AmeFloatingMenu iconNameForTitle:m.title];
         NSString *iconName = checked ? @"checkmark.circle.fill" : norm;
-        if (iconName == nil) {
+        // ★ Task295（装机 IMG_0440 实锤）：未命中关键词的 default 动作旧版
+        //   强塞 circle.dotted——蓝色点状圆环与"转圈加载"完全同观感，JIT 失败
+        //   弹窗"交给 StikDebug"被误读成"正在处理中"。改为无图标（行组件
+        //   对 nil 图标已有正确退化：隐藏图区、标题占满行宽）；destructive
+        //   /cancel 样式语义图标保留（未命中关键词时仍给）。
+        if (iconName == nil && m.style != 0) {
             iconName = (m.style == 2) ? @"exclamationmark.circle"
-                     : (m.style == 1) ? @"xmark.circle"
-                     : @"circle.dotted";
+                     : @"xmark.circle";
         }
         UIImage *icon = [AmeFloatingMenu symbolImageForName:iconName];
         UIColor *textColor = (m.style == 2) ? [UIColor systemRedColor] : [UIColor labelColor];

@@ -1855,8 +1855,19 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
         NSLog(@"[JIT] [RightPanel] Task134 enabler=%@ noScript=%d builtin=%d (avail=%d ts=%d)",
               ame134_enabler, ame134_noScript, ame294_useBuiltin, ame294_builtinAvail, ame134_isTrollStore);
 
-        // Task294：builtin 失败后的显式降级弹窗（专用 window 双选：交给
-        // StikDebug / 取消）。LocalDevVPN 超时类错误附开启提示（PocketJ 同款）。
+        // ★ Task295（装机 latestlog 实锤）：等待环取消语义双通道。旧版只有
+        //   ame267_cancelled 一位，且失败弹窗（level-1000 独立 window）呈现
+        //   时会级联 dismiss 掉等待弹窗——UIKit 对程序性 dismiss 同样回调
+        //   cancel action → 用户未点取消却被置位（装机日志：失败弹窗出现的
+        //   同一毫秒打出 "user cancelled JIT wait"，3.7s 后等待环被
+        //   cancelled 满足 → "abandoning launch"）。现在：
+        //   ① ame267_builtinDialogShowing 在失败弹窗发出前置位，等待弹窗
+        //     cancel handler 见位即忽略（程序性级联非用户意图）；
+        //   ② 失败弹窗真取消（cancelBlock）→ 置 ame267_cancelled 终止等待；
+        //     点"交给 StikDebug"→ 只发深链、不置取消位，等待环继续等 JIT
+        //     经 StikJIT 到位（旧版此路径被①误杀 = 交给后必弃启）。
+        __block BOOL ame267_cancelled = NO;
+        __block BOOL ame267_builtinDialogShowing = NO;
         void (^ame294_fireStikjitFallback)(void) = ^{
             if (@available(iOS 17.4, *)) {
                 NSString *scriptPart = @"";
@@ -1881,8 +1892,12 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
                 [detail localizedCaseInsensitiveContainsString:@"not ready for JIT"]) {
                 detail = [detail stringByAppendingFormat:@"\n\n%@", localize(@"ame294.jit.localdevvpn_hint", nil)];
             }
-            ame294_showJITActionDialog(localize(@"ame293.jit.builtin_fail_title", nil), detail,
-                localize(@"ame293.jit.fallback_ok", nil), ame294_fireStikjitFallback);
+            // ★ Task295：置位必须同步在弹窗 dispatch 之前（Ex 内部才 async）——
+            //   级联 dismiss 引发的 cancel 回调晚于本行到达，见位即忽略。
+            ame267_builtinDialogShowing = YES;
+            ame294_showJITActionDialogEx(localize(@"ame293.jit.builtin_fail_title", nil), detail,
+                localize(@"ame293.jit.fallback_ok", nil), ame294_fireStikjitFallback,
+                ^{ ame267_cancelled = YES; });
         };
 
         if (ame294_useBuiltin) {
@@ -1955,14 +1970,22 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
     self.progressLabel.text = localize(@"i18n_str_436", nil);
     
     // Task267：等待期可取消——旧版 120s（Task226 自动重试后最长 240s）弹窗
-    // 零 action，想退出只能杀进程 = 「JIT 未响应」观感的直接来源。
-    __block BOOL ame267_cancelled = NO;
+    //   零 action，想退出只能杀进程 = 「JIT 未响应」观感的直接来源。
+    //   （ame267_cancelled/builtinDialogShowing 声明已上移至 builtin 弹窗闭包
+    //   之前——Task295 取消语义双通道需两处闭包共享，见上方注释。）
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:localize(@"i18n_str_437", nil)
                                                                    message:hasTrollStoreJIT ? localize(@"i18n_str_2054", nil) : localize(@"i18n_str_439", nil)
                                                             preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
                                               style:UIAlertActionStyleCancel
                                             handler:^(UIAlertAction * _Nonnull action) {
+        // ★ Task295：失败弹窗呈现引发的本弹窗程序性 dismiss 也会回调这里
+        //   （UIKit 对程序性 dismiss 同样触发 cancel action）——弹窗在场期间
+        //   见位即忽略，非用户意图（装机 latestlog 实锤误置位弃启链）。
+        if (ame267_builtinDialogShowing) {
+            NSLog(@"[JIT] [RightPanel] Task295: waiting-alert cancel fired by builtin-dialog cascade -- ignored");
+            return;
+        }
         ame267_cancelled = YES;
         NSLog(@"[JIT] [RightPanel] Task267: user cancelled JIT wait (main)");
     }]];

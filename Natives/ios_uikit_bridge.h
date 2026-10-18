@@ -19,6 +19,11 @@ void ame187_showAccountRepairDialog(NSString *username, NSString *accountId, NSS
 // 否则展示「fallbackTitle / Cancel」双 action，点 fallback 执行 fallbackBlock。
 void ame294_showJITActionDialog(NSString *title, NSString *message,
                                 NSString *fallbackTitle, void (^fallbackBlock)(void));
+// Task295：同上 + 取消回调——装机实锤点取消的语义是"终止 JIT 等待环"
+// （旧版取消被吞，等待环只能耗到 120s 超时）。cancelBlock 可空。
+void ame294_showJITActionDialogEx(NSString *title, NSString *message,
+                                  NSString *fallbackTitle, void (^fallbackBlock)(void),
+                                  void (^cancelBlock)(void));
 jstring UIKit_accessClipboard(JNIEnv* env, jint action, jstring copySrc);
 void UIKit_launchMinecraftSurfaceVC(UIWindow *window, NSDictionary *metadata);
 void UIKit_returnToSplitView();
