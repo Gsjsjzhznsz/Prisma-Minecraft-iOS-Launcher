@@ -34,9 +34,19 @@
 //   zink/ANGLE/virgl 等其他渲染器不经 libMobileGL 的 __got，零误伤；
 //   -gles 变体（DirectGLES 后端，无 Vulkan swapchain）钩了也不触发。
 //
-// 安装点：ctxbridges/gl_bridge.m 渲染器 EGL dylib dlopen 成功后（swapchain
-// 首建发生在 eglMakeCurrent/首次 swap，晚于此处）。幂等可重入。
-// 失败路径全部落日志：安装失败=下一个装机日志可直接对单，绝不静默。
+// 安装点（Task299 重构）：①ctxbridges/gl_bridge.m dlsym_EGL（经典 GL 路径）
+//   ②egl_bridge.m pojavInitOpenGLInternal 渲染器预加载 dlopen 后（SDL3 路径
+//   ——装机 7672dd9 latestlog line725/754/755 实锤 mg/DirectVulkan 会话只走
+//   SDL_GL_LoadLibrary->pojavInitOpenGLForSDL3，全程零 [VSyncUnlock] 日志，
+//   Task298 唯一安装点不在其路径上，钩子从未装上）。幂等可重入。
+//   ③ dyld add-image 观察者：libMoltenVK 晚于安装点加载（DirectVulkan 后端
+//   初始化时才 dlopen），Task298 原版此时会 latch done=1 永久放弃——重构后
+//   未就绪一律 defer 不锁存，观察者在 MoltenVK 镜像落地瞬间精确安装
+//   （先于任何 swapchain 创建）。
+//   env 检查移入包装器（swapchain 创建时动态读 POJAV_DISABLE_VSYNC）：
+//   安装期与解锁开关无时序耦合，彻底消除 Task298 的 env-latch 病。
+// 失败路径全部落日志（状态变化才打，add-image 风暴不刷屏）：安装失败=下
+// 一个装机日志可直接对单，绝不静默。
 
 #import <Foundation/Foundation.h>
 #import <mach/mach.h>
@@ -78,7 +88,6 @@ _Static_assert(offsetof(ame298_VkSwapchainCreateInfoKHR, presentMode) == 80,
                "ame298: presentMode offset drift");
 
 static void *(*ame298_real_vkCreateSwapchainKHR)(void *, const void *, const void *, void *);
-static int ame298_vsync_off = 0;
 
 static int32_t ame298_hook_vkCreateSwapchainKHR(void *device, const void *pCreateInfo,
                                                 const void *pAllocator, void *pSwapchain) {
@@ -86,7 +95,10 @@ static int32_t ame298_hook_vkCreateSwapchainKHR(void *device, const void *pCreat
     if (ame298_real == NULL) {
         return -1; // 理论不可达：槽被改写前 real 必已解析
     }
-    if (pCreateInfo != NULL && ame298_vsync_off) {
+    // Task299：env 动态读（每次 swapchain 创建至多一次 getenv，成本可忽略）——
+    // 安装期 env 未就绪不再造成永久失联（Task298 env-latch 病根治）。
+    const char *ame298_dis = getenv("POJAV_DISABLE_VSYNC");
+    if (pCreateInfo != NULL && ame298_dis != NULL && strcmp(ame298_dis, "1") == 0) {
         const ame298_VkSwapchainCreateInfoKHR *ci = (const ame298_VkSwapchainCreateInfoKHR *)pCreateInfo;
         if (ci->sType == 1000001000 /* VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR */ &&
             ci->presentMode != 0 /* VK_PRESENT_MODE_IMMEDIATE_KHR */) {
@@ -166,19 +178,17 @@ static int ame298_patch_got_slots(const struct mach_header_64 *ame298_hdr, intpt
     return (int)ame298_nsects_total;
 }
 
-void ame298_install_mg_vsync_hook(void) {
-    static int ame298_done = 0;
+// Task299 安装状态机：done 仅在【终态】锁存（已装/硬失败/放弃）；
+// 镜像未就绪一律 defer（Task298 的 MoltenVK 晚加载 latch 病根治）。
+static int ame298_done = 0;
+static int ame298_attempts = 0;
+static BOOL ame298_defer_logged = NO;
+
+static void ame298_try_install(const char *ame298_trigger) {
     if (ame298_done) {
         return;
     }
-
-    const char *ame298_dis = getenv("POJAV_DISABLE_VSYNC");
-    if (ame298_dis == NULL || strcmp(ame298_dis, "1") != 0) {
-        // vsync 未关闭：不装钩子（MobileGL 保持 MAILBOX 默认=用户要垂直同步）
-        ame298_done = 1;
-        NSLog(@"[VSyncUnlock] ame298: POJAV_DISABLE_VSYNC!=1 -- present-mode hook not installed (vsync kept)");
-        return;
-    }
+    ame298_attempts++;
 
     // ① 定位 libMobileGL.dylib 镜像（严格名匹配，-gles 物理同体但 DirectGLES
     //    无 Vulkan swapchain，钩槽不会触发，无需区分）
@@ -197,17 +207,19 @@ void ame298_install_mg_vsync_hook(void) {
             ame298_mv_path = ame298_name;
         }
     }
-    if (ame298_mg_hdr == NULL) {
-        // 渲染器非 MobileGL（zink/ANGLE/...）：无 Vulkan swapchain 走该 GOT，
-        // 且这些路径的 vsync 语义已由各自 eglSwapInterval 链处理。
-        // 注意：此处【不锁存】done —— 调用点可能早于 MobileGL dlopen，
-        // 后续加载成功后的重入必须仍能安装。
-        NSLog(@"[VSyncUnlock] ame298: libMobileGL image not loaded (yet) -- hook deferred");
-        return;
-    }
-    if (ame298_mv_path == NULL) {
-        ame298_done = 1;
-        NSLog(@"[VSyncUnlock] ame298: libMoltenVK image not found while libMobileGL loaded -- unexpected, hook aborted");
+    if (ame298_mg_hdr == NULL || ame298_mv_path == NULL) {
+        // 未就绪：不锁存，等 dyld add-image 观察者在镜像落地瞬间重试。
+        // 每 20 次尝试落一条日志（注册即对已加载全镜像回调，绝不刷屏）。
+        if (!ame298_defer_logged || (ame298_attempts % 20) == 0) {
+            ame298_defer_logged = YES;
+            NSLog(@"[VSyncUnlock] ame299: images not ready (MobileGL=%d MoltenVK=%d, attempt %d, trigger=%s) -- deferred",
+                  ame298_mg_hdr != NULL, ame298_mv_path != NULL, ame298_attempts, ame298_trigger);
+        }
+        if (ame298_attempts >= 100) {
+            ame298_done = 1;
+            NSLog(@"[VSyncUnlock] ame299: %d attempts without both images -- renderer never became MobileGL, hook disarmed",
+                  ame298_attempts);
+        }
         return;
     }
 
@@ -218,31 +230,49 @@ void ame298_install_mg_vsync_hook(void) {
     }
     if (ame298_mv == NULL) {
         ame298_done = 1;
-        NSLog(@"[VSyncUnlock] ame298: dlopen(libMoltenVK) failed: %s -- hook aborted", dlerror() ?: "?");
+        NSLog(@"[VSyncUnlock] ame299: dlopen(libMoltenVK) failed: %s -- hook aborted", dlerror() ?: "?");
         return;
     }
     void *ame298_real = dlsym(ame298_mv, "vkCreateSwapchainKHR");
     if (ame298_real == NULL) {
         ame298_done = 1;
-        NSLog(@"[VSyncUnlock] ame298: dlsym(vkCreateSwapchainKHR) failed: %s -- hook aborted", dlerror() ?: "?");
+        NSLog(@"[VSyncUnlock] ame299: dlsym(vkCreateSwapchainKHR) failed: %s -- hook aborted", dlerror() ?: "?");
         return;
     }
     ame298_real_vkCreateSwapchainKHR =
         (void *(*)(void *, const void *, const void *, void *))ame298_real;
-    ame298_vsync_off = 1;
 
     // ③ value-scan + GOT 改绑
     int ame298_patched = ame298_patch_got_slots(
         ame298_mg_hdr, ame298_mg_slide, (uintptr_t)ame298_real, (uintptr_t)&ame298_hook_vkCreateSwapchainKHR);
     ame298_done = 1;
     if (ame298_patched < 0) {
-        NSLog(@"[VSyncUnlock] ame298: __got scan failed -- MobileGL present-mode unlock NOT installed");
+        NSLog(@"[VSyncUnlock] ame299: __got scan failed -- MobileGL present-mode unlock NOT installed");
     } else if (ame298_patched == 0) {
-        NSLog(@"[VSyncUnlock] ame298: no __got slot matched vkCreateSwapchainKHR real=%p -- "
+        NSLog(@"[VSyncUnlock] ame299: no __got slot matched vkCreateSwapchainKHR real=%p -- "
               @"MobileGL may resolve Vulkan entry points dynamically; unlock NOT installed (diagnostic anchor for next round)",
               ame298_real);
     } else {
-        NSLog(@"[VSyncUnlock] ame298: installed (%d slot(s)) -- swapchains will present IMMEDIATE while POJAV_DISABLE_VSYNC=1",
+        NSLog(@"[VSyncUnlock] ame299: installed (%d slot(s)) -- swapchains will present IMMEDIATE while POJAV_DISABLE_VSYNC=1",
               ame298_patched);
     }
+}
+
+// dyld 镜像加载回调：MoltenVK 由 DirectVulkan 后端初始化时才 dlopen，
+// 该回调保证在【任何 swapchain 创建之前】给出精确安装时机。
+// 注册时 dyld 会对全部已加载镜像各回调一次（文档行为）——回调体必须廉价：
+// done 短路 + 名称扫描，仅状态变化才落日志（ame298_try_install 内控）。
+static void ame298_image_added_cb(const struct mach_header *ame298_mh, intptr_t ame298_slide) {
+    (void)ame298_mh; (void)ame298_slide;
+    if (ame298_done) return;
+    ame298_try_install("add-image");
+}
+
+void ame298_install_mg_vsync_hook(void) {
+    static dispatch_once_t ame298_arm_once;
+    dispatch_once(&ame298_arm_once, ^{
+        _dyld_register_func_for_add_image(ame298_image_added_cb);
+        NSLog(@"[VSyncUnlock] ame299: dyld add-image observer armed -- env checked at swapchain time, MoltenVK late-load covered");
+    });
+    ame298_try_install("eager");
 }

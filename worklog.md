@@ -4009,3 +4009,23 @@ Work Log:
 
 Stage Summary:
 - Task 298 双线根修随 run#919 产物交付；装机复验锚：①[VSyncUnlock] ame298: installed + MobileGL 渲染器 fps>60 ②JIT Monitor 不再抛 19 / "monitor: N identity(ies) discovered" / Extensions/AngelAuraAmethyst.appexpt 在位
+
+---
+Task ID: 299
+Agent: main (Super Z)
+Task: 内置 JIT Code=19 二次根修（PocketJ v1.4 官方 IPA 逐字节实证）+ 解锁帧率安装点缺失根修（装机 latestlog line725 实锤）
+
+Work Log:
+- 装机 7672dd9 latestlog + 截图取证：builtin 轨三次重试均 extensionKit Code=19 "Failed to add observer" → Task295/298 两代 appexpt 形态双双证伪；同会话 MobileGL(DirectVulkan) 游跑 40s 全程零 [VSyncUnlock] 日志
+- JIT 取证链：浅克隆 EricoEC/PocketJLauncher → 下载 v1.4 官方 IPA 解包 → Extensions/PocketJLauncher.appexpt 编译器生成形态实证 = EXVersion:2 + 点键字典仅 EXExtensionPointName（无 _EXScopeRestriction/EXPresentsUserInterface，Task298 依 torrent7 加的双键证伪）；build_pocketj.sh:84-105 佐证 appexpt 是 Swift 编译器从 @Definition 宏生成、缺失即同款病历；PocketJ entitlements 无任何 extensionkit 私有键（KhaosT scoped 理论不必要）；上游 issue 区 Code=19/observer 零命中
+- 修①：appexpt 重写对齐上游形态 + appex Info.plist 补 PocketJ 同款平台键（MinimumOSVersion 26.0/CFBundleSupportedPlatforms=[iPhoneOS]/UIDeviceFamily=[1,2]/UIRequiredDeviceCapabilities=[arm64]）
+- 修②（直启兜底轨）：discovery 不可用时 posix_spawn appex 内新二进制 PrismaJITDirect（同旗标同源集换 main；env 传 TARGET_PID/PAIRING_FILE/RESULT_FILE；StikJIT.enableJIT 全链不变；结果文件原子握手 + 600s 轮询 + waitpid 退出侦测）；XPC 轨仍优先；ObjC 侧零改动（100ms isJITEnabled 轮询 + deliver 一次性保护天然兼容长时兜底）
+- 帧率取证链：装机 latestlog line725 SDL_GL_LoadLibrary(libMobileGL)→pojavInitOpenGLForSDL3=0 + line754 MG-Bridge bootstrap skipped + line755 raw ANGLE —— mg/DirectVulkan 会话只走 egl_bridge SDL3 入口，Task298 唯一安装点（gl_bridge dlsym_EGL）不在该路径 → 钩子从未装上；且 Task298 两条 latch 病：MoltenVK 晚加载→"hook aborted"永久放弃、env 未就绪→锁存跳过
+- 修③：egl_bridge pojavInitOpenGLInternal 渲染器预加载 dlopen 后补第二安装点；mg_vsync_hook.m 重构 = dyld add-image 观察者（_dyld_register_func_for_add_image）在 libMoltenVK 镜像落地瞬间精确安装（先于任何 swapchain 创建），未就绪一律 defer 不锁存（100 次上限放弃），POJAV_DISABLE_VSYNC 检查移入包装器 swapchain 创建时动态读（env-latch 病根治），日志仅状态变化落（注册即对已加载全镜像回调，绝不刷屏）
+- Makefile 走字节级补丁脚本 scripts/task299_makefile_patch.py（TAB 保形幂等五补丁：Direct 编译块/staging guard/appex cp/ldid/chmod；注释行独立 TAB 不进续行链——Task297-ci-r2 家法）
+- 门禁：payload JIT if 块 $(VAR) 替换重建 bash -n=exit 0；双 plist plistlib OK；双 Swift 括号配平 0；make 全文件解析通过（至 cmake 检查点，Linux 无 cmake 预期内）；CI 取证=#920(7672dd9) 绿、#918 已在 e3291ee 热修，上游无开放故障
+- 边界：posix_spawn 子进程继承宿主沙盒（NewTerm 先例）；LocalDevVPN 可达性失败将以 check-reachability 阶段落进回包与日志（Stage Summary 见下）
+
+Stage Summary:
+- 装机复验锚（下轮 latestlog 对单）：①[VSyncUnlock] ame299: dyld add-image observer armed + installed (N slot(s)) + swapchain presentMode X -> IMMEDIATE + 游戏内 fps>60（MobileGL 渲染器）②JIT XPC 轨不再抛 19 / 或 "Task299 discovery unavailable ... direct-spawn fallback" 后 "direct helper spawned pid=" + "[PrismaJITDirect] prepare: ..." 阶段链 / 最终 "JIT enabled"
+- 前置条件提醒：直启轨与 XPC 轨同需 LocalDevVPN 运行 + 配对文件已导入（PocketJ README 同款前置）；首跑含 DDI 下载耗时正常

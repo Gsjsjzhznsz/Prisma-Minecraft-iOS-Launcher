@@ -10,6 +10,16 @@ import XPC
 //   （libPrismaJITCoordinator.dylib，min target 26.0），由 ObjC 侧在
 //   @available(iOS 26) 分支 dlopen（不强链，iOS 26 以下不加载——
 //   INTEGRATION.md "Do not strongly link" 要求）。
+//
+// ★ Task299（装机 7672dd9 latestlog 实锤 + PocketJ v1.4 官方 IPA 逐字节对照）：
+//   ① appexpt 对齐上游编译器生成形态（EXVersion=2 + 点键字典仅
+//      EXExtensionPointName；Task298 的 _EXScopeRestriction/EXPresentsUser
+//      Interface 双键是 torrent7 私有形态，装机 Code=19 证伪）；
+//   ② discovery 在部分装机链路上仍可能不可用（三次重试均 Code=19）——
+//      新增直启兜底轨：posix_spawn appex 内 PrismaJITDirect 二进制（子进程
+//      继承宿主沙盒），env 传 target PID/配对文件/结果文件，Helper 侧
+//      StikJIT.enableJIT 全链不变，结果文件握手回包。XPC 轨仍优先
+//      （有进度回包），兜底轨仅在 discovery 不可用时启用。
 
 @available(iOS 26.0, *)
 @objc(PrismaJITCoordinator)
@@ -52,19 +62,20 @@ public final class PrismaJITCoordinator: NSObject {
                         }
                     }
                 }
-                if identities.isEmpty && monitorError != nil {
-                    NSLog("[JIT] Task295 monitor path exhausted -- discovery failed")
-                    throw NSError(domain: "PrismaJIT", code: 19,
-                                  userInfo: [NSLocalizedDescriptionKey:
-                                    "[discovery] \(monitorError!.localizedDescription) -- host bundle must embed Extensions/AngelAuraAmethyst.appexpt (app-module-name convention, EXVersion=2 + EXExtensionPointName keys) + Extensions/PrismaJITHelper.appex (reinstall a build with the extension definition, or re-sign keeping Extensions/)"])
+                if identities.first == nil {
+                    // ★ Task299 直启兜底轨：discovery 不可用（monitor Code=19 三次
+                    //   重试耗尽 / 观察者可用但 identities 为空）不再直接判死——
+                    //   posix_spawn appex 内 PrismaJITDirect（绕过 ExtensionKit）。
+                    NSLog("[JIT] Task299 discovery unavailable (monitorError=\(monitorError.map { String(describing: $0) } ?? "identities-empty")) -- direct-spawn fallback (bypassing ExtensionKit)")
+                    let (ok, message) = try await PrismaJITCoordinator.directSpawnEnableJIT(
+                        targetPID: targetPID, pairingData: pairingData)
+                    DispatchQueue.main.async {
+                        completion(ok, message)
+                    }
+                    return
                 }
-                let firstID = identities.first?.bundleIdentifier ?? "none"
-                NSLog("[JIT] Task294 monitor: \(identities.count) helper identity(ies) discovered, first=\(firstID)")
-                guard let identity = identities.first else {
-                    throw NSError(domain: "PrismaJIT", code: 1,
-                                  userInfo: [NSLocalizedDescriptionKey:
-                                    "[discovery] Prisma JIT Helper was not found in this installation (Extensions/ embedding or re-sign issue)."])
-                }
+                let identity = identities.first!
+                NSLog("[JIT] Task299 monitor: \(identities.count) helper identity(ies) discovered, first=\(identity.bundleIdentifier ?? "none")")
 
                 let process: AppExtensionProcess
                 do {
@@ -101,12 +112,94 @@ public final class PrismaJITCoordinator: NSObject {
                     }
                 }
             } catch {
-                // Task294 取证：discovery/spawn/activate 层失败进 latestlog
-                NSLog("[JIT] Task294 coordinator error: \(error)")
+                // Task294/299 取证：discovery/spawn/activate/direct-spawn 层失败进 latestlog
+                NSLog("[JIT] Task299 coordinator error: \(error)")
                 activeSession = nil
                 completion(false, error.localizedDescription)
             }
         }
+    }
+
+    // ★ Task299 直启兜底轨：posix_spawn appex 内 PrismaJITDirect，
+    //   env 握手（target PID / 配对文件 / 结果文件），轮询结果文件回包。
+    //   首跑含 DDI 下载可能耗时数分钟 → 轮询上限 600s；子进程无结果即退
+    //   也要报错（stage 日志在 [PrismaJITDirect] 前缀下可对单）。
+    private static func directSpawnEnableJIT(targetPID: Int32,
+                                             pairingData: Data) async throws -> (Bool, String) {
+        let manager = FileManager.default
+        let root = manager.urls(for: .libraryDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("PrismaJIT", isDirectory: true)
+        try manager.createDirectory(at: root, withIntermediateDirectories: true)
+        let pairingURL = root.appendingPathComponent("pairing-direct.plist")
+        try pairingData.write(to: pairingURL, options: .atomic)
+        let resultPath = root.appendingPathComponent("direct-result.txt").path
+        try? manager.removeItem(atPath: resultPath)
+
+        let execPath = Bundle.main.bundlePath + "/Extensions/PrismaJITHelper.appex/PrismaJITDirect"
+        guard manager.fileExists(atPath: execPath) else {
+            throw NSError(domain: "PrismaJIT", code: 21,
+                          userInfo: [NSLocalizedDescriptionKey:
+                            "[direct-spawn] PrismaJITDirect not found at \(execPath) -- reinstall a build with the embedded JIT helper (keep Extensions/ when re-signing)"])
+        }
+
+        var envLines: [String] = ProcessInfo.processInfo.environment.map { "\($0.key)=\($0.value)" }
+        envLines.append("PRISMA_JIT_TARGET_PID=\(targetPID)")
+        envLines.append("PRISMA_JIT_PAIRING_FILE=\(pairingURL.path)")
+        envLines.append("PRISMA_JIT_RESULT_FILE=\(resultPath)")
+
+        var childPID: pid_t = 0
+        let rc = execDirectBinary(path: execPath, envLines: envLines, pidOut: &childPID)
+        if rc != 0 {
+            let spawnErrno = errno
+            throw NSError(domain: "PrismaJIT", code: 22,
+                          userInfo: [NSLocalizedDescriptionKey:
+                            "[direct-spawn] posix_spawn rc=\(rc) errno=\(spawnErrno) -- child-process exec denied on this install"])
+        }
+        NSLog("[JIT] Task299 direct helper spawned pid=%d result=%@", childPID, resultPath as NSString)
+
+        // 轮询结果文件（首跑 DDI 下载可达数分钟）+ 子进程退出侦测
+        for _ in 0..<300 {
+            try await Task.sleep(nanoseconds: 2_000_000_000)
+            if let raw = try? String(contentsOfFile: resultPath, encoding: .utf8),
+               !raw.isEmpty {
+                let parts = raw.split(separator: "\t", maxSplits: 1,
+                                      omittingEmptySubsequences: false)
+                let ok = parts.first.map {
+                    $0.trimmingCharacters(in: .whitespacesAndNewlines) == "1"
+                } ?? false
+                let message = parts.count > 1
+                    ? String(parts[1])
+                    : raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                NSLog("[JIT] Task299 direct track result: ok=\(ok) message=\(message)")
+                return (ok, message)
+            }
+            var exitStatus: Int32 = 0
+            if waitpid(childPID, &exitStatus, WNOHANG) == childPID {
+                throw NSError(domain: "PrismaJIT", code: 23,
+                              userInfo: [NSLocalizedDescriptionKey:
+                                "[direct-spawn] helper exited (status=\(exitStatus)) without result -- see [PrismaJITDirect] stage logs (reachability/DDI/attach/script)"])
+            }
+        }
+        throw NSError(domain: "PrismaJIT", code: 24,
+                      userInfo: [NSLocalizedDescriptionKey:
+                        "[direct-spawn] timeout (600s) waiting for helper result -- first-run DDI download slow, or LocalDevVPN/pairing not ready"])
+    }
+
+    // posix_spawn（char** 手工封组；strdup 区在 spawn 返回后统一释放）
+    private static func execDirectBinary(path: String,
+                                         envLines: [String],
+                                         pidOut: UnsafeMutablePointer<pid_t>) -> Int32 {
+        var argv: [UnsafeMutablePointer<CChar>?] = []
+        var envp: [UnsafeMutablePointer<CChar>?] = []
+        var arena: [UnsafeMutablePointer<CChar>] = []
+        let arg0 = strdup(path)!; arena.append(arg0); argv.append(arg0)
+        argv.append(nil)
+        for line in envLines {
+            let p = strdup(line)!; arena.append(p); envp.append(p)
+        }
+        envp.append(nil)
+        defer { for p in arena { free(p) } }
+        return posix_spawn(pidOut, path, nil, nil, &argv, &envp)
     }
 }
 

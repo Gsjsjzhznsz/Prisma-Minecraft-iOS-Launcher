@@ -8,10 +8,6 @@
 	<dict>
 		<key>EXExtensionPointName</key>
 		<string>PrismaJITHelper</string>
-		<key>EXPresentsUserInterface</key>
-		<false/>
-		<key>_EXScopeRestriction</key>
-		<string>application</string>
 	</dict>
 </dict>
 </plist>

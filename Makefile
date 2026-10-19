@@ -849,6 +849,32 @@ else
 		$(JIT_APP_SRC)/integration/Shared/PrismaJITXPC.swift \
 		$(JIT_APP_SRC)/integration/Helper/PrismaJITHelper.swift \
 		|| exit 1
+		# Task299 直启兜底二进制：同旗标同源集，Helper main 换 Direct main
+		# （env 驱动绕过 ExtensionKit discovery，病历与设计见
+		# PrismaJITDirect.swift 头注；XPC 轨仍优先，本轨仅兜底）
+		$(JIT_SWIFTC) -O \
+			-sdk '$(JIT_SDK)' -target arm64-apple-ios26.0 \
+			-I $(JIT_APP_SRC)/idevice -I $(JIT_APP_SRC)/iokit \
+			-Xlinker -force_load -Xlinker $(JIT_APP_SRC)/idevice/libidevice_ffi.a \
+			-Xlinker -dead_strip \
+			-framework JavaScriptCore -framework Network -framework Security \
+			-framework CFNetwork -framework SystemConfiguration -framework IOKit \
+			-framework ExtensionFoundation \
+			-o $(JIT_STAGING)/PrismaJITDirect \
+			$(JIT_APP_SRC)/Sources/BundledScript.swift \
+			$(JIT_APP_SRC)/Sources/DDISession.swift \
+			$(JIT_APP_SRC)/Sources/DeveloperDiskImageService.swift \
+			$(JIT_APP_SRC)/Sources/EndpointProbe.swift \
+			$(JIT_APP_SRC)/Sources/IdeviceFFI.swift \
+			$(JIT_APP_SRC)/Sources/JITSession.swift \
+			$(JIT_APP_SRC)/Sources/ProcessInfo+TXM.swift \
+			$(JIT_APP_SRC)/Sources/ScriptRunner.swift \
+			$(JIT_APP_SRC)/Sources/StikJIT.swift \
+			$(JIT_APP_SRC)/Sources/StikJITError.swift \
+			$(JIT_APP_SRC)/Sources/SynchronousDDIDownloader.swift \
+			$(JIT_APP_SRC)/integration/Shared/PrismaJITXPC.swift \
+			$(JIT_APP_SRC)/integration/Helper/PrismaJITDirect.swift \
+			|| exit 1
 	mkdir -p $(JIT_STAGING)/Resources
 	cp $(JIT_APP_SRC)/Resources/universal.js $(JIT_APP_SRC)/Resources/legacy.js $(JIT_STAGING)/Resources/ || exit 1
 	echo '[Prisma v$(VERSION)] jit_helper - build ok'
@@ -959,17 +985,19 @@ payload: native dep_mg java jre assets dep_shader_shims dep_openal_shim dep_mith
 	#   缺键时 extensionkitd 解析不了扩展点 → AppExtensionPoint.Monitor 拒注册
 	#   → builtin 轨 Code=19 "Failed to add observer"。appex bundle 同时补
 	#   ldid -S 目录级密封（PocketJ 上游 codesign 重密封 .appex 同语义）。
-	if [ -f '$(JIT_STAGING)/PrismaJITHelper' ] && [ -f '$(JIT_STAGING)/libPrismaJITCoordinator.dylib' ]; then \
+	if [ -f '$(JIT_STAGING)/PrismaJITHelper' ] && [ -f '$(JIT_STAGING)/PrismaJITDirect' ] && [ -f '$(JIT_STAGING)/libPrismaJITCoordinator.dylib' ]; then \
 		mkdir -p $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks; \
 		cp $(JIT_STAGING)/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper || exit 1; \
 		cp $(SOURCEDIR)/Natives/stikjit/integration/Helper/Info.plist $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/Info.plist || exit 1; \
+		cp $(JIT_STAGING)/PrismaJITDirect $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITDirect || exit 1; \
 		cp $(JIT_STAGING)/Resources/universal.js $(JIT_STAGING)/Resources/legacy.js $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/ || exit 1; \
 		cp $(JIT_STAGING)/PrismaJITHelper.appexpt $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/AngelAuraAmethyst.appexpt || exit 1; \
 		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper; \
+		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITDirect; \
 		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex || echo '[Prisma v$(VERSION)] payload - WARN: appex bundle seal failed (continuing)'; \
 		cp $(JIT_STAGING)/libPrismaJITCoordinator.dylib $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/ || exit 1; \
 		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
-		chmod 755 $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
+		chmod 755 $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITDirect $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
 		echo '[Prisma v$(VERSION)] payload - JIT helper embedded (Extensions/PrismaJITHelper.appex + AngelAuraAmethyst.appexpt)'; \
 	else \
 		echo '[Prisma v$(VERSION)] payload - JIT helper staging missing, embedding skipped (deep-link fallback)'; \
