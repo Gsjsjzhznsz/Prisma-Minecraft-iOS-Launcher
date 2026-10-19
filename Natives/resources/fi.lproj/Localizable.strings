@@ -290,3 +290,4 @@
 "ame303.copy_failed" = "Could not write the version file for renamed instance \"%@\": copying the local copy failed. Free up storage space and try again.";
 "ame303.manifest_missing" = "Could not resolve version \"%@\": the remote version manifest is not loaded yet and no local copy exists to duplicate from. Check your network connection and try again.";
 "ame306.jit.spawn_denied" = "Sisäänrakennettu JIT ei ole käytettävissä tällä asennustavalla: jailbreakaton hiekkalaatikko estää JIT-avuprosessin käynnistyksen (vain TrollStore/jailbreak voi sallia sen). Paina vain «Käynnistä» — JIT pyydetään automaattisesti StikDebugin kautta; tai ota se käyttöön manuaalisesti StikDebug-sovelluksessa.";
+"ame307.crash.switch_gles" = "Vaihda GLES-taustajärjestelmään (ohittaen MoltenVK)";

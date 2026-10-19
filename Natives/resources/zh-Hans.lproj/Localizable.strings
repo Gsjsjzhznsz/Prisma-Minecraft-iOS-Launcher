@@ -3368,3 +3368,4 @@
 "ame303.copy_failed" = "无法为重命名实例“%@”写入版本文件：复制本地副本失败。请清理存储空间后重试。";
 "ame303.manifest_missing" = "无法解析版本“%@”：远端版本清单尚未加载，且本地没有可复制的版本文件。请检查网络连接后重试。";
 "ame306.jit.spawn_denied" = "当前安装方式无法使用内置 JIT：非越狱沙盒拒绝派生 JIT 辅助进程（仅 TrollStore / 越狱环境可能允许）。直接点“启动游戏”即可——JIT 会经 StikDebug 自动申请；也可在 StikDebug 应用内手动为启动器开启 JIT。";
+"ame307.crash.switch_gles" = "一键切换 GLES 后端（绕开 MoltenVK）";

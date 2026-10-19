@@ -567,3 +567,4 @@
 "ame303.copy_failed" = "Không thể ghi tệp phiên bản cho thực thể đã đổi tên \"%@\": sao chép bản sao cục bộ thất bại. Hãy giải phóng dung lượng rồi thử lại.";
 "ame303.manifest_missing" = "Không thể phân giải phiên bản \"%@\": danh mục phiên bản từ xa chưa được tải và không có bản sao cục bộ để nhân bản. Kiểm tra kết nối mạng rồi thử lại.";
 "ame306.jit.spawn_denied" = "JIT tích hợp không khả dụng với cách cài đặt này: sandbox không jailbreak từ chối khởi chạy tiến trình trợ lý JIT (chỉ TrollStore/jailbreak có thể cho phép). Chỉ cần nhấn «Khởi động» — JIT sẽ được tự động yêu cầu qua StikDebug; hoặc bật thủ công trong ứng dụng StikDebug.";
+"ame307.crash.switch_gles" = "Chuyển sang backend GLES (bỏ qua MoltenVK)";

@@ -320,3 +320,4 @@
 "ame303.copy_failed" = "Kan versiebestand voor hernoemde instantie \"%@\" niet schrijven: kopiëren van lokale kopie mislukt. Maak opslagruimte vrij en probeer opnieuw.";
 "ame303.manifest_missing" = "Kan versie \"%@\" niet herleiden: het externe versiemanifest is nog niet geladen en er is geen lokale kopie om te dupliceren. Controleer de netwerkverbinding en probeer opnieuw.";
 "ame306.jit.spawn_denied" = "Ingebouwde JIT is niet beschikbaar bij deze installatie: de sandbox zonder jailbreak weigert het JIT-hulpproces te starten (alleen TrollStore/jailbreak staan dit toe). Druk gewoon op «Starten» — JIT wordt automatisch via StikDebug aangevraagd; of schakel het handmatig in binnen StikDebug.";
+"ame307.crash.switch_gles" = "Overschakelen naar GLES-backend (MoltenVK omzeilen)";

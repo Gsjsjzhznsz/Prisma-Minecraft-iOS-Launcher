@@ -660,6 +660,26 @@ static void ame274_presentAfterSettling(UIViewController *presenter, UIViewContr
             alertControllerWithTitle:localize(@"ame273.crash.title", nil)
                              message:msg
                       preferredStyle:UIAlertControllerStyleAlert];
+        // ★ Task307：MoltenVK 定向自愈入口——headline 指向 libMoltenVK.dylib
+        // （MobileGL Vulkan 后端着色器管线初始化空指针崩溃，生成端 main_hook
+        // ame307 定向 fix 同源判据）时，追加"切 GLES 后端"一键动作：写
+        // mobileglues.mobilegl_backend=2（DirectGLES，Espryt/ANGLE 翻译，
+        // 不经 MoltenVK）+ marker 落盘取证，下次启动生效。仅当前档位非
+        // GLES 时出现（已是 GLES 档仍崩则不重复设置，走常规排查）。
+        if (headline.length > 0 && [headline containsString:@"libMoltenVK.dylib"] &&
+            getPrefInt(@"mobileglues.mobilegl_backend") != 2) {
+            [ame273_alert addAction:[UIAlertAction actionWithTitle:localize(@"ame307.crash.switch_gles", nil)
+                style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+                setPrefInt(@"mobileglues.mobilegl_backend", 2);
+                NSString *ame307_home = [NSProcessInfo processInfo].environment[@"POJAV_HOME"];
+                if (ame307_home.length > 0) {
+                    NSString *ame307_marker = [ame307_home stringByAppendingPathComponent:@"ame307_gles_fallback.txt"];
+                    NSString *ame307_stamp = [NSString stringWithFormat:@"time=%@\nheadline=%@\n", [NSDate date], headline];
+                    [ame307_stamp writeToFile:ame307_marker atomically:YES encoding:NSUTF8StringEncoding error:nil];
+                }
+                NSLog(@"[Ame307] GLES fallback engaged from crash dialog (mobileglues.mobilegl_backend=2, marker written) -- next launch bypasses MoltenVK");
+            }]];
+        }
         // ★ Task275（P2-b5）：宿主现取锚——2.5s 延迟期间语言切换等会重建根，
         // 快照宿主脱窗后 present 静默失败且报告已归档 = 补弹永久丢失。
         __block UIViewController *ame273_anchor = nil;

@@ -595,8 +595,33 @@ static void ame273_writeCrashReport(int code) {
         fixLen = lines[idxFix].len - (int)(fix - lines[idxFix].start);
     }
     if (fixLen == 0 && catJvmFatal) {
-        // Task305：JVM fatal 没有 Fabric 的 "Fix:" 行——给默认处置指引
-        fix = "完整原生回溯在 hs_err_pid*.log（启动器 Documents 根目录）；若问题帧指向渲染器/图形库，可在设置中切换渲染器后重试";
+        // Task307：MoltenVK 定向诊断（装机 862ea2c hs_err_pid47069 实锤）——
+        // MobileGL(DirectVulkan) 会话在 MC GlDevice 创建（首次 GL 上下文
+        // make-current）期间，MoltenVK 内部着色器管线初始化空指针崩溃
+        // （SIGSEGV SEGV_ACCERR @null+0x40，problematic frame =
+        // libMoltenVK.dylib vkSetWorkgroupSizeMVK 附近，原生栈 libMobileGL
+        // eglMakeCurrent → MoltenVK SPIRVToMSL 区）。JIT 与游戏本体无关，
+        // 是 MobileGL Vulkan(MoltenVK) 后端在本机/LC guest 环境的兼容性雷。
+        // 特征 = "libMoltenVK.dylib+"（库名+偏移格式，避开命令行
+        // -Dorg.lwjgl.vulkan.libname=MoltenVK 弱引用误报）与
+        // libMobileGL.dylib 同场。唯一绕开 MoltenVK 的 MobileGL 档 =
+        // DirectGLES（Espryt/ANGLE 翻译）；Mithril 也是 Vulkan 后端
+        // （同样过 MoltenVK），切它无效。呈现层（SceneDelegate ame273
+        // 弹窗）按 headline 同特征追加"一键切 GLES 后端"动作（写
+        // mobileglues.mobilegl_backend=2，ame307）。
+        int ame307_molten = 0, ame307_mgl = 0;
+        for (int i = 0; i < lineCount; i++) {
+            if (!ame307_molten && strstr(lines[i].start, "libMoltenVK.dylib+") != NULL) ame307_molten = 1;
+            if (!ame307_mgl && strstr(lines[i].start, "libMobileGL.dylib") != NULL) ame307_mgl = 1;
+            if (ame307_molten && ame307_mgl) break;
+        }
+        if (ame307_molten && ame307_mgl) {
+            NSLog(@"[Ame307] MoltenVK crash signature detected (libMoltenVK+libMobileGL) -- targeted fix guidance attached");
+            fix = "MoltenVK（MobileGlues Vulkan 后端）在着色器管线初始化时崩溃（空指针）。缓解：设置-视频-渲染器-渲染后端(MobileGlues) 切到 GLES 档（不经 MoltenVK），或改用其他渲染器后重试。 EN: MoltenVK (MobileGlues Vulkan backend) crashed during shader pipeline init (null deref). Mitigation: switch the MobileGlues backend to GLES (bypasses MoltenVK), or pick another renderer.";
+        } else {
+            // Task305：JVM fatal 没有 Fabric 的 "Fix:" 行——给默认处置指引
+            fix = "完整原生回溯在 hs_err_pid*.log（启动器 Documents 根目录）；若问题帧指向渲染器/图形库，可在设置中切换渲染器后重试";
+        }
         fixLen = (int)strlen(fix);
     }
 

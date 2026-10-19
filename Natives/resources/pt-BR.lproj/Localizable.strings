@@ -3156,3 +3156,4 @@
 "ame303.copy_failed" = "Não foi possível gravar o arquivo de versão da instância renomeada \"%@\": falha ao copiar a cópia local. Libere espaço e tente novamente.";
 "ame303.manifest_missing" = "Não foi possível resolver a versão \"%@\": o manifesto remoto de versões ainda não foi carregado e não há cópia local para duplicar. Verifique a conexão e tente novamente.";
 "ame306.jit.spawn_denied" = "O JIT integrado não está disponível nesta instalação: o sandbox sem jailbreak nega a execução do processo auxiliar de JIT (apenas TrollStore/jailbreak podem permitir). Basta tocar em «Iniciar» — o JIT será solicitado automaticamente via StikDebug; ou ative-o manualmente no app StikDebug.";
+"ame307.crash.switch_gles" = "Alternar para o backend GLES (evitar o MoltenVK)";

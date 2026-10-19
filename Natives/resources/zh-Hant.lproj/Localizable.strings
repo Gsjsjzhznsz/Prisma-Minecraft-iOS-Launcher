@@ -3365,3 +3365,4 @@
 "ame303.copy_failed" = "無法為重新命名實例「%@」寫入版本檔案：複製本機副本失敗。請清理儲存空間後重試。";
 "ame303.manifest_missing" = "無法解析版本「%@」：遠端版本清單尚未載入，且本機沒有可複製的版本檔案。請檢查網路連線後重試。";
 "ame306.jit.spawn_denied" = "目前安裝方式無法使用內建 JIT：非越獄沙盒拒絕衍生 JIT 輔助程序（僅 TrollStore / 越獄環境可能允許）。直接點「啟動遊戲」即可——JIT 會經 StikDebug 自動申請；也可在 StikDebug 應用內手動為啟動器開啟 JIT。";
+"ame307.crash.switch_gles" = "一鍵切換 GLES 後端（繞開 MoltenVK）";

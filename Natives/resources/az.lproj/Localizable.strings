@@ -288,3 +288,4 @@
 "ame303.copy_failed" = "Could not write the version file for renamed instance \"%@\": copying the local copy failed. Free up storage space and try again.";
 "ame303.manifest_missing" = "Could not resolve version \"%@\": the remote version manifest is not loaded yet and no local copy exists to duplicate from. Check your network connection and try again.";
 "ame306.jit.spawn_denied" = "Bu quraşdırma ilə daxili JIT əlçatmazdır: jailbreaksiz sandbox JIT köməkçi prosesini işə salmaqdan imtina edir (yalnız TrollStore/jailbreak icazə verə bilər). Sadəcə «Başlat» düyməsinə basın — JIT StikDebug vasitəsilə avtomatik soruşulacaq; ya da StikDebug tətbiqində əl ilə aktivləşdirin.";
+"ame307.crash.switch_gles" = "GLES backendinə keç (MoltenVK-dan yan keç)";

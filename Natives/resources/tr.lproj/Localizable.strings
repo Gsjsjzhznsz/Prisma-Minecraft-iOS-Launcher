@@ -476,3 +476,4 @@
 "ame303.copy_failed" = "Yeniden adlandırılan örnek \"%@\" için sürüm dosyası yazılamadı: yerel kopya çoğaltılamadı. Depolama alanını boşaltıp tekrar deneyin.";
 "ame303.manifest_missing" = "\"%@\" sürümü çözümlenemedi: uzak sürüm manifestosu henüz yüklenmedi ve çoğaltılacak yerel kopya yok. Ağ bağlantısını kontrol edip tekrar deneyin.";
 "ame306.jit.spawn_denied" = "Bu kurulumda yerleşik JIT kullanılamıyor: jailbreak'siz sanal alan JIT yardımcı sürecini başlatmayı reddediyor (yalnızca TrollStore/jailbreak izin verebilir). Sadece 'Başlat'a dokunun — JIT, StikDebug üzerinden otomatik istenecek; ya da StikDebug uygulaması içinde elle etkinleştirin.";
+"ame307.crash.switch_gles" = "GLES arka ucuna geç (MoltenVK'yi atla)";

@@ -491,3 +491,4 @@
 "ame303.copy_failed" = "Tidak dapat menulis file versi untuk instance yang diganti nama \"%@\": penyalinan salinan lokal gagal. Bersihkan ruang penyimpanan lalu coba lagi.";
 "ame303.manifest_missing" = "Tidak dapat menyelesaikan versi \"%@\": manifest versi jarak jauh belum dimuat dan tidak ada salinan lokal untuk diduplikasi. Periksa koneksi jaringan lalu coba lagi.";
 "ame306.jit.spawn_denied" = "JIT bawaan tidak tersedia dengan pemasangan ini: sandbox tanpa jailbreak menolak menjalankan proses pembantu JIT (hanya TrollStore/jailbreak yang dapat mengizinkan). Cukup tekan «Mulai» — JIT akan diminta otomatis lewat StikDebug; atau aktifkan secara manual di aplikasi StikDebug.";
+"ame307.crash.switch_gles" = "Beralih ke backend GLES (hindari MoltenVK)";
