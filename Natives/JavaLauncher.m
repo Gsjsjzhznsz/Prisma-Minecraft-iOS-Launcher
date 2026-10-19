@@ -2146,6 +2146,60 @@ static void ame286_seedFirstLaunchPerformanceOptions(NSString *gameDir) {
     }
 }
 
+// ★ Task301：JIT26 brk 握手有界看门狗（launchJVM / launchHeadlessJVM 共用）。
+// 病历（用户 2026-10-19"启动不了游戏呢，卡住了"）：isJITEnabled=CS_DEBUGGED
+// 是进程级持久态——早前 StikDebug 会话成功附加过后，即使调试器已被用户杀掉，
+// CS_DEBUGGED 仍为 1，启动门秒过；而死调试器残留的任务级断点异常端口让
+// brk #0x69 进 mach_msg 永久等待，SIGTRAP 安全网（JIT26TrapCatch）根本收
+// 不到信号 = heap ceiling/mods 扫描后零后续日志零弹窗的"永久卡住"。
+// 修法：区域创建放后台线程 + 20s 有界等待；超时自动跑内置 JIT 轨（其
+// debugserver 接管后应答挂起的 brk），再给 brk 线程 90s 收尾窗口；仍无果
+// 返回 NULL 走既有优雅失败弹窗。泄漏一条阻塞线程优于整机永久卡死。
+static void* ame301_createRegionWithWatchdog(void) {
+    dispatch_semaphore_t ame301_done = dispatch_semaphore_create(0);
+    __block void *ame301_region = NULL;
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        ame301_region = JIT26CreateRegionLegacySafe(getpagesize());
+        dispatch_semaphore_signal(ame301_done);
+    });
+    // 第一轮 20s：活调试器在场的正常握手毫秒级完成
+    if (dispatch_semaphore_wait(ame301_done, dispatch_time(DISPATCH_TIME_NOW, (int64_t)20 * NSEC_PER_SEC)) == 0) {
+        return ame301_region;
+    }
+    NSLog(@"[JIT] [JavaLauncher] Task301 brk handshake stalled >20s (dead debugger exception port?) -- auto-running builtin JIT track to service it");
+    BOOL ame301_builtinAvail = [StikDebugViewController ame294_builtinTrackAvailable];
+    if (ame301_builtinAvail) {
+        dispatch_semaphore_t ame301_builtinSem = dispatch_semaphore_create(0);
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [StikDebugViewController ame294_enableBuiltinJITWithCompletion:^(BOOL success, NSString *message) {
+                NSLog(@"[JIT] [JavaLauncher] Task301 watchdog builtin track: success=%d msg=%@", success, message);
+                dispatch_semaphore_signal(ame301_builtinSem);
+            }];
+        });
+        // 内置轨首跑含 DDI 下载可达数分钟（600s 上限）；期间 brk 线程若先完成
+        // （新调试器接管应答了挂起的 brk）则提前出线
+        for (int ame301_i = 0; ame301_i < 600; ame301_i++) {
+            if (dispatch_semaphore_wait(ame301_builtinSem, dispatch_time(DISPATCH_TIME_NOW, (int64_t)1 * NSEC_PER_SEC)) == 0) break;
+            if (dispatch_semaphore_wait(ame301_done, DISPATCH_TIME_NOW) == 0) {
+                NSLog(@"[JIT] [JavaLauncher] Task301 stalled brk thread got serviced mid-builtin -- resuming launch");
+                return ame301_region;
+            }
+        }
+        NSLog(@"[JIT] [JavaLauncher] Task301 builtin track done -- 90s grace for the stalled brk thread");
+    } else {
+        NSLog(@"[JIT] [JavaLauncher] Task301 builtin track unavailable -- 60s grace for the stalled brk thread");
+        if (dispatch_semaphore_wait(ame301_done, dispatch_time(DISPATCH_TIME_NOW, (int64_t)60 * NSEC_PER_SEC)) == 0) {
+            return ame301_region;
+        }
+        return NULL;
+    }
+    if (dispatch_semaphore_wait(ame301_done, dispatch_time(DISPATCH_TIME_NOW, (int64_t)90 * NSEC_PER_SEC)) == 0) {
+        return ame301_region;
+    }
+    NSLog(@"[JIT] [JavaLauncher] Task301 brk handshake never serviced -- failing launch gracefully (JIT dialog follows)");
+    return NULL;
+}
+
 int launchJVM(NSString *accountId, id launchTarget, int width, int height, int minVersion) {
     NSLog(@"[JavaLauncher] Beginning JVM launch");
 
@@ -2231,7 +2285,10 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         static void *result;
         // Task91：SIGTRAP 安全网——brk 无应答（JIT26 调试器未就绪/脚本未挂载）
         // 时原裸函数直接 SIGTRAP 致死（用户实测"开启 JIT 后闪退"），改走优雅报错
-        if(!result) result = JIT26CreateRegionLegacySafe(getpagesize());
+        // ★ Task301：SIGTRAP 安全网只救得了"无异常端口"场景；死调试器残留
+        // 端口下 brk 进 mach_msg 永久阻塞（用户实测"启动卡住"）——改走有界
+        // 看门狗：超时自动跑内置 JIT 轨服务挂起的 brk，仍无果才优雅失败。
+        if(!result) result = ame301_createRegionWithWatchdog();
         if (!result) {
             NSLog(@"[JIT26] JIT26CreateRegionLegacy returned NULL — JIT26 debugger not servicing brk; aborting launch gracefully");
             showDialog(localize(@"Error", nil), localize(@"i18n_str_jit26_not_ready", nil));
@@ -4197,7 +4254,9 @@ int launchHeadlessJVM(NSString *mainClass, NSArray<NSString *> *args, int minJav
     if (requiresTXMWorkaround) {
         static void *result;
         // Task91：同 launchJVM，SIGTRAP 安全网——无应答时优雅报错而非闪退
-        if (!result) result = JIT26CreateRegionLegacySafe(getpagesize());
+        // ★ Task301：同 launchJVM 换有界看门狗（死调试器端口下 brk 永久
+        // mach_msg 阻塞，SIGTRAP 安全网收不到；超时自动跑内置轨后收尾）。
+        if (!result) result = ame301_createRegionWithWatchdog();
         if (!result) {
             NSLog(@"[JIT26] [Headless] JIT26CreateRegionLegacy returned NULL — JIT26 debugger not servicing brk; aborting gracefully");
             showDialog(localize(@"Error", nil), localize(@"i18n_str_jit26_not_ready", nil));

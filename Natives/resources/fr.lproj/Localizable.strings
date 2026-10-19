@@ -3153,3 +3153,9 @@
 "ame300.dup.message" = "Une instance nommée « %@ » existe déjà.\nNommez la nouvelle instance ou annulez ce téléchargement.";
 "ame300.dup.confirm" = "Télécharger avec ce nom";
 "ame300.dup.dir_exists" = "Une instance nommée « %@ » existe déjà. Choisissez un autre nom.";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "Téléchargement incomplet détecté";
+"ame301.residual.message" = "Un dossier résiduel “%@” d’un téléchargement interrompu existe (manifeste manquant), il n’apparaît donc pas dans la liste des instances. Nettoyer et retélécharger, installer sous un autre nom, ou annuler.";
+"ame301.residual.clean" = "Nettoyer et retélécharger";
+"ame301.residual.rename" = "Installer sous un autre nom";

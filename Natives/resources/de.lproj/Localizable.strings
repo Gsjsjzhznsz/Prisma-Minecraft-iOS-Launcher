@@ -3158,3 +3158,9 @@
 "ame300.dup.message" = "Eine Instanz namens “%@” existiert bereits.\nBenenne die neue Instanz oder brich den Download ab.";
 "ame300.dup.confirm" = "Mit diesem Namen herunterladen";
 "ame300.dup.dir_exists" = "Eine Instanz namens “%@” existiert bereits. Wähle einen anderen Namen.";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "Unvollständiger Download erkannt";
+"ame301.residual.message" = "Ein Überbleibsel-Ordner “%@” eines abgebrochenen Downloads existiert (Manifest fehlt) und erscheint daher nicht in der Instanzliste. Bereinigen und neu laden, unter anderem Namen installieren oder abbrechen.";
+"ame301.residual.clean" = "Bereinigen & neu laden";
+"ame301.residual.rename" = "Unter neuem Namen installieren";

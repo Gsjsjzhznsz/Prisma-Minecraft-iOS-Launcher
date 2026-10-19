@@ -533,3 +533,9 @@
 "ame300.dup.message" = "An instance named “%@” already exists.\nName the new instance, or cancel this download.";
 "ame300.dup.confirm" = "Download with this name";
 "ame300.dup.dir_exists" = "An instance named “%@” already exists. Choose a different name.";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "Виявлено незавершене завантаження";
+"ame301.residual.message" = "Залишилась папка “%@” від перерваного завантаження (без манifestу), тому вона не видима у списку екземплярів. Очистіть і завантажте знову, встановіть під іншою назвою або скасуйте.";
+"ame301.residual.clean" = "Очистити й завантажити знову";
+"ame301.residual.rename" = "Встановити під іншою назвою";

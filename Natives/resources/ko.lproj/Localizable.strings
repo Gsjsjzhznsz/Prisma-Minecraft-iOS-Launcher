@@ -3138,3 +3138,9 @@
 "ame300.dup.message" = "이름이 “%@”인 인스턴스가 이미 있습니다.\n새 인스턴스의 이름을 지정하거나 다운로드를 취소하세요.";
 "ame300.dup.confirm" = "이 이름으로 다운로드";
 "ame300.dup.dir_exists" = "“%@” 이름의 인스턴스가 이미 존재합니다. 다른 이름을 입력하세요.";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "완료되지 않은 다운로드 감지됨";
+"ame301.residual.message" = "중단된 다운로드의 잔여 폴더 “%@”이(가) 있습니다(매니페스트가 없어 인스턴스 목록에 표시되지 않습니다). 정리 후 다시 다운로드하거나, 다른 이름으로 설치하거나, 취소하세요.";
+"ame301.residual.clean" = "정리 후 다시 다운로드";
+"ame301.residual.rename" = "다른 이름으로 설치";

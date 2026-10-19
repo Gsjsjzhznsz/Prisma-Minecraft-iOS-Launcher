@@ -816,13 +816,34 @@ else ifeq ($(JIT_SDK),)
 else
 	rm -rf $(JIT_STAGING); mkdir -p $(JIT_STAGING)
 	# ① 宿主侧协调器 dylib（AppExtensionProcess + XPC 会话编排）
+	#   ★ Task301：加编 StikJIT 核心全源 + idevice FFI force_load + 自重拉起
+	#   入口 PrismaJITDirectEntry.swift（@_cdecl prisma_jit_direct_main）——
+	#   自重拉起子进程 dlopen 本 dylib 即可跑 enableJIT 全链，不再依赖
+	#   AMFI 拒绝 exec 的 appex 内嵌二进制（装机 2c6458a errno=2 实锤）。
 	$(JIT_SWIFTC) -parse-as-library -emit-library -O \
 		-sdk '$(JIT_SDK)' -target arm64-apple-ios26.0 \
+		-I $(JIT_APP_SRC)/idevice -I $(JIT_APP_SRC)/iokit \
+		-Xlinker -force_load -Xlinker $(JIT_APP_SRC)/idevice/libidevice_ffi.a \
+		-Xlinker -dead_strip \
+		-framework JavaScriptCore -framework Network -framework Security \
+		-framework CFNetwork -framework SystemConfiguration -framework IOKit \
 		-framework ExtensionFoundation \
 		-o $(JIT_STAGING)/libPrismaJITCoordinator.dylib \
+		$(JIT_APP_SRC)/Sources/BundledScript.swift \
+		$(JIT_APP_SRC)/Sources/DDISession.swift \
+		$(JIT_APP_SRC)/Sources/DeveloperDiskImageService.swift \
+		$(JIT_APP_SRC)/Sources/EndpointProbe.swift \
+		$(JIT_APP_SRC)/Sources/IdeviceFFI.swift \
+		$(JIT_APP_SRC)/Sources/JITSession.swift \
+		$(JIT_APP_SRC)/Sources/ProcessInfo+TXM.swift \
+		$(JIT_APP_SRC)/Sources/ScriptRunner.swift \
+		$(JIT_APP_SRC)/Sources/StikJIT.swift \
+		$(JIT_APP_SRC)/Sources/StikJITError.swift \
+		$(JIT_APP_SRC)/Sources/SynchronousDDIDownloader.swift \
 		$(JIT_APP_SRC)/integration/Shared/PrismaJITXPC.swift \
 		$(JIT_APP_SRC)/integration/Host/PrismaJITExtensionPoint.swift \
 		$(JIT_APP_SRC)/integration/Host/PrismaJITCoordinator.swift \
+		$(JIT_APP_SRC)/integration/Helper/PrismaJITDirectEntry.swift \
 		|| exit 1
 	# ② Helper appex 可执行（StikJIT.enableJIT 全链：RSD 探测/DDI 下载挂载/
 	#    debugserver vAttach/universal 脚本协议；idevice FFI force_load 对齐上游）

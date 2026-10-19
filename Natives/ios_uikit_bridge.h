@@ -29,6 +29,15 @@ void ame294_showJITActionDialogEx(NSString *title, NSString *message,
 // 名称唯一性校验由调用方负责（可循环重弹）。
 void ame300_promptRenameInstance(NSString *title, NSString *message, NSString *prefill,
                                  void (^completion)(NSString *chosenName));
+// Task301：残根目录三选弹窗（清理并重装 / 重命名继续 / 取消；ame300 同款 level-1000
+// 承载）。重命名按钮消费预填文本框（onRename(nil)=空输入），清理/取消不消费；
+// 回调一律 main 队列，任意线程可调。
+void ame301_promptResidualInstance(NSString *title, NSString *message,
+                                   NSString *cleanTitle, NSString *renameTitle,
+                                   NSString *prefill,
+                                   void (^onClean)(void),
+                                   void (^onRename)(NSString *chosenName),
+                                   void (^onCancel)(void));
 jstring UIKit_accessClipboard(JNIEnv* env, jint action, jstring copySrc);
 void UIKit_launchMinecraftSurfaceVC(UIWindow *window, NSDictionary *metadata);
 void UIKit_returnToSplitView();

@@ -1,4 +1,5 @@
 #import <mach-o/dyld.h>
+#import <dlfcn.h>
 #import <spawn.h>
 #import <sys/sysctl.h>
 #import <UIKit/UIKit.h>
@@ -621,6 +622,47 @@ void init_setupHomeDirectory() {
 }
 
 int main(int argc, char *argv[]) {
+    // ★ Task301：内置 JIT 自重拉起子进程分支（第三轨）。必须在【一切】初始化
+    // 之前分支——含 shaderc 沙箱分支。装机 2c6458a latestlog 实锤：LC guest 内
+    // posix_spawn appex 内嵌二进制被 AMFI 拒（errno=2），而主二进制自身 exec
+    // 必合法（它正在跑）。协调器 posix_spawn 本体 + env PRISMA_JIT_HELPER_CHILD=1
+    // + PRISMA_JIT_COORDINATOR_DYLIB；此处 dlopen 协调器 dylib，调
+    // @_cdecl("prisma_jit_direct_main") 入口（StikJIT.enableJIT 全链：RSD 探测
+    // → DDI 下载/挂载 → debugserver vAttach 父 PID → universal 脚本协议），
+    // 返回码即进程退出码。dlopen/dlsym 失败也必须原子写回 RESULT_FILE（协调器
+    // 轮询以文件存在+内容为准），否则宿主只能等 600s 超时。
+    if (getenv("PRISMA_JIT_HELPER_CHILD") != NULL) {
+        const char *ame301_dylibPath = getenv("PRISMA_JIT_COORDINATOR_DYLIB");
+        const char *ame301_resultPath = getenv("PRISMA_JIT_RESULT_FILE");
+        const char *ame301_failMsg = NULL;
+        void *ame301_h = NULL;
+        int ame301_rc = 3;
+        if (ame301_dylibPath == NULL) {
+            ame301_failMsg = "PRISMA_JIT_COORDINATOR_DYLIB missing in child env";
+        } else {
+            ame301_h = dlopen(ame301_dylibPath, RTLD_NOW | RTLD_LOCAL);
+            if (ame301_h == NULL) {
+                NSLog(@"[JIT] Task301 child dlopen(%s) failed: %s", ame301_dylibPath, dlerror());
+                ame301_failMsg = "coordinator dylib dlopen failed in self-relaunch child";
+            }
+        }
+        if (ame301_h != NULL) {
+            typedef int (*ame301_entry_t)(void);
+            ame301_entry_t ame301_entry = (ame301_entry_t)dlsym(ame301_h, "prisma_jit_direct_main");
+            if (ame301_entry != NULL) {
+                ame301_rc = ame301_entry();
+                _exit(ame301_rc);
+            }
+            NSLog(@"[JIT] Task301 child dlsym(prisma_jit_direct_main) failed: %s", dlerror());
+            ame301_failMsg = "prisma_jit_direct_main symbol missing in coordinator dylib";
+        }
+        if (ame301_resultPath != NULL && ame301_failMsg != NULL) {
+            NSString *payload = [NSString stringWithFormat:@"0\t[self-relaunch] %s", ame301_failMsg];
+            [payload writeToFile:@(ame301_resultPath) atomically:YES encoding:NSUTF8StringEncoding error:nil];
+        }
+        _exit(3);
+    }
+
     // Task 42：shaderc 编译沙箱 helper 子进程分支。必须在【一切】launcher/JVM/
     // hook 初始化之前分支（pJLI_Launch、ptrace JIT 分支都在其后）。父进程的
     // shaderc shim 通过 posix_spawn 以 AME_SHADERC_SANDBOX=1 + AME_SB_FD=3

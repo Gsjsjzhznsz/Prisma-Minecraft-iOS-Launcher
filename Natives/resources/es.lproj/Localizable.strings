@@ -3145,3 +3145,9 @@
 "ame300.dup.message" = "Ya existe una instancia llamada “%@”.\nAsigna un nombre a la nueva instancia o cancela esta descarga.";
 "ame300.dup.confirm" = "Descargar con este nombre";
 "ame300.dup.dir_exists" = "Ya existe una instancia llamada “%@”. Elige un nombre diferente.";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "Descarga incompleta detectada";
+"ame301.residual.message" = "Existe una carpeta residual “%@” de una descarga interrumpida (falta el manifiesto), por eso no aparece en la lista de instancias. Limpiar y volver a descargar, instalar con otro nombre o cancelar.";
+"ame301.residual.clean" = "Limpiar y volver a descargar";
+"ame301.residual.rename" = "Instalar con otro nombre";

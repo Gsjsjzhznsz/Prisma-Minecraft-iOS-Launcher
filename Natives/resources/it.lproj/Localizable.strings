@@ -3143,3 +3143,9 @@
 "ame300.dup.message" = "Esiste già un’istanza denominata “%@”.\nAssegna un nome alla nuova istanza o annulla il download.";
 "ame300.dup.confirm" = "Scarica con questo nome";
 "ame300.dup.dir_exists" = "Esiste già un’istanza denominata “%@”. Scegli un nome diverso.";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "Download incompleto rilevato";
+"ame301.residual.message" = "Esiste una cartella residua “%@” di un download interrotto (manifest mancante), quindi non compare nell’elenco delle istanze. Pulisci e riscarica, installa con un altro nome o annulla.";
+"ame301.residual.clean" = "Pulisci e riscarica";
+"ame301.residual.rename" = "Installa con un altro nome";

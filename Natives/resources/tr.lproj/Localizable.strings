@@ -466,3 +466,9 @@
 "ame300.dup.message" = "An instance named “%@” already exists.\nName the new instance, or cancel this download.";
 "ame300.dup.confirm" = "Download with this name";
 "ame300.dup.dir_exists" = "An instance named “%@” already exists. Choose a different name.";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "Tamamlanmamış indirme algılandı";
+"ame301.residual.message" = "Kesintiye uğrayan bir indirmeden kalan “%@” klasörü var (manifest eksik), bu yüzden örnek listesinde görünmüyor. Temizleyip yeniden indirin, farklı bir adla yükleyin veya iptal edin.";
+"ame301.residual.clean" = "Temizle ve yeniden indir";
+"ame301.residual.rename" = "Farklı adla yükle";

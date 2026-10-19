@@ -481,3 +481,9 @@
 "ame300.dup.message" = "Sudah ada instans bernama “%@”.\nBeri nama instans baru, atau batalkan unduhan ini.";
 "ame300.dup.confirm" = "Unduh dengan nama ini";
 "ame300.dup.dir_exists" = "Sudah ada instans bernama “%@”. Gunakan nama lain.";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "Unduhan tidak lengkap terdeteksi";
+"ame301.residual.message" = "Folder sisa “%@” dari unduhan yang terputus masih ada (manifest hilang), sehingga tidak muncul di daftar instansi. Bersihkan dan unduh ulang, instal dengan nama lain, atau batalkan.";
+"ame301.residual.clean" = "Bersihkan & unduh ulang";
+"ame301.residual.rename" = "Instal dengan nama lain";

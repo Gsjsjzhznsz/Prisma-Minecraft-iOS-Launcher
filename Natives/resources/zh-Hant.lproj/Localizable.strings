@@ -3355,3 +3355,9 @@
 "ame300.dup.message" = "發現同名實例「%@」。\n請為新實例命名，或取消本次下載。";
 "ame300.dup.confirm" = "使用此名稱下載";
 "ame300.dup.dir_exists" = "已存在同名實例「%@」，請換一個名稱。";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "檢測到未完成的下載殘留";
+"ame301.residual.message" = "檢測到上次下載中斷留下的殘留目錄「%@」（缺少清單檔案），因此實例列表中看不到它。可以清理後重新下載、換名稱安裝，或取消。";
+"ame301.residual.clean" = "清理並重新下載";
+"ame301.residual.rename" = "換名稱安裝";

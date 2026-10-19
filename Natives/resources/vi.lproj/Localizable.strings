@@ -557,3 +557,9 @@
 "ame300.dup.message" = "Đã tồn tại instance tên “%@”.\nHãy đặt tên cho instance mới hoặc hủy tải xuống này.";
 "ame300.dup.confirm" = "Tải xuống với tên này";
 "ame300.dup.dir_exists" = "Đã tồn tại instance tên “%@”. Hãy chọn tên khác.";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "Phát hiện tải xuống chưa hoàn tất";
+"ame301.residual.message" = "Thư mục còn sót “%@” từ một lượt tải bị gián đoạn vẫn còn (thiếu manifest) nên không xuất hiện trong danh sách phiên bản. Dọn sạch và tải lại, cài đặt dưới tên khác, hoặc hủy.";
+"ame301.residual.clean" = "Dọn sạch và tải lại";
+"ame301.residual.rename" = "Cài đặt dưới tên khác";

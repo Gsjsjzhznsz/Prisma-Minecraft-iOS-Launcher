@@ -557,3 +557,9 @@
 "ame300.dup.message" = "Instance s názvem “%@” již existuje.\nPojmenujte novou instanci nebo stahování zrušte.";
 "ame300.dup.confirm" = "Stáhnout pod tímto názvem";
 "ame300.dup.dir_exists" = "Instance s názvem “%@” již existuje. Zvolte jiný název.";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "Zjištěn nedokončený stahování";
+"ame301.residual.message" = "Zbytková složka “%@” z přerušeného stahování stále existuje (chybí manifest), proto se nezobrazuje v seznamu instancí. Vyčistěte a stáhněte znovu, nainstalujte pod jiným názvem, nebo zrušte.";
+"ame301.residual.clean" = "Vyčistit a stáhnout znovu";
+"ame301.residual.rename" = "Instalovat pod jiným názvem";

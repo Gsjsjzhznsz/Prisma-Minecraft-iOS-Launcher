@@ -622,6 +622,16 @@ static const NSUInteger kMCStageIndexVerify = 5;
         && ![ame300_origId hasPrefix:@"latest-"]   // latest-* 由元数据阶段二次解析，此处不拦
         && [NSFileManager.defaultManager fileExistsAtPath:ame300_target isDirectory:&ame300_isDir]
         && ame300_isDir) {
+        // ★ Task301：残根目录分流——目录存在但 <id>.json 缺失 = 上次下载
+        //   被中断的残根（版本列表只认完整实例→列表不可见，重下永远撞名
+        //   = 用户实测"26.1.2 被吞"的死循环根）。弹清理确认而非命名窗。
+        NSString *ame301_jsonPath = [ame300_target stringByAppendingPathComponent:
+            [NSString stringWithFormat:@"%@.json", ame300_origId]];
+        if (![NSFileManager.defaultManager fileExistsAtPath:ame301_jsonPath]) {
+            NSLog(@"[MCDL] Task301 residual dir detected (json missing): %@ -- prompting cleanup/rename", ame300_target);
+            [self ame301_promptResidualForVersion:version originalId:ame300_origId];
+            return;
+        }
         [self ame300_promptRenameForVersion:version
                                  originalId:ame300_origId
                                  suggestion:[self ame300_uniqueSuggestionForId:ame300_origId]];
@@ -640,6 +650,63 @@ static const NSUInteger kMCStageIndexVerify = 5;
     }
     return [NSString stringWithFormat:@"%@ %lu", origId,
             (unsigned long)[NSDate date].timeIntervalSince1970];
+}
+
+// ★ Task301：残根目录三选窗（清理并重装 / 重命名继续 / 取消）。
+// 残根 = versions/<id>/ 在但 <id>.json 缺失（下载中断遗留，列表不可见）。
+// 清理 = 删除残根后按原始 id 正常下载；重命名 = 走 Task300 命名闭环；
+// 取消 = Task300 同款干净终止（prepareForDownload+cancel，防
+// vanillaPreinstall 30min 空转）。
+- (void)ame301_promptResidualForVersion:(NSDictionary *)version originalId:(NSString *)origId {
+    NSString *message = [NSString stringWithFormat:localize(@"ame301.residual.message", nil), origId];
+    ame301_promptResidualInstance(
+        localize(@"ame301.residual.title", nil),
+        message,
+        localize(@"ame301.residual.clean", nil),
+        localize(@"ame301.residual.rename", nil),
+        [self ame300_uniqueSuggestionForId:origId],
+        ^{
+            NSString *target = [NSString stringWithFormat:@"%s/versions/%@",
+                                getenv("POJAV_GAME_DIR"), origId];
+            NSError *ame301_err = nil;
+            BOOL ame301_ok = [NSFileManager.defaultManager removeItemAtPath:target error:&ame301_err];
+            NSLog(@"[MCDL] Task301 residual cleanup ok=%d target=%@ err=%@", ame301_ok, target, ame301_err);
+            [self ame300_downloadVersionChecked:version];
+        },
+        ^(NSString *chosenName) {
+            if (chosenName.length == 0) {
+                [self ame301_cancelBeforeStart:origId];
+                return;
+            }
+            NSString *chosenDir = [NSString stringWithFormat:@"%s/versions/%@",
+                                   getenv("POJAV_GAME_DIR"), chosenName];
+            if ([NSFileManager.defaultManager fileExistsAtPath:chosenDir]) {
+                NSLog(@"[MCDL] Task301 chosen name still collides (%@) -- fall through to rename loop", chosenName);
+                [self ame300_promptRenameForVersion:version originalId:origId
+                                         suggestion:[self ame300_uniqueSuggestionForId:chosenName]];
+                return;
+            }
+            NSMutableDictionary *renamed = [version mutableCopy];
+            renamed[@"ame300_origId"] = origId;
+            renamed[@"id"] = chosenName;
+            NSLog(@"[MCDL] Task301 residual renamed download: %@ -> %@ (manifest lookup keeps %@)",
+                  origId, chosenName, origId);
+            [self ame300_downloadVersionChecked:renamed];
+        },
+        ^{
+            [self ame301_cancelBeforeStart:origId];
+        });
+}
+
+// Task301：下载未启动前的干净终止（ame300 取消分支同款语义）
+- (void)ame301_cancelBeforeStart:(NSString *)origId {
+    [self prepareForDownload];
+    [self.progress cancel];
+    NSLog(@"[MCDL] Task301 residual dialog cancelled -- download aborted before start (id=%@)", origId);
+    if (self.currentDownloadTaskItem) {
+        [[DownloadTaskManager sharedManager] setTaskWithId:self.currentDownloadTaskItem.taskId
+                                                    state:DownloadTaskStateCancelled];
+    }
 }
 
 // Task300：命名窗循环（确认名仍重复 → 带自增建议重弹；取消 → 干净终止）

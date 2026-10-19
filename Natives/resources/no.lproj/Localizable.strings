@@ -311,3 +311,9 @@
 "ame300.dup.message" = "En instans med navnet “%@” finnes allerede.\nGi den nye instansen et navn, eller avbryt nedlastingen.";
 "ame300.dup.confirm" = "Last ned med dette navnet";
 "ame300.dup.dir_exists" = "En instans med navnet “%@” finnes allerede. Velg et annet navn.";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "Incomplete download detected";
+"ame301.residual.message" = "A leftover folder “%@” from an interrupted download exists (its manifest is missing), so it never shows up in the instance list. Clean it up and download again, install under a different name, or cancel.";
+"ame301.residual.clean" = "Clean up & re-download";
+"ame301.residual.rename" = "Install under a new name";

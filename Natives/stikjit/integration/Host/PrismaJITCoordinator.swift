@@ -135,29 +135,50 @@ public final class PrismaJITCoordinator: NSObject {
         let resultPath = root.appendingPathComponent("direct-result.txt").path
         try? manager.removeItem(atPath: resultPath)
 
-        // ★ Task300 双路径解析：用户重签工具只递归重签 PlugIns/（canonical 扩展目录，
-        //   StikDebug/StikJIT 同族全落在 PlugIns），Extensions/ 副本重签后保留 CI 侧
-        //   ldid 伪签名 → 真机 AMFI 拒绝 exec（装机 dfc438f 实锤：二进制存在、存在性
-        //   检查过，posix_spawn 仍 rc=1 errno=2）。PlugIns/ 优先（重签覆盖真签），
-        //   Extensions/ 兑底（CI 原包直装/TrollStore 场景）。
+        // ★ Task301 三候选自检序列（自重拉起轨优先）：①主二进制自身 ——
+        //   exec 必合法（它正在跑；装机 2c6458a 实锤 LC guest 重签后 appex
+        //   内嵌二进制被 AMFI 拒 errno=2），env 加 PRISMA_JIT_HELPER_CHILD=1
+        //   + PRISMA_JIT_COORDINATOR_DYLIB，main.m 顶端分支 dlopen 协调器后
+        //   调 @_cdecl("prisma_jit_direct_main") 入口（同单元 StikJIT 全链）；
+        //   ②③ appex 内 PrismaJITDirect 两副本降为兜底（重签覆盖 PlugIns/
+        //   的装机链路可救）。Task300 双路径解析语义保留。
         let bundleRoot = Bundle.main.bundlePath
-        let ame300Candidates = [
-            bundleRoot + "/PlugIns/PrismaJITHelper.appex/PrismaJITDirect",
-            bundleRoot + "/Extensions/PrismaJITHelper.appex/PrismaJITDirect"
-        ]
-        guard let execPath = ame300Candidates.first(where: { manager.fileExists(atPath: $0) }) else {
-            let ame300Probe = ame300Candidates
-                .map { "\($0)=\(manager.fileExists(atPath: $0))" }
+        var ame301Candidates: [(path: String, isSelf: Bool)] = []
+        if let ame301_mainExec = Bundle.main.executablePath {
+            let ame301_dylibCandidates = [
+                bundleRoot + "/Frameworks/libPrismaJITCoordinator.dylib"
+            ]
+            if let ame301_dylib = ame301_dylibCandidates.first(where: { manager.fileExists(atPath: $0) }) {
+                ame301Candidates.append((ame301_mainExec, true))
+                ame301_selfDylibOverride = ame301_dylib
+            } else {
+                NSLog("[JIT] Task301 self-relaunch skipped: coordinator dylib not found under %@/Frameworks", bundleRoot)
+            }
+        }
+        if ame301Candidates.isEmpty {
+            NSLog("[JIT] Task301 self-relaunch unavailable (executablePath=%@) -- appex fallback only",
+                  Bundle.main.executablePath ?? "nil")
+        }
+        ame301Candidates.append((bundleRoot + "/PlugIns/PrismaJITHelper.appex/PrismaJITDirect", false))
+        ame301Candidates.append((bundleRoot + "/Extensions/PrismaJITHelper.appex/PrismaJITDirect", false))
+        guard let ame301_chosen = ame301Candidates.first(where: { manager.fileExists(atPath: $0.path) }) else {
+            let ame300Probe = ame301Candidates
+                .map { "\($0.path)=\(manager.fileExists(atPath: $0.path))" }
                 .joined(separator: " ")
             throw NSError(domain: "PrismaJIT", code: 21,
                           userInfo: [NSLocalizedDescriptionKey:
-                            "[direct-spawn] PrismaJITDirect not found (\(ame300Probe)) -- reinstall a build with the embedded JIT helper (keep PlugIns/ when re-signing)"])
+                            "[direct-spawn] no spawnable JIT helper candidate (\(ame300Probe)) -- reinstall a build with the embedded JIT helper (keep PlugIns/ when re-signing)"])
         }
+        let execPath = ame301_chosen.path
 
         var envLines: [String] = ProcessInfo.processInfo.environment.map { "\($0.key)=\($0.value)" }
         envLines.append("PRISMA_JIT_TARGET_PID=\(targetPID)")
         envLines.append("PRISMA_JIT_PAIRING_FILE=\(pairingURL.path)")
         envLines.append("PRISMA_JIT_RESULT_FILE=\(resultPath)")
+        if ame301_chosen.isSelf, let ame301_dylib = ame301_selfDylibOverride {
+            envLines.append("PRISMA_JIT_HELPER_CHILD=1")
+            envLines.append("PRISMA_JIT_COORDINATOR_DYLIB=\(ame301_dylib)")
+        }
 
         var childPID: pid_t = 0
         let rc = execDirectBinary(path: execPath, envLines: envLines, pidOut: &childPID)
@@ -216,6 +237,10 @@ public final class PrismaJITCoordinator: NSObject {
         defer { for p in arena { free(p) } }
         return posix_spawn(pidOut, path, nil, nil, &argv, &envp)
     }
+
+    // Task301：自重拉起轨的协调器 dylib 路径（directSpawnEnableJIT 内局部传递；
+    // 声明为静态存储避免闭包捕获复杂度）
+    private static var ame301_selfDylibOverride: String?
 }
 
 // 会话持有物：进程+XPC 会话存活的锚点；deinit 时取消会话并失效进程

@@ -288,6 +288,66 @@ void ame300_promptRenameInstance(NSString *title, NSString *message, NSString *p
     });
 }
 
+// ===== Task301：残根目录三选弹窗（清理并重装 / 重命名继续 / 取消）=====
+// 家法同 ame300（level-1000 window 承载 + associated object dismiss）；三个
+// 回调一律 main 队列，任意线程可调。重命名按钮消费预填文本框，清理/取消
+// 不消费。取消按钮风格 Cancel——level-1000 window 下系统不自动联动键盘，
+// 行为与 ame300 取消一致。
+void ame301_promptResidualInstance(NSString *title, NSString *message,
+                                   NSString *cleanTitle, NSString *renameTitle,
+                                   NSString *prefill,
+                                   void (^onClean)(void),
+                                   void (^onRename)(NSString *chosenName),
+                                   void (^onCancel)(void)) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:title
+            message:message preferredStyle:UIAlertControllerStyleAlert];
+        [alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+            textField.text = prefill ?: @"";
+            textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
+            textField.autocorrectionType = UITextAutocorrectionTypeNo;
+            textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+        }];
+        UIWindow *previousKeyWindow = UIWindow.mainWindow;
+        __weak UIAlertController *ame301_weakAlert = alert;
+        void (^dismissWindow)(void) = ^{
+            UIWindow *w = objc_getAssociatedObject(ame301_weakAlert, @selector(alertWindow));
+            if (w) {
+                w.hidden = YES;
+                if (previousKeyWindow && previousKeyWindow != w) {
+                    [previousKeyWindow makeKeyAndVisible];
+                }
+            }
+        };
+        [alert addAction:[UIAlertAction actionWithTitle:cleanTitle
+            style:UIAlertActionStyleDestructive
+            handler:^(UIAlertAction *action) {
+                dismissWindow();
+                onClean();
+            }]];
+        [alert addAction:[UIAlertAction actionWithTitle:renameTitle
+            style:UIAlertActionStyleDefault
+            handler:^(UIAlertAction *action) {
+                dismissWindow();
+                NSString *ame301_chosen = ame301_weakAlert.textFields.firstObject.text;
+                onRename(ame301_chosen.length > 0 ? ame301_chosen : nil);
+            }]];
+        [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+            style:UIAlertActionStyleCancel
+            handler:^(UIAlertAction *action) {
+                dismissWindow();
+                onCancel();
+            }]];
+        UIWindow *alertWindow = [[UIWindow alloc] initWithWindowScene:UIWindow.mainWindow.windowScene];
+        alertWindow.frame = UIScreen.mainScreen.bounds;
+        alertWindow.rootViewController = [UIViewController new];
+        alertWindow.windowLevel = 1000;
+        [alertWindow makeKeyAndVisible];
+        objc_setAssociatedObject(alert, @selector(alertWindow), alertWindow, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        [alertWindow.rootViewController presentViewController:alert animated:YES completion:nil];
+    });
+}
+
 JNIEXPORT void JNICALL Java_net_kdt_pojavlaunch_uikit_UIKit_showError(JNIEnv* env, jclass clazz, jstring title, jstring message, jboolean exitIfOk) {
     const char *title_c = (*env)->GetStringUTFChars(env, title, 0);
     const char *message_c = (*env)->GetStringUTFChars(env, message, 0);

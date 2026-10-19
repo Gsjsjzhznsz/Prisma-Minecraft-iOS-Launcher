@@ -452,3 +452,9 @@
 "ame300.dup.message" = "Instancja o nazwie “%@” już istnieje.\nNazwij nową instancję lub anuluj pobieranie.";
 "ame300.dup.confirm" = "Pobierz pod tą nazwą";
 "ame300.dup.dir_exists" = "Instancja o nazwie “%@” już istnieje. Wybierz inną nazwę.";
+
+// Task301: residual instance dialog (cleanup / rename / cancel)
+"ame301.residual.title" = "Wykryto niedokończone pobieranie";
+"ame301.residual.message" = "Istnieje folder resztkowy “%@” po przerwanym pobieraniu (brak manifestu), dlatego nie pojawia się na liście instancji. Wyczyść i pobierz ponownie, zainstaluj pod inną nazwą lub anuluj.";
+"ame301.residual.clean" = "Wyczyść i pobierz ponownie";
+"ame301.residual.rename" = "Zainstaluj pod inną nazwą";
