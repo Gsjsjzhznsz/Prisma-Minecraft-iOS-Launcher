@@ -1516,6 +1516,14 @@ static const CGFloat AmePanelVerticalEdgeInset = 12;
 }
 
 - (void)startDownloadWithVersion:(NSDictionary *)versionObject profileName:(NSString *)profileName {
+    // ★ Task304：本函数仅由启动前完整性校验链调用（launch 按钮 → findVersion
+    //   回调）。带 ame300_launchcheck 键后 downloadVersion: 对本地完整实例
+    //   （目录+json 都在）直接放行 SHA 校验补全——不再弹 Task300 命名窗
+    //   （用户实测"点启动弹改名窗"根因之一），残根（json 缺）仍弹 Task301。
+    NSMutableDictionary *ame304_vo = [versionObject mutableCopy];
+    ame304_vo[@"ame300_launchcheck"] = @YES;
+    versionObject = ame304_vo;
+
     self.task = [MinecraftResourceDownloadTask new];
 
     __weak LauncherRightPanelViewController *weakSelf = self;

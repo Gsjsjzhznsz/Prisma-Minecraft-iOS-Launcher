@@ -679,6 +679,22 @@ static const NSUInteger kMCStageIndexVerify = 5;
             [self ame301_promptResidualForVersion:version originalId:ame300_origId];
             return;
         }
+        // ★ Task304：启动校验链语义分离（用户 2026-10-19"依旧点启动弹改名窗"
+        //   + 装机 ed7ae10 日志实锤模组端二次改名链）。病历：RightPanel/
+        //   NavigationController 的 launchMinecraft 启动前完整性校验（HMCL
+        //   风格"缺啥补啥"）也是调 downloadVersion: 实现的——本地完整实例
+        //   （目录+json 都在）启动时必然撞目录 → Task300 命名窗每次启动必弹；
+        //   模组端装完（installFabricLikeLoader 已写 json+注册 profile）顺手
+        //   点启动 → 校验链再撞刚写的目录 → 二次改名 " 2 2" + mods 目录错位。
+        //   修法：调用方带 ame300_launchcheck=YES（启动校验语义）时，目录+json
+        //   完整 = 正是本校验的目标实例，直接放行走 SHA 校验补全，零弹窗；
+        //   残根（json 缺）仍弹 Task301 三选窗保护 mods；下载安装链不带键
+        //   = Task300 重复实例检测语义原样保留。
+        if ([version[@"ame300_launchcheck"] boolValue]) {
+            NSLog(@"[MCDL] Task304 launch-check path: existing complete instance %@ -- verify-and-continue (no rename prompt)", ame300_origId);
+            [self ame300_downloadVersionChecked:version];
+            return;
+        }
         [self ame300_promptRenameForVersion:version
                                  originalId:ame300_origId
                                  suggestion:[self ame300_uniqueSuggestionForId:ame300_origId]];

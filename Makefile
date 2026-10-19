@@ -1012,29 +1012,25 @@ payload: native dep_mg java jre assets dep_shader_shims dep_openal_shim dep_mith
 	#   目录，StikDebug/StikJIT 同族全部落在 PlugIns），Extensions/ 里的二进制
 	#   保留 CI 侧 ldid 伪签名 → 真机签名校验失败 → exec 被报 ENOENT。双嵌后
 	#   重签工具覆盖 PlugIns/ 副本（真签），Extensions/ 兜底 CI 原包直装场景。
+	#	★ Task304：Extensions/ 双副本退役（SideStore IMG_0447 实锤：重签工具把
+	#	  PlugIns/ 副本替换为 <原ID>.<随机后缀>，Extensions/ 副本不递归处理 →
+	#	  installd 扫到原 ID 与主 app 新 ID 前缀不符 → Mismatched bundle IDs 拒装）。
+	#	  单副本 PlugIns/ 标准位全链兼容；EXKit XPC 观察者轨装机三证判死（Code=19）
+	#	  appexpt 兜底价值归零；Coordinator 双路径解析 PlugIns 优先天然兼容。
 	if [ -f '$(JIT_STAGING)/PrismaJITHelper' ] && [ -f '$(JIT_STAGING)/PrismaJITDirect' ] && [ -f '$(JIT_STAGING)/libPrismaJITCoordinator.dylib' ]; then \
-		mkdir -p $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks; \
-		cp $(JIT_STAGING)/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper || exit 1; \
-		cp $(SOURCEDIR)/Natives/stikjit/integration/Helper/Info.plist $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/Info.plist || exit 1; \
-		cp $(JIT_STAGING)/PrismaJITDirect $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITDirect || exit 1; \
-		cp $(JIT_STAGING)/Resources/universal.js $(JIT_STAGING)/Resources/legacy.js $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/ || exit 1; \
-		cp $(JIT_STAGING)/PrismaJITHelper.appexpt $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/AngelAuraAmethyst.appexpt || exit 1; \
-		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper; \
-		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITDirect; \
-		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex || echo '[Prisma v$(VERSION)] payload - WARN: appex bundle seal failed (continuing)'; \
-		mkdir -p $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex; \
-		cp $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITHelper || exit 1; \
-		cp $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/Info.plist $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/Info.plist || exit 1; \
-		cp $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITDirect $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITDirect || exit 1; \
-		cp $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/universal.js $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/legacy.js $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/ || exit 1; \
+		mkdir -p $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks; \
+		cp $(JIT_STAGING)/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITHelper || exit 1; \
+		cp $(SOURCEDIR)/Natives/stikjit/integration/Helper/Info.plist $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/Info.plist || exit 1; \
+		cp $(JIT_STAGING)/PrismaJITDirect $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITDirect || exit 1; \
+		cp $(JIT_STAGING)/Resources/universal.js $(JIT_STAGING)/Resources/legacy.js $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/ || exit 1; \
 		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITHelper; \
 		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITDirect; \
 		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex || echo '[Prisma v$(VERSION)] payload - WARN: PlugIns appex bundle seal failed (continuing)'; \
 		chmod 755 $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/PlugIns/PrismaJITHelper.appex/PrismaJITDirect; \
 		cp $(JIT_STAGING)/libPrismaJITCoordinator.dylib $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/ || exit 1; \
 		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
-		chmod 755 $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITDirect $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
-		echo '[Prisma v$(VERSION)] payload - JIT helper embedded (PlugIns/ + Extensions/PrismaJITHelper.appex + AngelAuraAmethyst.appexpt)'; \
+		chmod 755 $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
+		echo '[Prisma v$(VERSION)] payload - JIT helper embedded (PlugIns/ single copy -- Task304 SideStore bundle-id mismatch fix)'; \
 	else \
 		echo '[Prisma v$(VERSION)] payload - JIT helper staging missing, embedding skipped (deep-link fallback)'; \
 	fi

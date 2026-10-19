@@ -562,6 +562,16 @@ static void *ProgressObserverContext = &ProgressObserverContext;
             @"type": @"custom"
         };
     }
+    // ★ Task304：launchMinecraft 的 downloadVersion: 调用是"启动前完整性
+    //   校验"（HMCL 风格缺啥补啥），不是重复安装——本地完整实例（目录+json
+    //   都在）必须直接放行 SHA 校验补全。旧语义撞目录即弹 Task300 命名窗 =
+    //   用户实测"点击启动游戏会出现重命名实例"根因；模组端装完点启动还会
+    //   二次改名 " 2 2" 致 mods 目录错位。带键后残根（json 缺）仍弹 Task301。
+    {
+        NSMutableDictionary *ame304_obj = [object mutableCopy];
+        ame304_obj[@"ame300_launchcheck"] = @YES;
+        object = ame304_obj;
+    }
 
     self.task = [MinecraftResourceDownloadTask new];
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{

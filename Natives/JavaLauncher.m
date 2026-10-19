@@ -2273,6 +2273,153 @@ static void* ame301_createRegionWithWatchdog(void) {
     return NULL;
 }
 
+// ★ Task304：主启动链 JIT 自动申请（用户 2026-10-19"启动重命名之后显示启动
+//   画面了，但是没有依据用户选择的jit启动器申请权限，比如我的是stikdebug"）。
+//   病历：RightPanel/NavigationController/DownloadVC 三条启动入口都有
+//   Task134/139/267 式申请+等待链（ame169_waitForJITCondition），唯
+//   SurfaceViewController 主链（点启动 → 启动画面 → launchJVM）零 JIT 申请
+//   ——用户按 debug.jit_enabler 偏好选了 StikDebug，启动时却从未被带去申请，
+//   区域创建在无调试器下看门狗空转后优雅失败（体感"没申请权限"）。
+//   语义（launchHeadlessJVM Task139 段同构，主链场景去掉了"正在开启 JIT"
+//   等待提示弹窗——启动画面本身就是反馈；builtin 显式失败的如实报错保留；
+//   manual 模式保留提示弹窗否则零反馈）：
+//   - isJITEnabled=YES → 立即返回 YES（零开销）；
+//   - debug_skip_wait_jit=YES → 返回 YES（旧语义直接放行）；
+//   - 否则按 debug.jit_enabler 偏好发起申请（stikjit:// / trollstore /
+//     sidestore / stosdebug / jitstreamer / builtin；LC guest 下 Task302
+//     builtinTrackAvailable=NO → auto 自动降级深链），ame169 等待环 120s
+//     有界轮询。
+//   返回 YES = 已开启/无需申请/等待成功；NO = 超时（调用方继续走既有区域
+//   创建看门狗，jitless 优雅失败路径不受影响——不新增 return 路径）。
+//   线程约定：launchJVM 运行线程（后台）；openURL 必须主线程——非主线程
+//   dispatch_sync(main) 派发申请体（headless 同款模式），主线程上下文直接
+//   执行；等待环纯轮询无主队列依赖（utils.m ame169 实现），两态皆安全。
+static BOOL ame304_requestAndAwaitJITIfNeeded(NSString *tag) {
+    if (isJITEnabled(NO)) {
+        return YES;
+    }
+    if (getPrefBool(@"debug.debug_skip_wait_jit")) {
+        NSLog(@"[JIT] [%@] Task304: debug_skip_wait_jit set -- proceeding without JIT", tag);
+        return YES;
+    }
+    NSLog(@"[JIT] [%@] Task304: JIT not enabled -- auto-requesting via configured enabler", tag);
+
+    __block BOOL ame304_requested = NO;
+    void (^ame304_request)(void) = ^{
+        NSString *ame304_enabler = getPrefObject(@"debug.jit_enabler");
+        if (![ame304_enabler isKindOfClass:NSString.class] || ame304_enabler.length == 0) {
+            ame304_enabler = @"auto";
+        }
+        BOOL ame304_noScript = getPrefBool(@"debug.jit26_script_disable");
+        NSString *ame304_bundleId = NSBundle.mainBundle.bundleIdentifier;
+        // Task294/302 同口径：builtin 显式 + auto 非 TS 环境按可用性
+        BOOL ame304_isTrollStore = getEntitlementValue(@"jb.pmap_cs.custom_trust") && isTrollStoreInstall();
+        BOOL ame304_builtinAvail = [StikDebugViewController ame294_builtinTrackAvailable];
+        BOOL ame304_useBuiltin = NO;
+        if ([ame304_enabler isEqualToString:@"builtin"]) {
+            ame304_useBuiltin = YES;
+        } else if ([ame304_enabler isEqualToString:@"auto"] && !ame304_isTrollStore) {
+            ame304_useBuiltin = ame304_builtinAvail;
+        }
+        NSLog(@"[JIT] [%@] Task304 enabler=%@ noScript=%d builtin=%d (avail=%d ts=%d)",
+              tag, ame304_enabler, ame304_noScript, ame304_useBuiltin, ame304_builtinAvail, ame304_isTrollStore);
+        NSURL *ame304_url = nil;
+        if (ame304_useBuiltin) {
+            ame304_requested = YES;
+            [StikDebugViewController ame294_enableBuiltinJITWithCompletion:^(BOOL success, NSString *message) {
+                if (success || isJITEnabled(YES)) {
+                    NSLog(@"[JIT] [%@] Task304 builtin track OK", tag);
+                    return;
+                }
+                NSLog(@"[JIT] [%@] Task304 builtin track failed: %@", tag, message);
+                if ([ame304_enabler isEqualToString:@"builtin"]) {
+                    // 显式 builtin：如实报错，不擅自跳第三方（Task294 语义）
+                    NSString *detail = message.length ? message : localize(@"ame293.jit.builtin_fail_title", nil);
+                    if ([detail localizedCaseInsensitiveContainsString:@"Timed out connecting"] ||
+                        [detail localizedCaseInsensitiveContainsString:@"not ready for JIT"]) {
+                        detail = [detail stringByAppendingFormat:@"\n\n%@", localize(@"ame294.jit.localdevvpn_hint", nil)];
+                    }
+                    showDialog(localize(@"ame293.jit.builtin_fail_title", nil), detail);
+                } else if (@available(iOS 17.4, *)) {
+                    // auto：降级 stikjit:// 深链（等待环继续轮询）
+                    NSString *sd = @"";
+                    if (!ame304_noScript) {
+                        NSData *s = [NSData dataWithContentsOfFile:
+                            [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"UniversalJIT26.js"]];
+                        if (s) sd = [@"&script-data=" stringByAppendingString:[s base64EncodedStringWithOptions:0]];
+                    }
+                    [UIApplication.sharedApplication openURL:[NSURL URLWithString:
+                        [NSString stringWithFormat:@"stikjit://enable-jit?bundle-id=%@&pid=%d%@", ame304_bundleId, getpid(), sd]]
+                        options:@{} completionHandler:nil];
+                }
+            }];
+            return;
+        }
+        if ([ame304_enabler isEqualToString:@"trollstore"]) {
+            ame304_url = [NSURL URLWithString:[NSString stringWithFormat:
+                @"apple-magnifier://enable-jit?bundle-id=%@", ame304_bundleId]];
+        } else if ([ame304_enabler isEqualToString:@"sidestore"]) {
+            ame304_url = [NSURL URLWithString:[NSString stringWithFormat:
+                @"sidestore://enable-jit?bundle-id=%@", ame304_bundleId]];
+        } else if ([ame304_enabler isEqualToString:@"stosdebug"]) {
+            NSString *ame304_appName = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"] ?: @"Amethyst";
+            NSMutableString *ame304_u = [NSMutableString stringWithFormat:
+                @"stosdebug://enableJIT?bundleId=%@&appName=%@", ame304_bundleId, ame304_appName];
+            if (!ame304_noScript) {
+                NSData *ame304_script = [NSData dataWithContentsOfFile:
+                    [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"UniversalJIT26.js"]];
+                if (ame304_script) {
+                    [ame304_u appendFormat:@"&script=%@", [ame304_script base64EncodedStringWithOptions:0]];
+                }
+            }
+            ame304_url = [NSURL URLWithString:ame304_u];
+        } else if ([ame304_enabler isEqualToString:@"jitstreamer"]) {
+            ame304_url = [NSURL URLWithString:[NSString stringWithFormat:
+                @"http://[fd00::]:9172/launch_app/%@", ame304_bundleId]];
+        } else if ([ame304_enabler isEqualToString:@"manual"]) {
+            // 手动模式：不跳转（维持旧语义），仅提示弹窗（主链无此弹窗则零反馈）
+            showDialog(localize(@"i18n_str_437", nil), localize(@"i18n_str_439", nil));
+        } else if (@available(iOS 17.4, *)) {
+            // auto / stikjit 共用 stikjit://
+            NSString *ame304_scriptData = @"";
+            if (!ame304_noScript) {
+                NSData *ame304_script = [NSData dataWithContentsOfFile:
+                    [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"UniversalJIT26.js"]];
+                if (ame304_script) {
+                    ame304_scriptData = [@"&script-data=" stringByAppendingString:[ame304_script base64EncodedStringWithOptions:0]];
+                }
+            }
+            ame304_url = [NSURL URLWithString:[NSString stringWithFormat:
+                @"stikjit://enable-jit?bundle-id=%@&pid=%d%@", ame304_bundleId, getpid(), ame304_scriptData]];
+        } else {
+            ame304_url = [NSURL URLWithString:[NSString stringWithFormat:
+                @"sidestore://sidejit-enable?pid=%d", getpid()]];
+        }
+        if (ame304_url) {
+            [UIApplication.sharedApplication openURL:ame304_url options:@{} completionHandler:nil];
+        }
+        ame304_requested = YES;
+    };
+    if ([NSThread isMainThread]) {
+        ame304_request();
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), ame304_request);
+    }
+    if (!ame304_requested) {
+        // 申请体未跑成（防御：manual 且无弹窗路径等），按放行处理交看门狗兜底
+        NSLog(@"[JIT] [%@] Task304: no request issued (enabler config?) -- proceeding", tag);
+        return YES;
+    }
+    BOOL ame304_ok = ame169_waitForJITCondition(^{ return isJITEnabled(NO); }, 120.0,
+        [NSString stringWithFormat:@"%@-JIT", tag] ?: @"Launch-JIT");
+    if (!ame304_ok) {
+        NSLog(@"[JIT] [%@] Task304 JIT wait timed out (120s) -- continuing (region watchdog will fail gracefully without JIT)", tag);
+    } else {
+        NSLog(@"[JIT] [%@] Task304 JIT became enabled, continuing launch", tag);
+    }
+    return ame304_ok;
+}
+
 int launchJVM(NSString *accountId, id launchTarget, int width, int height, int minVersion) {
     NSLog(@"[JavaLauncher] Beginning JVM launch");
 
@@ -2355,6 +2502,13 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
         jit26AlwaysAttached = YES;
     }
     if (requiresTXMWorkaround) {
+        // ★ Task304：主启动链 JIT 自动申请（SurfaceViewController 链此前零
+        //   JIT 申请，见 ame304 函数头病历）——按 debug.jit_enabler 偏好
+        //   （用户实测选 StikDebug）发起 stikjit:// 等深链并 120s 有界等待；
+        //   超时/失败不 return，继续走下方区域创建看门狗的既有优雅失败。
+        if (!ame304_requestAndAwaitJITIfNeeded(@"Launch")) {
+            NSLog(@"[JIT] [JavaLauncher] Task304 JIT request/wait did not succeed -- proceeding to region watchdog (graceful failure path intact)");
+        }
         static void *result;
         // Task91：SIGTRAP 安全网——brk 无应答（JIT26 调试器未就绪/脚本未挂载）
         // 时原裸函数直接 SIGTRAP 致死（用户实测"开启 JIT 后闪退"），改走优雅报错
