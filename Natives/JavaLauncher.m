@@ -152,20 +152,16 @@ void init_loadDefaultEnv() {
     setenv("POJAV_DISABLE_VSYNC", getPrefBool(@"video.disable_game_vsync") ? "1" : "0", 1);
 
     // 帧率解锁诊断日志：记录关键环境变量和偏好设置
+    // Task300-r2 勘误：maximumFramesPerSecond 在 iPhoneOS26.2 SDK 是只读属性
+    // （CI run 39225659390 "assignment to readonly property" 实锤）——它报告的是
+    // 面板能力上限（本机 60Hz，iPad Air M4 非 ProMotion），不可赋值也不可突破。
+    // 帧率解锁的完整能力面=渲染侧 presentMode=IMMEDIATE（ame298/300 双层钩子，
+    // 与 zink 同层），MC 侧 maxFps=260 与 EGL interval(0) 已在位；显示层无锁可解，
+    // 此处仅落诊断值供装机日志对单。
     NSLog(@"[JavaLauncher] Framerate unlock configuration:");
     NSLog(@"[JavaLauncher]   video.disable_game_vsync=%d", getPrefBool(@"video.disable_game_vsync"));
     NSLog(@"[JavaLauncher]   POJAV_DISABLE_VSYNC=%s", getenv("POJAV_DISABLE_VSYNC"));
-    // Task300：显示层解锁（原第 5 层，装机 dfc438f latestlog 实锤缺失）——
-    // UIScreen.maximumFramesPerSecond 报 60：渲染侧即便 presentMode=IMMEDIATE
-    // （ame298/299 钩子），CoreAnimation 合成节奏仍被 60 压制，ProMotion 面板
-    // 白白锁在 60fps。解锁开启时显式抬到 120（面板不支持时系统自行钳制，无
-    // 副作用）；垂直同步未关时不动系统默认。
-    if (getenv("POJAV_DISABLE_VSYNC") != NULL && strcmp(getenv("POJAV_DISABLE_VSYNC"), "1") == 0) {
-        UIScreen.mainScreen.maximumFramesPerSecond = 120;
-        NSLog(@"[JavaLauncher]   UIScreen.maximumFramesPerSecond -> %d (display-side unlock, Task300)",
-              (int)UIScreen.mainScreen.maximumFramesPerSecond);
-    }
-    NSLog(@"[JavaLauncher]   UIScreen.maximumFramesPerSecond=%d", (int)UIScreen.mainScreen.maximumFramesPerSecond);
+    NSLog(@"[JavaLauncher]   UIScreen.maximumFramesPerSecond=%d (readonly panel capability)", (int)UIScreen.mainScreen.maximumFramesPerSecond);
 }
 
 void init_loadCustomEnv() {
