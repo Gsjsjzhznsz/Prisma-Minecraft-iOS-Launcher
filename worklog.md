@@ -3979,3 +3979,20 @@ Work Log:
 Stage Summary:
 - run#914 两族编译雷（r1 修）+ run#916 payload 续行雷（r2 修）全闭环；三族雷同源于"补丁脚本插入行未按 make 续行语义落位"
 - 家法续记：Makefile recipe 续行链内禁插注释行——独立 recipe 注释必须落链外（单 TAB）；CI"编译过"≠"打包过"，首次触达的 recipe 段=新雷区
+
+---
+Task ID: 298
+Agent: main (Super Z)
+Task: 双线根修（trace 1a152777b8d26869）：①解锁帧率（关闭垂直同步）在 MobileGL/DirectVulkan 失效——"现在就 zink 渲染器可以超过 60fps"；②内置 JIT 继续修——装机 latestlog+IMG_0441 实锤 builtin 轨 Code=19 "Failed to add observer"（Task295 已嵌 Extensions/ 仍失败）
+
+Work Log:
+- CI 先核：run#917（23a8f74e=装机构建）success=上一轮"朋友 CI 错误"已闭环，本轮零 CI 修复量；本地 main 落后远端，reset --hard 对齐后动工
+- 【JIT Code=19 根因三源定案】①PocketJ 上游 build_pocketj.sh 实读：其 .appexpt 是 Xcode/Swift 编译器生成（exutil extract-extension-points，包装构建期抢救回填），非手搓；②swiftlang/swift-build EXUtil.xcspec（Xcode 26.5/27.0 双缓存核对）实锤产出规范=$(PRODUCT_MODULE_NAME).appexpt（app 模块名，非扩展点名）；③torrent7 提交的真实可用 .appexpt 全文=顶层 EXVersion=2 + 内容键 <bundle-id>.<点名> + 字典内 EXExtensionPointName/EXPresentsUserInterface/_EXScopeRestriction=application。对照本仓手搓版：文件名错（PrismaJITHelper.appexpt 应为 AngelAuraAmethyst.appexpt）+ 内容缺 EXVersion/EXExtensionPointName/_EXScopeRestriction 三键 → extensionkitd 解析不了扩展点 → installd 不注册 → Monitor 初始化即拒 = Code=19（KhaosT README "beta 3 起无私有 entitlement 不得观察非 scoped 点"同族印证）。Task295 的"文件在位"检查只证存在不证可解析
+- 【JIT 修法】appexpt 按三源全键重写；Makefile 嵌入改名 AngelAuraAmethyst.appexpt；appex bundle 补 ldid -S 目录级密封（PocketJ codesign 重密封同语义，非致命 WARN）；PrismaJITCoordinator Code=19 报错文案同步新文件名+键要求
+- 【帧率根因上游源码定案】拉 Amethyst-iOS-MyRemastered 上游：SwapchainObject.h s_desiredPresentModes={MAILBOX,IMMEDIATE,FIFO_RELAXED,FIFO} 静态偏好表首选 MAILBOX（MoltenVK 下=CAMetalLayer 显示节奏同步=60Hz 锁 60）；EGLImpl.cpp SwapInterval 虽转发 BackendObject::SetEGLSwapInterval，但 DirectVulkan 后端无 SetSwapInterval 实现（DirectGLES 才有 ApplyRequestedSwapInterval，libMobileGL.dylib 符号表实锤）→ eglSwapInterval(0) 永远到不了呈现层；zink 路径走 Mesa 自家 swapchain（gl_bridge 提前 eglSwapInterval(0)→IMMEDIATE）故解锁。vendor MoltenVK 1.4.3 strings 实锤无 present mode 配置键（MVK_CONFIG_SWAPCHAIN_PRESENT_MODE 不存在）
+- 【帧率修法】新增 Natives/mg_vsync_hook.m：libMobileGL.dylib 直链 libMoltenVK 且 __got 走 LC_DYLD_CHAINED_FIXUPS（经典 fishhook 不支持，Mach-O 取证实锤 indirect syms=0）→ 不解析 chained 导入表改用 value-scan：dlopen(NOLOAD)+dlsym 取 vkCreateSwapchainKHR 真值 → 扫 __DATA_CONST __got（S_NON_LAZY_SYMBOL_POINTERS）等值槽 → mach_vm_protect RW|COPY（Task132 同款手法）改绑包装器；包装器 POJAV_DISABLE_VSYNC=1 时把 VkSwapchainCreateInfoKHR.presentMode 改 0（IMMEDIATE）再转发，vsync=0 时透传保 MAILBOX 原语义；zink/ANGLE/virgl 零误伤，-gles(DirectGLES) 钩了也不触发。安装点=gl_bridge 渲染器 dlopen 成功后（swapchain 首建于 makeCurrent/首 swap，时序安全）；MobileGL 未加载时不锁存可重入；失败路径全落 [VSyncUnlock] 日志（0 槽命中=下轮诊断锚）。结构体布局 gcc 实测 96B/presentMode@80 + _Static_assert 双保险；sType 常量复核 VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR=1000001000
+- 门禁：task139 all balanced、task240 all balanced、新 JIT if 块 $(VAR) 替换重建 bash -n=exit 0、全 Makefile 续行链注释雷复扫=0（Task297 家法复核）、双 plist plistlib 解析 OK
+
+Stage Summary:
+- JIT builtin 轨 Code=19 根因=手搓 .appexpt 文件名+三缺键（上游三源互证），修复=模块名约定+全键格式+bundle 密封；装机复验锚=Extensions/AngelAuraAmethyst.appexpt 在位且 Monitor 不再抛 19（日志出现 "monitor: N identity(ies) discovered"）
+- 帧率解锁根因=MobileGL 静态 present 偏好表不看 swap interval + DirectVulkan 无 SetSwapInterval 钩子，修复=进程内 vkCreateSwapchainKHR GOT 改绑强制 IMMEDIATE（vsync 关时）；装机复验锚=[VSyncUnlock] ame298: installed (1 slot(s)) + 游戏内 fps>60（MobileGL 渲染器）

@@ -56,7 +56,7 @@ public final class PrismaJITCoordinator: NSObject {
                     NSLog("[JIT] Task295 monitor path exhausted -- discovery failed")
                     throw NSError(domain: "PrismaJIT", code: 19,
                                   userInfo: [NSLocalizedDescriptionKey:
-                                    "[discovery] \(monitorError!.localizedDescription) -- host bundle must embed Extensions/PrismaJITHelper.appexpt + Extensions/PrismaJITHelper.appex (reinstall a build with the extension definition, or re-sign keeping Extensions/)"])
+                                    "[discovery] \(monitorError!.localizedDescription) -- host bundle must embed Extensions/AngelAuraAmethyst.appexpt (app-module-name convention, EXVersion=2 + EXExtensionPointName keys) + Extensions/PrismaJITHelper.appex (reinstall a build with the extension definition, or re-sign keeping Extensions/)"])
                 }
                 let firstID = identities.first?.bundleIdentifier ?? "none"
                 NSLog("[JIT] Task294 monitor: \(identities.count) helper identity(ies) discovered, first=\(firstID)")

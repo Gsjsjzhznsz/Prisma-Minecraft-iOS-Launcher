@@ -950,17 +950,27 @@ payload: native dep_mg java jre assets dep_shader_shims dep_openal_shim dep_mith
 	# ★ Task295：泛用 ExtensionFoundation appex 落 Extensions/（非 PlugIns/，
 	#   上游 build_pocketj.sh "Generic ExtensionFoundation extensions live
 	#   in Extensions/" 同款）+ 扩展点定义 .appexpt 同目嵌入。
+	# ★ Task298（装机 run#917 产物 Code=19 实锤后三源定案）：扩展点定义
+	#   文件名必须是【app 模块名】约定（Xcode exutil extract-extension-points
+	#   产出 $(PRODUCT_MODULE_NAME).appexpt；rxlab 实测 test_app_extension.appexpt、
+	#   torrent7 Packaging/TorrentApp.appexpt 同款）——旧名 PrismaJITHelper.appexpt
+	#   （扩展点名）错误；且内容必须含 EXVersion=2 + EXExtensionPointName +
+	#   _EXScopeRestriction=application（torrent7 提交的真实可用 .appexpt 全键），
+	#   缺键时 extensionkitd 解析不了扩展点 → AppExtensionPoint.Monitor 拒注册
+	#   → builtin 轨 Code=19 "Failed to add observer"。appex bundle 同时补
+	#   ldid -S 目录级密封（PocketJ 上游 codesign 重密封 .appex 同语义）。
 	if [ -f '$(JIT_STAGING)/PrismaJITHelper' ] && [ -f '$(JIT_STAGING)/libPrismaJITCoordinator.dylib' ]; then \
 		mkdir -p $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks; \
 		cp $(JIT_STAGING)/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper || exit 1; \
 		cp $(SOURCEDIR)/Natives/stikjit/integration/Helper/Info.plist $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/Info.plist || exit 1; \
 		cp $(JIT_STAGING)/Resources/universal.js $(JIT_STAGING)/Resources/legacy.js $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/ || exit 1; \
-		cp $(JIT_STAGING)/PrismaJITHelper.appexpt $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appexpt || exit 1; \
+		cp $(JIT_STAGING)/PrismaJITHelper.appexpt $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/AngelAuraAmethyst.appexpt || exit 1; \
 		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper; \
+		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex || echo '[Prisma v$(VERSION)] payload - WARN: appex bundle seal failed (continuing)'; \
 		cp $(JIT_STAGING)/libPrismaJITCoordinator.dylib $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/ || exit 1; \
 		ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
 		chmod 755 $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Extensions/PrismaJITHelper.appex/PrismaJITHelper $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app/Frameworks/libPrismaJITCoordinator.dylib; \
-		echo '[Prisma v$(VERSION)] payload - JIT helper embedded (Extensions/PrismaJITHelper.appex + .appexpt)'; \
+		echo '[Prisma v$(VERSION)] payload - JIT helper embedded (Extensions/PrismaJITHelper.appex + AngelAuraAmethyst.appexpt)'; \
 	else \
 		echo '[Prisma v$(VERSION)] payload - JIT helper staging missing, embedding skipped (deep-link fallback)'; \
 	fi
