@@ -4125,3 +4125,22 @@ Stage Summary:
 - 门禁：task139 all balanced + task240 all balanced + import sweep（WARN 为 Task260 已知项）+ Makefile TAB 保形断言；提交 4b9585c1；CI run#935（39273477386）。
 - 装机验证锚点：①点启动 log 见 `[MCDL] Task304 launch-check path: ... verify-and-continue` 且零命名窗 ②装 fabric 后点启动不再出现 " 2 2"，mods 对位 ③启动画面后按偏好跳转 StikDebug，log 见 `[JIT] [Launch] Task304 enabler=stikjit` ④SideStore 重装 Mismatched bundle IDs 消失。
 - 未竟移交：手柄优化/Switch 手柄/下载中心控件三分类页/键鼠优化（五轮顺延）；Forge/OptiFine 安装链同款重复检测未挂；旧实例 " 2 2"/" 2" 手动重命名；JIT 界面显示异常；IPA 瘦包；GLFW；壁纸模糊；Fabric 模组版本隔离显示。
+
+---
+Task ID: 305
+Agent: main (Super Z)
+Task: 三线根修（用户 1a154cef：游戏启动闪退且无崩溃分析画面 + SideStore 依旧无法安装 IMG_0448）
+
+Work Log:
+- latestlog（754 行）尾部铁证：JVM fatal SIGSEGV at ame298_patch_got_slots+0x194，堆栈链 ame298_install_mg_vsync_hook(pojavInitOpenGLInternal)→dispatch_once 注册→dyld 同步回调→image_added_cb→try_install→patch_got_slots→SIGSEGV→libjvm VMError→os::abort→hooked_abort Task208 直通（无崩溃画面）
+- 闪退根因：ame298 GOT 槽地址双重加 slide（旧式 base+sect->addr+slide；base=_dyld_get_image_header 已含 slide，dylib 首选基址 0 时 base==slide）→ 槽地址=真实地址+base 落未映射高地址；对照 Task132 真机验证 canonical（sdl3_hook.m:2151 slot=slide+sect->addr，本日志 hits=1 实锤）；时间线闭环：Task299 egl_bridge 安装点接入后 Task301~303 游戏从未跑到渲染器初始化（JIT 死锁挡前），Task304 修通 JIT 后首次真机执行即暴露地雷
+- 修复①：槽地址公式对齐 Task132 canonical 摘 base + ame298_range_readable 可读性探针（vm_read_overwrite 首尾 8 字节）+ 段大小 64MB sanity cap + load command cmdsize 下限校验——钩子永不再带走游戏进程
+- 崩溃分析画面缺失根因：Task208 JVM fatal 直通终止把呈现一并砍掉；修复②：直通前同步落盘 Task273 待读报告（ame273_writeCrashReport(SIGABRT)，分类器原生 jvm_fatal），下次启动 SceneDelegate ame273_presentPendingCrashReportFrom: 玻璃弹窗必达呈现，会话内仍不 park；ame273 分类器增强 Problematic frame: 锚点（headline=下一行真实问题帧、详情块=横幅起、jvm_fatal 默认处置指引）
+- SideStore 根因：IMG_0448 新拦 AppexBundleUnknownExtensionPointIdentifier——Helper/Info.plist EXAppExtensionAttributes.EXExtensionPointIdentifier 自定义值不对应任何已知扩展点（EXKit XPC 轨 Task302/304 三证判死兜底价值归零）；修复③：EX 字典整块摘除（python 字节级保 TAB + plistlib 结构复验），NSExtension=widgetkit-extension 保留（Task303 extensionDictionary 强制实锤）
+- 提交 579453c8 推送 main；CI run 39280981419 一轮终绿；v6.5.5 资产第七轮静默替换（ipa 235498431 / tipa 235498811，同名保链 updated_at=2026-10-19T16:34/16:35Z，构建=579453c8）
+
+Stage Summary:
+- 闪退/崩溃分析画面缺失/SideStore 拒装 三线代码全量交付
+- 装机验证锚点：①MobileGL 渲染器会话不再闪退（log 见 [VSyncUnlock] ame299 installed / no __got slot matched，而非 SIGSEGV）②闪退后下次启动弹"崩溃分析"玻璃窗（jvm_fatal + Problematic frame 行 + hs_err 指引）③SideStore 重装过 installd 扩展点校验
+- JIT 主链（Task304）已被本日志证实生效：stikjit:// 深链 + 3.7s 条件满足 + JIT26 debugger mapping 到手
+- 遗留移交：手柄优化/Switch 手柄/下载中心控件三分类页/键鼠优化（四连催）；FPS 解锁 ame298 修复后首次可真机验证
