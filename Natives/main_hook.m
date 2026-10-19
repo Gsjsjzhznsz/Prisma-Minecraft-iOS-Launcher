@@ -333,6 +333,113 @@ static void ame273_write_report_file(const char *home, int code,
     NSLog(@"[Ame273] crash report written: %s (category=%s, details=%d) -- next launch will surface it", path, category, detailCount);
 }
 
+// ======================================================================
+// ★ Task306：SIGKILL 级游戏会话死亡感知（marker 生命周期 + 非钩子死亡回溯）
+// ----------------------------------------------------------------------
+// 病历（装机 579453c8 latestlog 2026-10-20）：游戏推进到 Mixin 阶段后闪退，
+// 用户视角"依旧闪退"且无崩溃分析画面——ame273 报告链覆盖 exit()/abort()
+// 路径，但 SIGKILL（StikDebug 断连被 TXM 回收 debug 会话 / 看门狗 / jetsam）
+// 不经过任何钩子，报告零落盘 = 死无对证。
+// 机制：游戏会话起点（JavaLauncher JLI_Launch 前）写
+//   $POJAV_HOME/ame306_session.marker（ts/pid/ver）；
+// 正常/异常退出路径（hooked_exit 两分支、hooked_abort JVM fatal 直通）调
+//   ame306_endGameSessionMarker 清除；
+// 下一次会话起点 / 下一次 app 冷启动若 marker 仍在场 = 上次进程未走任何
+//   退出钩子即消失 —— 且 ame273_crash_report.txt 不在（SIGKILL 无报告）——
+//   现场铸一份 SIGKILL 级待读报告（走既有 SceneDelegate 补弹链呈现）。
+// 全程纯 C stdio（与 ame273 同口径，启动早期/任意线程均可安全调用）。
+// ======================================================================
+
+static void ame306_sessionMarkerPath(char *ame306_out, size_t ame306_cap) {
+    const char *ame306_home = getenv("POJAV_HOME");
+    if (ame306_home == NULL || ame306_home[0] == '\0') {
+        ame306_out[0] = '\0';
+        return;
+    }
+    snprintf(ame306_out, ame306_cap, "%s/ame306_session.marker", ame306_home);
+}
+
+/// 感知上次会话是否未走钩子即死亡；是且无 ame273 报告则铸 SIGKILL 报告。
+/// 幂等：读后即清 marker（无论是否铸报告），不重复打扰。
+void ame306_consumeStaleGameSessionMarker(void) {
+    char ame306_path[1024];
+    ame306_sessionMarkerPath(ame306_path, sizeof(ame306_path));
+    if (ame306_path[0] == '\0') return;
+    FILE *ame306_f = fopen(ame306_path, "rb");
+    if (ame306_f == NULL) return; // 无残留 marker = 上次会话正常收尾
+    char ame306_tsLine[128] = {0}, ame306_verLine[128] = {0};
+    if (fgets(ame306_tsLine, sizeof(ame306_tsLine), ame306_f) != NULL) {
+        if (fgets(ame306_verLine, sizeof(ame306_verLine), ame306_f) == NULL) {
+            ame306_verLine[0] = '\0';
+        }
+    }
+    fclose(ame306_f);
+    unlink(ame306_path); // 读后即清：下次会话不再重复感知
+
+    // ame273 报告在 = 上次死亡已由正式报告链覆盖（abort/exit 路径），
+    // 不叠加 SIGKILL 疑似报告，避免双弹。
+    const char *ame306_home = getenv("POJAV_HOME");
+    if (ame306_home == NULL) return;
+    char ame306_rpt[1024];
+    snprintf(ame306_rpt, sizeof(ame306_rpt), "%s/ame273_crash_report.txt", ame306_home);
+    FILE *ame306_rf = fopen(ame306_rpt, "rb");
+    if (ame306_rf != NULL) {
+        fclose(ame306_rf);
+        NSLog(@"[Ame306] stale session marker found but ame273 report already pending -- kill-report suppressed");
+        return;
+    }
+
+    // 铸 SIGKILL 级报告（ame273 文件格式同族，SceneDelegate 补弹链原生消费）
+    ame273_line_t ame306_details[6];
+    char ame306_d0[160], ame306_d1[160], ame306_d2[160], ame306_d3[160];
+    snprintf(ame306_d0, sizeof(ame306_d0), "上次游戏会话标记: %.*s",
+             (int)(strlen(ame306_tsLine) > 0 && ame306_tsLine[strlen(ame306_tsLine)-1] == '\n'
+                   ? (int)strlen(ame306_tsLine) - 1 : (int)strlen(ame306_tsLine)), ame306_tsLine);
+    snprintf(ame306_d1, sizeof(ame306_d1), "进程未执行任何退出钩子即消失（SIGKILL 级）—— 崩溃报告机制无法在进程被杀时落盘");
+    snprintf(ame306_d2, sizeof(ame306_d2), "常见成因: StikDebug 断连（debug 会话被回收）/ 系统看门狗 / 内存压力（jetsam）");
+    snprintf(ame306_d3, sizeof(ame306_d3), "详情请查 latestlog.txt 尾部（最后停在哪一步即闪退点，如 Mixin 阶段=模组加载期）");
+    ame306_details[0].start = ame306_d0; ame306_details[0].len = (int)strlen(ame306_d0);
+    ame306_details[1].start = ame306_d1; ame306_details[1].len = (int)strlen(ame306_d1);
+    ame306_details[2].start = ame306_d2; ame306_details[2].len = (int)strlen(ame306_d2);
+    ame306_details[3].start = ame306_d3; ame306_details[3].len = (int)strlen(ame306_d3);
+    static const char ame306_headline[] =
+        "上次游戏会话被系统强制终止（无崩溃报告可落盘）";
+    static const char ame306_fix[] =
+        "保持 StikDebug 在前台或后台存活（勿从后台任务划掉它）后重试启动；若在加载后期死亡，尝试调低内存分配；复现时上传 latestlog.txt 供进一步定位";
+    ame273_write_report_file(ame306_home, 9,
+                             "sigkill_like",
+                             "进程异常终止（SIGKILL 级）",
+                             "Abnormal session death (SIGKILL-like)",
+                             ame306_headline, (int)sizeof(ame306_headline) - 1,
+                             ame306_fix, (int)sizeof(ame306_fix) - 1,
+                             ame306_details, 4);
+    NSLog(@"[Ame306] stale session marker minted SIGKILL-like report -- next launch will present it");
+}
+
+/// 游戏会话起点（JavaLauncher JLI_Launch 前）：先感知残留，再立新 marker。
+void ame306_beginGameSessionMarker(const char *ame306_versionTag) {
+    ame306_consumeStaleGameSessionMarker();
+    char ame306_path[1024];
+    ame306_sessionMarkerPath(ame306_path, sizeof(ame306_path));
+    if (ame306_path[0] == '\0') return;
+    FILE *ame306_f = fopen(ame306_path, "wb");
+    if (ame306_f == NULL) return;
+    fprintf(ame306_f, "ts=%lld\npid=%d\nver=%s\n",
+            (long long)time(NULL), getpid(),
+            ame306_versionTag ? ame306_versionTag : "-");
+    fclose(ame306_f);
+    NSLog(@"[Ame306] game session marker armed (%s)", ame306_path);
+}
+
+/// 退出钩子路径（hooked_exit 两分支 / hooked_abort JVM fatal 直通）调用：
+/// marker 在场说明本次会话有钩子收尾，清除后下次启动不再误报。
+void ame306_endGameSessionMarker(void) {
+    char ame306_path[1024];
+    ame306_sessionMarkerPath(ame306_path, sizeof(ame306_path));
+    if (ame306_path[0] == '\0') return;
+    unlink(ame306_path);
+}
+
 static void ame273_writeCrashReport(int code) {
     // ★ Task274-f（F2）：一次性/防重入防护（参照本文件 ame_write_fatal_trace
     //   的 CAS 语义）——两个线程同时 hooked_exit(≠0) 并发进入时，旧实现会
@@ -591,6 +698,7 @@ void hooked_abort() {
                 //   实锤用户视角“闪退 + 零分析”根因 = 缺呈现层，非缺直通）。
                 atomic_store(&g_ame273_fatalExitInFlight, 1);
                 ame273_writeCrashReport(SIGABRT);
+                ame306_endGameSessionMarker(); // ★ Task306：有钩子收尾，marker 不留隐患
                 NSLog(@"[main_hook] Task305: JVM fatal -- ame273 pending crash report persisted, terminating for real (next launch presents analysis)");
                 orig_abort();
                 return;  // orig_abort 不返回；防御性 return
@@ -675,6 +783,7 @@ void hooked_exit(int code) {
         //   fflush 兜底 stdio 缓冲。3s 看门狗随之退役（_exit 永不返回，
         //   无需兜底）。
         NSLog(@"[main_hook] Task248/250: exit(0) -> immediate _exit(0) (no libc teardown window)");
+        ame306_endGameSessionMarker(); // ★ Task306：正常退出收尾，防下次启动误报
         fflush(NULL);
         _exit(0);
     }
@@ -687,6 +796,7 @@ void hooked_exit(int code) {
     //   装机实锤）；报告文件同时供下次启动补弹（双保险自适应恢复）。
     atomic_store(&g_ame273_fatalExitInFlight, 1);
     ame273_writeCrashReport(code);
+    ame306_endGameSessionMarker(); // ★ Task306：非零退出已有正式报告，marker 不叠加 SIGKILL 疑报
     handle_fatal_exit(code);
 
     orig_exit(code);

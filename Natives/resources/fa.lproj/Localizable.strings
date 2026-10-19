@@ -472,3 +472,4 @@
 "ame302.jit.lc_guest" = "JIT داخلی در LiveContainer در دسترس نیست: سیستم از راه‌اندازی فرایند کمکی JIT خودداری می‌کند (هم ثبت افزونه و هم اجرای فرایند رد می‌شود). JIT را از طریق StikDebug یا SideStore فعال کنید — ابزار JIT را روی «خودکار» بگذارید تا هنگام راه‌اندازی به‌طور خودکار منتقل شود.";
 "ame303.copy_failed" = "Could not write the version file for renamed instance \"%@\": copying the local copy failed. Free up storage space and try again.";
 "ame303.manifest_missing" = "Could not resolve version \"%@\": the remote version manifest is not loaded yet and no local copy exists to duplicate from. Check your network connection and try again.";
+"ame306.jit.spawn_denied" = "Builtin JIT is unavailable with this install: the non-jailbroken sandbox denies spawning the JIT helper process (only TrollStore/jailbroken hosts may allow it). Just press Launch -- JIT is requested automatically via StikDebug; or enable JIT for the launcher manually inside StikDebug.";

@@ -364,6 +364,15 @@ void ame_write_fatal_trace(const char *reason);
 void ame273_crashViewDidPresent(void);
 void ame273_crashViewDidDismiss(void);
 
+// ★ Task306（main_hook.m 实现）：SIGKILL 级游戏会话死亡感知。
+// begin = 先感知残留 marker（铸 SIGKILL 疑似报告）再立本会话 marker；
+// end   = 退出钩子路径收尾清除；consume = app 冷启动时感知残留（不立新）。
+// SIGKILL（StikDebug 断连/看门狗/jetsam）不经过任何退出钩子，ame273 报告
+// 链覆盖不到 —— marker 残留即"进程未走钩子即消失"的唯一定性依据。
+void ame306_beginGameSessionMarker(const char *versionTag);
+void ame306_endGameSessionMarker(void);
+void ame306_consumeStaleGameSessionMarker(void);
+
 NSString* localize(NSString* key, NSString* comment);
 NSMutableDictionary* parseJSONFromFile(NSString *path);
 NSError* saveJSONToFile(NSDictionary *dict, NSString *path);

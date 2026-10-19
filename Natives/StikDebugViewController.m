@@ -54,6 +54,9 @@ static BOOL ame294_builtinScriptCompleted = NO;
 /// 前置声明：+ame294_enableBuiltinJITWithCompletion / +ame294_builtinTrackAvailable
 /// 在文件前部调用（定义在下方 #pragma mark 开启 JIT 区）——C 静态函数先声明后用。
 static BOOL ame293_hasGetTaskAllow(void);
+/// Task306：spawn 可行性门（见 ame294 区实现注释）——SideStore/AltStore
+/// 直装无 no-sandbox/dynamic-codesigning entitlement 时 builtin 派生轨结构性必死。
+static BOOL ame306_spawnDerivable(void);
 
 + (Ame291JITSetupState)ame291_setupState {
     if (@available(iOS 17.4, *)) {
@@ -156,6 +159,11 @@ static BOOL ame293_hasGetTaskAllow(void);
         //   可用性直接回 NO：auto 模式直通 stikjit:// 深链，不再做注定
         //   失败的内置尝试（装机 2c6458a/c3e70c5 两代实锤）。
         if (ame302_isLiveContainerGuest()) return NO;
+        // ★ Task306：非越狱直装（SideStore/AltStore）spawn 结构性必死短路
+        //   （IMG_0449 直装实测 rc=1 errno=2 + Task43 shaderc 真机恒 EPERM
+        //   先例）——auto 模式继续直通 stikjit:// 深链，不再做注定失败的
+        //   内置尝试。
+        if (!ame306_spawnDerivable()) return NO;
         if (!ame293_hasGetTaskAllow()) return NO;
         [StikDebugEngine.sharedEngine synchronizePairingFileFromDocuments:nil];
         if (!StikDebugEngine.sharedEngine.hasPairingFile) return NO;
@@ -176,6 +184,15 @@ static BOOL ame293_hasGetTaskAllow(void);
         if (ame302_isLiveContainerGuest()) {
             NSLog(@"[JIT] Task302 gate: LiveContainer guest -- builtin spawn tracks structurally unavailable (EXKit Code=19 / spawn errno=2 / fork errno=1)");
             completion(NO, localize(@"ame302.jit.lc_guest", nil));
+            return;
+        }
+        // ★ Task306：非越狱直装 spawn 必死如实报错（不再走注定失败的
+        //   posix_spawn，不再弹误导性 "re-sign the IPA" 建议——IMG_0449
+        //   实锤 SideStore 直装 PlugIns/ 完好依旧 errno=2，重签救不了
+        //   沙盒拒绝 spawn 行为本身）。
+        if (!ame306_spawnDerivable()) {
+            NSLog(@"[JIT] Task306 gate: spawn not derivable (no no-sandbox/dynamic-codesigning entitlement) -- builtin track denied, advise StikDebug deep-link");
+            completion(NO, localize(@"ame306.jit.spawn_denied", nil));
             return;
         }
         if (!ame293_hasGetTaskAllow()) {
@@ -500,6 +517,44 @@ static BOOL ame293_hasGetTaskAllow(void) {
     if (value) CFRelease(value);
     CFRelease(task);
     return result;
+}
+
+/// Task306：单 entitlement 存在性（值非空即视为持有——no-sandbox 是 BOOL 型
+/// entitlement，dynamic-codesigning 在部分签名链上为空值/布尔，统一按存在性判）。
+static BOOL ame306_hasEntitlement(CFStringRef ame306_ent) {
+    void *(*ame306_taskCreate)(CFAllocatorRef) =
+        (void *(*)(CFAllocatorRef))dlsym(RTLD_DEFAULT, "SecTaskCreateFromSelf");
+    CFTypeRef (*ame306_taskValue)(void *, CFStringRef, CFErrorRef *) =
+        (CFTypeRef (*)(void *, CFStringRef, CFErrorRef *))dlsym(RTLD_DEFAULT, "SecTaskCopyValueForEntitlement");
+    if (!ame306_taskCreate || !ame306_taskValue) return NO;
+    void *ame306_task = ame306_taskCreate(NULL);
+    if (!ame306_task) return NO;
+    CFTypeRef ame306_value = ame306_taskValue(ame306_task, ame306_ent, NULL);
+    BOOL ame306_result = (ame306_value != NULL);
+    if (ame306_value) CFRelease(ame306_value);
+    CFRelease(ame306_task);
+    return ame306_result;
+}
+
+/// Task306：builtin 派生轨 spawn 可行性统一门。判定依据（装机实证链）：
+///   ① IMG_0449（SideStore 直装 579453c8）：主二进制在场 size=23471680，
+///      posix_spawn rc=1 errno=2 —— 沙盒/AMFI 拒绝 spawn 行为本身，重签无解；
+///   ② Task43 shaderc_sandbox.m 病历：真机无 no-sandbox entitlement 时
+///      posix_spawn 恒 EPERM（失败一次记死）——同一结构性约束；
+///   ③ Pre-Init entitlement 快照：SideStore/AltStore/LC 装机
+///      no-sandbox=NO 且 dynamic-codesigning=NO。TrollStore/越狱装机二者
+///      至少其一在场，spawn 才有活的可能。
+/// 判 NO 时调用方给如实报错（ame306.jit.spawn_denied），不再空跑 spawn。
+static BOOL ame306_spawnDerivable(void) {
+    static BOOL ame306_cached = NO;
+    static dispatch_once_t ame306_once;
+    dispatch_once(&ame306_once, ^{
+        ame306_cached =
+            ame306_hasEntitlement(CFSTR("com.apple.private.security.no-sandbox")) ||
+            ame306_hasEntitlement(CFSTR("dynamic-codesigning"));
+        NSLog(@"[JIT] Task306 spawn-derivable=%d (no-sandbox || dynamic-codesigning; SideStore/AltStore direct installs deny posix_spawn structurally)", ame306_cached);
+    });
+    return ame306_cached;
 }
 
 - (void)ame291_enableJIT {

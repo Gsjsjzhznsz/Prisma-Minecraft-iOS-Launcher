@@ -4241,6 +4241,12 @@ int launchJVM(NSString *accountId, id launchTarget, int width, int height, int m
     // Task229: 1.20.1 loadIcon 路径的 NSImage/NSData 桩同批安装（详见 Task229 注释块）。
     ame229_installIconPathStubs();
 
+    // ★ Task306：SIGKILL 级闪退感知——会话 marker 立桩（先感知残留：
+    //   上次会话未走退出钩子即消失 = SIGKILL 级死亡，现场铸待读报告，
+    //   下次冷启动 SceneDelegate 补弹链呈现；本次会话若同样被强杀，
+    //   marker 残留即下次感知依据）。
+    ame306_beginGameSessionMarker(NULL);
+
     NSLog(@"[Init] Calling JLI_Launch");
 
     // Cr4shed known issue: exit after crash dump,

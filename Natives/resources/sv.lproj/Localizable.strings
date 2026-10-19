@@ -307,3 +307,4 @@
 "ame302.jit.lc_guest" = "Inbyggd JIT är inte tillgänglig i LiveContainer: systemet vägrar starta JIT-hjälpprocessen (både tilläggsregistrering och processkörning nekas). Aktivera JIT via StikDebug eller SideStore — ställ in JIT-verktyget på «Automatisk» för automatisk överlämning vid start.";
 "ame303.copy_failed" = "Could not write the version file for renamed instance \"%@\": copying the local copy failed. Free up storage space and try again.";
 "ame303.manifest_missing" = "Could not resolve version \"%@\": the remote version manifest is not loaded yet and no local copy exists to duplicate from. Check your network connection and try again.";
+"ame306.jit.spawn_denied" = "Inbyggd JIT är inte tillgänglig med denna installation: sandboxen utan jailbreak nekar att starta JIT-hjälpprocessen (endast TrollStore/jailbreak kan tillåta det). Tryck bara på «Starta» — JIT begärs automatiskt via StikDebug; eller aktivera det manuellt i StikDebug-appen.";

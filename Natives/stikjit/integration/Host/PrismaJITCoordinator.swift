@@ -196,12 +196,15 @@ public final class PrismaJITCoordinator: NSObject {
         let rc = execDirectBinary(path: execPath, envLines: envLines, pidOut: &childPID)
         if rc != 0 {
             let spawnErrno = errno
-            // Task300：带上被拒路径与体积，ENOENT(2)=二进制在但内核/AMFI 拒绝执行
-            // （重签未覆盖该副本）；EPERM(1)/EACCES(13)=沙盒硬拒绝。下一轮日志可直接对单。
+            // Task300：带上被拒路径与体积。Task306：文案中性化——非越狱
+            // 直装（无 no-sandbox/dynamic-codesigning entitlement）下
+            // posix_spawn 结构性被拒（Task43 shaderc 真机恒 EPERM 同源），
+            // 重签 PlugIns/ 救不了，不再给误导性 re-sign 建议（宿主侧
+            // Task306 gate 已拦截绝大多数此类调用，本串为兜底日志）。
             let binSize = (try? manager.attributesOfItem(atPath: execPath))?[.size] as? Int ?? -1
             throw NSError(domain: "PrismaJIT", code: 22,
                           userInfo: [NSLocalizedDescriptionKey:
-                            "[direct-spawn] posix_spawn rc=\(rc) errno=\(spawnErrno) on \(execPath) (size=\(binSize)) -- errno 2 = binary present but kernel/AMFI rejected exec: re-sign the IPA with PlugIns/ intact; errno 1/13 = sandbox denial"])
+                            "[direct-spawn] posix_spawn rc=\(rc) errno=\(spawnErrno) on \(execPath) (size=\(binSize)) -- exec denied by sandbox/AMFI on this install (non-jailbroken hosts without no-sandbox/dynamic-codesigning entitlements deny spawning structurally; re-signing will not help). Enable JIT via the StikDebug deep-link track instead (set JIT enabler to Auto)."])
         }
         NSLog("[JIT] Task299 direct helper spawned pid=%d result=%@", childPID, resultPath as NSString)
 

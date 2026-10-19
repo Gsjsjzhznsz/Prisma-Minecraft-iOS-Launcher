@@ -136,6 +136,11 @@ extern BOOL Amethyst_EnforceSDL3Presentation(void);
     //   另有沿链上溯，双保险）。
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.5 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
+        // ★ Task306：SIGKILL 级会话死亡感知——app 冷启动即感知上次会话
+        //   残留 marker（未走退出钩子即消失），无 ame273 正式报告时现场
+        //   铸 SIGKILL 疑似报告，随后既有补弹链一并呈现（点启动路径由
+        //   ame306_beginGameSessionMarker 内部先行感知，双入口全覆盖）。
+        ame306_consumeStaleGameSessionMarker();
         [self ame273_presentPendingCrashReportFrom:rootVC];
     });
 

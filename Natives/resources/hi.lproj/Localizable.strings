@@ -287,3 +287,4 @@
 "ame302.jit.lc_guest" = "LiveContainer के अंदर बिल्ट-इन JIT उपलब्ध नहीं है: सिस्टम JIT हेल्पर प्रोसेस शुरू करने से इनकार करता है (एक्सटेंशन पंजीकरण और प्रोसेस निष्पादन दोनों अस्वीकृत)। StikDebug या SideStore से JIT सक्रिय करें — स्वतः हस्तांतरण के लिए JIT टूल को 'ऑटो' पर सेट करें।";
 "ame303.copy_failed" = "Could not write the version file for renamed instance \"%@\": copying the local copy failed. Free up storage space and try again.";
 "ame303.manifest_missing" = "Could not resolve version \"%@\": the remote version manifest is not loaded yet and no local copy exists to duplicate from. Check your network connection and try again.";
+"ame306.jit.spawn_denied" = "Builtin JIT is unavailable with this install: the non-jailbroken sandbox denies spawning the JIT helper process (only TrollStore/jailbroken hosts may allow it). Just press Launch -- JIT is requested automatically via StikDebug; or enable JIT for the launcher manually inside StikDebug.";
