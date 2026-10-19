@@ -4012,7 +4012,6 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
 
             // 写入版本 JSON（阶段2）
             [manager updateTaskWithId:fabricTaskId stageAtIndex:kFabricStageWriteJSON status:PLTaskStageStatusRunning];
-            [manager updateTaskWithId:fabricTaskId stageAtIndex:kFabricStageWriteJSON progress:0];
             [manager updateTaskWithId:fabricTaskId currentStageIndex:kFabricStageWriteJSON];
 
             // Task303：__block —— 改名后需在 ame303 回调内重赋值 id
