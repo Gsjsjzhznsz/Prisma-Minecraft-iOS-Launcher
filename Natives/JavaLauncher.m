@@ -2171,15 +2171,15 @@ static void ame302_clearStaleDebuggerPorts(void) {
                                  ame302_behaviors, ame302_flavors) == KERN_SUCCESS) {
         for (mach_msg_type_number_t ame302_i = 0; ame302_i < ame302_count; ame302_i++) {
             if (ame302_ports[ame302_i] == MACH_PORT_NULL) continue;
-            natural_t ame302_type = 0;
-            kern_return_t ame302_kr = mach_port_kobject(ame302_task, ame302_ports[ame302_i], &ame302_type);
-            if (ame302_kr == KERN_INVALID_RIGHT || ame302_kr == KERN_INVALID_NAME) {
+            mach_port_type_t ame302_ptype = 0;
+            kern_return_t ame302_kr = mach_port_type(ame302_task, ame302_ports[ame302_i], &ame302_ptype);
+            if (ame302_kr == KERN_SUCCESS && (ame302_ptype & MACH_PORT_TYPE_DEAD_NAME)) {
                 task_set_exception_ports(ame302_task, ame302_masks[ame302_i], MACH_PORT_NULL,
                                          ame302_behaviors[ame302_i], ame302_flavors[ame302_i]);
-                NSLog(@"[JIT] [JavaLauncher] Task302 stale TASK exception port cleared (mask=0x%x kr=%d) -- brk falls back to SIGTRAP net",
-                      ame302_masks[ame302_i], ame302_kr);
+                NSLog(@"[JIT] [JavaLauncher] Task302 stale TASK exception port cleared (mask=0x%x ptype=0x%x) -- brk falls back to SIGTRAP net",
+                      ame302_masks[ame302_i], ame302_ptype);
             } else if (ame302_kr == KERN_SUCCESS) {
-                NSLog(@"[JIT] [JavaLauncher] Task302 live debugger TASK port present (type=%u) -- untouched", ame302_type);
+                NSLog(@"[JIT] [JavaLauncher] Task302 live debugger TASK port present (ptype=0x%x) -- untouched", ame302_ptype);
             }
         }
     }
@@ -2198,9 +2198,9 @@ static void ame302_clearStaleDebuggerPorts(void) {
                                            ame302_tb, ame302_tf) == KERN_SUCCESS) {
                 for (mach_msg_type_number_t ame302_j = 0; ame302_j < ame302_tn; ame302_j++) {
                     if (ame302_tp[ame302_j] == MACH_PORT_NULL) continue;
-                    natural_t ame302_ttype = 0;
-                    kern_return_t ame302_tkr = mach_port_kobject(ame302_task, ame302_tp[ame302_j], &ame302_ttype);
-                    if (ame302_tkr == KERN_INVALID_RIGHT || ame302_tkr == KERN_INVALID_NAME) {
+                    mach_port_type_t ame302_tptype = 0;
+                    kern_return_t ame302_tkr = mach_port_type(ame302_task, ame302_tp[ame302_j], &ame302_tptype);
+                    if (ame302_tkr == KERN_SUCCESS && (ame302_tptype & MACH_PORT_TYPE_DEAD_NAME)) {
                         thread_set_exception_ports(ame302_threads[ame302_t], ame302_tm[ame302_j], MACH_PORT_NULL,
                                                    ame302_tb[ame302_j], ame302_tf[ame302_j]);
                         NSLog(@"[JIT] [JavaLauncher] Task302 stale THREAD exception port cleared (thread=%u mask=0x%x)",
