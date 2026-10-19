@@ -94,8 +94,8 @@ static void *(*ame298_real_vkCreateSwapchainKHR)(void *, const void *, const voi
 // vkGetInstanceProcAddr ×13 / vkGetDeviceProcAddr ×5 vs vkCreateSwapchainKHR ×2）
 // ——MG 疑似经 vk*ProcAddr 动态解析 Vulkan 入口，静态 __got 直补层（第一层）
 // 0 命中时改拦解析器本身：MG 查询 vkCreateSwapchainKHR 时直接返回包装器。
-static void *ame298_hook_vkCreateSwapchainKHR(void *device, const void *pCreateInfo,
-                                              const void *pAllocator, void *pSwapchain);
+static int32_t ame298_hook_vkCreateSwapchainKHR(void *device, const void *pCreateInfo,
+                                                const void *pAllocator, void *pSwapchain);
 static void *ame300_real_vkGetInstanceProcAddr;
 static void *ame300_real_vkGetDeviceProcAddr;
 
