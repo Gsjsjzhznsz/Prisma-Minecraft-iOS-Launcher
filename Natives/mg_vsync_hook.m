@@ -145,6 +145,40 @@ static int32_t ame298_hook_vkCreateSwapchainKHR(void *device, const void *pCreat
 // 在指定镜像的段表里找 __DATA_CONST __got（S_NON_LAZY_SYMBOL_POINTERS），
 // value-scan 等于 real 的槽改写为 hook。返回改写槽数（-1=段遍历失败）。
 // Task300：label 入参化——同一扫描器复用于 vk*ProcAddr 解析器拦截，日志可对单。
+//
+// ★ Task305 闪退根修（装机 4b9585c latestlog 实锤 SIGSEGV at
+//   ame298_patch_got_slots+0x194，JVM fatal 整局闪退）：
+//   ① 地址公式双重加 slide —— 旧式 `base + sect->addr + slide` 中 base
+//      （_dyld_get_image_header）本身已含 slide（dylib 首选基址 0 时
+//      base==slide），等于 slide 加了两次，槽地址 = 真实地址 + base，
+//      首个槽读取即踩未映射高地址段错误。本钩子经 Task299 egl_bridge
+//      安装点接入后，Task301~303 时代游戏从未跑到渲染器初始化（JIT 死锁
+//      挡在前面），Task304 修通 JIT 后本函数首次真机执行即暴露地雷。
+//      修法对齐 Task132 真机验证 canonical（sdl3_hook.m:2151）：
+//      `slot = slide + sect->addr`（vmaddr + slide，不掺 header）。
+//   ② 段扫描前可读性探针（vm_read_overwrite 首尾 8 字节）+ 段大小 sanity
+//      cap —— LiveContainer guest / 未来镜像布局再出现任何意外时，本钩子
+//      只跳段落日志，绝不许再带走整个游戏进程。
+static BOOL ame298_range_readable(const void *ame298_addr, size_t ame298_len) {
+    if (ame298_addr == NULL || ame298_len < sizeof(uint64_t)) {
+        return NO;
+    }
+    uint64_t ame298_sink = 0;
+    vm_size_t ame298_out = 0;
+    kern_return_t ame298_kr1 = vm_read_overwrite(
+        mach_task_self(), (vm_address_t)ame298_addr, (vm_size_t)sizeof(uint64_t),
+        (vm_address_t)&ame298_sink, &ame298_out);
+    if (ame298_kr1 != KERN_SUCCESS) {
+        return NO;
+    }
+    kern_return_t ame298_kr2 = vm_read_overwrite(
+        mach_task_self(),
+        (vm_address_t)((const uint8_t *)ame298_addr + ame298_len - sizeof(uint64_t)),
+        (vm_size_t)sizeof(uint64_t),
+        (vm_address_t)&ame298_sink, &ame298_out);
+    return ame298_kr2 == KERN_SUCCESS;
+}
+
 static int ame298_patch_got_slots(const struct mach_header_64 *ame298_hdr, intptr_t ame298_slide,
                                   uintptr_t ame298_real, uintptr_t ame298_hook,
                                   const char *ame298_label) {
@@ -157,6 +191,9 @@ static int ame298_patch_got_slots(const struct mach_header_64 *ame298_hdr, intpt
     uint32_t ame298_nsects_total = 0;
     struct segment_command_64 *ame298_seg = NULL;
     for (uint32_t i = 0; i < ame298_hdr->ncmds; ++i) {
+        if (ame298_lc->cmdsize < sizeof(struct load_command)) {
+            return -1; // 损坏的 load command 链，防越走越飞
+        }
         if (ame298_lc->cmd == LC_SEGMENT_64) {
             ame298_seg = (struct segment_command_64 *)ame298_lc;
             if (strcmp(ame298_seg->segname, "__DATA_CONST") == 0) {
@@ -170,9 +207,25 @@ static int ame298_patch_got_slots(const struct mach_header_64 *ame298_hdr, intpt
                     if (strcmp(ame298_sect->sectname, "__got") != 0) {
                         continue;
                     }
+                    // Task305：段大小 sanity（>64MB = 布局解析必错，跳段自保）
+                    if (ame298_sect->size > 64ull * 1024ull * 1024ull) {
+                        NSLog(@"[VSyncUnlock] ame305: __got section size %llu suspicious (>64MB) -- skip (guard)",
+                              (unsigned long long)ame298_sect->size);
+                        continue;
+                    }
+                    // Task305：canonical 地址 = vmaddr + slide（Task132 同款；
+                    // 旧式 base+addr+slide 双重加 slide = SIGSEGV 根因，已摘 base）
                     uintptr_t *ame298_slots =
-                        (uintptr_t *)(ame298_base + ame298_sect->addr + ame298_slide);
+                        (uintptr_t *)(ame298_slide + (intptr_t)ame298_sect->addr);
                     size_t ame298_count = ame298_sect->size / sizeof(uintptr_t);
+                    // Task305：扫描前整段可读性探针——不可读跳段落日志，绝不段错误
+                    if (!ame298_range_readable(ame298_slots, ame298_sect->size)) {
+                        NSLog(@"[VSyncUnlock] ame305: __got %p..%p not readable (probe failed) -- skip section (label=%s)",
+                              (void *)ame298_slots,
+                              (void *)((uint8_t *)ame298_slots + ame298_sect->size),
+                              ame298_label);
+                        continue;
+                    }
                     for (size_t k = 0; k < ame298_count; ++k) {
                         if (ame298_slots[k] != ame298_real) {
                             continue;

@@ -404,6 +404,7 @@ static void ame273_writeCrashReport(int code) {
     int catModIncompat = 0, catMissingDep = 0, catOOM = 0, catJvmFatal = 0, catJavaExc = 0;
     int idxImmediateReason = -1, idxFix = -1, idxIncompatHead = -1;
     int idxLastCausedBy = -1, idxLastException = -1;
+    int idxProblematicFrame = -1;  // Task305：JVM fatal 锚点（下一行 = 真实问题帧）
     int scanFrom = lineCount > 500 ? lineCount - 500 : 0;
     for (int i = scanFrom; i < lineCount; i++) {
         const char *s = ame273_trim(lines[i].start);
@@ -420,6 +421,13 @@ static void ame273_writeCrashReport(int code) {
             strstr(s, "OutOfMemory")) catOOM = 1;
         if (strstr(s, "SIGSEGV") || strstr(s, "EXCEPTION_ACCESS_VIOLATION") ||
             strstr(s, "A fatal error has been detected") || strstr(s, "hs_err")) catJvmFatal = 1;
+        // Task305：JVM fatal 横幅的 "Problematic frame:" 行——更精准的分类锚点
+        // 与 headline 素材（下一行即真实问题帧，如
+        // "C  [AngelAuraAmethyst+0x28118]  ame298_patch_got_slots+0x194"）
+        if (strstr(s, "Problematic frame:") != NULL) {
+            catJvmFatal = 1;
+            idxProblematicFrame = i;
+        }
         if (strstr(s, "Caused by: ")) idxLastCausedBy = i;
         if (strstr(s, "Exception") || strstr(s, "Error")) {
             catJavaExc = 1;
@@ -462,6 +470,10 @@ static void ame273_writeCrashReport(int code) {
     if (idxImmediateReason >= 0) {
         headline = ame273_trim(lines[idxImmediateReason].start);
         headlineLen = lines[idxImmediateReason].len - (int)(headline - lines[idxImmediateReason].start);
+    } else if (idxProblematicFrame >= 0 && idxProblematicFrame + 1 < lineCount) {
+        // Task305：Problematic frame 的下一行才是真实问题帧（函数名 + 偏移，直接定位）
+        headline = ame273_trim(lines[idxProblematicFrame + 1].start);
+        headlineLen = lines[idxProblematicFrame + 1].len - (int)(headline - lines[idxProblematicFrame + 1].start);
     } else if (idxLastCausedBy >= 0) {
         headline = ame273_trim(lines[idxLastCausedBy].start);
         headlineLen = lines[idxLastCausedBy].len - (int)(headline - lines[idxLastCausedBy].start);
@@ -475,6 +487,11 @@ static void ame273_writeCrashReport(int code) {
         fix = ame273_trim(lines[idxFix].start);
         fixLen = lines[idxFix].len - (int)(fix - lines[idxFix].start);
     }
+    if (fixLen == 0 && catJvmFatal) {
+        // Task305：JVM fatal 没有 Fabric 的 "Fix:" 行——给默认处置指引
+        fix = "完整原生回溯在 hs_err_pid*.log（启动器 Documents 根目录）；若问题帧指向渲染器/图形库，可在设置中切换渲染器后重试";
+        fixLen = (int)strlen(fix);
+    }
 
     // ---- 详情块：headline 定位 → 连续取块（Fabric 崩溃块天然连续完整） ----
     ame273_line_t details[20];
@@ -482,6 +499,7 @@ static void ame273_writeCrashReport(int code) {
     int blockIdx = -1;
     if (idxIncompatHead >= 0) blockIdx = idxIncompatHead;
     else if (idxImmediateReason >= 0 && idxImmediateReason > 0) blockIdx = idxImmediateReason - 1;
+    else if (idxProblematicFrame >= 0) blockIdx = (idxProblematicFrame > 0) ? idxProblematicFrame - 1 : idxProblematicFrame;
     else if (idxLastCausedBy >= 0) blockIdx = idxLastCausedBy;
     else if (idxLastException >= 0) blockIdx = idxLastException;
     if (blockIdx >= 0) {
@@ -564,7 +582,16 @@ void hooked_abort() {
             memset(&ame208_info, 0, sizeof(ame208_info));
             if (dladdr(ame208_frames[i], &ame208_info) && ame208_info.dli_fname != NULL &&
                 strstr(ame208_info.dli_fname, "libjvm.dylib") != NULL) {
-                NSLog(@"[main_hook] Task208: abort() originated inside libjvm (JVM fatal) -- terminating for real, no crash-view park");
+                // ★ Task305：JVM fatal 不再“死无对证”——直通终止前同步落盘
+                //   Task273 待读崩溃报告（latestlog 尾部此刻已含 JVM fatal 横幅
+                //   + Problematic frame + hs_err 路径，分类器原生识别
+                //   jvm_fatal），下次启动 SceneDelegate
+                //   ame273_presentPendingCrashReportFrom: 玻璃弹窗必达呈现。
+                //   进程内仍不 park（Task208 防僵尸语义原样保留；装机 4b9585c
+                //   实锤用户视角“闪退 + 零分析”根因 = 缺呈现层，非缺直通）。
+                atomic_store(&g_ame273_fatalExitInFlight, 1);
+                ame273_writeCrashReport(SIGABRT);
+                NSLog(@"[main_hook] Task305: JVM fatal -- ame273 pending crash report persisted, terminating for real (next launch presents analysis)");
                 orig_abort();
                 return;  // orig_abort 不返回；防御性 return
             }

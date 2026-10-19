@@ -20,11 +20,6 @@
         <string>1.0</string>
         <key>CFBundleVersion</key>
         <string>1.0</string>
-        <key>EXAppExtensionAttributes</key>
-        <dict>
-                <key>EXExtensionPointIdentifier</key>
-                <string>com.prisma-devs.prisma.PrismaJITHelper</string>
-        </dict>
         <key>NSExtension</key>
         <dict>
                 <key>NSExtensionPointIdentifier</key>
