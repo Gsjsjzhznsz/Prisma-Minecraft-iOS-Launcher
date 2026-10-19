@@ -472,3 +472,4 @@
 "ame301.residual.message" = "Kesintiye uğrayan bir indirmeden kalan “%@” klasörü var (manifest eksik), bu yüzden örnek listesinde görünmüyor. Temizleyip yeniden indirin, farklı bir adla yükleyin veya iptal edin.";
 "ame301.residual.clean" = "Temizle ve yeniden indir";
 "ame301.residual.rename" = "Farklı adla yükle";
+"ame302.jit.lc_guest" = "LiveContainer içinde yerleşik JIT kullanılamıyor: sistem JIT yardımcı sürecini başlatmayı reddediyor (uzantı kaydı ve süreç başlatma ikisi de reddedildi). JIT'yi StikDebug veya SideStore ile etkinleştirin — otomatik geçiş için JIT aracını 'Otomatik' yapın.";

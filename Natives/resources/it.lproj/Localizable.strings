@@ -3149,3 +3149,4 @@
 "ame301.residual.message" = "Esiste una cartella residua “%@” di un download interrotto (manifest mancante), quindi non compare nell’elenco delle istanze. Pulisci e riscarica, installa con un altro nome o annulla.";
 "ame301.residual.clean" = "Pulisci e riscarica";
 "ame301.residual.rename" = "Installa con un altro nome";
+"ame302.jit.lc_guest" = "Il JIT integrato non è disponibile in LiveContainer: il sistema rifiuta di avviare il processo helper JIT (sia la registrazione dell'estensione che l'esecuzione dei processi sono negate). Abilita il JIT tramite StikDebug o SideStore: imposta lo strumento JIT su «Auto» per il passaggio automatico all'avvio.";

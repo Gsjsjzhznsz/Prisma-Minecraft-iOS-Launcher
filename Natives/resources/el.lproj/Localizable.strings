@@ -326,3 +326,4 @@
 "ame301.residual.message" = "A leftover folder “%@” from an interrupted download exists (its manifest is missing), so it never shows up in the instance list. Clean it up and download again, install under a different name, or cancel.";
 "ame301.residual.clean" = "Clean up & re-download";
 "ame301.residual.rename" = "Install under a new name";
+"ame302.jit.lc_guest" = "Η ενσωματωμένη JIT δεν είναι διαθέσιμη στο LiveContainer: το σύστημα αρνείται την εκκίνηση της βοηθητικής διεργασίας JIT (τότε η καταχώρηση επέκτασης όσο και η εκτέλεση διεργασιών απορρίπτονται). Ενεργοποιήστε τη JIT μέσω StikDebug ή SideStore — ορίστε το εργαλείο JIT σε «Αυτόματο» για αυτόματη μετάβαση κατά την εκκίνηση.";

@@ -142,7 +142,7 @@ check("F10 编辑器长按入口保留", "actionMenuRepo" in read("Natives/Custo
 check("F11 vgpu 镜像源报错日志锚点", "[ControlRepo] Task189: mirror #" in cr)
 
 # ============================ G. i18n 第一批 ============================
-KEYS = 185
+KEYS = 191  # Task302 重锚：Task189 段实测 191（Task300/301 时代追加 ame294/ame300/ame301 键入段，185→191）
 for lang in ("en", "zh-Hans", "zh-CN", "zh-Hant"):
     s = read("Natives/resources/%s.lproj/Localizable.strings" % lang)
     # Task192 重锚：Task189 注册块之后追加了 Task192 的 AI 批次注册，

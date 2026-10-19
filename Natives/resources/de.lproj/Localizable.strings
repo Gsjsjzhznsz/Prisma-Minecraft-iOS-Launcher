@@ -3164,3 +3164,4 @@
 "ame301.residual.message" = "Ein Überbleibsel-Ordner “%@” eines abgebrochenen Downloads existiert (Manifest fehlt) und erscheint daher nicht in der Instanzliste. Bereinigen und neu laden, unter anderem Namen installieren oder abbrechen.";
 "ame301.residual.clean" = "Bereinigen & neu laden";
 "ame301.residual.rename" = "Unter neuem Namen installieren";
+"ame302.jit.lc_guest" = "Integriertes JIT ist in LiveContainer nicht verfügbar: Das System verweigert das Starten des JIT-Hilfsprozesses (sowohl Erweiterungsregistrierung als auch Prozessstart werden abgelehnt). Aktivieren Sie JIT über StikDebug oder SideStore – stellen Sie das JIT-Tool auf „Automatisch“, dann übergibt der Launcher beim Start automatisch.";

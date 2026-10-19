@@ -151,6 +151,11 @@ static BOOL ame293_hasGetTaskAllow(void);
 
 + (BOOL)ame294_builtinTrackAvailable {
     if (@available(iOS 26.0, *)) {
+        // ★ Task302：LiveContainer guest 结构性短路——三条派生轨全死
+        //   （EXKit Code=19 / posix_spawn errno=2 / fork errno=1），builtin
+        //   可用性直接回 NO：auto 模式直通 stikjit:// 深链，不再做注定
+        //   失败的内置尝试（装机 2c6458a/c3e70c5 两代实锤）。
+        if (ame302_isLiveContainerGuest()) return NO;
         if (!ame293_hasGetTaskAllow()) return NO;
         [StikDebugEngine.sharedEngine synchronizePairingFileFromDocuments:nil];
         if (!StikDebugEngine.sharedEngine.hasPairingFile) return NO;
@@ -167,6 +172,12 @@ static BOOL ame293_hasGetTaskAllow(void);
     // 门禁序（INTEGRATION.md）：① iOS 26+ ② get-task-allow ③ 配对文件
     // ④ 协调器。①②③④ 任一不过立即回包（caller 决定是否降级深链）。
     if (@available(iOS 26.0, *)) {
+        // ★ Task302：LC guest 如实报错（不再给误导性重签建议）
+        if (ame302_isLiveContainerGuest()) {
+            NSLog(@"[JIT] Task302 gate: LiveContainer guest -- builtin spawn tracks structurally unavailable (EXKit Code=19 / spawn errno=2 / fork errno=1)");
+            completion(NO, localize(@"ame302.jit.lc_guest", nil));
+            return;
+        }
         if (!ame293_hasGetTaskAllow()) {
             NSLog(@"[JIT] Task294 gate: get-task-allow missing");
             completion(NO, localize(@"ame293.jit.gettask_fail", nil));

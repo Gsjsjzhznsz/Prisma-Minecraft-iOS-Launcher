@@ -563,3 +563,4 @@
 "ame301.residual.message" = "Thư mục còn sót “%@” từ một lượt tải bị gián đoạn vẫn còn (thiếu manifest) nên không xuất hiện trong danh sách phiên bản. Dọn sạch và tải lại, cài đặt dưới tên khác, hoặc hủy.";
 "ame301.residual.clean" = "Dọn sạch và tải lại";
 "ame301.residual.rename" = "Cài đặt dưới tên khác";
+"ame302.jit.lc_guest" = "JIT tích hợp không khả dụng trong LiveContainer: hệ thống từ chối khởi chạy tiến trình trợ lý JIT (cả đăng ký tiện ích và thực thi tiến trình đều bị từ chối). Hãy bật JIT qua StikDebug hoặc SideStore — đặt công cụ JIT thành 'Tự động' để tự động chuyển tiếp khi khởi động.";

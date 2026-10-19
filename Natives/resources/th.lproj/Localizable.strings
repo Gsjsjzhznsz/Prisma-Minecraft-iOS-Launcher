@@ -337,3 +337,4 @@
 "ame301.residual.message" = "A leftover folder “%@” from an interrupted download exists (its manifest is missing), so it never shows up in the instance list. Clean it up and download again, install under a different name, or cancel.";
 "ame301.residual.clean" = "Clean up & re-download";
 "ame301.residual.rename" = "Install under a new name";
+"ame302.jit.lc_guest" = "ไม่สามารถใช้ JIT ในตัวภายใน LiveContainer ได้: ระบบปฏิเสธการเริ่มกระบวนการช่วย JIT (ทั้งการลงทะเบียนส่วนขยายและการเรียกใช้กระบวนการถูกปฏิเสธ) เปิดใช้ JIT ผ่าน StikDebug หรือ SideStore — ตั้งเครื่องมือ JIT เป็น 'อัตโนมัติ' เพื่อส่งต่ออัตโนมัติเมื่อเริ่มเกม";

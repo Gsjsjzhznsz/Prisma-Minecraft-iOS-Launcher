@@ -2146,6 +2146,76 @@ static void ame286_seedFirstLaunchPerformanceOptions(NSString *gameDir) {
     }
 }
 
+// ★ Task302：死调试器残留异常端口清除（"游戏卡在准备"根修）。
+// 病历（Task301 看门狗只能兜底报错，救不了启动）：StikDebug 会话中途被杀
+// （用户上滑 StikDebug）后，debugserver 曾在本任务登记的 task/thread 级
+// 断点/软件异常端口变成死名——后续 JIT26CreateRegionLegacy 的 brk #0x69
+// 异常投递进死端口 mach_msg 永久等待，SIGTRAP 安全网（JIT26TrapCatch）
+// 永远收不到信号，启动界面停在"正在准备运行环境…"（装机日志 2026-10-19
+// "游戏依旧卡在准备"）。修法：区域创建前扫描本任务与全部线程的
+// EXC_BREAKPOINT/EXC_SOFTWARE 端口，mach_port_kobject 命中死名
+// （KERN_INVALID_RIGHT/KERN_INVALID_NAME）即 set_exception_ports 置空
+// 回收——brk 随即回落 BSD 层 SIGTRAP → 安全网接管建区 → 无调试器
+// （jitless）也能继续启动。活调试器端口（kobject 命中）绝不触碰，
+// StikDebug 附加中的会话不受影响。
+static void ame302_clearStaleDebuggerPorts(void) {
+    mach_port_t ame302_task = mach_task_self();
+    exception_mask_t ame302_want = EXC_MASK_BREAKPOINT | EXC_MASK_SOFTWARE;
+    exception_mask_t ame302_masks[EXC_TYPES_COUNT];
+    mach_port_t ame302_ports[EXC_TYPES_COUNT];
+    exception_behavior_t ame302_behaviors[EXC_TYPES_COUNT];
+    thread_state_flavor_t ame302_flavors[EXC_TYPES_COUNT];
+    mach_msg_type_number_t ame302_count = EXC_TYPES_COUNT;
+    if (task_get_exception_ports(ame302_task, ame302_want, ame302_masks,
+                                 &ame302_count, ame302_ports,
+                                 ame302_behaviors, ame302_flavors) == KERN_SUCCESS) {
+        for (mach_msg_type_number_t ame302_i = 0; ame302_i < ame302_count; ame302_i++) {
+            if (ame302_ports[ame302_i] == MACH_PORT_NULL) continue;
+            natural_t ame302_type = 0;
+            kern_return_t ame302_kr = mach_port_kobject(ame302_task, ame302_ports[ame302_i], &ame302_type);
+            if (ame302_kr == KERN_INVALID_RIGHT || ame302_kr == KERN_INVALID_NAME) {
+                task_set_exception_ports(ame302_task, ame302_masks[ame302_i], MACH_PORT_NULL,
+                                         ame302_behaviors[ame302_i], ame302_flavors[ame302_i]);
+                NSLog(@"[JIT] [JavaLauncher] Task302 stale TASK exception port cleared (mask=0x%x kr=%d) -- brk falls back to SIGTRAP net",
+                      ame302_masks[ame302_i], ame302_kr);
+            } else if (ame302_kr == KERN_SUCCESS) {
+                NSLog(@"[JIT] [JavaLauncher] Task302 live debugger TASK port present (type=%u) -- untouched", ame302_type);
+            }
+        }
+    }
+    // 线程级清扫（debugserver 部分路径挂 thread 端口）
+    thread_act_array_t ame302_threads = NULL;
+    mach_msg_type_number_t ame302_tcount = 0;
+    if (task_threads(ame302_task, &ame302_threads, &ame302_tcount) == KERN_SUCCESS) {
+        for (mach_msg_type_number_t ame302_t = 0; ame302_t < ame302_tcount; ame302_t++) {
+            mach_msg_type_number_t ame302_tn = EXC_TYPES_COUNT;
+            exception_mask_t ame302_tm[EXC_TYPES_COUNT];
+            mach_port_t ame302_tp[EXC_TYPES_COUNT];
+            exception_behavior_t ame302_tb[EXC_TYPES_COUNT];
+            thread_state_flavor_t ame302_tf[EXC_TYPES_COUNT];
+            if (thread_get_exception_ports(ame302_threads[ame302_t], ame302_want,
+                                           ame302_tm, &ame302_tn, ame302_tp,
+                                           ame302_tb, ame302_tf) == KERN_SUCCESS) {
+                for (mach_msg_type_number_t ame302_j = 0; ame302_j < ame302_tn; ame302_j++) {
+                    if (ame302_tp[ame302_j] == MACH_PORT_NULL) continue;
+                    natural_t ame302_ttype = 0;
+                    kern_return_t ame302_tkr = mach_port_kobject(ame302_task, ame302_tp[ame302_j], &ame302_ttype);
+                    if (ame302_tkr == KERN_INVALID_RIGHT || ame302_tkr == KERN_INVALID_NAME) {
+                        thread_set_exception_ports(ame302_threads[ame302_t], ame302_tm[ame302_j], MACH_PORT_NULL,
+                                                   ame302_tb[ame302_j], ame302_tf[ame302_j]);
+                        NSLog(@"[JIT] [JavaLauncher] Task302 stale THREAD exception port cleared (thread=%u mask=0x%x)",
+                              ame302_threads[ame302_t], ame302_tm[ame302_j]);
+                    }
+                }
+            }
+        }
+        if (ame302_threads) {
+            vm_deallocate(ame302_task, (vm_address_t)ame302_threads,
+                          ame302_tcount * sizeof(thread_act_t));
+        }
+    }
+}
+
 // ★ Task301：JIT26 brk 握手有界看门狗（launchJVM / launchHeadlessJVM 共用）。
 // 病历（用户 2026-10-19"启动不了游戏呢，卡住了"）：isJITEnabled=CS_DEBUGGED
 // 是进程级持久态——早前 StikDebug 会话成功附加过后，即使调试器已被用户杀掉，
@@ -2156,6 +2226,9 @@ static void ame286_seedFirstLaunchPerformanceOptions(NSString *gameDir) {
 // debugserver 接管后应答挂起的 brk），再给 brk 线程 90s 收尾窗口；仍无果
 // 返回 NULL 走既有优雅失败弹窗。泄漏一条阻塞线程优于整机永久卡死。
 static void* ame301_createRegionWithWatchdog(void) {
+    // ★ Task302：区域创建前先清死调试器残留端口（根修见函数注释）——
+    //   brk #0x69 从此回落 SIGTRAP 安全网，jitless 也能建区继续启动。
+    ame302_clearStaleDebuggerPorts();
     dispatch_semaphore_t ame301_done = dispatch_semaphore_create(0);
     __block void *ame301_region = NULL;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{

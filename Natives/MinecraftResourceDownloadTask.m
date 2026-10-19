@@ -14,6 +14,7 @@
 #import "DownloadTaskManager.h"
 #import "DownloadTaskItem.h"
 #import "PLTaskStages.h"
+#import "PLProfiles.h"   // ★ Task302：实例注册表预登记（吞实例根修）
 #import "ios_uikit_bridge.h"
 #import "utils.h"
 
@@ -752,6 +753,46 @@ static const NSUInteger kMCStageIndexVerify = 5;
     self.ame187_taskStartTs = CFAbsoluteTimeGetCurrent();
 
     self.currentVersionId = version[@"id"];
+
+    // ===== ★ Task302：实例注册表预登记（吞实例三催根修）=====
+    // 病历（用户 2026-10-19"依旧吞实例/重复实例重命名没有出现过"）：下载
+    // 入口有三条（DownloadVC / RightPanel 快捷 / NavigationController），
+    // 只有 DownloadVC.downloadVanillaVersion: 在下载前 saveProfile（3820
+    // 家法）；RightPanel startDownloadWithVersion 全链零注册——版本实体
+    // 落盘后实例注册表（launcher_profiles.json）无条目，实例列表按注册
+    // 表枚举永远看不见 = "被吞"。Task300/301 改名闭环只解决目录撞名，
+    // 解决不了注册缺失：改名下载照样隐身。
+    // 修法：任务层统一预登记（对齐 DVC 家法：下载前即登记，中断下载也
+    // 立即可见可删）。守卫：①latest-* 元数据二次解析阶段不登记（此刻
+    // id 尚未定型）②同名 profile 已存在不覆盖（防误写用户定制）③已有
+    // profile 引用该版本（lastVersionId 命中）不重复登记。
+    {
+        NSString *ame302_vid = version[@"id"];
+        if ([ame302_vid isKindOfClass:NSString.class] && ame302_vid.length > 0
+            && ![ame302_vid hasPrefix:@"latest-"]) {
+            BOOL ame302_needRegister = YES;
+            for (NSString *ame302_key in PLProfiles.current.profiles) {
+                NSDictionary *ame302_p = PLProfiles.current.profiles[ame302_key];
+                if (![ame302_p isKindOfClass:NSDictionary.class]) continue;
+                if ([ame302_key isEqualToString:ame302_vid] ||
+                    [ame302_p[@"lastVersionId"] isEqualToString:ame302_vid]) {
+                    ame302_needRegister = NO;
+                    break;
+                }
+            }
+            if (ame302_needRegister) {
+                NSMutableDictionary *ame302_profile = [NSMutableDictionary dictionary];
+                ame302_profile[@"name"] = ame302_vid;
+                ame302_profile[@"lastVersionId"] = ame302_vid;
+                ame302_profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", ame302_vid];
+                ame302_profile[@"type"] = @"custom";
+                ame302_profile[@"created"] = [NSDate date].description;
+                [PLProfiles.current saveProfile:ame302_profile withName:ame302_vid];
+                NSLog(@"[MCDL] Task302 profile auto-registered upfront: %@ (RightPanel/Navigation paths were invisible)", ame302_vid);
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"ReloadProfileList" object:nil];
+            }
+        }
+    }
     [self prepareForDownload];
 
     // ===== 阶段上报初始化（redesign-download-ui Phase 3 Task 3.1）=====

@@ -126,6 +126,18 @@ public final class PrismaJITCoordinator: NSObject {
     //   也要报错（stage 日志在 [PrismaJITDirect] 前缀下可对单）。
     private static func directSpawnEnableJIT(targetPID: Int32,
                                              pairingData: Data) async throws -> (Bool, String) {
+        // ★ Task302：LiveContainer guest 结构性短路——LC guest 内
+        //   Bundle.main.executablePath 位于 Documents/Applications/ 下
+        //   （装机 c3e70c5 实锤：spawn 目标即该路径），posix_spawn 必被
+        //   AMFI 拒（rc=1 errno=2），fork errno=1、ExtensionKit Code=19。
+        //   三轨全死时不再给误导性 "re-sign with PlugIns/ intact" 建议
+        //   （PlugIns 完好也没用）——直接如实报错指向外部开启工具。
+        if let ame302Exec = Bundle.main.executablePath,
+           ame302Exec.contains("/Documents/Applications/") {
+            throw NSError(domain: "PrismaJIT", code: 25,
+                          userInfo: [NSLocalizedDescriptionKey:
+                            "[livecontainer] guest environment detected (exec under Documents/Applications) -- iOS refuses to spawn JIT helper processes here (ExtensionKit Code=19, posix_spawn errno=2, fork errno=1). Enable JIT via StikDebug/SideStore instead."])
+        }
         let manager = FileManager.default
         let root = manager.urls(for: .libraryDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("PrismaJIT", isDirectory: true)

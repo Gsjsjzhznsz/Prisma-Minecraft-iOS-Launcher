@@ -29,6 +29,7 @@
 #import "AmeLiquidGlassView.h"  // ★ Task252：TG LegacyGlassView 配方接管面板玻璃
 #import "SurfaceViewController.h" // ★ Task252：+surface 判定游戏域（快照供料 vs 实况采样）
 #import <CoreImage/CoreImage.h>   // ★ Task277：快照磨砂材质化（高斯+饱和度，Apple 材质观感）
+#import <objc/runtime.h>          // ★ Task302：no-mirror 豁免标记（实例流弹窗恒原生）
 
 #pragma mark - 前向声明与工具
 
@@ -1407,7 +1408,15 @@ static UIColor *Ame244SnapshotTint(void) {
                                  animated:(BOOL)flag
                                completion:(nullable void (^)(void))completion {
     if ([viewControllerToPresent isKindOfClass:[UIAlertController class]] && LGCIsGlassStyleActive()) {
-        @try {
+        // ★ Task302：关键流豁免——ame300/ame301 实例弹窗（改名/残根三选窗）
+        //   打 no-mirror 标记（ios_uikit_bridge 侧 sel_registerName 同名）时
+        //   恒原生直通。装机实锤：Task300 改名窗被镜像接管后动作链不可达
+        //   （弹窗后 40s+ 零 [MCDL] 动作日志），实例流弹窗必须保证原生
+        //   可见可点，视觉降级可接受。
+        if (objc_getAssociatedObject(viewControllerToPresent,
+                                     sel_registerName("ame302NoMirror")) != nil) {
+            NSLog(@"[AmeMenu] Task302: no-mirror alert (instance flow) -- native passthrough");
+        } else @try {
             // ★ Task263/276/277（接管域收窄史，现役口径见下方 Task289 条）：
             //   三轮收窄曾把真玻璃档接管域压到仅剩 Metal 游戏面（启动器域
             //   弹窗原生直通），动因是当时镜像材质与页面材质不同源（页面

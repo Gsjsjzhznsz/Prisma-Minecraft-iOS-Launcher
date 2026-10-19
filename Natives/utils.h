@@ -226,6 +226,11 @@ BOOL isTrollStoreInstall(void);
 // while (!isJITEnabled) 死循环——stikjit:// 偶发没开成 JIT 时旧循环
 // 永不退出（装机实测"启动卡在启动器界面"，只能杀进程）。
 BOOL ame169_waitForJITCondition(BOOL (^condition)(void), NSTimeInterval timeout, NSString *label);
+
+// ★ Task302：LiveContainer guest 判定（exec 路径含 /Documents/Applications/）。
+// YES 时 builtin JIT 三条派生轨（ExtensionKit/posix_spawn/fork）结构性不可用，
+// 调用方应快速如实报错或直通外部开启工具深链。
+BOOL ame302_isLiveContainerGuest(void);
 // Task185：JIT 等待成功后的自愈式主队列派发。病历（11e4b63 装机 latestlog.2）：
 // condition satisfied（后台态 3.8s，traced=1 exn=1）之后 dispatch_async(main)
 // 的续接块【从未执行】——Task183 锚点 "wait-completed block entered" 缺失，

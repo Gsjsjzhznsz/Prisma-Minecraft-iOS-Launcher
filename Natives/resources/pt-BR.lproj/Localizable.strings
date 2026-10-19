@@ -3152,3 +3152,4 @@
 "ame301.residual.message" = "Existe uma pasta residual “%@” de um download interrompido (manifesto ausente), por isso ela não aparece na lista de instâncias. Limpar e baixar novamente, instalar com outro nome ou cancelar.";
 "ame301.residual.clean" = "Limpar e baixar novamente";
 "ame301.residual.rename" = "Instalar com outro nome";
+"ame302.jit.lc_guest" = "O JIT integrado não está disponível no LiveContainer: o sistema se recusa a iniciar o processo auxiliar de JIT (o registro de extensão e a execução de processos são negados). Ative o JIT via StikDebug ou SideStore — defina a ferramenta JIT como «Auto» para a transferência automática ao iniciar.";

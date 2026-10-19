@@ -458,3 +458,4 @@
 "ame301.residual.message" = "Istnieje folder resztkowy “%@” po przerwanym pobieraniu (brak manifestu), dlatego nie pojawia się na liście instancji. Wyczyść i pobierz ponownie, zainstaluj pod inną nazwą lub anuluj.";
 "ame301.residual.clean" = "Wyczyść i pobierz ponownie";
 "ame301.residual.rename" = "Zainstaluj pod inną nazwą";
+"ame302.jit.lc_guest" = "Wbudowane JIT jest niedostępne w LiveContainer: system odmawia uruchomienia procesu pomocniczego JIT (zarówno rejestracja rozszerzeń, jak i uruchamianie procesów są odrzucane). Włącz JIT przez StikDebug lub SideStore — ustaw narzędzie JIT na «Auto», aby automatycznie przekazywać przy starcie.";

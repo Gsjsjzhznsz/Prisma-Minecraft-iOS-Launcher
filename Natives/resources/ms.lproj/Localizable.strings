@@ -337,3 +337,4 @@
 "ame301.residual.message" = "A leftover folder “%@” from an interrupted download exists (its manifest is missing), so it never shows up in the instance list. Clean it up and download again, install under a different name, or cancel.";
 "ame301.residual.clean" = "Clean up & re-download";
 "ame301.residual.rename" = "Install under a new name";
+"ame302.jit.lc_guest" = "JIT terbina dalam tidak tersedia dalam LiveContainer: sistem menolak menjalankan proses pembantu JIT (pendaftaran sambungan dan pelaksanaan proses kedua-duanya ditolak). Aktifkan JIT melalui StikDebug atau SideStore — tetapkan alat JIT kepada 'Auto' untuk serahan automatik semasa mula.";

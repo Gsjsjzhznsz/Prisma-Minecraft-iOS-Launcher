@@ -563,3 +563,4 @@
 "ame301.residual.message" = "Zbytková složka “%@” z přerušeného stahování stále existuje (chybí manifest), proto se nezobrazuje v seznamu instancí. Vyčistěte a stáhněte znovu, nainstalujte pod jiným názvem, nebo zrušte.";
 "ame301.residual.clean" = "Vyčistit a stáhnout znovu";
 "ame301.residual.rename" = "Instalovat pod jiným názvem";
+"ame302.jit.lc_guest" = "Vestavěné JIT není v LiveContainer k dispozici: systém odmítá spustit pomocný proces JIT (registrace rozšíření i spouštění procesů jsou zamítnuty). Povolte JIT přes StikDebug nebo SideStore — nastavte nástroj JIT na «Auto» pro automatický přechod při spuštění.";

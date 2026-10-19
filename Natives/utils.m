@@ -501,6 +501,31 @@ BOOL ame169_waitForJITCondition(BOOL (^condition)(void), NSTimeInterval timeout,
     }
 }
 
+// ★ Task302：LiveContainer guest 判定（内置 JIT 三轨结构性死亡的统一开关）。
+// 病历（装机 c3e70c5 latestlog.txt 2026-10-19 实锤链）：LC 宿主把 guest app
+// 包整体搬到 <LC容器>/Documents/Applications/<bundle-id>/ 下运行——本仓
+// self-relaunch 轨的 spawn 目标路径（Documents/Applications/com.prisma-devs.
+// prisma.app/AngelAuraAmethyst）就是直接证据。该形态下三条派生轨全部结构性
+// 死亡：① ExtensionKit 观察者必拒（Code=19 "Failed to add observer"——guest
+// 的 PlugIns 扩展从未在系统 extensionkitd 注册）；② posix_spawn 任意
+// Documents 内二进制必被 AMFI/沙盒拒绝（rc=1 errno=2，文件在、体积可
+// stat，执行被内核拒）；③ fork() errno=1（沙盒禁 fork）。据此：builtin
+// 轨可用性判定直接回 NO（auto 模式直通 stikjit:// 深链，不再做注定失败
+// 的内置尝试），builtin 显式选项给出如实报错而非误导性重签建议。
+BOOL ame302_isLiveContainerGuest(void) {
+    static BOOL ame302_cached = NO;
+    static dispatch_once_t ame302_once;
+    dispatch_once(&ame302_once, ^{
+        NSString *ame302_exec = NSBundle.mainBundle.executablePath;
+        ame302_cached = (ame302_exec.length > 0 &&
+                         [ame302_exec containsString:@"/Documents/Applications/"]);
+        if (ame302_cached) {
+            NSLog(@"[JIT] Task302 LiveContainer guest detected (exec=%@) -- builtin spawn tracks structurally unavailable (EXKit Code=19 / spawn errno=2 / fork errno=1)", ame302_exec);
+        }
+    });
+    return ame302_cached;
+}
+
 #ifndef P_TRACED
 #define P_TRACED 0x00000800 /* process is being traced by a debugger (ptrace) */
 #endif

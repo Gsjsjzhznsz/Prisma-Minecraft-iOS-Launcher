@@ -3159,3 +3159,4 @@
 "ame301.residual.message" = "Un dossier résiduel “%@” d’un téléchargement interrompu existe (manifeste manquant), il n’apparaît donc pas dans la liste des instances. Nettoyer et retélécharger, installer sous un autre nom, ou annuler.";
 "ame301.residual.clean" = "Nettoyer et retélécharger";
 "ame301.residual.rename" = "Installer sous un autre nom";
+"ame302.jit.lc_guest" = "Le JIT intégré est indisponible dans LiveContainer : le système refuse de lancer le processus assistant JIT (l'enregistrement d'extension et l'exécution de processus sont tous deux refusés). Activez le JIT via StikDebug ou SideStore — réglez l'outil JIT sur « Auto » pour un transfert automatique au lancement.";

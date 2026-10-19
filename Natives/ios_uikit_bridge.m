@@ -254,6 +254,14 @@ void ame300_promptRenameInstance(NSString *title, NSString *message, NSString *p
             textField.autocorrectionType = UITextAutocorrectionTypeNo;
             textField.clearButtonMode = UITextFieldViewModeWhileEditing;
         }];
+        // ★ Task302：关键流弹窗禁玻璃镜像（用户"重复实例重命名没有出现过"
+        //   装机实锤：Task300 改名窗被 AmeMenu Task237 镜像接管后动作链
+        //   不可达——弹窗上屏后 40s+ 零 [MCDL] 动作日志，用户只能退后台）。
+        //   no-mirror 标记位 + 钩子侧豁免（AmeFloatingMenu 同名 sel）= 本窗
+        //   恒原生上屏；level-1000 window 家法本身可独立承载，视觉降级
+        //   可接受，可用性优先。
+        objc_setAssociatedObject(alert, sel_registerName("ame302NoMirror"), @YES,
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         UIWindow *previousKeyWindow = UIWindow.mainWindow;
         __weak UIAlertController *ame300_weakAlert = alert;
         void (^dismissWindow)(void) = ^{
@@ -308,6 +316,10 @@ void ame301_promptResidualInstance(NSString *title, NSString *message,
             textField.autocorrectionType = UITextAutocorrectionTypeNo;
             textField.clearButtonMode = UITextFieldViewModeWhileEditing;
         }];
+        // ★ Task302：残根三选窗同标 no-mirror（ame300 同款病历/同款豁免，
+        //   三选窗承担清理残根自愈入口，可用性必须最高）。
+        objc_setAssociatedObject(alert, sel_registerName("ame302NoMirror"), @YES,
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         UIWindow *previousKeyWindow = UIWindow.mainWindow;
         __weak UIAlertController *ame301_weakAlert = alert;
         void (^dismissWindow)(void) = ^{

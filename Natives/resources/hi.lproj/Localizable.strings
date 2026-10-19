@@ -284,3 +284,4 @@
 "ame301.residual.message" = "A leftover folder “%@” from an interrupted download exists (its manifest is missing), so it never shows up in the instance list. Clean it up and download again, install under a different name, or cancel.";
 "ame301.residual.clean" = "Clean up & re-download";
 "ame301.residual.rename" = "Install under a new name";
+"ame302.jit.lc_guest" = "LiveContainer के अंदर बिल्ट-इन JIT उपलब्ध नहीं है: सिस्टम JIT हेल्पर प्रोसेस शुरू करने से इनकार करता है (एक्सटेंशन पंजीकरण और प्रोसेस निष्पादन दोनों अस्वीकृत)। StikDebug या SideStore से JIT सक्रिय करें — स्वतः हस्तांतरण के लिए JIT टूल को 'ऑटो' पर सेट करें।";
