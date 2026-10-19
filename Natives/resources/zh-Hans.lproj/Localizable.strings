@@ -3365,3 +3365,5 @@
 "ame301.residual.clean" = "清理并重新下载";
 "ame301.residual.rename" = "换名称安装";
 "ame302.jit.lc_guest" = "LiveContainer 环境下无法使用内置 JIT：系统拒绝在此启动 JIT 助手进程（扩展注册与进程派生均被拒绝）。请改用 StikDebug / SideStore 开启——JIT 开启工具选“自动”，启动时会自动跳转。";
+"ame303.copy_failed" = "无法为重命名实例“%@”写入版本文件：复制本地副本失败。请清理存储空间后重试。";
+"ame303.manifest_missing" = "无法解析版本“%@”：远端版本清单尚未加载，且本地没有可复制的版本文件。请检查网络连接后重试。";

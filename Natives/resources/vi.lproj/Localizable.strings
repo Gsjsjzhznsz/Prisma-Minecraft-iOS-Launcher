@@ -564,3 +564,5 @@
 "ame301.residual.clean" = "Dọn sạch và tải lại";
 "ame301.residual.rename" = "Cài đặt dưới tên khác";
 "ame302.jit.lc_guest" = "JIT tích hợp không khả dụng trong LiveContainer: hệ thống từ chối khởi chạy tiến trình trợ lý JIT (cả đăng ký tiện ích và thực thi tiến trình đều bị từ chối). Hãy bật JIT qua StikDebug hoặc SideStore — đặt công cụ JIT thành 'Tự động' để tự động chuyển tiếp khi khởi động.";
+"ame303.copy_failed" = "Không thể ghi tệp phiên bản cho thực thể đã đổi tên \"%@\": sao chép bản sao cục bộ thất bại. Hãy giải phóng dung lượng rồi thử lại.";
+"ame303.manifest_missing" = "Không thể phân giải phiên bản \"%@\": danh mục phiên bản từ xa chưa được tải và không có bản sao cục bộ để nhân bản. Kiểm tra kết nối mạng rồi thử lại.";

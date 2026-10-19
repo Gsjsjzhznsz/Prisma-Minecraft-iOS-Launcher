@@ -864,6 +864,22 @@ static BOOL aiIsLatestAlias(NSString *s) {
 
             const char *env = getenv("POJAV_GAME_DIR");
             NSString *gameDirRoot = (env && strlen(env) > 0) ? [NSString stringWithUTF8String:env] : NSHomeDirectory();
+
+            // ★ Task303：AI 链静默唯一化（"下载模组端被吞"同源根治）。与 DVC
+            //   弹窗链同源不同交互：AI 工具场景无 UI 命名窗预期，versions/<id>/
+            //   已存在时自动 +2 后缀落新实例，防静默覆盖旧档；写入 JSON 内部
+            //   id 同步重写保持与目录名一致（DVC 弹窗链见 installFabricLikeLoader）。
+            NSString *ame303_aiDir = [gameDirRoot stringByAppendingPathComponent:
+                                      [NSString stringWithFormat:@"versions/%@", versionId]];
+            if ([NSFileManager.defaultManager fileExistsAtPath:ame303_aiDir]) {
+                NSString *ame303_unique = [MinecraftResourceDownloadTask ame303_uniqueSuggestionForId:versionId];
+                NSMutableDictionary *ame303_mutable = [profileJson mutableCopy];
+                ame303_mutable[@"id"] = ame303_unique;
+                profileJson = ame303_mutable;
+                NSLog(@"[AI] Task303 loader install id uniquified: %@ -> %@", versionId, ame303_unique);
+                versionId = ame303_unique;
+            }
+
             NSString *jsonPath = [gameDirRoot stringByAppendingPathComponent:
                                   [NSString stringWithFormat:@"versions/%@/%@.json", versionId, versionId]];
             [[NSFileManager defaultManager] createDirectoryAtPath:[jsonPath stringByDeletingLastPathComponent]

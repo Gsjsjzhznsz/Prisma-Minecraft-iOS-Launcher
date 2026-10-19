@@ -46,4 +46,15 @@ extern NSString * const kMinecraftResourceDownloadBackgroundSessionIdentifier;
 - (void)downloadVersion:(NSDictionary *)version;
 - (void)downloadModpackFromAPI:(ModpackAPI *)api detail:(NSDictionary *)modDetail atIndex:(NSUInteger)selectedVersion;
 
+#pragma mark - Task303：跨安装链共用（原版/模组端重复实例检测）
+
+/// 目标版本目录已存在时弹 Task300 同款命名窗，返回用户确认后的唯一 id；
+/// 目录不存在直接回调原始 id；用户取消回调 finalId=nil。completion 恒在主线程回调。
+/// 供 DVC.installFabricLikeLoader 等模组端安装链复用（对齐原版 Task300 行为）。
++ (void)ame303_resolveDuplicateVersionId:(NSString *)versionId
+                              completion:(void (^)(NSString *finalId, BOOL cancelled))completion;
+
+/// 预填唯一建议名 "<id> 2"、"<id> 3"...（目标目录不存在即采纳）
++ (NSString *)ame303_uniqueSuggestionForId:(NSString *)origId;
+
 @end

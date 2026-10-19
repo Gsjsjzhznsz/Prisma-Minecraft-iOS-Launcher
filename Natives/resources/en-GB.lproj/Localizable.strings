@@ -318,3 +318,5 @@
 "ame301.residual.clean" = "Clean up & re-download";
 "ame301.residual.rename" = "Install under a new name";
 "ame302.jit.lc_guest" = "Builtin JIT is unavailable inside LiveContainer: the system refuses to spawn the JIT helper process here (extension registration and process exec are both denied). Enable JIT via StikDebug or SideStore instead -- set the JIT enabler to Auto and the launcher will hand off automatically at launch.";
+"ame303.copy_failed" = "Could not write the version file for renamed instance \"%@\": copying the local copy failed. Free up storage space and try again.";
+"ame303.manifest_missing" = "Could not resolve version \"%@\": the remote version manifest is not loaded yet and no local copy exists to duplicate from. Check your network connection and try again.";

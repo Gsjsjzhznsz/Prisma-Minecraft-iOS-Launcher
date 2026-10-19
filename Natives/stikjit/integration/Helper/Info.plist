@@ -25,6 +25,11 @@
                 <key>EXExtensionPointIdentifier</key>
                 <string>com.prisma-devs.prisma.PrismaJITHelper</string>
         </dict>
+        <key>NSExtension</key>
+        <dict>
+                <key>NSExtensionPointIdentifier</key>
+                <string>com.apple.widgetkit-extension</string>
+        </dict>
         <key>MinimumOSVersion</key>
         <string>26.0</string>
         <key>CFBundleSupportedPlatforms</key>

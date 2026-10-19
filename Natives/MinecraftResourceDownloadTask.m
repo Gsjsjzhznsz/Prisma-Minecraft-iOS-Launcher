@@ -402,6 +402,52 @@ static const NSUInteger kMCStageIndexVerify = 5;
         success();
     };
 
+    // ★ Task303：改名流清单查找失败兜底（点启动弹改名窗的因果根）。
+    // 病历（装机 2026-10-19 实锤）：Task300 renamed 后 2s 即报 ParseJSON
+    // “26.1.2 2.json 不存在”——remoteVersionList 是被 LauncherRootVC/DownloadVC/
+    // CardLayout 三源 removeAllObjects 重建的非线程安全全局，改名确认瞬间正逢
+    // Task218 piston 重载进行中 → findVersion 返回 nil → 误入本地版本分支读
+    // 不存在的新路径。更糟的是 prepareForDownload 已建残根目录 → 用户点启动
+    // 该实例 → 补拉链撞残根弹残根/命名窗 = “点启动游戏出现重命名实例”。
+    // 兑底语义：改名流的前置就是原始 id 目录已存在 → 原始 json 在 → 直接复制
+    // json+jar 到新名目录（json 内部 id 重写为新名，Task71 同语义），库/资产
+    // 阶段按 SHA 自动跳过，零下载秒完成；原始 json 也不在才报清单错误。
+    if (!version && ame300_renamed) {
+        NSString *ame303_srcJson = [NSString stringWithFormat:@"%1$s/versions/%2$@/%2$@.json",
+                                    getenv("POJAV_GAME_DIR"), ame300_lookupId];
+        NSMutableDictionary *ame303_json = parseJSONFromFile(ame303_srcJson);
+        if (ame303_json && !ame303_json[@"NSErrorObject"]) {
+            [NSFileManager.defaultManager createDirectoryAtPath:path.stringByDeletingLastPathComponent
+                                    withIntermediateDirectories:YES attributes:nil error:nil];
+            ame303_json[@"id"] = versionStr;
+            NSError *ame303_writeErr = nil;
+            NSData *ame303_data = [NSJSONSerialization dataWithJSONObject:ame303_json
+                                                                  options:NSJSONWritingPrettyPrinted
+                                                                    error:&ame303_writeErr];
+            BOOL ame303_ok = ame303_data && [ame303_data writeToFile:path options:NSDataWritingAtomic error:&ame303_writeErr];
+            NSString *ame303_srcJar = [NSString stringWithFormat:@"%1$s/versions/%2$@/%2$@.jar",
+                                       getenv("POJAV_GAME_DIR"), ame300_lookupId];
+            NSString *ame303_dstJar = [NSString stringWithFormat:@"%1$s/versions/%2$@/%2$@.jar",
+                                       getenv("POJAV_GAME_DIR"), versionStr];
+            if ([NSFileManager.defaultManager fileExistsAtPath:ame303_srcJar]
+                && ![NSFileManager.defaultManager fileExistsAtPath:ame303_dstJar]) {
+                [NSFileManager.defaultManager copyItemAtPath:ame303_srcJar toPath:ame303_dstJar error:nil];
+            }
+            if (ame303_ok) {
+                NSLog(@"[MCDL] Task303 renamed local-copy fallback: %@ -> %@ (remote manifest race/absent)",
+                      ame300_lookupId, versionStr);
+                completionBlock();
+                return;
+            }
+            NSLog(@"[MCDL] Task303 local-copy write failed: %@", ame303_writeErr.localizedDescription ?: @"unknown");
+            [self finishDownloadWithErrorString:[NSString stringWithFormat:localize(@"ame303.copy_failed", nil), versionStr]];
+            return;
+        }
+        NSLog(@"[MCDL] Task303 renamed lookup miss + no local base json (%@)", ame300_lookupId);
+        [self finishDownloadWithErrorString:[NSString stringWithFormat:localize(@"ame303.manifest_missing", nil), ame300_lookupId]];
+        return;
+    }
+
     if (!version) {
         // This is likely local version, check if json exists and has inheritsFrom
         NSMutableDictionary *json = parseJSONFromFile(path);
@@ -651,6 +697,56 @@ static const NSUInteger kMCStageIndexVerify = 5;
     }
     return [NSString stringWithFormat:@"%@ %lu", origId,
             (unsigned long)[NSDate date].timeIntervalSince1970];
+}
+
+// ★ Task303：类方法版唯一名建议（模组端安装链与原版命名窗共用，语义同上）
++ (NSString *)ame303_uniqueSuggestionForId:(NSString *)origId {
+    for (NSUInteger i = 2; i < 100; ++i) {
+        NSString *cand = [NSString stringWithFormat:@"%@ %lu", origId, (unsigned long)i];
+        NSString *candDir = [NSString stringWithFormat:@"%s/versions/%@",
+                             getenv("POJAV_GAME_DIR"), cand];
+        if (![NSFileManager.defaultManager fileExistsAtPath:candDir]) return cand;
+    }
+    return [NSString stringWithFormat:@"%@ %lu", origId,
+            (unsigned long)[NSDate date].timeIntervalSince1970];
+}
+
+// ★ Task303：模组端安装链重复实例检测入口（DVC.installFabricLikeLoader 等）。
+// 病历（用户 2026-10-19“下载原版有改名提示，模组端依旧被吞”）：原版下载链
+// 有 Task300/301 重复检测+命名窗，模组端（Fabric/Quilt）写 versions/<id>/
+// 前零检测——同 id 重复安装静默覆盖旧实例（“被吞”）。修法：目录已存在 →
+// 弹 Task300 同款命名窗；取消 → cancelled=YES 调用方干净终止；目录不存在
+// 直接回调原 id。completion 恒在主线程回调。
++ (void)ame303_resolveDuplicateVersionId:(NSString *)versionId
+                              completion:(void (^)(NSString *finalId, BOOL cancelled))completion {
+    NSString *target = [NSString stringWithFormat:@"%s/versions/%@",
+                        getenv("POJAV_GAME_DIR"), versionId];
+    BOOL isDir = NO;
+    if (versionId.length == 0
+        || ![NSFileManager.defaultManager fileExistsAtPath:target isDirectory:&isDir]
+        || !isDir) {
+        dispatch_async(dispatch_get_main_queue(), ^{ completion(versionId, NO); });
+        return;
+    }
+    NSString *suggestion = [self ame303_uniqueSuggestionForId:versionId];
+    NSString *message = [NSString stringWithFormat:localize(@"ame300.dup.message", nil), versionId];
+    ame300_promptRenameInstance(localize(@"ame300.dup.title", nil), message, suggestion,
+        ^(NSString *chosenName) {
+            if (chosenName.length == 0) {
+                NSLog(@"[MCDL] Task303 loader-install duplicate naming cancelled (id=%@)", versionId);
+                dispatch_async(dispatch_get_main_queue(), ^{ completion(nil, YES); });
+                return;
+            }
+            NSString *chosenDir = [NSString stringWithFormat:@"%s/versions/%@",
+                                   getenv("POJAV_GAME_DIR"), chosenName];
+            if ([NSFileManager.defaultManager fileExistsAtPath:chosenDir]) {
+                NSLog(@"[MCDL] Task303 chosen name still collides (%@) -- re-prompt", chosenName);
+                [self ame303_resolveDuplicateVersionId:chosenName completion:completion];
+                return;
+            }
+            NSLog(@"[MCDL] Task303 loader-install duplicate renamed: %@ -> %@", versionId, chosenName);
+            dispatch_async(dispatch_get_main_queue(), ^{ completion(chosenName, NO); });
+        });
 }
 
 // ★ Task301：残根目录三选窗（清理并重装 / 重命名继续 / 取消）。

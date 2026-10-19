@@ -333,3 +333,5 @@
 "ame301.residual.clean" = "Clean up & re-download";
 "ame301.residual.rename" = "Install under a new name";
 "ame302.jit.lc_guest" = "Vstavané JIT nie je v LiveContainer k dispozícii: systém odmieta spustiť pomocný proces JIT (registrácia rozšírení aj spúšťanie procesov sú zamietnuté). Povoľte JIT cez StikDebug alebo SideStore — nastavte nástroj JIT na «Auto» pre automatický prechod pri spustení.";
+"ame303.copy_failed" = "Could not write the version file for renamed instance \"%@\": copying the local copy failed. Free up storage space and try again.";
+"ame303.manifest_missing" = "Could not resolve version \"%@\": the remote version manifest is not loaded yet and no local copy exists to duplicate from. Check your network connection and try again.";

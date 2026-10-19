@@ -488,3 +488,5 @@
 "ame301.residual.clean" = "Bersihkan & unduh ulang";
 "ame301.residual.rename" = "Instal dengan nama lain";
 "ame302.jit.lc_guest" = "JIT bawaan tidak tersedia di dalam LiveContainer: sistem menolak menjalankan proses pembantu JIT (baik pendaftaran ekstensi maupun eksekusi proses ditolak). Aktifkan JIT melalui StikDebug atau SideStore — atur alat JIT ke 'Otomatis' agar berpindah otomatis saat memulai.";
+"ame303.copy_failed" = "Tidak dapat menulis file versi untuk instance yang diganti nama \"%@\": penyalinan salinan lokal gagal. Bersihkan ruang penyimpanan lalu coba lagi.";
+"ame303.manifest_missing" = "Tidak dapat menyelesaikan versi \"%@\": manifest versi jarak jauh belum dimuat dan tidak ada salinan lokal untuk diduplikasi. Periksa koneksi jaringan lalu coba lagi.";

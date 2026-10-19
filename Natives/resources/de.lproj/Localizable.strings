@@ -3165,3 +3165,5 @@
 "ame301.residual.clean" = "Bereinigen & neu laden";
 "ame301.residual.rename" = "Unter neuem Namen installieren";
 "ame302.jit.lc_guest" = "Integriertes JIT ist in LiveContainer nicht verfügbar: Das System verweigert das Starten des JIT-Hilfsprozesses (sowohl Erweiterungsregistrierung als auch Prozessstart werden abgelehnt). Aktivieren Sie JIT über StikDebug oder SideStore – stellen Sie das JIT-Tool auf „Automatisch“, dann übergibt der Launcher beim Start automatisch.";
+"ame303.copy_failed" = "Versionsdatei für umbenannte Instanz „%@“ konnte nicht geschrieben werden: Kopieren der lokalen Kopie fehlgeschlagen. Speicherplatz freigeben und erneut versuchen.";
+"ame303.manifest_missing" = "Version „%@“ konnte nicht aufgelöst werden: Das remote Versionsmanifest ist noch nicht geladen und es existiert keine lokale Kopie zum Duplizieren. Netzwerkverbindung prüfen und erneut versuchen.";

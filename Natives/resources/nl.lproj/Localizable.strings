@@ -317,3 +317,5 @@
 "ame301.residual.clean" = "Clean up & re-download";
 "ame301.residual.rename" = "Install under a new name";
 "ame302.jit.lc_guest" = "Ingebouwde JIT is niet beschikbaar in LiveContainer: het systeem weigert het JIT-hulpproces te starten (zowel extensieregistratie als het starten van processen worden geweigerd). Gebruik StikDebug of SideStore om JIT in te schakelen — zet de JIT-tool op 'Automatisch' voor automatische overdracht bij het starten.";
+"ame303.copy_failed" = "Kan versiebestand voor hernoemde instantie \"%@\" niet schrijven: kopiëren van lokale kopie mislukt. Maak opslagruimte vrij en probeer opnieuw.";
+"ame303.manifest_missing" = "Kan versie \"%@\" niet herleiden: het externe versiemanifest is nog niet geladen en er is geen lokale kopie om te dupliceren. Controleer de netwerkverbinding en probeer opnieuw.";

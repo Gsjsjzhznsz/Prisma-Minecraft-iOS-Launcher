@@ -287,3 +287,5 @@
 "ame301.residual.clean" = "Clean up & re-download";
 "ame301.residual.rename" = "Install under a new name";
 "ame302.jit.lc_guest" = "Sisäänrakennettu JIT ei ole käytettävissä LiveContainerissa: järjestelmä kieltää JIT-avuprosessin käynnistyksen (sekä laajennuksen rekisteröinti että prosessien suorittaminen on estetty). Ota JIT käyttöön StikDebug- tai SideStore-sovelluksella — aseta JIT-työkalu arvoon «Automaattinen» automaattista siirtymää varten.";
+"ame303.copy_failed" = "Could not write the version file for renamed instance \"%@\": copying the local copy failed. Free up storage space and try again.";
+"ame303.manifest_missing" = "Could not resolve version \"%@\": the remote version manifest is not loaded yet and no local copy exists to duplicate from. Check your network connection and try again.";

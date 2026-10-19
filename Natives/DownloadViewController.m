@@ -3998,7 +3998,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
 
             // 解析 JSON（阶段0 收尾）
             NSError *jsonError;
-            NSDictionary *profileJson = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+            // Task303：__block —— 重复实例改名时需在 ame303 回调内重赋值 id
+            __block NSDictionary *profileJson = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
             if (!profileJson || jsonError) {
                 [manager updateTaskWithId:fabricTaskId stageAtIndex:kFabricStageProfile status:PLTaskStageStatusFailed];
                 [manager updateTaskWithId:fabricTaskId stageAtIndex:kFabricStageProfile progress:0 message:jsonError.localizedDescription];
@@ -4011,9 +4012,36 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
 
             // 写入版本 JSON（阶段2）
             [manager updateTaskWithId:fabricTaskId stageAtIndex:kFabricStageWriteJSON status:PLTaskStageStatusRunning];
+            [manager updateTaskWithId:fabricTaskId stageAtIndex:kFabricStageWriteJSON progress:0];
             [manager updateTaskWithId:fabricTaskId currentStageIndex:kFabricStageWriteJSON];
 
-            NSString *versionId = profileJson[@"id"];
+            // Task303：__block —— 改名后需在 ame303 回调内重赋值 id
+            __block NSString *versionId = profileJson[@"id"];
+            // ★ Task303：重复实例检测+命名窗（对齐原版 Task300 交互）。
+            // 病历（用户 2026-10-19"下载原版有改名提示，模组端依旧被吞"）：
+            // installFabricLikeLoader 写 versions/<id>/ 前零检测，同 id（如
+            // fabric-loader-<v>-<mc> 固定格式）重复安装静默覆盖旧实例。修法：
+            // 目录已存在 → 弹 Task300 同款命名窗；取消 → 任务置 Cancelled
+            // 干净终止；确认后以 finalId 落盘+注册。
+            __strong typeof(weakSelf) strongSelfDup = weakSelf;
+            if (!strongSelfDup) return;
+            [MinecraftResourceDownloadTask ame303_resolveDuplicateVersionId:versionId completion:^(NSString *finalId, BOOL cancelled) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    __strong typeof(weakSelf) strongSelfDupInner = weakSelf;
+                    if (!strongSelfDupInner) return;
+                    if (cancelled || finalId.length == 0) {
+                        [manager updateTaskWithId:fabricTaskId stageAtIndex:kFabricStageWriteJSON status:PLTaskStageStatusFailed];
+                        [[DownloadTaskManager sharedManager] setTaskWithId:fabricTaskId completedWithError:nil];
+                        [[DownloadTaskManager sharedManager] setTaskWithId:fabricTaskId state:DownloadTaskStateCancelled];
+                        return;
+                    }
+                    if (![finalId isEqualToString:versionId]) {
+                        NSMutableDictionary *mutableProfile = [profileJson mutableCopy];
+                        mutableProfile[@"id"] = finalId;
+                        profileJson = mutableProfile;
+                        versionId = finalId;
+                    }
+
             NSString *jsonPath = [NSString stringWithFormat:@"%s/versions/%@/%@.json", getenv("POJAV_GAME_DIR"), versionId, versionId];
             [[NSFileManager defaultManager] createDirectoryAtPath:[jsonPath stringByDeletingLastPathComponent]
                                       withIntermediateDirectories:YES
@@ -4075,6 +4103,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
                 [[DownloadTaskManager sharedManager] setTaskWithId:fabricTaskId completedWithError:nil];
                 [strongSelf finishInstallerProgressWithSuccess:[NSString stringWithFormat:localize(@"i18n_str_213", nil), displayName, loaderVersion]];
             }
+                });
+            }];
         });
     }];
     DownloadTaskItem *fabricTaskItem = [[DownloadTaskManager sharedManager] taskWithId:fabricTaskId];

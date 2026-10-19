@@ -3150,3 +3150,5 @@
 "ame301.residual.clean" = "Pulisci e riscarica";
 "ame301.residual.rename" = "Installa con un altro nome";
 "ame302.jit.lc_guest" = "Il JIT integrato non è disponibile in LiveContainer: il sistema rifiuta di avviare il processo helper JIT (sia la registrazione dell'estensione che l'esecuzione dei processi sono negate). Abilita il JIT tramite StikDebug o SideStore: imposta lo strumento JIT su «Auto» per il passaggio automatico all'avvio.";
+"ame303.copy_failed" = "Impossibile scrivere il file di versione per l’istanza rinominata «%@»: copia della copia locale non riuscita. Libera spazio e riprova.";
+"ame303.manifest_missing" = "Impossibile risolvere la versione «%@»: il manifesto remoto delle versioni non è ancora caricato e non esiste una copia locale da duplicare. Verifica la connessione e riprova.";
