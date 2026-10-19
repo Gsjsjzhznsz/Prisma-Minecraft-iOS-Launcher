@@ -4047,3 +4047,18 @@ Work Log:
 Stage Summary:
 - 三刀全落地：重复实例弹窗命名（HMCL/PCL 对齐）+ 显示层/动态解析双层 fps 解锁 + PlugIns/ 双嵌 JIT 修复
 - 未竟事项移交下轮：手柄操作优化、Switch 手柄支持（现仅 PS/Xbox）、下载中心控件分类三页（手柄/触摸/键鼠）、键鼠支持优化（用户本轮新提，量大未及）；CI 若红按日志热修
+
+---
+Task ID: 300-ci
+Agent: main (Super Z)
+Task: Task 300 CI 三连修（r1 Makefile TAB / r2 前置声明 / r3 readonly 属性）
+
+Work Log:
+- run 39223564018 红：Makefile:232 missing separator——MultiEdit 把全文 TAB 写成 8 空格（1569 行 diff），checkout dfc438fb 后 Python 字节级重放（diff 19 行/17 行真实 TAB），make -n|bash -n OK → r1 (a04aeefc)
+- run 39224275414 红（真实编译，147 万行日志）：mg_vsync_hook.m:116 conflicting types——前置声明误写 void* 而定义 int32_t，对齐定义 → r2 (b7b0dd29)
+- run 39225659390 红（146 万行日志）：JavaLauncher.m:164 assignment to readonly property——UIScreen.maximumFramesPerSecond 在 iPhoneOS26.2 SDK 只读（报告面板能力=60Hz，iPad Air M4 非 ProMotion），撤赋值保留只读诊断日志；帧率解锁能力面收敛=渲染侧 IMMEDIATE（ame298/300 双层钩子，与 zink 同层） → r3 (2c6458aa)
+- run 39227155412 绿（~18min 全量编译+payload+package 含 Swift staging 阶段）
+
+Stage Summary:
+- Task 300 三刀全链闭环（吞包弹窗命名/fps 双层解锁/JIT PlugIns 双嵌），CI 一轮终绿后 r1-r3 三连修全部单点热修，无第二 error 连爆
+- 家法沉淀：Makefile 编辑禁用 Edit/MultiEdit 直写（TAB 转空格事故二犯），必须 Python 字节级重放；UIScreen.maximumFramesPerSecond 只读勿再尝试赋值
