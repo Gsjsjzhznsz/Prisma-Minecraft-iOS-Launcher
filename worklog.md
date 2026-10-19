@@ -4073,3 +4073,19 @@ Stage Summary:
 3. **吞实例残根分流**：versions/<id>/ 在但 <id>.json 缺失=下载中断残根（列表不可见+重下撞名=26.1.2 死循环根）；下载入口三选窗 ame301_promptResidualInstance（清理并重装/重命名继续/取消干净终止）；ame301.residual.* 四键 54 表（19 语言真译）
 
 门禁：task139/240/191(3165)/248/250 全绿；verify219 重锚 81/81（J 3157→3165、K3 TAB 724→812）；verify255 PASS。未竟移交：手柄优化/Switch 手柄/控件三分类页/键鼠优化（与 Task300-ci 一致）。
+
+---
+## Task 302（2026-10-19，trace 1a154054a61de509 + 1a15412986397069）：五催三线根修终局——JIT 五催/启动卡准备二报/吞实例三催+「重复实例重命名没有出现过」
+
+装机证据：v6.5.5（c3e70c5）latestlog.txt + IMG_0445 弹窗截图。关键新锚点：①自重拉起轨 spawn 目标 = `Documents/Applications/com.prisma-devs.prisma.app/AngelAuraAmethyst` = **LiveContainer guest 形态实锤**（三条派生轨结构性全死：EXKit Monitor Code=19 ×3 / posix_spawn rc=1 errno=2 / fork errno=1，fork 病历见同日志 shaderc-sandbox 首行）②Task300 改名窗确实被 AmeMenu Task237 镜像接管上屏（alert #2 fields=1），但弹窗后 40s+ 零 [MCDL] 动作日志 = **镜像面板动作链不可达**（用户"重命名没有出现过"的本相）③versions/26.1.2/26.1.2.json 在（弹的是改名窗非残根窗）——真根因是 **RightPanel/Navigation 快捷下载路径全链零 saveProfile**：注册表（launcher_profiles.json）无条目 → 实例列表按注册表枚举永远看不见 = "吞"。
+
+四刀根修（bddc80d9 + r1 aa50e03e，CI run#39253160098 红→run#39254525711 绿）：
+1. **JIT 五催终局**：`ame302_isLiveContainerGuest()`（exec 含 `/Documents/Applications/`，dispatch_once 缓存）——`ame294_builtinTrackAvailable` 回 NO（auto 直通 stikjit:// 深链，不再做注定失败的内置尝试）+ builtin 显式选项如实报错 `ame302.jit.lc_guest`（54 表 i18n，scripts/task302_i18n_lc.py 30+ 语言真译+英文回退）+ Swift 协调器 directSpawn 短路 code=25。LC guest 内置 JIT = iOS 结构性拒绝派生助手进程，任何重签/打包修复都无效——如实告知 + 外部工具直通是唯一正确行为。
+2. **启动卡准备根修**：`ame302_clearStaleDebuggerPorts()`（ame301 看门狗头部调用）——扫描 task/thread 级 EXC_BREAKPOINT|EXC_SOFTWARE 端口，`mach_port_type` DEAD_NAME 位判定死调试器残留（活调试器端口绝不触碰）→ `task/thread_set_exception_ports` 置空回收 → brk #0x69 回落 BSD SIGTRAP → JIT26TrapCatch 安全网接管建区 → **jitless 也能启动**。CI r1 教训：mach_port_kobject 在 iPhoneOS26.2 SDK 是 4 参签名（expected 4, have 3 ×2）——换远古稳定 3 参 mach_port_type，语义零变化。
+3. **吞实例根修**：`MinecraftResourceDownloadTask` 任务级 profile 预登记（ame300_downloadVersionChecked 头部，DVC downloadVanillaVersion 3820 家法）——三守卫（latest-* 跳过/同名不覆盖/lastVersionId 命中跳过）+ ReloadProfileList。下载前即登记：中断下载也立即可见可删，三条下载入口（DownloadVC/RightPanel/Navigation）全覆盖。
+4. **实例弹窗原生直通**：ame300/ame301 弹窗打 `ame302NoMirror` 关联标记 + AmeMenu Task237 钩子豁免（else @try 保形）——实例流弹窗恒原生上屏（level-1000 window 家法独立承载），可用性优先于玻璃视觉。
+
+门禁：task139/240 all balanced；task191 全表 OK（3167）；task248 缺键0硬编码0动态键0；task250 0；verify_task189 G1 重锚 185→191（300/301 时代追加键入段）后 79/79。**遗留陈旧锚点移交**（HEAD 既有，非本轮引入）：verify_task191 A3（`pathForResource:@"zh-Hans"` 已迁离 utils.m，HEAD 即 0，需考古迁移点重锚）；verify_task190 announcements[12] 越界（网站内容漂移，需重建索引）。
+
+资产：v6.5.5 release（id 414211989）同名静默替换第五轮完成（ipa/tipa 239.4MB @ 2026-10-19T13:07Z，构建=aa50e03e 绿）。装机验证锚点：①LC guest 下 JIT 菜单选 builtin → 弹"LiveContainer 环境下无法使用内置 JIT…"（不再误导重签）；auto → 直接跳 StikDebug ②曾用 StikDebug 开过 JIT 的会话再启动游戏 → 日志见 `Task302 stale ... exception port cleared` + 游戏正常进（jitless）③主页快捷下载任意版本 → 实例列表立即可见（含下载中断残根）④下载撞名 → 改名窗原生渲染可正常确认/取消。
+未竟移交：手柄优化/Switch 手柄/下载中心控件三分类页/键鼠优化（Task300-ci 起连续三轮顺延）；JIT 界面显示异常；IPA 瘦包；GLFW 缺失方法；壁纸模糊；Fabric 模组版本隔离显示。
