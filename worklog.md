@@ -4062,3 +4062,14 @@ Work Log:
 Stage Summary:
 - Task 300 三刀全链闭环（吞包弹窗命名/fps 双层解锁/JIT PlugIns 双嵌），CI 一轮终绿后 r1-r3 三连修全部单点热修，无第二 error 连爆
 - 家法沉淀：Makefile 编辑禁用 Edit/MultiEdit 直写（TAB 转空格事故二犯），必须 Python 字节级重放；UIScreen.maximumFramesPerSecond 只读勿再尝试赋值
+
+---
+## Task 301（c3e70c54，run#927 一轮终绿）
+
+三线根修（JIT 四催/启动卡死/吞实例二催；装机 2c6458a 日志 + IMG_0444 实锤）：
+
+1. **内置 JIT 第三轨·自重拉起**：XPC 轨 Code=19（LC guest extensionkitd 拒观察者）+ direct-spawn 轨 AMFI 拒 exec appex 嵌套二进制（errno=2）双断后，协调器 posix_spawn 主二进制自身（正在跑=签名必合法）+ env PRISMA_JIT_HELPER_CHILD=1/PRISMA_JIT_COORDINATOR_DYLIB；main.m 顶端分支（dlfcn.h 补齐）dlopen 协调器调 @_cdecl prisma_jit_direct_main（新 PrismaJITDirectEntry.swift，enableJIT 全链返回码版）；Makefile 协调器 dylib 扩编 StikJIT 核心 11 源+idevice force_load（字节级 splice 保 TAB，make -n|bash -n 双证）；appex 双副本降兜底。装机锚点：`[PrismaJITDirect] [self-relaunch] direct track start`
+2. **启动卡死根修**：CS_DEBUGGED 进程级持久 + 死调试器残留断点异常端口 → brk #0x69 mach_msg 永久阻塞（SIGTRAP 安全网收不到）；launchJVM/launchHeadlessJVM 换 ame301_createRegionWithWatchdog：20s 有界→自动内置轨自救（新 debugserver 应答挂起 brk）→90s 收尾→优雅失败。锚点：`Task301 brk handshake stalled >20s` 后必见内置轨接管或 JIT 弹窗，零永久冻结
+3. **吞实例残根分流**：versions/<id>/ 在但 <id>.json 缺失=下载中断残根（列表不可见+重下撞名=26.1.2 死循环根）；下载入口三选窗 ame301_promptResidualInstance（清理并重装/重命名继续/取消干净终止）；ame301.residual.* 四键 54 表（19 语言真译）
+
+门禁：task139/240/191(3165)/248/250 全绿；verify219 重锚 81/81（J 3157→3165、K3 TAB 724→812）；verify255 PASS。未竟移交：手柄优化/Switch 手柄/控件三分类页/键鼠优化（与 Task300-ci 一致）。
