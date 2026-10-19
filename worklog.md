@@ -4144,3 +4144,23 @@ Stage Summary:
 - 装机验证锚点：①MobileGL 渲染器会话不再闪退（log 见 [VSyncUnlock] ame299 installed / no __got slot matched，而非 SIGSEGV）②闪退后下次启动弹"崩溃分析"玻璃窗（jvm_fatal + Problematic frame 行 + hs_err 指引）③SideStore 重装过 installd 扩展点校验
 - JIT 主链（Task304）已被本日志证实生效：stikjit:// 深链 + 3.7s 条件满足 + JIT26 debugger mapping 到手
 - 遗留移交：手柄优化/Switch 手柄/下载中心控件三分类页/键鼠优化（四连催）；FPS 解锁 ame298 修复后首次可真机验证
+
+---
+Task ID: 306
+Agent: main (Super Z)
+Task: 双线根修：SideStore 直装内置 JIT 弹误导窗 / LC 容器游戏 Mixin 阶段闪退死无对证（SIGKILL 感知）
+
+Work Log:
+- 判读 latestlog（LC guest 579453c8）：JIT 自动轨全链成功（Task176 stikjit://=1 → Task181 traced=1 → JIT26 64MB mapping 到手）——"内置 JIT 无法使用"实为 SideStore 直装手点 builtin 触发 direct-spawn 必死轨
+- IMG_0449 定性：直装路径 /var/containers/Bundle/Application/.../App.app/，posix_spawn rc=1 errno=2，弹窗误导性建议 re-sign（Task43 shaderc 真机恒 EPERM 同源：无 no-sandbox/dynamic-codesigning entitlement 时 spawn 行为本身被沙盒/AMFI 拒绝，重签无解）
+- 线① StikDebugViewController 双 gate（ame294_builtinTrackAvailable/ame294_enableBuiltinJITWithCompletion）加 ame306_spawnDerivable（SecTask SPI entitlement 判定）→ 判 NO 回 ame306.jit.spawn_denied 如实报错；auto 直通 stikjit:// 链路无损
+- 线② SIGKILL 感知——main_hook ame306 三函数（marker 立桩/钩子清除/残留感知铸 sigkill_like 报告）；begin 挂 JLI_Launch 前，end 挂 hooked_exit 两分支+hooked_abort 直通，consume 挂 SceneDelegate 冷启动补弹前；ame273 报告在则不叠加防双弹
+- 线③ PrismaJITCoordinator.swift direct-spawn 兜底文案中性化（摘 re-sign 误导）
+- 线④ task306_i18n.py：ame306.jit.spawn_denied 54 表注册 + 根修 task302 ALIAS 缺 zh-CN 映射的历史 bug（zh-CN 表 ame302.jit.lc_guest 英文残留→中文实译）
+- 门禁：task139/240 all balanced；task248 缺键0硬编码0；task250 动态键齐备；verify191 仅 2 项历史存量 fail（stash 对比证实）
+- 提交 4043e406 推送 main，CI 轮询中
+
+Stage Summary:
+- 直装/LC 双场景内置 JIT 不再空跑必死 spawn：LC→ame302 如实报错、直装无 entitlement→ame306 如实报错、TrollStore/越狱照常放行
+- SIGKILL 级闪退不再死无对证：闪退后下次冷启动/点启动呈现"进程异常终止（SIGKILL 级）"分析弹窗（成因三候选+处置指引），闪退定位数据闭环补全
+- 装机验证锚点：①直装点"内置 JIT"→ ame306 如实提示（无 re-sign 字样）②LC 点启动→ stikjit:// 自动跳转照旧 ③若再闪退→ 冷启动 2.5s 后玻璃弹窗给出死亡分析
