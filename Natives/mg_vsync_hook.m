@@ -143,12 +143,12 @@ static int ame298_patch_got_slots(const struct mach_header_64 *ame298_hdr, intpt
                         if (ame298_psize <= 0) ame298_psize = 16384; // arm64 iOS 16KB
                         uintptr_t ame298_slot_addr = (uintptr_t)&ame298_slots[k];
                         uintptr_t ame298_page = ame298_slot_addr & ~((uintptr_t)ame298_psize - 1);
-                        kern_return_t ame298_kr = mach_vm_protect(
-                            mach_task_self(), (mach_vm_address_t)ame298_page,
-                            (mach_vm_size_t)ame298_psize, FALSE,
+                        kern_return_t ame298_kr = vm_protect(
+                            mach_task_self(), (vm_address_t)ame298_page,
+                            (vm_size_t)ame298_psize, FALSE,
                             VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY);
                         if (ame298_kr != KERN_SUCCESS) {
-                            NSLog(@"[VSyncUnlock] ame298: mach_vm_protect failed (%d) at slot %p -- %s",
+                            NSLog(@"[VSyncUnlock] ame298: vm_protect failed (%d) at slot %p -- %s",
                                   ame298_kr, (void *)ame298_slot_addr,
                                   "MobileGL present-mode unlock NOT installed");
                             return -1;
