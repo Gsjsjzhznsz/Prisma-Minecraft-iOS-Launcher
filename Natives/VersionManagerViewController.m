@@ -1679,6 +1679,13 @@ static const CGFloat kVMCardCornerRadius = 16.0;
 
 - (void)createGameDirWithName:(NSString *)name {
     NSString *dest = [NSString stringWithFormat:@"%s/instances/%@", getenv("POJAV_HOME"), name];
+    // Task300：同名实例防吞——createDirectoryAtPath:withIntermediateDirectories:YES
+    // 对已存在目录静默返回成功（新档内容并入旧档，用户观感="新实例被吞了"），
+    // 必须显式拒绝并提示改名（下载侧重复拦截见 MinecraftResourceDownloadTask）。
+    if ([NSFileManager.defaultManager fileExistsAtPath:dest]) {
+        [self showAlert:[NSString stringWithFormat:localize(@"ame300.dup.dir_exists", nil), name]];
+        return;
+    }
     NSError *error = nil;
     if (![NSFileManager.defaultManager createDirectoryAtPath:dest withIntermediateDirectories:YES attributes:nil error:&error]) {
         [self showAlert:[NSString stringWithFormat:localize(@"i18n_str_1079", nil), error.localizedDescription]];

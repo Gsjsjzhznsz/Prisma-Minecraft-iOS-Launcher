@@ -476,3 +476,8 @@
 "download.modpack.retry_failed" = "Modpack download failed (retried %ld times): %@";
 "download.empty_data" = "Download returned empty data";
 "common.unknown_error" = "Unknown error";
+// ★ Task300: duplicate-instance naming i18n (主要语言实译 + 长尾英文回退值)
+"ame300.dup.title" = "Instans sudah ada";
+"ame300.dup.message" = "Sudah ada instans bernama “%@”.\nBeri nama instans baru, atau batalkan unduhan ini.";
+"ame300.dup.confirm" = "Unduh dengan nama ini";
+"ame300.dup.dir_exists" = "Sudah ada instans bernama “%@”. Gunakan nama lain.";

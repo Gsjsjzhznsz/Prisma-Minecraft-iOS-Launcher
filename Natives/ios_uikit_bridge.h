@@ -24,6 +24,11 @@ void ame294_showJITActionDialog(NSString *title, NSString *message,
 void ame294_showJITActionDialogEx(NSString *title, NSString *message,
                                   NSString *fallbackTitle, void (^fallbackBlock)(void),
                                   void (^cancelBlock)(void));
+// Task300：重复实例命名弹窗（level-1000 window 家法，ame294 同款承载；内部 main
+// 队列呈现，completion 一律 main 队列回调，任意线程可调）。completion(nil)=用户取消；
+// 名称唯一性校验由调用方负责（可循环重弹）。
+void ame300_promptRenameInstance(NSString *title, NSString *message, NSString *prefill,
+                                 void (^completion)(NSString *chosenName));
 jstring UIKit_accessClipboard(JNIEnv* env, jint action, jstring copySrc);
 void UIKit_launchMinecraftSurfaceVC(UIWindow *window, NSDictionary *metadata);
 void UIKit_returnToSplitView();

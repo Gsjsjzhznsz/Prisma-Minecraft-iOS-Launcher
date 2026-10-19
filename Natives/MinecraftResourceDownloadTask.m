@@ -354,7 +354,13 @@ static const NSUInteger kMCStageIndexVerify = 5;
 
     NSString *path = [NSString stringWithFormat:@"%1$s/versions/%2$@/%2$@.json", getenv("POJAV_GAME_DIR"), versionStr];
     // Find it again to resolve latest-*
-    version = (id)[MinecraftResourceUtils findVersion:versionStr inList:remoteVersionList];
+    // Task300：重命名实例时清单查找必须用原始 id——新目录名不在远端清单里，
+    // 直接 findVersion 必失败 → 误入本地版本分支报"json 丢失"。ame300_origId
+    // 由 downloadVersion: 命名流写入，其余路径（latest-*/普通下载）不含该键。
+    NSString *ame300_lookupId = version[@"ame300_origId"];
+    BOOL ame300_renamed = [ame300_lookupId isKindOfClass:[NSString class]] && ame300_lookupId.length > 0;
+    if (!ame300_renamed) ame300_lookupId = versionStr;
+    version = (id)[MinecraftResourceUtils findVersion:ame300_lookupId inList:remoteVersionList];
 
     void(^completionBlock)(void) = ^{
         self.metadata = parseJSONFromFile(path);
@@ -491,7 +497,12 @@ static const NSUInteger kMCStageIndexVerify = 5;
         }
     }
 
-    versionStr = version[@"id"];
+    // Task300：重命名实例保持落盘目录用新名——远端清单对象的 id 是原始名，
+    // 此处重提取会吞掉新名（ame300_renamed 仅重命名流为 YES；latest-* 与普通
+    // 下载不受影响，仍走清单对象 id 重提取）。
+    if (!ame300_renamed) {
+        versionStr = version[@"id"];
+    }
     NSString *url = version[@"url"];
     NSString *sha = url.stringByDeletingLastPathComponent.lastPathComponent;
     NSUInteger size = [version[@"size"] unsignedLongLongValue];
@@ -595,6 +606,81 @@ static const NSUInteger kMCStageIndexVerify = 5;
 }
 
 - (void)downloadVersion:(NSDictionary *)version {
+    // ===== Task300：重复实例吞包根修（用户 2026-10-19"下载的新实例被吞了"）=====
+    // 根因链：downloadVersion: 直接以 version[@"id"] 落盘 versions/<id>/，目标
+    // 目录已存在时下载文件全部静默合并进旧实例（旧 json 被 SHA 通过的新 json
+    // 覆盖），版本列表观感="新实例被吞了"。
+    // 修法（对齐 HMCL/PCL 重复实例交互）：目标目录已存在 → 先弹命名窗（预填
+    // 自增唯一名），取消则干净终止；确认后以新名落盘。远端清单查找仍用原始
+    // id（ame300_origId 随 dict 透传，见 downloadVersionMetadata:），json 内部
+    // id 与目录名不一致由 Task71 自愈链兜底对齐。
+    NSString *ame300_origId = version[@"id"];
+    NSString *ame300_target = [NSString stringWithFormat:@"%s/versions/%@",
+                              getenv("POJAV_GAME_DIR"), ame300_origId];
+    BOOL ame300_isDir = NO;
+    if (ame300_origId.length > 0
+        && ![ame300_origId hasPrefix:@"latest-"]   // latest-* 由元数据阶段二次解析，此处不拦
+        && [NSFileManager.defaultManager fileExistsAtPath:ame300_target isDirectory:&ame300_isDir]
+        && ame300_isDir) {
+        [self ame300_promptRenameForVersion:version
+                                 originalId:ame300_origId
+                                 suggestion:[self ame300_uniqueSuggestionForId:ame300_origId]];
+        return;
+    }
+    [self ame300_downloadVersionChecked:version];
+}
+
+// Task300：预填唯一建议名 "<id> 2"、"<id> 3"...（目标目录不存在即采纳）
+- (NSString *)ame300_uniqueSuggestionForId:(NSString *)origId {
+    for (NSUInteger i = 2; i < 100; ++i) {
+        NSString *cand = [NSString stringWithFormat:@"%@ %lu", origId, (unsigned long)i];
+        NSString *candDir = [NSString stringWithFormat:@"%s/versions/%@",
+                             getenv("POJAV_GAME_DIR"), cand];
+        if (![NSFileManager.defaultManager fileExistsAtPath:candDir]) return cand;
+    }
+    return [NSString stringWithFormat:@"%@ %lu", origId,
+            (unsigned long)[NSDate date].timeIntervalSince1970];
+}
+
+// Task300：命名窗循环（确认名仍重复 → 带自增建议重弹；取消 → 干净终止）
+- (void)ame300_promptRenameForVersion:(NSDictionary *)version
+                           originalId:(NSString *)origId
+                           suggestion:(NSString *)suggestion {
+    NSString *message = [NSString stringWithFormat:localize(@"ame300.dup.message", nil), origId];
+    ame300_promptRenameInstance(localize(@"ame300.dup.title", nil), message, suggestion,
+        ^(NSString *chosenName) {
+            if (chosenName.length == 0) {
+                // 取消：先走 prepareForDownload 建立进度对象再 cancel——整合包
+                // 预装轮询器（vanillaPreinstall）靠 progress.finished 退出，若不
+                // 建 progress 会空转 30 分钟；cancel 后 finished=YES 且
+                // succeeded=!p.cancelled=NO，调用方 completion(NO) 即刻出线。
+                [self prepareForDownload];
+                [self.progress cancel];
+                NSLog(@"[MCDL] Task300 duplicate-instance naming cancelled -- download aborted before start (id=%@)", origId);
+                if (self.currentDownloadTaskItem) {
+                    [[DownloadTaskManager sharedManager] setTaskWithId:self.currentDownloadTaskItem.taskId
+                                                                 state:DownloadTaskStateCancelled];
+                }
+                return;
+            }
+            NSString *chosenDir = [NSString stringWithFormat:@"%s/versions/%@",
+                                   getenv("POJAV_GAME_DIR"), chosenName];
+            if ([NSFileManager.defaultManager fileExistsAtPath:chosenDir]) {
+                NSLog(@"[MCDL] Task300 chosen name still collides (%@) -- re-prompt", chosenName);
+                [self ame300_promptRenameForVersion:version originalId:origId
+                                         suggestion:[self ame300_uniqueSuggestionForId:chosenName]];
+                return;
+            }
+            NSMutableDictionary *renamed = [version mutableCopy];
+            renamed[@"ame300_origId"] = origId;
+            renamed[@"id"] = chosenName;
+            NSLog(@"[MCDL] Task300 duplicate instance renamed: %@ -> %@ (manifest lookup keeps %@)",
+                  origId, chosenName, origId);
+            [self ame300_downloadVersionChecked:renamed];
+        });
+}
+
+- (void)ame300_downloadVersionChecked:(NSDictionary *)version {
     // Task187：验证阶段耗时锚点的时间零点（CFAbsoluteTime，CoreFoundation 恒可用）
     self.ame187_taskStartTs = CFAbsoluteTimeGetCurrent();
 

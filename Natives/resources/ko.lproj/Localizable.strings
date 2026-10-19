@@ -3133,3 +3133,8 @@
 "download.modpack.retry_failed" = "모드팩 다운로드 실패(재시도 %ld회): %@";
 "download.empty_data" = "다운로드가 빈 데이터를 반환했습니다";
 "common.unknown_error" = "알 수 없는 오류";
+// ★ Task300: duplicate-instance naming i18n (主要语言实译 + 长尾英文回退值)
+"ame300.dup.title" = "인스턴스가 이미 존재합니다";
+"ame300.dup.message" = "이름이 “%@”인 인스턴스가 이미 있습니다.\n새 인스턴스의 이름을 지정하거나 다운로드를 취소하세요.";
+"ame300.dup.confirm" = "이 이름으로 다운로드";
+"ame300.dup.dir_exists" = "“%@” 이름의 인스턴스가 이미 존재합니다. 다른 이름을 입력하세요.";

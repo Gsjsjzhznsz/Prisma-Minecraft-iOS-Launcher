@@ -135,11 +135,23 @@ public final class PrismaJITCoordinator: NSObject {
         let resultPath = root.appendingPathComponent("direct-result.txt").path
         try? manager.removeItem(atPath: resultPath)
 
-        let execPath = Bundle.main.bundlePath + "/Extensions/PrismaJITHelper.appex/PrismaJITDirect"
-        guard manager.fileExists(atPath: execPath) else {
+        // ★ Task300 双路径解析：用户重签工具只递归重签 PlugIns/（canonical 扩展目录，
+        //   StikDebug/StikJIT 同族全落在 PlugIns），Extensions/ 副本重签后保留 CI 侧
+        //   ldid 伪签名 → 真机 AMFI 拒绝 exec（装机 dfc438f 实锤：二进制存在、存在性
+        //   检查过，posix_spawn 仍 rc=1 errno=2）。PlugIns/ 优先（重签覆盖真签），
+        //   Extensions/ 兑底（CI 原包直装/TrollStore 场景）。
+        let bundleRoot = Bundle.main.bundlePath
+        let ame300Candidates = [
+            bundleRoot + "/PlugIns/PrismaJITHelper.appex/PrismaJITDirect",
+            bundleRoot + "/Extensions/PrismaJITHelper.appex/PrismaJITDirect"
+        ]
+        guard let execPath = ame300Candidates.first(where: { manager.fileExists(atPath: $0) }) else {
+            let ame300Probe = ame300Candidates
+                .map { "\($0)=\(manager.fileExists(atPath: $0))" }
+                .joined(separator: " ")
             throw NSError(domain: "PrismaJIT", code: 21,
                           userInfo: [NSLocalizedDescriptionKey:
-                            "[direct-spawn] PrismaJITDirect not found at \(execPath) -- reinstall a build with the embedded JIT helper (keep Extensions/ when re-signing)"])
+                            "[direct-spawn] PrismaJITDirect not found (\(ame300Probe)) -- reinstall a build with the embedded JIT helper (keep PlugIns/ when re-signing)"])
         }
 
         var envLines: [String] = ProcessInfo.processInfo.environment.map { "\($0.key)=\($0.value)" }
@@ -151,9 +163,12 @@ public final class PrismaJITCoordinator: NSObject {
         let rc = execDirectBinary(path: execPath, envLines: envLines, pidOut: &childPID)
         if rc != 0 {
             let spawnErrno = errno
+            // Task300：带上被拒路径与体积，ENOENT(2)=二进制在但内核/AMFI 拒绝执行
+            // （重签未覆盖该副本）；EPERM(1)/EACCES(13)=沙盒硬拒绝。下一轮日志可直接对单。
+            let binSize = (try? manager.attributesOfItem(atPath: execPath))?[.size] as? Int ?? -1
             throw NSError(domain: "PrismaJIT", code: 22,
                           userInfo: [NSLocalizedDescriptionKey:
-                            "[direct-spawn] posix_spawn rc=\(rc) errno=\(spawnErrno) -- child-process exec denied on this install"])
+                            "[direct-spawn] posix_spawn rc=\(rc) errno=\(spawnErrno) on \(execPath) (size=\(binSize)) -- errno 2 = binary present but kernel/AMFI rejected exec: re-sign the IPA with PlugIns/ intact; errno 1/13 = sandbox denial"])
         }
         NSLog("[JIT] Task299 direct helper spawned pid=%d result=%@", childPID, resultPath as NSString)
 

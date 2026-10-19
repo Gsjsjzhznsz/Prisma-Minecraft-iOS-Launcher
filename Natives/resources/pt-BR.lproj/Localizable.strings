@@ -3141,3 +3141,8 @@
 "download.modpack.retry_failed" = "Falha ao baixar o modpack (tentativas: %ld): %@";
 "download.empty_data" = "O download devolveu dados vazios";
 "common.unknown_error" = "Erro desconhecido";
+// ★ Task300: duplicate-instance naming i18n (主要语言实译 + 长尾英文回退值)
+"ame300.dup.title" = "A instância já existe";
+"ame300.dup.message" = "Já existe uma instância chamada “%@”.\nNomeie a nova instância ou cancele este download.";
+"ame300.dup.confirm" = "Baixar com este nome";
+"ame300.dup.dir_exists" = "Já existe uma instância chamada “%@”. Escolha um nome diferente.";

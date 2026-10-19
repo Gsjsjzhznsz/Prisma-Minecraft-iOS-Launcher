@@ -3218,3 +3218,8 @@
 "download.modpack.retry_failed" = "モッドパックのダウンロードに失敗しました（再試行 %ld 回）：%@";
 "download.empty_data" = "ダウンロードが空のデータを返しました";
 "common.unknown_error" = "不明なエラー";
+// ★ Task300: duplicate-instance naming i18n (主要语言实译 + 长尾英文回退值)
+"ame300.dup.title" = "インスタンスが既に存在します";
+"ame300.dup.message" = "同じ名前のインスタンス「%@」が既に存在します。\n新しいインスタンスの名前を入力するか、ダウンロードをキャンセルしてください。";
+"ame300.dup.confirm" = "この名前でダウンロード";
+"ame300.dup.dir_exists" = "「%@」という名前のインスタンスが既に存在します。別の名前を入力してください。";

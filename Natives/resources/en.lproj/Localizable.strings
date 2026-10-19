@@ -3355,3 +3355,8 @@
 "ame293.jit.gettask_fail" = "This installation does not carry the get-task-allow entitlement, so the debugger cannot grant JIT to this app. Reinstall with a signing method that keeps get-task-allow."; 
 "preference.detail.ame291_builtin_jit" = "Pairing file, LocalDevVPN status and built-in JIT enablement (iOS 26+ helper track).";
 "preference.title.done.ame291_builtin_jit" = "Built-in JIT Manager";
+// ★ Task300: duplicate-instance naming i18n (主要语言实译 + 长尾英文回退值)
+"ame300.dup.title" = "Instance already exists";
+"ame300.dup.message" = "An instance named “%@” already exists.\nName the new instance, or cancel this download.";
+"ame300.dup.confirm" = "Download with this name";
+"ame300.dup.dir_exists" = "An instance named “%@” already exists. Choose a different name.";

@@ -3353,3 +3353,8 @@
 "ame293.jit.gettask_fail" = "当前安装未携带 get-task-allow 权限，调试器无法为应用授予 JIT。请使用保留 get-task-allow 的签名方式重装后再试。";
 "preference.detail.ame291_builtin_jit" = "配对文件、LocalDevVPN 状态与内置 JIT 开启（iOS 26+ Helper 轨）。";
 "preference.title.done.ame291_builtin_jit" = "内置 JIT 管理";
+// ★ Task300: duplicate-instance naming i18n (主要语言实译 + 长尾英文回退值)
+"ame300.dup.title" = "实例已存在";
+"ame300.dup.message" = "发现同名实例「%@」。\n请为新实例命名，或取消本次下载。";
+"ame300.dup.confirm" = "使用此名称下载";
+"ame300.dup.dir_exists" = "已存在同名实例「%@」，请换一个名称。";

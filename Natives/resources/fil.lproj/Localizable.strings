@@ -456,3 +456,8 @@
 "download.modpack.retry_failed" = "Modpack download failed (retried %ld times): %@";
 "download.empty_data" = "Download returned empty data";
 "common.unknown_error" = "Unknown error";
+// ★ Task300: duplicate-instance naming i18n (主要语言实译 + 长尾英文回退值)
+"ame300.dup.title" = "Instance already exists";
+"ame300.dup.message" = "An instance named “%@” already exists.\nName the new instance, or cancel this download.";
+"ame300.dup.confirm" = "Download with this name";
+"ame300.dup.dir_exists" = "An instance named “%@” already exists. Choose a different name.";

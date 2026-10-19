@@ -155,6 +155,16 @@ void init_loadDefaultEnv() {
     NSLog(@"[JavaLauncher] Framerate unlock configuration:");
     NSLog(@"[JavaLauncher]   video.disable_game_vsync=%d", getPrefBool(@"video.disable_game_vsync"));
     NSLog(@"[JavaLauncher]   POJAV_DISABLE_VSYNC=%s", getenv("POJAV_DISABLE_VSYNC"));
+    // Task300：显示层解锁（原第 5 层，装机 dfc438f latestlog 实锤缺失）——
+    // UIScreen.maximumFramesPerSecond 报 60：渲染侧即便 presentMode=IMMEDIATE
+    // （ame298/299 钩子），CoreAnimation 合成节奏仍被 60 压制，ProMotion 面板
+    // 白白锁在 60fps。解锁开启时显式抬到 120（面板不支持时系统自行钳制，无
+    // 副作用）；垂直同步未关时不动系统默认。
+    if (getenv("POJAV_DISABLE_VSYNC") != NULL && strcmp(getenv("POJAV_DISABLE_VSYNC"), "1") == 0) {
+        UIScreen.mainScreen.maximumFramesPerSecond = 120;
+        NSLog(@"[JavaLauncher]   UIScreen.maximumFramesPerSecond -> %d (display-side unlock, Task300)",
+              (int)UIScreen.mainScreen.maximumFramesPerSecond);
+    }
     NSLog(@"[JavaLauncher]   UIScreen.maximumFramesPerSecond=%d", (int)UIScreen.mainScreen.maximumFramesPerSecond);
 }
 

@@ -238,6 +238,56 @@ void ame294_showJITActionDialogEx(NSString *title, NSString *message,
     });
 }
 
+// ===== Task300：重复实例命名弹窗（重复实例被吞根修的用户交互面）=====
+// 家法同 ame294（level-1000 window 承载，不依赖当前 VC 栈；PLTaskProgress
+// 等进度页覆盖时也可弹出）。与 ame294 的差异：带文本输入 + completion 出线
+// （取消=nil，确认=输入框内容）。completion 固定 main 队列回调，调用方在
+// 回调里做唯一性校验，不唯一可循环重弹。
+void ame300_promptRenameInstance(NSString *title, NSString *message, NSString *prefill,
+                                 void (^completion)(NSString *chosenName)) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:title
+            message:message preferredStyle:UIAlertControllerStyleAlert];
+        [alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+            textField.text = prefill ?: @"";
+            textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
+            textField.autocorrectionType = UITextAutocorrectionTypeNo;
+            textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+        }];
+        UIWindow *previousKeyWindow = UIWindow.mainWindow;
+        __weak UIAlertController *ame300_weakAlert = alert;
+        void (^dismissWindow)(void) = ^{
+            UIWindow *w = objc_getAssociatedObject(ame300_weakAlert, @selector(alertWindow));
+            if (w) {
+                w.hidden = YES;
+                if (previousKeyWindow && previousKeyWindow != w) {
+                    [previousKeyWindow makeKeyAndVisible];
+                }
+            }
+        };
+        [alert addAction:[UIAlertAction actionWithTitle:localize(@"ame300.dup.confirm", nil)
+            style:UIAlertActionStyleDefault
+            handler:^(UIAlertAction *action) {
+                dismissWindow();
+                NSString *ame300_chosen = ame300_weakAlert.textFields.firstObject.text;
+                completion(ame300_chosen.length > 0 ? ame300_chosen : nil);
+            }]];
+        [alert addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
+            style:UIAlertActionStyleCancel
+            handler:^(UIAlertAction *action) {
+                dismissWindow();
+                completion(nil);
+            }]];
+        UIWindow *alertWindow = [[UIWindow alloc] initWithWindowScene:UIWindow.mainWindow.windowScene];
+        alertWindow.frame = UIScreen.mainScreen.bounds;
+        alertWindow.rootViewController = [UIViewController new];
+        alertWindow.windowLevel = 1000;
+        [alertWindow makeKeyAndVisible];
+        objc_setAssociatedObject(alert, @selector(alertWindow), alertWindow, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        [alertWindow.rootViewController presentViewController:alert animated:YES completion:nil];
+    });
+}
+
 JNIEXPORT void JNICALL Java_net_kdt_pojavlaunch_uikit_UIKit_showError(JNIEnv* env, jclass clazz, jstring title, jstring message, jboolean exitIfOk) {
     const char *title_c = (*env)->GetStringUTFChars(env, title, 0);
     const char *message_c = (*env)->GetStringUTFChars(env, message, 0);

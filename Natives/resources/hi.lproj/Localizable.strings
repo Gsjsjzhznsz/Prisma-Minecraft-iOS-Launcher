@@ -273,3 +273,8 @@
 "download.empty_data" = "Download returned empty data";
 "common.unknown_error" = "Unknown error";
 "launcher.jit.trollstore_unhandled" = "apple-magnifier:// was not handled (TrollStore JIT helper did not take over; often an outdated TrollStore). Update TrollStore, or switch to stikjit / SideStore / StosDebug in Settings and retry.";
+// ★ Task300: duplicate-instance naming i18n (主要语言实译 + 长尾英文回退值)
+"ame300.dup.title" = "इंस्टेंस पहले से मौजूद है";
+"ame300.dup.message" = "“%@” नाम का इंस्टेंस पहले से मौजूद है।\nनए इंस्टेंस को नाम दें या यह डाउनलोड रद्द करें।";
+"ame300.dup.confirm" = "इस नाम से डाउनलोड करें";
+"ame300.dup.dir_exists" = "“%@” नाम का इंस्टेंस पहले से मौजूद है। कृपया कोई अन्य नाम चुनें।";

@@ -4029,3 +4029,21 @@ Work Log:
 Stage Summary:
 - 装机复验锚（下轮 latestlog 对单）：①[VSyncUnlock] ame299: dyld add-image observer armed + installed (N slot(s)) + swapchain presentMode X -> IMMEDIATE + 游戏内 fps>60（MobileGL 渲染器）②JIT XPC 轨不再抛 19 / 或 "Task299 discovery unavailable ... direct-spawn fallback" 后 "direct helper spawned pid=" + "[PrismaJITDirect] prepare: ..." 阶段链 / 最终 "JIT enabled"
 - 前置条件提醒：直启轨与 XPC 轨同需 LocalDevVPN 运行 + 配对文件已导入（PocketJ README 同款前置）；首跑含 DDI 下载耗时正常
+
+---
+Task ID: 300
+Agent: main (Super Z)
+Task: 三刀——①重复实例吞包根修（下载重复实例弹窗命名，用户 2026-10-19"下载的新实例被吞了，能不能像其他启动器那样发现重复的实例弹窗给用户命名"）②fps 解锁二次根修（用户前轮复诉"fps解锁依旧没有用"）③内置 JIT 三次根修（posix_spawn rc=1 errno=2）
+
+Work Log:
+- 取证：装机 dfc438f 两份 latestlog 逐行对单。JIT 线：Task295 bundle fs 实锤 Extensions=("PrismaJITHelper.appex","AngelAuraAmethyst.appexpt") PlugIns=(absent)，PrismaJITDirect 存在性检查通过但 posix_spawn rc=1 errno=2——ENOENT 非"文件不存在"而是内核/AMFI 拒绝执行未真签二进制的典型表现（对照 shaderc-sandbox fork() errno=1 硬拒绝，errno 谱系不同），根因指向用户重签工具只递归重签 PlugIns/（canonical 扩展目录，StikDebug/StikJIT 同族全落 PlugIns），Extensions/ 副本保留 CI 侧 ldid 伪签名；fps 线：latestlog 实锤 UIScreen.maximumFramesPerSecond=60（显示层从未解锁，四层机制漏了显示层）+ 全程零 [VSyncUnlock] 日志（日志截断无法判定钩子是否装上）+ libMobileGL.dylib 二进制串统计 vkGetInstanceProcAddr×13/vkGetDeviceProcAddr×5 vs vkCreateSwapchainKHR×2（自写 Mach-O 解析器取证：直链 @rpath/libMoltenVK.dylib + chained fixups，动态解析入口嫌疑实锤）
+- ①吞包根修：MinecraftResourceDownloadTask downloadVersion: 入口拦截——目标 versions/<id> 目录已存在即弹命名窗（ame300_promptRenameInstance，ios_uikit_bridge level-1000 window 家法同 ame294，带文本输入+completion 出线），预填自增唯一名"<id> 2"，确认名仍撞→循环重弹，取消→prepareForDownload+progress.cancel 干净终止（补齐 vanillaPreinstall 轮询器 progress.finished 出线，防 30 分钟空转）；远端清单查找用原始 id（ame300_origId 随 dict 透传+ame300_renamed 双修正：findVersion 不因新名失败、line500 处不回退原始 id 落盘），json 内部 id 与目录名不一致由 Task71 自愈链兜底；latest-* 不拦（元数据阶段二次解析）；VersionManagerViewController createGameDirWithName 补同名显式拒绝（createDirectoryAtPath 对已存在目录静默成功=手动建档同款吞包面）
+- ②fps 二次根修双层：显示层=JavaLauncher 帧率配置块解锁开启时 UIScreen.mainScreen.maximumFramesPerSecond=120（面板不支持系统自钳，无副作用），日志行前移后打新值；渲染层=mg_vsync_hook 第二层拦截——第一层 __got 直补 0 命中时改 value-scan 重绑 libMobileGL 的 vkGetInstanceProcAddr/vkGetDeviceProcAddr 槽（ame298_patch_got_slots 入参化 label 复用），MG 查询 vkCreateSwapchainKHR 即得 IMMEDIATE 包装器（动态解析路径全覆盖），0 命中时诊断日志升级（列明两路径均未命中，下轮装机日志可对单）
+- ③JIT 三次根修：Makefile appex 双嵌 PlugIns/ 标准位（cp+ldid+chmod 全套，注释只加 if 链外守 Task297-ci-r2 续行链家法；make -n|bash -n 语义重建验证 OK）+ PrismaJITCoordinator.swift 双路径解析（PlugIns/ 优先 Extensions/ 兜底）+ spawn 失败诊断增强（带被拒路径+二进制体积+errno 语义注释：2=重签未覆盖该副本/1、13=沙盒硬拒绝，下轮日志直接对单）
+- i18n：ame300.dup.title/message/confirm/dir_exists 四键 54 表齐备（task300_i18n.py 主要语言实译+长尾英文回退；首版 \n 写成真实换行致 .strings 非法+审计缺键，task300_i18n_fixup.py 54 表全修）；task248 审计终态缺键0/硬编码0/动态键缺表0
+- 自查：task139 all balanced + 改动文件独立平衡复核（增量严格对称：+10/+10 花括号、+28/+28 方括号、+1/+1；残余差额为 HEAD 同款检查器噪声）；imports/枚举可见性逐个对单（DownloadTaskItem.h 枚举+既有调用证明）；Swift 括号平衡+first(where:)/guard-let 结构复核
+- CI：push 后验证 run 状态（最近已知绿 #919）
+
+Stage Summary:
+- 三刀全落地：重复实例弹窗命名（HMCL/PCL 对齐）+ 显示层/动态解析双层 fps 解锁 + PlugIns/ 双嵌 JIT 修复
+- 未竟事项移交下轮：手柄操作优化、Switch 手柄支持（现仅 PS/Xbox）、下载中心控件分类三页（手柄/触摸/键鼠）、键鼠支持优化（用户本轮新提，量大未及）；CI 若红按日志热修

@@ -89,6 +89,30 @@ _Static_assert(offsetof(ame298_VkSwapchainCreateInfoKHR, presentMode) == 80,
 
 static void *(*ame298_real_vkCreateSwapchainKHR)(void *, const void *, const void *, void *);
 
+// ===== Task300 第二层：vk*ProcAddr 解析器拦截 =====
+// 取证（装机 dfc438f 用户反馈 fps 解锁仍无效 + libMobileGL.dylib 二进制串统计：
+// vkGetInstanceProcAddr ×13 / vkGetDeviceProcAddr ×5 vs vkCreateSwapchainKHR ×2）
+// ——MG 疑似经 vk*ProcAddr 动态解析 Vulkan 入口，静态 __got 直补层（第一层）
+// 0 命中时改拦解析器本身：MG 查询 vkCreateSwapchainKHR 时直接返回包装器。
+static void *ame298_hook_vkCreateSwapchainKHR(void *device, const void *pCreateInfo,
+                                              const void *pAllocator, void *pSwapchain);
+static void *ame300_real_vkGetInstanceProcAddr;
+static void *ame300_real_vkGetDeviceProcAddr;
+
+static void *ame300_hook_vkGetInstanceProcAddr(void *ame300_instance, const char *ame300_name) {
+    if (ame300_name != NULL && strcmp(ame300_name, "vkCreateSwapchainKHR") == 0) {
+        return (void *)&ame298_hook_vkCreateSwapchainKHR;
+    }
+    return ((void *(*)(void *, const char *))ame300_real_vkGetInstanceProcAddr)(ame300_instance, ame300_name);
+}
+
+static void *ame300_hook_vkGetDeviceProcAddr(void *ame300_device, const char *ame300_name) {
+    if (ame300_name != NULL && strcmp(ame300_name, "vkCreateSwapchainKHR") == 0) {
+        return (void *)&ame298_hook_vkCreateSwapchainKHR;
+    }
+    return ((void *(*)(void *, const char *))ame300_real_vkGetDeviceProcAddr)(ame300_device, ame300_name);
+}
+
 static int32_t ame298_hook_vkCreateSwapchainKHR(void *device, const void *pCreateInfo,
                                                 const void *pAllocator, void *pSwapchain) {
     void *ame298_real = ame298_real_vkCreateSwapchainKHR;
@@ -120,8 +144,10 @@ static int32_t ame298_hook_vkCreateSwapchainKHR(void *device, const void *pCreat
 
 // 在指定镜像的段表里找 __DATA_CONST __got（S_NON_LAZY_SYMBOL_POINTERS），
 // value-scan 等于 real 的槽改写为 hook。返回改写槽数（-1=段遍历失败）。
+// Task300：label 入参化——同一扫描器复用于 vk*ProcAddr 解析器拦截，日志可对单。
 static int ame298_patch_got_slots(const struct mach_header_64 *ame298_hdr, intptr_t ame298_slide,
-                                  uintptr_t ame298_real, uintptr_t ame298_hook) {
+                                  uintptr_t ame298_real, uintptr_t ame298_hook,
+                                  const char *ame298_label) {
     if (ame298_hdr == NULL || ame298_hdr->magic != MH_MAGIC_64) {
         return -1;
     }
@@ -167,8 +193,8 @@ static int ame298_patch_got_slots(const struct mach_header_64 *ame298_hdr, intpt
                         }
                         ame298_slots[k] = ame298_hook;
                         ame298_nsects_total++;
-                        NSLog(@"[VSyncUnlock] ame298: __got slot #%zu @%p rebound vkCreateSwapchainKHR -> hook (real=%p)",
-                              k, (void *)ame298_slot_addr, (void *)ame298_real);
+                        NSLog(@"[VSyncUnlock] ame300: __got slot #%zu @%p rebound %s -> hook (real=%p)",
+                              k, (void *)ame298_slot_addr, ame298_label, (void *)ame298_real);
                     }
                 }
             }
@@ -244,14 +270,38 @@ static void ame298_try_install(const char *ame298_trigger) {
 
     // ③ value-scan + GOT 改绑
     int ame298_patched = ame298_patch_got_slots(
-        ame298_mg_hdr, ame298_mg_slide, (uintptr_t)ame298_real, (uintptr_t)&ame298_hook_vkCreateSwapchainKHR);
+        ame298_mg_hdr, ame298_mg_slide, (uintptr_t)ame298_real, (uintptr_t)&ame298_hook_vkCreateSwapchainKHR,
+        "vkCreateSwapchainKHR");
     ame298_done = 1;
     if (ame298_patched < 0) {
         NSLog(@"[VSyncUnlock] ame299: __got scan failed -- MobileGL present-mode unlock NOT installed");
     } else if (ame298_patched == 0) {
-        NSLog(@"[VSyncUnlock] ame299: no __got slot matched vkCreateSwapchainKHR real=%p -- "
-              @"MobileGL may resolve Vulkan entry points dynamically; unlock NOT installed (diagnostic anchor for next round)",
-              ame298_real);
+        // Task300 第二层：动态解析路径拦截（证据与设计见文件头与钩子函数注释）。
+        void *ame300_real_gi = dlsym(ame298_mv, "vkGetInstanceProcAddr");
+        void *ame300_real_gd = dlsym(ame298_mv, "vkGetDeviceProcAddr");
+        int ame300_patched_pa = 0;
+        if (ame300_real_gi != NULL) {
+            ame300_real_vkGetInstanceProcAddr = ame300_real_gi;
+            ame300_patched_pa += ame298_patch_got_slots(
+                ame298_mg_hdr, ame298_mg_slide, (uintptr_t)ame300_real_gi,
+                (uintptr_t)&ame300_hook_vkGetInstanceProcAddr, "vkGetInstanceProcAddr");
+        }
+        if (ame300_real_gd != NULL) {
+            ame300_real_vkGetDeviceProcAddr = ame300_real_gd;
+            ame300_patched_pa += ame298_patch_got_slots(
+                ame298_mg_hdr, ame298_mg_slide, (uintptr_t)ame300_real_gd,
+                (uintptr_t)&ame300_hook_vkGetDeviceProcAddr, "vkGetDeviceProcAddr");
+        }
+        if (ame300_patched_pa > 0) {
+            NSLog(@"[VSyncUnlock] ame300: proc-addr interception installed (%d resolver slot(s)) -- "
+                  @"vkCreateSwapchainKHR queries now return IMMEDIATE wrapper (dynamic-resolution path)",
+                  ame300_patched_pa);
+        } else {
+            NSLog(@"[VSyncUnlock] ame300: no __got slot matched vkCreateSwapchainKHR or vk*ProcAddr "
+                  @"(real=%p) -- MobileGL resolves Vulkan entry points neither via static GOT nor "
+                  @"imported resolvers; unlock NOT installed (diagnostic anchor for next round)",
+                  ame298_real);
+        }
     } else {
         NSLog(@"[VSyncUnlock] ame299: installed (%d slot(s)) -- swapchains will present IMMEDIATE while POJAV_DISABLE_VSYNC=1",
               ame298_patched);
