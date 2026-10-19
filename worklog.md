@@ -4089,3 +4089,28 @@ Stage Summary:
 
 资产：v6.5.5 release（id 414211989）同名静默替换第五轮完成（ipa/tipa 239.4MB @ 2026-10-19T13:07Z，构建=aa50e03e 绿）。装机验证锚点：①LC guest 下 JIT 菜单选 builtin → 弹"LiveContainer 环境下无法使用内置 JIT…"（不再误导重签）；auto → 直接跳 StikDebug ②曾用 StikDebug 开过 JIT 的会话再启动游戏 → 日志见 `Task302 stale ... exception port cleared` + 游戏正常进（jitless）③主页快捷下载任意版本 → 实例列表立即可见（含下载中断残根）④下载撞名 → 改名窗原生渲染可正常确认/取消。
 未竟移交：手柄优化/Switch 手柄/下载中心控件三分类页/键鼠优化（Task300-ci 起连续三轮顺延）；JIT 界面显示异常；IPA 瘦包；GLFW 缺失方法；壁纸模糊；Fabric 模组版本隔离显示。
+
+---
+## Task 303（trace 1a1544b5b3cab0b9）：三线根修——点启动弹改名窗 / 模组端被吞 / SideStore 装不上
+
+病历（装机 latestlog.txt v6.5.5 aa50e03 + IMG_0446 截图 + 用户口述）：
+1. "为什么点击启动游戏会出现重命名实例"——启动实例撞残根目录弹残根/命名窗；
+2. "下载原版确实有提示重命名实例，但下载模组端依旧被吞"——原版有 Task300 命名窗，模组端零检测；
+3. "SideStore 安装失败"——installd 拒绝 PrismaJITHelper.appex：extensionDictionary must be set in placeholder attributes。
+装机日志铁证链：`Task300 duplicate instance renamed: 26.1.2 -> 26.1.2 2` → 2s 后 `ParseJSON Error: versions/26.1.2 2/26.1.2 2.json 不存在` → `Dialog 错误`。时间线与 21:10:43.6 Task218 piston 重载完成点重合。
+
+根因：
+- ①②同因果：downloadVersionMetadata 的 findVersion 依赖全局 remoteVersionList（LauncherRootVC/DownloadVC/CardLayout 三源 removeAllObjects 重建的非线程安全全局数组），改名确认瞬间正逢清单重建 → findVersion nil → 误入"本地版本"分支读不存在的新路径 → 下载失败留残根目录（prepareForDownload 已建）→ 用户点启动该实例 → 补拉链撞残根 → 弹 Task301 残根三选窗（用户口中的"重命名实例"弹窗）。
+- ②独立缺口：DVC.installFabricLikeLoader（3935-4084）写 versions/<id>/ 前零重复检测——fabric-loader-<v>-<mc> 固定 id 重复安装静默覆盖旧实例 = "模组端被吞"。
+- ③Helper/Info.plist 只有 ExtensionKit 体系 EXAppExtensionAttributes，缺传统 NSExtension 字典——SideStore/installd 对每个 .appex 建 placeholder 时必须读 NSExtension 塞占位符属性，缺失即拒（IMG_0446 实锤）。用户装的 IPA 是朋友 Darwin 构建（官方 Linux CI 三级跳过无 appex），appex 在 PlugIns/（Task300 双嵌位）与报错路径吻合。
+
+修复（66d1ea49 + r1 132424d3）：
+- ①downloadVersionMetadata 加 Task303 兜底：`!version && ame300_renamed` 时，原始 id 本地 json 在 → 直接复制 json+jar 到新名目录（json 内部 id 重写为新名，Task71 同语义），库/资产按 SHA 跳过零下载秒完成；无本地 json 才报 ame303.manifest_missing。改名下载从此必落盘，点启动不再撞残根。
+- ②MinecraftResourceDownloadTask 新增类方法 `+ame303_resolveDuplicateVersionId:completion:`（Task300 同款命名窗，取消=Cancelled 干净终止，completion 恒主线程）+ `+ame303_uniqueSuggestionForId:`；挂入 DVC.installFabricLikeLoader 写盘前（__block versionId/profileJson 改名重赋值，finalId 落盘+注册+选中）；AiAssetTools AI 链静默唯一化（无 UI 场景自动 +2 后缀防覆盖，json 内部 id 同步重写）。
+- ③Helper/Info.plist 补 `NSExtension.NSExtensionPointIdentifier=com.apple.widgetkit-extension`（EXAppExtensionAttributes 保留双轨兼容 ExtensionKit XPC 轨；Makefile 单点复制自动覆盖 PlugIns/+Extensions/ 双副本）。
+- i18n：ame303.copy_failed / ame303.manifest_missing 两键 54 表（scripts/task303_i18n_rename_fallback.py，task302 样板）。
+
+门禁：task248 缺键0硬编码0动态键0；task250 0；CI run 39261316336 红（DVC 4015 多余的 updateTaskWithId:stageAtIndex:progress: 无 message: 变体，no visible @interface）→ r1 132424d3 删行热修 → run 39262766557 绿。
+资产：v6.5.5 release（id 414211989）同名静默替换第六轮完成（ipa/tipa 239.4MB，构建=132424d3 绿；IPA 内 PlugIns/PrismaJITHelper.appex/Info.plist 实测含 NSExtension+EX 双键）。
+装机验证锚点：①下载 26.1.2 撞名 → 改名确认后日志应现 `[MCDL] Task303 renamed local-copy fallback`（清单竞态时）或正常远端下载，实例立即可见可启动，点启动不再弹命名窗 ②下载中心装 Fabric/Quilt 撞已有 → 弹 Task300 同款命名窗，取消任务置 Cancelled，确认新实例独立落盘 ③AI 助手装加载器撞名 → 日志 `[AI] Task303 loader install id uniquified` 自动 +2 后缀 ④朋友 Darwin 重构建 IPA → SideStore 安装不再报 extensionDictionary 错误（NSExtension 在位）。
+未竟移交：手柄优化/Switch 手柄/下载中心控件三分类页/键鼠优化（四轮顺延）；Forge/OptiFine 安装链同款重复检测未挂（下轮）；JIT 界面显示异常；IPA 瘦包；GLFW；壁纸模糊；Fabric 模组版本隔离显示。
