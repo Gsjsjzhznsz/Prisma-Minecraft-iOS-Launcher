@@ -3996,3 +3996,16 @@ Work Log:
 Stage Summary:
 - JIT builtin 轨 Code=19 根因=手搓 .appexpt 文件名+三缺键（上游三源互证），修复=模块名约定+全键格式+bundle 密封；装机复验锚=Extensions/AngelAuraAmethyst.appexpt 在位且 Monitor 不再抛 19（日志出现 "monitor: N identity(ies) discovered"）
 - 帧率解锁根因=MobileGL 静态 present 偏好表不看 swap interval + DirectVulkan 无 SetSwapInterval 钩子，修复=进程内 vkCreateSwapchainKHR GOT 改绑强制 IMMEDIATE（vsync 关时）；装机复验锚=[VSyncUnlock] ame298: installed (1 slot(s)) + 游戏内 fps>60（MobileGL 渲染器）
+
+---
+Task ID: 298-r1
+Agent: main (Super Z)
+Task: run#918 编译热修 + run#919 复验
+
+Work Log:
+- run#918 failure 实锤：mg_vsync_hook.m:146 mach_vm_protect 未声明（<mach/mach.h> 本 SDK 不带 mach_vm.h 原型，-Wimplicit-function-declaration error）——本轮唯一 error，其余全树编译通过（含 Swift 协调器改动与 Makefile 打包段首达）
+- 修=对齐 Task132 家法改用 vm_protect(mach_task_self(),...)（sdl3_hook.m:2170 同款）；门禁 task139 all balanced
+- 推送 e3291ee4 → run#919 completed success（Development build 全绿）
+
+Stage Summary:
+- Task 298 双线根修随 run#919 产物交付；装机复验锚：①[VSyncUnlock] ame298: installed + MobileGL 渲染器 fps>60 ②JIT Monitor 不再抛 19 / "monitor: N identity(ies) discovered" / Extensions/AngelAuraAmethyst.appexpt 在位
