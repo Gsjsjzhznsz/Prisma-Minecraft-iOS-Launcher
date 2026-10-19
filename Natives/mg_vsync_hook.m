@@ -373,6 +373,23 @@ static void ame298_image_added_cb(const struct mach_header *ame298_mh, intptr_t 
 
 void ame298_install_mg_vsync_hook(void) {
     static dispatch_once_t ame298_arm_once;
+    // ★ Task308 恢复：本钩子默认关闸（AME298_VSYNC_HOOK=1 显式开启）。
+    //   病历：装机两连崩（hs_err_pid47069/47275，MoltenVK WINDOW_IN_USE ->
+    //   vkGetSwapchainImagesKHR 空句柄 SIGSEGV）恰好是本钩子经 Task305 修复
+    //   安装器后【首次真机生效】的两个会话。机理上 presentMode 透传到不了
+    //   WINDOW_IN_USE（包装器单次转发、无第二创建方），第一嫌疑实为
+    //   Task246 的 MoltenVK 1.4.3（本次已回退 1.4.2）；但按"先恢复到
+    //   最后已知良好状态、再逐项隔离重开"的指令，钩子同步默认停用，
+    //   恢复 60fps 基线；后续单变量重开时序安全（dyld add-image 观察者）。
+    static BOOL ame308_skip_logged = NO;
+    const char *ame308_optin = getenv("AME298_VSYNC_HOOK");
+    if (ame308_optin == NULL || strcmp(ame308_optin, "1") != 0) {
+        if (!ame308_skip_logged) {
+            ame308_skip_logged = YES;
+            NSLog(@"[VSyncUnlock] ame308: hook disabled by default (Task308 restore; set AME298_VSYNC_HOOK=1 to opt-in)");
+        }
+        return;
+    }
     dispatch_once(&ame298_arm_once, ^{
         _dyld_register_func_for_add_image(ame298_image_added_cb);
         NSLog(@"[VSyncUnlock] ame299: dyld add-image observer armed -- env checked at swapchain time, MoltenVK late-load covered");

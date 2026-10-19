@@ -128,9 +128,9 @@ void init_loadDefaultEnv() {
     //    Mesa 21.0 的 zink 不会动态重建 swapchain，导致帧率锁死在屏幕刷新率。
     //
     // 关于 MoltenVK 配置与 Vulkan 帧率解锁研究：
-    //   实际运行的 MoltenVK 版本为 1.4.3（Task246：上游 main @ 2c28e0c8
-    //   2026-10-09 CI 构建，从 libMoltenVK.dylib 二进制 strings 确认；
-    //   历史链 1.2.9 → 1.4.2 → 1.4.3，本次领先 v1.4.2 release 54 提交）。
+    //   实际运行的 MoltenVK 版本为 1.4.2（Task308 回退 b066e8c 二进制；
+    //   1.4.3@2c28e0c8 因装机 WINDOW_IN_USE 双崩暂退场，复进需单变量重验；
+    //   历史链 1.2.9 → 1.4.2 → 1.4.3 → Task308 回退 1.4.2）。
     //   设备是否支持 IMMEDIATE present mode 由 MVKPhysicalDeviceMetalFeatures.presentModeImmediate
     //   自动检测（大多数 iOS 设备支持）。
     //
