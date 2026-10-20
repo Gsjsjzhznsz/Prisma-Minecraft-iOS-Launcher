@@ -3183,7 +3183,9 @@
 "dl.controls.local.delete.active" = "Это текущая раскладка по умолчанию — сначала выберите другую в редакторе";
 "controller.toast.connected" = "Геймпад подключён: %@\nВиртуальная мышь включена";
 "controller.profile.unsupported" = "Геймпад «%@» не предоставил полный профиль — подключите оба Joy-Con парой";
-"preference.title.nintendo_layout" = "Раскладка Nintendo (A↔B / X↔Y)";
-"preference.detail.nintendo_layout" = "Для контроллеров Switch/Pro/Joy-Con с обратной маркировкой: A↔B и X↔Y меняются местами перед маппингом — кнопка «A» выполняет функцию A";
 "preference.title.scroll_speed" = "Скорость виртуального колеса (%)";
 "preference.detail.scroll_speed" = "Множитель шага прокрутки для экранных кнопок и клавиш геймпада; колесо настоящей мыши не затронуто";
+"dl.controls.cat.gamepad" = "Геймпад";
+"custom_controls.repo.download.gamepad.done" = "Геймпад-маппинг %@ установлен — выберите его в настройках контроллера";
+"custom_controls.repo.download.gamepad.invalid" = "Недействительный файл маппинга геймпада";
+"controller_configurator.title.type.nintendo" = "Switch";

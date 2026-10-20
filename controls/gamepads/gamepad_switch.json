@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "mGameMappingList": [
+    {
+      "name": "bumper_left",
+      "gamepad_button": 4,
+      "keycode": -7
+    },
+    {
+      "name": "bumper_right",
+      "gamepad_button": 5,
+      "keycode": -8
+    },
+    {
+      "name": "trigger_left",
+      "gamepad_button": 349,
+      "keycode": -4
+    },
+    {
+      "name": "trigger_right",
+      "gamepad_button": 350,
+      "keycode": -3
+    },
+    {
+      "name": "named_back",
+      "gamepad_button": 6,
+      "keycode": 258
+    },
+    {
+      "name": "named_start",
+      "gamepad_button": 7,
+      "keycode": 256
+    },
+    {
+      "name": "named_a",
+      "gamepad_button": 0,
+      "keycode": 81
+    },
+    {
+      "name": "named_b",
+      "gamepad_button": 1,
+      "keycode": 32
+    },
+    {
+      "name": "named_x",
+      "gamepad_button": 2,
+      "keycode": 70
+    },
+    {
+      "name": "named_y",
+      "gamepad_button": 3,
+      "keycode": 69
+    },
+    {
+      "name": "dpad_up",
+      "gamepad_button": 11,
+      "keycode": 340
+    },
+    {
+      "name": "dpad_down",
+      "gamepad_button": 13,
+      "keycode": 79
+    },
+    {
+      "name": "dpad_left",
+      "gamepad_button": 14,
+      "keycode": 74
+    },
+    {
+      "name": "dpad_right",
+      "gamepad_button": 12,
+      "keycode": 75
+    },
+    {
+      "name": "thumb_left",
+      "gamepad_button": 9,
+      "keycode": 341
+    },
+    {
+      "name": "thumb_right",
+      "gamepad_button": 10,
+      "keycode": 340
+    }
+  ],
+  "mMenuMappingList": [
+    {
+      "name": "bumper_left",
+      "gamepad_button": 4,
+      "keycode": -7
+    },
+    {
+      "name": "bumper_right",
+      "gamepad_button": 5,
+      "keycode": -8
+    },
+    {
+      "name": "trigger_left",
+      "gamepad_button": 349,
+      "keycode": 0
+    },
+    {
+      "name": "trigger_right",
+      "gamepad_button": 350,
+      "keycode": 0
+    },
+    {
+      "name": "named_back",
+      "gamepad_button": 6,
+      "keycode": 0
+    },
+    {
+      "name": "named_start",
+      "gamepad_button": 7,
+      "keycode": 0
+    },
+    {
+      "name": "named_a",
+      "gamepad_button": 0,
+      "keycode": 256
+    },
+    {
+      "name": "named_b",
+      "gamepad_button": 1,
+      "keycode": -3
+    },
+    {
+      "name": "named_x",
+      "gamepad_button": 2,
+      "keycode": 340
+    },
+    {
+      "name": "named_y",
+      "gamepad_button": 3,
+      "keycode": -4
+    },
+    {
+      "name": "dpad_up",
+      "gamepad_button": 11,
+      "keycode": 0
+    },
+    {
+      "name": "dpad_down",
+      "gamepad_button": 13,
+      "keycode": 79
+    },
+    {
+      "name": "dpad_left",
+      "gamepad_button": 14,
+      "keycode": 74
+    },
+    {
+      "name": "dpad_right",
+      "gamepad_button": 12,
+      "keycode": 75
+    },
+    {
+      "name": "thumb_left",
+      "gamepad_button": 9,
+      "keycode": 0
+    },
+    {
+      "name": "thumb_right",
+      "gamepad_button": 10,
+      "keycode": 0
+    }
+  ]
+}

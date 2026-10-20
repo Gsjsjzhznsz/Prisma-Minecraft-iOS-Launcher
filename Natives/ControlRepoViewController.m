@@ -49,15 +49,20 @@ static NSString *task189_mirrorURL(NSInteger idx, NSString *relPath) {
 
 @interface ControlRepoViewController ()
 @property (nonatomic, strong) NSMutableArray<NSDictionary *> *layouts;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *localVersions;  // id -> 本地已装版本
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *localVersions;  // id -> 本地已装版本（触屏布局）
+// ★ Task311（手柄控件）：本地已装手柄映射角标（controlmap/gamepads/ 扫描，
+//   id -> 版本；与触屏 localVersions 分表——两目录同名文件互不串号）。
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *localGamepadVersions;
 @property (nonatomic, strong) NSHashTable *downloading;  // 正在下载的 id 集合（去重点击）
 @property (nonatomic, assign) BOOL loadFailed;
-// ★ Task310（控件三分类页）：0=官方精选 1=社区 2=本地。
-//   仓库 index.json 的 layouts[] 条目新增 category 字段（official/community，
-//   缺省按 official 兼容旧索引）；本地页扫 controlmap/ 全部 .json。
+// ★ Task310（控件三分类页）→ Task311（四分类）：0=官方精选 1=社区 2=手柄 3=本地。
+//   仓库 index.json 的 layouts[] 条目 category 字段（official/community/gamepad，
+//   缺省按 official 兼容旧索引）；手柄页 = category:gamepad 仓库条目，下载落盘
+//   controlmap/gamepads/<id>.json（手柄配置弹窗“当前”文件选择器同目录可直接选用）；
+//   本地页扫 controlmap/ 全部 .json（触屏布局，语义不变）。
 @property (nonatomic, strong) UISegmentedControl *categorySegment;
 @property (nonatomic, assign) NSInteger selectedCategory;
-@property (nonatomic, copy) NSArray<NSDictionary *> *filteredLayouts;      // 官方/社区过滤结果
+@property (nonatomic, copy) NSArray<NSDictionary *> *filteredLayouts;      // 官方/社区/手柄过滤结果
 @property (nonatomic, strong) NSMutableArray<NSDictionary *> *localLayouts; // 本地布局 {name, version, size}
 @end
 
@@ -215,6 +220,26 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
     });
 }
 
+/// ★ Task311（手柄控件）：手柄映射下载落盘安装。落盘 controlmap/gamepads/
+/// <id>.json——与启动器内建 generateAndSaveDefaultControlForGamepad 及
+/// 手柄配置弹窗「当前」文件选择器（LauncherPrefContCfgViewController
+/// actionOpenFilePicker）同目录，装完即可在该弹窗里选用，无需重启。
+- (void)ame311_installDownloadedGamepad:(NSString *)layoutId data:(NSData *)data {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSString *dir = [NSString stringWithFormat:@"%s/controlmap/gamepads", getenv("POJAV_HOME")];
+        ame188_ensureDirectoryHealed(dir);
+        NSString *dest = [dir stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.json", layoutId]];
+        if (![data writeToFile:dest options:NSDataWritingAtomic error:nil]) {
+            [NMToast showMessage:localize(@"custom_controls.repo.download.failed", nil)];
+            return;
+        }
+        NSLog(@"[ControlRepo] Task311: gamepad map saved -> %@", dest);
+        [self scanLocalVersions];   // 手柄角标表同轮刷新
+        [NMToast showMessage:[NSString stringWithFormat:localize(@"custom_controls.repo.download.gamepad.done", nil), layoutId]];
+        if (self.whenLayoutDownloaded) self.whenLayoutDownloaded(layoutId);
+    });
+}
+
 - (NSInteger)task189_stickyMirror {
     NSInteger idx = [getPrefObject(@"controlrepo.mirror_idx") integerValue];
     if (idx < 0 || idx >= kTask189MirrorCount) idx = 0;
@@ -268,6 +293,7 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
     if (self) {
         _layouts = [NSMutableArray array];
         _localVersions = [NSMutableDictionary dictionary];
+        _localGamepadVersions = [NSMutableDictionary dictionary];   // ★ Task311：手柄映射角标
         _downloading = [NSHashTable weakObjectsHashTable];
         _localLayouts = [NSMutableArray array];   // ★ Task310：本地页数据源
         _filteredLayouts = @[];
@@ -278,9 +304,10 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
 #pragma mark - Task310：控件三分类页（官方精选 / 社区 / 本地）
 
 /// 按当前分类过滤仓库布局（index.json 条目 category 字段；缺省 = official
-/// 兼容旧索引，旧缓存/镜像未更新也不空窗）。
+/// 兼容旧索引，旧缓存/镜像未更新也不空窗）。Task311：手柄页过滤 category:gamepad。
 - (void)ame310_rebuildFilteredLayouts {
-    NSString *want = (self.selectedCategory == 1) ? @"community" : @"official";
+    NSString *want = (self.selectedCategory == 1) ? @"community"
+                    : (self.selectedCategory == 2) ? @"gamepad" : @"official";
     NSMutableArray<NSDictionary *> *out = [NSMutableArray array];
     for (NSDictionary *e in self.layouts) {
         NSString *cat = [e[@"category"] isKindOfClass:[NSString class]] ? e[@"category"] : @"official";
@@ -319,7 +346,7 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
 
 - (void)ame310_categoryChanged:(UISegmentedControl *)seg {
     self.selectedCategory = seg.selectedSegmentIndex;
-    if (self.selectedCategory == 2) [self ame310_scanLocalLayouts];   // 切到本地页时重扫（可能刚下载/刚删）
+    if (self.selectedCategory == 3) [self ame310_scanLocalLayouts];   // 切到本地页时重扫（可能刚下载/刚删）
     else [self ame310_rebuildFilteredLayouts];
     [self.tableView reloadData];
 }
@@ -342,7 +369,8 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
                   forControlEvents:UIControlEventValueChanged];
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 76.0;
-    // ★ Task310（控件三分类页）：顶部三分类分段控件（官方精选/社区/本地）。
+    // ★ Task310（控件三分类页）→ Task311（四分类）：顶部四分类分段控件
+    //   （官方精选/社区/手柄/本地）。手柄页 = 仓库 gamepad 控件映射下载区。
     //   frame 定宽 + autoresizing 宽度弹窗——tableHeaderView 约束宽度不随
     //   tableView 自适应的经典坑，autoresizingMask 一行解。
     UIView *ame310_hdr = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 48)];
@@ -350,6 +378,7 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
     self.categorySegment = [[UISegmentedControl alloc] initWithItems:@[
         localize(@"dl.controls.cat.official", nil),
         localize(@"dl.controls.cat.community", nil),
+        localize(@"dl.controls.cat.gamepad", nil),
         localize(@"dl.controls.cat.local", nil)]];
     self.categorySegment.selectedSegmentIndex = 0;
     self.categorySegment.frame = CGRectMake(12, 8, self.view.bounds.size.width - 24, 32);
@@ -386,6 +415,22 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
         id v = [(NSDictionary *)obj objectForKey:@"version"];
         self.localVersions[stem] = [v isKindOfClass:[NSString class]] ? v :
                                    ([v respondsToSelector:@selector(stringValue)] ? [v stringValue] : @"?");
+    }
+    // ★ Task311（手柄控件）：同口径扫描 controlmap/gamepads/——手柄页角标
+    //   （已下载/可更新）数据源。与触屏分表，两目录同名文件互不串号。
+    [self.localGamepadVersions removeAllObjects];
+    NSString *ame311_gpDir = [NSString stringWithFormat:@"%s/controlmap/gamepads", getenv("POJAV_HOME")];
+    for (NSString *f in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:ame311_gpDir error:nil] ?: @[]) {
+        if (![f.pathExtension.lowercaseString isEqualToString:@"json"]) continue;
+        NSString *p = [ame311_gpDir stringByAppendingPathComponent:f];
+        NSData *d = [NSData dataWithContentsOfFile:p];
+        if (!d) continue;
+        id obj = [NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
+        if (![obj isKindOfClass:[NSDictionary class]]) continue;
+        id v = [(NSDictionary *)obj objectForKey:@"version"];
+        self.localGamepadVersions[[f stringByDeletingPathExtension]] =
+            [v isKindOfClass:[NSString class]] ? v :
+            ([v respondsToSelector:@selector(stringValue)] ? [v stringValue] : @"?");
     }
     // ★ Task310：同一次遍历口径复用——本地三分类页数据源同步刷新
     [self ame310_scanLocalLayouts];
@@ -459,9 +504,9 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 1; }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    // ★ Task310：三分类行数——本地页走 localLayouts，官方/社区走过滤视图。
-    //   空态统一占位 1 行（占位文案在 cellForRow 内区分分类）。
-    if (self.selectedCategory == 2) {
+    // ★ Task310：三分类行数 → Task311：四分类——本地页(3)走 localLayouts，
+    //   官方/社区/手柄(0/1/2)走过滤视图。空态统一占位 1 行（占位文案在 cellForRow 内区分分类）。
+    if (self.selectedCategory == 3) {
         return self.localLayouts.count == 0 ? 1 : self.localLayouts.count;
     }
     return self.loadFailed ? 1 : (self.filteredLayouts.count == 0 ? 1 : self.filteredLayouts.count);
@@ -475,8 +520,8 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
         cell.accessoryType = UITableViewCellAccessoryNone;
         cell.detailTextLabel.numberOfLines = 0;
     }
-    if (self.selectedCategory == 2) {
-        // ★ Task310：本地页。空态 = 引导去官方精选/编辑器；有数据 = 布局清单。
+    if (self.selectedCategory == 3) {
+        // ★ Task310：本地页（Task311 起索引 3）。空态 = 引导去官方精选/编辑器；有数据 = 布局清单。
         if (self.localLayouts.count == 0) {
             cell.textLabel.text = localize(@"dl.controls.local.empty", nil);
             cell.detailTextLabel.text = @"";
@@ -517,7 +562,10 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
     NSString *desc = [e[@"description"] isKindOfClass:[NSString class]] ? e[@"description"] : @"";
     NSString *ver = [e[@"version"] isKindOfClass:[NSString class]] ? e[@"version"] : @"1.0";
     NSMutableString *sub = [NSMutableString string];
-    NSString *local = self.localVersions[e[@"id"]];
+    // ★ Task311：角标分表——gamepad 条目查手柄映射安装表，触屏条目查原表。
+    NSString *ame311_cat = [e[@"category"] isKindOfClass:[NSString class]] ? e[@"category"] : @"official";
+    NSString *local = [ame311_cat isEqualToString:@"gamepad"] ? self.localGamepadVersions[e[@"id"]]
+                                                              : self.localVersions[e[@"id"]];
     if (local != nil) {
         [sub appendFormat:@"%@", [NSString stringWithFormat:localize(@"custom_controls.repo.installed", nil), local]];
         if (![local isEqualToString:ver]) {
@@ -534,8 +582,8 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    // ★ Task310：本地页点击 —— 动作单（上传到社区 / 删除）。
-    if (self.selectedCategory == 2) {
+    // ★ Task310：本地页点击（Task311 起索引 3）—— 动作单（上传到社区 / 删除）。
+    if (self.selectedCategory == 3) {
         if (self.localLayouts.count == 0) return;
         NSDictionary *e = self.localLayouts[indexPath.row];
         NSString *name = e[@"name"];
@@ -599,10 +647,14 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
     }
     NSDictionary *e = self.filteredLayouts[indexPath.row];
     NSString *layoutId = e[@"id"];
+    // ★ Task311：gamepad 条目分流——校验/安装路径/提示全部走手柄映射管线
+    //  （落盘 controlmap/gamepads/<id>.json，触屏管线落 controlmap/ 不变）。
+    NSString *ame311_cat = [e[@"category"] isKindOfClass:[NSString class]] ? e[@"category"] : @"official";
+    BOOL ame311_isGamepad = [ame311_cat isEqualToString:@"gamepad"];
     if ([self.downloading containsObject:layoutId]) return;  // 防连点
     [self.downloading addObject:layoutId];
     NSString *file = [e[@"file"] isKindOfClass:[NSString class]] ? e[@"file"] :
-                     [NSString stringWithFormat:@"layouts/%@.json", layoutId];
+                     [NSString stringWithFormat:ame311_isGamepad ? @"gamepads/%@.json" : @"layouts/%@.json", layoutId];
     NSLog(@"[ControlRepo] Task189: downloading layout %@ (%@) via mirror chain", layoutId, file);
     [self fetchRepoFile:file completion:^(NSData *data, NSError *error) {
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -610,6 +662,27 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
             if (!data || error) {
                 NSLog(@"[ControlRepo] Task188: layout download failed: %@", error.localizedDescription ?: @"unknown");
                 [NMToast showMessage:[NSString stringWithFormat:@"%@\n%@", localize(@"custom_controls.repo.download.failed", nil), error.localizedDescription ?: @""]];
+                return;
+            }
+            if (ame311_isGamepad) {
+                // ★ Task311（手柄控件）：手柄映射校验——顶层 dict 且
+                //   mGameMappingList / mMenuMappingList 至少一个为数组
+                //   （与 generateAndSaveDefaultControlForGamepad / ControllerInput
+                //   initKeycodeTable 消费口径同构），拦截 CDN/代理污染的 HTML 页；
+                //   体积上限 256KB（手柄映射实测 ~3KB，留百倍余量）。
+                //   ame232 触屏安全扫描不适用（schema 不同：无 mControlDataList/
+                //   按钮形状树；手柄映射是纯 键码表，无脚本执行面）。
+                id obj = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                BOOL ame311_valid = [obj isKindOfClass:[NSDictionary class]] &&
+                    ([[obj objectForKey:@"mGameMappingList"] isKindOfClass:[NSArray class]] ||
+                     [[obj objectForKey:@"mMenuMappingList"] isKindOfClass:[NSArray class]]);
+                if (!ame311_valid || data.length > 256 * 1024) {
+                    NSLog(@"[ControlRepo] Task311: gamepad map invalid (valid=%d, len=%lu)",
+                          (int)ame311_valid, (unsigned long)data.length);
+                    [NMToast showMessage:localize(@"custom_controls.repo.download.gamepad.invalid", nil)];
+                    return;
+                }
+                [self ame311_installDownloadedGamepad:layoutId data:data];
                 return;
             }
             // 校验：必须是 layoutDictionary 同构（顶层 dict + mControlDataList 数组），
@@ -760,6 +833,17 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
     return out;
 }
 
+/// ★ Task311（手柄控件）：已安装手柄映射清单（controlmap/gamepads/ 下全部
+/// .json）——上传选择器与触屏布局并列，手柄映射也能进仓库生态。
++ (NSArray<NSString *> *)ame311_installedGamepadFileNames {
+    NSString *dir = [NSString stringWithFormat:@"%s/controlmap/gamepads", getenv("POJAV_HOME")];
+    NSMutableArray<NSString *> *out = [NSMutableArray array];
+    for (NSString *f in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:dir error:nil] ?: @[]) {
+        if ([f hasSuffix:@".json"]) [out addObject:f];
+    }
+    return out;
+}
+
 /// Task230：上传主流程（仓库页与控件编辑器共用）。
 ///   ① 选已安装布局（preselect 非空则跳过）；
 ///   ② 填写元信息（名称/作者/描述——详细信息即仓库条目字段）；
@@ -767,7 +851,9 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
 ///   ④ 双通道提交：系统分享（导出提交文件，任意渠道发给维护者）或
 ///      GitHub 网页建文件深链（预填路径+内容，登录用户一键提 PR）。
 + (void)ame230_presentUploadFlowFrom:(UIViewController *)presenter preselect:(NSString *)preselect {
-    void (^fillForm)(NSString *) = ^(NSString *fileName) {
+    // ★ Task311：fillForm 增加 isGamepad 维度——手柄映射与触屏布局共用表单，
+    //   提交分流在 ame230_finishUploadFrom（目录/文件路径/category 元数据）。
+    void (^fillForm)(NSString *, BOOL) = ^(NSString *fileName, BOOL isGamepad) {
         UIAlertController *form = [UIAlertController
             alertControllerWithTitle:localize(@"ame230.repo.upload.form.title", nil)
                              message:[NSString stringWithFormat:localize(@"ame230.repo.upload.form.message", nil), fileName]
@@ -790,7 +876,8 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
                                                           name:form.textFields[0].text
                                                         author:form.textFields[1].text
                                                      depiction:form.textFields[2].text
-                                                    viaGitHub:NO];
+                                                    viaGitHub:NO
+                                                    isGamepad:isGamepad];
         }]];
         [form addAction:[UIAlertAction actionWithTitle:localize(@"ame230.repo.upload.github", nil)
                                                  style:UIAlertActionStyleDefault
@@ -800,7 +887,8 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
                                                           name:form.textFields[0].text
                                                         author:form.textFields[1].text
                                                      depiction:form.textFields[2].text
-                                                    viaGitHub:YES];
+                                                    viaGitHub:YES
+                                                    isGamepad:isGamepad];
         }]];
         [form addAction:[UIAlertAction actionWithTitle:localize(@"resman.common.cancel", nil)
                                                  style:UIAlertActionStyleCancel handler:nil]];
@@ -812,18 +900,27 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
         [presenter presentViewController:form animated:YES completion:nil];
     };
 
-    if (preselect.length > 0) { fillForm(preselect); return; }
+    if (preselect.length > 0) { fillForm(preselect, NO); return; }
     NSArray<NSString *> *installed = [self ame230_installedLayoutFileNames];
-    if (installed.count == 0) {
+    NSArray<NSString *> *ame311_gamepads = [self ame311_installedGamepadFileNames];
+    if (installed.count == 0 && ame311_gamepads.count == 0) {
         [NMToast showMessage:localize(@"ame230.repo.upload.no_layouts", nil)];
         return;
     }
     // ★ Task240：换装系统原生 UIMenu（旧 actionSheet 退役）。
+    //   ★ Task311：手柄映射与触屏布局并列可选——手柄项尾部带分类标签区分。
     NSMutableArray<NSDictionary *> *ame240_items = [NSMutableArray array];
     for (NSString *f in installed) {
         [ame240_items addObject:@{
             @"title": f.stringByDeletingPathExtension,
-            @"handler": ^{ fillForm(f); },
+            @"handler": ^{ fillForm(f, NO); },
+        }];
+    }
+    for (NSString *f in ame311_gamepads) {
+        [ame240_items addObject:@{
+            @"title": [NSString stringWithFormat:@"%@ · %@", f.stringByDeletingPathExtension,
+                       localize(@"dl.controls.cat.gamepad", nil)],
+            @"handler": ^{ fillForm(f, YES); },
         }];
     }
     [AmeNativeMenu ame240_presentMenuWithTitle:localize(@"ame230.repo.upload.pick", nil)
@@ -832,13 +929,19 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
 }
 
 /// Task230：上传收尾——安全检查 → 提交文件生成 → 分享 / GitHub 深链。
+/// ★ Task311：新增 isGamepad 维度——手柄映射提交读 gamepads 目录、
+///   file 字段指 gamepads/、带 category:gamepad 元数据、GitHub 深链指
+///   controls/gamepads 目录（触屏路径行为不变）。
 + (void)ame230_finishUploadFrom:(UIViewController *)presenter
                        fileName:(NSString *)fileName
                            name:(NSString *)name
                          author:(NSString *)author
                       depiction:(NSString *)depiction
-                     viaGitHub:(BOOL)viaGitHub {
-    NSString *dir = [NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")];
+                     viaGitHub:(BOOL)viaGitHub
+                      isGamepad:(BOOL)isGamepad {
+    NSString *dir = isGamepad
+        ? [NSString stringWithFormat:@"%s/controlmap/gamepads", getenv("POJAV_HOME")]
+        : [NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")];
     NSString *src = [dir stringByAppendingPathComponent:fileName];
     NSData *raw = [NSData dataWithContentsOfFile:src];
     // ★ Task232（反馈 #15）：上传免检——用户指令（连默认控件都过不了
@@ -852,15 +955,17 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
     id obj = [NSJSONSerialization JSONObjectWithData:raw options:0 error:nil];
     // 提交文件：元信息包裹布局（维护者合入 controls/index.json + layouts/）
     NSString *ame230_id = fileName.stringByDeletingPathExtension;
-    NSDictionary *submission = @{
+    NSMutableDictionary *ame311_submission = [NSMutableDictionary dictionaryWithDictionary:@{
         @"id": ame230_id,
         @"name": name.length > 0 ? name : ame230_id,
         @"author": author.length > 0 ? author : @"anonymous",
         @"description": depiction.length > 0 ? depiction : @"",
         @"version": @"1",
-        @"file": [NSString stringWithFormat:@"layouts/%@.json", ame230_id],
+        @"file": [NSString stringWithFormat:isGamepad ? @"gamepads/%@.json" : @"layouts/%@.json", ame230_id],
         @"layout": obj,
-    };
+    }];
+    if (isGamepad) ame311_submission[@"category"] = @"gamepad";   // ★ Task311：手柄条目进仓库手柄分类
+    NSDictionary *submission = ame311_submission;
     NSData *out = [NSJSONSerialization dataWithJSONObject:submission options:NSJSONWritingPrettyPrinted error:nil];
     if (out == nil) {
         [NMToast showMessage:localize(@"ame230.repo.upload.invalid", nil)];
@@ -888,8 +993,9 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
         UIPasteboard.generalPasteboard.string = json ?: @"";
         NSLog(@"[ControlRepo] Task233: submission JSON (%lu bytes) copied to clipboard", (unsigned long)out.length);
         NSString *ame234_base = [NSString stringWithFormat:
-            @"https://github.com/%@/%@/new/%@/controls/layouts/community",
-            kTask189RepoOwner, kTask189RepoName, kTask189RepoRef];
+            @"https://github.com/%@/%@/new/%@/%@",
+            kTask189RepoOwner, kTask189RepoName, kTask189RepoRef,
+            isGamepad ? @"controls/gamepads" : @"controls/layouts/community"];
         NSURL *ame233_url = [NSURL URLWithString:ame234_base];
         if (ame233_url != nil) {
             [[UIApplication sharedApplication] openURL:ame233_url options:@{}

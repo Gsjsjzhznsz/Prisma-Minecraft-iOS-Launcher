@@ -3170,7 +3170,9 @@
 "dl.controls.local.delete.active" = "This is the active default layout — switch to another layout in the editor first";
 "controller.toast.connected" = "Mando conectado: %@\nRatón virtual activado";
 "controller.profile.unsupported" = "Controller \"%@\" has no full gamepad profile — pair both Joy-Con halves and retry";
-"preference.title.nintendo_layout" = "Distribución Nintendo (intercambiar A↔B / X↔Y)";
-"preference.detail.nintendo_layout" = "For Switch/Pro/Joy-Con controllers whose printed labels are reversed: swap A↔B and X↔Y before mapping, so the button printed \"A\" acts as A";
 "preference.title.scroll_speed" = "Velocidad de rueda simulada (%)";
 "preference.detail.scroll_speed" = "Scroll step multiplier for on-screen scroll buttons and gamepad scroll keys; a real mouse wheel is unaffected";
+"dl.controls.cat.gamepad" = "Mando";
+"custom_controls.repo.download.gamepad.done" = "Mapeo de mando %@ instalado: selecciónalo en Configuración del mando";
+"custom_controls.repo.download.gamepad.invalid" = "No es un archivo de mapeo de mando válido";
+"controller_configurator.title.type.nintendo" = "Switch";

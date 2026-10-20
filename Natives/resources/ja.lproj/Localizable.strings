@@ -3248,7 +3248,9 @@
 "dl.controls.local.delete.active" = "使用中のデフォルトレイアウトです — エディタで他のレイアウトに切り替えてから削除してください";
 "controller.toast.connected" = "コントローラー接続：%@\nバーチャルマウス有効";
 "controller.profile.unsupported" = "コントローラー「%@」は完全なプロファイルを提供していません — Joy-Con は左右をペアにして接続してください";
-"preference.title.nintendo_layout" = "任天堂レイアウト（A↔B / X↔Y 入れ替え）";
-"preference.detail.nintendo_layout" = "Switch/Pro/Joy-Con など刻印が標準位置と逆のコントローラー向け：面ボタン A↔B、X↔Y を入れ替えてからマッピングするため、刻印「A」で A の動作（ジャンプなど）になります";
 "preference.title.scroll_speed" = "模擬ホイール速度 (%)";
 "preference.detail.scroll_speed" = "画面上のスクロールボタンとコントローラーのスクロールキーのステップ倍率。実マウスのホイールには影響しません";
+"dl.controls.cat.gamepad" = "ゲームパッド";
+"custom_controls.repo.download.gamepad.done" = "ゲームパッドマップ %@ をインストールしました —「コントローラー設定」で選択できます";
+"custom_controls.repo.download.gamepad.invalid" = "有効なゲームパッドマップファイルではありません";
+"controller_configurator.title.type.nintendo" = "Switch";

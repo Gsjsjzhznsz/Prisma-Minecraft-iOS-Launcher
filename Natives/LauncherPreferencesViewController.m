@@ -1540,12 +1540,12 @@ if ([section isEqualToString:@"general"]) {
                 @"canDismissWithSwipe": @NO,
                 @"class": LauncherPrefContCfgViewController.class
             },
-            @{@"key": @"nintendo_layout",
-                // ★ Task310（Switch 手柄）：面键 A↔B/X↔Y 位置交换（键面标签语义）
-                @"hasDetail": @YES,
-                @"icon": @"gamecontroller",
-                @"type": self.typeSwitch,
-            },
+            // ★ Task311（Switch 选项搬家）：设置页 nintendo_layout 开关行退役——
+            //   用户指令"去除掉设置那里的switch，而是放在这里（手柄配置弹窗）"。
+            //   任天堂布局交换改由 手柄配置 → 手柄类型 单选（Xbox/PlayStation/
+            //   Switch）驱动（见 LauncherPrefContCfgViewController didSelectRow
+            //   section 3），control.nintendo_layout 偏好键本身保留（ControllerInput
+            //   运行时消费不变，默认 NO 老用户无感）。
             @{@"key": @"button_scale",
                 @"hasDetail": @YES,
                 @"icon": @"aspectratio",

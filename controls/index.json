@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-10-11",
+  "updated": "2026-10-20",
   "layouts": [
     {
       "id": "classic",
@@ -31,6 +31,24 @@
       "version": "7",
       "size": 111938,
       "category": "official"
+    },
+    {
+      "name": "默认手柄映射 / Default",
+      "author": "Prisma Team",
+      "description": "与启动器内建默认手柄映射逐键一致（Xbox 位置语义）：A=跳跃 B=Q X=E Y=F，LB/RB=滚轮，LT/RT=鼠标右/左键，START=ESC。误删内建 default.json 后可由此找回。",
+      "category": "gamepad",
+      "version": "1",
+      "file": "gamepads/gamepad_default.json",
+      "size": 2895
+    },
+    {
+      "name": "Switch 面键对齐 / Switch aligned",
+      "author": "Prisma Team",
+      "description": "Switch/Pro/Joy-Con 专用：面键键码已按键面标签预交换（物理 A=跳跃、B=Q、X=E、Y=F），手柄类型保持 Xbox 即可，无需开启布局交换。菜单内物理 A=左键、B=ESC。",
+      "category": "gamepad",
+      "version": "1",
+      "file": "gamepads/gamepad_switch.json",
+      "size": 2895
     }
   ]
 }

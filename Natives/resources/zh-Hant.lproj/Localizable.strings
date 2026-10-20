@@ -3380,7 +3380,9 @@
 "dl.controls.local.delete.active" = "這是目前使用的預設佈局——請先在控件編輯器中切換到其他佈局再刪除";
 "controller.toast.connected" = "手把已連線：%@\n虛擬滑鼠已啟用";
 "controller.profile.unsupported" = "手把「%@」未提供完整檔案——單邊 Joy-Con 請成對連線後再試";
-"preference.title.nintendo_layout" = "Switch/任天堂鍵位（A↔B、X↔Y 交換）";
-"preference.detail.nintendo_layout" = "Switch/Pro/Joy-Con 的鍵面印刷與標準位置相反時開啟：面鍵 A↔B、X↔Y 交換後再查映射，按印刷 \"A\" 即 A 的功能（跳躍等）";
 "preference.title.scroll_speed" = "模擬滾輪速度 (%)";
 "preference.detail.scroll_speed" = "觸屏佈局滾動按鈕與手把滾動鍵的滾輪步進倍率；真滑鼠滾輪不受影響";
+"dl.controls.cat.gamepad" = "手把";
+"custom_controls.repo.download.gamepad.done" = "手把映射 %@ 已安裝——在「手把配置」中即可選用";
+"custom_controls.repo.download.gamepad.invalid" = "不是有效的手把映射檔案";
+"controller_configurator.title.type.nintendo" = "Switch";

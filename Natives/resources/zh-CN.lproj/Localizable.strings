@@ -3380,7 +3380,9 @@
 "dl.controls.local.delete.active" = "这是当前使用的默认布局——请先在控件编辑器中切换到其他布局再删除";
 "controller.toast.connected" = "手柄已连接：%@\n虚拟鼠标已启用";
 "controller.profile.unsupported" = "手柄「%@」未提供完整档案——单边 Joy-Con 请成对连接后再试";
-"preference.title.nintendo_layout" = "Switch/任天堂键位（A↔B、X↔Y 交换）";
-"preference.detail.nintendo_layout" = "Switch/Pro/Joy-Con 的键面印刷与标准位置相反时开启：面键 A↔B、X↔Y 交换后再查映射，按印刷 \"A\" 即 A 的功能（跳跃等）";
 "preference.title.scroll_speed" = "模拟滚轮速度 (%)";
 "preference.detail.scroll_speed" = "触屏布局滚动按钮与手柄滚动键的滚轮步进倍率；真鼠标滚轮不受影响";
+"dl.controls.cat.gamepad" = "手柄";
+"custom_controls.repo.download.gamepad.done" = "手柄映射 %@ 已安装——在「手柄配置」中即可选用";
+"custom_controls.repo.download.gamepad.invalid" = "不是有效的手柄映射文件";
+"controller_configurator.title.type.nintendo" = "Switch";

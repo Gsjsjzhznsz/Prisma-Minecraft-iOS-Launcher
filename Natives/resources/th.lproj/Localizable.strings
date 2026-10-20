@@ -356,7 +356,11 @@
 "dl.controls.local.delete.active" = "This is the active default layout — switch to another layout in the editor first";
 "controller.toast.connected" = "Controller connected: %@\nVirtual mouse enabled";
 "controller.profile.unsupported" = "Controller \"%@\" has no full gamepad profile — pair both Joy-Con halves and retry";
-"preference.title.nintendo_layout" = "Nintendo layout (A↔B / X↔Y swap)";
-"preference.detail.nintendo_layout" = "For Switch/Pro/Joy-Con controllers whose printed labels are reversed: swap A↔B and X↔Y before mapping, so the button printed \"A\" acts as A";
 "preference.title.scroll_speed" = "Simulated wheel speed (%)";
 "preference.detail.scroll_speed" = "Scroll step multiplier for on-screen scroll buttons and gamepad scroll keys; a real mouse wheel is unaffected";
+"dl.controls.cat.gamepad" = "เกมแพด";
+"custom_controls.repo.download.gamepad.done" = "Gamepad mapping %@ installed — select it in Controller Config";
+"custom_controls.repo.download.gamepad.invalid" = "Not a valid gamepad mapping file";
+"controller_configurator.title.type.nintendo" = "Switch";
+"controller_configurator.title.type.xbox" = "Xbox";
+"controller_configurator.title.type.playstation" = "PlayStation";

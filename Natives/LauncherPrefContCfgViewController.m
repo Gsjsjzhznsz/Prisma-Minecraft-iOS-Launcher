@@ -50,7 +50,10 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
     self.tableView.sectionFooterHeight = 50;
     
     [self loadGamepadConfigurationFile];
-    self.prefControllerTypes = @[@{@"name": @"xbox"}, @{@"name": @"playstation"}];
+    // ★ Task311（Switch 选项搬家）：设置页 nintendo_layout 开关行退役，
+    //   任天堂布局改到手柄类型单选里（第三项 Switch）——选中即启用
+    //   control.nintendo_layout 布局交换（见 didSelectRow section 3）。
+    self.prefControllerTypes = @[@{@"name": @"xbox"}, @{@"name": @"playstation"}, @{@"name": @"nintendo"}];
     
     self.prefSections = @[@"config_files", @"game_mappings", @"menu_mappings", @"controller_style"];
     
@@ -145,7 +148,11 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
         cell.detailTextLabel.text = getPrefObject(@"control.default_gamepad_ctrl");
     } else if(indexPath.section == 1 || indexPath.section == 2) {
         NSNumber *keycode = (NSNumber *)item[@"keycode"];
-        cell.textLabel.text = localize(([NSString stringWithFormat:@"controller_configurator.%@.title.%@", getPrefObject(@"control.controller_type"), item[@"name"]]), nil);
+        // ★ Task311：Switch 无专属键名表——面键同为 A/B/X/Y 字母（仅位置语义
+        //   不同，由 nintendo_layout 布局交换处理），键名显示回落 Xbox 表。
+        NSString *ame311_nameType = getPrefObject(@"control.controller_type");
+        if ([ame311_nameType isEqualToString:@"nintendo"]) ame311_nameType = @"xbox";
+        cell.textLabel.text = localize(([NSString stringWithFormat:@"controller_configurator.%@.title.%@", ame311_nameType, item[@"name"]]), nil);
         UITextField *view = (id)cell.accessoryView;
         if (view == nil) {
             view = [[PickTextField alloc] initWithFrame:CGRectMake(0, 0, cell.bounds.size.width / 2.1, cell.bounds.size.height)];
@@ -195,7 +202,13 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
     if(indexPath.section == 0) {
         [self actionMenuLoad];
     } else if(indexPath.section == 3) {
-        setPrefObject(@"control.controller_type", self.prefControllerTypes[indexPath.row][@"name"]);
+        // ★ Task311（Switch 选项搬家）：手柄类型单选同时驱动任天堂布局交换——
+        //   选 Switch = control.nintendo_layout YES（面键 A↔B/X↔Y 位置交换，
+        //   ControllerInput ame310_layoutSwapKeycode 消费）；选 Xbox/PlayStation
+        //   = 恢复 Xbox 位置语义（NO）。偏好键不变，运行时消费点零改动。
+        NSString *ame311_type = self.prefControllerTypes[indexPath.row][@"name"];
+        setPrefObject(@"control.controller_type", ame311_type);
+        setPrefObject(@"control.nintendo_layout", [ame311_type isEqualToString:@"nintendo"] ? @YES : @NO);
         NSIndexSet *section = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, 3)];
         [self.tableView reloadSections:section withRowAnimation:UITableViewRowAnimationNone];
     }

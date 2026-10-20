@@ -3163,7 +3163,9 @@
 "dl.controls.local.delete.active" = "현재 사용 중인 기본 레이아웃입니다 — 에디터에서 다른 레이아웃으로 전환한 후 삭제하세요";
 "controller.toast.connected" = "컨트롤러 연결됨: %@\n가상 마우스 활성화";
 "controller.profile.unsupported" = "컨트롤러 '%@'에 전체 게임패드 프로필이 없습니다 — 조이콘은 좌우를 페어로 연결하세요";
-"preference.title.nintendo_layout" = "닌텐도 레이아웃 (A↔B / X↔Y 교체)";
-"preference.detail.nintendo_layout" = "Switch/Pro/Joy-Con처럼 표기가 표준 위치와 반대인 컨트롤러용: A↔B, X↔Y를 교환한 뒤 매핑하므로 'A'로 인쇄된 버튼이 A 기능(점프 등)을 수행합니다";
 "preference.title.scroll_speed" = "가상 휠 속도 (%)";
 "preference.detail.scroll_speed" = "화면 스크롤 버튼과 컨트롤러 스크롤 키의 스텝 배율입니다. 실제 마우스 휠에는 영향이 없습니다";
+"dl.controls.cat.gamepad" = "게임패드";
+"custom_controls.repo.download.gamepad.done" = "게임패드 매핑 %@ 설치됨 — '컨트롤러 설정'에서 선택하세요";
+"custom_controls.repo.download.gamepad.invalid" = "유효한 게임패드 매핑 파일이 아닙니다";
+"controller_configurator.title.type.nintendo" = "Switch";
