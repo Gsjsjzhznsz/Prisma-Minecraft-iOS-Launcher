@@ -4280,3 +4280,23 @@ Work Log:
 
 Stage Summary:
 - v6.5.5 发行版资产第九轮替换完成，下载链接不变；用户 SideStore/TrollStore 重装即得 69752f0e 构建
+
+---
+Task ID: 311
+Agent: main (Super Z)
+Task: Switch 选项搬家（设置页→手柄配置弹窗）+ 控件下载中心添加手柄控件（用户截图指令）
+
+Work Log:
+- 用户截图（IMG_0451 手柄配置弹窗）指令：①去除设置里的 Switch，放到手柄配置弹窗里 ②控件下载那里添加手柄控件
+- ①设置页：LauncherPreferencesViewController.m 摘除 nintendo_layout 开关行（Task310 行退役），偏好键 control.nintendo_layout 保留（ControllerInput ame310_layoutSwapKeycode 运行时消费不变，默认 NO 老用户无感）
+- ①弹窗：LauncherPrefContCfgViewController.m 手柄类型三选项（xbox/playstation/nintendo），didSelectRow section3 选 Switch 同步写 nintendo_layout=YES、选其余写 NO；键名显示 nintendo→xbox 回落（面键同为 A/B/X/Y 字母，仅位置语义不同）
+- ②下载中心：ControlRepoViewController.m 三分类扩四分类（官方精选/社区/手柄/本地，本地 2→3）：手柄页过滤 index.json category:gamepad；下载独立校验管线（顶层 dict + mGameMappingList/mMenuMappingList 至少一数组同构校验 + 256KB 上限；ame232 触屏安全扫描不适用——手柄映射纯键码表无脚本执行面）；ame311_installDownloadedGamepad 落盘 controlmap/gamepads/<id>.json（与手柄配置弹窗"当前"文件选择器同目录，装完即选即用）；角标分表 localGamepadVersions 同口径扫描 gamepads 目录；上传选择器并列手柄映射（fillForm 加 isGamepad 维度：源目录 gamepads/、提交带 category:gamepad、file 指 gamepads/<id>.json、GitHub 深链指 controls/gamepads）
+- ②仓库内容：scripts/task311_gamepad_repo.py 生成 controls/gamepads/gamepad_default.json（内建 generateAndSaveDefaultControlForGamepad 逐键同源备份，16+16 条目）+ gamepad_switch.json（面键键码按 Switch 键面标签预交换：物理 A→SPACE/B→Q/X→E/Y→F，菜单 A→ESC/B→鼠标左键/X→Shift/Y→鼠标右键，免开布局交换）+ index.json 追加双 gamepad 条目（updated 2026-10-20）
+- ④i18n：scripts/task311_i18n.py 54 表 +6 键（dl.controls.cat.gamepad 主语言 23 翻译余 EN 回退 / 下载 gamepad.done+invalid / controller_configurator 三类型品牌名全语言同文——36 表此前缺 xbox/playstation 裸键一并补齐）-2 孤儿键（preference.title/detail.nintendo_layout）
+- 门禁：task139/175/211/240 全 balanced+ALL PASS（首轮 240 抓出 ame311_valid 少外层 '[' 实锤修掉），task191 54 表 OK，task248 缺键0/硬编码0/动态键0，task250 同键值行 0
+- 提交 36155345 push origin main；CI run 39432562972 queued
+
+Stage Summary:
+- 设置页 Switch 行已消失；手柄配置弹窗手柄类型 = Xbox/PlayStation/Switch 三选一（选 Switch 即任天堂布局交换生效）
+- 控件下载新增「手柄」分类：官方手柄映射（默认备份 + Switch 面键对齐版）可下载安装，装完在手柄配置弹窗"当前"里选用；本地手柄映射可上传进仓库生态
+- 待 CI 取证（run 39432562972）
