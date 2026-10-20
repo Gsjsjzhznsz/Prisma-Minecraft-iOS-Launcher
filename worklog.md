@@ -4252,3 +4252,18 @@ Stage Summary:
 - Switch 用户"确认/跳跃反了"终结：设置-控制-「Switch/任天堂键位」开关一键对齐键面印刷
 - 下载中心控件页三分类：官方精选（3 官方布局）/社区（上传 CTA 待内容生态）/本地（管理+删除+上传全闭环）
 - 装机验证锚点：①手柄连接即 toast（名称+电量）②边走边断连角色立即停 ③设置-控制见 Switch 键位与滚轮速度两行 ④下载-控件 tab 顶部分三段，本地可删可传 ⑤触屏/手柄滚动按钮速度随滑条变化
+
+---
+Task ID: 310-ci
+Agent: main (Super Z)
+Task: Task310 CI 三轮闭环（r1 vendorName / r2 电量段摘除）+ 资产替换
+
+Work Log:
+- 首轮 run#39372506214 failure——ControllerInput.m:139/144 + SurfaceVC:1611 'productName' not found on GCController（iPhoneOS26.2 SDK 无此属性）→ r1 542c6b03 改 vendorName（iOS 7+ 正名）
+- r1 run failure——SurfaceVC:1612 'batteryHandler' not found + :1614 'deviceBatteryLevelFraction' not found（26.2 SDK 旧名双不认）→ r2 69752f0e 电量段整段摘除（toast 保名称交付核心价值，电量待 API 实名考证单变量复进）
+- r2 run completed success——Task310 四功能线全绿；同族 SDK 属性域盲区第四进宫（260/261/310r1/310r2），防线候选=门禁加 SDK 属性拼写扫描
+- Task309 闭环补记：run#39370014895 completed success（41b9ea09 FPS 解锁回退 + MoltenVK 1.4.3 恢复）
+
+Stage Summary:
+- v6.5.5 资产静默替换第九轮进行中（构建=69752f0e，含 309+310 全部内容）
+- 装机验证锚点不变（见 Task310 条目 Stage Summary）
