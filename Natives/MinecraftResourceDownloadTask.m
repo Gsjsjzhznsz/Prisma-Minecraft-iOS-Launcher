@@ -31,6 +31,58 @@ static const NSUInteger kMCStageIndexLibraries = 3;
 static const NSUInteger kMCStageIndexAssets = 4;
 static const NSUInteger kMCStageIndexVerify = 5;
 
+// ===== Task312 ame312：批量下载吞吐量见证与低速换源（会话内生效，不落盘） =====
+// 病历（用户反馈 2026-10-20）：“6.5.5 下载速度比 6.5.0 慢多了”。双 tag 全链
+// 审计（v6.5.0→v6.5.5：MinecraftResourceDownloadTask/PLMirrorCenter/
+// DownloadTasksViewController/ForgeDirectInstaller/Tools.java 下载核心逐字节
+// 零改动）定性：非代码回归，是官方源路由劣化——现有候选轮换只在
+// 【彻底失败】后才切镜像，“慢而不断”的官方源永不轮换，用户只能爬。
+// 修复：会话内吞吐量见证——按源累计（样本≥512KB 且耗时≥0.5s 的完成任务），
+// 官方源平均吞吐 < 128KB/s 且样本≥2 → 本批后续文件换镜像候选在前；
+// 镜像自身也被证慢（< 32KB/s 且样本≥2）→ 回退官方，防双向误伤。不改
+// 用户偏好，不落盘，每次启动重新观测（网络状况会变，持久化反而粘错）。
+typedef struct {
+    double bytes;
+    double elapsed;
+    NSInteger samples;
+} ame312_SourceStats;
+
+// [0]=官方源 [1]=镜像源
+static ame312_SourceStats ame312_stats[2];
+static BOOL ame312_batchPreferMirror = NO;
+static BOOL ame312_mirrorProvenSlow = NO;
+
+static double ame312_avgKBps(NSInteger idx) {
+    if (ame312_stats[idx].elapsed <= 0) return -1.0;
+    return (ame312_stats[idx].bytes / ame312_stats[idx].elapsed) / 1024.0;
+}
+
+static void ame312_recordThroughput(NSInteger idx, double bytes, double elapsed) {
+    // 小文件/瞬时完成样本无统计意义，跳过（SHA 命中/秒下不计）
+    if (bytes < 512.0 * 1024.0 || elapsed < 0.5) return;
+    ame312_stats[idx].bytes += bytes;
+    ame312_stats[idx].elapsed += elapsed;
+    ame312_stats[idx].samples += 1;
+    double kbps = ame312_avgKBps(idx);
+    NSLog(@"[MCDL] ame312: source[%ld] throughput sample %ld -> avg %.0f KB/s",
+          (long)idx, (long)ame312_stats[idx].samples, kbps);
+    if (idx == 0 && !ame312_batchPreferMirror && !ame312_mirrorProvenSlow
+        && ame312_stats[0].samples >= 2 && kbps >= 0 && kbps < 128.0) {
+        ame312_batchPreferMirror = YES;
+        NSLog(@"[MCDL] ame312: official source SLOW (%.0f KB/s over %ld samples) -- "
+              @"switching remaining batch to mirror-first (session-scoped)",
+              kbps, (long)ame312_stats[0].samples);
+    }
+    if (idx == 1 && ame312_batchPreferMirror && !ame312_mirrorProvenSlow
+        && ame312_stats[1].samples >= 2 && kbps >= 0 && kbps < 32.0) {
+        ame312_mirrorProvenSlow = YES;
+        ame312_batchPreferMirror = NO;
+        NSLog(@"[MCDL] ame312: mirror also SLOW (%.0f KB/s over %ld samples) -- "
+              @"reverting to official candidates for remaining batch",
+              kbps, (long)ame312_stats[1].samples);
+    }
+}
+
 @interface MinecraftResourceDownloadTask ()
 @property AFURLSessionManager* manager;
 @property (nonatomic, strong) DownloadTaskItem *currentDownloadTaskItem;
@@ -191,6 +243,12 @@ static const NSUInteger kMCStageIndexVerify = 5;
         mirrorCandidates = fallbackURL ? @[fallbackURL] : @[];
     }
     NSInteger maxRetry = self.maxRetryCount > 0 ? self.maxRetryCount : 3;
+    // ame312：吞吐量见证判官方源低速时，本批后续文件镜像候选在前（会话内
+    // 生效，见文件头部 ame312 契约注释）。必须先交换候选序、再算 candidateIndex。
+    if (ame312_batchPreferMirror && mirrorCandidates.count == 2) {
+        mirrorCandidates = @[[mirrorCandidates.lastObject copy],
+                             [mirrorCandidates.firstObject copy]];
+    }
     // 总尝试次数 = 单候选重试预算 × 候选数（全部候选耗尽才最终失败）
     NSInteger attemptCount = MAX((NSInteger)mirrorCandidates.count, 1) * maxRetry;
     // 当前尝试对应的候选索引：第 0~(maxRetry-1) 次尝试用候选 0，耗尽后轮换下一候选
@@ -206,6 +264,9 @@ static const NSUInteger kMCStageIndexVerify = 5;
               (unsigned long)(candidateIndex + 1), (unsigned long)mirrorCandidates.count);
     }
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:replacedURL]];
+    // ame312：本任务走的源（0=官方 1=镜像）与起始时刻，完成时回填吞吐量样本
+    BOOL ame312_isMirror = ![replacedURL isEqualToString:url];
+    CFTimeInterval ame312_startTs = CFAbsoluteTimeGetCurrent();
     __block NSProgress *progress;
     __weak MinecraftResourceDownloadTask *weakSelf = self;
     __block NSURLSessionDownloadTask *task = [self.manager downloadTaskWithRequest:request progress:nil
@@ -311,6 +372,13 @@ static const NSUInteger kMCStageIndexVerify = 5;
         } else {
             progress.totalUnitCount = progress.completedUnitCount;
             [self mc_recordStageFileFinishedAtPath:path];
+            // ame312：成功任务回填吞吐量样本（镜像/官方源择路依据，见文件头契约）
+            {
+                double ame312_bytes = (double)task.countOfBytesReceived;
+                double ame312_elapsed = CFAbsoluteTimeGetCurrent() - ame312_startTs;
+                if (ame312_bytes <= 0) ame312_bytes = (double)size;
+                ame312_recordThroughput(ame312_isMirror ? 1 : 0, ame312_bytes, ame312_elapsed);
+            }
             if (success) success();
         }
     }];

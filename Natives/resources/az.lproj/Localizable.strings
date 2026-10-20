@@ -311,3 +311,10 @@
 "controller_configurator.title.type.nintendo" = "Switch";
 "controller_configurator.title.type.xbox" = "Xbox";
 "controller_configurator.title.type.playstation" = "PlayStation";
+"regiongate.title" = "Xidmət bölgəsi bildirişi";
+"regiongate.message" = "Bu başladıcı Çin materikindəki istifadəçilər üçün əlçatan deyil. Bu icma layihəsidir; Mojang Studios, Microsoft və ya NetEase (Çin materik nəşriyyatı) ilə əlaqəsi yoxdur və Çin materikində yayımlanmır və xidmət göstərmir. Materik Çin istifadəçisi deysinizsə, davam etmək üçün \"Mən materik istifadəçisi deyiləm\" düyməsinə toxunun.";
+"regiongate.ack1" = "Notice 1/3: please confirm your service region again.";
+"regiongate.ack2" = "Notice 2/3: continuing means you confirm that you are not a mainland China user.";
+"regiongate.ack3" = "Final notice (3/3): thank you for confirming. Continuing...";
+"regiongate.not_mainland" = "Mən materik istifadəçisi deyiləm";
+"regiongate.exit" = "Çıxış";

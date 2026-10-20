@@ -588,3 +588,10 @@
 "custom_controls.repo.download.gamepad.done" = "Gamepad mapping %@ installed — select it in Controller Config";
 "custom_controls.repo.download.gamepad.invalid" = "Not a valid gamepad mapping file";
 "controller_configurator.title.type.nintendo" = "Switch";
+"regiongate.title" = "إشعار منطقة الخدمة";
+"regiongate.message" = "هذا المشغّل غير متاح للمستخدمين في الصين القارية. وهو مشروع مجتمعي، غير تابع لـ Mojang Studios أو Microsoft أو NetEase (الناشر في الصين القارية)، ولا يتم توزيعه أو تقديم خدمته في الصين القارية. إذا لم تكن مستخدمًا من الصين القارية، فاضغط على \"لست مستخدمًا من القارة\" للمتابعة.";
+"regiongate.ack1" = "Notice 1/3: please confirm your service region again.";
+"regiongate.ack2" = "Notice 2/3: continuing means you confirm that you are not a mainland China user.";
+"regiongate.ack3" = "Final notice (3/3): thank you for confirming. Continuing...";
+"regiongate.not_mainland" = "لست مستخدمًا من القارة";
+"regiongate.exit" = "خروج";

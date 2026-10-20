@@ -3386,3 +3386,10 @@
 "custom_controls.repo.download.gamepad.done" = "手把映射 %@ 已安裝——在「手把配置」中即可選用";
 "custom_controls.repo.download.gamepad.invalid" = "不是有效的手把映射檔案";
 "controller_configurator.title.type.nintendo" = "Switch";
+"regiongate.title" = "服務地區聲明";
+"regiongate.message" = "本啟動器不對中國大陸地區使用者開放。本啟動器為社群專案，與 Mojang Studios、Microsoft 及網易（中國大陸地區代理方）均無關聯，也未在中國大陸地區進行散布或提供服務。若您不是中國大陸地區使用者，請點選「我不是大陸使用者」繼續。";
+"regiongate.ack1" = "提示 1/3：請再次確認您所在的服務地區。";
+"regiongate.ack2" = "提示 2/3：繼續使用即表示您確認自己不屬於中國大陸地區使用者。";
+"regiongate.ack3" = "最終提示（3/3）：感謝您的確認，即將繼續。";
+"regiongate.not_mainland" = "我不是大陸使用者";
+"regiongate.exit" = "結束";

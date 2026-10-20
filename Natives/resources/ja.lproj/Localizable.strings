@@ -3254,3 +3254,10 @@
 "custom_controls.repo.download.gamepad.done" = "ゲームパッドマップ %@ をインストールしました —「コントローラー設定」で選択できます";
 "custom_controls.repo.download.gamepad.invalid" = "有効なゲームパッドマップファイルではありません";
 "controller_configurator.title.type.nintendo" = "Switch";
+"regiongate.title" = "サービス提供地域に関するお知らせ";
+"regiongate.message" = "このランチャーは中国本土のユーザーには提供されていません。本ランチャーはコミュニティプロジェクトであり、Mojang Studios、Microsoft、および網易（中国本土代理店）とは無関係で、中国本土では配布・サービスを行っていません。中国本土のユーザーでない場合は、「私は本土ユーザーではありません」をタップして続行してください。";
+"regiongate.ack1" = "お知らせ 1/3：お住まいのサービス提供地域を再度ご確認ください。";
+"regiongate.ack2" = "お知らせ 2/3：続行すると、あなたが中国本土のユーザーではないことを確認したものとみなされます。";
+"regiongate.ack3" = "最終のお知らせ（3/3）：ご確認ありがとうございます。続行します…";
+"regiongate.not_mainland" = "私は本土ユーザーではありません";
+"regiongate.exit" = "終了";

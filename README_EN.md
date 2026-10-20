@@ -3,7 +3,7 @@
 </div>
 
 <h1 align="center">Prisma</h1>
-<p align="center"><b>A polished Minecraft: Java Edition launcher for iOS, optimized for Chinese users.</b></p>
+<p align="center"><b>A polished Minecraft: Java Edition launcher for iOS, built for international users — not available in mainland China.</b></p>
 <p align="center"><sub>Forked from <a href="https://github.com/herbrine8403/Amethyst-iOS-MyRemastered">Amethyst-iOS-MyRemastered</a></sub></p>
 
 <div align="center">
@@ -43,11 +43,15 @@
   every star keeps the updates coming (same entry in the launcher's About page).
 </p>
 
+> ⚠️ **Region Notice / 服务地区声明** (Task312)
+>
+> **This launcher is NOT available to users in mainland China.** Prisma is a community project, unaffiliated with Mojang Studios, Microsoft, or NetEase (the mainland China publisher), and is **not distributed or serviced in mainland China**. The app performs on-device multi-angle detection (device region / timezone / carrier / language / IP geolocation — corroborated signals only, probe failures never block) and shows a "Service Region Notice" to suspected mainland users, with an "I am not a mainland user" button; the gate releases after 3 confirmations. **本启动器不对中国大陆地区用户开放。**
+
 ---
 
 ## What is Prisma?
 
-**Prisma** is a customized fork of [Amethyst-iOS-MyRemastered](https://github.com/herbrine8403/Amethyst-iOS-MyRemastered), a premium Minecraft: Java Edition launcher for iOS and iPadOS. This fork focuses on the **Chinese user experience** -- delivering robust Chinese localization, in-app language switching, streamlined JIT handling for iOS 26+, and bug fixes sourced from upstream issue audits.
+**Prisma** is a customized fork of [Amethyst-iOS-MyRemastered](https://github.com/herbrine8403/Amethyst-iOS-MyRemastered), a premium Minecraft: Java Edition launcher for iOS and iPadOS. This fork is deeply optimized for **international users (mainland China not included)** -- delivering robust Chinese localization, in-app language switching, streamlined JIT handling for iOS 26+, and bug fixes sourced from upstream issue audits. Mainland China is outside this launcher's service scope (see the Region Notice above).
 
 > **Not sure which fork to use?** See the [Fork Network](#fork-network) section below for a comparison of active forks and their unique features.
 

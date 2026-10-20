@@ -485,3 +485,10 @@
 "controller_configurator.title.type.nintendo" = "Switch";
 "controller_configurator.title.type.xbox" = "Xbox";
 "controller_configurator.title.type.playstation" = "PlayStation";
+"regiongate.title" = "Powiadomienie o regionie usługi";
+"regiongate.message" = "Ten launcher nie jest dostępny dla użytkowników z kontynentalnych Chin. To projekt społecznościowy, niezwiązany z Mojang Studios, Microsoft ani NetEase (wydawcą dla kontynentalnych Chin) i nie jest dystrybuowany ani obsługiwany w kontynentalnych Chinach. Jeśli nie jesteś użytkownikiem z kontynentalnych Chin, dotknij „Nie jestem użytkownikiem z kontynentu”, aby kontynuować.";
+"regiongate.ack1" = "Notice 1/3: please confirm your service region again.";
+"regiongate.ack2" = "Notice 2/3: continuing means you confirm that you are not a mainland China user.";
+"regiongate.ack3" = "Final notice (3/3): thank you for confirming. Continuing...";
+"regiongate.not_mainland" = "Nie jestem użytkownikiem z kontynentu";
+"regiongate.exit" = "Zakończ";

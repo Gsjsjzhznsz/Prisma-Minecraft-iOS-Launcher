@@ -3386,3 +3386,10 @@
 "custom_controls.repo.download.gamepad.done" = "手柄映射 %@ 已安装——在「手柄配置」中即可选用";
 "custom_controls.repo.download.gamepad.invalid" = "不是有效的手柄映射文件";
 "controller_configurator.title.type.nintendo" = "Switch";
+"regiongate.title" = "服务地区声明";
+"regiongate.message" = "本启动器不对中国大陆地区用户开放。本启动器为社区项目，与 Mojang Studios、Microsoft 及网易（中国大陆地区代理方）均无关联，也未在中国大陆地区进行分发或提供服务。若您不是中国大陆地区用户，请点击「我不是大陆用户」继续。";
+"regiongate.ack1" = "提示 1/3：请再次确认您所在的服务地区。";
+"regiongate.ack2" = "提示 2/3：继续使用即表示您确认自己不属于中国大陆地区用户。";
+"regiongate.ack3" = "最终提示（3/3）：感谢您的确认，即将继续。";
+"regiongate.not_mainland" = "我不是大陆用户";
+"regiongate.exit" = "退出";

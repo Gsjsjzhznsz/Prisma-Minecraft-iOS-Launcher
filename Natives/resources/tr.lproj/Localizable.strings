@@ -499,3 +499,10 @@
 "controller_configurator.title.type.nintendo" = "Switch";
 "controller_configurator.title.type.xbox" = "Xbox";
 "controller_configurator.title.type.playstation" = "PlayStation";
+"regiongate.title" = "Hizmet Bölgesi Bildirimi";
+"regiongate.message" = "Bu başlatıcı, Çin anakarasındaki kullanıcılara sunulmamaktadır. Bu bir topluluk projesidir; Mojang Studios, Microsoft veya NetEase (Çin anakarası yayıncısı) ile bağlantısı yoktur ve Çin anakarasında dağıtılmaz veya hizmet vermez. Anakara Çin kullanıcısı değilseniz devam etmek için \"Ben anakara kullanıcısı değilim\" düğmesine dokunun.";
+"regiongate.ack1" = "Notice 1/3: please confirm your service region again.";
+"regiongate.ack2" = "Notice 2/3: continuing means you confirm that you are not a mainland China user.";
+"regiongate.ack3" = "Final notice (3/3): thank you for confirming. Continuing...";
+"regiongate.not_mainland" = "Ben anakara kullanıcısı değilim";
+"regiongate.exit" = "Çıkış";

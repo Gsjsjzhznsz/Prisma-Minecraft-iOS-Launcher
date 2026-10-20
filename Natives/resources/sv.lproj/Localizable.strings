@@ -331,3 +331,10 @@
 "controller_configurator.title.type.nintendo" = "Switch";
 "controller_configurator.title.type.xbox" = "Xbox";
 "controller_configurator.title.type.playstation" = "PlayStation";
+"regiongate.title" = "Serviceområde meddelande";
+"regiongate.message" = "Denna startare är inte tillgänglig för användare i fastlands-Kina. Det är ett communityprojekt utan koppling till Mojang Studios, Microsoft eller NetEase (utgivaren i fastlands-Kina) och distribueras eller servas inte i fastlands-Kina. Om du inte är användare från fastlandet, tryck på \"Jag är inte fastlandsanvändare\" för att fortsätta.";
+"regiongate.ack1" = "Notice 1/3: please confirm your service region again.";
+"regiongate.ack2" = "Notice 2/3: continuing means you confirm that you are not a mainland China user.";
+"regiongate.ack3" = "Final notice (3/3): thank you for confirming. Continuing...";
+"regiongate.not_mainland" = "Jag är inte fastlandsanvändare";
+"regiongate.exit" = "Avsluta";

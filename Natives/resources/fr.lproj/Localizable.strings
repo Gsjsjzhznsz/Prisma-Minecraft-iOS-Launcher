@@ -3184,3 +3184,10 @@
 "custom_controls.repo.download.gamepad.done" = "Mapping manette %@ installé — sélectionnez-le dans la configuration manette";
 "custom_controls.repo.download.gamepad.invalid" = "Fichier de mapping manette invalide";
 "controller_configurator.title.type.nintendo" = "Switch";
+"regiongate.title" = "Avis de zone de service";
+"regiongate.message" = "Ce lanceur n'est pas disponible pour les utilisateurs de Chine continentale. Il s'agit d'un projet communautaire, sans lien avec Mojang Studios, Microsoft ou NetEase (l'éditeur pour la Chine continentale), et n'est ni distribué ni pris en charge en Chine continentale. Si vous n'êtes pas un utilisateur de Chine continentale, appuyez sur « Je ne suis pas un utilisateur du continent » pour continuer.";
+"regiongate.ack1" = "Avis 1/3 : veuillez confirmer à nouveau votre zone de service.";
+"regiongate.ack2" = "Avis 2/3 : continuer signifie que vous confirmez ne pas être un utilisateur de Chine continentale.";
+"regiongate.ack3" = "Avis final (3/3) : merci de votre confirmation. Poursuite...";
+"regiongate.not_mainland" = "Je ne suis pas un utilisateur du continent";
+"regiongate.exit" = "Quitter";

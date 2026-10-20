@@ -3177,3 +3177,10 @@
 "custom_controls.repo.download.gamepad.done" = "Mapeamento de controle %@ instalado — selecione em Config. de controle";
 "custom_controls.repo.download.gamepad.invalid" = "Não é um arquivo de mapeamento de controle válido";
 "controller_configurator.title.type.nintendo" = "Switch";
+"regiongate.title" = "Aviso de região de serviço";
+"regiongate.message" = "Este launcher não está disponível para usuários da China continental. É um projeto comunitário, sem vínculo com Mojang Studios, Microsoft ou NetEase (a publicadora da China continental), e não é distribuído ou atendido na China continental. Se você não é um usuário da China continental, toque em \"Não sou usuário do continente\" para continuar.";
+"regiongate.ack1" = "Aviso 1/3: confirme novamente sua região de serviço.";
+"regiongate.ack2" = "Aviso 2/3: continuar significa que você confirma que não é um usuário da China continental.";
+"regiongate.ack3" = "Aviso final (3/3): obrigado por confirmar. Continuando...";
+"regiongate.not_mainland" = "Não sou usuário do continente";
+"regiongate.exit" = "Sair";

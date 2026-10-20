@@ -3,7 +3,7 @@
 </div>
 
 <h1 align="center">Prisma</h1>
-<p align="center"><b>一款面向中国用户深度优化的 iOS Minecraft: Java Edition 启动器</b></p>
+<p align="center"><b>一款面向国际用户（不对中国大陆地区开放）深度优化的 iOS Minecraft: Java Edition 启动器</b></p>
 <p align="center"><sub>派生自 <a href="https://github.com/herbrine8403/Amethyst-iOS-MyRemastered">Amethyst-iOS-MyRemastered</a></sub></p>
 
 <div align="center">
@@ -43,11 +43,15 @@
   每一个 Star 都是持续更新的动力（关于页同款入口）。
 </p>
 
+> ⚠️ **服务地区声明 / Region Notice**（Task312）
+>
+> **本启动器不对中国大陆地区用户开放。** Prisma 为社区项目，与 Mojang Studios、Microsoft 及网易（中国大陆地区代理方）均无关联，也**未在中国大陆地区进行分发或提供服务**。启动器会在本机多角度检测（设备地区 / 时区 / 运营商 / 语言 / IP 归属地，互证命中才会触发，探测失败不误伤）疑似大陆用户时弹出「服务地区声明」，提供「我不是大陆用户」按钮，连续 3 次确认后放行。**This launcher is NOT available to users in mainland China** — it is a community project unaffiliated with Mojang Studios, Microsoft, or NetEase, and is not distributed or serviced in mainland China.
+
 ---
 
 ## Prisma 是什么？
 
-**Prisma** 是 [Amethyst-iOS-MyRemastered](https://github.com/herbrine8403/Amethyst-iOS-MyRemastered) 的定制 Fork，一款面向 iOS 和 iPadOS 的 Minecraft: Java Edition 高端启动器。本 Fork 聚焦**中国用户体验** -- 提供完整的中文本地化、应用内中英文切换、iOS 26+ JIT 直接启动优化，以及来自上游议题审计的 Bug 修复。
+**Prisma** 是 [Amethyst-iOS-MyRemastered](https://github.com/herbrine8403/Amethyst-iOS-MyRemastered) 的定制 Fork，一款面向 iOS 和 iPadOS 的 Minecraft: Java Edition 高端启动器。本 Fork 面向**国际用户（不含中国大陆地区）**深度优化 -- 提供完整的中文本地化、应用内中英文切换、iOS 26+ JIT 直接启动优化，以及来自上游议题审计的 Bug 修复。中国大陆地区不在本启动器的服务范围内（见上方服务地区声明）。
 
 > **不知道该用哪个 Fork？** 请查看下方的 [Fork 网络](#fork-网络) 章节，了解各活跃 Fork 的功能对比。
 
@@ -103,7 +107,7 @@ herbrine8403/Amethyst-iOS-MyRemastered       (主要重制版 Fork - UI 重构�
                                             BMCLAPI 支持、多账户、自动渲染器/JVM)
         |
         v
-Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher       (本仓库 - 中国用户体验、JIT 优化、
+Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher       (本仓库 - 国际版体验（不对大陆开放）、JIT 优化、
                                             应用内语言切换、Bug 修复、LWJGL 3.4.1)
 ```
 

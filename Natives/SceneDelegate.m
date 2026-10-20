@@ -7,6 +7,7 @@
 #import "BackgroundManager.h"
 #import "BingWallpaperManager.h" // Task151
 #import "WelcomeViewController.h" // Task218：首次使用欢迎向导
+#import "RegionGate.h" // Task312：服务地区门（明面不对大陆开放，3 次提示后放行）
 // ★ [MP-RESTORE] Task222：Terracotta 联机恢复（上游同日恢复）
 #import "TerracottaManager.h"
 #import "TerracottaBridge.h"
@@ -122,9 +123,14 @@ extern BOOL Amethyst_EnforceSDL3Presentation(void);
     // Task218：首次使用欢迎向导（general.welcome_completed 哨兵，默认 NO）。
     // 延迟 0.8s 让主界面先完成首帧布局，再全屏淡入向导（语言 / 下载源 /
     // 数据导入三步引导 + 动效）。完成或跳过即置 YES，此后不再打扰。
+    // Task312：服务地区门前置——0.8s 到点先跑地区门（明面不对大陆开放，
+    // 多角度检测 + 3 次确认后放行），未命中/已放行同步直通 completion，
+    // 命中则弹窗链走完才放向导（门必须在向导之前，保证声明必达）。
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.8 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
-        [WelcomeViewController presentIfNeededFromViewController:rootVC];
+        [RegionGate runGateFromViewController:rootVC completion:^{
+            [WelcomeViewController presentIfNeededFromViewController:rootVC];
+        }];
     });
 
     // ★ Task273（PCL CE 式崩溃分析第二层）：上次会话非零退出的崩溃原因
