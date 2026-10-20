@@ -1460,12 +1460,9 @@ static bool dlsym_EGL() {
     // RTLD_DEFAULT 撞上先加载的 ANGLE，见 Task 140 病历）。
     ame145_rendererHandle = dl_handle;
 
-    // ★ Task298：MobileGL(DirectVulkan) 帧率解锁 —— vkCreateSwapchainKHR
-    //   present mode __got 改绑（POJAV_DISABLE_VSYNC=1 时强制 IMMEDIATE）。
-    //   病历与机制见 mg_vsync_hook.m 头注；幂等，非 MobileGL 渲染器零操作。
-    //   swapchain 首建在 eglMakeCurrent/首次 swap，晚于本 dlopen，时序安全。
-    extern void ame298_install_mg_vsync_hook(void);
-    ame298_install_mg_vsync_hook();
+    // ★ Task309：帧率解锁钩子（mg_vsync_hook.m，Task298 首安装点）按用户指令
+    //   整体回退退役——装机定性其 vkCreateSwapchainKHR GOT 改绑是 WINDOW_IN_USE
+    //   双崩（hs_err_pid47069/47275）的元凶；本安装点随之摘除，60fps 基线恢复。
 
     // Task 36：MobileGlues 前端 EGL 准备（不改变任何行为，仅记录句柄/符号，
     // 真正的指针切换发生在 ame_mgBootstrap 成功之后）。

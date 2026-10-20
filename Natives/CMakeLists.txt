@@ -433,9 +433,8 @@ add_executable(AngelAuraAmethyst
   # 主窗口复用、EGL 兼容重试、Vulkan 加载器句柄共享。iOS 无 bytehook，
   # 由 main_hook.m 的 hooked_dlsym 驱动。
   sdl3_hook.m
-  # Task298：MobileGL(DirectVulkan) 帧率解锁 —— vkCreateSwapchainKHR present
-  # mode GOT 改绑（POJAV_DISABLE_VSYNC=1 时强制 IMMEDIATE，zink 同款解锁语义）
-  mg_vsync_hook.m
+  # Task309：mg_vsync_hook.m（帧率解锁钩子）整体回退退役——装机定性
+  # vkCreateSwapchainKHR GOT 改绑为 WINDOW_IN_USE 双崩元凶，源文件已删除。
   JavaLauncher.m
   external/fishhook/fishhook.c
   UIKit+hook.m

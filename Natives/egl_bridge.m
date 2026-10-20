@@ -646,17 +646,10 @@ static int pojavInitOpenGLInternal(BOOL setLwjglProperty) {
         dlopen([NSString stringWithFormat:@"@rpath/%s", ame131_load].UTF8String, RTLD_GLOBAL);
     }
 
-    // ★ Task299：MobileGL(DirectVulkan) 帧率解锁 —— 第二安装点（SDL3 路径）。
-    //   装机 7672dd9 latestlog line725/754/755 实锤：mg/DirectVulkan 会话走
-    //   SDL_GL_LoadLibrary -> pojavInitOpenGLForSDL3 -> 本函数，Task298 唯一
-    //   安装点（gl_bridge dlsym_EGL）不在该路径上，钩子从未装上（全程零
-    //   [VSyncUnlock] 日志）。此处渲染器 dylib 预加载完成后立即尝试安装；
-    //   libMoltenVK 若晚加载由 mg_vsync_hook.m 的 dyld add-image 观察者兜底。
-    //   幂等可重入，非 MobileGL 渲染器零操作。
-    {
-        extern void ame298_install_mg_vsync_hook(void);
-        ame298_install_mg_vsync_hook();
-    }
+    // ★ Task309：帧率解锁钩子（mg_vsync_hook.m）按用户指令整体回退退役——
+    //   装机定性其 vkCreateSwapchainKHR GOT 改绑是 WINDOW_IN_USE 双崩
+    //   （hs_err_pid47069/47275）的元凶；本第二安装点（Task299）随之摘除。
+    //   MoltenVK 1.4.3 经用户实测确认正常，保留不动。
 
     // Task227 第二道防线：即便出现新的未覆盖分支，也只报错返回不崩溃。
     if (br_init == NULL) {

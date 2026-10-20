@@ -128,9 +128,9 @@ void init_loadDefaultEnv() {
     //    Mesa 21.0 的 zink 不会动态重建 swapchain，导致帧率锁死在屏幕刷新率。
     //
     // 关于 MoltenVK 配置与 Vulkan 帧率解锁研究：
-    //   实际运行的 MoltenVK 版本为 1.4.2（Task308 回退 b066e8c 二进制；
-    //   1.4.3@2c28e0c8 因装机 WINDOW_IN_USE 双崩暂退场，复进需单变量重验；
-    //   历史链 1.2.9 → 1.4.2 → 1.4.3 → Task308 回退 1.4.2）。
+    //   实际运行的 MoltenVK 版本为 1.4.3（Task309 恢复：用户实测 1.4.3 正常，
+    //   WINDOW_IN_USE 双崩元凶实为帧率解锁钩子已整体回退退役；
+    //   历史链 1.2.9 → 1.4.2 → 1.4.3（Task246 起，Task309 驳回 308 误伤回退））。
     //   设备是否支持 IMMEDIATE present mode 由 MVKPhysicalDeviceMetalFeatures.presentModeImmediate
     //   自动检测（大多数 iOS 设备支持）。
     //
@@ -155,8 +155,9 @@ void init_loadDefaultEnv() {
     // Task300-r2 勘误：maximumFramesPerSecond 在 iPhoneOS26.2 SDK 是只读属性
     // （CI run 39225659390 "assignment to readonly property" 实锤）——它报告的是
     // 面板能力上限（本机 60Hz，iPad Air M4 非 ProMotion），不可赋值也不可突破。
-    // 帧率解锁的完整能力面=渲染侧 presentMode=IMMEDIATE（ame298/300 双层钩子，
-    // 与 zink 同层），MC 侧 maxFps=260 与 EGL interval(0) 已在位；显示层无锁可解，
+    // 帧率解锁的完整能力面=渲染侧 presentMode=IMMEDIATE（ame298/300 双层钩子
+    // 已 Task309 整体回退退役，装机定性为 WINDOW_IN_USE 双崩元凶；zink 路径
+    // 不受影响），MC 侧 maxFps=260 与 EGL interval(0) 已在位；显示层无锁可解，
     // 此处仅落诊断值供装机日志对单。
     NSLog(@"[JavaLauncher] Framerate unlock configuration:");
     NSLog(@"[JavaLauncher]   video.disable_game_vsync=%d", getPrefBool(@"video.disable_game_vsync"));

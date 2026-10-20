@@ -28,10 +28,12 @@ typedef uintptr_t VkInstance;
 // 注意：仓库中的 vk_mvk_moltenvk.h 头文件是旧版本（1.1.2, spec 30），
 // 实际运行的 libMoltenVK.dylib 版本以二进制 strings 确认为准。
 // ★ Task246：libMoltenVK.dylib 已更新为 1.4.3（上游 main @ 2c28e0c8
-// ★ Task308：回退至 1.4.2（b066e8c 二进制，4,822,128B strings 实锤）——
-//   装机 hs_err_pid47069/47275 双崩定性 MoltenVK WINDOW_IN_USE（surface
-//   已有 activeSwapchain 而新建未带 oldSwapchain）→ vkGetSwapchainImagesKHR
-//   空句柄 SIGSEGV；1.4.2+Task166 是最后经用户实测可玩的渲染栈组合。
+// ★ Task309：驳回 Task308 对 1.4.3 的误伤回退，恢复 1.4.3（4,904,816B
+//   strings 实锤）——用户实测确认 1.4.3 正常，WINDOW_IN_USE 双崩
+//   （hs_err_pid47069/47275，surface 已有 activeSwapchain 而新建未带
+//   oldSwapchain → vkGetSwapchainImagesKHR 空句柄 SIGSEGV）元凶实为
+//   帧率解锁钩子（mg_vsync_hook.m 的 vkCreateSwapchainKHR GOT 改绑），
+//   已按用户指令整体回退退役；1.4.3+无钩子即最后经用户实测可玩的渲染栈。
 //   （上游 main @ 2c28e0c8
 //   2026-10-09 CI 构建，领先 v1.4.2 release 54 提交：draw indirect count /
 //   零除数绑定 / indexed indirect 状态终化 / Metal encoder 执行依赖与
