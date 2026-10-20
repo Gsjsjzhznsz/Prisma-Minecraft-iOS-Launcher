@@ -1608,7 +1608,7 @@ static NSInteger ame283_lastLandscapeDev = 0;
         //   可用时一并展示，低电无感人（蓝牙手柄低电丢按键是高频误诊源）。
         //   档案不受支持的情形由 registerControllerCallbacks 内部另行提示。
         if (controller.extendedGamepad != nil) {
-            NSMutableString *msg = [NSMutableString stringWithFormat:localize(@"controller.toast.connected", nil), controller.productName ?: @""];
+            NSMutableString *msg = [NSMutableString stringWithFormat:localize(@"controller.toast.connected", nil), controller.vendorName ?: @""];
             GCDeviceBattery *bat = controller.batteryHandler;
             if (bat != nil && bat.batteryState != GCDeviceBatteryStateUnknown) {
                 [msg appendFormat:@" · %ld%%", (long)lround(bat.deviceBatteryLevelFraction * 100.0)];

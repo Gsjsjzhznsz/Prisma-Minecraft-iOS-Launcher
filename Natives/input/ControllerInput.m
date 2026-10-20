@@ -136,12 +136,12 @@ static CGFloat ame310_scrollFactor(void) {
     //   iOS 16+ 双只成对连接的 Joy-Con 会由系统合并为单一 extendedGamepad
     //   档案可正常游玩，单只请先成对连接。
     if (gamepad == nil) {
-        NSString *name = controller.productName ?: @"controller";
+        NSString *name = controller.vendorName ?: @"controller";
         NSLog(@"[ControllerInput] Task310: %@ provides no extendedGamepad profile (single Joy-Con half?), skipped", name);
         [NMToast showMessage:[NSString stringWithFormat:localize(@"controller.profile.unsupported", nil), name]];
         return;
     }
-    NSLog(@"[ControllerInput] Task310: registered extendedGamepad profile for %@", controller.productName ?: @"controller");
+    NSLog(@"[ControllerInput] Task310: registered extendedGamepad profile for %@", controller.vendorName ?: @"controller");
 
     gamepad.leftShoulder.pressedChangedHandler = ^(GCControllerButtonInput *button, float value, BOOL pressed) {
         [self sendKeyEvent:GLFW_GAMEPAD_BUTTON_LEFT_BUMPER pressed:pressed];
