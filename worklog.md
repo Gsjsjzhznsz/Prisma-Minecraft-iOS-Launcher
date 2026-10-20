@@ -4294,9 +4294,10 @@ Work Log:
 - ②仓库内容：scripts/task311_gamepad_repo.py 生成 controls/gamepads/gamepad_default.json（内建 generateAndSaveDefaultControlForGamepad 逐键同源备份，16+16 条目）+ gamepad_switch.json（面键键码按 Switch 键面标签预交换：物理 A→SPACE/B→Q/X→E/Y→F，菜单 A→ESC/B→鼠标左键/X→Shift/Y→鼠标右键，免开布局交换）+ index.json 追加双 gamepad 条目（updated 2026-10-20）
 - ④i18n：scripts/task311_i18n.py 54 表 +6 键（dl.controls.cat.gamepad 主语言 23 翻译余 EN 回退 / 下载 gamepad.done+invalid / controller_configurator 三类型品牌名全语言同文——36 表此前缺 xbox/playstation 裸键一并补齐）-2 孤儿键（preference.title/detail.nintendo_layout）
 - 门禁：task139/175/211/240 全 balanced+ALL PASS（首轮 240 抓出 ame311_valid 少外层 '[' 实锤修掉），task191 54 表 OK，task248 缺键0/硬编码0/动态键0，task250 同键值行 0
-- 提交 36155345 push origin main；CI run 39432562972 queued
+- 提交 36155345 push origin main；run 39432562972 被 worklog 提交取代取消（惯例）
+- CI 闭环：run 39432717355（13735f1e 含 36155345 全部代码）completed success（13:42:21→14:03:26，21min；页面缓存多次误报 in-progress，API head_sha 终审定案）
 
 Stage Summary:
 - 设置页 Switch 行已消失；手柄配置弹窗手柄类型 = Xbox/PlayStation/Switch 三选一（选 Switch 即任天堂布局交换生效）
 - 控件下载新增「手柄」分类：官方手柄映射（默认备份 + Switch 面键对齐版）可下载安装，装完在手柄配置弹窗"当前"里选用；本地手柄映射可上传进仓库生态
-- 待 CI 取证（run 39432562972）
+- CI 绿：run 39432717355 success（Task311 全量进入 main 可构建基线）
