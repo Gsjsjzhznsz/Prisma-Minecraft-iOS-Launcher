@@ -4335,3 +4335,35 @@ Work Log:
 
 Stage Summary:
 - Task 312 全链闭环：服务地区门 + 下载吞吐量见证换源 + README/网站/公告/FAQ 声明全套，CI 构建绿、网站部署绿；origin/main=4fd49d9b
+
+---
+Task ID: 313
+Agent: main (Super Z)
+Task: 服务地区门卡 2/3 根修 + 新界面 i18n 补全 + 6.5.5 正式版发布前置
+
+Work Log:
+- 用户装机 6.5.5 截图实证：弹窗卡"提示 2/3"，点"我不是大陆用户"不前进。根因定位：PLPreferences 是"只写已注册键"设计（setObject:value: 键不存在静默 return NO，Task142/143 家族），Task312 的 regiongate.confirm_count/passed 两键未在 defaultPrefForGlobal 注册 → 写入静默失败、读恒 0 → 每次点击从 0 重计（0+1=1<3）→ 下一弹恒为 index=2 死循环
+- 修复①：PLPreferences.m defaultPrefForGlobal 注册 regiongate section（confirm_count=0 / passed=NO）；新装直接播种，存量受影响设备经 setDefaultsForPref fill-only 补种下次启动自动治愈
+- 修复②：RegionGate.m 加 ame312_fallbackCount 会话内内存兜底（ame312_effectiveCount = max(持久化, 内存)），持久化再失效也保证会话内点满 3 次必放行；确认日志加 persisted= 回显
+- i18n 审计（task313_i18n_audit.py）：regiongate.*/手柄键覆盖 54/54 但 40 表实为英文兜底；controller_configurator.title.current 缺 38 表（裸键上屏）
+- i18n 补全（task313_i18n_patch.py）：34 语言实译 ~300 处 + en-GB/PT/UD/ba/km/lol/pr/tt 补缺键；de 顺修 "Hinweis zum Serviceregion" 语法；esc() 统一内嵌引号转义；小语种 ba/km/lol/pr/tt 按项目 EN 兜底策略保留
+- 门禁：task248 缺键0/硬编码0/动态键缺表0，task240 all balanced，task191 54 表 OK，strings 逐行正则校验 0 破损
+- 提交 211f7476 push origin main 成功，CI run 待取证
+
+Stage Summary:
+- 卡 2/3 死循环根修（键注册 + 内存双保险）；新界面 i18n 完整（0 缺键 0 破损）；origin/main=211f7476，6.5.5 正式版发布待 CI 绿后执行（重指 tag + Release 转正 + 挂新产物）
+
+---
+Task ID: 313-ci
+Agent: main (Super Z)
+Task: Task 313 CI 闭环取证 + 6.5.5 正式版发布
+
+Work Log:
+- push 触发的 run 39463725011 三遭取消（attempt1 运行中被砍/attempt2 运行 15:00 整被砍/attempt3 排队即被砍；job 级全部 cancelled 无失败步骤、无其他并发 run、timeout=60s 未触及——判定为外部/基础设施级取消非编译失败）
+- 改用 workflow_dispatch 全新 run 39472258738（event=workflow_dispatch）一轮终绿 success
+- 产物下载：com.prisma-devs.prisma-6.5.5-ios.ipa (235,571,896B) + trollstore.tipa (235,572,270B)
+- 正式版发布操作：tag v6.5.5 由 37bb9780（Task274 时代 Beta）重指 211f7476（delete + new push 双证 ls-remote）；Release 414211989 PATCH 转正（prerelease=false，标题'Prisma 6.5.5 正式版 —— 服务地区声明 + 手柄全链优化 + JIT 内置轨 + 下载提速'，新 body 覆盖 Task276~313 全量主题：服务地区声明+卡 2/3 根修/手柄四分类/JIT 内置轨/下载提速/吞实例系列/小窗适配/i18n 54 表；旧 Beta 资产 DELETE 双 204 后新 ipa/tipa 上传双 state=uploaded）
+- 终验：/releases/latest 实测返回 v6.5.5 正式版（网站 Task291 版本检查链从此取到非预发布标签）
+
+Stage Summary:
+- 6.5.5 正式版上线：tag=211f7476、Release prerelease=false、双产物 235MB×2 在架、Latest 解析正确；Task 313（卡 2/3 根修 + i18n 补全）全链闭环
