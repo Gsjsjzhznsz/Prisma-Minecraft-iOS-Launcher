@@ -4322,3 +4322,16 @@ Stage Summary:
 - origin/main=3f9d559f；CI：Deploy website(39456544405) success（声明横幅已上线）；Development build(39456544438) 构建中待取证
 - 交付：服务地区门（5 信号互证、3 次确认放行、54 语言）；下载速度根修（吞吐见证+自动换源，下个构建起生效）；README×2/网站横幅/公告×3/FAQ×2 全套声明落面
 - 遗留：SafariServices 同款 weak_framework 链接法待 CI 编译实证；CTCarrier iOS16+ 部分场景返回 nil 属预期降级；IP 端点未来若失效自动降级为纯本地信号判定
+
+---
+Task ID: 312-ci
+Agent: main (Super Z)
+Task: Task 312 CI 闭环取证
+
+Work Log:
+- run #39456544438（3f9d559f）被并发组取消：非编译失败——worklog 提交 4fd49d9b 在 1 分钟后触发新 run，development.yml concurrency cancel-in-progress 取消前序（badge 短暂挂红为 cancelled 所致，与代码无关）
+- 有效取证 run = #955（4fd49d9b，代码内容 = 3f9d559f 全量改动 + worklog 文档）：badge 实测 "Development build - passing"，构建成功
+- Deploy website run 39456544405（3f9d559f）success：官网声明横幅已部署上线
+
+Stage Summary:
+- Task 312 全链闭环：服务地区门 + 下载吞吐量见证换源 + README/网站/公告/FAQ 声明全套，CI 构建绿、网站部署绿；origin/main=4fd49d9b
