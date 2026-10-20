@@ -52,6 +52,13 @@ static NSString *task189_mirrorURL(NSInteger idx, NSString *relPath) {
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *localVersions;  // id -> 本地已装版本
 @property (nonatomic, strong) NSHashTable *downloading;  // 正在下载的 id 集合（去重点击）
 @property (nonatomic, assign) BOOL loadFailed;
+// ★ Task310（控件三分类页）：0=官方精选 1=社区 2=本地。
+//   仓库 index.json 的 layouts[] 条目新增 category 字段（official/community，
+//   缺省按 official 兼容旧索引）；本地页扫 controlmap/ 全部 .json。
+@property (nonatomic, strong) UISegmentedControl *categorySegment;
+@property (nonatomic, assign) NSInteger selectedCategory;
+@property (nonatomic, copy) NSArray<NSDictionary *> *filteredLayouts;      // 官方/社区过滤结果
+@property (nonatomic, strong) NSMutableArray<NSDictionary *> *localLayouts; // 本地布局 {name, version, size}
 @end
 
 // ============================================================================
@@ -262,8 +269,59 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
         _layouts = [NSMutableArray array];
         _localVersions = [NSMutableDictionary dictionary];
         _downloading = [NSHashTable weakObjectsHashTable];
+        _localLayouts = [NSMutableArray array];   // ★ Task310：本地页数据源
+        _filteredLayouts = @[];
     }
     return self;
+}
+
+#pragma mark - Task310：控件三分类页（官方精选 / 社区 / 本地）
+
+/// 按当前分类过滤仓库布局（index.json 条目 category 字段；缺省 = official
+/// 兼容旧索引，旧缓存/镜像未更新也不空窗）。
+- (void)ame310_rebuildFilteredLayouts {
+    NSString *want = (self.selectedCategory == 1) ? @"community" : @"official";
+    NSMutableArray<NSDictionary *> *out = [NSMutableArray array];
+    for (NSDictionary *e in self.layouts) {
+        NSString *cat = [e[@"category"] isKindOfClass:[NSString class]] ? e[@"category"] : @"official";
+        if ([cat isEqualToString:want]) [out addObject:e];
+    }
+    self.filteredLayouts = out;
+}
+
+/// 本地 controlmap/ 全量布局清单（本地页数据源）。与 scanLocalVersions
+/// 同一次目录遍历填充（见该方法），此处仅复位容器。
+- (void)ame310_scanLocalLayouts {
+    [self.localLayouts removeAllObjects];
+    NSString *dir = [NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")];
+    NSArray *files = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:dir error:nil];
+    for (NSString *f in files) {
+        if (![f.pathExtension.lowercaseString isEqualToString:@"json"]) continue;
+        NSString *p = [dir stringByAppendingPathComponent:f];
+        NSData *d = [NSData dataWithContentsOfFile:p];
+        if (!d) continue;
+        id obj = [NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
+        if (![obj isKindOfClass:[NSDictionary class]]) continue;   // 损坏文件不上榜（与旧 badge 口径一致）
+        id v = [obj objectForKey:@"version"];
+        NSString *ver = [v isKindOfClass:[NSString class]] ? v :
+                        ([v respondsToSelector:@selector(stringValue)] ? [v stringValue] : nil);
+        NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:p error:nil];
+        [self.localLayouts addObject:@{
+            @"name": [f stringByDeletingPathExtension],
+            @"version": ver ?: @"",
+            @"size": attrs[NSFileSize] ?: @0,
+        }];
+    }
+    [self.localLayouts sortUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
+        return [a[@"name"] compare:b[@"name"] options:NSCaseInsensitiveSearch];
+    }];
+}
+
+- (void)ame310_categoryChanged:(UISegmentedControl *)seg {
+    self.selectedCategory = seg.selectedSegmentIndex;
+    if (self.selectedCategory == 2) [self ame310_scanLocalLayouts];   // 切到本地页时重扫（可能刚下载/刚删）
+    else [self ame310_rebuildFilteredLayouts];
+    [self.tableView reloadData];
 }
 
 - (void)viewDidLoad {
@@ -284,6 +342,22 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
                   forControlEvents:UIControlEventValueChanged];
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 76.0;
+    // ★ Task310（控件三分类页）：顶部三分类分段控件（官方精选/社区/本地）。
+    //   frame 定宽 + autoresizing 宽度弹窗——tableHeaderView 约束宽度不随
+    //   tableView 自适应的经典坑，autoresizingMask 一行解。
+    UIView *ame310_hdr = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 48)];
+    ame310_hdr.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    self.categorySegment = [[UISegmentedControl alloc] initWithItems:@[
+        localize(@"dl.controls.cat.official", nil),
+        localize(@"dl.controls.cat.community", nil),
+        localize(@"dl.controls.cat.local", nil)]];
+    self.categorySegment.selectedSegmentIndex = 0;
+    self.categorySegment.frame = CGRectMake(12, 8, self.view.bounds.size.width - 24, 32);
+    self.categorySegment.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    [self.categorySegment addTarget:self action:@selector(ame310_categoryChanged:)
+                  forControlEvents:UIControlEventValueChanged];
+    [ame310_hdr addSubview:self.categorySegment];
+    self.tableView.tableHeaderView = ame310_hdr;
     [self scanLocalVersions];
     [self fetchIndex];
 }
@@ -313,6 +387,8 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
         self.localVersions[stem] = [v isKindOfClass:[NSString class]] ? v :
                                    ([v respondsToSelector:@selector(stringValue)] ? [v stringValue] : @"?");
     }
+    // ★ Task310：同一次遍历口径复用——本地三分类页数据源同步刷新
+    [self ame310_scanLocalLayouts];
     if (self.isViewLoaded) [self.tableView reloadData];
 }
 
@@ -329,6 +405,7 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
                 NSLog(@"[ControlRepo] Task189: index fetch failed (all mirrors): %@", error.localizedDescription ?: @"unknown");
                 self.loadFailed = YES;
                 [self.layouts removeAllObjects];
+                [self ame310_rebuildFilteredLayouts];   // ★ Task310：错误分支同步清空过滤视图
                 [self.tableView reloadData];
                 return;
             }
@@ -338,6 +415,7 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
                 NSLog(@"[ControlRepo] Task189: index JSON invalid (no layouts array)");
                 self.loadFailed = YES;
                 [self.layouts removeAllObjects];
+                [self ame310_rebuildFilteredLayouts];   // ★ Task310：错误分支同步清空过滤视图
                 [self.tableView reloadData];
                 return;
             }
@@ -349,6 +427,8 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
                 }
             }
             NSLog(@"[ControlRepo] Task189: index loaded via mirror chain, %lu layouts", (unsigned long)self.layouts.count);
+            // ★ Task310：按当前分类重建过滤视图（官方精选/社区）
+            [self ame310_rebuildFilteredLayouts];
             [self scanLocalVersions];
         });
     }];
@@ -379,7 +459,12 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 1; }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return self.loadFailed ? 1 : (self.layouts.count == 0 ? 1 : self.layouts.count);
+    // ★ Task310：三分类行数——本地页走 localLayouts，官方/社区走过滤视图。
+    //   空态统一占位 1 行（占位文案在 cellForRow 内区分分类）。
+    if (self.selectedCategory == 2) {
+        return self.localLayouts.count == 0 ? 1 : self.localLayouts.count;
+    }
+    return self.loadFailed ? 1 : (self.filteredLayouts.count == 0 ? 1 : self.filteredLayouts.count);
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -390,15 +475,44 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
         cell.accessoryType = UITableViewCellAccessoryNone;
         cell.detailTextLabel.numberOfLines = 0;
     }
-    if (self.loadFailed || self.layouts.count == 0) {
+    if (self.selectedCategory == 2) {
+        // ★ Task310：本地页。空态 = 引导去官方精选/编辑器；有数据 = 布局清单。
+        if (self.localLayouts.count == 0) {
+            cell.textLabel.text = localize(@"dl.controls.local.empty", nil);
+            cell.detailTextLabel.text = @"";
+            cell.accessoryType = UITableViewCellAccessoryNone;
+            cell.selectionStyle = UITableViewCellSelectionStyleNone;
+            return cell;
+        }
+        NSDictionary *e = self.localLayouts[indexPath.row];
+        cell.textLabel.text = [NSString stringWithFormat:@"%@", e[@"name"]];
+        NSString *ver = [e[@"version"] isKindOfClass:[NSString class]] && [(NSString *)e[@"version"] length] > 0
+                        ? e[@"version"] : @"?";
+        double kb = [(NSNumber *)e[@"size"] doubleValue] / 1024.0;
+        cell.detailTextLabel.text = [NSString stringWithFormat:localize(@"dl.controls.local.file.sub", nil), ver, kb];
+        cell.accessoryType = UITableViewCellAccessoryDetailButton;
+        cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+        return cell;
+    }
+    if (self.loadFailed || self.filteredLayouts.count == 0) {
+        // ★ Task310：官方/社区空态区分——社区空 = 上传 CTA（点击可发布）。
+        if (!self.loadFailed && self.selectedCategory == 1) {
+            cell.textLabel.text = localize(@"dl.controls.community.empty", nil);
+            cell.detailTextLabel.text = localize(@"dl.controls.community.empty.tap", nil);
+            cell.accessoryType = UITableViewCellAccessoryNone;
+            cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+            return cell;
+        }
         cell.textLabel.text = self.loadFailed ? localize(@"custom_controls.repo.fetch.failed", nil)
                                               : localize(@"custom_controls.repo.empty", nil);
         cell.detailTextLabel.text = self.loadFailed ? localize(@"custom_controls.repo.retry_hint", nil) : @"";
+        cell.accessoryType = UITableViewCellAccessoryNone;
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
         return cell;
     }
-    NSDictionary *e = self.layouts[indexPath.row];
+    NSDictionary *e = self.filteredLayouts[indexPath.row];
     cell.textLabel.text = [e[@"name"] isKindOfClass:[NSString class]] ? e[@"name"] : e[@"id"];
+    cell.accessoryType = UITableViewCellAccessoryNone;
     NSString *author = [e[@"author"] isKindOfClass:[NSString class]] ? e[@"author"] : @"?";
     NSString *desc = [e[@"description"] isKindOfClass:[NSString class]] ? e[@"description"] : @"";
     NSString *ver = [e[@"version"] isKindOfClass:[NSString class]] ? e[@"version"] : @"1.0";
@@ -420,11 +534,70 @@ static NSArray<NSString *> *ame232_layoutSafetyIssues(NSData *raw, id jsonObj) {
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    if (self.loadFailed || self.layouts.count == 0) {
+    // ★ Task310：本地页点击 —— 动作单（上传到社区 / 删除）。
+    if (self.selectedCategory == 2) {
+        if (self.localLayouts.count == 0) return;
+        NSDictionary *e = self.localLayouts[indexPath.row];
+        NSString *name = e[@"name"];
+        NSString *fileName = [name stringByAppendingPathExtension:@"json"];
+        // ★ Task310：当前默认布局禁删——删了它游戏启动即无控件可用
+        //（control.default_ctrl 指向的文件是 LoadControlFile 的主源）。
+        if ([fileName isEqualToString:getPrefObject(@"control.default_ctrl")]) {
+            [NMToast showMessage:localize(@"dl.controls.local.delete.active", nil)];
+            return;
+        }
+        UIAlertController *sheet = [UIAlertController alertControllerWithTitle:name
+                                                                      message:nil
+                                                               preferredStyle:UIAlertControllerStyleActionSheet];
+        [sheet addAction:[UIAlertAction actionWithTitle:localize(@"dl.controls.local.upload", nil)
+                                                  style:UIAlertActionStyleDefault
+                                                handler:^(UIAlertAction *a) {
+            [ControlRepoViewController ame230_presentUploadFlowFrom:self preselect:fileName];
+        }]];
+        [sheet addAction:[UIAlertAction actionWithTitle:localize(@"dl.controls.local.delete", nil)
+                                                  style:UIAlertActionStyleDestructive
+                                                handler:^(UIAlertAction *a) {
+            NSString *msg = [NSString stringWithFormat:localize(@"dl.controls.local.delete.confirm", nil), fileName];
+            UIAlertController *confirm = [UIAlertController alertControllerWithTitle:fileName
+                                                                             message:msg
+                                                                      preferredStyle:UIAlertControllerStyleAlert];
+            [confirm addAction:[UIAlertAction actionWithTitle:localize(@"ame232.repo.check.cancel", nil)
+                                                       style:UIAlertActionStyleCancel handler:nil]];
+            [confirm addAction:[UIAlertAction actionWithTitle:localize(@"dl.controls.local.delete", nil)
+                                                       style:UIAlertActionStyleDestructive
+                                                     handler:^(UIAlertAction *a2) {
+                NSString *dir = [NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")];
+                NSString *path = [dir stringByAppendingPathComponent:fileName];
+                NSError *delErr = nil;
+                if ([[NSFileManager defaultManager] removeItemAtPath:path error:&delErr]) {
+                    NSLog(@"[ControlRepo] Task310: local layout %@ deleted", fileName);
+                    [NMToast showMessage:localize(@"dl.controls.local.deleted", nil)];
+                    [self scanLocalVersions];   // 同步刷新 localVersions + localLayouts + 角标
+                } else {
+                    NSLog(@"[ControlRepo] Task310: delete %@ failed: %@", fileName, delErr.localizedDescription ?: @"?");
+                    [NMToast showMessage:[NSString stringWithFormat:@"%@: %@", localize(@"dl.controls.local.delete", nil), delErr.localizedDescription ?: @"error"]];
+                }
+            }]];
+            [self presentViewController:confirm animated:YES completion:nil];
+        }]];
+        [sheet addAction:[UIAlertAction actionWithTitle:localize(@"ame232.repo.check.cancel", nil)
+                                                  style:UIAlertActionStyleCancel handler:nil]];
+        sheet.popoverPresentationController.sourceView = tableView;
+        sheet.popoverPresentationController.sourceRect = [tableView rectForRowAtIndexPath:indexPath];
+        [self presentViewController:sheet animated:YES completion:nil];
+        return;
+    }
+    // ★ Task310：官方/社区空态行 —— 社区空态行点击直达上传流程；
+    //   加载失败行点击重拉索引（原行为）。
+    if (self.loadFailed || self.filteredLayouts.count == 0) {
+        if (!self.loadFailed && self.selectedCategory == 1) {
+            [ControlRepoViewController ame230_presentUploadFlowFrom:self preselect:nil];
+            return;
+        }
         if (self.loadFailed) [self fetchIndex];
         return;
     }
-    NSDictionary *e = self.layouts[indexPath.row];
+    NSDictionary *e = self.filteredLayouts[indexPath.row];
     NSString *layoutId = e[@"id"];
     if ([self.downloading containsObject:layoutId]) return;  // 防连点
     [self.downloading addObject:layoutId];

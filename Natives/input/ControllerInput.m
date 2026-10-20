@@ -3,6 +3,7 @@
 #import "../PLProfiles.h"
 #import "../SurfaceViewController.h"
 #import "../utils.h"
+#import "../NMToast.h"
 
 #include "../glfw_keycodes.h"
 
@@ -26,6 +27,38 @@ CGFloat lastYValue; // lastVerticalValue
 NSMutableDictionary *gameMap, *menuMap;
 BOOL leftShiftHeld;
 
+// ★ Task310（Switch 手柄）：任天堂/Switch 布局交换。
+//   病历：GCController 按位置上报面键（buttonA=下方物理键、buttonB=右方），
+//   Xbox 位置语义下下方键标 "A"；而 Switch/Pro/Joy-Con 下方物理键标 "B"、
+//   右方标 "A"——Switch 用户按肌肉记忆按 "A"（右键）却得到 buttonB 的映射，
+//   确认/跳跃反了。开启本偏好后在映射查询前做 A↔B、X↔Y 位置交换，
+//   让 "键面标签 A" 重新对准 "A 的功能"。
+//   偏好：control.nintendo_layout（默认 NO = Xbox 位置语义，老用户无感）。
+static int ame310_layoutSwapKeycode(int keycode) {
+    if (![getPrefObject(@"control.nintendo_layout") boolValue]) return keycode;
+    switch (keycode) {
+        case GLFW_GAMEPAD_BUTTON_A: return GLFW_GAMEPAD_BUTTON_B;
+        case GLFW_GAMEPAD_BUTTON_B: return GLFW_GAMEPAD_BUTTON_A;
+        case GLFW_GAMEPAD_BUTTON_X: return GLFW_GAMEPAD_BUTTON_Y;
+        case GLFW_GAMEPAD_BUTTON_Y: return GLFW_GAMEPAD_BUTTON_X;
+        default: return keycode;
+    }
+}
+
+// ★ Task310（手柄优化）：虚拟滚轮速度系数（control.scroll_speed，100=1.0）。
+//   作用面 = 触屏布局滚动按钮 + 手柄滚动键这类模拟滚轮（固定 ±1 步进）
+//   的发送点；真硬件外设（GCMouse 滚轮/触摸惯性甩动）不在此列，保持原样。
+static CGFloat ame310_scrollFactor(void) {
+    NSInteger pct = [getPrefObject(@"control.scroll_speed") integerValue];
+    if (pct < 25) pct = 25;   // 与设置页滑条 min 一致，防手改越界
+    if (pct > 300) pct = 300;
+    return pct / 100.0;
+}
+
++ (CGFloat)scrollStep:(CGFloat)baseStep {
+    return baseStep * ame310_scrollFactor();
+}
+
 + (void)initKeycodeTable {
     if (gameMap && menuMap) {
         return;
@@ -46,6 +79,9 @@ BOOL leftShiftHeld;
     //   已有专门 case，零成本根修。
     int keycode = GLFW_KEY_UNKNOWN;
     __block NSMutableDictionary *mapping;
+    // ★ Task310（Switch 手柄）：任天堂布局交换在映射查询前生效，
+    //   gameMap/menuMap 两表统一走同一交换（位置键值 -> 键面标签语义）。
+    controllerKeycode = ame310_layoutSwapKeycode(controllerKeycode);
     if (isGrabbing) {
         mapping = gameMap;
     } else {
@@ -78,10 +114,10 @@ BOOL leftShiftHeld;
             CallbackBridge_nativeSendMouseButton(GLFW_MOUSE_BUTTON_RIGHT, pressed, 0);
             break;
         case SPECIALBTN_SCROLLUP:
-            CallbackBridge_nativeSendScroll(0, pressed ? 1 : 0);
+            CallbackBridge_nativeSendScroll(0, pressed ? [self scrollStep:1.0] : 0);
             break;
         case SPECIALBTN_SCROLLDOWN:
-            CallbackBridge_nativeSendScroll(0, pressed ? -1 : 0);
+            CallbackBridge_nativeSendScroll(0, pressed ? [self scrollStep:-1.0] : 0);
             break;
         default:
             if (keycode == GLFW_KEY_LEFT_SHIFT) {
@@ -94,6 +130,18 @@ BOOL leftShiftHeld;
 
 + (void)registerControllerCallbacks:(GCController *)controller {
     GCExtendedGamepad *gamepad = controller.extendedGamepad;
+    // ★ Task310（手柄优化）：不完整档案守卫——单边 Joy-Con 等无法提供
+    //   extendedGamepad 档案的外设，原先静默零注册（每个元素 handler 都对
+    //   nil 发消息 = 全部无感失效，用户只觉"手柄坏了"）。改为如实提示：
+    //   iOS 16+ 双只成对连接的 Joy-Con 会由系统合并为单一 extendedGamepad
+    //   档案可正常游玩，单只请先成对连接。
+    if (gamepad == nil) {
+        NSString *name = controller.productName ?: @"controller";
+        NSLog(@"[ControllerInput] Task310: %@ provides no extendedGamepad profile (single Joy-Con half?), skipped", name);
+        [NMToast showMessage:[NSString stringWithFormat:localize(@"controller.profile.unsupported", nil), name]];
+        return;
+    }
+    NSLog(@"[ControllerInput] Task310: registered extendedGamepad profile for %@", controller.productName ?: @"controller");
 
     gamepad.leftShoulder.pressedChangedHandler = ^(GCControllerButtonInput *button, float value, BOOL pressed) {
         [self sendKeyEvent:GLFW_GAMEPAD_BUTTON_LEFT_BUMPER pressed:pressed];
@@ -226,7 +274,32 @@ BOOL leftShiftHeld;
     lastFrameTime = frameTime;
 }
 
++ (void)releaseAllHeld {
+    // ★ Task310（手柄优化）：断连全量释放。左手摇杆 WASD 不走映射表（直接
+    //   CallbackBridge_nativeSendKey），故这里也直接补发，两侧语义一致：
+    //   ① 八方向 WASD 全 UP  ② 潜行 Shift UP（含锁存态复位）
+    //   ③ 鼠标三键 UP  ④ 滚轮清零  ⑤ 虚拟鼠标增量/方向锁存复位
+    //   （防下次连接后残留上次的 lastX/Y 首帧漂移）。
+    CallbackBridge_nativeSendKey(GLFW_KEY_W, 0, NO, 0);
+    CallbackBridge_nativeSendKey(GLFW_KEY_A, 0, NO, 0);
+    CallbackBridge_nativeSendKey(GLFW_KEY_S, 0, NO, 0);
+    CallbackBridge_nativeSendKey(GLFW_KEY_D, 0, NO, 0);
+    CallbackBridge_nativeSendKey(GLFW_KEY_LEFT_SHIFT, 0, NO, 0);
+    leftShiftHeld = NO;
+    CallbackBridge_nativeSendMouseButton(GLFW_MOUSE_BUTTON_LEFT, NO, 0);
+    CallbackBridge_nativeSendMouseButton(GLFW_MOUSE_BUTTON_MIDDLE, NO, 0);
+    CallbackBridge_nativeSendMouseButton(GLFW_MOUSE_BUTTON_RIGHT, NO, 0);
+    CallbackBridge_nativeSendScroll(0, 0);
+    lastXValue = 0;
+    lastYValue = 0;
+    lastFrameTime = 0;
+    NSLog(@"[ControllerInput] Task310: controller lost -- all held keys/buttons released");
+}
+
 + (void)unregisterControllerCallbacks:(GCController *)controller {
+    // ★ Task310（手柄优化）：断连先释放全部按住态再摘 handler——
+    //   否则"边走边断连"会让角色永远走下去（游戏侧等不到 UP）。
+    [self releaseAllHeld];
     GCExtendedGamepad *gamepad = controller.extendedGamepad;
     gamepad.leftShoulder.pressedChangedHandler = nil;
     gamepad.rightShoulder.pressedChangedHandler = nil;

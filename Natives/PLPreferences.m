@@ -123,6 +123,10 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
             @"control_safe_area": UIApplication.sharedApplication ? NSStringFromUIEdgeInsets(getDefaultSafeArea()) : @"",
             @"default_gamepad_ctrl": @"default.json",
             @"controller_type": @"xbox",
+            // ★ Task310（Switch 手柄）：任天堂布局交换——Switch/Pro/Joy-Con
+            //   键面标签与 GCController 位置语义（Xbox 位）相反，开启后
+            //   面键 A↔B、X↔Y 交换后再查映射（ControllerInput ame310）。
+            @"nintendo_layout": @NO,
             @"hardware_hide": @YES,
             @"recording_hide": @YES,
             @"gesture_mouse": @YES,
@@ -137,6 +141,10 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
             @"button_scale": @(100),
             @"mouse_scale": @(100),
             @"mouse_speed": @(100),
+            // ★ Task310（键鼠优化）：模拟滚轮速度（%）——作用面 = 触屏布局
+            //   滚动按钮 + 手柄滚动键的固定 ±1 步进；GCMouse 真滚轮与惯性
+            //   甩动不走此系数。默认 100 = 与旧版完全一致。
+            @"scroll_speed": @(100),
             @"virtmouse_enable": @NO,
             // ★ Task230（反馈 #10：自动打开输入法（SDL）开关无效）：Task229
             // 加开关时漏注册默认值——PLPreferences 只能读写已注册的键

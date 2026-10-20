@@ -4214,3 +4214,41 @@ Work Log:
 
 Stage Summary:
 - Task307 全链闭环：MoltenVK 定性 + 一键自愈修复已进 v6.5.5 资产；装机验证锚点见 Task307 条目 Stage Summary
+
+---
+Task ID: 309
+Agent: main (Super Z)
+Task: FPS 解锁整体回退 + MoltenVK 1.4.3 恢复（用户判读纠正：308 双回退中的 1.4.3 是误伤）
+
+Work Log:
+- 用户判读输入："1.4.3是正常的就是之前的解锁fps导致崩溃，回退解锁fps"——308 把 MoltenVK 1.4.3 与钩子捆绑回退属误伤，本轮精准分离
+- git 取证：833be890（Task308）diff 全读——四文件：JavaLauncher.m/vk_bridge.m 注释、mg_vsync_hook.m 默认关闸、dylib 1.4.3→1.4.2；钩子引用面全树 rg 摸排（egl_bridge/gl_bridge 两安装点 + CMakeLists 源条目 + mg_vsync_hook.m 本体，ame298 presentMode 层与 ame300 vkCreateSwapchainKHR GOT 改绑层同文件）
+- 回退执行：①mg_vsync_hook.m git rm（427 行全退役）②egl_bridge.m Task299 安装点摘除（替换 Task309 注释锚）③gl_bridge.m Task298 安装点摘除（同）④CMakeLists.txt 摘源条目 ⑤libMoltenVK.dylib checkout 833be890^ 恢复 1.4.3（4,904,816B，strings 实锤 1.4.3）⑥JavaLauncher.m/vk_bridge.m 版本注释链同步（309 驳回 308 判定在案）
+- 清洁度验证：全树 ame298_install/AME298_VSYNC_HOOK/VSyncUnlock 功能引用清零（main_hook.m:533 历史崩溃证据注释保留）；UI/i18n 无 fps 解锁开关残留；task139 all balanced / task240 all balanced + retired refs 0（唯一 WARN 为 LauncherPrefManageJREViewController currentMenu 历史存量，与本轮无关）
+- 提交 41b9ea09 推送 main（7 files，+21/−427）；CI run#39370014895 Development build in_progress 轮询中
+- zink 路径不受影响：POJAV_DISABLE_VSYNC → eglSwapInterval(0) → zink presentMode IMMEDIATE 语义原样（MC enableVsync=false + maxFps=260 在位）
+
+Stage Summary:
+- VK 前端回归定案闭环：元凶=帧率解锁钩子（非 1.4.3，非 Task166 层），60fps 基线恢复，MoltenVK 1.4.3 保留
+- 装机验证锚点：mg/DirectVulkan 会话启动不再有 [VSyncUnlock] 行、不再有 ame300 GOT rebind 行；swapchain 单一创建方（MG 自身）无 WINDOW_IN_USE 触发面
+- fps 解锁退役定性：GOT 改绑方案（同进程改写 MoltenVK 导出函数指针）在 Task166 私有 SwapchainLayer × MG 单次创建场景下结构性危险，不再复进；若未来解锁需求另起 zink/eglSwapInterval 路线单变量重验
+
+---
+Task ID: 310
+Agent: main (Super Z)
+Task: 四功能线（手柄优化 / Switch 手柄 / 控件三分类页 / 键鼠优化）+ Task309 CI 闭环
+
+Work Log:
+- Task309 CI：run#39370014895 completed success（41b9ea09，FPS 解锁回退 + MoltenVK 1.4.3 恢复已出包）
+- ①手柄优化（ControllerInput + SurfaceVC）：断连全量释放新 API releaseAllHeld——病历=unregister 只摘 handler，"边走边断连"游戏侧永远等不到 UP 角色一直走/潜行；修法=unregister 头部先补发 W/A/S/D/Shift/鼠标三键全 UP + 滚轮清零 + 虚拟鼠标/八方向锁存复位；连接 toast（名称+GCDeviceBattery 电量%，低电误诊源）；不完整档案守卫（单边 Joy-Con 无 extendedGamepad 原静默零注册=用户觉手柄坏，改 toast 如实提示成对连接）
+- ②Switch 手柄：任天堂布局交换 ame310_layoutSwapKeycode——GCController 按位置上报面键（buttonA=下方物理键），Xbox 位下方标 A 而 Switch 下方标 B，Switch 用户按肌肉记忆"按 A=跳"拿到反键；开启 control.nintendo_layout 后 A↔B/X↔Y 交换再查映射（gameMap/menuMap 双表统一，默认 OFF 老用户无感）；Joy-Con iOS16+ 双只成对由系统合并为单一 extendedGamepad 档案可正常玩
+- ③控件三分类页（ControlRepoViewController）：顶部 UISegmentedControl 三分类（官方精选/社区/本地）；仓库 index.json 条目 category 字段（缺省=official 兼容旧索引/镜像）；社区页空态=上传 CTA（点按直达 ame230 上传流程）；本地页=controlmap/ 全量 .json 清单（名称+版本+体积），点击动作单（上传到社区/删除），删除双重确认 + 当前默认布局（control.default_ctrl）禁删守卫（删了游戏无控件可用）；本地坏文件不上榜（与旧角标口径一致）；cell 复用 accessory 残留根修
+- ④键鼠优化：模拟滚轮速度 control.scroll_speed（25-300%，默认 100=行为不变）——统一系数口 scrollStep:，作用面=触屏布局滚动按钮（SurfaceVC SPECIALBTN_SCROLL*）+ 手柄滚动键（ControllerInput SPECIALBTN_SCROLL*）；GCMouse 真滚轮与触摸惯性甩动不过此口保持原样
+- 基建：PLPreferences 注册 nintendo_layout=@NO/scroll_speed=@(100)（Task142/230 同款病历预防）；设置页控制节新增两行（Switch 键位开关+滚轮速度滑条）；controls/index.json 三布局补 category=official；task310_i18n.py 18 键×54 表（972 行；主语言实译+其余 EN 兜底；首跑 \\n 双反斜杠事故清行重跑闭环）
+- 门禁：task139/240 all balanced + retired refs 0；task248 缺键0硬编码0动态键0；task191 54 表 OK；task250 动态键齐备；import sweep 仅历史存量 WARN
+
+Stage Summary:
+- 手柄三痛点根修：断连卡键（游戏性级 bug）、连接无反馈/低电无感、单边 Joy-Con 静默失效
+- Switch 用户"确认/跳跃反了"终结：设置-控制-「Switch/任天堂键位」开关一键对齐键面印刷
+- 下载中心控件页三分类：官方精选（3 官方布局）/社区（上传 CTA 待内容生态）/本地（管理+删除+上传全闭环）
+- 装机验证锚点：①手柄连接即 toast（名称+电量）②边走边断连角色立即停 ③设置-控制见 Switch 键位与滚轮速度两行 ④下载-控件 tab 顶部分三段，本地可删可传 ⑤触屏/手柄滚动按钮速度随滑条变化

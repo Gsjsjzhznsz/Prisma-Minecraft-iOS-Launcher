@@ -1602,6 +1602,19 @@ static NSInteger ame283_lastLandscapeDev = 0;
         strongSelf.mousePointerView.hidden = isGrabbing;
         virtualMouseEnabled = YES;
         if (getPrefBool(@"control.hardware_hide")) { strongSelf.ctrlView.hidden = YES; }
+        // ★ Task310（手柄优化）：连接可见性——手柄名称 + 电量 toast。
+        //   病历：连接成功除指针出现/触屏层隐藏外零反馈，用户分不清
+        //   "连上了"还是"连了个半死不活的设备"；电量（GCDeviceBattery）
+        //   可用时一并展示，低电无感人（蓝牙手柄低电丢按键是高频误诊源）。
+        //   档案不受支持的情形由 registerControllerCallbacks 内部另行提示。
+        if (controller.extendedGamepad != nil) {
+            NSMutableString *msg = [NSMutableString stringWithFormat:localize(@"controller.toast.connected", nil), controller.productName ?: @""];
+            GCDeviceBattery *bat = controller.batteryHandler;
+            if (bat != nil && bat.batteryState != GCDeviceBatteryStateUnknown) {
+                [msg appendFormat:@" · %ld%%", (long)lround(bat.deviceBatteryLevelFraction * 100.0)];
+            }
+            [NMToast showMessage:msg];
+        }
     }];
     // Task270 P0：同上，块内弱引用化。
     self.controllerDisconnectCallback = [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidDisconnectNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
@@ -4416,10 +4429,10 @@ static NSMapTable<ControlButton *, UIColor *> *s_ame261_modLatchColors = nil;
                     [self executebtn_special_togglebtn:held];
                     break;
                 case SPECIALBTN_SCROLLDOWN:
-                    if (!held) { CallbackBridge_nativeSendScroll(0.0, 1.0); }
+                    if (!held) { CallbackBridge_nativeSendScroll(0.0, [ControllerInput scrollStep:1.0]); }
                     break;
                 case SPECIALBTN_SCROLLUP:
-                    if (!held) { CallbackBridge_nativeSendScroll(0.0, -1.0); }
+                    if (!held) { CallbackBridge_nativeSendScroll(0.0, [ControllerInput scrollStep:-1.0]); }
                     break;
                 case SPECIALBTN_VIRTUALMOUSE:
                     if (!isGrabbing && !held) {

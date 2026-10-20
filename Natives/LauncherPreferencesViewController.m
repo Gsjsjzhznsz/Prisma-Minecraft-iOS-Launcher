@@ -1540,6 +1540,12 @@ if ([section isEqualToString:@"general"]) {
                 @"canDismissWithSwipe": @NO,
                 @"class": LauncherPrefContCfgViewController.class
             },
+            @{@"key": @"nintendo_layout",
+                // ★ Task310（Switch 手柄）：面键 A↔B/X↔Y 位置交换（键面标签语义）
+                @"hasDetail": @YES,
+                @"icon": @"gamecontroller",
+                @"type": self.typeSwitch,
+            },
             @{@"key": @"button_scale",
                 @"hasDetail": @YES,
                 @"icon": @"aspectratio",
@@ -1557,6 +1563,14 @@ if ([section isEqualToString:@"general"]) {
             @{@"key": @"mouse_speed",
                 @"hasDetail": @YES,
                 @"icon": @"cursorarrow.motionlines",
+                @"type": self.typeSlider,
+                @"min": @(25),
+                @"max": @(300)
+            },
+            @{@"key": @"scroll_speed",
+                // ★ Task310（键鼠优化）：模拟滚轮速度（触屏滚动按钮/手柄滚动键）
+                @"hasDetail": @YES,
+                @"icon": @"arrow.up.arrow.down.square",
                 @"type": self.typeSlider,
                 @"min": @(25),
                 @"max": @(300)

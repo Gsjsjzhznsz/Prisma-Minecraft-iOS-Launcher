@@ -9,7 +9,8 @@
       "description": "随启动器内建的经典控件布局：左摇杆 + 16 个核心按钮 + 右侧抽屉，适合绝大多数玩法。",
       "file": "layouts/classic.json",
       "version": "7",
-      "size": 112523
+      "size": 112523,
+      "category": "official"
     },
     {
       "id": "minimal-fps",
@@ -18,7 +19,8 @@
       "description": "去掉抽屉、按钮半透明，视野最大化，适合射击类整合包与 PvP。",
       "file": "layouts/minimal-fps.json",
       "version": "7",
-      "size": 11132
+      "size": 11132,
+      "category": "official"
     },
     {
       "id": "large-buttons",
@@ -27,7 +29,8 @@
       "description": "所有按钮与摇杆放大 30%，大手与横屏大屏设备友好。",
       "file": "layouts/large-buttons.json",
       "version": "7",
-      "size": 111938
+      "size": 111938,
+      "category": "official"
     }
   ]
 }
