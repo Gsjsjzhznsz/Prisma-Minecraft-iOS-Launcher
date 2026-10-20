@@ -76,6 +76,20 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
             // 弹出向导：语言 / 下载源 / 数据导入三步引导 + 动效）。
             @"welcome_completed": @NO,
         }.mutableCopy,
+        // ★ Task313：服务地区门计数（RegionGate.m）——键注册即修复。
+        //   病历（装机 6.5.5 截图 + 用户报告"点击之后一直卡 2/3"）：
+        //   Task312 引入 regiongate.* 两键时未在本表注册，而 setObject:
+        //   value: 是"只写已注册键"设计（Task142/143 家族，键不存在静默
+        //   return NO）→ confirm_count 每次写入都静默失败、读恒 0 →
+        //   "我不是大陆用户"每次点击都从 0 重计（0+1=1 < 3）→ 下一弹
+        //   恒为 index=2（"提示 2/3"）→ 死循环，用户永远过不了门。
+        //   修复：此处注册后，新装直接播种；存量受影响设备经
+        //   setDefaultsForPref 的 fill-only 补种在下次启动自动治愈。
+        //   双保险见 RegionGate.m 的 ame312_fallbackCount 内存兜底。
+        @"regiongate": @{
+            @"confirm_count": @(0),
+            @"passed": @NO,
+        }.mutableCopy,
         // 分类镜像策略（值 official_first / mirror_first / speed_first，
         // 由 PLMirrorCenter 统一读取，未迁移时回退旧键 general.download_source）。
         // Task138：默认改为 speed_first（加载速度快优先，用户指令，参考 FCL

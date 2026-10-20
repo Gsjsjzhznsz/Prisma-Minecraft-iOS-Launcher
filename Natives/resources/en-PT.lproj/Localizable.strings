@@ -335,3 +335,5 @@
 "regiongate.ack3" = "Final notice (3/3): thank you for confirming. Continuing...";
 "regiongate.not_mainland" = "I am not a mainland user";
 "regiongate.exit" = "Exit";
+
+"controller_configurator.title.current" = "Gamepad configuration file";

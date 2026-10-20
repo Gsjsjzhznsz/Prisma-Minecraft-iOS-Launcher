@@ -359,15 +359,17 @@
 "preference.title.scroll_speed" = "Simulated wheel speed (%)";
 "preference.detail.scroll_speed" = "Scroll step multiplier for on-screen scroll buttons and gamepad scroll keys; a real mouse wheel is unaffected";
 "dl.controls.cat.gamepad" = "เกมแพด";
-"custom_controls.repo.download.gamepad.done" = "Gamepad mapping %@ installed — select it in Controller Config";
-"custom_controls.repo.download.gamepad.invalid" = "Not a valid gamepad mapping file";
+"custom_controls.repo.download.gamepad.done" = "ติดตั้งการแมปเกมแพด %@ แล้ว — เลือกในการตั้งค่าคอนโทรลเลอร์";
+"custom_controls.repo.download.gamepad.invalid" = "ไม่ใช่ไฟล์แมปเกมแพดที่ถูกต้อง";
 "controller_configurator.title.type.nintendo" = "Switch";
 "controller_configurator.title.type.xbox" = "Xbox";
 "controller_configurator.title.type.playstation" = "PlayStation";
 "regiongate.title" = "ประกาศเขตพื้นที่ให้บริการ";
 "regiongate.message" = "ตัวเรียกใช้งานนี้ไม่เปิดให้ใช้งานสำหรับผู้ใช้ในจีนแผ่นดินใหญ่ เป็นโครงการชุมชนที่ไม่เกี่ยวข้องกับ Mojang Studios, Microsoft หรือ NetEase (ผู้จัดจำหน่ายในจีนแผ่นดินใหญ่) และไม่มีการจัดจำหน่ายหรือให้บริการในจีนแผ่นดินใหญ่ หากคุณไม่ใช่ผู้ใช้จากแผ่นดินใหญ่ แตะ \"ฉันไม่ใช่ผู้ใช้จากแผ่นดินใหญ่\" เพื่อดำเนินการต่อ";
-"regiongate.ack1" = "Notice 1/3: please confirm your service region again.";
-"regiongate.ack2" = "Notice 2/3: continuing means you confirm that you are not a mainland China user.";
-"regiongate.ack3" = "Final notice (3/3): thank you for confirming. Continuing...";
+"regiongate.ack1" = "แจ้งเตือน 1/3: โปรดยืนยันภูมิภาคการให้บริการของคุณอีกครั้ง";
+"regiongate.ack2" = "แจ้งเตือน 2/3: การดำเนินการต่อหมายความว่าคุณยืนยันว่าไม่ใช่ผู้ใช้ในจีนแผ่นดินใหญ่";
+"regiongate.ack3" = "แจ้งเตือนสุดท้าย (3/3): ขอบคุณที่ยืนยัน กำลังดำเนินการต่อไป...";
 "regiongate.not_mainland" = "ฉันไม่ใช่ผู้ใช้จากแผ่นดินใหญ่";
 "regiongate.exit" = "ออก";
+
+"controller_configurator.title.current" = "ไฟล์ตั้งค่าเกมแพด";

@@ -306,15 +306,17 @@
 "preference.title.scroll_speed" = "Simulated wheel speed (%)";
 "preference.detail.scroll_speed" = "Scroll step multiplier for on-screen scroll buttons and gamepad scroll keys; a real mouse wheel is unaffected";
 "dl.controls.cat.gamepad" = "Gamepad";
-"custom_controls.repo.download.gamepad.done" = "Gamepad mapping %@ installed — select it in Controller Config";
-"custom_controls.repo.download.gamepad.invalid" = "Not a valid gamepad mapping file";
+"custom_controls.repo.download.gamepad.done" = "Adsignatio gamepad %@ instituta — eam in configuratione elige";
+"custom_controls.repo.download.gamepad.invalid" = "Documentum adsignationis gamepad non validum";
 "controller_configurator.title.type.nintendo" = "Switch";
 "controller_configurator.title.type.xbox" = "Xbox";
 "controller_configurator.title.type.playstation" = "PlayStation";
-"regiongate.title" = "Service Region Notice";
-"regiongate.message" = "This launcher is not available to users in mainland China. It is a community project, unaffiliated with Mojang Studios, Microsoft, or NetEase (the mainland China publisher), and is not distributed or serviced in mainland China. If you are not a mainland China user, tap \"I am not a mainland user\" to continue.";
-"regiongate.ack1" = "Notice 1/3: please confirm your service region again.";
-"regiongate.ack2" = "Notice 2/3: continuing means you confirm that you are not a mainland China user.";
-"regiongate.ack3" = "Final notice (3/3): thank you for confirming. Continuing...";
-"regiongate.not_mainland" = "I am not a mainland user";
-"regiongate.exit" = "Exit";
+"regiongate.title" = "Nuntius regionis servitii";
+"regiongate.message" = "Hic launcher usoribus in Sinis continentalibus non praesto est. Res communitatis est, neque cum Mojang Studios, Microsoft aut NetEase (editore Sinorum continentalium) coniuncta, neque in Sinis continentalibus distribuitur aut servitur. Si usor Sinorum continentalium non es, ut pergas, tange \"Non sum usor continentalis\".";
+"regiongate.ack1" = "Nuntius 1/3: regionem servitii tuam rursus confirma.";
+"regiongate.ack2" = "Nuntius 2/3: pergere significat te confirmare te usorem Sinorum continentalium non esse.";
+"regiongate.ack3" = "Nuntius ultimus (3/3): gratiae pro confirmatione. Pergitur...";
+"regiongate.not_mainland" = "Non sum usor continentalis";
+"regiongate.exit" = "Exire";
+
+"controller_configurator.title.current" = "Documentum configurationis gamepad";

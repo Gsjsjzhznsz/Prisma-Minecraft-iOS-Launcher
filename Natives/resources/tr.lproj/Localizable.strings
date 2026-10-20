@@ -494,15 +494,17 @@
 "preference.title.scroll_speed" = "Simulated wheel speed (%)";
 "preference.detail.scroll_speed" = "Scroll step multiplier for on-screen scroll buttons and gamepad scroll keys; a real mouse wheel is unaffected";
 "dl.controls.cat.gamepad" = "Oyun kumandası";
-"custom_controls.repo.download.gamepad.done" = "Gamepad mapping %@ installed — select it in Controller Config";
-"custom_controls.repo.download.gamepad.invalid" = "Not a valid gamepad mapping file";
+"custom_controls.repo.download.gamepad.done" = "Gamepad eşlemesi %@ yüklendi — Denetleyici Yapılandırması'ndan seçin";
+"custom_controls.repo.download.gamepad.invalid" = "Geçerli bir gamepad eşleme dosyası değil";
 "controller_configurator.title.type.nintendo" = "Switch";
 "controller_configurator.title.type.xbox" = "Xbox";
 "controller_configurator.title.type.playstation" = "PlayStation";
 "regiongate.title" = "Hizmet Bölgesi Bildirimi";
 "regiongate.message" = "Bu başlatıcı, Çin anakarasındaki kullanıcılara sunulmamaktadır. Bu bir topluluk projesidir; Mojang Studios, Microsoft veya NetEase (Çin anakarası yayıncısı) ile bağlantısı yoktur ve Çin anakarasında dağıtılmaz veya hizmet vermez. Anakara Çin kullanıcısı değilseniz devam etmek için \"Ben anakara kullanıcısı değilim\" düğmesine dokunun.";
-"regiongate.ack1" = "Notice 1/3: please confirm your service region again.";
-"regiongate.ack2" = "Notice 2/3: continuing means you confirm that you are not a mainland China user.";
-"regiongate.ack3" = "Final notice (3/3): thank you for confirming. Continuing...";
+"regiongate.ack1" = "Bildirim 1/3: lütfen hizmet bölgenizi yeniden onaylayın.";
+"regiongate.ack2" = "Bildirim 2/3: devam etmek, Çin anakarası kullanıcısı olmadığınızı onayladığınız anlamına gelir.";
+"regiongate.ack3" = "Son bildirim (3/3): onayınız için teşekkürler. Devam ediliyor...";
 "regiongate.not_mainland" = "Ben anakara kullanıcısı değilim";
 "regiongate.exit" = "Çıkış";
+
+"controller_configurator.title.current" = "Gamepad yapılandırma dosyası";

@@ -359,15 +359,17 @@
 "preference.title.scroll_speed" = "Simulated wheel speed (%)";
 "preference.detail.scroll_speed" = "Scroll step multiplier for on-screen scroll buttons and gamepad scroll keys; a real mouse wheel is unaffected";
 "dl.controls.cat.gamepad" = "Gamepad";
-"custom_controls.repo.download.gamepad.done" = "Gamepad mapping %@ installed — select it in Controller Config";
-"custom_controls.repo.download.gamepad.invalid" = "Not a valid gamepad mapping file";
+"custom_controls.repo.download.gamepad.done" = "Pemetaan gamepad %@ dipasang — pilihnya dalam Konfigurasi Pengawal";
+"custom_controls.repo.download.gamepad.invalid" = "Bukan fail pemetaan gamepad yang sah";
 "controller_configurator.title.type.nintendo" = "Switch";
 "controller_configurator.title.type.xbox" = "Xbox";
 "controller_configurator.title.type.playstation" = "PlayStation";
-"regiongate.title" = "Service Region Notice";
-"regiongate.message" = "This launcher is not available to users in mainland China. It is a community project, unaffiliated with Mojang Studios, Microsoft, or NetEase (the mainland China publisher), and is not distributed or serviced in mainland China. If you are not a mainland China user, tap \"I am not a mainland user\" to continue.";
-"regiongate.ack1" = "Notice 1/3: please confirm your service region again.";
-"regiongate.ack2" = "Notice 2/3: continuing means you confirm that you are not a mainland China user.";
-"regiongate.ack3" = "Final notice (3/3): thank you for confirming. Continuing...";
-"regiongate.not_mainland" = "I am not a mainland user";
-"regiongate.exit" = "Exit";
+"regiongate.title" = "Notis Wilayah Perkhidmatan";
+"regiongate.message" = "Pelancar ini tidak tersedia untuk pengguna di tanah besar China. Ini projek komuniti, tidak berkaitan dengan Mojang Studios, Microsoft atau NetEase (penerbit di tanah besar China), dan tidak diedarkan atau diservis di tanah besar China. Jika anda bukan pengguna tanah besar China, ketik \"Saya bukan pengguna tanah besar\" untuk teruskan.";
+"regiongate.ack1" = "Notis 1/3: sila sahkan wilayah perkhidmatan anda sekali lagi.";
+"regiongate.ack2" = "Notis 2/3: meneruskan bermakna anda mengesahkan anda bukan pengguna tanah besar China.";
+"regiongate.ack3" = "Notis akhir (3/3): terima kasih atas pengesahan. Melanjutkan...";
+"regiongate.not_mainland" = "Saya bukan pengguna tanah besar";
+"regiongate.exit" = "Keluar";
+
+"controller_configurator.title.current" = "Fail konfigurasi gamepad";

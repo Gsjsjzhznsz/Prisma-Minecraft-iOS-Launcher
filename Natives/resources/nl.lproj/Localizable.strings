@@ -338,15 +338,17 @@
 "preference.title.scroll_speed" = "Simulated wheel speed (%)";
 "preference.detail.scroll_speed" = "Scroll step multiplier for on-screen scroll buttons and gamepad scroll keys; a real mouse wheel is unaffected";
 "dl.controls.cat.gamepad" = "Gamepad";
-"custom_controls.repo.download.gamepad.done" = "Gamepad mapping %@ installed — select it in Controller Config";
-"custom_controls.repo.download.gamepad.invalid" = "Not a valid gamepad mapping file";
+"custom_controls.repo.download.gamepad.done" = "Gamepad-toewijzing %@ geïnstalleerd — selecteer deze in de controllerconfiguratie";
+"custom_controls.repo.download.gamepad.invalid" = "Geen geldig gamepad-toewijzingsbestand";
 "controller_configurator.title.type.nintendo" = "Switch";
 "controller_configurator.title.type.xbox" = "Xbox";
 "controller_configurator.title.type.playstation" = "PlayStation";
 "regiongate.title" = "Serviceregio-melding";
 "regiongate.message" = "Deze launcher is niet beschikbaar voor gebruikers in continentaal China. Het is een communityproject, niet gelieerd aan Mojang Studios, Microsoft of NetEase (de uitgever voor continentaal China), en wordt niet gedistribueerd of ondersteund in continentaal China. Als je geen gebruiker uit continentaal China bent, tik dan op \"Ik ben geen vastelandgebruiker\" om door te gaan.";
-"regiongate.ack1" = "Notice 1/3: please confirm your service region again.";
-"regiongate.ack2" = "Notice 2/3: continuing means you confirm that you are not a mainland China user.";
-"regiongate.ack3" = "Final notice (3/3): thank you for confirming. Continuing...";
+"regiongate.ack1" = "Melding 1/3: bevestig uw serviceregio opnieuw.";
+"regiongate.ack2" = "Melding 2/3: doorgaan betekent dat u bevestigt geen gebruiker uit vasteland China te zijn.";
+"regiongate.ack3" = "Laatste melding (3/3): bedankt voor uw bevestiging. Doorgaan...";
 "regiongate.not_mainland" = "Ik ben geen vastelandgebruiker";
 "regiongate.exit" = "Afsluiten";
+
+"controller_configurator.title.current" = "Gamepad-configuratiebestand";

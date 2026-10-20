@@ -111,6 +111,19 @@ static void ame312_ipProbeCountryCode(void (^done)(BOOL isCN, NSString *countryC
 
 #pragma mark - 呈现链（3 次提示后放行）
 
+// ★ Task313：会话内兜底计数。Task312 的 confirm_count 曾因键未注册而
+//   写入静默失败（PLPreferences "只写已注册键"设计），读恒 0 → 弹窗
+//   永远卡 2/3。键注册已根修（PLPreferences.m regiongate section），
+//   此内存计数再兜一层：只要用户在本次会话内点了 3 次，无论如何都
+//   放行——持久化哪怕再因任何原因失效，门也绝不把人锁死。
+static NSInteger ame312_fallbackCount = 0;
+
+/// 当前有效确认次数 = max(持久化值, 会话内兜底值)。
+static NSInteger ame312_effectiveCount(void) {
+    NSInteger persisted = getPrefInt(@"regiongate.confirm_count");
+    return (persisted > ame312_fallbackCount) ? persisted : ame312_fallbackCount;
+}
+
 /// 找最顶层可呈现 VC（异步补弹时 root 可能已被欢迎向导/主界面覆盖）。
 static UIViewController *ame312_topmost(UIViewController *vc) {
     while (vc.presentedViewController) vc = vc.presentedViewController;
@@ -139,9 +152,13 @@ static void ame312_presentPrompt(UIViewController *base, NSInteger index, void (
     [alert addAction:[UIAlertAction actionWithTitle:localize(@"regiongate.not_mainland", nil)
                                               style:UIAlertActionStyleDefault
                                             handler:^(__unused UIAlertAction *a) {
-        NSInteger count = getPrefInt(@"regiongate.confirm_count") + 1;
-        setPrefObject(@"regiongate.confirm_count", @(count));
-        NSLog(@"[RegionGate] ame312: 'not mainland' confirmed (%ld/3)", (long)count);
+        // Task313：以 effectiveCount（持久化 ∨ 内存兜底）为基准递增，
+        // 持久化写入失败不再能卡死门（内存计数必然推进）。
+        NSInteger count = ame312_effectiveCount() + 1;
+        setPrefObject(@"regiongate.confirm_count", @(count)); // 尽力持久化
+        ame312_fallbackCount = count;                        // 兜底必然生效
+        NSLog(@"[RegionGate] ame312: 'not mainland' confirmed (%ld/3, persisted=%ld)",
+              (long)count, (long)getPrefInt(@"regiongate.confirm_count"));
         if (count >= 3) {
             setPrefBool(@"regiongate.passed", YES);
             NSLog(@"[RegionGate] ame312: gate PASSED after %ld confirmations -- releasing", (long)count);
@@ -171,7 +188,7 @@ static void ame312_presentPrompt(UIViewController *base, NSInteger index, void (
     BOOL carrierCN = ame312_isCNCarrier();
     // 命中规则：强信号任一（地区 / 运营商），或 中信号组合互证（时区×语言）
     BOOL flagged = regionCN || carrierCN || (tzCN && langZh);
-    NSInteger ame312_prevCount = getPrefInt(@"regiongate.confirm_count");
+    NSInteger ame312_prevCount = ame312_effectiveCount();
     NSLog(@"[RegionGate] ame312: sync signals region=%d tz=%d lang=%d carrier=%d -> flagged=%d (prevCount=%ld)",
           regionCN, tzCN, langZh, carrierCN, flagged, (long)ame312_prevCount);
 
@@ -194,7 +211,7 @@ static void ame312_presentPrompt(UIViewController *base, NSInteger index, void (
     ame312_ipProbeCountryCode(^(BOOL isCN, NSString *countryCode) {
         BOOL corroborated = tzCN || langZh || carrierCN || regionCN;
         if (isCN && corroborated) {
-            NSInteger count = getPrefInt(@"regiongate.confirm_count");
+            NSInteger count = ame312_effectiveCount();
             if (count >= 3) return; // 探测期间用户已在别处确认满，静默
             NSLog(@"[RegionGate] ame312: async ip=CN + corroboration -> late gate (count=%ld)", (long)count);
             ame312_presentPrompt(presenter, count + 1, ^{ /* 异步补弹不回串启动链 */ });

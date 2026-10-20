@@ -354,15 +354,17 @@
 "preference.title.scroll_speed" = "Simulated wheel speed (%)";
 "preference.detail.scroll_speed" = "Scroll step multiplier for on-screen scroll buttons and gamepad scroll keys; a real mouse wheel is unaffected";
 "dl.controls.cat.gamepad" = "Gamepad";
-"custom_controls.repo.download.gamepad.done" = "Gamepad mapping %@ installed — select it in Controller Config";
-"custom_controls.repo.download.gamepad.invalid" = "Not a valid gamepad mapping file";
+"custom_controls.repo.download.gamepad.done" = "Mapovanie gamepadu %@ nainštalované — vyberte ho v konfigurácii ovládača";
+"custom_controls.repo.download.gamepad.invalid" = "Neplatný súbor mapovania gamepadu";
 "controller_configurator.title.type.nintendo" = "Switch";
 "controller_configurator.title.type.xbox" = "Xbox";
 "controller_configurator.title.type.playstation" = "PlayStation";
-"regiongate.title" = "Service Region Notice";
-"regiongate.message" = "This launcher is not available to users in mainland China. It is a community project, unaffiliated with Mojang Studios, Microsoft, or NetEase (the mainland China publisher), and is not distributed or serviced in mainland China. If you are not a mainland China user, tap \"I am not a mainland user\" to continue.";
-"regiongate.ack1" = "Notice 1/3: please confirm your service region again.";
-"regiongate.ack2" = "Notice 2/3: continuing means you confirm that you are not a mainland China user.";
-"regiongate.ack3" = "Final notice (3/3): thank you for confirming. Continuing...";
-"regiongate.not_mainland" = "I am not a mainland user";
-"regiongate.exit" = "Exit";
+"regiongate.title" = "Oznámenie o servisnom regióne";
+"regiongate.message" = "Tento spúšťač nie je dostupný používateľom v kontinentálnej Číne. Ide o komunitný projekt, ktorý nesúvisí so spoločnosťami Mojang Studios, Microsoft ani NetEase (vydavateľom v kontinentálnej Číne) a v kontinentálnej Číne sa nedistribuuje ani neservuje. Ak nie ste používateľ z kontinentálnej Číny, klepnutím na „Nie som používateľ z kontinentu“ pokračujte.";
+"regiongate.ack1" = "Oznámenie 1/3: potvrďte svoj servisný región znova.";
+"regiongate.ack2" = "Oznámenie 2/3: pokračovaním potvrdzujete, že nie ste používateľ z kontinentálnej Číny.";
+"regiongate.ack3" = "Posledné oznámenie (3/3): ďakujeme za potvrdenie. Pokračuje sa...";
+"regiongate.not_mainland" = "Nie som používateľ z kontinentu";
+"regiongate.exit" = "Ukončiť";
+
+"controller_configurator.title.current" = "Konfiguračný súbor gamepadu";
