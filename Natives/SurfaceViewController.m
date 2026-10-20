@@ -1602,17 +1602,15 @@ static NSInteger ame283_lastLandscapeDev = 0;
         strongSelf.mousePointerView.hidden = isGrabbing;
         virtualMouseEnabled = YES;
         if (getPrefBool(@"control.hardware_hide")) { strongSelf.ctrlView.hidden = YES; }
-        // ★ Task310（手柄优化）：连接可见性——手柄名称 + 电量 toast。
+        // ★ Task310（手柄优化）：连接可见性 toast（手柄名称）。
         //   病历：连接成功除指针出现/触屏层隐藏外零反馈，用户分不清
-        //   "连上了"还是"连了个半死不活的设备"；电量（GCDeviceBattery）
-        //   可用时一并展示，低电无感人（蓝牙手柄低电丢按键是高频误诊源）。
-        //   档案不受支持的情形由 registerControllerCallbacks 内部另行提示。
+        //   "连上了"还是"连了个半死不活的设备"。
+        //   （r2 勘误：电量展示随 r1/r2 双 SDK 属性雷一并摘除——26.2 SDK
+        //   的 GCController 既无 productName/batteryHandler、GCDeviceBattery
+        //   也无 deviceBatteryLevelFraction 旧名；名称展示已交付核心价值，
+        //   电量待 API 实名考证后单变量复进。）
         if (controller.extendedGamepad != nil) {
-            NSMutableString *msg = [NSMutableString stringWithFormat:localize(@"controller.toast.connected", nil), controller.vendorName ?: @""];
-            GCDeviceBattery *bat = controller.batteryHandler;
-            if (bat != nil && bat.batteryState != GCDeviceBatteryStateUnknown) {
-                [msg appendFormat:@" · %ld%%", (long)lround(bat.deviceBatteryLevelFraction * 100.0)];
-            }
+            NSString *msg = [NSString stringWithFormat:localize(@"controller.toast.connected", nil), controller.vendorName ?: @""];
             [NMToast showMessage:msg];
         }
     }];
