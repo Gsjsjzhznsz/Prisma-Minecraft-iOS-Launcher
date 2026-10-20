@@ -4301,3 +4301,24 @@ Stage Summary:
 - 设置页 Switch 行已消失；手柄配置弹窗手柄类型 = Xbox/PlayStation/Switch 三选一（选 Switch 即任天堂布局交换生效）
 - 控件下载新增「手柄」分类：官方手柄映射（默认备份 + Switch 面键对齐版）可下载安装，装完在手柄配置弹窗"当前"里选用；本地手柄映射可上传进仓库生态
 - CI 绿：run 39432717355 success（Task311 全量进入 main 可构建基线）
+
+---
+Task ID: 312
+Agent: main (Super Z)
+Task: 服务地区门（明面不对大陆开放，多角度检测+3次提示放行）+ 6.5.5 下载速度回归审计与根修 + README/网站/公告/FAQ 声明全套落面
+
+Work Log:
+- 调研取证：微软/Mojang 2025-2026 DMCA 浪潮（Luanti 被无据 AI 通知下架、Allumeria Steam 下架）、网易大陆代理权先例（多玩盒子 2017 被责令停运、2020 停服）、EULA 第三方工具条款——地区门合规背景成立
+- 下载速度审计：v6.5.0→v6.5.5 双 tag 全链逐字节 diff——MinecraftResourceDownloadTask.m / PLMirrorCenter.h+m / DownloadTasksViewController.m / ForgeDirectInstaller.m / ControlRepoViewController.m / Tools.java 下载核心全部零改动，定性非代码回归；真因=候选轮换只在彻底失败后切镜像、"慢而不断"的官方源永不轮换（speed_first 出厂默认 v6.5.0 已有，但存量设备被旧迁移物化为 official_first 落盘）
+- RegionGate.h/m 新建（ame312）：五信号检测（regionCode=CN 强 / CTCarrier MCC=460 强（weak_framework CoreTelephony+objc_msgSend 弱接入，类缺失异常降级）/ 时区 Asia/Shanghai 系中 / zh-Hans 中仅互证 / IP 异步链式探测 ipapi.co→ipwho.is→freeipapi.com 6s 超时全败不误伤）；命中规则=强信号任一 或 时区×语言互证；同步未命中走 IP 兜底补弹（IP=CN 且一信号互证才弹，纯 IP 无互证只记日志防旅行者误伤）；弹窗=服务地区声明+「退出」(exit(0) 带锚点)+「我不是大陆用户」双钮，confirm_count 持久化 +1、满 3 置 passed=YES 本安装周期不再弹（用户指令"多几次提示之后放行"）；SceneDelegate willConnect 0.8s 点前置运行（先于 Task218 欢迎向导，门未放行则向导不启动）
+- CMakeLists.txt：RegionGate.m 入源表 + "-weak_framework CoreTelephony"
+- ame312 下载吞吐量见证：MinecraftResourceDownloadTask 按源累计成功任务样本（≥512KB 且 ≥0.5s），官方平均 <128KB/s 样本≥2 → 本批镜像候选在前（先交换序再算 candidateIndex），镜像 <32KB/s 样本≥2 回退官方防双向误伤；会话内生效不落盘不改用户偏好；[MCDL] ame312 全程日志
+- i18n：scripts/task312_i18n.py — regiongate.* 7 键×54 表（378 行，主语言实译+ALIAS+EN 兜底）
+- 文档：README.md/README_EN.md 定位反转（面向中国用户→面向国际用户（不对大陆开放））+ 服务地区声明块 + Fork 网络口径；website index.astro hero 琥珀色声明横幅；announcements.json（root+src/data+public 三处同步）新公告（声明+下载速度说明）；help-faq.json 故障排除 +2 条（task312_announce.py / task312_faq.py）
+- git 波折：push 两遭 non-fast-forward（本地 main 基于旧 tip f13bfe6d，origin 已到 4be7e0b6）；rebase 时 54 张 strings 表冲突（Task311 同尾追加），解法=checkout --ours（origin 侧含 311 键）+ 重跑 task312_i18n.py 补 7 键实现无损并集，rebase 成 3f9d559f 推送成功
+- 门禁：task248 缺键0硬编码0动态键0 / task240 all balanced / task191 43 pass+2 历史存量 fail（stash 对比证实非本轮引入）/ task139 依赖设备日志移交 CI；rebase 后复跑 task248/240 全绿；JSON 四文件语法校验过
+
+Stage Summary:
+- origin/main=3f9d559f；CI：Deploy website(39456544405) success（声明横幅已上线）；Development build(39456544438) 构建中待取证
+- 交付：服务地区门（5 信号互证、3 次确认放行、54 语言）；下载速度根修（吞吐见证+自动换源，下个构建起生效）；README×2/网站横幅/公告×3/FAQ×2 全套声明落面
+- 遗留：SafariServices 同款 weak_framework 链接法待 CI 编译实证；CTCarrier iOS16+ 部分场景返回 nil 属预期降级；IP 端点未来若失效自动降级为纯本地信号判定
