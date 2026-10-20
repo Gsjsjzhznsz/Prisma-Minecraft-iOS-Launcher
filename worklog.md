@@ -4267,3 +4267,16 @@ Work Log:
 Stage Summary:
 - v6.5.5 资产静默替换第九轮进行中（构建=69752f0e，含 309+310 全部内容）
 - 装机验证锚点不变（见 Task310 条目 Stage Summary）
+
+---
+Task ID: 310-asset
+Agent: main (Super Z)
+Task: v6.5.5 资产静默替换第九轮（构建=69752f0e）
+
+Work Log:
+- 绿 run 39374595524 三 artifact 落袋（ipa/tipa 221.7MB zip 各一 + dSYM 6.5MB）；解包出 com.prisma-devs.prisma-6.5.5-ios.ipa（235,546,053B）+ -trollstore.tipa（235,546,424B）
+- 旧 asset DELETE 双 204（657075846 ipa / 657076770 tipa，updated=2026-10-19T18:28 = 3072dc3f 构建）；新同名 uploads POST 双 201，updated_at=2026-10-20T05:44/05:45
+- 本轮资产内容 = Task309（FPS 解锁回退 + MoltenVK 1.4.3 恢复）+ Task310（手柄优化/Switch 手柄/控件三分类页/键鼠优化）全量
+
+Stage Summary:
+- v6.5.5 发行版资产第九轮替换完成，下载链接不变；用户 SideStore/TrollStore 重装即得 69752f0e 构建
