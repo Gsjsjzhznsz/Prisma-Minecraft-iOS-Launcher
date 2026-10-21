@@ -5,6 +5,7 @@
 #import "ProfileSettingsViewController.h"
 #import "PLProfiles.h"
 #import "BackgroundManager.h"
+#import "PrismaUI.h" // Task314：PrismaUI 设计系统令牌（7.0 UI 架构试点第一屏）
 #import "utils.h"
 
 @interface LauncherMenuViewController ()
@@ -165,7 +166,8 @@
     // Task137：新拟态退役——初始选中项直接应用原生 accent 半透明高亮
     // （选中态在 updateButtonColors 维护）
     if (index == self.selectedIndex) {
-        btn.backgroundColor = [accent colorWithAlphaComponent:0.15];
+        // Task314：选中态底色收敛 PrismaTheme 令牌（同值 accent 15%）
+        btn.backgroundColor = [PrismaTheme colorAccentSelectedBackground];
     }
 
     return btn;
@@ -321,7 +323,8 @@
                 // Task101：按钮无标题（纯图标），仅剩图标着色，原 setTitleColor 分支退场
                 // Task137：新拟态退役——选中项回归原生 accent 半透明高亮
                 // （Task89 之前的样式）；幂等重刷（重复调用安全）
-                btn.backgroundColor = [accent colorWithAlphaComponent:0.15];
+                // Task314：底色收敛 PrismaTheme 令牌（同值 accent 15%）
+                btn.backgroundColor = [PrismaTheme colorAccentSelectedBackground];
                 // Task111：z 序保险——把图标子视图提回最前（幂等保留）
                 UIView *iconView = btn.imageView;
                 if (iconView && iconView.superview == btn) {
@@ -362,7 +365,9 @@
         UIColor *custom = [self colorFromHexString:hex];
         if (custom) return custom;
     }
-    return [UIColor systemGrayColor];
+    // Task314：系统默认色迁 PrismaTheme 令牌（明暗双态跟随系统）——
+    // 原 systemGrayColor 单值在深色模式下偏亮，token 化后观感与全应用一致
+    return [PrismaTheme colorTextSecondary];
 }
 
 - (UIColor *)colorFromHexString:(NSString *)hexString {

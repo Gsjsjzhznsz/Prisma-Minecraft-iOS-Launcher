@@ -974,7 +974,7 @@ static const NSInteger ame218_welcomeStepCount = 8;  // Task246：+1 界面风�
 
     UILabel *ame218_version = [[UILabel alloc] init];
     ame218_version.text = [NSString stringWithFormat:@"v%@",
-        [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"6.5.5"];
+        [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"7.0.0-beta1"];
     ame218_version.font = [UIFont monospacedDigitSystemFontOfSize:14 weight:UIFontWeightMedium];
     ame218_version.textColor = [self ame224_directSecondaryColor];   // Task224：壁纸直排自适应
     ame218_version.textAlignment = NSTextAlignmentCenter;

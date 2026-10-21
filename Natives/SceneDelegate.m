@@ -8,6 +8,7 @@
 #import "BingWallpaperManager.h" // Task151
 #import "WelcomeViewController.h" // Task218：首次使用欢迎向导
 #import "RegionGate.h" // Task312：服务地区门（明面不对大陆开放，3 次提示后放行）
+#import "PrismaUI.h" // Task314：PrismaUI 设计系统（7.0 前端 UI 架构）
 // ★ [MP-RESTORE] Task222：Terracotta 联机恢复（上游同日恢复）
 #import "TerracottaManager.h"
 #import "TerracottaBridge.h"
@@ -31,6 +32,12 @@ extern BOOL Amethyst_EnforceSDL3Presentation(void);
 
 - (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)connectionOptions {
     UIWindowScene *windowScene = (UIWindowScene *)scene;
+
+    // Task314：PrismaUI 全局外观安装（首个 UI 对象创建前执行）——
+    // UIAppearance 代理仅在控件创建时取值，越早安装覆盖面越完整。
+    // dispatch_once 兜底防重复调用。
+    [PrismaTheme install];
+    NSLog(@"[SceneDelegate] Task314: PrismaUI theme installed (Fluent 2 tokens, iOS14+)");
 
     // Task189：异常处理器晚装复挂（AppDelegate 挂载点之后 LC 若再覆盖，
     // 此处再抢回一次——场景连接是 UI 阶段最后的稳定挂载点）。

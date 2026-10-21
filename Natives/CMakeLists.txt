@@ -22,6 +22,8 @@ endif()
 
 include_directories(
   "."
+  # Task314：PrismaUI 设计系统头目录（根目录文件 #import "PrismaUI.h" 直达）
+  "PrismaUI"
   "external/AFNetworking/AFNetworking"
   "external/AFNetworking/UIKit+AFNetworking"
   "external/DBNumberedSlider/Classes"
@@ -443,6 +445,13 @@ add_executable(AngelAuraAmethyst
   UIKit+NativeSurface.m
   NMToast.m
   UIViewController+AMEPanel.m
+
+  # Task314：PrismaUI 设计系统（7.0 前端 UI 架构，Fluent 2 设计语言原生实现，
+  # 决策见 docs/decisions/2026-10-21-ui-architecture-prisma-ui.md）
+  PrismaUI/PrismaTheme.m
+  PrismaUI/PrismaFilledButton.m
+  PrismaUI/PrismaCardView.m
+  PrismaUI/PrismaListCell.m
 
   authenticator/BaseAuthenticator.m
   authenticator/LocalAuthenticator.m

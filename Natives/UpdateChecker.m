@@ -137,6 +137,12 @@
         /* 无法提取版本号时，直接比较 tag 和当前版本字符串 */
         info.hasUpdate = ![info.currentVersion isEqualToString:info.latestVersion];
     }
+    /* Task314：beta 构建静默——7.0.0-beta 系测试版不接入 Release 渠道，
+     * 版本比较对 "-betaN" 后缀的解析结果也不可靠；测试期一律不弹更新
+     * 提示，避免测试者被 6.5.5 正式版的更新横幅打断 */
+    if ([info.currentVersion rangeOfString:@"beta" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+        info.hasUpdate = NO;
+    }
     return info;
 }
 
