@@ -4367,3 +4367,23 @@ Work Log:
 
 Stage Summary:
 - 6.5.5 正式版上线：tag=211f7476、Release prerelease=false、双产物 235MB×2 在架、Latest 解析正确；Task 313（卡 2/3 根修 + i18n 补全）全链闭环
+
+---
+Task ID: 314
+Agent: main (Super Z)
+Task: 7.0 前端 UI 架构调研决策 + PrismaUI 设计系统落地（beta1，不上传发行版）
+
+Work Log:
+- 用户指令①"研究启动器前端UI全部改成 fluentui-apple 方案或给更好架构"②"算了fluentui-apple要iOS17+，有没有iOS14+的方案"③"只是测试版不上传发行版"
+- 选型三重取证：fluentui-apple 0.37.0 Package.swift .iOS(.v17)（0.31.0 已 .v16；0.10.0 时代 .v14 但全 Swift 框架 + SPM 与本工程 CMake 裸编链冲突且停更 3 年）；Material Components iOS GitHub 官方归档 2025-12-11（维护模式自 2021-07）；SwiftUI 整体重写否决（59 VC ~13.9 万行 .m，iOS 14 下 SwiftUI 能力受限）
+- 构建链复核：Amethyst.xcodeproj = PBXLegacyTarget 空壳，真实构建 Makefile + Natives/CMakeLists.txt（add_executable 显式源列表，-fobjc-arc -ObjC 全局），无 SPM/CocoaPods 接入面
+- 决策：自研 PrismaUI（Fluent 2 设计语言 ObjC/UIKit 原生实现，iOS 14+），ADR 落盘 docs/decisions/2026-10-21-ui-architecture-prisma-ui.md
+- 令牌层 PrismaTheme：色板明暗双态 dynamic provider（画布/卡片/描边/文字三级/语义色，Fluent 2 规范值）+ 字阶六槽 + 圆角 4/8 + 4pt 间距网格 + elevation 2/8/16；强调色委托 accentColor()（general.accent_color 用户偏好同一事实源）；install = UIAppearance 全局 NavBar/TabBar/Switch/Slider/ProgressView/PageControl/RefreshControl/ActivityIndicatorView/UITextField tint，59 VC 零改动得 Fluent 基线；iOS 15+ API 护栏（scrollEdgeAppearance @available 包裹）；不碰 UIWindow/UILabel 保 BackgroundManager 体系零回归
+- 组件层首批：PrismaFilledButton（filled/outline/subtle 三型经典 UIControl 路径）、PrismaCardView（外层阴影/内层圆角双层结构）、PrismaListCell（图标槽+标题副标题+chevron，单行 44/双行 56 约束组）；PrismaCardView.h 补 PrismaTheme.h 自含依赖（PrismaElevation 枚举）
+- 接线：CMakeLists 源列表 +4 文件、include_directories +PrismaUI；SceneDelegate willConnect 首个 UI 对象创建前 install + Task314 锚点日志；侧边菜单试点第一屏（menuNormalColor 回退色 systemGray→colorTextSecondary 明暗跟随、选中底色收敛 colorAccentSelectedBackground，行为零变化纯令牌化）
+- beta 配套：版本 7.0.0-beta1（Makefile VERSION + Info.plist 双字段 + WelcomeVC 兜底）；UpdateChecker beta 静默护栏（currentVersion 含 beta → hasUpdate=NO，测试版不受 6.5.5 更新横幅打扰）
+- 门禁：task139 all balanced / task240 all balanced + retired 0 / task248 缺键0硬编码0动态键0 / task191 54 表 OK
+- 提交 07966601 push origin main 成功；GitHub API 匿名限流（两次 403），CI 取证走 commit 网页/隔窗重试
+
+Stage Summary:
+- PrismaUI 设计系统（令牌层 + 组件层首批三件）落地 origin/main=07966601；7.0.0-beta1 无 Release 上传（用户指令），CI Development build 产物即测试包；后续按模块渐进迁移 59 VC（侧边菜单已试点），iOS 26+ 可接 AmeLiquidGlassView 材质增强
