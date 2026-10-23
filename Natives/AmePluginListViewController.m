@@ -72,9 +72,9 @@
 }
 
 - (void)ame318_pickZip {
-    // UTTypeZip（UniformTypeIdentifiers，iOS 14+；框架已在 CMake 链接）。
+    // UTTypeZIP（UniformTypeIdentifiers，iOS 14+；框架已在 CMake 链接）。
     UIDocumentPickerViewController *picker =
-        [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[UTTypeZip]];
+        [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[UTTypeZIP]];
     picker.allowsMultipleSelection = NO;
     picker.delegate = self;
     [self presentViewController:picker animated:YES completion:nil];

@@ -256,9 +256,10 @@ static BOOL ame318_allow(NSString *permissionId, NSString *pluginId, const char 
             NSLog(@"[Ame318] on('%@') rejected: unknown event (plugin %@)", event, pid);
             return;
         }
-        // JSValue 无 isFunction 属性（CI SDK 实证）——用 C API 判函数。
-        JSGlobalContextRef ame318_ref = [handler.context JSGlobalContextRef];
-        if (!JSValueIsFunction(ame318_ref, [handler JSValueRef])) return;
+        // JSValue 无 isFunction 属性，JSValueRef.h 在 CI SDK 亦无 JSValueIsFunction
+        // （r3 实证）——放宽为空值校验；非函数在分发期 callWithArguments 时抛
+        // JS 异常，由 context.exceptionHandler 捕获留痕，不崩不连坐。
+        if (!handler) return;
         if (eventSink) eventSink(event, handler);
     };
 
