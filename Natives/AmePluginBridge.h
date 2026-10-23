@@ -11,6 +11,7 @@
 
 #import <Foundation/Foundation.h>
 #import <JavaScriptCore/JavaScriptCore.h>
+#import <JavaScriptCore/JSValueRef.h> // JSValueIsFunction（伞头不带入，CI SDK 实证）
 
 NS_ASSUME_NONNULL_BEGIN
 
