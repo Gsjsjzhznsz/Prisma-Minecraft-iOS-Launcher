@@ -4410,3 +4410,5 @@ Stage Summary:
 - 插件系统全链交付：.zip 插件包（manifest.json+main.js）安装/启停/卸载/权限实时开关/内置仓库一键装，权限边界收口在桥接器（JS 侧零裸露原生对象），渲染器/实例配置/主题三大强力面全部白名单化 + 锁内写
 - 实例冲突根修后整合包安装不再弹"实例已存在"，不再产生 "X 2" 幽灵实例；AI 助手主页磁贴上线（老用户布局自动注入）
 - PCL 目录结构答疑口径：嵌套 Documents/Data/Application/<UUID> 来自 LiveContainer 每guest 假容器（utils.m ame302 判据），非启动器布局选择；PCL 式重根（Prisma/minecraft）可行性已侦察（≈25 处 instances/ 硬编码改点 + Task226 迁移器同款哨兵模式），但用户设备日志含未推送的 ame316 平行构建产物，为避免与平行会话布局工作对撞本轮不动布局代码
+
+- 【CI 闭环补记】run 39970878417（r0，2743e7f4）→ 39972557986（r1，7a421a2f）→ 39974224572（r2，596b7fd5）→ 39975848922（r3，a2c7f222）→ 39977695299（r4，52620919）→ **run 39979785216（r5，259e1204）一轮终绿**：五轮热修全谱系 = ①ObjC 方法上下文孤儿（Manager 解析类方法落在两个 @implementation 之间 + Bridge 全文缺实现包裹）②block 无显式返回类型推断雷（[out copy] 返回 id 与首 return 失配，四块显式化 ^NSString */^NSArray */^id）③JSValue isFunction 属性 CI SDK 不存在 ④JSValueRef.h 无 JSValueIsFunction（C API 路线放弃，分发期异常兜底）⑤嵌套泛型 static 声明 typedef 化 ⑥UTTypeZIP 大写 ⑦kShortcutActionAI 头文件 extern（跨文件常量消费老雷第四进宫）。本地门禁盲区实锤：ObjC 语义面（实现归属/block 返回类型推断/SDK 符号存在性/跨文件常量声明域）四类全靠 CI 兜底，与 Task255/256/260/261/310 同族第五批
