@@ -20,10 +20,14 @@
 
 #pragma mark - 内部状态
 
+/// 事件订阅表内层类型（嵌套泛型 typedef 化——clang 对 static 声明中的
+/// 多层嵌套泛型实参报 "neither an Objective-C object nor a block type"）。
+typedef NSMutableDictionary<NSString *, NSMutableArray<JSValue *> *> Ame318HandlerMap;
+
 /// pluginId → JSContext（运行中插件表）。
 static NSMutableDictionary<NSString *, JSContext *> *s_ame318_contexts = nil;
 /// pluginId → {event → [JSValue handler]}（事件订阅表）。
-static NSMutableDictionary<NSString *, NSMutableDictionary<NSString *, NSMutableArray<JSValue *> *>> *s_ame318_handlers = nil;
+static NSMutableDictionary<NSString *, Ame318HandlerMap *> *s_ame318_handlers = nil;
 /// pluginId → 最近 JS 异常文本。
 static NSMutableDictionary<NSString *, NSString *> *s_ame318_lastError = nil;
 /// 状态保护（运行表/订阅表/错误表的互斥；JS 求值本身走串行队列）。

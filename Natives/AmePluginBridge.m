@@ -123,13 +123,13 @@ static BOOL ame318_allow(NSString *permissionId, NSString *pluginId, const char 
     };
 
     // ---- 渲染器（renderer.*）----
-    facade[@"getRenderer"] = ^{
-        if (!ame318_allow(AmePluginPermRendererRead, pid, "getRenderer")) return (NSString *)nil;
+    facade[@"getRenderer"] = ^NSString *{
+        if (!ame318_allow(AmePluginPermRendererRead, pid, "getRenderer")) return nil;
         NSString *raw = [PLProfiles resolveKeyForCurrentProfile:@"renderer"];
-        return (NSString *)(raw ?: @"auto");
+        return raw ?: @"auto";
     };
-    facade[@"listRendererOptions"] = ^{
-        if (!ame318_allow(AmePluginPermRendererRead, pid, "listRendererOptions")) return (NSArray *)nil;
+    facade[@"listRendererOptions"] = ^NSArray *{
+        if (!ame318_allow(AmePluginPermRendererRead, pid, "listRendererOptions")) return nil;
         // containsDefault=NO：不要 "(default)" 占位行（插件拿到的是纯候选表）。
         NSArray *keys = getRendererKeys(NO);
         NSArray *names = getRendererNames(NO);
@@ -185,8 +185,8 @@ static BOOL ame318_allow(NSString *permissionId, NSString *pluginId, const char 
     };
 
     // ---- 实例/配置（profile.*）----
-    facade[@"listInstances"] = ^{
-        if (!ame318_allow(AmePluginPermProfileRead, pid, "listInstances")) return (NSArray *)nil;
+    facade[@"listInstances"] = ^NSArray *{
+        if (!ame318_allow(AmePluginPermProfileRead, pid, "listInstances")) return nil;
         NSDictionary *profiles = [PLProfiles current].profiles;
         NSMutableArray *out = [NSMutableArray array];
         for (NSString *name in profiles) {
@@ -197,9 +197,9 @@ static BOOL ame318_allow(NSString *permissionId, NSString *pluginId, const char 
         }
         return [out copy];
     };
-    facade[@"getProfileValue"] = ^(NSString *key) {
-        if (!ame318_allow(AmePluginPermProfileRead, pid, "getProfileValue")) return (id)nil;
-        if (![key isKindOfClass:[NSString class]] || key.length == 0) return (id)nil;
+    facade[@"getProfileValue"] = ^id(NSString *key) {
+        if (!ame318_allow(AmePluginPermProfileRead, pid, "getProfileValue")) return nil;
+        if (![key isKindOfClass:[NSString class]] || key.length == 0) return nil;
         return [PLProfiles resolveKeyForCurrentProfile:key];
     };
     facade[@"setProfileValue"] = ^(NSString *key, JSValue *value) {
@@ -256,7 +256,9 @@ static BOOL ame318_allow(NSString *permissionId, NSString *pluginId, const char 
             NSLog(@"[Ame318] on('%@') rejected: unknown event (plugin %@)", event, pid);
             return;
         }
-        if (!handler.isFunction) return;
+        // JSValue 无 isFunction 属性（CI SDK 实证）——用 C API 判函数。
+        JSGlobalContextRef ame318_ref = [handler.context JSGlobalContextRef];
+        if (!JSValueIsFunction(ame318_ref, [handler JSValueRef])) return;
         if (eventSink) eventSink(event, handler);
     };
 
