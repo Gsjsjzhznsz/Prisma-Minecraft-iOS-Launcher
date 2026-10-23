@@ -54,6 +54,8 @@ extern NSString * const kShortcutActionCleanup;
 // ★ Task259（清单 6：版本安装界面关闭之后没有地方再打开）：主页“下载中心”
 // 快捷磁贴——统一下载进度页最小化/关闭后的重新打开入口（任务列表 FormSheet）。
 extern NSString * const kShortcutActionDownloadCenter;
+// ★ Task318：AI 助手主页磁贴（用户："原来的ai功能怎么不见了"）。
+extern NSString * const kShortcutActionAI;
 
 // MARK: - LauncherNewsViewController
 
