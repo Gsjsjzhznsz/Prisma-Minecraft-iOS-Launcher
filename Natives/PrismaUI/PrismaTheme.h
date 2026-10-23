@@ -106,6 +106,16 @@ typedef NS_ENUM(NSInteger, PrismaElevation) {
 /// 自定义背景体系与各屏既有配色零回归。
 + (void)install;
 
+#pragma mark - Task318：插件主题令牌覆盖
+
+/// 插件主题覆盖（权限中心 theme.write 授权后由桥接层写入）。
+/// key 为令牌短名：accent / canvas / card / cardElevated / stroke /
+/// textPrimary / textSecondary / textTertiary / danger / success / warning；
+/// 值为 #RRGGBB / #RRGGBBAA。整体替换语义（nil = 清空恢复默认）；
+/// 非法键/非法色值静默丢弃并留痕。写入后由调用方广播
+/// LauncherAppearanceChanged 触发组件重取。
++ (void)setOverrideHexColors:(nullable NSDictionary<NSString *, NSString *> *)hexByToken;
+
 @end
 
 NS_ASSUME_NONNULL_END

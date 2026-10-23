@@ -9,6 +9,7 @@
 #import "WelcomeViewController.h" // Task218：首次使用欢迎向导
 #import "RegionGate.h" // Task312：服务地区门（明面不对大陆开放，3 次提示后放行）
 #import "PrismaUI.h" // Task314：PrismaUI 设计系统（7.0 前端 UI 架构）
+#import "AmePluginRuntime.h" // Task318：插件系统（boot 事件 + 已启用插件拉起）
 // ★ [MP-RESTORE] Task222：Terracotta 联机恢复（上游同日恢复）
 #import "TerracottaManager.h"
 #import "TerracottaBridge.h"
@@ -38,6 +39,11 @@ extern BOOL Amethyst_EnforceSDL3Presentation(void);
     // dispatch_once 兜底防重复调用。
     [PrismaTheme install];
     NSLog(@"[SceneDelegate] Task314: PrismaUI theme installed (Fluent 2 tokens, iOS14+)");
+
+    // Task318：插件系统拉起（异步串行队列，不阻塞首帧）+ launcherBoot 事件
+    // 分发——插件侧可在此事件里读渲染器/写主题/记计数。
+    [AmePluginRuntime bootAll];
+    NSLog(@"[SceneDelegate] Task318: plugin runtime booted");
 
     // Task189：异常处理器晚装复挂（AppDelegate 挂载点之后 LC 若再覆盖，
     // 此处再抢回一次——场景连接是 UI 阶段最后的稳定挂载点）。

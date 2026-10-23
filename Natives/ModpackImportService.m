@@ -2778,7 +2778,12 @@ if (hasRealFileName) {
     };
 
     // 启动下载（downloadVersion: 是异步的，内部会 prepareForDownload 重建 progress）
-    NSDictionary *versionArg = @{@"id": versionId};
+    // ★ Task318：ame300_preinstall=YES——整合包导入的补装语义 = 同版本复用续传，
+    //   MCDL.downloadVersion: 禁弹 Task300 命名窗（与 DVC.ensureVanillaInstalled
+    //   同族修法；重装整合包不再产生"X 2"幽灵实例）。
+    NSMutableDictionary *versionArg = [NSMutableDictionary dictionary];
+    versionArg[@"id"] = versionId;
+    versionArg[@"ame300_preinstall"] = @YES;
     [downloader downloadVersion:versionArg];
 
     // 轮询等待完成（每 0.5s 检查一次，最长 30 分钟）

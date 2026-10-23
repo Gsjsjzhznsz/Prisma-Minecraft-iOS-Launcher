@@ -90,6 +90,14 @@ NSString *const PREF_MOD_MIRROR = @"general.mod_mirror";
             @"confirm_count": @(0),
             @"passed": @NO,
         }.mutableCopy,
+        // ★ Task318：插件中心状态（AmePluginManager 启停账本 + AmePluginPermissions
+        //   授权账本）。键注册是硬前提——setObject:value: 对未注册键静默
+        //   return NO（Task313 地区门"卡 2/3"同族病历），此处播种默认值；
+        //   存量设备经 setDefaultsForPref 的 fill-only 补种自动到位。
+        @"plugin": @{
+            @"enabled_map": @{},  // pluginId → BOOL
+            @"perm_map":    @{},  // pluginId → {permId → BOOL}
+        }.mutableCopy,
         // 分类镜像策略（值 official_first / mirror_first / speed_first，
         // 由 PLMirrorCenter 统一读取，未迁移时回退旧键 general.download_source）。
         // Task138：默认改为 speed_first（加载速度快优先，用户指令，参考 FCL

@@ -146,7 +146,8 @@
 
 - (void)refreshTheme {
     self.titleLabel.font = [PrismaTheme fontForRole:PrismaTextBody1];
-    self.titleLabel.textColor = [PrismaTheme colorTextPrimary];
+    // Task318：标题色覆盖优先（危险行红字等语义色场景），nil 回落令牌。
+    self.titleLabel.textColor = self.titleOverrideColor ?: [PrismaTheme colorTextPrimary];
 
     self.subtitleLabel.font = [PrismaTheme fontForRole:PrismaTextCaption1];
     self.subtitleLabel.textColor = [PrismaTheme colorTextTertiary];

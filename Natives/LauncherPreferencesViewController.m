@@ -6,6 +6,7 @@
 #import "LauncherMenuViewController.h"
 #import "LauncherPreferences.h"
 #import "LauncherPreferencesViewController.h"
+#import "AmePluginListViewController.h" // Task318：插件中心子页
 #import "UIKit+NativeSurface.h" // Task160 新拟态规格色
 // Task 132：renderer_backend 行的 legacy 显示精化需读当前 profile 的
 // renderer 键（与 ame_effective_renderer 同一解析入口）
@@ -1069,6 +1070,16 @@ if ([section isEqualToString:@"general"]) {
               @"action": ^void(){
                   [self openColorPickerForKey:@"general.accent_color" title:localize(@"i18n_str_383", nil)];
               }
+            },
+            // ★ Task318：插件中心入口（管理列表 + 内置插件仓库 + 详情权限组）。
+            @{@"key": @"plugins",
+              @"title": localize(@"ame318.page.title", nil),
+              @"hasDetail": @YES,
+              @"icon": @"puzzlepiece.extension",
+              @"type": self.typeChildPane,
+              @"enableCondition": whenNotInGame,
+              @"canDismissWithSwipe": @NO,
+              @"class": AmePluginListViewController.class
             },
             @{@"key": @"custom_text_color",
               @"title": localize(@"i18n_str_384", nil),

@@ -452,6 +452,15 @@ add_executable(AngelAuraAmethyst
   PrismaUI/PrismaFilledButton.m
   PrismaUI/PrismaCardView.m
   PrismaUI/PrismaListCell.m
+  # Task318：插件系统（JavaScriptCore 脚本引擎 + 权限中心 + 桥接权限边界 +
+  # 事件运行时 + 管理三页；插件包 = manifest.json + main.js 的 zip）
+  AmePluginPermissions.m
+  AmePluginManager.m
+  AmePluginBridge.m
+  AmePluginRuntime.m
+  AmePluginListViewController.m
+  AmePluginDetailViewController.m
+  AmePluginRepoViewController.m
 
   authenticator/BaseAuthenticator.m
   authenticator/LocalAuthenticator.m
@@ -825,6 +834,8 @@ target_link_libraries(AngelAuraAmethyst
   "-framework CoreImage"
   "-framework CoreMedia"
   "-framework ImageIO"
+  # Task318：插件脚本引擎（JavaScriptCore 系统框架，JSContext/JSValue 门面）
+  "-framework JavaScriptCore"
   # Task151：Bing 壁纸保存到相册（PHPhotoLibrary/PHAssetChangeRequest）
   "-framework Photos"
   "-framework CoreMotion"

@@ -758,8 +758,18 @@ static void ame312_recordThroughput(NSInteger idx, double bytes, double elapsed)
         //   完整 = 正是本校验的目标实例，直接放行走 SHA 校验补全，零弹窗；
         //   残根（json 缺）仍弹 Task301 三选窗保护 mods；下载安装链不带键
         //   = Task300 重复实例检测语义原样保留。
-        if ([version[@"ame300_launchcheck"] boolValue]) {
-            NSLog(@"[MCDL] Task304 launch-check path: existing complete instance %@ -- verify-and-continue (no rename prompt)", ame300_origId);
+        // ★ Task318（用户装机日志 2026-10-23：整合包预装原版 26.3 恒弹
+        //   "实例已存在"改名窗）：自动预装链（DVC.ensureVanillaInstalled /
+        //   ModpackImportService.ensureCompleteVersionInstalled）带
+        //   ame300_preinstall=YES——预装语义 = 同版本复用续传（SHA 跳过
+        //   已有文件、补齐缺的），与 Task304 校验链同属"目标就是这份实例"
+        //   家族，禁弹改名窗；且预装链自己刚 ensureParentVersionExists 写出
+        //   versions/<id>/<id>.json（json-only 残根形态），旧逻辑会把自家
+        //   半成品当"用户既有实例"撞名。用户手动下载链（不带任一键）
+        //   的 Task300/301 检测语义原样保留。
+        if ([version[@"ame300_launchcheck"] boolValue] || [version[@"ame300_preinstall"] boolValue]) {
+            NSLog(@"[MCDL] Task318 auto path (%@): existing instance %@ -- verify-and-continue (no rename prompt)",
+                  [version[@"ame300_preinstall"] boolValue] ? @"preinstall" : @"launchcheck", ame300_origId);
             [self ame300_downloadVersionChecked:version];
             return;
         }

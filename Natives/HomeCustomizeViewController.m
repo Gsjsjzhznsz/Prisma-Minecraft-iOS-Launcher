@@ -20,6 +20,8 @@ static NSDictionary *availableShortcuts(void) {
         kShortcutActionCleanup:   @{@"title": localize(@"home.tile.cleanup", @"清理垃圾"),    @"icon": @"trash.circle.fill",             @"color": @"#EF4444"},
         // ★ Task259（清单 6）：下载中心磁贴进可选清单（默认开启 + 老布局注入）。
         kShortcutActionDownloadCenter: @{@"title": localize(@"home.tile.download_center", @"下载中心"), @"icon": @"arrow.down.circle.fill", @"color": @"#3B82F6"},
+        // ★ Task318（用户："原来的ai功能怎么不见了"）：AI 助手磁贴进可选清单。
+        kShortcutActionAI: @{@"title": localize(@"home.tile.ai", @"AI 助手"), @"icon": @"sparkles", @"color": @"#A855F7"},
     };
 }
 

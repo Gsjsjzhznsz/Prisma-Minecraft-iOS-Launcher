@@ -4,7 +4,7 @@
 
  + 「滚动近况」即可开工；更早历史一律查 worklog-archive.md，勿通读）
 
-> 最后更新：Task 165（2026-09-25，ES/4.0 黑屏真根因根修：Task154 的 LWJGL delegate dlsym 补丁致 gl* 解析绕过 MobileGlues 前端，前端导出 xglGetProcAddress 复活死名查找；renderTexture 探针 + RCAS 运行期熔断）。此前：Task 164（RCAS 四项对齐 + 壁纸 nil 判定 + Vulkan FSR 矩阵）；Task 163（新拟态范围修正）；Task 162（八案根修）；Task 161（六案根修）。
+> 最后更新：Task 318（2026-10-23，插件系统大架构+权限中心：JavaScriptCore 引擎/桥接权限边界/事件运行时/管理三页/内置仓库 4 插件；实例冲突根修 ame300_preinstall 预装语义分离；AI 主页磁贴）。此前：Task 164（RCAS 四项对齐 + 壁纸 nil 判定 + Vulkan FSR 矩阵）；Task 163（新拟态范围修正）；Task 162（八案根修）；Task 161（六案根修）。
 > 新会话规则：新任务记录**追加到本文件最末尾**（`## Task N` 或 `---/Task ID:` 模板均可）；收尾时同步更新下面「当前状态」表；本文件超过 ~400 行时把最旧的任务段挪进 worklog-archive.md。
 
 ### 一句话
@@ -13,8 +13,8 @@ AngelAuraAmethyst（Amethyst-iOS 重制版，fork **Gsjsjzhznsz/Air-Minecraft-iO
 ### 当前状态（收尾时更新）
 | 项 | 值 |
 |---|---|
-| 远端 HEAD | Task 234 提交 8eddb7fd + worklog（CI run 37959645228 一次绿）：圈错按钮三级锚定 / coach body 标签约束冲突根修（文字第五轮）/ 描边拷贝 textRectForBounds 对齐 / MobileGL 上游无更新 / 分享 GitHub 零查询参数 |
-| 最新 Task 号 | **234**（多会话并行开发，开新任务前先 fetch 避让编号） |
+| 远端 HEAD | Task 318（插件系统全链 + 实例冲突根修 + AI 磁贴；CI 取证中） |
+| 最新 Task 号 | **318**（多会话并行开发，开新任务前先 fetch 避让编号） |
 | 待用户装机验证 | Task 183（四线锚点见文末）+ Task 182（三锚点）+ Task 181（六锚点）+ Task 180（双滑条透明度）+ Task 179（八连修）+ Task 178/177（新拟态定稿）+ 更早轮次 |
 | 已知历史遗留 | v6.0.0-release-notes.md 是工作区工件不在 git（发布时从 announcements.json 重导出）；部分 verify 级联失败为沙箱环境性（会话本地脚本被清 + task132/135/149/158 路径依赖 + task140 G2/G3 日志轮换），与基线对拍判读 |
 
@@ -4387,3 +4387,26 @@ Work Log:
 
 Stage Summary:
 - PrismaUI 设计系统（令牌层 + 组件层首批三件）落地 origin/main=07966601；7.0.0-beta1 无 Release 上传（用户指令），CI Development build 产物即测试包；后续按模块渐进迁移 59 VC（侧边菜单已试点），iOS 26+ 可接 AmeLiquidGlassView 材质增强
+
+---
+Task ID: 318
+Agent: main (Super Z)
+Task: Task 318 插件系统大架构 + 权限中心（JavaScriptCore 引擎 / 桥接权限边界 / 事件运行时 / 管理三页 / 内置插件仓库）+ 用户四问联修（实例冲突根修 / AI 磁贴 / PCL 目录答疑）
+
+Work Log:
+- 会话重启发现本地落后（Task 262 → 远端 Task 314），pull 同步；确认上一会话 Task318 文件从未落仓（全新重写）；侦察确认 Task314 后设计系统为 PrismaUI/PrismaTheme（ZL2 系前缀仅存在于用户设备未推送的平行构建）
+- 插件核心四件套落 Natives/：AmePluginPermissions（8 权限目录 + 三级危险度 + PLPreferences plugin.perm_map 授权账本）／AmePluginManager（manifest 解析 + id 字符集闸 + Zip Slip/总量 8MB/条目 128 三道解包闸 + 暂存目录原子换装 + UnzipKit 全 API 对表）／AmePluginBridge（`prisma` 门面 16 API，权限检查全部集中在桥接边界；渲染器写走候选表白名单 + PLProfiles applyChanges 锁内 API（Task275 家法）；profile 写键白名单 {allocated_memory, java_args}；files.plugin 私有目录路径闸拒绝对路径/穿越）／AmePluginRuntime（单条串行队列承载全部 JSC 求值 + 快照式事件分发 + 逐插件 JS 异常账本）
+- 事件插桩三处：SceneDelegate willConnect（bootAll + launcherBoot，PrismaTheme install 之后）／SurfaceViewController launchJVM 前后两支（gameLaunch/gameExit 含 code）／JavaGUIViewController（jarLaunch）
+- PrismaTheme 主题覆盖钩子：自包含静态覆盖表落 PrismaTheme.m（11 色值 getter 顶部查覆盖，colorAccentSelectedBackground 派生自 accent 不设独立位），+setOverrideHexColors:（合法令牌集 + #RGB/#RRGGBB/#RRGGBBAA 解析校验，非法丢弃留痕）；桥接层 setThemeTokens 写入后广播 LauncherAppearanceChanged
+- 管理三页（全 PrismaUI 组件 + AmeNativeMenu 菜单 + UIAlertController 确认 + NMToast 反馈家法）：列表页（仓库入口 + 已装列表四态 + "+" 菜单导入 .zip 走 initForOpeningContentTypes 先例 + 安全范围 URL 读取）／详情页（信息/启停开关/权限组实时开关——撤销 events 且在跑即重启插件使旧订阅作废/高危权限行红字 titleOverrideColor/危险区卸载两步确认）／仓库页（bundle BuiltinPlugins/*.zip peek manifest 展示权限要求 → 确认 → 安装）
+- 内置插件仓库 4 包（scripts/task318_builtin_plugins.py 生成 .zip 进 Natives/resources/BuiltinPlugins/，Makefile payload cp -R 随包）：启动横幅(events+notify)／渲染器体检(events+notify+renderer.read/write，dylib 缺失自动回落 auto)／主题色轮盘(events+theme.write)／启动计数器(events+files.plugin)
+- 实例冲突根修（用户装机日志：整合包预装原版 26.3 恒弹"实例已存在"改名窗 → 26.3 2 幽灵实例）：根因 = 预装链上一步 ensureParentVersionExists 刚写出的 versions/<id>/<id>.json json-only 残根，紧接着的 downloadVersion: 把自家半成品当用户既有实例撞名（Task300 命名窗），Task303 改名 fallback 再补一刀。修法 = 自动预装链语义分离：DVC.ensureVanillaInstalled 与 ModpackImportService.ensureCompleteVersionInstalled 调 downloadVersion: 时带 ame300_preinstall=YES，MCDL 门禁放行走 Task304 同款 verify-and-continue（SHA 跳过已有补齐缺的）；用户手动下载链 Task300/301 检测语义原样保留
+- AI 入口（用户："原来的ai功能怎么不见了"）：git 历史实证零删除——入口一直都在（侧边栏第三颗星星图标 + 设置 AI 分区），可发现性不足 + Task259 换 bundle id 后 provider 需重配造成"不见了"观感；主页新增 AI 助手磁贴（defaultTileConfigs + 老布局 Task235/256/259/267 同款一次性注入 + availableShortcuts 可选池 + handleShortcutAction 直发 ShowAIPage 通知，呈现收敛在双根容器零重复实现）
+- i18n：task318_i18n.py 64 键 ×54 表（en/zh-Hans/zh-Hant 全量实译，zh-CN 走 ALIAS，其余主语言常用键 + en 兜底）；自建四表针对性审计 65 键 missing=NONE（task250 的 preference.detail.* 动态族被审计点名 → 补 preference.detail.plugins）
+- 门禁：task191 54 表全 OK／task248 缺键0硬编码0动态键0／task240 all balanced／import sweep 与基线同 WARN；修复过程三处残次（Manager 死代码探针+嵌套目录提升逻辑重写+C 静态函数先用后声明；Bridge weakPid 残留+getRenderer 返回类型显式化；PrismaTheme.m 一次编辑吃 @ 字符经 od -c 字节级定位补回——显示层吞字第五例实锤为工具侧伪影）
+- 已知边界：CMake 主目标新链 -framework JavaScriptCore；Natives/resources/BuiltinPlugins 随 Makefile payload 自动进包无需 CMake 登记；AI 目录结构审计确认 Natives/AI/ 26 源文件 CMake 编译位全在
+
+Stage Summary:
+- 插件系统全链交付：.zip 插件包（manifest.json+main.js）安装/启停/卸载/权限实时开关/内置仓库一键装，权限边界收口在桥接器（JS 侧零裸露原生对象），渲染器/实例配置/主题三大强力面全部白名单化 + 锁内写
+- 实例冲突根修后整合包安装不再弹"实例已存在"，不再产生 "X 2" 幽灵实例；AI 助手主页磁贴上线（老用户布局自动注入）
+- PCL 目录结构答疑口径：嵌套 Documents/Data/Application/<UUID> 来自 LiveContainer 每guest 假容器（utils.m ame302 判据），非启动器布局选择；PCL 式重根（Prisma/minecraft）可行性已侦察（≈25 处 instances/ 硬编码改点 + Task226 迁移器同款哨兵模式），但用户设备日志含未推送的 ame316 平行构建产物，为避免与平行会话布局工作对撞本轮不动布局代码

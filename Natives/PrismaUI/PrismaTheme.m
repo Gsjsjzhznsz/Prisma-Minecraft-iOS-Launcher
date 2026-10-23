@@ -9,6 +9,50 @@
 #import "PrismaTheme.h"
 #import "LauncherPreferences.h"  // accentColor()（general.accent_color 用户偏好）
 
+#pragma mark - Task318：插件主题令牌覆盖（自包含静态表）
+
+/// 令牌短名 → 覆盖色。自包含设计：覆盖表落在本文件内，PrismaTheme 零新增
+/// 依赖；桥接层经 setOverrideHexColors: 写入，取色点在 11 个色值 getter 顶部
+/// 先查覆盖再走默认 Fluent 值（colorAccentSelectedBackground 派生自 accent，
+/// 无需独立覆盖位）。
+static NSDictionary<NSString *, UIColor *> *s_ame318_themeOverrides = nil;
+
+/// 合法令牌短名集。
+static NSSet<NSString *> *ame318_validTokens(void) {
+    static NSSet *s = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        s = [NSSet setWithArray:@[@"accent", @"canvas", @"card", @"cardElevated",
+                                  @"stroke", @"textPrimary", @"textSecondary",
+                                  @"textTertiary", @"danger", @"success", @"warning"]];
+    });
+    return s;
+}
+
+/// #RGB / #RRGGBB / #RRGGBBAA → UIColor（非法 = nil）。
+static UIColor *ame318_colorFromHex(NSString *hex) {
+    if (![hex isKindOfClass:[NSString class]]) return nil;
+    NSString *s = [[hex stringByReplacingOccurrencesOfString:@"#" withString:@""]
+                   uppercaseString];
+    if (s.length != 6 && s.length != 8) return nil;
+    NSCharacterSet *bad = [[NSCharacterSet characterSetWithCharactersInString:@"0123456789ABCDEF"] invertedSet];
+    if ([s rangeOfCharacterFromSet:bad].location != NSNotFound) return nil;
+    unsigned int rgb = 0, a = 255;
+    [[NSScanner scannerWithString:[s substringToIndex:6]] scanHexInt:&rgb];
+    if (s.length == 8) {
+        [[NSScanner scannerWithString:[s substringFromIndex:6]] scanHexInt:&a];
+    }
+    return [UIColor colorWithRed:((rgb >> 16) & 0xFF) / 255.0
+                           green:((rgb >> 8) & 0xFF) / 255.0
+                            blue:(rgb & 0xFF) / 255.0
+                           alpha:(a & 0xFF) / 255.0];
+}
+
+/// getter 顶部覆盖查表（无覆盖 = nil，走默认）。
+static UIColor *ame318_overrideForToken(NSString *token) {
+    return s_ame318_themeOverrides[token];
+}
+
 @implementation PrismaTheme
 
 #pragma mark - 色板
@@ -21,6 +65,9 @@ static UIColor *PrismaDynamic(UIColor *light, UIColor *dark) {
 }
 
 + (UIColor *)colorAccent {
+    // Task318：插件主题覆盖优先（theme.write 授权面）。
+    UIColor *ov = ame318_overrideForToken(@"accent");
+    if (ov) return ov;
     // 用户自定义强调色优先（与全应用 accentColor() 消费点同一事实源）；
     // 返回前经 dynamic 包装无意义（偏好值本身是静态解析色），
     // 直接返回快照，组件在重布局时机重取。
@@ -28,51 +75,71 @@ static UIColor *PrismaDynamic(UIColor *light, UIColor *dark) {
 }
 
 + (UIColor *)colorCanvas {
+    UIColor *ov = ame318_overrideForToken(@"canvas");
+    if (ov) return ov;
     return PrismaDynamic([UIColor colorWithRed:0.9608 green:0.9608 blue:0.9608 alpha:1.0],   // #F5F5F5
                          [UIColor colorWithRed:0.0784 green:0.0784 blue:0.0784 alpha:1.0]);  // #141414
 }
 
 + (UIColor *)colorCard {
+    UIColor *ov = ame318_overrideForToken(@"card");
+    if (ov) return ov;
     return PrismaDynamic([UIColor whiteColor],
                          [UIColor colorWithRed:0.1490 green:0.1490 blue:0.1490 alpha:1.0]);  // #262626
 }
 
 + (UIColor *)colorCardElevated {
+    UIColor *ov = ame318_overrideForToken(@"cardElevated");
+    if (ov) return ov;
     return PrismaDynamic([UIColor whiteColor],
                          [UIColor colorWithRed:0.1765 green:0.1765 blue:0.1765 alpha:1.0]);  // #2D2D2D
 }
 
 + (UIColor *)colorStroke {
+    UIColor *ov = ame318_overrideForToken(@"stroke");
+    if (ov) return ov;
     return PrismaDynamic([UIColor colorWithRed:0.8196 green:0.8196 blue:0.8196 alpha:1.0],   // #D1D1D1
                          [UIColor colorWithRed:0.2196 green:0.2196 blue:0.2196 alpha:1.0]);  // #383838
 }
 
 + (UIColor *)colorTextPrimary {
+    UIColor *ov = ame318_overrideForToken(@"textPrimary");
+    if (ov) return ov;
     return PrismaDynamic([UIColor colorWithRed:0.1412 green:0.1412 blue:0.1412 alpha:1.0],   // #242424
                          [UIColor whiteColor]);
 }
 
 + (UIColor *)colorTextSecondary {
+    UIColor *ov = ame318_overrideForToken(@"textSecondary");
+    if (ov) return ov;
     return PrismaDynamic([UIColor colorWithRed:0.2588 green:0.2588 blue:0.2588 alpha:1.0],   // #424242
                          [UIColor colorWithRed:0.8118 green:0.8118 blue:0.8118 alpha:1.0]);  // #CFCFCF
 }
 
 + (UIColor *)colorTextTertiary {
+    UIColor *ov = ame318_overrideForToken(@"textTertiary");
+    if (ov) return ov;
     return PrismaDynamic([UIColor colorWithRed:0.3804 green:0.3804 blue:0.3804 alpha:1.0],   // #616161
                          [UIColor colorWithRed:0.6039 green:0.6039 blue:0.6039 alpha:1.0]);  // #9A9A9A
 }
 
 + (UIColor *)colorDanger {
+    UIColor *ov = ame318_overrideForToken(@"danger");
+    if (ov) return ov;
     return PrismaDynamic([UIColor colorWithRed:0.7725 green:0.0588 blue:0.1216 alpha:1.0],   // #C50F1F
                          [UIColor colorWithRed:0.9451 green:0.4392 blue:0.4824 alpha:1.0]);  // #F1707B
 }
 
 + (UIColor *)colorSuccess {
+    UIColor *ov = ame318_overrideForToken(@"success");
+    if (ov) return ov;
     return PrismaDynamic([UIColor colorWithRed:0.0549 green:0.4392 blue:0.0549 alpha:1.0],   // #0E700E
                          [UIColor colorWithRed:0.4235 green:0.7961 blue:0.3725 alpha:1.0]);  // #6CCB5F
 }
 
 + (UIColor *)colorWarning {
+    UIColor *ov = ame318_overrideForToken(@"warning");
+    if (ov) return ov;
     return PrismaDynamic([UIColor colorWithRed:0.7176 green:0.3647 blue:0.0000 alpha:1.0],   // #B75D00
                          [UIColor colorWithRed:0.9686 green:0.6980 blue:0.3608 alpha:1.0]);  // #F7B25C
 }
@@ -81,6 +148,31 @@ static UIColor *PrismaDynamic(UIColor *light, UIColor *dark) {
     // Task314：与 LauncherMenuViewController 既有选中态配方同值
     // （accent 15%），先收敛成令牌，后续屏迁移时统一走这里。
     return [[self colorAccent] colorWithAlphaComponent:0.15];
+}
+
+#pragma mark - Task318：插件主题覆盖写入
+
++ (void)setOverrideHexColors:(NSDictionary<NSString *, NSString *> *)hexByToken {
+    if (!hexByToken) {
+        s_ame318_themeOverrides = nil;
+        NSLog(@"[Ame318] theme overrides cleared");
+        return;
+    }
+    NSMutableDictionary<NSString *, UIColor *> *parsed = [NSMutableDictionary dictionary];
+    for (NSString *token in hexByToken) {
+        if (![token isKindOfClass:[NSString class]] || ![ame318_validTokens() containsObject:token]) {
+            NSLog(@"[Ame318] theme override dropped (unknown token '%@')", token);
+            continue;
+        }
+        UIColor *color = ame318_colorFromHex(hexByToken[token]);
+        if (!color) {
+            NSLog(@"[Ame318] theme override dropped (bad hex for '%@')", token);
+            continue;
+        }
+        parsed[token] = color;
+    }
+    s_ame318_themeOverrides = [parsed copy];
+    NSLog(@"[Ame318] theme overrides set: %@", [parsed.allKeys componentsJoinedByString:@","]);
 }
 
 #pragma mark - 字阶

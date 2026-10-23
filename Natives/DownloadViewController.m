@@ -3780,7 +3780,20 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
                 __strong typeof(weakSelf) ss = weakSelf;
                 if (!ss) return;
                 MinecraftResourceDownloadTask *waitTask = ss.vanillaPreinstallTask;
-                [waitTask downloadVersion:version];
+                // ★ Task318（用户装机日志：整合包预装原版恒弹"实例已存在"改名窗）：
+                //   预装链自带 ame300_preinstall=YES 语义标记——MCDL.downloadVersion:
+                //   对"目录已存在"的既有实例走 Task304 同款 verify-and-continue
+                //   （SHA 跳过已有文件补齐缺的），禁弹 Task300 命名窗。病历：预装链
+                //   上一步 ensureParentVersionExists 刚写出 versions/<id>/<id>.json，
+                //   紧接着的 downloadVersion: 把自家 json-only 半成品当"用户既有实例"
+                //   撞名，26.3 被改名成"26.3 2"且每装一次整合包弹一次。
+                NSMutableDictionary *ame318_preinstallVersion =
+                    [version isKindOfClass:[NSDictionary class]] ? [version mutableCopy] : nil;
+                if (!ame318_preinstallVersion) {
+                    ame318_preinstallVersion = [NSMutableDictionary dictionary];
+                }
+                ame318_preinstallVersion[@"ame300_preinstall"] = @YES;
+                [waitTask downloadVersion:ame318_preinstallVersion];
 
                 // 轮询等待完成（最长 30 分钟；与 ensureCompleteVersionInstalled 一致）
                 NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:30 * 60];

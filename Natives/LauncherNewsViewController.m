@@ -67,6 +67,9 @@ NSString * const kShortcutActionCleanup = @"cleanup";
 // 后的重新打开入口（用户：版本安装界面关闭之后没有地方再打开）。与右
 // 面板下载中心按钮同一呈现路径（FormSheet 任务列表，行点按回统一进度页）。
 NSString * const kShortcutActionDownloadCenter = @"download_center";
+// ★ Task318（用户："原来的ai功能怎么不见了"）：AI 助手主页磁贴——入口
+//   从侧边栏第三颗星星图标升级为主页可见磁贴（侧边栏/设置 AI 分区保留）。
+NSString * const kShortcutActionAI = @"ai";
 
 // MARK: - Color Helpers
 
@@ -312,6 +315,20 @@ static UIColor *colorFromHex(NSString *hex) {
     ame267_vm.accentColorHex = @"#6366F1";
     [tiles addObject:ame267_vm];
 
+    // 13. 快捷入口: AI 助手 (半宽) —— ★ Task318（用户："原来的ai功能怎么不见了"）：
+    //    AI 页此前只有侧边栏第三颗星星图标（Task101 图标化后无文字）+ 设置页
+    //    AI 分区，可发现性不足；主页默认磁贴补位（Task267 版本管理同款路径）。
+    HomeTileConfig *ame318_ai = [[HomeTileConfig alloc] init];
+    ame318_ai.tileId = @"shortcut_ai";
+    ame318_ai.tileType = HomeTileTypeShortcut;
+    ame318_ai.tileSize = HomeTileSizeCompact;
+    ame318_ai.visible = YES;
+    ame318_ai.customTitle = localize(@"home.tile.ai", nil);
+    ame318_ai.iconName = @"sparkles";
+    ame318_ai.shortcutAction = kShortcutActionAI;
+    ame318_ai.accentColorHex = @"#A855F7";
+    [tiles addObject:ame318_ai];
+
     return tiles;
 }
 
@@ -439,6 +456,34 @@ static UIColor *colorFromHex(NSString *hex) {
         result = ame267_injected;
         [self saveConfigs:result];
         NSLog(@"[HomeTile] Task267 versions shortcut injected into saved layout");
+    }
+
+    // ★ Task318（用户："原来的ai功能怎么不见了"）：老用户布局一次性补
+    //    "AI 助手"磁贴（同 Task235/256/259/267 注入语义：缺失才加，不覆盖
+    //    用户自定义；落盘后由用户自行增删）。
+    BOOL ame318_hasAI = NO;
+    for (HomeTileConfig *c in result) {
+        if (c.tileType == HomeTileTypeShortcut &&
+            [c.shortcutAction isEqualToString:kShortcutActionAI]) {
+            ame318_hasAI = YES;
+            break;
+        }
+    }
+    if (!ame318_hasAI) {
+        NSMutableArray<HomeTileConfig *> *ame318_injected = [result mutableCopy];
+        HomeTileConfig *ame318_aiTile = [[HomeTileConfig alloc] init];
+        ame318_aiTile.tileId = @"shortcut_ai";
+        ame318_aiTile.tileType = HomeTileTypeShortcut;
+        ame318_aiTile.tileSize = HomeTileSizeCompact;
+        ame318_aiTile.visible = YES;
+        ame318_aiTile.customTitle = localize(@"home.tile.ai", nil);
+        ame318_aiTile.iconName = @"sparkles";
+        ame318_aiTile.shortcutAction = kShortcutActionAI;
+        ame318_aiTile.accentColorHex = @"#A855F7";
+        [ame318_injected addObject:ame318_aiTile];
+        result = ame318_injected;
+        [self saveConfigs:result];
+        NSLog(@"[HomeTile] Task318 AI shortcut injected into saved layout");
     }
     return result;
 }
@@ -1698,6 +1743,13 @@ static NSString *festivalGreeting(void) {
         ame256_nav.modalPresentationStyle = UIModalPresentationPageSheet;
         [self presentViewController:ame256_nav animated:YES completion:nil];
         NSLog(@"[HomeTile] Task256 cleanup tile -> CleanupViewController");
+    } else if ([action isEqualToString:kShortcutActionAI]) {
+        // ★ Task318（用户："原来的ai功能怎么不见了"）：AI 磁贴 → 直发
+        //    ShowAIPage 通知（侧边栏星星图标同款通路；vs/卡片双根均有监听，
+        //    呈现逻辑收敛在根容器，磁贴零重复实现）。
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"ShowAIPage" object:nil];
+        NSLog(@"[HomeTile] Task318 AI tile -> ShowAIPage");
+
     } else if ([action isEqualToString:kShortcutActionDownloadCenter]) {
         // ★ Task259（清单 6）：主页磁贴直通下载中心（与右面板 openDownloadCenter
         //    同一呈现路径：FormSheet 任务列表，行点按回统一进度页——版本安装

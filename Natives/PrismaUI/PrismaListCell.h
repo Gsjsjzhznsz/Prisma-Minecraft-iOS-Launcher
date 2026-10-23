@@ -30,6 +30,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// 图标槽是否着强调色（默认 YES；传入普通图片时按 tint 渲染）。
 @property(nonatomic, assign) BOOL iconTintedWithAccent;
 
+/// 标题色覆盖（nil = 走令牌默认 textPrimary；Task318 危险行红字用）。
+@property(nonatomic, strong, nullable) UIColor *titleOverrideColor;
+
 /// 明暗切换 / 强调色偏好变更时重算。
 - (void)refreshTheme;
 

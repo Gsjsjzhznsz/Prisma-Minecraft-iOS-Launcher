@@ -13,6 +13,7 @@
 
 #import "JavaLauncher.h"
 #import "LauncherPreferences.h"
+#import "AmePluginRuntime.h" // Task318：插件 gameLaunch/gameExit 事件插桩
 #import "MinecraftResourceUtils.h"
 #import "PLProfiles.h"
 #import "SurfaceViewController.h"
@@ -2615,6 +2616,14 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         NSLog(@"[SurfaceViewController] Launching Minecraft with accountId: %@, version: %d, size: %dx%d",
               accountId, minVersion, windowWidth, windowHeight);
 
+        // Task318：插件 gameLaunch 事件（launchJVM 前置分发，异步不阻塞启动链）。
+        NSString *ame318_eventVersion = nil;
+        if ([self.metadata isKindOfClass:[NSDictionary class]]) {
+            id ame318_vid = [(NSDictionary *)self.metadata objectForKey:@"id"];
+            if ([ame318_vid isKindOfClass:[NSString class]]) ame318_eventVersion = ame318_vid;
+        }
+        [AmePluginRuntime dispatchGameLaunchWithVersion:ame318_eventVersion];
+
         // Launch JVM（args[0] 传 accountId，Java 端 MinecraftAccount.load(accountId) 据此加载账户）
         int launchResult = launchJVM(accountId, self.metadata, windowWidth, windowHeight, minVersion);
 
@@ -2622,6 +2631,7 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         // launchJVM 内部失败时会调用 showDialog 显示错误，此处仅负责清理遮罩层
         if (launchResult != 0) {
             NSLog(@"[SurfaceViewController] JVM launch failed with code %d", launchResult);
+            [AmePluginRuntime dispatchGameExitWithVersion:ame318_eventVersion code:launchResult];
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self dismissLaunchOverlayOnError];
             });
@@ -2635,6 +2645,7 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
             //   否则新建 LauncherSplitViewController——与 FCL/Android 的
             //   "退游戏回启动器"行为一致；崩溃/强退路径不经此处，语义不变）。
             NSLog(@"[SurfaceViewController] Task238 JVM exited normally (user quit the game) -- returning to launcher home");
+            [AmePluginRuntime dispatchGameExitWithVersion:ame318_eventVersion code:0];
             dispatch_async(dispatch_get_main_queue(), ^{
                 // ★ Task242（用户："26.3推出游戏依旧启动器没有反应，还在挂着"）：
                 //   Task238 主路径单点依赖 UIWindow.mainWindow 静态指针——

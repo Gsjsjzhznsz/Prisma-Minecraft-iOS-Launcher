@@ -2,6 +2,7 @@
 #import "customcontrols/CustomControlsUtils.h"
 #import "JavaGUIViewController.h"
 #import "JavaLauncher.h"
+#import "AmePluginRuntime.h" // Task318：jar 直启事件插桩
 #import "PLCrashView.h"
 #import "LauncherPreferences.h"
 #import "PLLogOutputView.h"
@@ -382,6 +383,8 @@ dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         });
         return;
     }
+    // Task318：插件 jarLaunch 事件（headless jar/安装器 GUI 直启链）。
+    [AmePluginRuntime dispatchJarLaunchWithPath:strongSelf.filepath];
     launchJVM(nil, strongSelf.filepath, windowWidth, windowHeight, javaVer);
     strongSelf->_requiredJavaVersion = 0;
 });
