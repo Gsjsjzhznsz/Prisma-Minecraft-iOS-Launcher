@@ -60,6 +60,8 @@ static BOOL ame318_allow(NSString *permissionId, NSString *pluginId, const char 
     return NO;
 }
 
+@implementation AmePluginBridge
+
 #pragma mark - 渲染器校验
 
 + (BOOL)isRendererKeyAvailable:(NSString *)key {
@@ -274,3 +276,5 @@ static NSString *ame318_scopedPluginPath(NSString *name, NSString *pluginId) {
                      stringByAppendingPathComponent:@"data"];
     return [dir stringByAppendingPathComponent:name];
 }
+
+@end

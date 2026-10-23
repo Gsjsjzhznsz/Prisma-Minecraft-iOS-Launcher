@@ -29,6 +29,12 @@ static const NSUInteger kAme318MaxEntries = 128;
 
 @end
 
+#pragma mark - 单例与发现
+
+@implementation AmePluginManager {
+    NSRecursiveLock *_ame318_lock;
+}
+
 #pragma mark - 清单解析
 
 + (nullable AmePluginManifest *)parseManifestDictionary:(NSDictionary *)dict
@@ -98,11 +104,6 @@ static const NSUInteger kAme318MaxEntries = 128;
     return nil;
 }
 
-#pragma mark - 单例与发现
-
-@implementation AmePluginManager {
-    NSRecursiveLock *_ame318_lock;
-}
 
 + (instancetype)shared {
     static AmePluginManager *s_ame318_manager = nil;
