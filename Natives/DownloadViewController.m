@@ -824,8 +824,12 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     self.tabSegment.translatesAutoresizingMaskIntoConstraints = NO;
     self.tabSegment.selectedSegmentIndex = 0;
     // 调小字体，确保 8 个 tab 在窄屏也能完整显示
-    NSDictionary *textAttrs = @{NSFontAttributeName: [UIFont systemFontOfSize:12 weight:UIFontWeightMedium]};
+    // ★ Task323：第 9 段「安装」加入后窄屏更挤——字号 12→11 + 允许系统按
+    //   段宽自适应缩字（UISegmentedControl 不自动缩，溢出即截断省略号）。
+    NSDictionary *textAttrs = @{NSFontAttributeName: [UIFont systemFontOfSize:11 weight:UIFontWeightMedium]};
     [self.tabSegment setTitleTextAttributes:textAttrs forState:UIControlStateNormal];
+    [self.tabSegment setTitleTextAttributes:@{NSFontAttributeName: [UIFont systemFontOfSize:11 weight:UIFontWeightSemibold]}
+                                    forState:UIControlStateSelected];
     [self.tabSegment addTarget:self action:@selector(tabChanged:) forControlEvents:UIControlEventValueChanged];
     [self.view addSubview:self.tabSegment];
 
