@@ -4430,3 +4430,16 @@ Stage Summary:
 - 三问全落：①原版安装页=丢失构建的遗留页面（已失传），main 侧以「安装」tab 原生内嵌替代（ZL2 风格头部芯片+全宽卡片，布局三病根根治）②UI ZL2 风格=下载中心既有 FCL/ZL2 侧栏筛选 + 新「安装」tab 卡片语言 + 整合包加载器筛选解禁 ③隔离文件=game 叶子退役平铺+六目录骨架（mods/saves/config/resourcepacks/shaderpacks/screenshots），versions/<id>/ 直接可见 FCL 同款隔离目录且放模组即生效
 - 装机锚点：①启动日志 [Ame323] game-subdir flatten done（老设备）/[Ame323] isolation skeleton ensured for versions/<X>（六目录出现）②下载中心第 9 段「安装」tab=芯片选版本+卡片选加载器+安装按钮，全宽无死空间 ③整合包 tab 侧栏出现"模组加载器"筛选行 ④老 game 叶子实例启动后被拍平（versions/<id>/game 消失、内容上移）
 - 遗留移交：游戏内安装页 push 版本选择子页在嵌入模式的返回层级（picker pop 回 DVC 整页，可后续优化为局部呈现）；「安装」tab 未与版本 tab 双向联动（版本 tab 点版本卡仍走旧 push 流，语义保留）；Task304 谱系的 Forge/OptiFine 安装链重复检测在 Task318 ame300_preinstall 后是否全覆盖待装机复验
+
+---
+## Task 323-ci——CI 闭环 + v7.0.0-beta2 预发布（测试通道）
+
+Work Log:
+- run 40091146037（bc647452 r1）**一轮终绿** completed success（11:45→11:59，14.5min 零热修；3c987541 首轮按惯例被 r1 取代取消）
+- 发布通道定性：Task314"测试版不上传发行版"指令在案 + 稳定通道保护 → 新建 **v7.0.0-beta2 预发布**（tag=bc647452，prerelease=true），双产物在架（ipa 235709390B / tipa 235709797B 均含 dSYM 未拆）；/releases/latest 实测仍 = v6.5.5（预发布不进 latest 解析，网站 Task291 版本检查链与 hero 下载链零影响；UpdateChecker beta 护栏双保险）
+- 422 排障一则：已有 tag 再传 target_commitish 恒 422，省略该字段即过
+- 产物本地留档：/home/z/my-project/download/task323/（ipa/tipa 解压态）
+
+Stage Summary:
+- Task 323 全链闭环：三问修复 + 丢失平行构建等价重做已进可装机测试包；下载页 https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/tag/v7.0.0-beta2
+- 装机锚点：①[Ame323] 拍平/骨架日志 ②下载中心第 9 段「安装」tab ③整合包 tab 侧栏加载器筛选 ④老 game 叶子自动拍平
