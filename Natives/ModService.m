@@ -476,8 +476,8 @@
 }
 
 /// Task323：启动拍平全量入口（SceneDelegate 在 ame271 自愈前调用）。
-/// 三步：①versions/*/game 叶子逐个拍平（Task322 丢失成果的等价重做，
-/// 用户设备 203d22b 已拍平的场景天然空转）；②注册表 gameDir 重指
+/// 三步：①versions/*/game 叶子逐个拍平（老 game 叶子布局一次性迁移，
+/// 已拍平/无叶子的场景天然空转）；②注册表 gameDir 重指
 /// （versions/<id>/game → versions/<id>，Ame271 日志锚点同款）；③隔离
 /// 实例骨架补齐（mods/saves/config/resourcepacks/shaderpacks/screenshots
 /// = 用户本轮诉求"versions 下的实例没有隔离文件"）。幂等：无叶子、无
