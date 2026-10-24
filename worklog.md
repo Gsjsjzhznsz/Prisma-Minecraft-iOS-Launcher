@@ -4412,3 +4412,21 @@ Stage Summary:
 - PCL 目录结构答疑口径：嵌套 Documents/Data/Application/<UUID> 来自 LiveContainer 每guest 假容器（utils.m ame302 判据），非启动器布局选择；PCL 式重根（Prisma/minecraft）可行性已侦察（≈25 处 instances/ 硬编码改点 + Task226 迁移器同款哨兵模式），但用户设备日志含未推送的 ame316 平行构建产物，为避免与平行会话布局工作对撞本轮不动布局代码
 
 - 【CI 闭环补记】run 39970878417（r0，2743e7f4）→ 39972557986（r1，7a421a2f）→ 39974224572（r2，596b7fd5）→ 39975848922（r3，a2c7f222）→ 39977695299（r4，52620919）→ **run 39979785216（r5，259e1204）一轮终绿**：五轮热修全谱系 = ①ObjC 方法上下文孤儿（Manager 解析类方法落在两个 @implementation 之间 + Bridge 全文缺实现包裹）②block 无显式返回类型推断雷（[out copy] 返回 id 与首 return 失配，四块显式化 ^NSString */^NSArray */^id）③JSValue isFunction 属性 CI SDK 不存在 ④JSValueRef.h 无 JSValueIsFunction（C API 路线放弃，分发期异常兜底）⑤嵌套泛型 static 声明 typedef 化 ⑥UTTypeZIP 大写 ⑦kShortcutActionAI 头文件 extern（跨文件常量消费老雷第四进宫）。本地门禁盲区实锤：ObjC 语义面（实现归属/block 返回类型推断/SDK 符号存在性/跨文件常量声明域）四类全靠 CI 兜底，与 Task255/256/260/261/310 同族第五批
+
+---
+## Task 323——三线（用户截图三问：原版安装页有没有问题/UI 改 ZL2 风格/versions 实例缺隔离文件）＋丢失平行构建成果等价重做
+
+日期：2026-10-24　构建：b640ce48（CI 轮询中）
+
+Work Log:
+- 前置定性：设备日志（latestlog.txt 2026-10-24）实锤用户装机 = 平行会话构建 203d22b/12e9ca9（Version 1.0.0 development），两枚提交在 origin/main、全部远端分支、GitHub API 与 CI runs 四处均不存在 = 平行会话（Task319-322 谱系：.minecraft 重指/game 叶子拍平/ZL2VersionIndex/安装页重构）成果未推送已失传；本轮在 origin/main 基线等价重做用户三问涉及面，截图 IMG_0485（安装 - 26.3 页：内容挤左 1/4+安装（原版）按钮截断+右侧死空间）即该丢失构建的遗留面
+- ①game 子目录退役（FCL/HMCL/PCL parity）：ModService ame323 四件套（isolationGameDirForVersionId=versions/<id> 新口径 / ensureIsolationSkeletonForVersionId 六目录骨架 / flattenGameSubdirForVersionId 单实例拍平（目标存在跳过绝不覆盖+搬空删叶）/ flattenLegacyGameSubdirs 启动全量）+SceneDelegate 挂钩（ame271 自愈前，幂等三段空转安全）；ame225 嗅探/ame271 反推/ame272 清扫三读取方平铺优先；九处写入方全量切换+即时骨架（DVC×3/实例页/三态选择器 enableIsolationWorker 口径反转 legacy=game 叶子 assimilate/Fabric 直装/Forge 直装/NeoForge 直装/MRDT/VersionManager/AI×2）；Cleanup 扫描双口径（<id>.json 平铺实例+game 叶子兼容）
+- ②下载中心「安装」tab（index 8）：ModLoaderInstallViewController ame323_embedded 嵌入模式（导航栏按钮退位→页内头部条：游戏版本芯片+安装主按钮，iPad 全宽=截图三病根结构性根治）+ModLoaderGameVersionPickerViewController 远端清单选择子页（搜索过滤+卡式行）+Task189 同款容器内嵌；嵌入回调直连 proceedWithVersion（ame323_remoteVersionDictForId 反查远端字典，id 唯一必需字段）；目标版本=ame267 锁定实例 lastVersionId 回落最新 release；远端清单到手即喂
+- ③加载器筛选解禁（ZL2 parity）：sidebarLoaderButton 三行从"仅模组 tab"扩为"模组+整合包"（CF modLoaderType/Modrinth facets 后端 Task173/175/179 早已就绪，纯 UI 解禁）
+- ④门禁：task323_i18n.py 54 表 +1 键（download.tab.install）；task139/240 all balanced；task191 54 表 OK；task248 缺键0/硬编码0/动态键0；task250 0；verify219 重锚 81/81（唯一键 3165→3262=Task312/313/318 累计+本轮 1 键实测；公告 6→7=Task312 头插；TAB 812→808=Task314/318 扩编实测）；verify255 复绿 52/52（Task311 遗留 gamepad 双条目缺 id 补齐+公告锚同步）；ModService.h CRLF 字节级编辑（python 直写）；显示层吞字第六例实锤（sed 渲染 "[migrateSource" 为 "igrateSource"，od -c 字节级证伪未误修）
+- 事故两件：①task323_i18n.py 首版手写字节串 mojibake（役→彫）python 复查即修；②python 批量插 import 落点误入方法之间（Forge/NeoForge 两处，预处理器语义虽合法仍复位文件头）
+
+Stage Summary:
+- 三问全落：①原版安装页=丢失构建的遗留页面（已失传），main 侧以「安装」tab 原生内嵌替代（ZL2 风格头部芯片+全宽卡片，布局三病根根治）②UI ZL2 风格=下载中心既有 FCL/ZL2 侧栏筛选 + 新「安装」tab 卡片语言 + 整合包加载器筛选解禁 ③隔离文件=game 叶子退役平铺+六目录骨架（mods/saves/config/resourcepacks/shaderpacks/screenshots），versions/<id>/ 直接可见 FCL 同款隔离目录且放模组即生效
+- 装机锚点：①启动日志 [Ame323] game-subdir flatten done（老设备）/[Ame323] isolation skeleton ensured for versions/<X>（六目录出现）②下载中心第 9 段「安装」tab=芯片选版本+卡片选加载器+安装按钮，全宽无死空间 ③整合包 tab 侧栏出现"模组加载器"筛选行 ④老 game 叶子实例启动后被拍平（versions/<id>/game 消失、内容上移）
+- 遗留移交：游戏内安装页 push 版本选择子页在嵌入模式的返回层级（picker pop 回 DVC 整页，可后续优化为局部呈现）；「安装」tab 未与版本 tab 双向联动（版本 tab 点版本卡仍走旧 push 流，语义保留）；Task304 谱系的 Forge/OptiFine 安装链重复检测在 Task318 ame300_preinstall 后是否全覆盖待装机复验
