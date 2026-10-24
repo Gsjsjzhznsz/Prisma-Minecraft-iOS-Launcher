@@ -1169,12 +1169,165 @@ static NSString *ame185ShowAllRow(NSInteger hiddenCount) {
 
 @end
 
+#pragma mark - Game Version Picker（Task323 嵌入模式「安装」tab 游戏版本选择子页）
+
+/// Task323：远端版本清单选择页（与 ModLoaderVersionPickerViewController 同
+/// 视觉语言：InsetGrouped + ModLoaderVersionCell 卡式行），数据 =
+/// DownloadViewController.versionList 同源字典数组（id/type/releaseTime）。
+/// 搜索框按版本号过滤（大小写不敏感 contains）。选中即回调并返回本页。
+@interface ModLoaderGameVersionPickerViewController : UIViewController <UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate>
+@property (nonatomic, copy) NSArray *gameVersions;      // 远端清单字典数组
+@property (nonatomic, copy) NSString *selectedId;
+@property (nonatomic, copy) void (^onSelected)(NSString *vid);
+@property (nonatomic, strong) UITableView *tableView;
+@property (nonatomic, strong) UISearchBar *searchBar;
+@property (nonatomic, copy) NSArray *filtered;          // 搜索过滤后的展示集
+@end
+
+@implementation ModLoaderGameVersionPickerViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.title = localize(@"i18n_str_38", nil);
+    self.view.backgroundColor = [UIColor clearColor];
+    [[BackgroundManager sharedManager] makeViewControllerTransparent:self];
+    if (self.navigationController) {
+        [[BackgroundManager sharedManager] applyEffectToNavigationBar:self.navigationController.navigationBar];
+    }
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(ame323_reloadForEffect)
+                                                 name:@"BackgroundUIEffectChanged"
+                                               object:nil];
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"chevron.left"]
+                                                                              style:UIBarButtonItemStylePlain
+                                                                             target:self
+                                                                             action:@selector(ame323_backTapped)];
+    [self ame323_setupViews];
+    [self ame323_applyFilter:nil];
+}
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (void)ame323_reloadForEffect {
+    [_tableView reloadData];
+}
+
+- (void)ame323_backTapped {
+    if (self.navigationController.viewControllers.count > 1) {
+        [self.navigationController popViewControllerAnimated:YES];
+    } else {
+        [self dismissViewControllerAnimated:YES completion:nil];
+    }
+}
+
+- (void)ame323_setupViews {
+    _searchBar = [[UISearchBar alloc] init];
+    _searchBar.translatesAutoresizingMaskIntoConstraints = NO;
+    _searchBar.delegate = self;
+    _searchBar.placeholder = localize(@"i18n_str_155", nil);
+    _searchBar.searchBarStyle = UISearchBarStyleMinimal;
+    _searchBar.backgroundColor = [UIColor clearColor];
+    [self.view addSubview:_searchBar];
+
+    _tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
+    _tableView.translatesAutoresizingMaskIntoConstraints = NO;
+    _tableView.backgroundColor = [UIColor clearColor];
+    _tableView.backgroundView = nil;
+    _tableView.dataSource = self;
+    _tableView.delegate = self;
+    _tableView.rowHeight = 50;
+    _tableView.estimatedRowHeight = 50;
+    _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableView.separatorInset = UIEdgeInsetsZero;
+    _tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
+    _tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentAutomatic;
+    [_tableView registerClass:[ModLoaderVersionCell class] forCellReuseIdentifier:@"GameVersionCell"];
+    [self.view addSubview:_tableView];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [_searchBar.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:4],
+        [_searchBar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:8],
+        [_searchBar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-8],
+        [_searchBar.heightAnchor constraintEqualToConstant:36],
+
+        [_tableView.topAnchor constraintEqualToAnchor:_searchBar.bottomAnchor constant:4],
+        [_tableView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [_tableView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+        [_tableView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+    ]];
+}
+
+- (void)ame323_applyFilter:(NSString *)query {
+    NSMutableArray *ame323_out = [NSMutableArray array];
+    for (NSDictionary *ame323_v in _gameVersions) {
+        if (![ame323_v isKindOfClass:[NSDictionary class]]) continue;
+        NSString *ame323_id = ame323_v[@"id"];
+        if (![ame323_id isKindOfClass:[NSString class]] || ame323_id.length == 0) continue;
+        if (query.length > 0 && [ame323_id rangeOfString:query options:NSCaseInsensitiveSearch].location == NSNotFound) continue;
+        [ame323_out addObject:ame323_v];
+    }
+    _filtered = [ame323_out copy];
+    [_tableView reloadData];
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    return _filtered.count;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    ModLoaderVersionCell *cell = [tableView dequeueReusableCellWithIdentifier:@"GameVersionCell" forIndexPath:indexPath];
+    NSDictionary *v = _filtered[indexPath.row];
+    NSString *vid = [v[@"id"] isKindOfClass:[NSString class]] ? v[@"id"] : @"";
+    NSString *type = [v[@"type"] isKindOfClass:[NSString class]] ? v[@"type"] : @"";
+    // 展示附加类型徽标语义：release 原样、snapshot 前缀快照（本地化沿用
+    // 版本 tab 的既有键，缺表时回落英文 type 原文，task248 零硬编码口径）
+    NSString *typeTag = @"";
+    if (type.length > 0 && ![type isEqualToString:@"release"]) {
+        typeTag = [NSString stringWithFormat:@"  · %@", type];
+    }
+    [cell configureWithVersion:[vid stringByAppendingString:typeTag]
+                    isSelected:[vid isEqualToString:_selectedId]];
+    return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    NSDictionary *v = _filtered[indexPath.row];
+    NSString *vid = [v[@"id"] isKindOfClass:[NSString class]] ? v[@"id"] : nil;
+    if (vid.length == 0) return;
+    if (_onSelected) _onSelected(vid);
+    if (self.navigationController.viewControllers.count > 1) {
+        [self.navigationController popViewControllerAnimated:YES];
+    } else {
+        [self dismissViewControllerAnimated:YES completion:nil];
+    }
+}
+
+#pragma mark UISearchBarDelegate
+
+- (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
+    [self ame323_applyFilter:searchText];
+}
+
+- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar {
+    [searchBar resignFirstResponder];
+    [self ame323_applyFilter:searchBar.text];
+}
+
+@end
+
 #pragma mark - Main Controller
 
 @interface ModLoaderInstallViewController () <UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate>
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) UITextField *versionNameField;
 @property (nonatomic, strong) UIView *nameBar;
+// ★ Task323：嵌入模式页内头部（游戏版本选择芯片 + 安装按钮，替代导航栏按钮）
+@property (nonatomic, strong) UIView *ame323_headerBar;
+@property (nonatomic, strong) UIButton *ame323_gameVersionChip;
+@property (nonatomic, strong) UIButton *ame323_installButton;
 
 // 数据
 @property (nonatomic, strong) NSMutableArray<ModLoaderRow *> *loaders;
@@ -1211,18 +1364,24 @@ static NSString *ame185ShowAllRow(NSInteger hiddenCount) {
                                                  name:@"BackgroundUIEffectChanged"
                                                object:nil];
 
-    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"chevron.left"]
-                                                                              style:UIBarButtonItemStylePlain
-                                                                             target:self
-                                                                             action:@selector(backTapped)];
+    // ★ Task323：嵌入模式（下载中心「安装」tab）——导航栏返回/安装按钮退位，
+    //   页内头部条（游戏版本芯片 + 安装按钮）接管；取消/返回语义归嵌入方。
+    if (_ame323_embedded) {
+        [self ame323_setupHeader];
+    } else {
+        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"chevron.left"]
+                                                                                  style:UIBarButtonItemStylePlain
+                                                                                 target:self
+                                                                                 action:@selector(backTapped)];
 
-    // FCL 风格：右上角下载图标按钮（替代原底部 72pt 大按钮）
-    UIBarButtonItem *installItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"arrow.down.circle.fill"]
-                                                                      style:UIBarButtonItemStyleDone
-                                                                     target:self
-                                                                     action:@selector(installTapped)];
-    installItem.tintColor = [UIColor systemGreenColor];
-    self.navigationItem.rightBarButtonItem = installItem;
+        // FCL 风格：右上角下载图标按钮（替代原底部 72pt 大按钮）
+        UIBarButtonItem *installItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"arrow.down.circle.fill"]
+                                                                          style:UIBarButtonItemStyleDone
+                                                                         target:self
+                                                                         action:@selector(installTapped)];
+        installItem.tintColor = [UIColor systemGreenColor];
+        self.navigationItem.rightBarButtonItem = installItem;
+    }
 
     _installFabricAPI = YES;  // Fabric 默认勾选 Fabric API（与 FCL 默认行为一致）
 
@@ -1231,11 +1390,106 @@ static NSString *ame185ShowAllRow(NSInteger hiddenCount) {
     [self setupTableView];
     [self refreshIncompatibilities];
     [self refreshVersionName];
+    if (_ame323_embedded) {
+        [self ame323_updateChipTitle];
+    }
 }
 
 - (void)refreshBackgroundEffect {
     // 背景效果切换时刷新 cell 与 nameBar 的毛玻璃外观
     [_tableView reloadData];
+}
+
+#pragma mark Task323（嵌入模式：页内头部条 + 游戏版本切换）
+
+/// Task323：嵌入模式页内头部条——左「游戏版本」芯片（点按 push 远端版本
+/// 选择子页），右「安装」主按钮（点按走 installTapped，与导航档安装键同
+/// 一语义）。ZL2 风格：圆角卡片芯片 + 填充主按钮， iPad 全宽不挤不截断。
+- (void)ame323_setupHeader {
+    _ame323_headerBar = [[UIView alloc] init];
+    _ame323_headerBar.translatesAutoresizingMaskIntoConstraints = NO;
+    _ame323_headerBar.backgroundColor = [UIColor clearColor];
+    [self.view addSubview:_ame323_headerBar];
+
+    _ame323_gameVersionChip = [UIButton buttonWithType:UIButtonTypeSystem];
+    _ame323_gameVersionChip.translatesAutoresizingMaskIntoConstraints = NO;
+    _ame323_gameVersionChip.layer.cornerRadius = 10;
+    _ame323_gameVersionChip.layer.cornerCurve = kCACornerCurveContinuous;
+    _ame323_gameVersionChip.backgroundColor = [UIColor secondarySystemFillColor];
+    _ame323_gameVersionChip.contentEdgeInsets = UIEdgeInsetsMake(0, 12, 0, 12);
+    _ame323_gameVersionChip.titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
+    [_ame323_gameVersionChip addTarget:self action:@selector(ame323_showGameVersionPicker) forControlEvents:UIControlEventTouchUpInside];
+    [_ame323_headerBar addSubview:_ame323_gameVersionChip];
+
+    _ame323_installButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    _ame323_installButton.translatesAutoresizingMaskIntoConstraints = NO;
+    _ame323_installButton.layer.cornerRadius = 10;
+    _ame323_installButton.layer.cornerCurve = kCACornerCurveContinuous;
+    _ame323_installButton.backgroundColor = [UIColor systemGreenColor];
+    _ame323_installButton.contentEdgeInsets = UIEdgeInsetsMake(0, 18, 0, 18);
+    _ame323_installButton.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+    [_ame323_installButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [_ame323_installButton setTitle:localize(@"i18n_str_904", nil) forState:UIControlStateNormal];
+    [_ame323_installButton addTarget:self action:@selector(installTapped) forControlEvents:UIControlEventTouchUpInside];
+    [_ame323_headerBar addSubview:_ame323_installButton];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [_ame323_headerBar.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:8],
+        [_ame323_headerBar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:16],
+        [_ame323_headerBar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-16],
+        [_ame323_headerBar.heightAnchor constraintEqualToConstant:40],
+
+        [_ame323_gameVersionChip.leadingAnchor constraintEqualToAnchor:_ame323_headerBar.leadingAnchor],
+        [_ame323_gameVersionChip.centerYAnchor constraintEqualToAnchor:_ame323_headerBar.centerYAnchor],
+        [_ame323_gameVersionChip.heightAnchor constraintEqualToAnchor:_ame323_headerBar.heightAnchor],
+
+        [_ame323_installButton.trailingAnchor constraintEqualToAnchor:_ame323_headerBar.trailingAnchor],
+        [_ame323_installButton.centerYAnchor constraintEqualToAnchor:_ame323_headerBar.centerYAnchor],
+        [_ame323_installButton.heightAnchor constraintEqualToAnchor:_ame323_headerBar.heightAnchor],
+        [_ame323_gameVersionChip.trailingAnchor constraintLessThanOrEqualToAnchor:_ame323_installButton.leadingAnchor constant:-8],
+    ]];
+}
+
+/// Task323：芯片标题同步（游戏版本：X；空版本回落占位文案）。
+- (void)ame323_updateChipTitle {
+    NSString *ame323_title = _gameVersion.length > 0
+        ? [NSString stringWithFormat:@"%@：%@  ▾", localize(@"i18n_str_38", nil), _gameVersion]
+        : [NSString stringWithFormat:@"%@  ▾", localize(@"i18n_str_38", nil)];
+    [_ame323_gameVersionChip setTitle:ame323_title forState:UIControlStateNormal];
+    [_ame323_gameVersionChip setTitleColor:[UIColor labelColor] forState:UIControlStateNormal];
+}
+
+/// Task323：嵌入模式切换目标游戏版本——重建加载器兼容性行 + 自动版本名 +
+/// 芯片标题；选中加载器的版本选择按新版本重判（旧选择保留，不兼容时由
+/// refreshIncompatibilities 红字提示）。
+- (void)ame323_applyGameVersion:(NSString *)vid {
+    if (![vid isKindOfClass:[NSString class]] || vid.length == 0) return;
+    if ([vid isEqualToString:_gameVersion]) { [self ame323_updateChipTitle]; return; }
+    _gameVersion = [vid copy];
+    [self setupLoaders];
+    [self refreshIncompatibilities];
+    [self refreshVersionName];
+    [self ame323_updateChipTitle];
+}
+
+/// Task323：push 远端游戏版本选择子页（数据 = 嵌入方注入的远端清单）。
+- (void)ame323_showGameVersionPicker {
+    ModLoaderGameVersionPickerViewController *picker = [[ModLoaderGameVersionPickerViewController alloc] init];
+    picker.gameVersions = _ame323_gameVersions ?: @[];
+    picker.selectedId = _gameVersion;
+    __weak typeof(self) weakSelf = self;
+    picker.onSelected = ^(NSString *vid) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        [strongSelf ame323_applyGameVersion:vid];
+    };
+    if (self.navigationController) {
+        [self.navigationController pushViewController:picker animated:YES];
+    } else {
+        UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:picker];
+        nav.modalPresentationStyle = UIModalPresentationFormSheet;
+        [self presentViewController:nav animated:YES completion:nil];
+    }
 }
 
 #pragma mark Setup
@@ -1314,8 +1568,12 @@ static NSString *ame185ShowAllRow(NSInteger hiddenCount) {
     _versionNameField.clearButtonMode = UITextFieldViewModeWhileEditing;
     [_nameBar addSubview:_versionNameField];
 
+    // ★ Task323：嵌入模式时 nameBar 顶部锚在页内头部条下方；push 模式锚 safeArea
+    NSLayoutConstraint *ame323_top = _ame323_embedded
+        ? [_nameBar.topAnchor constraintEqualToAnchor:_ame323_headerBar.bottomAnchor constant:8]
+        : [_nameBar.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:8];
     [NSLayoutConstraint activateConstraints:@[
-        [_nameBar.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:8],
+        ame323_top,
         [_nameBar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:16],
         [_nameBar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-16],
         [_nameBar.heightAnchor constraintEqualToConstant:40],

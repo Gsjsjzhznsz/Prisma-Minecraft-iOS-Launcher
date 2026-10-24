@@ -901,11 +901,12 @@ static BOOL aiIsLatestAlias(NSString *s) {
             NSMutableDictionary *prof = [NSMutableDictionary dictionary];
             prof[@"name"] = versionId;
             prof[@"lastVersionId"] = versionId;
-            // ★ Task271（271-a F3）：AI 安装流同步隔离口径 versions/<id>/game
-            prof[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", versionId];
+            // ★ Task271（271-a F3）：AI 安装流同步隔离口径 ★ Task323：versions/<id> 平铺
+            prof[@"gameDir"] = [NSString stringWithFormat:@"versions/%@", versionId];
             prof[@"type"] = @"custom";
             prof[@"created"] = [NSDate date].description;
             [PLProfiles.current saveProfile:prof withName:versionId];
+            [ModService ame323_ensureIsolationSkeletonForVersionId:versionId];
             PLProfiles.current.selectedProfileName = versionId;
             [[NSNotificationCenter defaultCenter] postNotificationName:@"ReloadProfileList" object:nil];
             [manager updateTaskWithId:task.taskId stageAtIndex:jsonStage status:PLTaskStageStatusCompleted];
@@ -1565,11 +1566,12 @@ static BOOL aiIsLatestAlias(NSString *s) {
                             NSMutableDictionary *profile = [NSMutableDictionary dictionary];
                             profile[@"name"] = resolvedId;
                             profile[@"lastVersionId"] = resolvedId;
-                            // ★ Task271（271-a F3）：AI 原版安装同步隔离口径 versions/<id>/game
-                            profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", resolvedId];
+                            // ★ Task271（271-a F3）：AI 原版安装同步隔离口径 ★ Task323：versions/<id> 平铺
+                            profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@", resolvedId];
                             profile[@"type"] = @"custom";
                             profile[@"created"] = [NSDate date].description;
                             [PLProfiles.current saveProfile:profile withName:resolvedId];
+                            [ModService ame323_ensureIsolationSkeletonForVersionId:resolvedId];
                             PLProfiles.current.selectedProfileName = resolvedId;
                             [[NSNotificationCenter defaultCenter] postNotificationName:@"ReloadProfileList" object:nil];
                             if (completion) completion(YES, nil);

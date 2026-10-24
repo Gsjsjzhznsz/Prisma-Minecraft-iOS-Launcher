@@ -3247,3 +3247,4 @@
 "ame318.error.entry_unreadable" = "Cannot read entry %@.";
 "home.tile.ai" = "Asistente IA";
 "preference.detail.plugins" = "Manage plugins, permissions and the plugin repository";
+"download.tab.install" = "Instalar";

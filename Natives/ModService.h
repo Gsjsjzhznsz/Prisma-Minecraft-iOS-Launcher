@@ -84,6 +84,25 @@ typedef void(^ModDownloadHandler)(NSError * _Nullable error); // Added for downl
 /// 目录（幂等；已显式配置的条目绝不碰；SceneDelegate 启动钩子调用）。
 + (void)ame271_selfHealStrandedIsolation;
 
+/// ★ Task323（game 子目录退役·FCL/HMCL/PCL parity）：隔离 gameDir 新口径
+/// = versions/<id>（与 jar/json 同目录，和 FCL/HMCL/PCL/ZL2 文件架构对齐）。
+/// 旧 versions/<id>/game 叶子整体退役：启动拍平 + 注册表重指 + 骨架补齐。
++ (NSString *)ame323_isolationGameDirForVersionId:(NSString *)vid;
+
+/// Task323：为隔离实例补齐 FCL/HMCL/PCL parity 标准骨架目录
+/// （mods/saves/config/resourcepacks/shaderpacks/screenshots）——仅在
+/// 该版本处于隔离态时创建；非隔离实例绝不创建（防误导）。
++ (void)ame323_ensureIsolationSkeletonForVersionId:(NSString *)vid;
+
+/// Task323：拍平 GAME_DIR/versions/<vid>/game 旧叶子到 versions/<vid>/
+/// （目标已存在一律跳过不覆盖；搬空后删除空叶子）。返回搬动条目数。
++ (NSInteger)ame323_flattenGameSubdirForVersionId:(NSString *)vid;
+
+/// Task323：启动拍平全量入口——versions/*/game 叶子逐个拍平 + 全部
+/// profile 注册表 gameDir 由 versions/<id>/game 重指 versions/<id> +
+/// 隔离实例骨架补齐（幂等；SceneDelegate 启动钩子在 ame271 自愈前调用）。
++ (void)ame323_flattenLegacyGameSubdirs;
+
 @end
 
 NS_ASSUME_NONNULL_END

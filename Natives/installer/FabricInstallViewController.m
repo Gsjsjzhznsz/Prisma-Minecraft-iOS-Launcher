@@ -8,6 +8,7 @@
 #import "PLProfiles.h"
 #import "BackgroundManager.h"
 #import "PLMirrorCenter.h"
+#import "ModService.h"        // Task323: flat isolation gameDir + skeleton
 #import "ios_uikit_bridge.h"
 #import "utils.h"
 #include <objc/runtime.h>
@@ -221,7 +222,8 @@ extern NSMutableArray *localVersionList;
         //   Fabric 直装自动开版本隔离（原实现连 gameDir 都未写 = 共享根）；
         //   后续 installFabricAPIWithCompletion 读本 profile 的 gameDir
         //   会直接落隔离目录（语义正确：API 属于该实例）。
-        profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", response[@"id"]];
+        profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@", response[@"id"]];
+    [ModService ame323_ensureIsolationSkeletonForVersionId:response[@"id"]];   // Task323: FCL/HMCL/PCL parity 骨架
         profile[@"type"] = @"custom";
         profile[@"created"] = [NSDate date].description;
         [PLProfiles.current saveProfile:profile withName:response[@"id"]];

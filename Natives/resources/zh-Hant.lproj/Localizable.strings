@@ -3457,3 +3457,4 @@
 "ame318.error.entry_unreadable" = "入口檔案 %@ 讀取失敗。";
 "home.tile.ai" = "AI 助手";
 "preference.detail.plugins" = "管理插件、權限與插件倉庫";
+"download.tab.install" = "安裝";

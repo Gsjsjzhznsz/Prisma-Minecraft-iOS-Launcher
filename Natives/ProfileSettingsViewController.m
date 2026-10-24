@@ -1866,9 +1866,11 @@ static NSString * localizeProfileTitle(NSString *title) {
                               @"POJAV_GAME_DIR unset"]];
         return;
     }
-    // Task224：隔离目标 = versions/<id>/game（数据与版本 jar/json 分居）。
-    NSString *relative = [NSString stringWithFormat:@"versions/%@/game", lastVersionId];
-    NSString *legacyRelative = [NSString stringWithFormat:@"versions/%@", lastVersionId];
+    // Task224：隔离目标与版本元数据分居 → ★ Task323：口径反转为平铺新口径
+    // versions/<id>（game 子目录退役，FCL/HMCL/PCL/ZL2 文件架构 parity）；
+    // 旧口径 versions/<id>/game 叶子作为迁移源兑底（enable 时自动拍平 assimilate）。
+    NSString *relative = [NSString stringWithFormat:@"versions/%@", lastVersionId];
+    NSString *legacyRelative = [NSString stringWithFormat:@"versions/%@/game", lastVersionId];
     NSString *isoDir = [instanceRoot stringByAppendingPathComponent:relative];
     NSString *legacyDir = [instanceRoot stringByAppendingPathComponent:legacyRelative];
     NSFileManager *fm = [NSFileManager defaultManager];
@@ -1970,7 +1972,7 @@ static NSString * localizeProfileTitle(NSString *title) {
                 }
             }
             if (legacyMoved > 0) {
-                NSLog(@"[ProfileSettings] Task224 legacy isolation upgraded: %ld item(s) versions/<id> -> versions/<id>/game",
+                NSLog(@"[ProfileSettings] Task323 legacy leaf assimilated: %ld item(s) versions/<id>/game -> versions/<id>",
                       (long)legacyMoved);
             }
         }
@@ -2009,6 +2011,9 @@ static NSString * localizeProfileTitle(NSString *title) {
             self.profile[@"gameDirExplicit"] = @YES;
             self.ame272_gameDirTouched = YES;
             [self saveSettings];
+            // ★ Task323：隔离开启后即时补齐 FCL/HMCL/PCL parity 标准骨架目录
+            //   （mods/saves/config/resourcepacks/shaderpacks/screenshots）。
+            [ModService ame323_ensureIsolationSkeletonForVersionId:lastVersionId];
             [self reloadAllTableViews];
             [self updateHeroCard];
             NSLog(@"[ProfileSettings] Task217/224: version isolation ON for %@ (gameDir=%@; moved=%ld skipped=%ld legacyUpgraded=%ld)",
@@ -3175,11 +3180,12 @@ static ModVersion *ame217_pickVersionForGameVersion(NSArray<ModVersion *> *versi
             profile[@"name"] = versionId;
             profile[@"lastVersionId"] = versionId;
             // ★ Task271（271-a F3·Task242 补完）：实例页 OptiFine 同步隔离口径
-            //   versions/<id>/game（用户仍可在三态选择器改回）。
-            profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", versionId];
+            //   ★ Task323：versions/<id> 平铺新口径（用户仍可在三态选择器改回）。
+            profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@", versionId];
             profile[@"type"] = @"custom";
             profile[@"created"] = [NSDate date].description;
             [PLProfiles.current saveProfile:profile withName:versionId];
+            [ModService ame323_ensureIsolationSkeletonForVersionId:versionId];
             PLProfiles.current.selectedProfileName = versionId;
 
             [[NSNotificationCenter defaultCenter] postNotificationName:@"ReloadProfileList" object:nil];

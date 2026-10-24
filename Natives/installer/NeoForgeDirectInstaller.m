@@ -29,6 +29,7 @@
 #import "LauncherPreferences.h"
 #import "MinecraftResourceUtils.h"
 #import "ForgeProcessorExecutor.h"
+#import "ModService.h"        // Task323: flat isolation gameDir + skeleton
 #import "external/UnzipKit/UZKArchive.h"
 
 NSString *const NeoForgeDirectInstallerErrorDomain = @"NeoForgeDirectInstallerErrorDomain";
@@ -622,7 +623,8 @@ NSString *const NeoForgeDirectInstallerErrorDomain = @"NeoForgeDirectInstallerEr
     //   识别为"隔离此版本"；mods/saves/configs 由 ModService 隔离优先
     //   解析自动落隔离目录）。旧"共享根 + 手动切换"机制退役，用户仍可
     //   在版本设置页三态选择器改回。
-    profileDict[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", versionId];
+    profileDict[@"gameDir"] = [NSString stringWithFormat:@"versions/%@", versionId];
+    [ModService ame323_ensureIsolationSkeletonForVersionId:versionId];   // Task323: FCL/HMCL/PCL parity 骨架
     profileDict[@"type"] = @"custom";
     profileDict[@"created"] = [NSDate date].description;
     // 推断 Java 版本：NeoForge 1.20.5+ 需 Java 21，1.18+ 需 Java 17，1.17 需 Java 16

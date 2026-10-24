@@ -43,6 +43,19 @@ typedef NS_ENUM(NSInteger, ModLoaderKind) {
 /// 取消回调
 @property (nonatomic, copy) void (^cancelled)(void);
 
+/// ★ Task323（下载中心「安装」tab 嵌入模式）：置 YES 时本页作为
+/// DownloadViewController「安装」tab 的子 VC 内嵌呈现——不装返回/安装
+/// 导航按钮，改用页内头部条（游戏版本选择芯片 + 安装按钮）；cancelled
+/// 回调不再携带导航语义（pop/dismiss 由嵌入方管理）。
+@property (nonatomic, assign) BOOL ame323_embedded;
+
+/// Task323：嵌入模式游戏版本候选（远端版本清单字典数组，与
+/// DownloadViewController.versionList 同源同形）；空数组时芯片置灰。
+@property (nonatomic, copy, nullable) NSArray *ame323_gameVersions;
+
+/// Task323：嵌入模式切换目标游戏版本（重建兼容性行 + 自动版本名）。
+- (void)ame323_applyGameVersion:(NSString *)vid;
+
 @end
 
 NS_ASSUME_NONNULL_END

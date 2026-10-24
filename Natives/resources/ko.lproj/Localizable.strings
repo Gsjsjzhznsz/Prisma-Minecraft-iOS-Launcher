@@ -3240,3 +3240,4 @@
 "ame318.error.entry_unreadable" = "Cannot read entry %@.";
 "home.tile.ai" = "AI 어시스턴트";
 "preference.detail.plugins" = "플러그인, 권한, 저장소 관리";
+"download.tab.install" = "설치";

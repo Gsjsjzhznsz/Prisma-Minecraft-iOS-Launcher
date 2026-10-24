@@ -238,9 +238,11 @@
     if (base.length == 0) return nil;
 
     NSFileManager *fm = [NSFileManager defaultManager];
+    // ★ Task323：平铺新口径 versions/<vid> 优先（game 子目录退役），
+    //   旧 versions/<vid>/game 叶子兑底（启动拍平前的过渡期兼容）。
     for (NSString *rel in @[
-        [NSString stringWithFormat:@"versions/%@/game", vid],
         [NSString stringWithFormat:@"versions/%@", vid],
+        [NSString stringWithFormat:@"versions/%@/game", vid],
     ]) {
         NSString *dir = [base stringByAppendingPathComponent:rel];
         for (NSString *leaf in @[@"mods", @"saves"]) {
@@ -287,12 +289,13 @@
         if (!ame271_unset) continue;                       // 已显式配置：绝不碰
         NSString *ame271_hit = [self ame225_sniffedIsolationGameDirForProfile:ame271_prof];
         if (ame271_hit.length == 0) continue;              // 无隔离数据：空转零 IO
-        // 嗅探命中 → 反推注册表相对路径（优先新口径 versions/<vid>/game）
+        // 嗅探命中 → 反推注册表相对路径（★ Task323 优先平铺新口径
+        // versions/<vid>，旧 game 叶子兑底——新装/拍平后不再产生新叶子）
         NSString *ame271_vid = ame271_prof[@"lastVersionId"];
         if (![ame271_vid isKindOfClass:[NSString class]] || ame271_vid.length == 0) continue;
-        NSString *ame271_rel = [NSString stringWithFormat:@"versions/%@/game", ame271_vid];
+        NSString *ame271_rel = [NSString stringWithFormat:@"versions/%@", ame271_vid];
         if (![ame271_hit isEqualToString:[ame271_base stringByAppendingPathComponent:ame271_rel]]) {
-            ame271_rel = [NSString stringWithFormat:@"versions/%@", ame271_vid];
+            ame271_rel = [NSString stringWithFormat:@"versions/%@/game", ame271_vid];
         }
         NSMutableDictionary *ame271_updated = [ame271_prof mutableCopy];
         ame271_updated[@"gameDir"] = ame271_rel;
@@ -328,23 +331,208 @@
         NSString *ame272_vid = ame272_prof[@"lastVersionId"];
         if (![ame272_vid isKindOfClass:[NSString class]] || ame272_vid.length == 0) continue;
         NSMutableDictionary *ame272_updated = [ame272_prof mutableCopy];
-        ame272_updated[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", ame272_vid];
+        // ★ Task323：清扫落点跟随平铺新口径（game 子目录退役）
+        ame272_updated[@"gameDir"] = [NSString stringWithFormat:@"versions/%@", ame272_vid];
         [PLProfiles.current applyChanges:^(NSMutableDictionary<NSString *, id> *ame275_profiles) {
             ame275_profiles[ame272_key] = ame272_updated;
         }];
         ame272_swept++;
-        NSLog(@"[Ame271] default-isolation sweep: profile \"%@\" gameDir '%@' -> versions/%@/game (never explicitly configured)",
+        NSLog(@"[Ame271] default-isolation sweep: profile \"%@\" gameDir '%@' -> versions/%@ (never explicitly configured, Task323 flat)",
               ame272_key, ame272_gd ?: @"(nil)", ame272_vid);
     }
     if (ame272_swept > 0) {
         ame271_healed += ame272_swept;
-        NSLog(@"[Ame271] default-isolation sweep: %ld profile(s) converged to versions/<id>/game",
+        NSLog(@"[Ame271] default-isolation sweep: %ld profile(s) converged to versions/<id> (Task323 flat)",
               (long)ame272_swept);
     }
     if (ame271_healed > 0) {
         [PLProfiles.current save];
         NSLog(@"[Ame271] self-heal done: %ld profile(s) re-isolated", (long)ame271_healed);
     }
+}
+
+#pragma mark - Task323（game 子目录退役·FCL/HMCL/PCL parity）
+
+/// Task323：隔离 gameDir 新口径 = versions/<id>（与 jar/json 同目录，
+/// FCL/HMCL/PCL/ZL2 文件架构 parity）。旧 versions/<id>/game 叶子由
+/// ame323_flattenLegacyGameSubdirs 启动拍平退役，全部写入方改走本口径。
++ (NSString *)ame323_isolationGameDirForVersionId:(NSString *)vid {
+    return [NSString stringWithFormat:@"versions/%@", vid ?: @""];
+}
+
+/// Task323：隔离实例骨架补齐（用户指令："versions 下的实例还是没有其他
+/// 游戏隔离文件，比如模组"——拍平后实例目录里必须能直接看到 mods 等
+/// 标准隔离目录，FCL/HMCL/PCL/ZL2 同款观感）。ame217_items 迁移闭集的
+/// 目录子集 + screenshots：mods/saves/config/resourcepacks/shaderpacks/
+/// screenshots。仅隔离态创建（gameDir 为 versions/<id> 或旧 game 叶子）；
+/// 非隔离/默认实例绝不创建（防"放了模组却不生效"的误导）。幂等零副作用。
++ (void)ame323_ensureIsolationSkeletonForVersionId:(NSString *)vid {
+    if (![vid isKindOfClass:[NSString class]] || vid.length == 0) return;
+    const char *ame323_env = getenv("POJAV_GAME_DIR");
+    if (!ame323_env || !*ame323_env) return;
+    NSString *ame323_base = [NSString stringWithUTF8String:ame323_env];
+    if (ame323_base.length == 0) return;
+    NSFileManager *ame323_fm = [NSFileManager defaultManager];
+    NSString *ame323_flat = [ame323_base stringByAppendingPathComponent:
+        [NSString stringWithFormat:@"versions/%@", vid]];
+    BOOL ame323_isolated = NO;
+    // 隔离判据：注册表里存在指向该版本的隔离 profile（gameDir = 平铺新口径
+    // 或旧 game 叶子），或目录形状已有隔离数据（mods/saves 非空，ame225 同源）。
+    NSDictionary *ame323_profiles = PLProfiles.current.profiles;
+    for (NSDictionary *ame323_prof in ame323_profiles.allValues) {
+        if (![ame323_prof isKindOfClass:[NSDictionary class]]) continue;
+        if (![ame323_prof[@"lastVersionId"] isEqualToString:vid]) continue;
+        NSString *ame323_gd = ame323_prof[@"gameDir"];
+        if (![ame323_gd isKindOfClass:[NSString class]]) continue;
+        if ([ame323_gd isEqualToString:[NSString stringWithFormat:@"versions/%@", vid]] ||
+            [ame323_gd isEqualToString:[NSString stringWithFormat:@"versions/%@/game", vid]]) {
+            ame323_isolated = YES;
+            break;
+        }
+    }
+    if (!ame323_isolated) {
+        // 目录形状兜底：平铺目录已有 mods/saves 数据 = 事实上隔离（ame225 同源）
+        for (NSString *ame323_leaf in @[@"mods", @"saves"]) {
+            NSString *ame323_probe = [ame323_flat stringByAppendingPathComponent:ame323_leaf];
+            NSArray<NSString *> *ame323_entries = [ame323_fm contentsOfDirectoryAtPath:ame323_probe error:nil];
+            for (NSString *ame323_e in ame323_entries) {
+                if (![ame323_e hasPrefix:@"."]) { ame323_isolated = YES; break; }
+            }
+            if (ame323_isolated) break;
+        }
+    }
+    if (!ame323_isolated) return;
+    // 默认实例（jar/json 与共享数据同根）不补骨架：它就是共享根本体，
+    // 建 mods/ 会跟共享 mods 撞名（Task274 "(Default)" 守卫同款口径）。
+    if ([vid isEqualToString:@"(Default)"] || [vid isEqualToString:@"default"]) return;
+    NSArray<NSString *> *ame323_dirs = @[@"mods", @"saves", @"config", @"resourcepacks", @"shaderpacks", @"screenshots"];
+    NSInteger ame323_created = 0;
+    for (NSString *ame323_dir in ame323_dirs) {
+        NSString *ame323_path = [ame323_flat stringByAppendingPathComponent:ame323_dir];
+        if (![ame323_fm fileExistsAtPath:ame323_path]) {
+            NSError *ame323_err = nil;
+            if ([ame323_fm createDirectoryAtPath:ame323_path withIntermediateDirectories:YES attributes:nil error:&ame323_err]) {
+                ame323_created++;
+            } else {
+                NSLog(@"[Ame323] skeleton mkdir failed for %@/%@: %@", vid, ame323_dir, ame323_err.localizedDescription);
+            }
+        }
+    }
+    // 旧 game 叶子若仍在（拍平前刻到达的调用），骨架建进平铺目录即可，
+    // 叶子由启动拍平负责——此处不再向叶子内建目录（避免重新分居）。
+    if (ame323_created > 0) {
+        NSLog(@"[Ame323] isolation skeleton ensured for versions/%@ (%ld dir(s) created, FCL/HMCL/PCL parity)", vid, (long)ame323_created);
+    }
+}
+
+/// Task323：拍平单个 versions/<vid>/game 旧叶子。目标已存在一律跳过
+/// （绝不覆盖）；搬空后删除空叶子（连同可能残留的空 .DS_Store 由
+/// rmdir 天然拒绝，非空叶子保留待下轮）。返回搬动条目数。幂等可重入。
++ (NSInteger)ame323_flattenGameSubdirForVersionId:(NSString *)vid {
+    if (![vid isKindOfClass:[NSString class]] || vid.length == 0) return 0;
+    const char *ame323_env = getenv("POJAV_GAME_DIR");
+    if (!ame323_env || !*ame323_env) return 0;
+    NSString *ame323_base = [NSString stringWithUTF8String:ame323_env];
+    if (ame323_base.length == 0) return 0;
+    NSFileManager *ame323_fm = [NSFileManager defaultManager];
+    NSString *ame323_leaf = [ame323_base stringByAppendingPathComponent:
+        [NSString stringWithFormat:@"versions/%@/game", vid]];
+    if (![ame323_fm fileExistsAtPath:ame323_leaf]) return 0;
+    NSString *ame323_flat = [ame323_base stringByAppendingPathComponent:
+        [NSString stringWithFormat:@"versions/%@", vid]];
+    if (![ame323_fm fileExistsAtPath:ame323_flat]) {
+        [ame323_fm createDirectoryAtPath:ame323_flat withIntermediateDirectories:YES attributes:nil error:nil];
+    }
+    NSInteger ame323_moved = 0;
+    NSError *ame323_err = nil;
+    NSArray<NSString *> *ame323_items = [ame323_fm contentsOfDirectoryAtPath:ame323_leaf error:&ame323_err];
+    if (ame323_err) {
+        NSLog(@"[Ame323] flatten read failed for %@: %@", vid, ame323_err.localizedDescription);
+        return 0;
+    }
+    for (NSString *ame323_item in ame323_items) {
+        if ([ame323_item isEqualToString:@"."] || [ame323_item isEqualToString:@".."]) continue;
+        NSString *ame323_src = [ame323_leaf stringByAppendingPathComponent:ame323_item];
+        NSString *ame323_dst = [ame323_flat stringByAppendingPathComponent:ame323_item];
+        if ([ame323_fm fileExistsAtPath:ame323_dst]) {
+            NSLog(@"[Ame323] flatten skip (dst exists): versions/%@/%@", vid, ame323_item);
+            continue;
+        }
+        if ([ame323_fm moveItemAtPath:ame323_src toPath:ame323_dst error:nil]) {
+            ame323_moved++;
+        } else {
+            NSLog(@"[Ame323] flatten move failed: versions/%@/%@", vid, ame323_item);
+        }
+    }
+    // 搬空后删除空叶子（非空 = 有跳过冲突项，保留现场待人工/下轮处理）
+    NSArray<NSString *> *ame323_rest = [ame323_fm contentsOfDirectoryAtPath:ame323_leaf error:nil];
+    if (ame323_rest.count == 0) {
+        [ame323_fm removeItemAtPath:ame323_leaf error:nil];
+    }
+    if (ame323_moved > 0) {
+        NSLog(@"[Ame323] versions/%@/game flattened (%ld item(s) up, empty subdir removed)", vid, (long)ame323_moved);
+    }
+    return ame323_moved;
+}
+
+/// Task323：启动拍平全量入口（SceneDelegate 在 ame271 自愈前调用）。
+/// 三步：①versions/*/game 叶子逐个拍平（Task322 丢失成果的等价重做，
+/// 用户设备 203d22b 已拍平的场景天然空转）；②注册表 gameDir 重指
+/// （versions/<id>/game → versions/<id>，Ame271 日志锚点同款）；③隔离
+/// 实例骨架补齐（mods/saves/config/resourcepacks/shaderpacks/screenshots
+/// = 用户本轮诉求"versions 下的实例没有隔离文件"）。幂等：无叶子、无
+/// 旧键、骨架齐 = 三段全空转零 IO。
++ (void)ame323_flattenLegacyGameSubdirs {
+    // Task275 F6 同款让路：导入/迁移进行中不动布局（幂等，下轮启动再跑）
+    if ([ModpackImportService ame269_isImportBusy]) {
+        NSLog(@"[Ame323] flatten skipped: import busy");
+        return;
+    }
+    const char *ame323_env = getenv("POJAV_GAME_DIR");
+    if (!ame323_env || !*ame323_env) return;
+    NSString *ame323_base = [NSString stringWithUTF8String:ame323_env];
+    if (ame323_base.length == 0) return;
+    NSFileManager *ame323_fm = [NSFileManager defaultManager];
+    // ①叶子拍平
+    NSString *ame323_versionsDir = [ame323_base stringByAppendingPathComponent:@"versions"];
+    NSInteger ame323_totalMoved = 0;
+    NSInteger ame323_leafCount = 0;
+    for (NSString *ame323_vd in [ame323_fm contentsOfDirectoryAtPath:ame323_versionsDir error:nil]) {
+        NSString *ame323_leaf = [ame323_versionsDir stringByAppendingPathComponent:
+            [NSString stringWithFormat:@"%@/game", ame323_vd]];
+        BOOL ame323_isDir = NO;
+        if (![ame323_fm fileExistsAtPath:ame323_leaf isDirectory:&ame323_isDir] || !ame323_isDir) continue;
+        ame323_leafCount++;
+        ame323_totalMoved += [self ame323_flattenGameSubdirForVersionId:ame323_vd];
+    }
+    // ②注册表重指 + ③骨架补齐
+    NSDictionary *ame323_profiles = PLProfiles.current.profiles;
+    NSInteger ame323_repointed = 0;
+    for (NSString *ame323_key in [ame323_profiles allKeys]) {
+        NSDictionary *ame323_prof = ame323_profiles[ame323_key];
+        if (![ame323_prof isKindOfClass:[NSDictionary class]]) continue;
+        NSString *ame323_vid = ame323_prof[@"lastVersionId"];
+        if (![ame323_vid isKindOfClass:[NSString class]] || ame323_vid.length == 0) continue;
+        NSString *ame323_gd = ame323_prof[@"gameDir"];
+        if ([ame323_gd isKindOfClass:[NSString class]] &&
+            [ame323_gd isEqualToString:[NSString stringWithFormat:@"versions/%@/game", ame323_vid]]) {
+            NSMutableDictionary *ame323_updated = [ame323_prof mutableCopy];
+            ame323_updated[@"gameDir"] = [NSString stringWithFormat:@"versions/%@", ame323_vid];
+            [PLProfiles.current applyChanges:^(NSMutableDictionary<NSString *, id> *ame275_profiles) {
+                ame275_profiles[ame323_key] = ame323_updated;
+            }];
+            ame323_repointed++;
+            NSLog(@"[Ame271] Task323: profile \"%@\" gameDir versions/%@/game -> versions/%@ (game-subdir retired)",
+                  ame323_key, ame323_vid, ame323_vid);
+        }
+        // 骨架补齐：重指后（或本就平铺的）隔离实例；内部自带隔离判据
+        [self ame323_ensureIsolationSkeletonForVersionId:ame323_vid];
+    }
+    if (ame323_repointed > 0) {
+        [PLProfiles.current save];
+    }
+    NSLog(@"[Ame323] game-subdir flatten done (%ld leaf dir(s), %ld item(s) up, %ld profile(s) repointed, FCL/HMCL/PCL parity)",
+          (long)ame323_leafCount, (long)ame323_totalMoved, (long)ame323_repointed);
 }
 
 - (nullable NSString *)existingModsFolderForProfile:(NSString *)profileName {

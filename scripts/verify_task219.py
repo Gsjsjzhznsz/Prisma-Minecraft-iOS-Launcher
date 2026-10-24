@@ -209,15 +209,15 @@ print("== J. l10n + 公告 ==")
 for lang in ["en", "zh-Hans", "zh-Hant", "zh-CN"]:
     keys = set(re.findall(r'^"([^"]+)"\s*=',
                           rd(f"Natives/resources/{lang}.lproj/Localizable.strings"), re.M))
-    check(f"J-{lang} 唯一键 3165（Task301 重锚实测：Task294 锚 3157 + Task300 ame300 四键 + Task301 residual 四键 = 3165）", len(keys) == 3165, f"got {len(keys)}")
-check("J-公告 6 条（Task255 清单 13 精简：pin 2 + 版本史 3 + 最新总攻 1）",
-      len(ann) == 6
-      and ann[0]["id"] == "server-recommend-2026-09-24"
-      and ann[1]["id"] == "task217-download-fixes-about-isolation-2026-10-03"
+    check(f"J-{lang} 唯一键 3262（Task323 重锚实测：Task301 锤 3165 + Task312/313 regiongate 等族 + Task318 插件 64 键 + Task323 安装 tab 1 键 = 3262）", len(keys) == 3262, f"got {len(keys)}")
+check("J-公告 7 条（Task323 重锚实测：Task312 服务地区声明+下载速度公告头部插入，pin 2 + 声明 1 + 版本史 3 + 总攻 1）",
+      len(ann) == 7
+      and ann[0]["id"] == "region-notice-and-download-speed-2026-10-20"
+      and ann[1]["id"] == "server-recommend-2026-09-24"
       and any(a["id"] == "v6-0-0-release-2026-09-21" for a in ann))
-check("J-公告内容覆盖本轮主题（推荐服务器/6.5.0 修复/版本发布）",
-      len(ann) >= 5 and "mysv.dpdns.org" in ann[0]["content"]
-      and "6.5.0" in ann[1]["title"]
+check("J-公告内容覆盖本轮主题（服务地区声明/推荐服务器/6.5.0 修复/版本发布）",
+      len(ann) >= 5 and "大陆" in ann[0]["content"]
+      and "mysv.dpdns.org" in ann[1]["content"]
       and any("v6.0.0" in a["title"] for a in ann))
 check("J-JSON 可解析 + id 唯一",
       len(set(a["id"] for a in ann)) == len(ann))
@@ -229,8 +229,8 @@ check("K1 身份已迁移（Task259 com.prisma-devs.prisma——262 重锚）",
 check("K2 REVISION 保持 22 + Task219 附录在位（无 identity 变更不 bump）",
       "#define REVISION 22" in vh and "Task 219, no bump" in vh)
 mk = open("Makefile", "rb").read()
-check("K3 Makefile TAB 基线 812（Task301 重锚实测：协调器 dylib 扩编 StikJIT 核心 +21 行后 TAB 行实测 812）",
-      sum(1 for line in mk.split(b"\n") if line.startswith(b"\t")) == 812)
+check("K3 Makefile TAB 基线 808（Task323 重锚实测：Task314/318 Makefile payload 扩编后 TAB 行实测 808）",
+      sum(1 for line in mk.split(b"\n") if line.startswith(b"\t")) == 808)
 yml = open(".github/workflows/development.yml", "rb").read()
 check("K4 工作流 CRLF 完整", yml.count(b"\r\n") == yml.count(b"\n"))
 

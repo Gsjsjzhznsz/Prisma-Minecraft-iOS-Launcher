@@ -589,3 +589,4 @@
 "ame318.error.entry_unreadable" = "Cannot read entry %@.";
 "home.tile.ai" = "AI Assistant";
 "preference.detail.plugins" = "Manage plugins, permissions and the plugin repository";
+"download.tab.install" = "Install";

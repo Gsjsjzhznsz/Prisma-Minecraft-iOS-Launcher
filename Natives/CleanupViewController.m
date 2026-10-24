@@ -86,11 +86,17 @@
         NSArray<NSString *> *vdirs = [NSFileManager.defaultManager
             contentsOfDirectoryAtPath:versionsDir error:nil];
         for (NSString *vd in vdirs) {
+            // ★ Task323：平铺新口径 instances（versions/<id> 含 <id>.json 即
+            //   实例本体，日志真身直接在 versions/<id>/logs）；旧 game 叶子保留扫描。
+            NSString *flatJSON = [versionsDir stringByAppendingPathComponent:
+                [NSString stringWithFormat:@"%@/%@.json", vd, vd]];
             NSString *game = [versionsDir stringByAppendingPathComponent:
                 [NSString stringWithFormat:@"%@/game", vd]];
             BOOL isDir = NO;
             if ([NSFileManager.defaultManager fileExistsAtPath:game isDirectory:&isDir] && isDir) {
                 [roots addObject:game];
+            } else if ([NSFileManager.defaultManager fileExistsAtPath:flatJSON]) {
+                [roots addObject:[versionsDir stringByAppendingPathComponent:vd]];
             }
         }
     }

@@ -39,7 +39,8 @@
       "category": "gamepad",
       "version": "1",
       "file": "gamepads/gamepad_default.json",
-      "size": 2895
+      "size": 2895,
+      "id": "gamepad_default"
     },
     {
       "name": "Switch 面键对齐 / Switch aligned",
@@ -48,7 +49,8 @@
       "category": "gamepad",
       "version": "1",
       "file": "gamepads/gamepad_switch.json",
-      "size": 2895
+      "size": 2895,
+      "id": "gamepad_switch"
     }
   ]
 }

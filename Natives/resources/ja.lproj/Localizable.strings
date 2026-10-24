@@ -3325,3 +3325,4 @@
 "ame318.error.entry_unreadable" = "Cannot read entry %@.";
 "home.tile.ai" = "AI アシスタント";
 "preference.detail.plugins" = "プラグイン・権限・リポジトリを管理";
+"download.tab.install" = "インストール";

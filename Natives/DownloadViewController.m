@@ -556,6 +556,13 @@ typedef NS_ENUM(NSInteger, ModernAssetType) {
 @property (nonatomic, strong) UIView *controlRepoContainer;
 @property (nonatomic, strong) ControlRepoViewController *controlRepoChildVC;
 
+// ★ Task323：下载中心「安装」tab（index 8）——把原独立 push 的
+// ModLoaderInstallViewController 内嵌为下载中心原生分区（用户指令：
+// "把原版下载界面也塞到下载中心，使用下载中心等UI + ZL2 风格"）。
+// 复用控件仓库 tab 同款容器内嵌范式（Task189）。
+@property (nonatomic, strong) UIView *installContainer;
+@property (nonatomic, strong) ModLoaderInstallViewController *installChildVC;
+
 // 源切换 UI（仿 FCL 安卓风格的圆角胶囊切换器：Modrinth 绿 / CurseForge 橙）
 @property (nonatomic, strong) UIView *sourceSwitchContainer;
 @property (nonatomic, strong) UIView *sourceSwitchTrack;        // 圆角胶囊背景轨道
@@ -813,7 +820,7 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     // 精简标签文字为单字+图标，避免在窄屏上拥挤截断（参照 FCL 紧凑 tab）
     // Task189：第 8 个 tab = 控件仓库（用户反馈“控件仓库太不显眼”——从
     // 编辑器长按菜单入口升级为下载页一级 tab，与 FCL 的下载页布局对齐）
-    self.tabSegment = [[UISegmentedControl alloc] initWithItems:@[localize(@"i18n_str_39", nil), localize(@"i18n_str_1283", nil), localize(@"i18n_str_1284", nil), localize(@"i18n_str_1285", nil), localize(@"i18n_str_1286", nil), localize(@"i18n_str_1287", nil), localize(@"i18n_str_119", nil), localize(@"download.tab.controls", nil)]];
+    self.tabSegment = [[UISegmentedControl alloc] initWithItems:@[localize(@"i18n_str_39", nil), localize(@"i18n_str_1283", nil), localize(@"i18n_str_1284", nil), localize(@"i18n_str_1285", nil), localize(@"i18n_str_1286", nil), localize(@"i18n_str_1287", nil), localize(@"i18n_str_119", nil), localize(@"download.tab.controls", nil), localize(@"download.tab.install", nil)]];
     self.tabSegment.translatesAutoresizingMaskIntoConstraints = NO;
     self.tabSegment.selectedSegmentIndex = 0;
     // 调小字体，确保 8 个 tab 在窄屏也能完整显示
@@ -1552,6 +1559,44 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     self.controlRepoChildVC.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.controlRepoContainer addSubview:self.controlRepoChildVC.view];
     [self.controlRepoChildVC didMoveToParentViewController:self];
+
+    // ===== ★ Task323：「安装」tab 容器（index 8，Task189 同款内嵌范式）=====
+    self.installContainer = [[UIView alloc] initWithFrame:CGRectZero];
+    self.installContainer.translatesAutoresizingMaskIntoConstraints = NO;
+    self.installContainer.backgroundColor = [UIColor clearColor];
+    self.installContainer.hidden = YES;
+    [self.view addSubview:self.installContainer];
+    [NSLayoutConstraint activateConstraints:@[
+        [self.installContainer.topAnchor constraintEqualToAnchor:self.searchBar.bottomAnchor constant:4],
+        [self.installContainer.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [self.installContainer.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+        [self.installContainer.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor]
+    ]];
+    self.installChildVC = [[ModLoaderInstallViewController alloc] init];
+    self.installChildVC.ame323_embedded = YES;
+    __weak typeof(self) ame323_weakSelf = self;
+    self.installChildVC.completion = ^(NSString *loaderType, BOOL installFabricAPI, BOOL installOptiFine, NSString *loaderVersion) {
+        __strong typeof(ame323_weakSelf) strongSelf = ame323_weakSelf;
+        if (!strongSelf) return;
+        // 嵌入模式：无导航退栈语义，直接走下载中心既定安装分发链
+        //（与版本 tab 点版本卡后的 proceedWithVersion 同一入口）。
+        NSString *vid = strongSelf.installChildVC.gameVersion ?: @"";
+        NSDictionary *versionDict = [strongSelf ame323_remoteVersionDictForId:vid];
+        NSLog(@"[DownloadVC] Task323 embedded install: loader=%@ gameVersion=%@ fabricAPI=%d optifine=%d",
+              loaderType, vid, installFabricAPI, installOptiFine);
+        [strongSelf proceedWithVersion:versionDict
+                            loaderType:loaderType
+                      installFabricAPI:installFabricAPI
+                       installOptiFine:installOptiFine
+                          loaderVersion:loaderVersion];
+    };
+    self.installChildVC.cancelled = nil;   // 嵌入模式无取消导航语义
+    [self addChildViewController:self.installChildVC];
+    self.installChildVC.view.frame = self.installContainer.bounds;
+    self.installChildVC.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [self.installContainer addSubview:self.installChildVC.view];
+    [self.installChildVC didMoveToParentViewController:self];
+    [self ame323_configureInstallChildIfNeeded];
 }
 
 - (void)setupLoadingIndicator {
@@ -1596,7 +1641,8 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
         self.versionCollectionView.hidden = (index != 0);
         // 搜索框：版本 tab 用于版本号过滤，其余资产 tab 用于搜索；
         // Task189：控件仓库 tab（index 7）无搜索语义（仓库列表自带刷新/角标）——隐藏
-        self.searchBar.hidden = (index == 7);
+        // ★ Task323：「安装」tab（index 8）同样无搜索语义——隐藏
+        self.searchBar.hidden = (index == 7 || index == 8);
         // 过滤按钮仅在版本 tab 显示（用于调出版本类型筛选/排序选项）
         self.filterButton.hidden = (index != 0);
         self.modTableView.hidden = (index != 1);
@@ -1606,7 +1652,9 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
         self.modpackTableView.hidden = (index != 5);
         self.worldTableView.hidden = (index != 6);
         // Task189：控件仓库容器只在 index 7 显示（首访懒拉取由其 viewDidLoad 触发）
+        // ★ Task323：「安装」tab 容器只在 index 8 显示
         self.controlRepoContainer.hidden = (index != 7);
+        self.installContainer.hidden = (index != 8);
     } completion:nil];
 
     // 源切换仅在非版本 tab 显示；世界 tab 强制 CurseForge，无需切换
@@ -1621,7 +1669,8 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     // 左侧 30% 筛选栏。版本 tab 是独立布局（versionFilterSegment + collectionView），无 sidebar。
     // 这里 100% 对齐 FCL：所有非版本 tab 都显示 sidebar（含世界 tab）。
     // Task189：控件仓库 tab（index 7）无筛选语义——不显示 sidebar，列表铺满。
-    BOOL showSidebar = (index != 0 && index != 7);
+    // ★ Task323：「安装」tab（index 8）同款（内嵌页自带选择交互）。
+    BOOL showSidebar = (index != 0 && index != 7 && index != 8);
     self.filterSidebarContainer.hidden = !showSidebar;
     // 根据屏幕宽度按 30% 比例计算侧边栏宽度（FCL constraintWidth_percent=0.3）
     CGFloat screenWidth = self.view.bounds.size.width;
@@ -1632,22 +1681,27 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
     }
     self.sidebarWidthConstraint.constant = sidebarWidth;
 
-    // 模组加载器选择按钮仅在模组 tab 显示（其他 tab 无加载器概念）
-    self.sidebarLoaderButton.hidden = (index != 1);
-    self.sidebarLoaderTitleLabel.hidden = (index != 1);
-    self.sidebarLoaderValueLabel.hidden = (index != 1);
+    // 模组加载器选择按钮：模组 tab（1）+ ★ Task323 整合包 tab（5）——
+    // CF/Modrinth 两源整合包搜索均支持 modLoaderType/categories facets
+    //（Task175/179 已验证后端链路），此前仅 UI 行被隐藏 = 用户实测
+    // "ZL2 有的加载器筛选我们没有"的真身。其余 tab 无加载器概念维持隐藏。
+    self.sidebarLoaderButton.hidden = !(index == 1 || index == 5);
+    self.sidebarLoaderTitleLabel.hidden = !(index == 1 || index == 5);
+    self.sidebarLoaderValueLabel.hidden = !(index == 1 || index == 5);
 
     // 下载源切换：世界 tab 强制 CurseForge，隐藏源切换；其他非版本 tab 显示
     // FCL page_download.xml：仅当有多个来源时才显示 source Spinner
     // Task189：控件仓库 tab（index 7）源由镜像链自动处理——不显示源切换
-    self.sidebarSourceContainer.hidden = (index == 0 || index == 6 || index == 7);
+    // ★ Task323：「安装」tab 无源切换语义
+    self.sidebarSourceContainer.hidden = (index == 0 || index == 6 || index == 7 || index == 8);
 
     // versionFilterSegment 高度同步切换：版本 tab 显示 32pt，其他 tab 设为 0 不占空间，
     // 避免 hidden=YES 仍占空间导致 tabSegment 与 searchBar 之间出现"大白条"
     self.versionFilterHeightConstraint.constant = (index == 0) ? 32 : 0;
 
     // Task189：控件仓库 tab 折叠搜索框（高度 0 + hidden），其他 tab 恢复
-    self.searchBarHeightConstraint.constant = (index == 7) ? 0 : 36;
+    // ★ Task323：「安装」tab 同款折叠
+    self.searchBarHeightConstraint.constant = (index == 7 || index == 8) ? 0 : 36;
 
     // 整合包 tab 显示"导入本地整合包"按钮（参照 FCL 安卓），其他 tab 隐藏且宽度归零不占空间
     BOOL showImportButton = (index == 5);
@@ -1705,6 +1759,9 @@ static inline NSString *ame267_lockedDownloadTarget(NSString *ame267_target) {
         if (self.worldList.count == 0) {
             [self loadWorldList];
         }
+    } else if (index == 8) {
+        // ★ Task323：「安装」tab——首访配置嵌入页（目标版本/远端清单）
+        [self ame323_configureInstallChildIfNeeded];
     }
 
     // 更新侧边栏各筛选项的当前值显示
@@ -2419,6 +2476,8 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
                     if (json && !jsonError && [json[@"versions"] isKindOfClass:NSArray.class]) {
                         [strongSelf3.loadingIndicator stopAnimating];
                         strongSelf3.versionList = json[@"versions"];
+                        // ★ Task323：远端清单到手即喂「安装」tab 嵌入页（版本芯片候选）
+                        strongSelf3.installChildVC.ame323_gameVersions = strongSelf3.versionList;
                         [strongSelf3 applyVersionFilter];
                         NSLog(@"[DownloadVC] Task173 version manifest loaded from %@ (%lu versions)",
                               url.host, (unsigned long)[json[@"versions"] count]);
@@ -3454,6 +3513,51 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
     [self showLoaderSelectionForVersion:version];
 }
 
+#pragma mark - Task323（「安装」tab 嵌入页配置辅助）
+
+/// Task323：嵌入页首访配置——目标版本 = 锁定目标实例的 lastVersionId
+///（ame267 锁定语义，与资源 tab 落点一致）；远端清单 = 已加载的
+/// versionList（未加载时由 loadVersionList 回来后补喂）。
+- (void)ame323_configureInstallChildIfNeeded {
+    if (!self.installChildVC) return;
+    if (self.installChildVC.ame323_gameVersions == nil && self.versionList) {
+        self.installChildVC.ame323_gameVersions = self.versionList;
+    }
+    NSString *current = self.installChildVC.gameVersion;
+    if (current.length > 0) return;
+    NSDictionary *targetProfile = PLProfiles.current.profiles[ame267_lockedDownloadTarget(self.targetProfileName)];
+    NSString *vid = [targetProfile[@"lastVersionId"] isKindOfClass:[NSString class]] ? targetProfile[@"lastVersionId"] : @"";
+    if (vid.length == 0) {
+        // 锁定实例无 lastVersionId（default 空实例等）→ 回落远端最新 release
+        for (NSDictionary *v in self.versionList) {
+            if ([v isKindOfClass:[NSDictionary class]] && [v[@"type"] isEqualToString:@"release"] && [v[@"id"] isKindOfClass:[NSString class]]) {
+                vid = v[@"id"];
+                break;
+            }
+        }
+    }
+    if (vid.length > 0) {
+        [self.installChildVC ame323_applyGameVersion:vid];
+        NSLog(@"[DownloadVC] Task323 install tab configured: target=%@ gameVersion=%@", ame267_lockedDownloadTarget(self.targetProfileName), vid);
+    }
+}
+
+/// Task323：远端清单按 id 反查完整版本字典（proceedWithVersion 消费方）；
+/// 未命中回落 @{@"id": vid}——id 是安装链唯一必需字段（Task187 一键装
+/// 链同口径），url/sha 由下载任务内部按 id 走 BMCLAPI 解析。
+- (NSDictionary *)ame323_remoteVersionDictForId:(NSString *)vid {
+    if (vid.length == 0) return @{ @"id": @"" };
+    if ([self.versionList isKindOfClass:[NSArray class]]) {
+        for (NSDictionary *v in self.versionList) {
+            if ([v isKindOfClass:[NSDictionary class]] && [v[@"id"] isKindOfClass:[NSString class]] &&
+                [v[@"id"] isEqualToString:vid]) {
+                return v;
+            }
+        }
+    }
+    return @{ @"id": vid };
+}
+
 #pragma mark - Loader Selection (push 到中间内容区)
 
 - (void)showLoaderSelectionForVersion:(NSDictionary *)version {
@@ -3833,15 +3937,17 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
     profile[@"name"] = versionId;
     profile[@"lastVersionId"] = versionId;
     // ★ Task242：新下载版本自动开版本隔离（与模组端直装三处对齐，
-    //   PCL/FCL 行业惯例）——gameDir = versions/<id>/game（Task224 数据
-    //   分居新口径）。旧"共享根 + 手动切换"机制退役，用户仍可在版本
-    //   设置页三态选择器改回。
-    profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", versionId];
+    //   PCL/FCL 行业惯例）——★ Task323：隔离 gameDir 平铺新口径
+    //   versions/<id>（game 子目录退役，FCL/HMCL/PCL/ZL2 文件架构
+    //   parity），并即时补齐标准隔离骨架目录。用户仍可在版本设置页
+    //   三态选择器改回。
+    profile[@"gameDir"] = [ModService ame323_isolationGameDirForVersionId:versionId];
     profile[@"type"] = @"custom";
     profile[@"created"] = [NSDate date].description;
 
     [PLProfiles.current saveProfile:profile withName:versionId];
     PLProfiles.current.selectedProfileName = versionId;
+    [ModService ame323_ensureIsolationSkeletonForVersionId:versionId];
 
     [self startVersionDownload:version];
 }
@@ -4077,14 +4183,16 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
             profile[@"name"] = versionId;
             profile[@"lastVersionId"] = versionId;
                         // ★ Task271（271-a F3·Task242 补完）：下载页 Fabric/Quilt 对齐新下载原版/
-            //   Forge/NeoForge 的隔离口径 —— gameDir = versions/<id>/game。旧
+            //   Forge/NeoForge 的隔离口径 —— ★ Task323：gameDir = versions/<id>
+            //   平铺新口径（game 子目录退役，FCL/HMCL/PCL/ZL2 parity）。旧
             //   gameDir="."（Task242 半迁移遗留+陈旧注释）让同名重装覆写既有隔离
             //   条目、新装实例生而共享（装机实锤：fabric-loader-* 模组列表变共享）。
             //   用户仍可在版本设置三态选择器改回。
-            profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", versionId];
+            profile[@"gameDir"] = [ModService ame323_isolationGameDirForVersionId:versionId];
             profile[@"type"] = @"custom";
             profile[@"created"] = [NSDate date].description;
             [PLProfiles.current saveProfile:profile withName:versionId];
+            [ModService ame323_ensureIsolationSkeletonForVersionId:versionId];
             PLProfiles.current.selectedProfileName = versionId;
             [manager updateTaskWithId:fabricTaskId stageAtIndex:kFabricStageWriteJSON status:PLTaskStageStatusCompleted];
 
@@ -5104,11 +5212,12 @@ static const NSTimeInterval kAme291MergeWindowSeconds = 7.0 * 24.0 * 3600.0;
             profile[@"name"] = versionId;
             profile[@"lastVersionId"] = versionId;
             // ★ Task271（271-a F3·Task242 补完）：下载页 OptiFine 同步隔离口径
-            //   versions/<id>/game（与 Fabric/原版同批半迁移遗留）。
-            profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", versionId];
+            //   ★ Task323：versions/<id> 平铺新口径（与 Fabric/原版同批）。
+            profile[@"gameDir"] = [ModService ame323_isolationGameDirForVersionId:versionId];
             profile[@"type"] = @"custom";
             profile[@"created"] = [NSDate date].description;
             [PLProfiles.current saveProfile:profile withName:versionId];
+            [ModService ame323_ensureIsolationSkeletonForVersionId:versionId];
             PLProfiles.current.selectedProfileName = versionId;
 
             [optiManager updateTaskWithId:taskId stageAtIndex:kOptiFineStageInstall status:PLTaskStageStatusCompleted];

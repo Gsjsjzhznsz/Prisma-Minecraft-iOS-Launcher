@@ -92,7 +92,7 @@ check("Ctrl:index size 对齐", sizes.get("classic") == 112523 and sizes.get("la
 
 # ─── 8. 公告精简（43→6 + 脏值修复） ───
 ann = json.load(open(os.path.join(REPO, "announcements.json"), encoding="utf-8"))
-check("Ann:精简至 6 条", len(ann["announcements"]) == 6, "got %d" % len(ann["announcements"]))
+check("Ann:精简至 7 条（Task323 重锚实测：Task312 服务地区声明+下载速度公告 +1 = 7）", len(ann["announcements"]) == 7, "got %d" % len(ann["announcements"]))
 check("Ann:pin 保留", any(a.get("pin") for a in ann["announcements"]))
 check("Ann:priority 字符串化", all(a.get("priority") in ("high", "normal") for a in ann["announcements"]))
 check("Ann:pinned 混写清零", all("pinned" not in a for a in ann["announcements"]))

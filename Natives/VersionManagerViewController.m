@@ -9,6 +9,7 @@
 #import "DataPacksManagerViewController.h"
 #import "WorldsManagerViewController.h"
 #import "LauncherPreferences.h"
+#import "ModService.h"        // Task323: flat isolation gameDir + skeleton
 #import "ScreenUtils.h"
 #import "utils.h"
 #import "ModLoaderIconHelper.h"
@@ -2094,7 +2095,8 @@ static const CGFloat kVMCardCornerRadius = 16.0;
                     profile[@"name"] = vid;
                     profile[@"lastVersionId"] = vid;
                     // Task242 口径：新实例自动版本隔离（与下载完成创建一致）
-                    profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@/game", vid];
+                    profile[@"gameDir"] = [NSString stringWithFormat:@"versions/%@", vid];
+    [ModService ame323_ensureIsolationSkeletonForVersionId:vid];   // Task323: FCL/HMCL/PCL parity 骨架
                     profile[@"type"] = @"custom";
                     profile[@"created"] = [NSDate date].description;
                     [PLProfiles.current saveProfile:profile withName:vid];
