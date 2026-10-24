@@ -4394,7 +4394,7 @@ Agent: main (Super Z)
 Task: Task 318 插件系统大架构 + 权限中心（JavaScriptCore 引擎 / 桥接权限边界 / 事件运行时 / 管理三页 / 内置插件仓库）+ 用户四问联修（实例冲突根修 / AI 磁贴 / PCL 目录答疑）
 
 Work Log:
-- 会话重启发现本地落后（Task 262 → 远端 Task 314），pull 同步；确认上一会话 Task318 文件从未落仓（全新重写）；侦察确认 Task314 后设计系统为 PrismaUI/PrismaTheme（ZL2 系前缀仅存在于用户设备未推送的平行构建）
+- 会话重启发现本地落后（Task 262 → 远端 Task 314），pull 同步；确认上一会话 Task318 文件从未落仓（全新重写）；侦察确认 Task314 后设计系统为 PrismaUI/PrismaTheme（ZL2 系前缀仅存在于用户设备未推送的平行构建）【勘误 Task323：该“平行构建”定性已撤除——实为另一仓库二代 ZL2 应用产物，见 Task 323 条目勘误块】
 - 插件核心四件套落 Natives/：AmePluginPermissions（8 权限目录 + 三级危险度 + PLPreferences plugin.perm_map 授权账本）／AmePluginManager（manifest 解析 + id 字符集闸 + Zip Slip/总量 8MB/条目 128 三道解包闸 + 暂存目录原子换装 + UnzipKit 全 API 对表）／AmePluginBridge（`prisma` 门面 16 API，权限检查全部集中在桥接边界；渲染器写走候选表白名单 + PLProfiles applyChanges 锁内 API（Task275 家法）；profile 写键白名单 {allocated_memory, java_args}；files.plugin 私有目录路径闸拒绝对路径/穿越）／AmePluginRuntime（单条串行队列承载全部 JSC 求值 + 快照式事件分发 + 逐插件 JS 异常账本）
 - 事件插桩三处：SceneDelegate willConnect（bootAll + launcherBoot，PrismaTheme install 之后）／SurfaceViewController launchJVM 前后两支（gameLaunch/gameExit 含 code）／JavaGUIViewController（jarLaunch）
 - PrismaTheme 主题覆盖钩子：自包含静态覆盖表落 PrismaTheme.m（11 色值 getter 顶部查覆盖，colorAccentSelectedBackground 派生自 accent 不设独立位），+setOverrideHexColors:（合法令牌集 + #RGB/#RRGGBB/#RRGGBBAA 解析校验，非法丢弃留痕）；桥接层 setThemeTokens 写入后广播 LauncherAppearanceChanged
@@ -4409,17 +4409,17 @@ Work Log:
 Stage Summary:
 - 插件系统全链交付：.zip 插件包（manifest.json+main.js）安装/启停/卸载/权限实时开关/内置仓库一键装，权限边界收口在桥接器（JS 侧零裸露原生对象），渲染器/实例配置/主题三大强力面全部白名单化 + 锁内写
 - 实例冲突根修后整合包安装不再弹"实例已存在"，不再产生 "X 2" 幽灵实例；AI 助手主页磁贴上线（老用户布局自动注入）
-- PCL 目录结构答疑口径：嵌套 Documents/Data/Application/<UUID> 来自 LiveContainer 每guest 假容器（utils.m ame302 判据），非启动器布局选择；PCL 式重根（Prisma/minecraft）可行性已侦察（≈25 处 instances/ 硬编码改点 + Task226 迁移器同款哨兵模式），但用户设备日志含未推送的 ame316 平行构建产物，为避免与平行会话布局工作对撞本轮不动布局代码
+- PCL 目录结构答疑口径：嵌套 Documents/Data/Application/<UUID> 来自 LiveContainer 每guest 假容器（utils.m ame302 判据），非启动器布局选择；PCL 式重根（Prisma/minecraft）可行性已侦察（≈25 处 instances/ 硬编码改点 + Task226 迁移器同款哨兵模式），但用户设备日志含未推送的 ame316 平行构建产物，为避免与平行会话布局工作对撞本轮不动布局代码【勘误 Task323：设备构建定性已更正——实为另一仓库二代 ZL2 应用产物，“平行构建”表述随之作废，见 Task 323 条目勘误块】
 
 - 【CI 闭环补记】run 39970878417（r0，2743e7f4）→ 39972557986（r1，7a421a2f）→ 39974224572（r2，596b7fd5）→ 39975848922（r3，a2c7f222）→ 39977695299（r4，52620919）→ **run 39979785216（r5，259e1204）一轮终绿**：五轮热修全谱系 = ①ObjC 方法上下文孤儿（Manager 解析类方法落在两个 @implementation 之间 + Bridge 全文缺实现包裹）②block 无显式返回类型推断雷（[out copy] 返回 id 与首 return 失配，四块显式化 ^NSString */^NSArray */^id）③JSValue isFunction 属性 CI SDK 不存在 ④JSValueRef.h 无 JSValueIsFunction（C API 路线放弃，分发期异常兜底）⑤嵌套泛型 static 声明 typedef 化 ⑥UTTypeZIP 大写 ⑦kShortcutActionAI 头文件 extern（跨文件常量消费老雷第四进宫）。本地门禁盲区实锤：ObjC 语义面（实现归属/block 返回类型推断/SDK 符号存在性/跨文件常量声明域）四类全靠 CI 兜底，与 Task255/256/260/261/310 同族第五批
 
 ---
-## Task 323——三线（用户截图三问：原版安装页有没有问题/UI 改 ZL2 风格/versions 实例缺隔离文件）＋丢失平行构建成果等价重做
+## Task 323——三线（用户截图三问：原版安装页有没有问题/UI 改 ZL2 风格/versions 实例缺隔离文件）【勘误 2026-10-24：原“＋丢失平行构建成果等价重做”定性已撤除——203d22b/12e9ca9 为另一仓库（二代 ZL2）提交，详见 Work Log 勘误块】
 
 日期：2026-10-24　构建：b640ce48（CI 轮询中）
 
 Work Log:
-- 前置定性：设备日志（latestlog.txt 2026-10-24）实锤用户装机 = 平行会话构建 203d22b/12e9ca9（Version 1.0.0 development），两枚提交在 origin/main、全部远端分支、GitHub API 与 CI runs 四处均不存在 = 平行会话（Task319-322 谱系：.minecraft 重指/game 叶子拍平/ZL2VersionIndex/安装页重构）成果未推送已失传；本轮在 origin/main 基线等价重做用户三问涉及面，截图 IMG_0485（安装 - 26.3 页：内容挤左 1/4+安装（原版）按钮截断+右侧死空间）即该丢失构建的遗留面
+- 【勘误 2026-10-24·用户澄清，原“前置定性”整段撤除】设备日志（latestlog.txt 2026-10-24）所见构建 203d22b/12e9ca9（Version 1.0.0 development）实为另一个仓库（二代 ZL2/Prisma2）的提交——本仓库对象库四路查证（origin/main/全远端分支/GitHub API/CI runs）找不到它们，不是“成果未推送已失传”，而是这两枚提交从来就不属于本仓库；“平行会话（Task319-322 谱系：.minecraft 重指/game 叶子拍平/ZL2VersionIndex/安装页重构）成果失传”定性整体作废（Task319-322 为二代仓库任务谱系），本轮三线工作系响应用户截图三问的常规新增，非“等价重做”；截图 IMG_0485 亦为二代 ZL2 应用的安装页，非本仓库“丢失构建的遗留面”。教训（防再犯）：①判定提交归属先核对应用版本谱系——一代 6.5.x/7.0.0-beta vs 二代 1.0.0，日志里“Version 1.0.0 development”本身即二代身份铁证 ②“哈希在本仓库查不到”≠“成果失传”，先排除“来自另一仓库/另一应用” ③一代/二代任务号与 ame 前缀两边并行使用，跨仓库证据不得互为定性依据
 - ①game 子目录退役（FCL/HMCL/PCL parity）：ModService ame323 四件套（isolationGameDirForVersionId=versions/<id> 新口径 / ensureIsolationSkeletonForVersionId 六目录骨架 / flattenGameSubdirForVersionId 单实例拍平（目标存在跳过绝不覆盖+搬空删叶）/ flattenLegacyGameSubdirs 启动全量）+SceneDelegate 挂钩（ame271 自愈前，幂等三段空转安全）；ame225 嗅探/ame271 反推/ame272 清扫三读取方平铺优先；九处写入方全量切换+即时骨架（DVC×3/实例页/三态选择器 enableIsolationWorker 口径反转 legacy=game 叶子 assimilate/Fabric 直装/Forge 直装/NeoForge 直装/MRDT/VersionManager/AI×2）；Cleanup 扫描双口径（<id>.json 平铺实例+game 叶子兼容）
 - ②下载中心「安装」tab（index 8）：ModLoaderInstallViewController ame323_embedded 嵌入模式（导航栏按钮退位→页内头部条：游戏版本芯片+安装主按钮，iPad 全宽=截图三病根结构性根治）+ModLoaderGameVersionPickerViewController 远端清单选择子页（搜索过滤+卡式行）+Task189 同款容器内嵌；嵌入回调直连 proceedWithVersion（ame323_remoteVersionDictForId 反查远端字典，id 唯一必需字段）；目标版本=ame267 锁定实例 lastVersionId 回落最新 release；远端清单到手即喂
 - ③加载器筛选解禁（ZL2 parity）：sidebarLoaderButton 三行从"仅模组 tab"扩为"模组+整合包"（CF modLoaderType/Modrinth facets 后端 Task173/175/179 早已就绪，纯 UI 解禁）
@@ -4427,7 +4427,7 @@ Work Log:
 - 事故两件：①task323_i18n.py 首版手写字节串 mojibake（役→彫）python 复查即修；②python 批量插 import 落点误入方法之间（Forge/NeoForge 两处，预处理器语义虽合法仍复位文件头）
 
 Stage Summary:
-- 三问全落：①原版安装页=丢失构建的遗留页面（已失传），main 侧以「安装」tab 原生内嵌替代（ZL2 风格头部芯片+全宽卡片，布局三病根根治）②UI ZL2 风格=下载中心既有 FCL/ZL2 侧栏筛选 + 新「安装」tab 卡片语言 + 整合包加载器筛选解禁 ③隔离文件=game 叶子退役平铺+六目录骨架（mods/saves/config/resourcepacks/shaderpacks/screenshots），versions/<id>/ 直接可见 FCL 同款隔离目录且放模组即生效
+- 三问全落：①原版安装页=用户截图所示页面（勘误口径：截图实为二代 ZL2 应用页面，非本仓库遗留面），main 侧以「安装」tab 原生内嵌替代（ZL2 风格头部芯片+全宽卡片，布局三病根根治）②UI ZL2 风格=下载中心既有 FCL/ZL2 侧栏筛选 + 新「安装」tab 卡片语言 + 整合包加载器筛选解禁 ③隔离文件=game 叶子退役平铺+六目录骨架（mods/saves/config/resourcepacks/shaderpacks/screenshots），versions/<id>/ 直接可见 FCL 同款隔离目录且放模组即生效
 - 装机锚点：①启动日志 [Ame323] game-subdir flatten done（老设备）/[Ame323] isolation skeleton ensured for versions/<X>（六目录出现）②下载中心第 9 段「安装」tab=芯片选版本+卡片选加载器+安装按钮，全宽无死空间 ③整合包 tab 侧栏出现"模组加载器"筛选行 ④老 game 叶子实例启动后被拍平（versions/<id>/game 消失、内容上移）
 - 遗留移交：游戏内安装页 push 版本选择子页在嵌入模式的返回层级（picker pop 回 DVC 整页，可后续优化为局部呈现）；「安装」tab 未与版本 tab 双向联动（版本 tab 点版本卡仍走旧 push 流，语义保留）；Task304 谱系的 Forge/OptiFine 安装链重复检测在 Task318 ame300_preinstall 后是否全覆盖待装机复验
 
@@ -4441,5 +4441,5 @@ Work Log:
 - 产物本地留档：/home/z/my-project/download/task323/（ipa/tipa 解压态）
 
 Stage Summary:
-- Task 323 全链闭环：三问修复 + 丢失平行构建等价重做已进可装机测试包；下载页 https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/tag/v7.0.0-beta2
+- Task 323 全链闭环：三问修复已进可装机测试包（原“丢失平行构建等价重做”表述随勘误撤除）；下载页 https://github.com/Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher/releases/tag/v7.0.0-beta2
 - 装机锚点：①[Ame323] 拍平/骨架日志 ②下载中心第 9 段「安装」tab ③整合包 tab 侧栏加载器筛选 ④老 game 叶子自动拍平
