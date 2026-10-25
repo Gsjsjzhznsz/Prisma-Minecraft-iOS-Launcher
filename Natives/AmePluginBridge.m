@@ -22,6 +22,10 @@
 //    prisma.writeFile(name, text)     files.plugin
 //    prisma.on(event, handler)        events          → gameLaunch/gameExit/jarLaunch/launcherBoot
 //    prisma.isGranted(perm)           自省（免授权）
+//    prisma.registerRow(spec)         ui（Task329）  → 贡献行 {id,title,detail,onTap}
+//    prisma.updateRow(id, patch)      ui（Task329）  → 刷新行 {title,detail}
+//    prisma.alert(title, message)     ui（Task329）  → 主线程弹窗（纯展示）
+//    prisma.httpGet(url, cb)          network（Task329，高危）→ cb(body|null)
 //
 //  渲染器写路径家法：值必须命中 LauncherPreferences 的候选渲染器表
 //  （写错值 = 游戏黑屏的判例域），写入走 PLProfiles applyChanges: 锁内
@@ -31,11 +35,13 @@
 #import "AmePluginBridge.h"
 #import "AmePluginPermissions.h"
 #import "AmePluginManager.h"
+#import "AmePluginRuntime.h"
 #import "PLProfiles.h"
 #import "LauncherPreferences.h"
 #import "utils.h" // localize
 #import "PrismaUI/PrismaTheme.h"
 #import "NMToast.h"
+#import <UIKit/UIKit.h>   // ★ Task329：alert 弹窗面（UIScene/UIAlertController）
 
 #pragma mark - 事件白名单
 
@@ -261,6 +267,85 @@ static BOOL ame318_allow(NSString *permissionId, NSString *pluginId, const char 
         // JS 异常，由 context.exceptionHandler 捕获留痕，不崩不连坐。
         if (!handler) return;
         if (eventSink) eventSink(event, handler);
+    };
+
+    // ---- ★ Task329：贡献行 / 弹窗 / 联网（ui / network）----
+    facade[@"registerRow"] = ^(JSValue *spec) {
+        if (!ame318_allow(AmePluginPermUI, pid, "registerRow")) return;
+        id obj = spec.toObject;
+        if (![obj isKindOfClass:[NSDictionary class]]) {
+            NSLog(@"[Ame329] registerRow rejected: spec is not an object (%@)", pid);
+            return;
+        }
+        [AmePluginRuntime registerRowForPlugin:pid spec:(NSDictionary *)obj];
+    };
+    facade[@"updateRow"] = ^(NSString *rowId, JSValue *patch) {
+        if (!ame318_allow(AmePluginPermUI, pid, "updateRow")) return;
+        if (![rowId isKindOfClass:[NSString class]] || rowId.length == 0) return;
+        id obj = patch.toObject;
+        if (![obj isKindOfClass:[NSDictionary class]]) return;
+        [AmePluginRuntime updateRowForPlugin:pid rowId:rowId patch:(NSDictionary *)obj];
+    };
+    facade[@"alert"] = ^(JSValue *title, JSValue *message) {
+        if (!ame318_allow(AmePluginPermUI, pid, "alert")) return;
+        NSString *t = title.toString ?: @"";
+        NSString *m = message.toString ?: @"";
+        dispatch_async(dispatch_get_main_queue(), ^{
+            UIViewController *ame329_top = nil;
+            for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+                if (![scene isKindOfClass:[UIWindowScene class]]) continue;
+                for (UIWindow *win in ((UIWindowScene *)scene).windows) {
+                    if (!win.isKeyWindow) continue;
+                    ame329_top = win.rootViewController;
+                    NSUInteger ame329_walk = 0;
+                    while (ame329_top.presentedViewController != nil &&
+                           !ame329_top.presentedViewController.isBeingDismissed && ame329_walk++ < 8) {
+                        ame329_top = ame329_top.presentedViewController;
+                    }
+                    break;
+                }
+                if (ame329_top) break;
+            }
+            if (!ame329_top) return;
+            UIAlertController *alert = [UIAlertController
+                alertControllerWithTitle:t.length ? t : nil
+                                 message:m.length ? m : nil
+                          preferredStyle:UIAlertControllerStyleAlert];
+            [alert addAction:[UIAlertAction actionWithTitle:localize(@"ame318.alert.ok", nil)
+                                                      style:UIAlertActionStyleDefault
+                                                    handler:nil]];
+            [ame329_top presentViewController:alert animated:YES completion:nil];
+        });
+    };
+    facade[@"httpGet"] = ^(JSValue *urlValue, JSValue *callback) {
+        if (!ame318_allow(AmePluginPermNetwork, pid, "httpGet")) return;
+        NSString *url = urlValue.toString ?: @"";
+        NSURL *parsed = [NSURL URLWithString:url];
+        if (url.length == 0 || !parsed.scheme.length || !parsed.host) {
+            NSLog(@"[Ame329] httpGet rejected: invalid url '%@' (%@)", url, pid);
+            return;
+        }
+        if (![callback isKindOfClass:[JSValue class]] || !callback) return;
+        __block JSValue *cb = callback;
+        NSURLSessionDataTask *task = [[NSURLSession sharedSession]
+            dataTaskWithURL:parsed
+          completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+            NSString *body = nil;
+            if (data.length > 0 && data.length <= 4 * 1024 * 1024) {   // 4MB 上限防炸内存
+                body = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+            }
+            if (err) NSLog(@"[Ame329] httpGet failed (%@): %@", pid, err.localizedDescription);
+            // 回调回插件串行队列（JSContext 非线程安全硬约束；cb 持引用防释放）。
+            [AmePluginRuntime enqueueBlock:^{
+                @try {
+                    [cb callWithArguments:body ? @[body] : @[[NSNull null]]];
+                } @catch (NSException *e) {
+                    NSLog(@"[Ame329] httpGet callback threw (%@): %@", pid, e.reason);
+                }
+            }];
+        }];
+        [task resume];
+        NSLog(@"[Ame329] httpGet %@ -> %@ (plugin %@)", parsed.host, parsed.path ?: @"/", pid);
     };
 
     context[@"prisma"] = facade;

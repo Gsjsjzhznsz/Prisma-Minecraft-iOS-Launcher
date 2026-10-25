@@ -15,6 +15,8 @@
 
 #import <Foundation/Foundation.h>
 
+@class AmePluginManifest;
+
 NS_ASSUME_NONNULL_BEGIN
 
 /// 权限危险等级（详情页展示分层）。
@@ -34,6 +36,8 @@ extern NSString * const AmePluginPermRendererRead;   ///< 读取渲染器设置
 extern NSString * const AmePluginPermRendererWrite;  ///< 修改渲染器（高危）
 extern NSString * const AmePluginPermThemeWrite;     ///< 覆盖界面主题令牌
 extern NSString * const AmePluginPermFilesPlugin;    ///< 插件私有目录读写
+extern NSString * const AmePluginPermUI;             ///< 贡献启动器行/弹窗（Task329，低危）
+extern NSString * const AmePluginPermNetwork;        ///< 联网取数（Task329，高危）
 
 @interface AmePluginPermissions : NSObject
 
@@ -64,6 +68,12 @@ extern NSString * const AmePluginPermFilesPlugin;    ///< 插件私有目录读�
 
 /// 清除某插件的全部授权（卸载时调用）。
 + (void)clearGrantsForPlugin:(NSString *)pluginId;
+
+/// ★ Task329：Safe 级 + 插件私有目录装机即授（开箱即用根修——此前全部
+///   权限默认拒绝，插件装完即聋 = "无法使用"主诉的结构性根源之一）。
+///   只补缺账，绝不覆盖显式撤销记录；中危（theme.write）与高危
+///   （network/renderer.write/profile.write）维持默认拒绝，详情页授权。
++ (void)seedSafeDefaultGrantsForManifest:(AmePluginManifest *)manifest;
 
 @end
 

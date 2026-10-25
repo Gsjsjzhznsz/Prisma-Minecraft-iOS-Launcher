@@ -3458,3 +3458,22 @@
 "home.tile.ai" = "AI 助手";
 "preference.detail.plugins" = "管理插件、權限與插件倉庫";
 "download.tab.install" = "安裝";
+
+/* Task329: plugin rows/about/guide + ui/network perms */
+"ame318.list.section.rows" = "插件貢獻的啟動器行";
+"ame318.rows.empty" = "暫無插件貢獻行";
+"ame318.rows.empty_hint" = "啟用插件並在詳情頁授權後，其功能行會出現在這裡。";
+"ame318.list.section.about" = "關於";
+"ame318.list.about.api" = "插件 API 版本：%@";
+"ame318.list.section.guide" = "插件使用指南";
+"ame318.guide.install.title" = "安裝插件";
+"ame318.guide.install.detail" = "插件來源於內建倉庫，或經右上角 + 本地匯入。";
+"ame318.guide.perm.title" = "權限授權";
+"ame318.guide.perm.detail" = "高危權限（聯網/主題/渲染器寫入/實例管理）預設拒絕，進插件詳情頁打開對應開關即可。";
+"ame318.guide.ai.title" = "AI 寫插件";
+"ame318.guide.ai.detail" = "對 AI 助手說「幫我寫一個插件」並描述需求，即可自動生成並安裝。";
+"ame318.alert.ok" = "確定";
+"ame318.perm.ui" = "啟動器介面貢獻";
+"ame318.perm.ui.detail" = "在插件頁貢獻功能行與彈窗提示。";
+"ame318.perm.network" = "聯網取數";
+"ame318.perm.network.detail" = "允許插件向指定位址發起網路請求取回資料（高危）。";
