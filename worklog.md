@@ -4458,7 +4458,8 @@ Work Log:
 - 门禁：task139/240 all balanced；task191 54 表 OK（3262→3279）；task248 缺键 0/硬编码 0/动态键 0；task250 0
 - 编译雷自查三进宫（Task318 r1 家法先发制人）：嵌套 @implementation（AmePluginRow 误入 Runtime 实现块内）重构前置；row->pluginId 直访改属性点语法（合成 ivar 是 _pluginId 族名，无下划线直访 = undeclared）；Permissions.m 缺 AmePluginManager.h import（manifest 属性不可见）+ Bridge.m 缺 UIKit import（alert 面）双补
 - 显示层吞字第七例实锤：AmePluginManager.m 367 行 sed 渲染 "manifest" 为 "anifest"，od -c 字节级证伪未误修（历史同族第六例）
-- 提交 9a2356c0 推送 main；CI run 40199529940 轮询中
+- 提交 9a2356c0 推送 main；CI run 40199529940（run#973）**一轮终绿 12m36s 零热修**
+- 闭环补记 + 取证教训：WebFetch 拉取 run 详情页连续 6 次 1 小时全部命中陈旧缓存渲染（恒显 in progress），差点误判卡死并空转换道——Actions 列表页内嵌 JSON（curl 直抓 HTML payload）才是权威状态源，run 详情页渲染不可信；run#974（35b8027a 文档轮）随后在跑
 
 Stage Summary:
 - 四线全链交付待 CI 出包：①versions/<id>/ 六目录不再被剪（装机即见）②插件开箱有可见落点（贡献行四件套 + 低危权限即授）③插件页方块旋钮根治 ④小窗触点映射自愈 + 取证日志
