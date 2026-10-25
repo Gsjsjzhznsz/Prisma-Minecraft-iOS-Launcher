@@ -366,8 +366,6 @@ static const NSUInteger kAme318MaxEntries = 128;
     [NSFileManager.defaultManager removeItemAtPath:staging error:nil];
     NSLog(@"[Ame318] installed plugin %@ v%@ (perms: %@)",
           manifest.pluginId, manifest.version, [manifest.permissions componentsJoinedByString:@","]);
-        // ★ Task329：Safe 级 + 插件私有目录装机即授（开箱即用；显式撤销账永不覆盖，高危权限维持详情页授权）。
-    [AmePluginPermissions seedSafeDefaultGrantsForManifest:manifest];
     return nil;
 }
 

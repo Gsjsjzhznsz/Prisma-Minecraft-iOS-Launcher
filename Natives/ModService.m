@@ -423,18 +423,6 @@
     if (ame323_created > 0) {
         NSLog(@"[Ame323] isolation skeleton ensured for versions/%@ (%ld dir(s) created, FCL/HMCL/PCL parity)", vid, (long)ame323_created);
     }
-    // ★ Task329（用户第 7+ 次复诉"versions 没有隔离文件"的终审定案）：
-    //   装机日志（6f27aba 构建latestlog）实锤失传 Task328 曾在启动链把
-    //   本骨架当"decoy skeleton"整组剪除（'6 dir(s) removed -- show
-    //   json+jar only'）——空目录 = 可见性本身，用户验收口径就是
-    //   versions/<id>/ 下直接看到 mods/saves/...（FCL/HMCL/PCL/ZL2 同款
-    //   观感），剪除 = 直接复诉。自此立为红线：骨架只建不剪，任何
-    //   "空目录清理/decoy parity"逻辑不得触碰 versions/<id>/ 六目录；
-    //   真正的孤儿版本目录治理走 Cleanup 中心用户显式路径（Task256）。
-    //   幂等重入时逐目录补一行 kept 取证（限频口径与 created 一致）。
-    if (ame323_created == 0) {
-        NSLog(@"[Ame329] isolation skeleton kept for versions/%@ (6-dir no-prune policy; decoy-prune banned)", vid);
-    }
 }
 
 /// Task323：拍平单个 versions/<vid>/game 旧叶子。目标已存在一律跳过

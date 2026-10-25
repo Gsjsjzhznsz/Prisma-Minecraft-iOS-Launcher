@@ -3461,22 +3461,3 @@
 "home.tile.ai" = "AI 助手";
 "preference.detail.plugins" = "管理插件、权限与插件仓库";
 "download.tab.install" = "安装";
-
-/* Task329: plugin rows/about/guide + ui/network perms */
-"ame318.list.section.rows" = "插件贡献的启动器行";
-"ame318.rows.empty" = "暂无插件贡献行";
-"ame318.rows.empty_hint" = "启用插件并在详情页授权后，其功能行会出现在这里。";
-"ame318.list.section.about" = "关于";
-"ame318.list.about.api" = "插件 API 版本：%@";
-"ame318.list.section.guide" = "插件使用指南";
-"ame318.guide.install.title" = "安装插件";
-"ame318.guide.install.detail" = "插件来源于内置仓库，或经右上角 + 本地导入。";
-"ame318.guide.perm.title" = "权限授权";
-"ame318.guide.perm.detail" = "高危权限（联网/主题/渲染器写入/实例管理）默认拒绝，进插件详情页打开对应开关即可。";
-"ame318.guide.ai.title" = "AI 写插件";
-"ame318.guide.ai.detail" = "对 AI 助手说「帮我写一个插件」并描述需求，即可自动生成并安装。";
-"ame318.alert.ok" = "确定";
-"ame318.perm.ui" = "启动器界面贡献";
-"ame318.perm.ui.detail" = "在插件页贡献功能行与弹窗提示。";
-"ame318.perm.network" = "联网取数";
-"ame318.perm.network.detail" = "允许插件向指定地址发起网络请求取回数据（高危）。";

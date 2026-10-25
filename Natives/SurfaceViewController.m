@@ -1983,29 +1983,10 @@ static NSInteger ame283_lastLandscapeDev = 0;
           (int)physicalWidth, (int)physicalHeight, (int)windowWidth, (int)windowHeight);
 }
 
-/// ★ Task329：触点时刻几何自愈（小窗 stale-scale 终结）——adaptiveScale
-///   是 rescale 时刻的缓存因子，任何时序洞（后台恢复/拖拽收尾/布局跳过/
-///   防抖窗口内的触点）都会留下陈旧因子且无自愈路径，用户侧表现 =
-///   "切后台/小窗输入错位依旧"。修法：映射消费点即自愈点——视图当前
-///   尺寸 ≠ 上次 rescale 锚点（>1pt 才算漂移，防浮点抖动）时同步重排
-///   一次；ame267_rescale 内部自带 Task279 快路径，同尺寸时零工作。
-- (void)ame329_ensureFreshScaleMapping {
-    if (!g_ame267_freeformScaled) return;
-    CGSize ame329_now = self.view.bounds.size;
-    if (ame329_now.width <= 0.0 || ame329_now.height <= 0.0) return;
-    CGSize ame329_anchor = g_ame267_lastRescaledSize;
-    if (fabs(ame329_now.width - ame329_anchor.width) < 1.0 &&
-        fabs(ame329_now.height - ame329_anchor.height) < 1.0) return;
-    NSLog(@"[SurfaceVC] Task329: touch-time scale self-heal (view %.0fx%.0f vs anchor %.0fx%.0f) -> resync",
-          ame329_now.width, ame329_now.height, ame329_anchor.width, ame329_anchor.height);
-    [self ame267_rescaleViewStackToCurrentBounds];
-}
-
 /// ★ Task267：热栏/直发路径的 scale-mode 坐标适配——视图 pt 口径先乘
 ///   adaptiveScale 映射到整帧物理 px（热栏命中几何以 physicalWidth/Height
 ///   为基准）。全屏态原样返回（零变化）。
 - (CGPoint)ame267_adaptedPoint:(CGPoint)pt {
-    [self ame329_ensureFreshScaleMapping];   // ★ Task329：触点时刻自愈
     if (!g_ame267_freeformScaled) return pt;
     pt.x *= ame267_adaptiveScaleX;
     pt.y *= ame267_adaptiveScaleY;
@@ -2023,7 +2004,6 @@ static NSInteger ame283_lastLandscapeDev = 0;
 ///   坐标越界 deviceScale 倍（iPad 2.0）→ 热栏手势/双击/长按全打空 =
 ///   "小窗还是漂移"的热栏侧根因。全屏态走 screenScale 原路零变化。
 - (CGPoint)ame277_hotbarPointFromViewPt:(CGPoint)pt {
-    [self ame329_ensureFreshScaleMapping];   // ★ Task329：触点时刻自愈
     if (g_ame267_freeformScaled) {
         return CGPointMake(pt.x * (CGFloat)ame267_adaptiveScaleX,
                            pt.y * (CGFloat)ame267_adaptiveScaleY);
@@ -2043,7 +2023,6 @@ static NSInteger ame283_lastLandscapeDev = 0;
 ///   逐字节同源：全屏 = screenScale/FSR×resScale；小窗 =
 ///   adaptiveScale×(resScale/FSR)（设备倍率已含在 adaptiveScale 内）。
 - (CGPoint)ame277_cursorOutScale {
-    [self ame329_ensureFreshScaleMapping];   // ★ Task329：触点时刻自愈
     if (g_ame267_freeformScaled) {
         CGFloat ame277_belief = (mgFsrScale > 0.0f) ? resolutionScale / mgFsrScale
                                                     : resolutionScale;
@@ -3692,17 +3671,6 @@ static BOOL ame87_mcVersionRequiresTextureBuffer(NSString *mcVersionId) {
         [self ame267_rescaleViewStackToCurrentBounds];
     }
     [self updateSavedResolution];
-    // ★ Task329：回前台几何全量取证（一行看全 8 量——下轮装机日志直接
-    //   定位错位层：信念/视图/窗口/屏幕/drawable/因子六面异体现形）。
-    {
-        CGRect ame329_lay = self.touchView.layer.frame;
-        NSLog(@"[SurfaceVC] Task329: resume geometry freeform=%d adaptive=%.2fx%.2f view=%.0fx%.0f win=%@ screen=%@ belief=%dx%d touchView=%.0fx%.0f",
-              (int)g_ame267_freeformScaled, ame267_adaptiveScaleX, ame267_adaptiveScaleY,
-              self.view.bounds.size.width, self.view.bounds.size.height,
-              NSStringFromCGSize(self.view.window.bounds.size),
-              NSStringFromCGSize(self.view.window.screen.bounds.size),
-              (int)windowWidth, (int)windowHeight, ame329_lay.size.width, ame329_lay.size.height);
-    }
     // ★ Task254（反馈 1）：复屏侧立即打一行三方取证 + SDL 视图几何（不等
     //   首触点——装机实锤复屏后触摸可能根本不进 SurfaceVC 触摸链）。
     //   SDL 视图 frame 与容器 bounds 不一致时当场重assert（后台往返 UIKit

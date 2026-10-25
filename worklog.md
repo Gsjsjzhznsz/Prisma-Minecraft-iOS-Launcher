@@ -4,7 +4,7 @@
 
  + 「滚动近况」即可开工；更早历史一律查 worklog-archive.md，勿通读）
 
-> 最后更新：Task 329（2026-10-25，四线：versions 隔离骨架只建不剪红线/插件可用性结构根修（贡献行 API+开箱即用授权）/插件页重构（原生开关）/内置四件套重制/SDL 小窗触点映射自愈）。此前：Task 323（三线+勘误：203d22b/12e9ca9 为二代 ZL2 仓库提交）；Task 318（插件系统大架构）。失传提交第三例：设备构建 6f27aba（Task 324-328 谱系）全远端不存在，日志为唯一规格源。
+> 最后更新：Task 330（2026-10-26，一代勘误：Task 329 三提交全量撤销——设备构建 6f27aba 克隆终验为二代仓库 Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher2 main 谱系提交（6f27abab，二代自身 Task 329 docs），非本仓库失传提交，一代侧重实现系错位重复已回退；四问题修复移师二代 Task 330）。此前：Task 318（2026-10-23，插件系统大架构+权限中心：JavaScriptCore 引擎/桥接权限边界/事件运行时/管理三页/内置仓库 4 插件；实例冲突根修 ame300_preinstall 预装语义分离；AI 主页磁贴）。此前：Task 164（RCAS 四项对齐 + 壁纸 nil 判定 + Vulkan FSR 矩阵）；Task 163（新拟态范围修正）；Task 162（八案根修）；Task 161（六案根修）。
 > 新会话规则：新任务记录**追加到本文件最末尾**（`## Task N` 或 `---/Task ID:` 模板均可）；收尾时同步更新下面「当前状态」表；本文件超过 ~400 行时把最旧的任务段挪进 worklog-archive.md。
 
 ### 一句话
@@ -13,8 +13,8 @@ AngelAuraAmethyst（Amethyst-iOS 重制版，fork **Gsjsjzhznsz/Air-Minecraft-iO
 ### 当前状态（收尾时更新）
 | 项 | 值 |
 |---|---|
-| 远端 HEAD | Task 329（四线：versions/插件可用性/插件页/SDL 自愈；CI 取证中） |
-| 最新 Task 号 | **329**（多会话并行开发，开新任务前先 fetch 避让编号；324-328 失传号已跳过勿复用） |
+| 远端 HEAD | Task 318（插件系统全链 + 实例冲突根修 + AI 磁贴；CI 取证中） |
+| 最新 Task 号 | **318**（多会话并行开发，开新任务前先 fetch 避让编号） |
 | 待用户装机验证 | Task 183（四线锚点见文末）+ Task 182（三锚点）+ Task 181（六锚点）+ Task 180（双滑条透明度）+ Task 179（八连修）+ Task 178/177（新拟态定稿）+ 更早轮次 |
 | 已知历史遗留 | v6.0.0-release-notes.md 是工作区工件不在 git（发布时从 announcements.json 重导出）；部分 verify 级联失败为沙箱环境性（会话本地脚本被清 + task132/135/149/158 路径依赖 + task140 G2/G3 日志轮换），与基线对拍判读 |
 
@@ -4445,23 +4445,17 @@ Stage Summary:
 - 装机锚点：①[Ame323] 拍平/骨架日志 ②下载中心第 9 段「安装」tab ③整合包 tab 侧栏加载器筛选 ④老 game 叶子自动拍平
 
 ---
-## Task 329——四线（设备 6f27aba 构建装机日志 + IMG_0489/0490 双截图先行诊断：versions 隔离文件/插件不可用/SDL 小窗错位/MD3 开关方块旋钮）
+## Task 330——一代勘误：Task 329 三提交全量撤销 + 二代仓库定位定案
+
+日期：2026-10-26
 
 Work Log:
-- **失传提交第三例实锤勘误**：设备构建 6f27aba (main) 携带 Ame324/Ame328 日志标签，但该提交在本仓库全部远端分支（ls-remote 全量核对）与本地均不存在——Task 324-328 谱系与 203d22b（Task 319-322）同族"装机即失传"；设备日志成为唯一规格来源（isolation skeleton ensured→decoy skeleton pruned 的自相残杀链即铁证）。多会话并行环境下的提交推送纪律再亮红灯
-- ①versions 隔离文件（用户第 7+ 次复诉）终审定案：装机日志实锤失传 Task328 曾把 Task323 六目录骨架当 "decoy skeleton" 剪除（'6 dir(s) removed -- show json+jar only'）——空目录 = 可见性本身，剪除 = 直接复诉；红线落地 = ModService ame323_ensureIsolationSkeletonForVersionId 尾部 kept-log + decoy-prune 禁令注释（骨架只建不剪；孤儿目录治理归 Cleanup 中心 Task256 用户显式路径）；回退 main 行为后 ensure 建骨架且无剪除方，装机即恢复六目录
-- ②插件可用性结构根修（用户"插件还是无法使用" + IMG_0489 "插件贡献的启动器行"空分区实锤）：Task318 双结构性缺口 = 插件零 UI 面（只能 toast/写主题，无任何可见落点）+ 全权限默认拒绝（装完即聋）。Bridge 新增 registerRow/updateRow（ui 权限）/alert（ui）/httpGet（network 高危，4MB 上限 + 回调回插件串行队列）；Runtime 贡献行注册表（pluginId→[{rowId,title,detail,onTap}] 注册序快照/停即清/行面变更通知/enqueueBlock 公开出口/dispatchRowTapForPlugin 串行队列回放）；开箱即用授权播种 = seedSafeDefaultGrantsForManifest（Safe 级 + files.plugin 装机即授，只补缺账绝不覆盖显式撤销，installFromZip + bootAll 双点覆盖存量装）
-- ③插件列表页重构（IMG_0489 三病灶根治）：四分区 = 已安装插件（行内启停开关：原生 UISwitch = 圆形旋钮，失传构建自绘开关的方块旋钮病灶结构性根治）/插件贡献的启动器行（registerRow 落点，onTap 回放）/关于（API 版本单一事实源，失传构建"关于复读插件描述"病灶不复现）/插件使用指南三行；开关直通详情页同款语义（开=setEnabled+restart 关=setEnabled:NO+stop）
-- ④内置插件四件套重制（对齐设备版规格，旧演示件 accent-roulette/launch-banner/renderer-guard 退役）：launch-counter（events 持久化计数+退出码行）/modrinth-hot（network 拉取 Top5 弹窗+授权预检）/renderer-quickswitch（候选表循环+isRendererAvailable 过滤+授权预检）/theme-sunset（四配色循环+未授权静默恢复）；生成脚本 task329_build_plugins.py 入库
-- ⑤SDL 小窗触点映射自愈（用户"切后台以及小窗输入错位依旧"）：adaptiveScale 为 rescale 时刻缓存因子，任何时序洞（后台恢复/拖拽收尾/防抖窗内触点）无自愈路径 → 触点时刻自愈 = ame267_adaptedPoint/ame277_hotbarPointFromViewPt/ame277_cursorOutScale 三消费点前置 ame329_ensureFreshScaleMapping（视图尺寸 ≠ 锚点 >1pt 即同步重排；Task279 快路径幂等零工作）+ 回前台 8 量几何取证一行日志（freeform/adaptive/view/win/screen/belief/touchView，下轮日志一击定位错位层）
-- i18n：task329_i18n.py 17 新键 × 54 表（zh-Hans/zh-Hant/zh-CN 实译 + 其余 EN 兜底，幂等复跑归零）
-- 门禁：task139/240 all balanced；task191 54 表 OK（3262→3279）；task248 缺键 0/硬编码 0/动态键 0；task250 0
-- 编译雷自查三进宫（Task318 r1 家法先发制人）：嵌套 @implementation（AmePluginRow 误入 Runtime 实现块内）重构前置；row->pluginId 直访改属性点语法（合成 ivar 是 _pluginId 族名，无下划线直访 = undeclared）；Permissions.m 缺 AmePluginManager.h import（manifest 属性不可见）+ Bridge.m 缺 UIKit import（alert 面）双补
-- 显示层吞字第七例实锤：AmePluginManager.m 367 行 sed 渲染 "manifest" 为 "anifest"，od -c 字节级证伪未误修（历史同族第六例）
-- 提交 9a2356c0 推送 main；CI run 40199529940（run#973）**一轮终绿 12m36s 零热修**
-- 闭环补记 + 取证教训：WebFetch 拉取 run 详情页连续 6 次 1 小时全部命中陈旧缓存渲染（恒显 in progress），差点误判卡死并空转换道——Actions 列表页内嵌 JSON（curl 直抓 HTML payload）才是权威状态源，run 详情页渲染不可信；run#974（35b8027a 文档轮）随后在跑
+- 用户指令："请撤销提交，正确恢复6f27aba的问题"（并指路 worklog 已说明另一仓库）
+- 撤销执行：main 受分支保护规则 GH013 禁 force-push → 标准 revert（e90f85dc/35b8027a/9a2356c0 三连 --no-commit）→ git diff 17abe645 为空（内容逐字节回到 Task 323 勘误状态）；被撤三提交仍在历史可按 SHA 取回；run#973/#975 产物留档 Actions 勿再装机
+- 归属定案（克隆终验）：二代仓库 = Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher2（公开仓，main=eb0e863e）；设备构建 6f27aba = 该仓 6f27abab（二代自身 Task 329 docs 提交），merge-base 实证为二代 main 直系祖先；二代谱系 Task 319-329 健在从未失传
+- 误判根因定案：二代应用日志头 "[Pre-Init] Fork: …/Prisma-Minecraft-iOS-Launcher" 指向上游一代仓库（二代系一代 fork，Fork 行=谱系指针非本仓身份）；叠加两仓任务号/ame 前缀并行使用，一代侧四路查证全空后误落"失传"定性——Task 323 勘误同族误判第二进宫（203d22b 一次、6f27aba 一次）
+- 防再犯追加（继 Task 323 三条）：④设备日志 Fork 行=上游指针，归属判定以 Version 谱系（1.0.0=二代）+ 账号下仓库全量枚举（-2 后缀族）为准；⑤"本仓查不到"的哈希先试"另一仓库的 main 历史"再下结论
+- 移交：versions 隔离/插件可用性/SDL 切后台与小窗输入/MD3 滑块四问题真实修复在二代仓库进行（二代 Task 330，基于其 324-329 现状）；一代侧不动
 
 Stage Summary:
-- 四线全链交付待 CI 出包：①versions/<id>/ 六目录不再被剪（装机即见）②插件开箱有可见落点（贡献行四件套 + 低危权限即授）③插件页方块旋钮根治 ④小窗触点映射自愈 + 取证日志
-- 装机锚点：①启动日志 [Ame329] isolation skeleton kept（或 [Ame323] ensured）且 versions/<id>/ 出现 mods/saves/config/resourcepacks/shaderpacks/screenshots 六目录 ②插件页四行贡献（启动统计/Modrinth 热门榜/渲染器快切/日落主题包）+ 开关圆形旋钮 ③[SurfaceVC] Task329: touch-time scale self-heal / resume geometry 日志 ④[ame318] installed plugin 日志后见 [Ame329] safe-perm seeded
-- 遗留移交：AI 提示词插件内容/AI 写插件工具链（上轮诉求，本轮未动工）；原版下载界面/私有仓库下载中心 UI/下载加载器空白（多轮遗留）；JIT 游戏启动链（最高严重级）；二代 ZL2 仓库勘误（仓库位置仍未勘察）
+- 一代 main 内容回到 17abe645（Task 323 勘误）状态；6f27aba 归属定案收口，一代侧误判记录以本条勘误终审

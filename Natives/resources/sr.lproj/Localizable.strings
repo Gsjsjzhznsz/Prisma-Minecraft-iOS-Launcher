@@ -425,22 +425,3 @@
 "home.tile.ai" = "AI Assistant";
 "preference.detail.plugins" = "Manage plugins, permissions and the plugin repository";
 "download.tab.install" = "Инсталирај";
-
-/* Task329: plugin rows/about/guide + ui/network perms */
-"ame318.list.section.rows" = "Rows contributed by plugins";
-"ame318.rows.empty" = "No plugin rows yet";
-"ame318.rows.empty_hint" = "Enable a plugin and grant its permissions; its feature rows appear here.";
-"ame318.list.section.about" = "About";
-"ame318.list.about.api" = "Plugin API version: %@";
-"ame318.list.section.guide" = "Plugin guide";
-"ame318.guide.install.title" = "Install plugins";
-"ame318.guide.install.detail" = "From the built-in repo or local import via the + button.";
-"ame318.guide.perm.title" = "Permissions";
-"ame318.guide.perm.detail" = "High-risk permissions (network/theme/renderer write/profile) are denied by default; grant them in the plugin detail page.";
-"ame318.guide.ai.title" = "AI-written plugins";
-"ame318.guide.ai.detail" = "Tell the AI assistant to write a plugin with your needs; it generates and installs one.";
-"ame318.alert.ok" = "OK";
-"ame318.perm.ui" = "Launcher UI contribution";
-"ame318.perm.ui.detail" = "Contribute launcher rows and show dialogs inside the plugin page.";
-"ame318.perm.network" = "Network access";
-"ame318.perm.network.detail" = "Allow the plugin to fetch data over the network (high-risk).";

@@ -9,7 +9,6 @@
 //
 
 #import "AmePluginPermissions.h"
-#import "AmePluginManager.h"      // ★ Task329：seed 消费 AmePluginManifest 属性
 #import "LauncherPreferences.h"   // getPrefObject / setPrefObject
 #import "utils.h" // localize
 
@@ -23,10 +22,6 @@ NSString * const AmePluginPermRendererRead  = @"renderer.read";
 NSString * const AmePluginPermRendererWrite = @"renderer.write";
 NSString * const AmePluginPermThemeWrite    = @"theme.write";
 NSString * const AmePluginPermFilesPlugin   = @"files.plugin";
-// ★ Task329：插件可用性补面两权限 —— ui（贡献行/弹窗，低危）/ network
-//   （联网取数，高危；Modrinth 热门榜等内置插件的数据通道）。
-NSString * const AmePluginPermUI            = @"ui";
-NSString * const AmePluginPermNetwork       = @"network";
 
 @implementation AmePluginPermissions
 
@@ -47,8 +42,6 @@ NSString * const AmePluginPermNetwork       = @"network";
             AmePluginPermRendererWrite,
             AmePluginPermThemeWrite,
             AmePluginPermFilesPlugin,
-            AmePluginPermUI,          // Task329
-            AmePluginPermNetwork,     // Task329（高危）
         ];
     });
     return s_ame318_catalog;
@@ -58,8 +51,7 @@ NSString * const AmePluginPermNetwork       = @"network";
     // 高危 = 写路径碰渲染器/实例配置（写错值 = 游戏黑屏/配置损坏的家法
     // 判例源）；中危 = 观感与插件私有数据；低危 = 只读/通知/事件。
     if ([permissionId isEqualToString:AmePluginPermRendererWrite] ||
-        [permissionId isEqualToString:AmePluginPermProfileWrite] ||
-        [permissionId isEqualToString:AmePluginPermNetwork]) {
+        [permissionId isEqualToString:AmePluginPermProfileWrite]) {
         return AmePluginDangerHigh;
     }
     if ([permissionId isEqualToString:AmePluginPermThemeWrite] ||
@@ -80,8 +72,6 @@ NSString * const AmePluginPermNetwork       = @"network";
     if ([permissionId isEqualToString:AmePluginPermRendererWrite]) return localize(@"ame318.perm.renderer.write", nil);
     if ([permissionId isEqualToString:AmePluginPermThemeWrite])    return localize(@"ame318.perm.theme.write", nil);
     if ([permissionId isEqualToString:AmePluginPermFilesPlugin])   return localize(@"ame318.perm.files.plugin", nil);
-    if ([permissionId isEqualToString:AmePluginPermUI])            return localize(@"ame318.perm.ui", nil);
-    if ([permissionId isEqualToString:AmePluginPermNetwork])       return localize(@"ame318.perm.network", nil);
     return localize(@"ame318.perm.unknown", nil);
 }
 
@@ -94,8 +84,6 @@ NSString * const AmePluginPermNetwork       = @"network";
     if ([permissionId isEqualToString:AmePluginPermRendererWrite]) return localize(@"ame318.perm.renderer.write.detail", nil);
     if ([permissionId isEqualToString:AmePluginPermThemeWrite])    return localize(@"ame318.perm.theme.write.detail", nil);
     if ([permissionId isEqualToString:AmePluginPermFilesPlugin])   return localize(@"ame318.perm.files.plugin.detail", nil);
-    if ([permissionId isEqualToString:AmePluginPermUI])            return localize(@"ame318.perm.ui.detail", nil);
-    if ([permissionId isEqualToString:AmePluginPermNetwork])       return localize(@"ame318.perm.network.detail", nil);
     return @"";
 }
 
@@ -154,27 +142,6 @@ NSString * const AmePluginPermNetwork       = @"network";
     if (!map[pluginId]) return;
     [map removeObjectForKey:pluginId];
     setPrefObject(@"plugin.perm_map", map);
-}
-
-#pragma mark - Task329：开箱即用授权播种
-
-+ (void)seedSafeDefaultGrantsForManifest:(AmePluginManifest *)manifest {
-    // 只补缺账不改账：显式撤销（NO）与显式授权（YES）永不覆盖；
-    // Safe 级（events/notify/ui/renderer.read/profile.read）+ files.plugin
-    // （私有目录，设备版指南口径 = 不列入默认拒绝清单）装机即授。
-    NSString *pid = manifest.pluginId;
-    if (pid.length == 0 || manifest.permissions.count == 0) return;
-    NSDictionary *existing = [self grantsForPlugin:pid];
-    for (NSString *perm in manifest.permissions) {
-        if (![perm isKindOfClass:[NSString class]] || perm.length == 0) continue;
-        if ([existing objectForKey:perm] != nil) continue;   // 有账（含显式 NO）不动
-        BOOL ame329_safe =
-            [self dangerForPermission:perm] == AmePluginDangerSafe ||
-            [perm isEqualToString:AmePluginPermFilesPlugin];
-        if (!ame329_safe) continue;
-        [self setGranted:YES permission:perm forPlugin:pid];
-    }
-    NSLog(@"[Ame329] safe-perm seeded for %@ (%@ perms in manifest)", pid, @(manifest.permissions.count));
 }
 
 @end

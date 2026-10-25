@@ -13,22 +13,8 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <JavaScriptCore/JavaScriptCore.h>
 
 NS_ASSUME_NONNULL_BEGIN
-
-/// Task329：插件贡献行值对象（插件页"插件贡献的启动器行"分区数据源）。
-/// title/detail 为宿主持有的纯字符串（插件经 prisma.updateRow 自行刷新，
-/// 宿主不跨线程调 JS 求值——JSContext 非线程安全，全部求值走插件串行队列）；
-/// onTap 仅为 JSValue 引用，宿主在串行队列上回调。
-@interface AmePluginRow : NSObject
-@property(nonatomic, copy, readonly) NSString *pluginId;
-@property(nonatomic, copy, readonly) NSString *rowId;
-@property(nonatomic, copy, readonly) NSString *title;
-@property(nonatomic, copy, readonly) NSString *detail;
-/// 唯一排序键（注册序，跨插件单调递增）。
-@property(nonatomic, assign, readonly) NSUInteger order;
-@end
 
 @interface AmePluginRuntime : NSObject
 
@@ -60,27 +46,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// jar/安装器 GUI 直启（JavaGUIViewController）。
 + (void)dispatchJarLaunchWithPath:(nullable NSString *)path;
-
-#pragma mark - Task329：贡献行注册表 + 串行队列出口
-
-/// 插件串行队列公开出口（桥接层异步回调必须回同队列——JSContext 非线程
-/// 安全的硬约束；httpGet 完成回调 / onTap 回调都经此入队）。
-+ (void)enqueueBlock:(void (^)(void))block;
-
-/// 全部存活贡献行快照（注册序；线程安全，主线程读）。
-+ (NSArray<AmePluginRow *> *)allRows;
-
-/// 行面变更通知名（插件页监听 reload；main 队列派发）。
-+ (NSString *)rowsChangedNotification;
-
-/// 注册/替换贡献行（桥接层入口；内部串行队列上落账）。
-+ (void)registerRowForPlugin:(NSString *)pluginId spec:(NSDictionary *)spec;
-
-/// 刷新贡献行文案（桥接层入口；幂等，行不存在 = no-op）。
-+ (void)updateRowForPlugin:(NSString *)pluginId rowId:(NSString *)rowId patch:(NSDictionary *)patch;
-
-/// 行点击分发（插件页主线程调用；onTap 在串行队列上回放，异常不连坐）。
-+ (void)dispatchRowTapForPlugin:(NSString *)pluginId rowId:(NSString *)rowId;
 
 @end
 
