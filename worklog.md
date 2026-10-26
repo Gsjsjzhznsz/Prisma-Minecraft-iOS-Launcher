@@ -4459,3 +4459,18 @@ Work Log:
 
 Stage Summary:
 - 一代 main 内容回到 17abe645（Task 323 勘误）状态；6f27aba 归属定案收口，一代侧误判记录以本条勘误终审
+
+---
+## Task 331——Radiance iOS 会话 W^X 解药：-XX:+UseSerialGC 末端强制档 + 有效 argv 全量回显
+
+日期：2026-10-26
+
+Work Log:
+- 【取证（Radiance-ios 仓库 docs/incident-2026-10-26/ 双 .ips 定案）】宿主 JVM（java-21-openjdk，iOS aarch64）W^X bug：G1 并发标记 nmethod entry barrier 写 RX 代码缓存（nmethod::mark_as_maybe_on_stack）→ SIGBUS（ips 152753 帧链实锤）；解药 = SerialGC（无并发 nmethod 卸载 → entry barrier 不武装）。ips 200120 同时实锤：崩溃转储满屏 G1ConcurrentMarkThread/G1ServiceThread/StringDedup = 用户手加的 -XX:+UseSerialGC 从未生效——参数入口三层（Task255 preset / jvm_preset_custom_args 仅 custom 档注入 / profile javaArgs），任一层漏配即静默失效
+- 实施（JavaLauncher.m，margv 路径 dlsym(JLI_Launch) 之前末端）：①gameDir/mods 扫描文件名含 "radiance"（不分大小写）jar → Radiance 会话判定；②Radiance 会话且 argv 无任何 "UseSerialGC" 字样（用户显式 +/- 都尊重）→ 末端 PUSH -XX:+UseSerialGC（HotSpot 后推者胜，必盖过 Task255 预设 G1）；③无条件全量回显有效 argv（>120 字符截断防 classpath 巨串）——"参数是否生效"从 latestlog 一眼可查
+- 门禁：scripts/verify_task331.py 11/11（块存在/注入语句/尊重用户/检测逻辑/回显/三锚点顺序 custom<331<dlsym/覆盖语义注释/Java8 memory 档 SerialGC 不误伤/无越界）；本改纯 native 无 i18n 面，task191/248 族不适用
+- 边界与移交：hargv headless 安装器路径（launchHeadlessJVM）不注入——该路径无 JIT 游戏负载，W^X 故障类不存在；二代 ZL2 仓库（Prisma2）若承载 Radiance 会话需同款修复（二代 Task 谱系移交）
+
+Stage Summary:
+- Radiance 会话 SerialGC 从"用户手工配置碰运气"变为启动器末端保证生效，且每次启动日志全量回显有效 argv（本轮根因取证 = 用户加参仍闪退的直接解释：参数从未到达 JVM）
+- 装机锚点：①启动日志出现 "[JavaLauncher] Task331: Radiance iOS session detected -> appended -XX:+UseSerialGC LAST"（或 "respecting user value"）②"[JavaLauncher] Task331 effective JVM argv (N args): ..." 行内可直接目视 -XX:+UseSerialGC 在列
