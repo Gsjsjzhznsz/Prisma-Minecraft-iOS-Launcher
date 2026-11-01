@@ -13,7 +13,7 @@ AngelAuraAmethyst（Amethyst-iOS 重制版，fork **Gsjsjzhznsz/Air-Minecraft-iO
 ### 当前状态（收尾时更新）
 | 项 | 值 |
 |---|---|
-| 远端 HEAD | Task 332（Task 331 全量撤销 + libMoltenVK.dylib→javamc-rt RT 构建；CI 取证中） |
+| 远端 HEAD | Task 332（Task 331 全量撤销 + libMoltenVK.dylib→javamc-rt RT 构建；CI 终绿 run 41333485997，IPA 包内 RT dylib 终验通过） |
 | 最新 Task 号 | **332**（多会话并行开发，开新任务前先 fetch 避让编号） |
 | 待用户装机验证 | Task 183（四线锚点见文末）+ Task 182（三锚点）+ Task 181（六锚点）+ Task 180（双滑条透明度）+ Task 179（八连修）+ Task 178/177（新拟态定稿）+ 更早轮次 |
 | 已知历史遗留 | v6.0.0-release-notes.md 是工作区工件不在 git（发布时从 announcements.json 重导出）；部分 verify 级联失败为沙箱环境性（会话本地脚本被清 + task132/135/149/158 路径依赖 + task140 G2/G3 日志轮换），与基线对拍判读 |
@@ -4478,3 +4478,4 @@ Work Log:
 Stage Summary:
 - Radiance 路线从 JVM 参数 workaround（Task 331，已撤）切换到 MoltenVK 硬件光追 dylib 正解：VK_KHR_acceleration_structure / ray_query / ray_tracing_pipeline 实验族在 A17 Pro+/M3+ 物理设备默认可广告
 - 装机锚点：①Vulkan 层 vkEnumerateInstanceExtensionProperties 可见 VK_KHR_ray_query 等实验扩展（旧 dylib 无）②Radiance 会话硬件光追链路可建 ③latestlog 无 Task331 行（撤销生效）④[VKBridge] vkGetMoltenVKConfigurationMVK 加载成功行不变（配置通路无回归）
+- 【CI 闭环】run 41333485997（e971d0db，run#978）一轮终绿（17:50→18:09 零热修）；产物在架：ipa 232,748,775B / tipa 232,749,798B / dSYM 6,946,097B；IPA 终验 = 包内 Frameworks/libMoltenVK.dylib 3,936,800B（CI strip -x 后，5,238,912→3,936,800 系预期）RT 符号七族/vkGet+vkSetMoltenVKConfigurationMVK/1.4.3 版本串全实锚
