@@ -4,7 +4,7 @@
 
  + 「滚动近况」即可开工；更早历史一律查 worklog-archive.md，勿通读）
 
-> 最后更新：Task 330（2026-10-26，一代勘误：Task 329 三提交全量撤销——设备构建 6f27aba 克隆终验为二代仓库 Gsjsjzhznsz/Prisma-Minecraft-iOS-Launcher2 main 谱系提交（6f27abab，二代自身 Task 329 docs），非本仓库失传提交，一代侧重实现系错位重复已回退；四问题修复移师二代 Task 330）。此前：Task 318（2026-10-23，插件系统大架构+权限中心：JavaScriptCore 引擎/桥接权限边界/事件运行时/管理三页/内置仓库 4 插件；实例冲突根修 ame300_preinstall 预装语义分离；AI 主页磁贴）。此前：Task 164（RCAS 四项对齐 + 壁纸 nil 判定 + Vulkan FSR 矩阵）；Task 163（新拟态范围修正）；Task 162（八案根修）；Task 161（六案根修）。
+> 最后更新：Task 332（2026-11-02，Radiance 硬件光追正解：Task 331 全量撤销（run 40345114868 记录+产物一并 API 删除）+ libMoltenVK.dylib 替换 javamc-rt 构建（PR #2771 + iOS enablement；Apple9/A17 Pro/M3+ 物理设备编译期默认开实验光追，drop-in 四锚点零代码改动））。此前：Task 330（2026-10-26，一代勘误：Task 329 三提交全量撤销，6f27aba 定性为二代仓库提交）。此前：Task 318（2026-10-23，插件系统大架构+权限中心）；Task 164（RCAS 四项对齐 + 壁纸 nil 判定 + Vulkan FSR 矩阵）。
 > 新会话规则：新任务记录**追加到本文件最末尾**（`## Task N` 或 `---/Task ID:` 模板均可）；收尾时同步更新下面「当前状态」表；本文件超过 ~400 行时把最旧的任务段挪进 worklog-archive.md。
 
 ### 一句话
@@ -13,8 +13,8 @@ AngelAuraAmethyst（Amethyst-iOS 重制版，fork **Gsjsjzhznsz/Air-Minecraft-iO
 ### 当前状态（收尾时更新）
 | 项 | 值 |
 |---|---|
-| 远端 HEAD | Task 318（插件系统全链 + 实例冲突根修 + AI 磁贴；CI 取证中） |
-| 最新 Task 号 | **318**（多会话并行开发，开新任务前先 fetch 避让编号） |
+| 远端 HEAD | Task 332（Task 331 全量撤销 + libMoltenVK.dylib→javamc-rt RT 构建；CI 取证中） |
+| 最新 Task 号 | **332**（多会话并行开发，开新任务前先 fetch 避让编号） |
 | 待用户装机验证 | Task 183（四线锚点见文末）+ Task 182（三锚点）+ Task 181（六锚点）+ Task 180（双滑条透明度）+ Task 179（八连修）+ Task 178/177（新拟态定稿）+ 更早轮次 |
 | 已知历史遗留 | v6.0.0-release-notes.md 是工作区工件不在 git（发布时从 announcements.json 重导出）；部分 verify 级联失败为沙箱环境性（会话本地脚本被清 + task132/135/149/158 路径依赖 + task140 G2/G3 日志轮换），与基线对拍判读 |
 
@@ -4459,3 +4459,22 @@ Work Log:
 
 Stage Summary:
 - 一代 main 内容回到 17abe645（Task 323 勘误）状态；6f27aba 归属定案收口，一代侧误判记录以本条勘误终审
+
+---
+## Task 332——Radiance 硬件光追正解：Task 331 全量撤销 + libMoltenVK.dylib 替换 javamc-rt 构建
+
+日期：2026-11-02
+
+Work Log:
+- 用户指令：撤销 run 40345114868（Task 331 构建），把 RT 版 dylib 替换进启动器并构建 Task 332
+- 撤销执行：run 40345114868 构建记录+产物 API 删除（HTTP 204）；Task 331（b5573a58）标准 revert 全量撤销（5ff3e090）——UseSerialGC 末端强制档系 JVM W^X 症状的参数级解药，非用户所选路线；JavaLauncher.m 回到 Task 330 状态（UseSerialGC 推送仅剩 Java8 memory 预设 1 处）、verify_task331.py 退役删除
+- dylib 替换：Natives/resources/Frameworks/libMoltenVK.dylib 由 1.4.3 上游 main 构建（4,904,816B，Task246/309 谱系）→ javamc-rt 构建（5,238,912B，SHA256 6b45b4b2ffd40e3438daf4bea0331ca35f5bb12b98b6861af34d8b2b52bfe747，TYXH2024/MoltenVK feature/ios-hardware-raytracing @ a1d944a，release javamc-rt 根资产）
+- 二进制取证（drop-in 四锚点，与旧 dylib 逐项比对）：①install name 同 @rpath/MoltenVK.framework/MoltenVK ②LC_BUILD_VERSION 同 platform=iOS(2) minos=15.0.0（Vulkan 渲染器加载门槛不变）③版本串同 1.4.3（vk_bridge MVKConfigurationLocal 布局与 vkGet/vkSetMoltenVKConfigurationMVK 通路不变，双符号实锚仍导出）④arm64 MH_DYLIB；RT 符号族实锚在位：vkCreateRayTracingPipelinesKHR / vkCmdTraceRaysKHR / vkCmdTraceRaysIndirectKHR / vkBuildAccelerationStructuresKHR / vkCmdBuildAccelerationStructuresKHR / vkCreateAccelerationStructureKHR / vkGetRayTracingShaderGroupHandlesKHR
+- javamc-rt 构成（PR #2771 之上仅两个移植提交）：①caabafc iOS enablement——MVKEnvironment.h 编译期默认 MVK_CONFIG_ENABLE_EXPERIMENTAL_RAY_TRACING=1（仅物理 iOS 设备；模拟器/macOS 仍 0）+ MVKDevice.mm 运行时门禁 accelerationStructures &= Apple GPU ≥ 9（A17 Pro/M3 起）+ SPIRV-Cross 钉 dttdrv fork c1af5739（MSL 光追发射）+ cereal 尺寸守卫同步校准 + Makefile ios-javamc 打包目标（显式 MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS=1）；②a1d944a release CI（javamc-rt prerelease：iOS/macOS dylib + 双 xcframework + SHA256SUMS 五资产）
+- 零代码改动依据：RT 默认已在 dylib 编译期开启（启动器无需 setenv）；无构建期链接（Makefile payload cp -R Natives/resources/* 直拷进 .app/Frameworks + 运行时 dlopen @rpath/；MOLTENVK_LIBRARY 变量系死引用无消费方）；CI strip -x 剥本地符号对新 dylib 同样适用
+- 门禁：scripts/verify_task332.py（SHA256 钉死 / Mach-O 四锚 / RT 符号七族 / MVK 配置 API 双符号 / Task331 残留三查 / vk_bridge Task332 出处注记 / worklog 锚点）
+- 边界与移交：RT 实际生效分级——iOS 17+ ray query / iOS 18+ ray tracing pipeline（MSL 3.2）/ iOS 26+ IFT 路径（MSL 4.0），且需 Apple9+ GPU；老 GPU/模拟器不广告扩展（dylib 编译期+运行时双门禁）；vk_bridge.m Task246/309 注释块补 Task332 出处行
+
+Stage Summary:
+- Radiance 路线从 JVM 参数 workaround（Task 331，已撤）切换到 MoltenVK 硬件光追 dylib 正解：VK_KHR_acceleration_structure / ray_query / ray_tracing_pipeline 实验族在 A17 Pro+/M3+ 物理设备默认可广告
+- 装机锚点：①Vulkan 层 vkEnumerateInstanceExtensionProperties 可见 VK_KHR_ray_query 等实验扩展（旧 dylib 无）②Radiance 会话硬件光追链路可建 ③latestlog 无 Task331 行（撤销生效）④[VKBridge] vkGetMoltenVKConfigurationMVK 加载成功行不变（配置通路无回归）

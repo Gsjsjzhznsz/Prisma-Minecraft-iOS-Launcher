@@ -27,6 +27,19 @@ typedef uintptr_t VkInstance;
 //
 // 注意：仓库中的 vk_mvk_moltenvk.h 头文件是旧版本（1.1.2, spec 30），
 // 实际运行的 libMoltenVK.dylib 版本以二进制 strings 确认为准。
+// ★ Task332：dylib 替换为 javamc-rt 构建（TYXH2024/MoltenVK
+//   feature/ios-hardware-raytracing @ a1d944a，基线上游 1.4.3 main +
+//   PR #2771 实验性 Vulkan 光追 + iOS enablement：编译期默认开
+//   MVK_CONFIG_ENABLE_EXPERIMENTAL_RAY_TRACING=1（仅物理 iOS 设备），
+//   运行时再门禁 Apple9（A17 Pro/M3）+；5,238,912B，SHA256
+//   6b45b4b2ffd40e3438daf4bea0331ca35f5bb12b98b6861af34d8b2b52bfe747。
+//   drop-in 四锚点实锚（与 Task246/309 旧件逐项比对）：install name 仍
+//   @rpath/MoltenVK.framework/MoltenVK；LC_BUILD_VERSION 仍 iOS minos
+//   15.0.0（加载门槛不变）；版本串仍 1.4.3（下方 MVKConfigurationLocal
+//   布局与配置 API 通路不变）；RT 符号族（vkCreateRayTracingPipelinesKHR/
+//   vkCmdTraceRays(Indirect)KHR/vkBuildAccelerationStructuresKHR/
+//   vkCreateAccelerationStructureKHR/vkGetRayTracingShaderGroupHandlesKHR）
+//   二进制实锚在位。
 // ★ Task246：libMoltenVK.dylib 已更新为 1.4.3（上游 main @ 2c28e0c8
 // ★ Task309：驳回 Task308 对 1.4.3 的误伤回退，恢复 1.4.3（4,904,816B
 //   strings 实锤）——用户实测确认 1.4.3 正常，WINDOW_IN_USE 双崩
