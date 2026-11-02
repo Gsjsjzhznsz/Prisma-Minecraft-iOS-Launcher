@@ -13,7 +13,7 @@ AngelAuraAmethyst（Amethyst-iOS 重制版，fork **Gsjsjzhznsz/Air-Minecraft-iO
 ### 当前状态（收尾时更新）
 | 项 | 值 |
 |---|---|
-| 远端 HEAD | Task 333（javamc-rt 遥测版 dylib：[MVK-RT] 光追遥测默认开；CI 取证中） |
+| 远端 HEAD | Task 333（javamc-rt 遥测版 dylib：[MVK-RT] 光追遥测默认开；CI 终绿 run 41426119254，IPA 包内遥测 dylib 终验全锚） |
 | 最新 Task 号 | **333**（多会话并行开发，开新任务前先 fetch 避让编号） |
 | 待用户装机验证 | Task 183（四线锚点见文末）+ Task 182（三锚点）+ Task 181（六锚点）+ Task 180（双滑条透明度）+ Task 179（八连修）+ Task 178/177（新拟态定稿）+ 更早轮次 |
 | 已知历史遗留 | v6.0.0-release-notes.md 是工作区工件不在 git（发布时从 announcements.json 重导出）；部分 verify 级联失败为沙箱环境性（会话本地脚本被清 + task132/135/149/158 路径依赖 + task140 G2/G3 日志轮换），与基线对拍判读 |
@@ -4499,3 +4499,4 @@ Work Log:
 Stage Summary:
 - Radiance 光追调试观测面就位：latestlog 直接可读 [MVK-RT] 前缀行（能力门禁/AS 生命周期/管线编译/派发编码/CPU 性能汇总九类），无需改任何 Java/native 代码
 - 装机锚点：①latestlog 出现 [MVK-RT][CAPS]（requested/available/appleGPUFamily/argumentBuffersTier/mslVersion/simulator 一行）②Radiance 会话中 [MVK-RT][AS-BUILD]/[MVK-RT][TRACE] 持续滚动（含 cpuMs）③退会话时 [MVK-RT][PERF] Ray-tracing CPU performance summary 四行汇总 ④Vulkan 渲染器无回归（vk_bridge 配置加载日志不变）
+- 【CI 闭环】run#979/#980 双亡取证：macos-15 池三连 15 分钟排队即取消（41419469354 原始+rerun attempt2 / 41423892072 workflow_dispatch，job 0 步骤从未开跑；同窗口 fork macos-latest 8 作业全绿 = 池特定故障），r1 切 runs-on macos-latest（58e4ff9，CRLF 字节级单行手术，独立可撤销）→ run 41426119254（#981）一轮终绿（10:07→10:14 零热修）；产物在架：ipa 232,799,270B / tipa 232,799,953B / dSYM 6,956,988B；IPA 终验 = 包内 Frameworks/libMoltenVK.dylib 3,953,408B（strip -x 后，5,255,472→3,953,404 与 Task332 同形态）[MVK-RT] 19 串/十标签/配置开关/MVK 配置 API 双符号/RT 七符号族/1.4.3 全实锚
