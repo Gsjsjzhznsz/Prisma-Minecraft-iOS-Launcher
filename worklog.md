@@ -4,7 +4,7 @@
 
  + 「滚动近况」即可开工；更早历史一律查 worklog-archive.md，勿通读）
 
-> 最后更新：Task 332（2026-11-02，Radiance 硬件光追正解：Task 331 全量撤销（run 40345114868 记录+产物一并 API 删除）+ libMoltenVK.dylib 替换 javamc-rt 构建（PR #2771 + iOS enablement；Apple9/A17 Pro/M3+ 物理设备编译期默认开实验光追，drop-in 四锚点零代码改动））。此前：Task 330（2026-10-26，一代勘误：Task 329 三提交全量撤销，6f27aba 定性为二代仓库提交）。此前：Task 318（2026-10-23，插件系统大架构+权限中心）；Task 164（RCAS 四项对齐 + 壁纸 nil 判定 + Vulkan FSR 矩阵）。
+> 最后更新：Task 333（2026-11-02，javamc-rt 遥测版 dylib 上机：另一 AI 光追遥测提交b41b09b（[MVK-RT] 九类标签 + MVKPerformanceStatistics.rayTracing 四追踪器，默认开）+ aecc997编译解药（vulkan.mm 自由函数 getMVKConfig/reportMessage 可见性，对象上调用 idiom，遥测设计零改动）→ release 一轮终绿；本仓换锚 5,255,472B（SHA cdb86c4d...），verify_task333 接棒 dylib 钉扎）。此前：Task 332（Radiance 硬件光追正解：Task 331 全量撤销 + libMoltenVK.dylib→javamc-rt RT 构建）。此前：Task 330（一代勘误：Task 329 三提交全量撤销）。此前：Task 318（插件系统大架构+权限中心）。
 > 新会话规则：新任务记录**追加到本文件最末尾**（`## Task N` 或 `---/Task ID:` 模板均可）；收尾时同步更新下面「当前状态」表；本文件超过 ~400 行时把最旧的任务段挪进 worklog-archive.md。
 
 ### 一句话
@@ -13,8 +13,8 @@ AngelAuraAmethyst（Amethyst-iOS 重制版，fork **Gsjsjzhznsz/Air-Minecraft-iO
 ### 当前状态（收尾时更新）
 | 项 | 值 |
 |---|---|
-| 远端 HEAD | Task 332（Task 331 全量撤销 + libMoltenVK.dylib→javamc-rt RT 构建；CI 终绿 run 41333485997，IPA 包内 RT dylib 终验通过） |
-| 最新 Task 号 | **332**（多会话并行开发，开新任务前先 fetch 避让编号） |
+| 远端 HEAD | Task 333（javamc-rt 遥测版 dylib：[MVK-RT] 光追遥测默认开；CI 取证中） |
+| 最新 Task 号 | **333**（多会话并行开发，开新任务前先 fetch 避让编号） |
 | 待用户装机验证 | Task 183（四线锚点见文末）+ Task 182（三锚点）+ Task 181（六锚点）+ Task 180（双滑条透明度）+ Task 179（八连修）+ Task 178/177（新拟态定稿）+ 更早轮次 |
 | 已知历史遗留 | v6.0.0-release-notes.md 是工作区工件不在 git（发布时从 announcements.json 重导出）；部分 verify 级联失败为沙箱环境性（会话本地脚本被清 + task132/135/149/158 路径依赖 + task140 G2/G3 日志轮换），与基线对拍判读 |
 
@@ -4479,3 +4479,23 @@ Stage Summary:
 - Radiance 路线从 JVM 参数 workaround（Task 331，已撤）切换到 MoltenVK 硬件光追 dylib 正解：VK_KHR_acceleration_structure / ray_query / ray_tracing_pipeline 实验族在 A17 Pro+/M3+ 物理设备默认可广告
 - 装机锚点：①Vulkan 层 vkEnumerateInstanceExtensionProperties 可见 VK_KHR_ray_query 等实验扩展（旧 dylib 无）②Radiance 会话硬件光追链路可建 ③latestlog 无 Task331 行（撤销生效）④[VKBridge] vkGetMoltenVKConfigurationMVK 加载成功行不变（配置通路无回归）
 - 【CI 闭环】run 41333485997（e971d0db，run#978）一轮终绿（17:50→18:09 零热修）；产物在架：ipa 232,748,775B / tipa 232,749,798B / dSYM 6,946,097B；IPA 终验 = 包内 Frameworks/libMoltenVK.dylib 3,936,800B（CI strip -x 后，5,238,912→3,936,800 系预期）RT 符号七族/vkGet+vkSetMoltenVKConfigurationMVK/1.4.3 版本串全实锚
+
+---
+## Task 333——javamc-rt 遥测版 dylib 上机：另一 AI 光追遥测的成品化（保留全层可撤销）
+
+日期：2026-11-02
+
+Work Log:
+- 用户指令：另一 AI 给 dylib 加了监测性能/渲染等数据的日志功能，运行到一半额度被取消；确认其成果停在编译失败处，"要保留可撤销的余地，按照原样做出成品来"
+- 勘察定谳（本条前一轮只读勘察）：遥测 = fork 单提交 b41b09b（13 文件 +230/-15，设计完整：MVK_CONFIG_RAY_TRACING_LOGGING 开关（物理 iOS 默认 1）+ [MVK-RT] 九类标签（CAPS/DEVICE/API/AS-CREATE/BUILD/COPY/DESTROY/PIPELINE/TRACE/PERF）+ MVKPerformanceStatistics 新增 rayTracing 四追踪器（私有 API 44→45）+ 明确隐私边界（不输出 shader 源码/SPIR-V/资源内容/设备地址/路径））；12/13 文件编译通过，唯一堵点 vulkan.mm（6 平台 CI 全挂在 vulkan.o：use of undeclared identifier getMVKConfig / reportMessage）
+- 根因（静态取证）：getMVKConfig()/reportMessage() 在该代码库是 MVKBaseObject 成员——12 个通过的文件全部在类成员函数内调用（继承解析）；vulkan.mm 全是自由函数（无外层对象作用域）→ 未声明。MVKLogInfoIf 宏本身可见（MVKLogging.h 经 include 链可达），但宏体裸调 reportMessage 同样需要成员上下文
+- 修复（fork 提交 aecc997，b41b09b 之上独立提交零 amend）：两处遥测块改走对象上调用（mvkDev->getMVKConfig() / mvkPipeline->reportMessage(...)）——vulkan.mm 本文件 8 处既有 ->reportError(...) 同款 idiom；日志文本/条件语义（rayTracingLogging 经同一虚函数取有效配置，与另 12 文件等价）/位置一字不动；+7/-2 两块
+- 流水线：release-javamc run 41417612938 一轮终绿（iOS/macOS 双构建+发布零热修）→ javamc-rt release 五资产全部更新（旧资产按该流水线固定 tag 设计被覆盖；Task332 版 dylib 的双留档=本仓 git 历史 e971d0d + 本地 download/task332，撤销链完整）
+- 二进制终验（新 dylib 5,255,472B，SHA256 cdb86c4d613f6b1eae2de1761a65fa628ef4de306feeea5dc9d363e32b8f5c4a，SHA256SUMS 对账）：19 条 [MVK-RT] 格式串全在；MVK_CONFIG_RAY_TRACING_LOGGING 配置串在；vkGet/vkSetMoltenVKConfigurationMVK 仍导出（vk_bridge 配置通路不变）；RT 七符号族全在；drop-in 锚点与 Task332 旧件逐项一致（install name @rpath/MoltenVK.framework/MoltenVK / iOS minos 15.0 / arm64 MH_DYLIB / 1.4.3 版本族）
+- 撤销语义（三层各自独立）：①fork 层 revert aecc997 = 回到 b41b09b 原样（遥测提交一字未动）；②release 层重跑旧提交流水线即恢复旧资产；③本仓层 git revert 本提交 = 恢复 Task332 版 dylib（6b45b4b2，verify_task332 届时自然复绿）
+- 门禁：scripts/verify_task333.py（SHA/尺寸钉死新遥测版 + Mach-O 四锚 + 19 条遥测串抽验 + 配置 API 双符号 + RT 七符号 + Task331 撤销态仍成立 + vk_bridge/worklog 锚点 + verify_task332.py 未被改动（历史门完整性））；verify_task332 的 dylib 钉扎两项随换锚由本任务接棒（脚本按原样保留——回退 Task333 后自然复绿，撤销语义优先于套件常绿）
+- 行为与边界：物理设备 [MVK-RT] 遥测默认开（dylib 编译期默认，无需启动器 setenv）；生产帧计时诊断如需关日志 = MVK_CONFIG_RAY_TRACING_LOGGING=0；JVM 层独立诊断面（MVK_CONFIG_TRACE_VULKAN_CALLS=5 / MVK_CONFIG_PERFORMANCE_TRACKING=1）按其文档仍可叠加；iOS 17+ ray query / 18+ pipeline / 26+ IFT 分级与 Apple9+ 门禁不变
+
+Stage Summary:
+- Radiance 光追调试观测面就位：latestlog 直接可读 [MVK-RT] 前缀行（能力门禁/AS 生命周期/管线编译/派发编码/CPU 性能汇总九类），无需改任何 Java/native 代码
+- 装机锚点：①latestlog 出现 [MVK-RT][CAPS]（requested/available/appleGPUFamily/argumentBuffersTier/mslVersion/simulator 一行）②Radiance 会话中 [MVK-RT][AS-BUILD]/[MVK-RT][TRACE] 持续滚动（含 cpuMs）③退会话时 [MVK-RT][PERF] Ray-tracing CPU performance summary 四行汇总 ④Vulkan 渲染器无回归（vk_bridge 配置加载日志不变）

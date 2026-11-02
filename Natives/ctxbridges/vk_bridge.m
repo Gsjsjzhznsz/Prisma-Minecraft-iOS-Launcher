@@ -27,6 +27,18 @@ typedef uintptr_t VkInstance;
 //
 // 注意：仓库中的 vk_mvk_moltenvk.h 头文件是旧版本（1.1.2, spec 30），
 // 实际运行的 libMoltenVK.dylib 版本以二进制 strings 确认为准。
+// ★ Task333：dylib 再替换为 javamc-rt 遥测版（同一 fork
+//   feature/ios-hardware-raytracing：b41b09b 光追遥测 + aecc997 编译解药
+//   ——vulkan.mm 自由函数上下文 getMVKConfig/reportMessage 可见性问题，
+//   对象上调用同款 idiom 修复，遥测设计零改动）。5,255,472B，SHA256
+//   cdb86c4d613f6b1eae2de1761a65fa628ef4de306feeea5dc9d363e32b8f5c4a。
+//   物理设备 [MVK-RT] 遥测默认开（19 条格式串二进制实锚：CAPS/DEVICE/
+//   API/AS-CREATE/BUILD/COPY/DESTROY/PIPELINE/TRACE/PERF 九类标签）；
+//   关闭 = 环境变量 MVK_CONFIG_RAY_TRACING_LOGGING=0。drop-in 锚点与
+//   Task332 旧件逐项一致（install name/minos 15/arm64/1.4.3 版本族/
+//   vkGet+vkSetMoltenVKConfigurationMVK 双符号——本文件配置通路不变）。
+//   回退锚点：git revert 本提交即恢复 Task332 版 dylib（SHA
+//   6b45b4b2...，git 历史与本地 download/task332 双留档）。
 // ★ Task332：dylib 替换为 javamc-rt 构建（TYXH2024/MoltenVK
 //   feature/ios-hardware-raytracing @ a1d944a，基线上游 1.4.3 main +
 //   PR #2771 实验性 Vulkan 光追 + iOS enablement：编译期默认开
